@@ -140,6 +140,7 @@ class MIMIC3Paths(GlobalVars):
         self.labevents_path = mimic3_path + "LABEVENTS.csv.gz"
         self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv.gz"
         self.patients_path = mimic3_path + "PATIENTS.csv.gz"
+        self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv.gz"
         self.procedureevents_mv_path = mimic3_path + "PROCEDUREEVENTS_MV.csv.gz"
         self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv.gz"
 
@@ -158,6 +159,7 @@ class MIMIC3Paths(GlobalVars):
             self.labevents_path = mimic3_path + "LABEVENTS.csv"
             self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv"
             self.patients_path = mimic3_path + "PATIENTS.csv"
+            self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv"
             self.procedureevents_mv_path = mimic3_path + "PROCEDUREEVENTS_MV.csv"
             self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv"
 
@@ -191,6 +193,7 @@ class MIMIC4Paths(GlobalVars):
         self.labevents_path = mimic4_path + "hosp/labevents.csv.gz"
         self.outputevents_path = mimic4_path + "icu/outputevents.csv.gz"
         self.patients_path = mimic4_path + "hosp/patients.csv.gz"
+        self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv.gz"
         self.procedureevents_path = mimic4_path + "icu/procedureevents.csv.gz"
         self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv.gz"
 
@@ -208,6 +211,7 @@ class MIMIC4Paths(GlobalVars):
             self.labevents_path = mimic4_path + "hosp/labevents.csv"
             self.outputevents_path = mimic4_path + "icu/outputevents.csv"
             self.patients_path = mimic4_path + "hosp/patients.csv"
+            self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv"
             self.procedureevents_path = mimic4_path + "icu/procedureevents.csv"
             self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv"
 

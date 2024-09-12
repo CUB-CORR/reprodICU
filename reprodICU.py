@@ -32,7 +32,6 @@ class reprodICUPaths:
 
 
 # region main
-
 if __name__ == "__main__":
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Select datasets to extract.")
