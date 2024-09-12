@@ -1,0 +1,175 @@
+# Author: Finn Fassbender
+# Last modified: 2024-09-05
+
+# Description: This script contains helper functions and classes that are used across multiple scripts.
+# It contains the GlobalVars class that stores globally configured variables and the GlobalHelpers class
+# that contains helper functions that are used across multiple scripts.
+
+import polars as pl
+import yaml
+
+from typing import Sequence, Optional, Union
+
+
+class GlobalHelpers:
+    def __init__(self):
+        pass
+
+    def load_mapping(self, path: str) -> dict:
+        with open(path, "r") as f:
+            return yaml.safe_load(f)
+
+    def load_mapping_keys(self, path: str) -> list:
+        mapping = self.load_mapping(path)
+        return list(mapping.keys())
+
+    def load_many_to_one_mapping(self, path: str) -> dict:
+        mapping = self.load_mapping(path)
+        return {v: k for k, vs in mapping.items() for v in vs}
+
+    def load_many_to_many_to_one_mapping(self, path: str, database: str) -> dict:
+        mapping = self.load_mapping(path)
+        return_dict = {}
+        for key, value in mapping.items():
+            return_dict.update({v: key for v in value[database]})
+        return return_dict
+
+    def _convert_time_to_days_float(self, data, col_name, base_unit="minutes"):
+        assert base_unit in ["hours", "minutes", "seconds"]
+        if base_unit == "hours":
+            divided_by = 24
+        if base_unit == "minutes":
+            divided_by = 24 * 60
+        if base_unit == "seconds":
+            divided_by = 24 * 60 * 60
+
+        return data.with_columns((pl.col(col_name) / divided_by).cast(float).alias(col_name))
+
+    def _convert_time_to_seconds_float(self, data, col_name, base_unit="minutes"):
+        assert base_unit in ["hours", "minutes", "seconds"]
+        if base_unit == "hours":
+            multplicator = 60 * 60
+        if base_unit == "minutes":
+            multplicator = 60
+        if base_unit == "seconds":
+            multplicator = 1
+
+        return data.with_columns((pl.col(col_name) * multplicator).cast(float).alias(col_name))
+
+    def dropna(
+        self,
+        data: pl.LazyFrame,
+        how: str = "any",
+        subset: Optional[Union[str, Sequence[str]]] = None,
+        verbose: bool = False,
+    ) -> pl.LazyFrame:
+        """
+        Remove null and NaN values from polars DataFrame.
+        Modified from https://stackoverflow.com/a/73978691
+        """
+
+        if subset is None:
+            subset = pl.all()
+        else:
+            subset = pl.col(subset)
+
+        if verbose:
+            print(
+                "Dropping null and NaN values from DataFrame" + f" in columns {subset}"
+                if not subset is None
+                else "" + "..."
+            )
+
+        if how == "any":
+            result = data.filter(pl.all_horizontal(subset.is_not_null()))  # & subset.is_not_nan()))
+        elif how == "all":
+            result = data.filter(pl.any_horizontal(subset.is_not_null()))  # & subset.is_not_nan()))
+        else:
+            raise ValueError(f"how must be either 'any' or 'all', got {how}")
+
+        return result
+
+
+class GlobalVars(GlobalHelpers):
+    def __init__(self, paths=None) -> None:
+        config_path = "configs/"
+        mapping_path = "mappings/"
+        tempfiles_path = paths.reprodICU_files_path + "_tempfiles/"
+
+        # append globally configured variables as class attributes
+        for key, value in self.load_mapping(config_path + "GLOBAL_CONFIG.yaml").items():
+            setattr(self, key, value)
+
+        for key, value in self.load_mapping(config_path + "COLUMN_NAMES.yaml").items():
+            setattr(self, key, value)
+
+        # append globally configured mappings as class attributes
+        self.ETHNICITY_MAP = self.load_many_to_one_mapping(mapping_path + "ETHNICITY.yaml")
+        self.ADMISSION_LOCATIONS_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADMISSION_LOCATIONS.yaml"
+        )
+        self.DISCHARGE_LOCATIONS_MAP = self.load_many_to_one_mapping(
+            mapping_path + "DISCHARGE_LOCATIONS.yaml"
+        )
+        self.UNIT_TYPES_MAP = self.load_many_to_one_mapping(mapping_path + "UNIT_TYPES.yaml")
+
+        # append globally configured paths as class attributes
+        self.config_path = config_path
+        self.relevant_values_path = config_path + "RELEVANT_VALUES/"
+        self.mapping_path = mapping_path
+        self.precalc_path = tempfiles_path
+
+        # Define constants
+        self.DAYS_IN_YEAR = 365.25
+        self.INCH_TO_CM = 2.54  # 1 inch = 2.54 cm
+        self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
+
+        def F_TO_C(F: float) -> float:
+            return (F - 32) * 5 / 9
+
+        # Define custom data types
+        self.gender_dtype = pl.Enum(["Male", "Female", "Other", "Unknown"])
+        self.mortality_dtype = pl.Enum(["Alive", "Dead", "Unknown"])
+        self.ethnicity_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "ETHNICITY.yaml"))
+        self.admission_locations_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "ADMISSION_LOCATIONS.yaml")
+        )
+        self.discharge_locations_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "DISCHARGE_LOCATIONS.yaml")
+        )
+        self.unit_types_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml"))
+
+        # Define global mappings (ICD diagnoses)
+        self.ICD9_TO_ICD10_DIAGS = pl.read_csv(
+            mapping_path + "_icd_codes/icd9_diagnoses.csv", infer_schema_length=25000
+        )
+        self.ICD9_TO_ICD10_PROCS = pl.read_csv(
+            mapping_path + "_icd_codes/icd9_procedures.csv", infer_schema_length=25000
+        )
+        self.ICD10_TO_ICD9_DIAGS = pl.read_csv(
+            mapping_path + "_icd_codes/icd10_diagnoses.csv", infer_schema_length=25000
+        )
+        self.ICD10_TO_ICD9_PROCS = pl.read_csv(
+            mapping_path + "_icd_codes/icd10_procedures.csv", infer_schema_length=25000
+        )
+
+        # Select relevant variables
+        self.relevant_lab_values = self.load_mapping_keys(
+            self.relevant_values_path + "RELEVANT_LABS.yaml"
+        )
+        self.relevant_respiratory_values = self.load_mapping_keys(
+            self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
+        )
+        self.relevant_vital_values = self.load_mapping_keys(
+            self.relevant_values_path + "RELEVANT_VITALS.yaml"
+        )
+        self.relevant_intakeoutput_values = self.load_mapping_keys(
+            self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
+        )
+
+        self.all_relevant_values = (
+            self.relevant_lab_values
+            + self.relevant_respiratory_values
+            + self.relevant_vital_values
+            + self.relevant_intakeoutput_values
+        )

@@ -1,0 +1,194 @@
+"Inspiratory Pressure: Set":
+"Minute Volume: Spontaneous": minute_volume_patient
+"Set Vt (Servo:LTV)": tidal_volume_vent_set
+"Tidal Volume: Delivered":
+4. RSBI (RR/Vt):
+5. ARDS Eval (M or DNM):
+"A1: High Exhaled Vt":
+"Adult Con Alarms Backup I:E":
+Adult Con Alarms Backup PC:
+Adult Con Alarms Backup RR:
+Adult Con Alarms Circuit T (Celsius):
+Adult Con Alarms Hi Press Alarm:
+Adult Con Pt/Vent ETCO2: etCO2
+Adult Con Pt/Vent ETCO2_: etCO2
+Adult Con Pt/Vent IBW in Kg:
+Adult Con Pt/Vent InspiratorTV:
+Adult Con Pt/Vent MinuteVentil: minute_volume_vent_set
+Adult Con Pt/Vent SpO2:
+Adult Con Pt/Vent Spont Rate: respiratory_rate_patient
+Adult Con Setting Heliox_:
+Adult Con Setting INO:
+Adult Con Setting Set RR: respiratory_rate_vent_set
+Adult Con Setting Set Vt: tidal_volume_vent_set
+Adult Con Setting Spont Exp Vt:
+Airway Attachments:
+AIRWAY TEMPERATURE:
+Apnea Ventilation:
+Auto Release:
+Autoflow:
+Automatic Tube Compensation:
+"B1: IPAP":
+"B2: EPAP":
+"B3: Est Mask Leak":
+Backup IInsp Time (sec):
+Backup RR (Set):
+Backup Vent Active:
+Base Flow:
+Bipap Delivery Mode:
+Breath Sounds:
+Care:
+CCU Ventilator Weaning Protocol Started:
+Chest Tube Care:
+Chest Tube Description/Status:
+Chest Tube Drainage Color:
+Chest Tube Insertion Status:
+Chest Tube Label:
+Chest Tube Location:
+Chest Tube Position:
+Chest Tube Size:
+Chest Tube Suction Amount:
+Chest Tube Suction Type:
+Compliance:
+Cough Description:
+CPAP:
+DABP:
+DVT Prophylaxis:
+End Tidal CO2 Status: etCO2
+Endotracheal Position at Lip:
+Endotracheal Tube Moved to:
+Endotracheal Tube Placement Checked:
+Endotracheal Tube Placement:
+EPAP:
+ET Tube Repositioned:
+ETCO2: etCO2
+EtCO2: etCO2
+ETT Peptic Ulcer Prophylaxis:
+ETT Sedation Vacation:
+Exhaled MV: minute_volume_exhaled
+Exhaled TV (machine): tidal_volume_exhaled_vent
+Exhaled TV (patient): tidal_volume_exhaled_patient
+Exhaled Vt: tidal_volume_exhaled
+f Total:
+FIO2 (%): FiO2
+FiO2: FiO2
+Flow Sensitivity: flow_sensitivitiy
+Flowtrigger:
+Head of Bed Elevated:
+Head of Bed Elevation:
+Heat Moisture Exchanger:
+HOB Elevated 30-45 Degrees at All Times:
+HR Post:
+HR:
+Humidifier Temp:
+Humidity:
+Insp Cycle Off (%):
+Insp Flow (l/min): oxygen_flow
+Insp Time (%):
+Inspiratory Flow Rate:
+IPAP:
+LPM O2: oxygen_flow
+Lung Sound Location Modifier:
+Lung Sound Location:
+Lung Sound Respiratory Phase:
+Mean Airway Pressure: mean_airway_pressure
+Measured Ve:
+Mechanical Ventilation Slope:
+Mechanical Ventilator Compliance:
+Mechanical Ventilator High Tidal Volume Alarm:
+Mechanical Ventilator Mode:
+Mechanical Ventilator Resistance:
+Minute Ventilation Set(L/min): minute_volume_vent_set
+Minute Volume Leak:
+MVe: minute_volume_exhaled
+NIV Alarms Hi Press Alarm_5:
+NIV Alarms Low Press Alarm:
+NIV Pt/Vent SpO2_5:
+NIV Pt/Vent Spont_Rate: respiratory_rate_patient
+NIV Pt/Vent Spont_TidalV: tidal_volume_patient
+NIV Setting EPAP:
+NIV Setting Leak_:
+NIV Setting Set_RR: respiratory_rate_vent_set
+NIV Setting Spont Exp Vt_5:
+NIV Setting Total RR_5: respiratory_rate_total
+Non-invasive Ventilation Mode:
+O2 Device: O2_device # THIS TO ENUM!!
+O2 Percentage:
+Oral Care Complete Every 2 Hours:
+Oxygen Delivery Method:
+Oxygen Delivery Status:
+Oxygen Flow Rate: O2_flow
+Patient Leak:
+Patient Position:
+"PD I:E RATIO":
+Peak Flow: peak_flow
+Peak Insp. Pressure: peak_inspiratory_pressure
+Peak Pressure: peak_inspiratory_pressure # peak_pressure
+PEEP/CPAP:
+PEEP: PEEP
+Plateau Pressure: plateau_pressure
+Position at lip:
+Postion at Lip:
+Pressure Control:
+Pressure Support: pressure_support
+Pressure to Trigger PS:
+PS above PEEP:
+PS:
+PULSE OX RESULTS VT:
+Resp Rate Total: respiratory_rate_total
+Respiratory Device:
+Respiratory Phase:
+RETIRED O2 Device:
+Rise T:
+Rise:
+RR (patient): respiratory_rate_patient
+RR Spont: respiratory_rate_patient
+RSBI:
+RT Vent On/Off:
+SaO2: saO2
+SBT Method:
+Secured at-ETT:
+Secured by:
+Sedation outcome:
+Sedation Scoring Ventilation Depth:
+Sedation Wean:
+Set Fraction of Inspired Oxygen (FIO2): FiO2
+Set Vt (Drager): tidal_volume_vent_set
+Sigh:
+Skin Integrity:
+Spont TV: tidal_volume_patient
+Spontaneous Respiratory Rate: respiratory_rate_patient
+Sputum Amount:
+Sputum Color:
+Sputum Consistency:
+Static Compliance: compliance_static
+Suctioned patient:
+Tidal Volume (set): tidal_volume_vent_set
+Tidal Volume Observed (VT): tidal_volume_measured
+Total RR: respiratory_rate_total
+Total RSBI:
+Tracheostomy Type:
+Trachestomy Tube Size:
+Trapped Volume:
+Trigger:
+Tube Feedings on Hold:
+Tube Size:
+TV/kg IBW: tidal_volume_per_ideal_body_weight
+Type of Treatment:
+Unable to Obtain PEEPi and Vtrap:
+Unit of Measure:
+V60 Mask Leak Value:
+Vent Rate: respiratory_rate_vent_set
+Ventilator Checks:
+Ventilator Heater Temperature:
+Ventilator Population:
+Ventilator Support Mode:
+Ventilator Type:
+Volume Guarantee:
+VS RESP RATE:
+Vt Spontaneous (mL):
+Vti:
+Wake up assessment interventions:
+Wake up assessment performed:
+Weaning Assessment Criteria Collaboration:
+WUA Patient Response/RASS Score:

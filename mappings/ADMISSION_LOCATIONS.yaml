@@ -1,0 +1,89 @@
+Other ICU:
+  - ICU
+  - Other ICU
+  - CCU/IC zelfde ziekenhuis # CCU/IC of the same hospital
+  - CCU/IC ander ziekenhuis # CCU/IC of another hospital
+  # SICdb
+  - Externe Intensivstation # External Intensive Care Unit
+  - Intensivstation 2. Medizin # Intensive Care Unit 2. Medizin
+Emergency:
+  - EMERGENCY ROOM
+  - EMERGENCY ROOM ADMIT
+  - Emergency Department
+  - Eerste Hulp afdeling zelfde ziekenhuis # First Aid Department of the same hospital
+  - Eerste Hulp afdeling ander ziekenhuis # First Aid Department of another hospital
+  # SICdb
+  - Zentralambulanz (ZANE) CDK
+  - Zentrale Notaufnahme
+Direct Admit:
+  - WALK-IN/SELF REFERRAL
+  - Direct Admit
+  - Home
+  - Huis # Home
+Operating Room:
+  - PROCEDURE SITE
+  - AMBULATORY SURGERY TRANSFER
+  - Operating Room
+  - Operatiekamer vanaf verpleegafdeling zelfde ziekenhuis # Operating room from ward of same hospital
+  - operating room from emergency department of the same hospital # Operating room from the Emergency Department of the same hospital
+  - PACU
+Other:
+  - PHYSICIAN REFERRAL
+  - TRANSFER FROM HOSPITAL
+  - TRANSFER FROM HOSP/EXTRAM
+  - TRANSFER FROM SKILLED NUR
+  - TRANSFER FROM OTHER HEALT
+  - CLINIC REFERRAL
+  - HMO REFERRAL/SICK
+  - TRSF WITHIN THIS FACILITY
+  - CLINIC REFERRAL/PREMATURE
+  - PHYS REFERRAL/NORMAL DELI
+  - TRANSFER FROM SKILLED NURSING FACILITY
+  - INTERNAL TRANSFER TO OR FROM PSYCH
+  - Floor
+  - Recovery Room
+  - Step-Down Unit (SDU)
+  - Other Hospital
+  - Acute Care/Floor
+  - Chest Pain Center
+  - ICU to SDU
+  - Observation
+  - Anders # Other
+  - Verpleegafdeling zelfde ziekenhuis # Nursing ward of the same hospital
+  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
+  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
+  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
+  - Recovery zelfde ziekenhuis (alleen bij niet geplande IC-opname) # Recovery same hospital (only in case of unplanned ICU admission)
+  - Recovery ander ziekenhuis # Recovery from another hospital
+  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
+  - Other
+  # SICdb
+  - 1. Medizin
+  - 2. Medizin
+  - 3. Medizin
+  - Allgemeinchirurgie
+  - Angiologie
+  - Augenheilkunde
+  - Dermatologie
+  - Endokrinologie
+  - Externes Krankenhaus
+  - Gefäßchirurgie
+  - Gynäkologie
+  - HNO
+  - Herzchirurgie
+  - Kieferchirurgie
+  - Kinderchirurgie
+  - Neurochirurgie
+  - Neurologie
+  - Orthopädie
+  - Pneumologie
+  - Psychiatrie
+  - Pädiatrie
+  - Unfallchirurgie
+  - Urologie
+Unknown:
+  - INFORMATION NOT AVAILABLE
+  - "** INFO NOT AVAILABLE **"
+  - Unknown
+  - unknown
+  - ""

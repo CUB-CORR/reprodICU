@@ -1,0 +1,77 @@
+ReferenceGlobalID,ReferenceValue,ReferenceName,ReferenceUnit,REPRODICU
+701,BloodPressureArterialSystolic,SignalFloat,mmHg,invasive_systolic_blood_pressure
+702,BloodPressureArterialDiastolic,SignalFloat,mmHg,invasive_diastolic_blood_pressure
+711,PEEP,SignalFloat,,PEEP
+712,Mean Airway Pressure,SignalFloat,mbar,mean_airway_pressure
+713,MV (exp),SignalFloat,L,minute_volume_exhaled_patient
+715,pPeak,SignalFloat,mbar,peak_inspiratory_pressure
+716,etCO2,SignalFloat,mmHg,etCO2
+717,TV (insp),SignalFloat,ml,tidal_volume_inhaled_patient
+718,TV (exp),SignalFloat,ml,tidal_volume_exhaled_patient
+719,RespRate,SignalFloat,/min,respiratory_rate_patient
+723,CRRT Bloodflow,SignalFloat,ml/min,
+724,HeartRateABP,SignalFloat,/min,heart_rate
+703,BloodPressureArterialMAP,SignalFloat,mmHg,invasive_mean_blood_pressure
+725,Urine (c),SignalFloat,ml,urine_output
+726,GastricTube,SignalFloat,ml,
+727,FIO2,SignalFloat,
+728,Sevofluran (insp),SignalFloat,Vol%,
+729,Sevofluran (exp),SignalFloat,Vol%,
+730,CRRT DialysateFlow,SignalFloat,ml/h,
+731,CRRT SubstitutePrae,SignalFloat,ml/h,
+732,CRRT SubstitutePost,SignalFloat,ml/h,
+2018,CentralVenousPressure,SignalFloat,mmHg,central_venous_pressure
+2019,MV,SignalFloat,L,minute_volume_total
+704,BloodPressureNISystolic,SignalFloat,mmHg,noninvasive_systolic_blood_pressure
+2020,PressureSupport,SignalFloat,,pressure_support
+2021,IERatio,SignalFloat,,ie_ratio
+2022,CRRT Withdrawal,SignalFloat,ml/h,
+2023,ECMO PumpSpeed,SignalFloat,U/min,
+2024,ECMO BloodFlow,SignalFloat,L/min,
+2025,ECMO FI,SignalFloat,%,
+2274,RespRateEKG,SignalFloat,/min,respiratory_rate_measured
+2275,PAPSystolic,SignalFloat,mmHg,
+2276,PAPDiastolic,SignalFloat,mmHg,
+2277,PAPMEan,SignalFloat,mmHg,
+705,BloodPressureNIDiastolic,SignalFloat,mmHg,noninvasive_diastolic_blood_pressure
+2278,PEEP,RespiratorSetting,mbar,PEEP
+2279,pMean,SignalFloat,mbar,mean_airway_pressure
+2280,RespRateSpontanous,SignalFloat,/min,respiratory_rate_patient
+2281,MinuteVolumeSpontanous,SignalFloat,ml,minute_volume_patient
+2282,RespRate,RespiratorSetting,/min,respiratory_rate_vent_set
+2283,FIO2,RespiratorSetting,%,FiO2
+2284,PressureSupport,RespiratorSetting,mbar,pressure_support
+2285,IERatio,RespiratorSetting,ie_ratio
+2287,RespiratoryRateEKG,SignalFloat,respiratory_rate_measured
+2288,CerebralTissueOxygenNIRLeft,SignalFloat,%,
+706,BloodPressureNIMAP,SignalFloat,mmHg,noninvasive_mean_blood_pressure
+2289,CerebralTissueOxygenNIRRight,SignalFloat,%,
+2290,MAC,SignalFloat,%,
+2305,UrinePerKg,SignalFloat,
+2309,ThoraxDrain1,SignalFloat,ml,
+2310,ThoraxDrain2,SignalFloat,ml,
+2311,ThoraxDrain3,SignalFloat,ml,
+2312,ThoraxDrain4,SignalFloat,ml,
+2313,ThoraxDrain5,SignalFloat,ml,
+2314,Drain1,SignalFloat,ml,
+2315,Drain2,SignalFloat,ml,
+707,HeartRateEKG,SignalFloat,/min,heart_rate
+2316,Drain3,SignalFloat,ml,
+2317,Drain4,SignalFloat,ml,
+2318,Drain5,SignalFloat,ml,
+2319,Drain6,SignalFloat,ml,
+2320,Drain7,SignalFloat,ml,
+2321,Drain8,SignalFloat,ml,
+2322,DrainageSum,SignalFloat,
+3035,PeakInspiratoryPressure,SignalFloat,mbar,peak_inspiratory_pressure
+3036,O2exp,SignalFloat,%,
+3037,BispectralIndex,SignalFloat,
+708,HeartRateSPO2,SignalFloat,/min,
+3038,Desfluran (exp),SignalFloat,Vol%,
+3039,Desfluran (insp),SignalFloat,Vol%,
+3040,PressureOverPeep,RespiratorSetting,mbar,
+3071,CRRT CalciumSubstitution,SignalFloat,%,
+3120,DynCompliance,SignalFloat,ml/mbar,compliance_dynamic
+3121,Trigger,RespiratorSetting,L/min,
+709,Temperature,SignalFloat,°C,temperature
+710,SPO2,SignalFloat,%,spO2

@@ -1,0 +1,24 @@
+etCO2: True
+FiO2: True
+FiO2 / oxygen_flow: True # NOTE: needs work to be useful
+mean_airway_pressure: True
+# Mechanical Ventilator Mode: True  # TODO: check if this is good
+minute_volume_exhaled: True
+minute_volume_patient: True
+minute_volume_vent_set: True
+oxygen_delivery_device: True
+oxygen_flow: True
+# peak_pressure: False -> replaced by peak_inspiratory_pressure
+peak_inspiratory_pressure: True
+PEEP: True
+plateau_pressure: True
+pressure_support: True
+respiratory_rate_patient: True
+respiratory_rate_total: True
+respiratory_rate_vent_set: True
+# saO2: False # NOTE: this is also in the lab values
+tidal_volume_exhaled: True
+tidal_volume_exhaled_patient: True
+tidal_volume_exhaled_vent: True
+tidal_volume_per_ideal_body_weight: True
+tidal_volume_vent_set: True

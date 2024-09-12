@@ -1,0 +1,118 @@
+Heart rate: heart_rate
+Core body temperature: temperature
+Rectal temperature: temperature
+Axillary temperature: temperature
+Invasive systolic arterial pressure: invasive_systolic_blood_pressure
+Invasive diastolic arterial pressure: invasive_diastolic_blood_pressure
+Invasive mean arterial pressure: invasive_mean_blood_pressure
+Non-invasive systolic arterial pressure: non_invasive_systolic_blood_pressure
+Non-invasive diastolic arterial pressure: non_invasive_diastolic_blood_pressure
+Non-invasive mean arterial pressure: non_invasive_mean_blood_pressure
+Pulmonary artery mean pressure:
+Pulmonary artery systolic pressure:
+Pulmonary artery diastolic pressure:
+Pulmonary artery wedge pressure:
+Cardiac output:
+Mixed venous oxygen saturation:
+Central venous pressure: central_venous_pressure
+ST elevation:
+Circadian rhythm:
+Peripheral oxygen saturation: spO2
+End tidal carbon dioxide concentration: etCO2
+Respiratory rate: respiratory_rate
+Oxygen administration by mask: oxygen_flow
+Oxygen administration by nasal cannula: oxygen_flow
+Inspired oxygen concentration: FiO2
+Positive end expiratory pressure setting: PEEP
+Positive end expiratory pressure: PEEP
+Ventilator mode:
+Expiratory tidal volume: tidal_volume_exhaled
+Tidal volume setting: tidal_volume_vent_set
+Peak inspiratory pressure: peak_inspiratory_pressure
+Plateau pressure: plateau_pressure
+Mean inspiratory airway pressure: mean_airway_pressure
+Ventilator rate: respiratory_rate_vent_set
+Ventilator Airway Code:
+Hourly urine volume: urine_output
+Glasgow Coma Score verbal response subscore: glasgow_coma_score_verbal
+Glasgow Coma Score motor response subscore: glasgow_coma_score_motor
+Glasgow Coma Score eye opening subscore: glasgow_coma_score_eye
+Richmond agitation-sedation scale:
+Intracranial pressure: intracranial_pressure
+Measurement of output from drain:
+Train of four count:
+Fluid balance:
+Infusion of saline solution:
+Intravenous fluid colloid administration:
+Body weight:
+Body height measure:
+APACHE II Group:
+APACHE IV Group:
+Base excess in Arterial blood by calculation: base_excess_deficit
+Carboxyhemoglobin/Hemoglobin.total in Arterial blood: carboxyhemoglobin
+Hemoglobin [Mass/volume] in Arterial blood: hemoglobin
+Bicarbonate [Moles/volume] in Arterial blood: bicarbonate
+Lactate [Mass/volume] in Arterial blood: lactate
+Methemoglobin/Hemoglobin.total in Arterial blood: methemoglobin
+pH of Arterial blood: pH
+Carbon dioxide [Partial pressure] in Arterial blood: paCO2
+Oxygen [Partial pressure] in Arterial blood: paO2
+Oxygen saturation in Arterial blood: saO2
+Central venous oxygenation saturation: # scvO2
+Troponin T.cardiac [Mass/volume] in Serum or Plasma: troponin_T
+Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method:
+Creatine kinase panel - Serum or Plasma: CK
+Creatine kinase.MB [Mass/volume] in Serum or Plasma: CKMB
+Lactate [Moles/volume] in Venous blood:
+Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma: NTproBNP
+Potassium [Moles/volume] in Blood: potassium
+Sodium [Moles/volume] in Blood: sodium
+Chloride [Moles/volume] in Blood: chloride
+Calcium.ionized [Moles/volume] in Blood: # calcium_ionized
+Calcium [Moles/volume] in Blood: calcium
+Phosphate [Moles/volume] in Blood: phosphate
+Magnesium [Moles/volume] in Blood: magnesium
+Urea [Moles/volume] in Venous blood: # urea
+Creatinine [Moles/volume] in Blood: creatinine
+Creatinine [Moles/volume] in Urine: urine_creatinine
+Sodium [Moles/volume] in Urine: urine_sodium
+Urea [Moles/volume] in Urine: urea # don't forget to convert to blood_urea_nitrogen -> done!
+Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma: AST
+Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma: ALT
+Bilirubin.total [Moles/volume] in Serum or Plasma: bilirubin_total
+Bilirubin.direct [Mass/volume] in Serum or Plasma: bilirubin_direct
+Alkaline phosphatase [Enzymatic activity/volume] in Blood: alkaline_phosphatase
+Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma: gamma_glutamyl_transferase
+aPTT in Blood by Coagulation assay: partial_thromboplastin_time
+Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay: fibrinogen
+Prothrombin activity actual/normal in Platelet poor plasma by Coagulation assay:
+Coagulation factor V activity actual/normal in Platelet poor plasma by Coagulation assay:
+Coagulation factor VII activity actual/normal in Platelet poor plasma by Coagulation assay:
+Coagulation factor X activity actual/normal in Platelet poor plasma by Coagulation assay:
+INR in Blood by Coagulation assay: INR
+Albumin [Mass/volume] in Serum or Plasma: protein_albumin
+Glucose [Moles/volume] in Serum or Plasma: glucose
+Ammonia [Moles/volume] in Blood: ammonia
+C reactive protein [Mass/volume] in Serum or Plasma: CRP
+Procalcitonin [Mass/volume] in Serum or Plasma:
+Lymphocytes [#/volume] in Blood: lymphocytes # !! -> is absolute count
+Neutrophils/100 leukocytes in Blood: neutrophils
+Segmented neutrophils/100 leukocytes in Blood: segmented_neutrophils
+Band form neutrophils/100 leukocytes in Blood: banded_neutrophils
+Erythrocyte sedimentation rate: erythrocyte_sedimentation_rate
+Hemoglobin [Mass/volume] in Blood: hemoglobin
+Leukocytes [#/volume] in Blood: leukocytes
+Platelets [#/volume] in Blood: thrombocytes
+MCH [Entitic mass]: MCH
+MCHC [Mass/volume] in Cord blood: MCHC
+MCV [Entitic volume]: MCV
+Ferritin [Mass/volume] in Blood: ferritin
+Thyrotropin [Units/volume] in Serum or Plasma: TSH
+Amylase [Enzymatic activity/volume] in Serum or Plasma: amylase
+Lipase [Enzymatic activity/volume] in Serum or Plasma: lipase
+Cortisol [Moles/volume] in Serum or Plasma: # cortisol
+pH of Cerebral spinal fluid:
+Lactate [Moles/volume] in Cerebral spinal fluid:
+Glucose [Moles/volume] in Cerebral spinal fluid:
+pH of Body fluid:
+Amylase [Enzymatic activity/volume] in Body fluid:

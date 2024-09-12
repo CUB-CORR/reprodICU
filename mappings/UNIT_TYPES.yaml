@@ -1,0 +1,68 @@
+Cardiac:
+  - Cardiac ICU
+  - Cardiac Vascular Intensive Care Unit (CVICU)
+  - Cardiologie
+  - CCU
+  - CCU-CTICU
+  - Coronary Care Unit (CCU)
+Gastrosurgery:
+  - Heelkunde Gastro-enterologie
+  - Maag-,Darm-,Leverziekten
+Neurological:
+  - Neuro ICU
+  - Neuro Intermediate
+  - Neuro Stepdown
+  - Neuro Surgical Intensive Care Unit (Neuro SICU)
+  - Neurochirurgie
+  - Neurologie
+  - NICU
+Medical:
+  - Intensive Care Volwassenen
+  - Medical Intensive Care Unit (MICU)
+  - Medicine
+  - MICU
+Medical-Surgical:
+  - Med-Surg ICU
+  - Medical/Surgical Intensive Care Unit (MICU/SICU)
+  # SICdb
+  - INID # Interdisziplinäre Intensivstation INID
+Surgical:
+  - Cardiochirurgie
+  - CSICU
+  - CSRU
+  - CTICU
+  - PACU
+  - SICU
+  - Surgical Intensive Care Unit (SICU)
+  - Vaatchirurgie
+  # SICdb
+  - CWIN # Chirurgie West-Intensivstation - CWIN
+  - INBD # Intensivstation INBD
+  - INIC # Intermediate Care Station - INIC
+Trauma:
+  - Trauma SICU (TSICU)
+  - Traumatologie
+  - TSICU
+Other:
+  - ders
+  - Gynaecologie
+  - Heelkunde Longen/Oncologie
+  - Heelkunde Oncologie
+  - Hematologie
+  - Inwendig
+  - Keel, Neus & Oorarts
+  - Longziekte
+  - Mondheelkunde
+  - Nefrologie
+  - Obstetrie
+  - Oncologie Inwendig
+  - Oogheelkunde
+  - Orthopedie
+  - Plastische chirurgie
+  - Reumatologie
+  - Urologie
+  - Verloskunde
+Unknown:
+  - Unknown
+  - unknown
+  - ""

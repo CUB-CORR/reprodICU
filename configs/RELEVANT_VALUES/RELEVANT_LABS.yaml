@@ -1,0 +1,98 @@
+alkaline_phosphatase: True
+ALT: True
+anion_gap: True
+AST: True
+base_deficit: True # -> necessary for base_excess_deficit fixing in eICU
+base_excess: True # -> necessary for base_excess_deficit fixing in eICU
+base_excess_deficit: True
+basophils: True
+bicarbonate: True
+bilirubin_total: True
+blood_urea_nitrogen: True
+calcium: True
+chloride: True
+creatinine: True
+eosinophiles: True
+erythrocytes: True
+# FiO2: False # -> respiratory value
+glucose: True
+glucose_bedside: True
+hematocrit: True
+hemoglobin: True
+INR: True
+lactate: True
+leukocytes: True
+lymphocytes: True
+magnesium: True
+MCH: True
+MCHC: True
+MCV: True
+monocytes: True
+# MPV: False # -> too specific
+neutrophils: True
+paCO2: True
+paO2: True
+partial_thromboplastin_time: True
+pH: True
+phosphate: True
+potassium: True
+protein_albumin: True
+protein_total: True
+prothrombin_time: True
+RDW: True
+saO2: True
+sodium: True
+thrombocytes: True
+troponin_I: True
+urine_specific_gravity: True
+
+# ammonia: True
+amylase: True
+banded_neutrophils: True
+# bilirubin_direct: True
+# bilirubin_indirect: True
+# carboxyhemoglobin: True
+cholesterol_HDL: True
+cholesterol_LDL: True
+cholesterol_total: True
+CK: True
+CK-MB: True
+# cortisol: True
+CRP: True
+d_dimers: True
+eosinophils: True
+# erythrocyte_sedimentation_rate: True
+# ferritin: True
+fibrinogen: True
+# folate: True
+gamma_glutamyl_transferase: True
+haptoglobin: True
+# iron: True
+lactate_dehydrogenase: True
+lipase: True
+# methemoglobin: True
+# myoglobin: True
+# NTproBNP: True
+# oxyhemoglobin: True
+# protein_prealbumin: True
+red_cell_distribution_width: True
+reticulocytes: True
+# serum_ketones: True
+serum_osmolality: True
+# T3: True
+# T4: True
+# T4_free: True
+# total_iron_binding_capacity: True
+# transferrin: True
+triglycerides: True
+troponin_T: True
+TSH: True
+# uric_acid: True
+urine_creatinine: True
+# urine_ketones: True
+# urine_leukocytes: True
+# urine_nitrogen_24h: True
+urine_osmolality: True
+# urine_protein_24h: True
+# urine_sodium: True
+# vitamin_B12: True

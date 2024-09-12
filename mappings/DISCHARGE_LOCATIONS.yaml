@@ -1,0 +1,134 @@
+Hospital:
+  - Acute Care/Floor
+  - ACUTE HOSPITAL
+  - CHRONIC/LONG TERM ACUTE CARE
+  - Floor
+  - HEALTHCARE FACILITY
+  - LONG TERM CARE HOSPITAL
+  - Other Hospital
+  - Other Internal
+  - SHORT TERM HOSPITAL
+  - Step-Down Unit (SDU)
+  - Telemetry
+  # SICdb
+  - 1. Medizin
+  - 2. Medizin
+  - 3. Medizin
+  - Allgemeinchirurgie
+  - Dermatologie
+  - Externes Krankenhaus
+  - Gefäßchirurgie
+  - Augenabteilung
+  - Gynäkologie
+  - HNO
+  - Herzchirurgie
+  - Kiefer
+  - Kinderchirurgie
+  - Neurochirurgie
+  - Neurologie
+  - Orthopädie
+  - Pneumologie
+  - Psychiatrie
+  - Pädiatrie
+  - RCU
+  - Unfallchirurgie
+  - Urologie
+Home:
+  - Home
+  - HOME
+  - HOME HEALTH CARE
+  - HOME WITH HOME IV PROVIDR
+  # SICdb
+  - Nach Hause
+Death:
+  - DEAD/EXPIRED
+  - death
+  - Death
+  - DIED
+  # SICdb
+  - Pathologie # ???
+Hospice:
+  - HOSPICE
+  - HOSPICE-HOME
+  - HOSPICE-MEDICAL FACILITY
+  # SICdb
+  - Palliativstation
+Other ICU:
+  - ICU
+  - Other ICU
+  - Other ICU (CABG)
+Operating Room:
+  - Operating Room
+Rehabilitation:
+  - REHAB
+  - Rehabilitation
+  - REHAB/DISTINCT PART HOSP
+  # SICdb
+  - Neurorehabilitation
+Nursing Facility:
+  - ASSISTED LIVING
+  - Nursing Home
+  - SKILLED NURSING FACILITY
+  - Skilled Nursing Facility
+  - SNF
+  - SNF-MEDICAID ONLY CERTIF
+Other:
+  - DISC-TRAN CANCER/CHLDRN H
+  - DISC-TRAN TO FEDERAL HC
+  - DISCH-TRAN TO PSYCH HOSP
+  - ICF
+  - Other
+  - Other External
+  - OTHER FACILITY
+  - PSYCH FACILITY
+  # UMCdb specific ward numbers
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+  - "5"
+  - "8"
+  - "9"
+  - "10"
+  - "12"
+  - "13"
+  - "14"
+  - "15"
+  - "16"
+  - "17"
+  - "18"
+  - "19"
+  - "20"
+  - "21"
+  - "22"
+  - "23"
+  - "25"
+  - "26"
+  - "27"
+  - "29"
+  - "31"
+  - "32"
+  - "33"
+  - "35"
+  - "36"
+  - "37"
+  - "38"
+  - "40"
+  - "41"
+  - "42"
+  - "44"
+  - "45"
+  - "46"
+  - "47"
+  - "48"
+  - "49"
+  - "50"
+  - "51"
+Against Medical Advice:
+  - AGAINST ADVICE
+  - LEFT AGAINST MEDICAL ADVI
+Unknown:
+  - UNKNOWN
+  - Unknown
+  - unknown
+  - ""

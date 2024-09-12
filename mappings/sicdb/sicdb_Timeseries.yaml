@@ -1,0 +1,76 @@
+701: invasive_systolic_blood_pressure
+702: invasive_diastolic_blood_pressure
+723:
+724: heart_rate
+703: invasive_mean_blood_pressure
+725: urine_output
+726:
+727:
+728:
+729:
+730:
+731:
+711: PEEP
+732:
+2018: central_venous_pressure
+2019: minute_volume_total
+704: noninvasive_systolic_blood_pressure
+2020: pressure_support
+2021: ie_ratio
+2022:
+2023:
+2024:
+2025:
+712: mean_airway_pressure
+2274: respiratory_rate_measured
+2275:
+2276:
+2277:
+705: noninvasive_diastolic_blood_pressure
+2278: PEEP
+2279: mean_airway_pressure
+2280: respiratory_rate_patient
+2281: minute_volume_patient
+2282: respiratory_rate_vent_set
+713: minute_volume_exhaled_patient
+2283: FiO2
+2284: pressure_support
+2285:
+2287:
+2288:
+706: noninvasive_mean_blood_pressure
+2289:
+2290:
+2305:
+2309:
+715: peak_inspiratory_pressure
+2310:
+2311:
+2312:
+2313:
+2314:
+2315:
+707: heart_rate
+2316:
+2317:
+2318:
+716: etCO2
+2319:
+2320:
+2321:
+2322:
+3035: peak_inspiratory_pressure
+3036:
+3037:
+708:
+3038:
+3039:
+717: tidal_volume_inhaled_patient
+3040:
+3071:
+3120: compliance_dynamic
+3121:
+709: temperature
+710: spO2
+718: tidal_volume_exhaled_patient
+719: respiratory_rate_patient

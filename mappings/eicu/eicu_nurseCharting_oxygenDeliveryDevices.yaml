@@ -1,0 +1,141 @@
+" t- piece": t_piece
+"12": unknown
+"2 l": unknown
+"2L": unknown
+"2lnc": unknown
+"7": unknown
+"8 L": facemask
+"8 L oxy/ NRB": non_rebreather_mask
+"8 L oxymizer": nasal_cannula
+"88": unknown
+"96": unknown
+"ambu": ambu_bag
+"Bi-PAP": BiPAP
+"bipap": BiPAP
+"Bipap": BiPAP
+"BiPap": BiPAP
+"BiPaP": BiPAP
+"BiPAP": BiPAP
+"BiPAP": BiPAP
+"BiPAP 10/5": BiPAP
+"BiPAP 12/5": BiPAP
+"BiPAP 12/8": BiPAP
+"BiPAP 14/8": BiPAP
+"BiPAP 16/8": BiPAP
+"BiPAP 22/16": BiPAP
+"BiPAP/CPAP": BiPAP
+"BiPAP12/8": BiPAP
+"BiPAP14/8": BiPAP
+"BPap": BiPAP
+"cool aerosol mask": # what is this?
+"cpap": CPAP
+"CPap": CPAP
+"CPAP": CPAP
+"CPAP 16/5": CPAP
+"HF": high_flow_nasal_cannula
+"HF  20L": high_flow_nasal_cannula
+"HFNC": high_flow_nasal_cannula
+"HHHF": high_flow_nasal_cannula
+"Hi Flow NC": high_flow_nasal_cannula
+"hi flow vapotherm": high_flow_nasal_cannula
+"hi-flo": high_flow_nasal_cannula
+"hi-flow": high_flow_nasal_cannula
+"HiFloNC": high_flow_nasal_cannula
+"HIGH FLOW": high_flow_nasal_cannula
+"high flow NC": high_flow_nasal_cannula
+"HIGH FLOW VAPORTHREM": high_flow_nasal_cannula
+"HIGH FLOW vapotherm": high_flow_nasal_cannula
+"mask": facemask
+"MASK": facemask
+"mask99": facemask
+"misty ox": nebulizer
+"Misty Ox": nebulizer
+"N/C": nasal_cannula
+"nasal cannula": nasal_cannula
+"Nasal cannula": nasal_cannula
+"nasal cannula ": nasal_cannula
+"Nasal cannula (NC)": nasal_cannula
+"nasal cannula-oximizer": nasal_cannula
+"nc": nasal_cannula
+"NC": nasal_cannula
+"NC ": nasal_cannula
+"NCH": nasal_cannula
+"non-rebreather": non_rebreather_mask
+"none": room_air
+"nonrebreather": non_rebreather_mask
+"NRB": non_rebreather_mask
+"NRBM": non_rebreather_mask
+"NRM": non_rebreather_mask
+"other": other
+"other oximizer": nasal_cannula
+"other-oximizer": nasal_cannula
+"oximask": facemask
+"oximizer": nasal_cannula
+"Oximizer": nasal_cannula
+"oximyzer": nasal_cannula
+"oxy mask": facemask
+"oxy mask and cannula": facemask
+"oxymask": facemask
+"OXYMASK": facemask
+"OXYMASK ": facemask
+"oxymizer": nasal_cannula
+"Oxymizer": nasal_cannula
+"oxymizer/NRM": nasal_cannula
+"partial-rebreather": # what is this?
+"PS-Auto": # pressure support auto?
+"R.A": room_air
+"r/a": room_air
+"R/A": room_air
+"ra": room_air
+"Ra": room_air
+"RA": room_air
+"RA/trach capped": tracheostomy # or room air?
+"rm air": room_air
+"room air": room_air
+"Room air": room_air
+"Room Air": room_air
+"ROOM AIR": room_air
+"room air ": room_air
+"Room Air ": room_air
+"ROOM AIR ": room_air
+"roomair": room_air
+"rooom air": room_air
+"simple mask": facemask
+"Simple mask": facemask
+"SIMPLE MASK": facemask
+"simple mask ": facemask
+"SIMV": ventilator # synchronized intermittent mandatory ventilation -> ventilator?
+"T -piece": t_piece
+"t piece": t_piece
+"T piece": t_piece
+"T Piece": t_piece
+"T Piece ": t_piece
+"t-piece": t_piece
+"T-piece": t_piece
+"T-Piece": t_piece
+"T-PIECE": t_piece
+"tc": unknown # no clue what this is
+"tpiece": t_piece
+"Tpiece": t_piece
+"TPiece": t_piece
+"TPIECE": t_piece
+"trach /  vent": tracheostomy
+"trach / vent": tracheostomy
+"trach /vent": tracheostomy
+"trach collar": tracheostomy
+"Trach T piece": tracheostomy
+"trach to T-Piece": tracheostomy
+"trach to vent": tracheostomy
+"trach to ventilator": tracheostomy
+"Trach/tpiece": tracheostomy
+"trach/vent": tracheostomy
+"Vapotherm": high_flow_nasal_cannula
+"vent": ventilator
+"VENT": ventilator
+"ventilator": ventilator
+"Ventilator": ventilator
+"VENTILATOR": ventilator
+"Ventilator ": ventilator
+"ventilator/trach": tracheostomy
+"venturi mask": facemask
+"vm": facemask

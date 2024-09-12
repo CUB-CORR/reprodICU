@@ -1,0 +1,347 @@
+# REFERENCE RANGES FOR LABORATORY VALUES
+# based on the NBME reference values taken from https://www.nbme.org/sites/default/files/2020-07/Laboratory_Reference_Values.pdf
+# otherwise from the German impp reference values taken from https://amboss.com/media/de/amboss-staatsexamen-fruehjahr-2019-referenzwertliste
+
+# switching to the ABIM Laboratory Test Reference Ranges
+# taken from https://www.abim.org/Media/bfijryql/laboratory-reference-ranges.pdf
+
+# SERUM
+## GENERAL CHEMISTRY
+### ELECTROLYTES
+sodium:
+  units: mmol/L
+  reference_range:
+    lower: 136.0
+    upper: 146.0
+
+potassium:
+  units: mmol/L
+  reference_range:
+    lower: 3.5
+    upper: 5.0
+
+chloride:
+  units: mmol/L
+  reference_range:
+    lower: 95.0
+    upper: 105.0
+
+bicarbonate:
+  units: mmol/L
+  reference_range:
+    lower: 22.0
+    upper: 28.0
+
+blood_urea_nitrogen:
+  units: mmol/L
+  reference_range:
+    lower: 2.5
+    upper: 6.4
+
+creatinine:
+  units: µmol/L
+  reference_range:
+    lower: 53.0
+    upper: 106.0
+
+glucose:
+  units: mmol/L
+  reference_range:
+    lower: 3.8
+    upper: 5.6
+
+calcium:
+  units: mmol/L
+  reference_range:
+    lower: 2.1
+    upper: 2.6
+
+magnesium:
+  units: mmol/L
+  reference_range:
+    lower: 0.75
+    upper: 1.0
+
+phosphate:
+  units: mmol/L
+  reference_range:
+    lower: 1.0
+    upper: 1.5
+
+## HEPATIC FUNCTION
+ALT: # Alanine aminotransferase
+  units: U/L
+  reference_range:
+    lower: 10.0
+    upper: 40.0
+
+AST: # Aspartate aminotransferase
+  units: U/L
+  reference_range:
+    lower: 12.0
+    upper: 38.0
+
+alkaline_phosphatase:
+  units: U/L
+  reference_range:
+    lower: 25.0
+    upper: 100.0
+
+bilirubin_total:
+  units: µmol/L
+  reference_range:
+    lower: 2.0
+    upper: 17.0
+
+biliubin_direct:
+  units: µmol/L
+  reference_range:
+    lower: 0.0
+    upper: 5.0
+
+protein_total:
+  units: g/L
+  reference_range:
+    lower: 60.0
+    upper: 78.0
+
+protein_albumin:
+  units: g/L
+  reference_range:
+    lower: 35.0
+    upper: 55.0
+
+# protein_globulin:
+#   units: g/L
+#   reference_range:
+#     lower: 23.0
+#     upper: 35.0
+
+## LIPIDS
+cholesterol_total:
+  units: mmol/L
+  reference_range:
+    lower: 0
+    upper: 5.2
+
+cholesterol_HDL:
+  units: mmol/L
+  reference_range:
+    lower: 1.0
+    upper: 1.6
+
+cholesterol_LDL:
+  units: mmol/L
+  reference_range:
+    lower: 0
+    upper: 4.2
+
+triglycerides:
+  units: mmol/L
+  reference_range:
+    lower: 0
+    upper: 1.7
+
+## IRON STUDIES
+ferritin_MALE: # not yet ABIM since ABIM uses other units
+  units: µg/L
+  reference_range:
+    lower: 20.0
+    upper: 250.0
+
+ferritin_FEMALE: # not yet ABIM since ABIM uses other units
+  units: µg/L
+  reference_range:
+    lower: 10.0
+    upper: 120.0
+
+iron:
+  units: µg/dL
+  reference_range:
+    lower: 50.0
+    upper: 150
+
+# NBME SI values
+# iron_MALE:
+#   units: µmol/L
+#   reference_range:
+#     lower: 11.6
+#     upper: 31.3
+
+# iron_FEMALE:
+#   units: µmol/L
+#   reference_range:
+#     lower: 9.0
+#     upper: 30.4
+
+total_iron_binding_capacity:
+  units: µmol/L
+  reference_range:
+    lower: 44.8
+    upper: 71.6
+
+transferrin:
+  units: g/L
+  reference_range:
+    lower: 2.0
+    upper: 3.6
+
+## ENDOCRINE
+# FSH
+# LH
+# GH
+
+prolactin_MALE:
+  units: µg/L
+  reference_range:
+    lower: 0
+    upper: 17.0
+
+prolactin_FEMALE:
+  units: µg/L
+  reference_range:
+    lower: 0
+    upper: 25.0
+  
+# cortisol
+
+TSH:
+  units: mU/L
+  reference_range:
+    lower: 0.4
+    upper: 4.0
+
+T3:
+  units: nmol/L
+  reference_range:
+    lower: 1.5
+    upper: 3.1
+
+T3_resin_uptake:
+  units: %
+  reference_range:
+    lower: 25
+    upper: 35
+
+T4:
+  units: nmol/L
+  reference_range:
+    lower: 64
+    upper: 155
+
+T4_free:
+  units: pmol/L
+  reference_range:
+    lower: 12.0
+    upper: 21.9
+
+# Thyroidal iodine (123I) uptake
+# Intact PTH
+# 17-Hydroxycorticosteroids
+# 17-Ketosteroids
+
+## IMMUNOGLOBULINS
+IgA:
+  units: g/L
+  reference_range:
+    lower: 0.76
+    upper: 3.90
+
+IgE:
+  units: kU/L
+  reference_range:
+    lower: 0
+    upper: 380
+
+IgG:
+  units: g/L
+  reference_range:
+    lower: 6.5
+    upper: 15.0
+
+IgM:
+  units: g/L
+  reference_range:
+    lower: 0.5
+    upper: 3.0
+
+## OTHER
+creatine_clearance_MALE:
+  units: mL/min
+  reference_range:
+    lower: 97
+    upper: 137
+
+creatine_clearance_FEMALE:
+  units: mL/min
+  reference_range:
+    lower: 88
+    upper: 128
+
+CK_MALE:
+  units: U/L
+  reference_range:
+    lower: 25
+    upper: 90
+
+CK_FEMALE:
+  units: U/L
+  reference_range:
+    lower: 10
+    upper: 70
+
+lactate_dehydrogenase:
+  units: U/L
+  reference_range:
+    lower: 45
+    upper: 200
+
+serum_osmolality:
+  units: mOsm/kg
+  reference_range:
+    lower: 275
+    upper: 295
+
+uric_acid:
+  units: mmol/L
+  reference_range:
+    lower: 0.18
+    upper: 0.48
+
+# GASES, ARTERIAL BLOOD
+pH:
+  units: dimensionless
+  reference_range:
+    lower: 7.38
+    upper: 7.44
+
+paCO2:
+  units: mmHg
+  reference_range:
+    lower: 38
+    upper: 42
+
+paO2:
+  units: mmHg
+  reference_range:
+    lower: 75
+    upper: 100
+
+bicarbonate:
+  units: mmol/L
+  reference_range:
+    lower: 23
+    upper: 26
+
+saO2:
+  units: %
+  reference_range:
+    lower: 95
+    upper: 100
+
+base_excess_deficit:
+  units: mmol/L
+  reference_range:
+    lower: -2
+    upper: 3
+

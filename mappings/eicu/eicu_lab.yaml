@@ -1,0 +1,148 @@
+# Format labname: mapped_name
+-bands: banded_neutrophils
+-basos: basophils
+-eos: eosinophils
+-lymphs: lymphocytes
+-monos: monocytes
+-polys: neutrophils
+24 h urine protein: urine_protein_24h
+24 h urine urea nitrogen: urine_nitrogen_24h
+Acetaminophen: # Medication levels in blood
+albumin: protein_albumin
+alkaline phos.: alkaline_phosphatase
+ALT (SGPT): ALT
+Amikacin - peak: # Medication levels in blood
+Amikacin - trough: # Medication levels in blood
+ammonia: ammonia
+amylase: amylase
+ANF/ANA:
+anion gap: anion_gap
+AST (SGOT): AST
+Base Deficit: base_deficit # NOTE: Later combined with base_excess into base_excess_deficit
+Base Excess: base_excess # NOTE: Later combined with base_deficit into base_excess_deficit
+bedside glucose: glucose_bedside
+bicarbonate: bicarbonate
+BNP: BNP
+BUN: blood_urea_nitrogen
+calcium: calcium
+Carbamazepine: # Medication levels in blood
+Carboxyhemoglobin: carboxyhemoglobin
+cd 4:
+chloride: chloride
+Clostridium difficile toxin A+B:
+cortisol: cortisol
+CPK-MB INDEX:
+CPK-MB: CKMB
+CPK: CK
+creatinine: creatinine
+CRP-hs:
+CRP: CRP
+Device: # Respiratory parameter
+Digoxin: # Medication levels in blood
+direct bilirubin: bilirubin_direct
+ESR: erythrocyte_sedimentation_rate
+ethanol:
+Fe/TIBC Ratio:
+Fe: iron
+Ferritin: ferritin
+fibrinogen: fibrinogen
+FiO2: # Respiratory parameter
+folate: folate
+free T4: T4_free
+Gentamicin - peak: # Medication levels in blood
+Gentamicin - random: # Medication levels in blood
+Gentamicin - trough: # Medication levels in blood
+glucose - CSF:
+glucose: glucose
+haptoglobin: haptoglobin
+HCO3: bicarbonate
+Hct: hematocrit
+HDL: cholesterol_HDL
+Hgb: hemoglobin
+HSV 1&2 IgG AB:
+ionized calcium:
+lactate: lactate
+LDH: lactate_dehydrogenase
+LDL: cholesterol_LDL
+lipase: lipase
+Lithium: # Medication levels in blood
+LPM O2: # Respiratory parameter
+magnesium: magnesium
+MCH: MCH
+MCHC: MCHC
+MCV: MCV
+Methemoglobin: methemoglobin
+Mode: # Respiratory parameter
+MPV: MPV
+myoglobin: myoglobin
+O2 Content: # Respiratory parameter
+O2 Sat (%): saO2
+Oxyhemoglobin: oxyhemoglobin
+paCO2: paCO2
+paO2: paO2
+Peak Airway/Pressure: # Respiratory parameter
+PEEP: # Respiratory parameter
+pH: pH
+Phenobarbital: # Medication levels in blood
+Phenytoin: # Medication levels in blood
+phosphate: phosphate
+platelets x 1000: thrombocytes
+potassium: potassium
+prealbumin: protein_prealbumin
+Pressure Control: # Medication levels in blood
+Pressure Support: # Medication levels in blood
+prolactin:
+protein - CSF:
+protein C:
+protein S:
+PT - INR: INR
+PT: prothrombin_time
+PTT ratio:
+PTT: partial_thromboplastin_time
+RBC: erythrocytes
+RDW: red_cell_distribution_width
+Respiratory Rate:
+reticulocyte count: reticulocytes
+salicylate: # Medication levels in blood
+serum ketones: serum_ketones
+serum osmolality: serum_osmolality
+Site: # Respiratory parameter
+sodium: sodium
+Spontaneous Rate: # Respiratory parameter
+T3: T3
+T3RU: # T3 resin uptake
+T4: T4_total
+Tacrolimus-FK506: # Medication levels in blood
+Temperature: # Vital sign
+Theophylline: # Medication levels in blood
+TIBC: total_iron_binding_capacity
+Tobramycin - peak:
+Tobramycin - random:
+Tobramycin - trough:
+total bilirubin: bilirubin_total
+total cholesterol: cholesterol_total
+Total CO2: CO2_total
+total protein: protein_total
+transferrin: transferrin
+triglycerides: triglycerides
+troponin - I: troponin_I
+troponin - T: troponin_T
+TSH: TSH
+TV: # Respiratory parameter
+uric acid: uric_acid
+urinary creatinine: urine_creatinine
+urinary osmolality: urine_osmolality
+urinary sodium: urine_sodium
+urinary specific gravity: urine_specific_gravity
+Vancomycin - random: # Medication levels in blood
+Vancomycin - trough: # Medication levels in blood
+Vent Other: # Respiratory parameter
+Vent Rate: # Respiratory parameter
+Vitamin B12: vitamin_B12
+WBC x 1000: leukocytes
+WBC's in body fluid:
+WBC's in cerebrospinal fluid:
+WBC's in peritoneal fluid:
+WBC's in pleural fluid:
+WBC's in synovial fluid:
+WBC's in urine: urine_leukocytes
