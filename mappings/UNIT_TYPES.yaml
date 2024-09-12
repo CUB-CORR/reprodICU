@@ -16,16 +16,23 @@ Neurological:
   - Neurochirurgie
   - Neurologie
   - NICU
+  # MIMIC-IV 3.0
+  - Neurology
 Medical:
   - Intensive Care Volwassenen
   - Medical Intensive Care Unit (MICU)
   - Medicine
   - MICU
+  # MIMIC-IV 3.0
+  - Medicine/Cardiology Intermediate
 Medical-Surgical:
   - Med-Surg ICU
   - Medical/Surgical Intensive Care Unit (MICU/SICU)
   # SICdb
   - INID # Interdisziplinäre Intensivstation INID
+  # MIMIC-IV 3.0
+  - Intensive Care Unit (ICU)
+  - Med/Surg
 Surgical:
   - Cardiochirurgie
   - CSICU
@@ -39,10 +46,14 @@ Surgical:
   - CWIN # Chirurgie West-Intensivstation - CWIN
   - INBD # Intensivstation INBD
   - INIC # Intermediate Care Station - INIC
+  # MIMIC-IV 3.0
+  - Surgery/Vascular/Intermediate
 Trauma:
   - Trauma SICU (TSICU)
   - Traumatologie
   - TSICU
+  # MIMIC-IV 3.0
+  - Surgery/Trauma
 Other:
   - ders
   - Gynaecologie
