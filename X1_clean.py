@@ -9,7 +9,7 @@ import argparse
 import yaml
 
 # import harmonizing functions
-from helpers.C_harmonize.C_harmonize_patient_information import PatientInfoHarmonizer
+from helpers.C_harmonize.C_harmonize_patient_information import PatientInformationHarmonizer
 from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # Run harmonizing
     if "patient_information" in tables:
         print("reprodICU - Combining patient information...")
-        patient_info_harmonizer = PatientInfoHarmonizer(paths=paths, datasets=datasets)
+        patient_info_harmonizer = PatientInformationHarmonizer(paths=paths, datasets=datasets)
 
         # Winsorize the patient information
         columns_to_winsorize = [
@@ -97,28 +97,28 @@ if __name__ == "__main__":
             paths.reprodICU_files_path + "patient_information.parquet"
         )
 
-    elif "diagnoses" in tables:
+    if "diagnoses" in tables:
         print("reprodICU - Combining diagnoses...")
         diagnoses_harmonizer = DiagnosesHarmonizer(paths=paths, datasets=datasets)
         diagnoses_harmonizer.harmonize_diagnoses().collect().write_parquet(
             paths.reprodICU_files_path + "diagnoses.parquet"
         )
 
-    elif "procedures" in tables:
+    if "procedures" in tables:
         print("reprodICU - Combining procedures...")
         procedures_harmonizer = ProceduresHarmonizer(paths=paths, datasets=datasets)
         procedures_harmonizer.harmonize_procedures().collect().write_parquet(
             paths.reprodICU_files_path + "procedures.parquet"
         )
 
-    elif "medications" in tables:
+    if "medications" in tables:
         print("reprodICU - Combining medications...")
         medication_harmonizer = MedicationHarmonizer(paths=paths, datasets=datasets)
         medication_harmonizer.harmonize_medications().sink_parquet(
             paths.reprodICU_files_path + "medications.parquet"
         )
 
-    elif "timeseries" in tables:
+    if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
         timeseries_harmonizer = TimeseriesHarmonizer(paths=paths, datasets=datasets)
         # timeseries_harmonizer.harmonize_timeseries().sink_parquet("tempfiles/reprodICU_timeseries.parquet")
