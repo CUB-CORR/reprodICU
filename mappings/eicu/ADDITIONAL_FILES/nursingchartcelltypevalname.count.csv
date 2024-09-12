@@ -1,0 +1,53 @@
+nursingchartcelltypevalname,count
+Heart Rate,17565063
+Respiratory Rate,16180404
+O2 Saturation,14661045
+Non-Invasive BP Diastolic,13759225
+Non-Invasive BP Systolic,13759074
+Value,11593351
+Non-Invasive BP Mean,11526381
+Temperature (C),6267541
+Temperature (F),6267330
+Temperature Location,4013472
+Invasive BP Diastolic,3331630
+Invasive BP Systolic,3331016
+GCS Total,3248821
+Invasive BP Mean,2819084
+Eyes,2753109
+Motor,2750386
+Verbal,2745419
+Pain Score,2410507
+O2 L/%,1984890
+Sedation Scale,1471276
+Sedation Score,1450629
+O2 Admin Device,1296498
+Bedside Glucose,1212065
+CVP,1093874
+Pain Goal,884726
+Sedation Goal,559684
+PA Diastolic,290860
+PA Systolic,290537
+Delirium Score,287899
+Delirium Scale,287742
+PA Mean,273824
+CI,196393
+End Tidal CO2,189263
+ICP,169847
+SVR,108485
+CO,105168
+SVO2,90852
+CPP,87888
+Fall Risk,84432
+SV,61358
+SVRI,33323
+Electrolyte Replacement,28141
+QRS,18730
+PR,16809
+QT,15850
+PVR,13059
+QTc,6649
+PVRI,5598
+PAOP,4451
+IAP,569
+Flow Rate,3
+Mode,2

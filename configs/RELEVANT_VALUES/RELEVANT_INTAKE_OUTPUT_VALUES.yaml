@@ -1,0 +1,13 @@
+urine_output: True
+# NOTE: ALL OTHER VARIABLES NEED A LOT OF WORK
+# stool_output: True
+# dialysis_output: True
+# output_other: True
+# output_total: True
+# dialysis_input: True
+# input_total: True
+# input_liquid: True
+# input_blood: True
+# input_transfusion: True
+# input_nutrition: True
+# input_other: True

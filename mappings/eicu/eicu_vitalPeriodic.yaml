@@ -1,0 +1,13 @@
+temperature: temperature
+heartrate: heart_rate
+sao2: spO2 # measured by pulse oximetry
+etco2: etCO2
+respiration: respiratory_rate_measured
+systemicsystolic: invasive_systolic_blood_pressure
+systemicdiastolic: invasive_diastolic_blood_pressure
+systemicmean: invasive_mean_blood_pressure
+noninvasivesystolic: noninvasive_systolic_blood_pressure
+noninvasivediastolic: noninvasive_diastolic_blood_pressure
+noninvasivemean: noninvasive_mean_blood_pressure
+cvp: central_venous_pressure
+icp: intracranial_pressure

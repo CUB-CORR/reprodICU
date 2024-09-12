@@ -1,0 +1,20 @@
+Temperature (C): temperature
+Temperature (F): temperature # make sure to convert to Celsius
+Heart Rate: heart_rate
+Invasive BP Systolic: invasive_systolic_blood_pressure
+Invasive BP Diastolic: invasive_diastolic_blood_pressure
+Invasive BP Mean: invasive_mean_blood_pressure
+Non-Invasive BP Systolic: noninvasive_systolic_blood_pressure
+Non-Invasive BP Diastolic: noninvasive_diastolic_blood_pressure
+Non-Invasive BP Mean: noninvasive_mean_blood_pressure
+CVP: central_venous_pressure
+ICP: intracranial_pressure
+Respiratory Rate: respiratory_rate_measured
+O2 Saturation: spO2
+O2 Admin Device: oxygen_delivery_device
+O2 L/%: oxygen_flow / FiO2 # make sure to convert to FiO2 / oxygen_flow (L/min) where applicable (e.g. nasal cannula)
+End Tidal CO2: etCO2
+GCS Total: glasgow_coma_score
+Eyes: glasgow_coma_score_eye
+Motor: glasgow_coma_score_motor
+Verbal: glasgow_coma_score_verbal

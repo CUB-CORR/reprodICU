@@ -1,0 +1,652 @@
+"Venlafaxine, desmethyl (bloed)"
+A_Chronische_ziekten
+A_Eye
+A_Motoriek
+A_Verbal
+Aandacht - fysiek -Status01
+Aandacht - fysiek -Status02
+Aandacht - fysiek -Status03
+Aandacht - fysiek -Status04
+Aandacht - fysiek -Status05
+Aandacht - fysiek -Status06
+Aandacht - fysiek -Status07
+Aandacht - fysiek -Status08
+Aandacht - fysiek -Status09
+Aandacht - fysiek -Status10
+Aandacht - psyche -Status01
+Aandacht - psyche -Status02
+Aandacht - psyche -Status03
+Aandacht - psyche -Status04
+Aandacht - psyche -Status05
+Aandacht - sociaal -Status01
+Aandacht - sociaal -Status02
+Aandacht - sociaal -Status03
+Aandacht - sociaal -Status04
+Aandacht - sociaal -Status05
+Aantal Bronchiaaltoilet
+ABP Plaats
+Accidentele verwijdering beschrijving
+Achterhoofd
+Actief openen van de ogen
+Actieve Mobilisatie Methode
+ADL Hulp
+Afnameplaats
+Airway Braken
+Airway item anders pre-per-post
+Allergie 1 Bron
+Allergie 2 Bron
+Allergie 3 Bron
+Andere plek categorie
+Apache II Hoofdgroep
+Apache II Non-Operatief Cardiovasculair
+Apache II Non-Operatief Gastro-intestinaal
+Apache II Non-Operatief Hematologisch
+Apache II Non-Operatief Metabolisme
+Apache II Non-Operatief Neurologisch
+Apache II Non-Operatief Renaal
+Apache II Non-Operatief Respiratoir
+Apache II Operatief  Gastr-intenstinaal
+Apache II Operatief Cardiovasculair
+Apache II Operatief Hematologisch
+Apache II Operatief Metabolisme
+Apache II Operatief Neurologisch
+Apache II Operatief Renaal
+Apache II Operatief Respiratoir
+APACHE IV Groepen
+APACHE IV Non-operative cardiovascular
+APACHE IV Non-operative Gastro-intestinal
+APACHE IV Non-operative genitourinary
+APACHEIV  Non-operative haematological
+APACHEIV  Non-operative metabolic
+APACHEIV Non-operative musculo-skeletal
+APACHEIV Non-operative neurologic
+APACHEIV Non-operative respiratory
+APACHEIV Non-operative transplant
+APACHEIV Non-operative trauma
+APACHEIV Post-operative cardiovascular
+APACHEIV Post-operative gastro-intestinal
+APACHEIV Post-operative genitourinary
+APACHEIV Post-operative hematology
+APACHEIV Post-operative metabolic
+APACHEIV Post-operative musculoskeletal /skin
+APACHEIV Post-operative neurologic
+APACHEIV Post-operative respiratory
+APACHEIV Post-operative transplant
+APACHEIV Post-operative trauma
+Arm Li
+Arm Re
+Aspect Sputum
+Aspect SputumOud
+Balloneren
+Beademingstoestel
+Beademingstoestel(2)
+Bedsoort
+Been Li
+Been Re
+Beleid
+Beste motore reactie van de armen
+Beste verbale reactie
+Bezittingen Relatie tot pati�nt
+BPS - Acceptatie beademing
+BPS - Bewegen lichaam
+BPS - Gelaatsuitdrukking
+Breathing %Zuurstof veranderd
+Breathing Hypoxie
+Breathing item anders pre-per-post
+Breathing Zuurstoftank leeg
+Bronchoscopie Complicatielijst
+Bronchoscopie Indicatie
+Bronchoscopie Introductie via
+Bronchoscopie nummer
+CAD temperatuur studie
+CAM-ICU auditieve test
+CAM-ICU ongeorganiseerd denken opdrachten
+CAM-ICU ongeorganiseerd denken vragen
+CAM-ICU score
+Cardioversie / Defibrillatie beschrijving
+Cardioversie Indicatie
+Checklist Bezittingen gecontroleerd/meegegeven
+Checklist Druksysteem gecontroleerd
+Checklist Fixatie gecontroleerd
+Checklist Medicatie gecontroleerd
+Checklist Medicatie op naam meegegeven
+Checklist Opdrachten gecontroleerd
+Checklist Pompen gecontroleerd
+Checklist Processen gecontroleerd
+Checklist Sondevoeding gecontroleerd
+Circulation Bloeding
+Circulation Dislocatie lijn
+Circulation Hypertensie
+Circulation Hypotensie
+Circulation item anders pre-per-post
+Circulation Ritmestoornis
+Circulation Sterke toename medicatie behoefte
+Citraatslot
+Complicatie_Behandeling_1
+Complicatie_Behandeling_2
+Complicatie_Complicatie_1
+Complicatie_Complicatie_2
+Complicatie_Complicatie_3
+Complicatie_Interventie_1
+Complicatie_Interventie_2
+Complicatie_Uitkomst_1
+Complicatie_Uitkomst_2
+Contactpersoon 1 Relatie
+Contactpersoon 2 Relatie
+Contactpersoon 3 Relatie
+Course trial Alcohol status (gem. over 2 weken)
+Course trial Astma
+Course trial Astma Gold
+Course Trial Griepprik laatste 18 maanden
+Course trial Smoking status
+Course trial Zwanger
+CPAP PEEP (cmH2O)
+CVVH behandel afspraken Antistolling
+CVVH behandel afspraken Modaliteit
+CVVH behandel afspraken Predilutie
+CVVH behandel afspraken Substitutie PostDilutie
+D_Algemene chirurgie_Algemeen
+D_Algemene chirurgie_Buikchirurgie
+D_Algemene chirurgie_Endocrinologische chirurgie
+D_Algemene chirurgie_KNO/Overige
+D_Algemene chirurgie_Orthopedische chirurgie
+D_Algemene chirurgie_Transplantatie chirurgie
+D_Algemene chirurgie_Trauma
+D_Algemene chirurgie_Urogenitaal
+D_Algemene chirurgie_Vaatchirurgie
+D_Hoofdgroep
+D_Interne Geneeskunde_Abdominaal
+D_Interne Geneeskunde_Cardiovasculair
+D_Interne Geneeskunde_Hematologisch
+D_Interne Geneeskunde_Infectieziekten
+D_Interne Geneeskunde_Metabool
+D_Interne Geneeskunde_Overige
+D_Interne Geneeskunde_Pulmonaal
+D_Interne Geneeskunde_Renaal
+D_Neurochirurgie _Tumor chirurgie
+D_Neurochirurgie _Vasculair chirurgisch
+D_Neurochirurgie_Overige
+D_Neurologie_Overige
+D_Neurologie_Vasculair neurologisch
+D_Subgroep_Algemene chirurgie
+D_Subgroep_Interne geneeskunde
+D_Subgroep_Neurochirurgie
+D_Subgroep_Neurologie
+D_Subgroep_Thoraxchirurgie
+D_Thoraxchirurgie_Aorta chirurgie
+D_Thoraxchirurgie_CABG en Klepchirurgie
+D_Thoraxchirurgie_Cardio anders
+D_Thoraxchirurgie_Pulmonale chirurgie
+Defaecatie consistentie
+Dilutie
+Dim Incident ICU CAM score
+Dim Incident Verwijderd
+DIM medicatie Toediening
+DIM medicatie Wat ging er mis
+Disability Agitatie/Motorische onrust
+Disability Sterke toename medicatie behoefte
+DMC_Algemene chirurgie_Algemeen
+DMC_Algemene chirurgie_Buikchirurgie
+DMC_Algemene chirurgie_Endocrinologische chirurgie
+DMC_Algemene chirurgie_KNO/Overige
+DMC_Algemene chirurgie_Orthopedische chirurgie
+DMC_Algemene chirurgie_Transplantatie chirurgie
+DMC_Algemene chirurgie_Trauma
+DMC_Algemene chirurgie_Urogenitaal
+DMC_Algemene chirurgie_Vaatchirurgie
+DMC_Hoofdgroep
+DMC_Interne Geneeskunde_Abdominaal
+DMC_Interne Geneeskunde_Cardiovasculair
+DMC_Interne Geneeskunde_Hematologisch
+DMC_Interne Geneeskunde_Infectieziekten
+DMC_Interne Geneeskunde_Metabool
+DMC_Interne Geneeskunde_Overige
+DMC_Interne Geneeskunde_Pulmonaal
+DMC_Interne Geneeskunde_Renaal
+DMC_Neurochirurgie _Tumor chirurgie
+DMC_Neurochirurgie _Vasculair chirurgisch
+DMC_Neurochirurgie_Overige
+DMC_Neurologie_Overige
+DMC_Neurologie_Vasculair neurologisch
+DMC_Opname Sepsis
+DMC_Subgroep_Algemene chirurgie
+DMC_Subgroep_Interne geneeskunde
+DMC_Subgroep_Neurochirurgie
+DMC_Subgroep_Neurologie
+DMC_Subgroep_Thoraxchirurgie
+DMC_Thoraxchirurgie_Aorta chirurgie
+DMC_Thoraxchirurgie_CABG en Klepchirurgie
+DMC_Thoraxchirurgie_Cardio anders
+DMC_Thoraxchirurgie_Pulmonale chirurgie
+Donatie Donorregister geraadpleegd Uitkomst
+Donatie Geschiktheid als orgaandonor
+Donatie Geschiktheid als weefseldonor
+Donatie Moment van overlijden
+Donatie Natuurlijke dood
+Donatie obductie gevraagd
+Donatie toestemming
+Donatie Toestemming voor Organen
+Donatie Toestemming voor weefsels donatie
+DOS 1
+DOS 10
+DOS 11
+DOS 12
+DOS 13
+DOS 2
+DOS 3
+DOS 4
+DOS 5
+DOS 6
+DOS 7
+DOS 8
+DOS 9
+Druppelen NaCl
+E_EMV_NICE_24uur
+E_EMV_NICE_Opname
+ECMO - Type
+Ectopie
+ELD-Open/Dicht
+Elleboog Li
+Elleboog Re
+Enkel Li
+Enkel Li dorsaalflexie MRC
+Enkel Re
+Enkel Re dorsaalflexie MRC
+EVD-Open/Dicht
+EVD-Open/Dicht(2)
+Exposure Dislocatie drain
+Exposure Obstructie/afknellen drain
+Extreme onrust beschrijving
+FAC score Lopen/Verplaatsen
+FAC score Rolstoel
+Filtertype
+Fixatie beschrijving
+Fixatie reden
+Fixatie wettelijk vertegenwoordiger
+Fysio BBS stand
+Fysio BBS zit
+Fysio BBS zit-stand
+Fysio Co�peratie Aankijken
+Fysio Co�peratie Hoofdschudden
+Fysio Co�peratie Ogen
+Fysio Co�peratie Tong uitsteken
+Fysio Co�peratie Wenkbrauwen
+Fysio Mobiliteit Hand openen links
+Fysio Mobiliteit Hand openen rechts
+Fysio Mobiliteit Hand sluiten links
+Fysio Mobiliteit Hand sluiten rechts
+Fysio-Assesment resultaat
+Gastro-Intestinaal Gebitsprothese
+Gebruik Echografie
+Gecuffed/Ontcuffed
+Gewicht bron
+GOS (Glasgow Outcome Score)
+Handen Li knijpkracht MRC
+Handen Re knijpkracht MRC
+Hartritme
+Heup Li
+Heup Re
+Hiel Li
+Hiel Re
+Hoestprikkel
+Hoeveelheid Sputum
+Houding pati�nt
+IABP Curve
+IABP Frequentie
+IABP Pulsatie
+IABP Trigger
+IC NAS Administratieve en management taken
+IC NAS Mobiliseren en positioneren
+IC NAS Monitoren
+IC NAS Ondersteuning en zorg naasten
+IC NAS Procedures  hygi�ne
+ICARUS Blue Profiel A/B/C
+ICARUS LA
+ICARUS Lung Sliding links
+ICARUS Lung Sliding rechts
+ICARUS LV
+ICARUS LV functie
+ICARUS Pericardeffusie
+ICARUS PLAPS links
+ICARUS PLAPS rechts
+ICARUS RA
+ICARUS RV
+ICARUS RV functie
+ICARUS Verdenking tamponade
+ICARUS Vullingstatus
+Insult beschrijving
+Intubatie Techniek
+Intubatie_Complicaties
+item
+Kleur Sputum
+Knie Li
+Knie Li extensie MRC
+Knie Re
+Knie Re extensie MRC
+Lengte bron
+Levensbeschouwing Geestelijk verzorger
+Levensbeschouwing Geloof
+Lijnen_Arterieel_Complicaties
+Liquor aspect
+Liquor aspect(2)
+Locatie plaatsing
+M_EMV_NICE_24uur
+M_EMV_NICE_Opname
+MC NAS Administratieve en management taken
+MC NAS Mobiliseren en positioneren
+MC NAS Monitoren
+MC NAS Ondersteuning en zorg naasten
+MC NAS Procedures  hygi�ne
+MCA_Chronische_ziekten
+MCA_Eye
+MCA_Motoriek
+MCA_Verbal
+Metabole metingen pat. categorie
+MFT_Behandeling
+Mobilisatie barri�relijst
+Mobilisatie keuze
+Mobiliseren bed/stoel
+Mode (Bipap Vision)
+Mond/Keel toilet
+MRC Sum Score Links Abductie arm
+MRC Sum Score Links Dorsaalflexie voet
+MRC Sum Score Links Extensie pols
+MRC Sum Score Links Flexie Elleboog
+MRC Sum Score Links Heup flexie
+MRC Sum Score Links Knie extensie
+MRC Sum Score Rechts Abductie arm
+MRC Sum Score Rechts Dorsaalflexie voet
+MRC Sum Score Rechts Extensie pols
+MRC Sum Score Rechts Flexie Elleboog
+MRC Sum Score Rechts Heup flexie
+MRC Sum Score Rechts Knie extensie
+Nazorg  cijfer
+Nazorg  mening enquete
+Nazorg  tijd na ontslag
+Nazorg  tijdstip
+Nazorg belemmering sociale activiteiten
+Nazorg bezigheden 100m lopen
+Nazorg bezigheden Buigen knielen
+Nazorg bezigheden Forse Inpanning
+Nazorg bezigheden halve km lopen lopen
+Nazorg bezigheden km lopen
+Nazorg bezigheden Matige inspanning
+Nazorg bezigheden Paar trappen
+Nazorg bezigheden Tillen Boodschappen
+Nazorg bezigheden wassen aankleden
+Nazorg bezighedenTrap
+Nazorg Conditie
+Nazorg ernst reacties concentratie
+Nazorg ernst reacties delen herinneren
+Nazorg ernst reacties ge�rriteerd
+Nazorg ernst reacties inslapen
+Nazorg ernst reacties lichamelijke verschijnselen
+Nazorg ernst reacties minder betrokken
+Nazorg ernst reacties moeilijk genieten
+Nazorg ernst reacties nachtmerries
+Nazorg ernst reacties op uw hoede
+Nazorg ernst reacties opname opnieuw plaatsvinden
+Nazorg ernst reacties pessimistisch
+Nazorg ernst reacties pijnlijke beelden
+Nazorg ernst reacties schrikachtig
+Nazorg ernst reacties van slag
+Nazorg ernst reacties verdrietig
+Nazorg ernst reacties vermijden activiteiten
+Nazorg ernst reacties vermijden gedachten
+Nazorg gezondheid
+Nazorg gezondheid jaar geleden
+Nazorg pijn afgelopen 4 weken
+Nazorg pijn werkzaamheden afgelopen 4 weken
+Nazorg reacties aantal pijnlijke beelden
+Nazorg reacties concentratie
+Nazorg reacties delen herinneren
+Nazorg reacties ge�rriteerd
+Nazorg reacties inslapen
+Nazorg reacties lichamelijke verschijnselen
+Nazorg reacties minder betrokken
+Nazorg reacties moeilijk genieten
+Nazorg reacties nachtmerries
+Nazorg reacties op uw hoede
+Nazorg reacties opname opnieuw plaatsvinden
+Nazorg reacties pessimistisch
+Nazorg reacties schrikachtig
+Nazorg reacties van slag
+Nazorg reacties verdrietig
+Nazorg reacties vermijden activiteiten
+Nazorg reacties vermijden gedachten
+Nazorg sociale bezigheden
+Nazorg uitspraken achteruitgaan gezondheid
+Nazorg uitspraken gemakkelijk ziek
+Nazorg uitspraken gezondheid uitstekend
+Nazorg uitspraken net zo gezond
+Nazorg voelen energiek
+Nazorg voelen gelukkig
+Nazorg voelen in de put
+Nazorg voelen kalm rustig
+Nazorg voelen levenslustig
+Nazorg voelen moe
+Nazorg voelen neerslachtig somber
+Nazorg voelen uitgeblust
+Nazorg voelen zenuwachtig
+Neus
+Neus Toilet
+NICE APACHEII diagnosen
+NICE APACHEIV diagnosen
+NICE Herkomst
+NICE Opname type
+NICE SEC APACHEII diagnosen
+NICE SEC APACHEIV diagnosen
+NIV Program Status (Set)
+Ontslagbestemming
+Oor Li
+Oor Re
+Opname Sepsis
+Other Apparatuur
+Other Communicatie
+Other item anders pre-per-post
+Other Logistiek & Planning
+Pacemaker mode
+Pat_Ontslag_Bijzonderheden_Overdracht_Zaalarts
+Pat_Ontslag_Infuusbeleid
+Pat_Ontslag_Instructies_Controles
+Pat_Ontslag_Instructies_Medicatie
+Pat_Ontslag_Instructies_Oxygenatie
+Pat_Ontslag_Instructies_Wondverzorging_Dieet
+Pat_Ontslag_Score_Afspraak_Protocol
+Pati�nt overleden op afdeling
+Pati�nt Specialisme
+Pati�ntBloedgroep
+Pati�ntBurgerlijke staat
+Pati�ntGeslacht
+Pati�ntInfoRelatie
+Pati�ntNationaliteit
+Pati�ntSpreektaal
+Pati�ntWijzeVanOpname
+Psychosociaal M.M. W.  Gewenst-Ingeschakeld
+Pulsaties Arteria Femoralis Li
+Pulsaties Arteria Femoralis Re
+Pulsaties Arteria Radialis Li
+Pulsaties Arteria Radialis Re
+Pulsaties Li-been
+Pulsaties Re-been
+Pupil Links Grootte
+Pupil Links Reactie
+Pupil Rechts Grootte
+Pupil Rechts Reactie
+RA_Chronische_ziekten
+RA_Eye
+RA_Motoriek
+RA_Tijdsframe_Begintijd
+RA_Tijdsframe_Eindtijd
+RA_Verbal
+RA_Zoekdatum_Eindtijd
+Ramsay score
+RASS score
+Re OK beschrijving
+Reactie op Uitzuigen
+Reanimatie Ondernomen acties
+Reanimatie Oorzaak
+Reanimatie Reden
+Reden niet scoren decubitus
+Reden voor ontslag
+RedenStakenCVVH
+Rotem Indicatie
+Rotem Interpretatie
+Rotem Ondernomen actie
+Schouder Li
+Schouder Re
+SEC_Apache II Hoofdgroep
+SEC_Apache II Non-Operatief Cardiovasculair
+SEC_Apache II Non-Operatief Gastro-intestinaal
+SEC_Apache II Non-Operatief Hematologisch
+SEC_Apache II Non-Operatief Metabolisme
+SEC_Apache II Non-Operatief Neurologisch
+SEC_Apache II Non-Operatief Renaal
+SEC_Apache II Non-Operatief Respiratoir
+SEC_Apache II Operatief  Gastr-intenstinaal
+SEC_Apache II Operatief Cardiovasculair
+SEC_Apache II Operatief Hematologisch
+SEC_Apache II Operatief Metabolisme
+SEC_Apache II Operatief Neurologisch
+SEC_Apache II Operatief Renaal
+SEC_Apache II Operatief Respiratoir
+SEC_APACHE IV Groepen
+SEC_APACHE IV Non-operative cardiovascular
+SEC_APACHE IV Non-operative Gastro-intestinal
+SEC_APACHE IV Non-operative genitourinary
+SEC_APACHEIV  Non-operative haematological
+SEC_APACHEIV  Non-operative metabolic
+SEC_APACHEIV Non-operative musculo-skeletal
+SEC_APACHEIV Non-operative neurologic
+SEC_APACHEIV Non-operative respiratory
+SEC_APACHEIV Non-operative transplant
+SEC_APACHEIV Non-operative trauma
+SEC_APACHEIV Post-operative cardiovascular
+SEC_APACHEIV Post-operative gastro-intestinal
+SEC_APACHEIV Post-operative genitourinary
+SEC_APACHEIV Post-operative hematology
+SEC_APACHEIV Post-operative metabolic
+SEC_APACHEIV Post-operative musculoskeletal /skin
+SEC_APACHEIV Post-operative neurologic
+SEC_APACHEIV Post-operative respiratory
+SEC_APACHEIV Post-operative transplant
+SEC_APACHEIV Post-operative trauma
+SEPSIS_ADEQUAAT_BREEDSPECTRUM
+SEPSIS_CENTRAAL_VENEUS
+SEPSIS_GLUCOCORTICOIDEN
+SEPSIS_HYPOTENSIE
+SEPSIS_INSULINE_THERAPIE
+SEPSIS_LACTAAT
+SEPSIS_LOCATIE_DIAGNOSE
+SEPSIS_NIEUWE_VERDENKING
+SEPSIS_ORGAAN_DYSFUNCTIE
+SEPSIS_PROTECTIEVE_VENTILATIE
+SEPSIS_PROTEINE_C
+SEPSIS_SIRS
+SEPSIS_TWEE_BLOEDKWEKEN
+SEPSIS_VASOPRESSOREN
+Sonde controle
+Sonde functie
+Sonde maat
+Sonde positie
+Sonde route
+Sonde type
+Sonde zuigdruk (H2O)
+Soort plaatsing
+Stuit
+Substitutie vloeistof
+Temp Huid Plaats
+Temperatuur Plaats 1
+Temperatuur Plaats 2
+Tenen Li
+Tenen Re
+Thoraxdrain Complicaties
+Thoraxdrain Indicatie
+Thoraxdrain Plaatsing Locatie
+Thoraxdrain1 Aspect
+Thoraxdrain1 Luchtlekkage
+Thoraxdrain1 Plaats
+Thoraxdrain1 Transport
+Thoraxdrain1 Zuigkracht
+Thoraxdrain2 Aspect
+Thoraxdrain2 Luchtlekkage
+Thoraxdrain2 Plaats
+Thoraxdrain2 Transport
+Thoraxdrain2 Zuigkracht
+Thoraxdrain3 Aspect
+Thoraxdrain3 Luchtlekkage
+Thoraxdrain3 Plaats
+Thoraxdrain3 Transport
+Thoraxdrain3 Zuigkracht
+Thoraxdrain4 Aspect
+Thoraxdrain4 Luchtlekkage
+Thoraxdrain4 Plaats
+Thoraxdrain4 Transport
+Thoraxdrain4 Zuigkracht
+Thoraxdrain5 Aspect
+Thoraxdrain5 Luchtlekkage
+Thoraxdrain5 Plaats
+Thoraxdrain5 Transport
+Thoraxdrain5 Zuigkracht
+Thoraxdrain6 Aspect
+Thoraxdrain6 Luchtlekkage
+Thoraxdrain6 Plaats
+Thoraxdrain6 Transport
+Thoraxdrain6 Zuigkracht
+TIC-Draaien in bed
+TIC-Stabalans
+TIC-Transfer
+TIC-Transfer  van lig naar zit
+TIC-Transfer van stand naar zit
+TIC-Transfer van zit naar stand
+TIC-Zitbalans
+Toedieningsweg
+Tonus
+Tracheacanule maat
+Tracheacanule type
+Tracheotomie contraindicatie
+Tracheotomie indicatie
+Tracheotomie Late complicaties
+Tracheotomie methode
+Tracheotomie Perioperatieve complicaties
+Transport Airway (A)
+Transport bestemming
+Transport Breathing (B)
+Transport Circulation (C)
+Transport Disability (D)
+Transport Doel
+Transport Exposure (E) drains
+Transport Modus
+Transport RASS score
+Transport Transporteerders
+Tube diepte
+Tube maat
+Tube referentiepunt
+Tube route
+Type beademing Evita 1
+Type Beademing Evita 4
+Type Beademing Evita 4(2)
+V_EMV_NICE_24uur
+V_EMV_NICE_Opname
+VAS score
+Veneuze lijn Complicaties
+Veneuze lijn soort
+Ventilatie Mode (Set)
+Ventilatie Mode (Set) (2)
+Verkeerde bed Ontslagbestemming
+Verkeerde bed Reden
+VerzekeringTypeX
+ViaOK
+Vingers Li
+Vingers Re
+Visus hulpmiddelen
+Voedingsanamnese ongewild afgevallen 3 maanden ja
+Voedingsanamnese voedselinname week voor IC
+Wisselligging barri�relijst
+Wonddrain1 Plaats
+Wonddrain2 Plaats
+Wonddrain3 Plaats
+Wonddrain4 Plaats
+Wonddrain5 Plaats
+Wonddrain6 Plaats
+Zintuigen Gehoor Gehoorapparaat

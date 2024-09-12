@@ -1,0 +1,8 @@
+Emergency:
+  - EMERGENCY
+Urgent:
+  - URGENT
+Elective:
+  - ELECTIVE
+Unknown:
+  - ""

@@ -1,0 +1,398 @@
+"% Hemoglobin A1c": hemoglobin_a1c
+24 hr Calcium:
+24 hr Creatinine:
+24 hr Protein:
+25-OH Vitamin D:
+<Albumin>: protein_albumin
+Absolute A1c:
+Absolute CD3 Count:
+Absolute CD4 Count:
+Absolute CD8 Count:
+Absolute Hemoglobin: hemoglobin
+Absolute Lymphocyte Count: lymphocytes
+Acetaminophen: # Medication levels in blood
+Acetone:
+Alanine Aminotransferase (ALT): ALT
+Albumin: protein_albumin
+Albumin, Ascites:
+Albumin, Body Fluid:
+Albumin, Joint Fluid:
+Albumin, Pleural:
+Albumin, Urine: urine_albumin
+Albumin/Creatinine, Urine:
+Alkaline Phosphatase: alkaline_phosphatase
+Alpha Antiplasmin:
+Alpha-Fetoprotein:
+Alveolar-arterial Gradient:
+Amikacin:
+Ammonia: ammonia
+Amylase: amylase
+Amylase, Ascites:
+Amylase, Body Fluid:
+Amylase, Joint Fluid:
+Amylase, Pleural:
+Amylase, Urine:
+Amylase/Creatinine Ratio, Urine:
+Anion Gap: anion_gap
+Anisocytosis:
+Anti-DGP (IgA/IgG):
+Anti-Thyroglobulin Antibodies:
+Anticardiolipin Antibody IgG:
+Anticardiolipin Antibody IgM:
+Antithrombin:
+Asparate Aminotransferase (AST): AST
+Atypical Lymphocytes: # lymphocytes_atypical # NOTE: highly specific blood cell type
+Bacteria:
+Bands: banded_neutrophils
+Base Excess: base_excess_deficit
+Basophils: basophils
+Beta-2 Microglobulin:
+Bicarbonate: bicarbonate
+Bicarbonate, Ascites:
+Bicarbonate, Other Fluid:
+Bicarbonate, Pleural:
+Bicarbonate, Stool:
+Bicarbonate, Urine:
+Bilirubin, Direct: bilirubin_direct
+Bilirubin, Indirect:
+Bilirubin, Total: bilirubin_total
+Bilirubin, Total, Ascites:
+Bilirubin, Total, Body Fluid:
+Bilirubin, Total, CSF:
+Bilirubin, Total, Pleural:
+Blasts: # blasts # NOTE: highly specific blood cell type
+Bleeding Time:
+Blood Parasite Smear:
+Broad Casts:
+C-Reactive Protein: CRP
+C3:
+C4:
+CA-125:
+Calcium, Body Fluid:
+Calcium, Total: calcium
+Calcium, Urine:
+Calculated Bicarbonate, Whole Blood:
+Calculated Free Testosterone:
+Calculated TBG:
+Calculated Thyroxine (T4) Index:
+Calculated Total CO2:
+Cancer Antigen 27.29:
+Carbamazepine: # Medication levels in blood
+Carboxyhemoglobin: carboxyhemoglobin
+Carcinoembyronic Antigen (CEA):
+CD10:
+CD16/56 Absolute Count:
+CD16/56%:
+CD16/56:
+CD19 %:
+CD19 Absolute Count:
+CD19:
+CD20 %:
+CD20 Absolute Count:
+CD20:
+CD3 %:
+CD3 Absolute Count:
+CD3 Cells, Percent:
+CD34:
+CD3:
+CD4 Cells, Percent:
+CD4/CD8 Ratio:
+CD4:
+CD5 %:
+CD5 Absolute Count:
+CD56:
+CD5:
+CD8 Cells, Percent:
+CD8:
+Cellular Cast:
+Chloride: chloride
+Chloride, Ascites:
+Chloride, Body Fluid:
+Chloride, Pleural:
+Chloride, Stool:
+Chloride, Urine: urine_chloride
+Chloride, Whole Blood:
+Cholesterol Ratio (Total/HDL):
+Cholesterol, Ascites:
+Cholesterol, Body Fluid:
+Cholesterol, HDL: cholesterol_HDL
+Cholesterol, LDL, Calculated: cholesterol_LDL
+Cholesterol, LDL, Measured: cholesterol_LDL
+Cholesterol, Pleural:
+Cholesterol, Total: cholesterol_total
+CK-MB Index:
+Cortisol:
+Creatine Kinase (CK): CK
+Creatine Kinase, MB Isoenzyme: CKMB
+Creatinine: creatinine
+Creatinine Clearance:
+Creatinine, Ascites:
+Creatinine, Body Fluid:
+Creatinine, Joint Fluid:
+Creatinine, Pleural:
+Creatinine, Serum: creatinine
+Creatinine, Urine: urine_creatinine
+Cyclosporin:
+D-Dimer: d_dimers
+DHEA-Sulfate:
+Digoxin: # Medication levels in blood
+Eosinophil Count: eosinophils
+Eosinophils: eosinophils
+Epithelial Cells:
+Estimated Actual Glucose:
+Estradiol:
+Ethanol:
+Factor II:
+Factor IX:
+Factor V:
+Factor VII:
+Factor VIII:
+Factor X:
+Factor XI:
+Factor XII:
+Ferritin: ferritin
+Fetal Hemoglobin:
+Fibrinogen, Functional: fibrinogen
+Folate:
+Follicle Stimulating Hormone:
+Free Calcium:
+Gamma Glutamyltransferase: gamma_glutamyl_transferase
+Gastrin:
+Gentamicin:
+Globulin:
+Glucose: glucose
+Glucose, Ascites:
+Glucose, Body Fluid:
+Glucose, CSF:
+Glucose, Joint Fluid:
+Glucose, Pleural:
+Glucose, Urine: urine_glucose
+Granular Casts:
+Granulocyte Count: # granulocytes # NOTE: highly specific blood cell type
+H:
+Haptoglobin: haptoglobin
+Hematocrit: hematocrit
+Hematocrit, Ascites:
+Hematocrit, Calculated: hematocrit
+Hematocrit, CSF:
+Hematocrit, Joint Fluid:
+Hematocrit, Other Fluid:
+Hematocrit, Pleural:
+Hemoglobin A2:
+Hemoglobin C:
+Hemoglobin F:
+Hemoglobin: hemoglobin
+Hemogloblin A:
+Hemogloblin S:
+Heparin, LMW: # Medication levels in blood
+Heparin: # Medication levels in blood
+Homocysteine:
+Human Chorionic Gonadotropin:
+Hyaline Casts:
+Hypersegmented Neutrophils: # segmented_neutrophils # NOTE: difference to polys?
+Hypochromia:
+Immunoglobulin A:
+Immunoglobulin G:
+Immunoglobulin M:
+INR(PT): INR
+Iron Binding Capacity, Total:
+Iron: iron
+Ketone: urine_ketones
+Lactate: lactate
+Lactate Dehydrogenase (LD): lactate_dehydrogenase
+Lactate Dehydrogenase, Ascites:
+Lactate Dehydrogenase, CSF:
+Lactate Dehydrogenase, Pleural:
+Large Platelets:
+LD, Body Fluid:
+LD, Joint Fluid:
+Length of Urine Collection:
+Leukocyte Alkaline Phosphatase:
+Leukocytes: leukocytes
+Lipase: lipase
+Lipase, Ascites:
+Lipase, Body Fluid:
+Lipase, Pleural:
+Lithium: # Medication levels in blood
+Luteinizing Hormone:
+Lymphocytes, Percent:
+Lymphocytes: lymphocytes
+Lymphs: lymphocytes
+Macrophage: # macrophages
+Macrophages: # macrophages
+Magnesium: magnesium
+Magnesium, Body Fluid:
+Magnesium, Urine:
+MCH: MCH
+MCHC: MCHC
+MCV: MCV
+Mesothelial Cell:
+Mesothelial Cells:
+Mesothelial cells:
+Metamyelocytes: # metamyelocytes # NOTE: highly specific blood cell type
+Methemoglobin: methemoglobin
+Methotrexate: # Medication levels in blood
+Miscellaneous, Body Fluid:
+Miscellaneous, CSF:
+Monocytes: monocytes
+Monos: monocytes
+Myelocytes: # myelocytes
+N-Acetylprocainamide (NAPA):
+Neutrophils: neutrophils
+Non-squamous Epithelial Cells:
+NonSquamous Epithelial Cell:
+NRBC:
+NTproBNP: NTproBNP
+Nucleated RBC:
+Nucleated Red Cells:
+O2 Flow: # oxygen_flow # Respiratory parameter
+Osmolality, Ascites:
+Osmolality, Body Fluid:
+Osmolality, Measured: serum_osmolality
+Osmolality, Stool:
+Osmolality, Urine: urine_osmolality
+Other Cell:
+Other Cells:
+Other:
+Oxygen Saturation: # saO2 # Respiratory parameter
+Oxygen:
+Parathyroid Hormone:
+pCO2, Body Fluid:
+pCO2: paCO2
+PEEP: # PEEP # Respiratory parameter
+pH: pH
+Phenobarbital: # Medication levels in blood
+Phenytoin:
+Phenytoin, Free:
+Phenytoin, Percent Free:
+Phosphate: phosphate
+Phosphate, Body Fluid:
+Phosphate, Urine: urine_phosphate
+Plasma Cells:
+Plasma:
+PLASMGN:
+Platelet Clumps:
+Platelet Count: thrombocytes
+pO2: paO2
+pO2, Body Fluid:
+Poikilocytosis:
+Polys: neutrophils # NOTE: difference to hypersegmented neutrophils?
+Potassium: potassium
+Potassium, Ascites:
+Potassium, Body Fluid:
+Potassium, Pleural:
+Potassium, Stool:
+Potassium, Urine: urine_potassium
+Potassium, Whole Blood:
+Procainamide:
+Prolactin:
+Promyelocytes: # promyelocytes # NOTE: highly specific blood cell type
+Prostate Specific Antigen: # PSA
+Prot. Electrophoresis, Urine:
+Protein: protein_total
+Protein C, Antigen:
+Protein C, Functional:
+Protein S, Antigen:
+Protein S, Functional:
+Protein, Total: protein_total
+Protein/Creatinine Ratio:
+PT: prothrombin_time
+PTT: partial_thromboplastin_time
+Quantitative G6PD:
+Quinidine: # Medication levels in blood
+Rapamycin: # Medication levels in blood
+RBC: # erythrocytes -> refers to urine
+RBC Casts:
+RBC, Ascites:
+RBC, CSF:
+RBC, Joint Fluid:
+RBC, Other Fluid:
+RBC, Pleural:
+RDW: red_cell_distribution_width
+Red Blood Cells: erythrocytes
+Reducing Substances, Urine:
+Renal Epithelial Cells:
+Reptilase Time Control:
+Reptilase Time:
+Required O2:
+Reticulocyte Count, Absolute: reticulocytes
+Reticulocyte Count, Automated: reticulocytes
+Reticulocyte Count, Manual: reticulocytes
+Reticulocyte, Cellular Hemoglobin:
+Rheumatoid Factor:
+Salicylate: # Medication levels in blood
+Sedimentation Rate: erythrocyte_sedimentation_rate
+Serum Viscosity:
+Sex Hormone Binding Globulin:
+Sodium: sodium
+Sodium, Ascites:
+Sodium, Body Fluid:
+Sodium, Pleural:
+Sodium, Stool:
+Sodium, Urine: urine_sodium
+Sodium, Whole Blood:
+Specific Gravity: urine_specific_gravity
+tacroFK:
+Temperature: # temperature # NOTE: vital sign
+Testosterone:
+Testosterone, Free:
+Theophylline: # Medication levels in blood
+Thrombin: # thrombin
+Thyroglobulin:
+Thyroid Peroxidase Antibodies:
+Thyroid Stimulating Hormone: TSH
+Thyroxine (T4), Free: T4_free
+Thyroxine (T4): T4_total
+Tidal Volume: # tidal_volume # Respiratory parameter
+Tissue Transglutaminase Ab, IgA:
+Tobramycin:
+Total Collection Time:
+Total Protein, Ascites:
+Total Protein, Body Fluid:
+Total Protein, CSF:
+Total Protein, Joint Fluid:
+Total Protein, Pleural:
+Total Protein, Urine: urine_protein
+Transferrin:
+Transitional Epithelial Cells:
+Triglycer: triglycerides
+Triglycerides: triglycerides
+Triglycerides, Ascites:
+Triglycerides, Pleural:
+Triiodothyronine (T3): T3
+Troponin I: troponin_I
+Troponin T: troponin_T
+Uptake Ratio:
+Urea Nitrogen: blood_urea_nitrogen
+Urea Nitrogen, Ascites:
+Urea Nitrogen, Body Fluid:
+Urea Nitrogen, Urine:
+Uric Acid: uric_acid
+Uric Acid, Urine:
+Urine Casts, Other:
+Urine Color:
+Urine Creatinine:
+Urine Crystals, Other:
+Urine Mucous:
+Urine Specimen Type:
+Urine Volume:
+Urine Volume, Total:
+Urobilinogen: # urobilinogen
+Valproic Acid:
+Vancomycin: # Medication levels in blood
+Vitamin B12:
+Von Willebrand Factor Activity:
+Von Willebrand Factor Antigen:
+Waxy Casts:
+WBC: leukocytes
+WBC Casts:
+WBC Count: leukocytes
+WBC, Ascites:
+WBC, CSF:
+WBC, Joint Fluid:
+WBC, Other Fluid:
+WBC, Pleural:
+White Blood Cells: leukocytes
+Yeast:
+Young:
+Young Cells:

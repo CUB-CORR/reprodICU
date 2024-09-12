@@ -1,0 +1,71 @@
+Anderson:
+Anderson (gastric):
+Blakemore:
+Cath Lab:
+"Cerebral Subdural #1":
+"Cerebral Subdural #2":
+"Cerebral Ventricular #1":
+"Cerebral Ventricular #2":
+"Chest Tube #1":
+"Chest Tube #2":
+"Chest Tube #3":
+"Chest Tube #4":
+Condom Cath:
+Davol:
+Drainage Bag:
+Emesis:
+Ewald:
+Fecal Bag:
+Foley: urine_output
+Gastric Tube:
+GU Irrigant Volume In:
+GU Irrigant/Urine Volume Out:
+"Hemovac #1":
+"Hemovac #2":
+Ileoconduit:
+"Jackson Pratt #1":
+"Jackson Pratt #2":
+"Jackson Pratt #3":
+"Jackson Pratt #4":
+Jejunostomy:
+JP Lateral:
+JP Medial:
+L Nephrostomy: urine_output
+"L Pleural #1":
+"L Pleural #2":
+L Ureteral Stent: urine_output
+Lumbar:
+Mediastinal:
+Nasogastric:
+OR EBL:
+OR Urine: urine_output
+Oral Gastric:
+Ostomy (output):
+PACU Drains:
+PACU EBL:
+PACU Gastric:
+PACU Urine: urine_output
+"Penrose #1":
+"Penrose #2":
+Pericardial:
+"Pigtail #1":
+"Pigtail #2":
+Pre-Admission:
+R Nephrostomy: urine_output
+"R Pleural #1":
+"R Pleural #2":
+R Ureteral Stent: urine_output
+Rectal Tube:
+Red Rubber:
+Stool:
+Straight Cath: urine_output
+"Sump #1":
+"Sump #2":
+Suprapubic: urine_output
+T Tube:
+Tap:
+TF Residual:
+TF Residual Output:
+Void:
+"Wound Vac #1":
+"Wound Vac #2":

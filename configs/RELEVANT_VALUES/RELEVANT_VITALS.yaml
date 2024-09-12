@@ -1,0 +1,12 @@
+temperature: True
+heart_rate: True
+spO2: True
+respiratory_rate_measured: True
+invasive_systolic_blood_pressure: True
+invasive_diastolic_blood_pressure: True
+invasive_mean_blood_pressure: True
+noninvasive_systolic_blood_pressure: True
+noninvasive_diastolic_blood_pressure: True
+noninvasive_mean_blood_pressure: True
+central_venous_pressure: True
+intracranial_pressure: True
