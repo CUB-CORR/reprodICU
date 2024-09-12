@@ -48,12 +48,20 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("ReferringUnit")
                 .replace_strict(self._extract_references("ReferringUnit"))
                 .replace_strict(self.ADMISSION_LOCATIONS_MAP, default=None)
-                .cast(self.admission_locations_dtype),
+                .cast(self.admission_locations_dtype)
+                .alias(self.admission_loc_col),
+                # Convert unit type to established dtype
+                pl.col("HospitalUnit")
+                .replace_strict(self._extract_references("HospitalUnit"))
+                .replace_strict(self.UNIT_TYPES_MAP, default=None)
+                .cast(self.unit_types_dtype)
+                .alias(self.unit_type_col),
                 # Convert discharge destination to established dtype
                 pl.col("DischargeUnit")
                 .replace_strict(self._extract_references("DischargeUnit"))
                 .replace_strict(self.DISCHARGE_LOCATIONS_MAP, default=None)
-                .cast(self.discharge_locations_dtype),
+                .cast(self.discharge_locations_dtype)
+                .alias(self.discharge_loc_col),
                 # Convert mortality to established dtype
                 (pl.col("DischargeState") == 2202)  # "lebend"
                 .cast(bool)
@@ -216,6 +224,8 @@ class SICdbExtractor(SICdbPaths):
                 }
             )
             .with_columns(
+                # Remove dot from ICD code
+                pl.col(self.diagnosis_icd_code_col).str.replace(".", ""),
                 # Diagnoses are admission diagnoses
                 pl.lit(0).alias(self.diagnosis_start_col),
                 pl.lit(1).alias(self.diagnosis_priority_col),
