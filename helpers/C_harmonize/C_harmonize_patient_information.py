@@ -18,7 +18,7 @@ from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
 
 
-class PatientInfoHarmonizer(GlobalVars):
+class PatientInformationHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list):
         super().__init__(paths)
         self.eicu = EICUExtractor(paths)
