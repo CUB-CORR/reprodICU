@@ -91,7 +91,7 @@ class GlobalHelpers:
 
 
 class GlobalVars(GlobalHelpers):
-    def __init__(self, paths=None) -> None:
+    def __init__(self, paths) -> None:
         config_path = "configs/"
         mapping_path = "mappings/"
         tempfiles_path = paths.reprodICU_files_path + "_tempfiles/"
