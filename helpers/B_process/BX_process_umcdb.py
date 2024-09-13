@@ -36,7 +36,7 @@ class UMCdbProcessor(UMCdbExtractor):
         print("UMCdb — Loading time series data...")
 
         ts_numeric = self._process_timeseries_numeric()
-        ts_listitems = self._process_timeseries_listitems()
+        ts_listitems = pl.LazyFrame() # self._process_timeseries_listitems()
 
         return pl.concat(
             [ts_numeric, ts_listitems],

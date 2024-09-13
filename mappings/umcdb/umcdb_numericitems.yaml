@@ -47,8 +47,8 @@ Aantal prikpogingen:
 Abeta 1-42 (liquor):
 ABP diastolisch II: invasive_diastolic_blood_pressure
 ABP diastolisch: invasive_diastolic_blood_pressure
-ABP gemiddeld II: invasive_mean_blood_pressure
-ABP gemiddeld: invasive_mean_blood_pressure
+ABP gemiddeld II: invasive_mean_blood_pressure # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/mean_abp.sql
+ABP gemiddeld: invasive_mean_blood_pressure # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/mean_abp.sql
 ABP systolisch II: invasive_systolic_blood_pressure
 ABP systolisch: invasive_systolic_blood_pressure
 ACE (bloed):
@@ -59,13 +59,13 @@ ACTH (bloed):
 ADA (bloed):
 ADA pleuravocht (pleurapunct.):
 ADAMST13 act. (bloed):
-Adem Frequentie (Set) (2): respiratory_rate_vent_set
+Adem Frequentie (Set) (2): # respiratory_rate_vent_set # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/resp_rate.sql
 Adem Frequentie (Set): respiratory_rate_vent_set
 Ademfreq. Spontaan nieuw: respiratory_rate_patient
-Ademfreq.(2): respiratory_rate_total
-Ademfreq.: respiratory_rate_total
-Ademfrequentie Evita: respiratory_rate_vent_set
-Ademfrequentie Monitor: respiratory_rate_patient
+Ademfreq.(2): # respiratory_rate_patient
+Ademfreq.: respiratory_rate_patient
+Ademfrequentie Evita: respiratory_rate_patient
+Ademfrequentie Monitor: respiratory_rate_patient # ECG measured respiratory rate
 Ademfrequentie Spontaan(2): respiratory_rate_patient
 Ademfrequentie Spontaan: respiratory_rate_patient
 ADP (bloed):
@@ -174,8 +174,8 @@ Beta-Trace ratio (overig):
 Bezinking (bloed):
 Bezinking:
 Bili (Liq) (liquor):
-Bili Totaal: bilirubin_total
-Bilirubine (bloed): bilirubin_total
+Bili Totaal: bilirubin_total # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/bilirubin.sql
+Bilirubine (bloed): bilirubin_total # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/bilirubin.sql
 BILIRUBINE (overig):
 Bilirubine ascitesvocht (ascitesvocht):
 Bilirubine drainvocht (drain):
@@ -202,7 +202,7 @@ Bloedverlies:
 BMR-gemeten:
 BPS score:
 Braken:
-Breathing FiO2(%): FiO2
+Breathing FiO2(%): # FiO2 # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pO2_FiO2_estimated.sql
 Bronchoscopie ProcessID:
 BTP ratio (overig):
 Buikomvang:
@@ -377,7 +377,7 @@ Citraat (urine):
 CK (bloed): CK
 CK: CK
 CK-MB: CKMB
-Cl (onv.ISE) (bloed):
+Cl (onv.ISE) (bloed): chloride
 CLIP (beenmerg):
 CLIP (bloed):
 Clobazam (bloed):
@@ -471,7 +471,7 @@ ECMO - Tart:
 ECMO - Tven:
 ECMO - Veneuze saturatie:
 eGFR(MDRD) (bloed):
-Eind exp. druk (2): PEEP
+Eind exp. druk (2): # PEEP
 Eind exp. druk: PEEP
 Eind insp. cyclus (Set):
 Eiwit g/L (liquor):
@@ -520,9 +520,9 @@ Ethanol KCL (bloed):
 EVD-cm boven Monroe(2):
 EVD-cm boven Monroe:
 EVV_TotaalScore:
-Exp. minuut volume (2): minute_volume_exhaled
+Exp. minuut volume (2): # minute_volume_exhaled
 Exp. minuut volume: minute_volume_exhaled
-Exp. tidal volume (2): tidal_volume_exhaled
+Exp. tidal volume (2): # tidal_volume_exhaled
 Exp. tidal volume: tidal_volume_exhaled
 ExtraVasculair Lung Water Index:
 F/T PSA ratio (bloed):
@@ -554,7 +554,7 @@ Fibrinogeen  (bloed): fibrinogen
 Fibrinogeen (bloed): fibrinogen
 Fibrinogeen: fibrinogen
 FIBRONECT. (bloed):
-FiO2 %: FiO2
+FiO2 %: FiO2 # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pO2_FiO2_estimated.sql
 Fistel Stand:
 Fistel:
 FLAER granulocyt (bloed):
@@ -730,7 +730,7 @@ Haloperidol (bloed):
 Hand Li knijpkracht HHD:
 Hand Re knijpkracht HHD:
 Haptoglobine (bloed):
-Hartfrequentie: heart_rate
+Hartfrequentie: heart_rate # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/heart_rate.sql
 Hb (bloed): hemoglobin
 Hb (overig):
 Hb A2 (bloed):
@@ -750,7 +750,7 @@ HCO3: bicarbonate
 HCV RNA kwantitatief PCR (bloed):
 HCV RNA kwantitatief PCR (overig):
 Hdl-Chol (bloed):
-Hematocriet: hematocrit
+Hematocriet: hematocrit # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/hematocrit.sql
 Hemodialyse onttrekken:
 Hemoglobine: hemoglobin
 Heup Li flexie(�):
@@ -765,10 +765,10 @@ HIV 1 RNA kwan PCR (edta-bloed):
 HLA-DR (beenmerg):
 HLA-DR (bloed):
 Homocysteine (totaal) (bloed):
-Ht (bloed): hematocrit
+Ht (bloed): hematocrit # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/hematocrit.sql
 Ht (overig):
 Ht pleuravocht (pleurapunct.):
-Ht(v.Bgs) (bloed):
+Ht(v.Bgs) (bloed): hematocrit # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/hematocrit.sql
 Huidig gewicht:
 Humaan herpesvirus 6 kwan. DNA PCR (bloed):
 IABP Augmentatie:
@@ -828,7 +828,7 @@ Imipramine (bloed):
 Imipramine+Desipramine (bloed):
 Insp. Flow max:
 Insp. Minuut volume: minute_volume_inhaled
-Insp. tidal volume (2): tidal_volume_inhaled
+Insp. tidal volume (2): # tidal_volume_inhaled
 Insp. tidal volume: tidal_volume_inhaled
 Insp. Time (sec) nieuw:
 Insuline (bloed):
@@ -849,18 +849,18 @@ item:
 Itraconazol (bloed):
 Itraconazol+Itraconazol hydroxy (bloed):
 Jejunostoma:
-K (onv.ISE) (bloed):
+K (onv.ISE) (bloed): potassium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/potassium.sql
 Kalium  (verz. urine):
-Kalium (bloed): potassium
+Kalium (bloed): potassium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/potassium.sql
 Kalium (faeces verzameld):
 Kalium (faeces):
 Kalium (overig):
 Kalium (urine):
 Kalium (verz. urine):
-Kalium Astrup: potassium
+Kalium Astrup: potassium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/potassium.sql
 Kalium dialysaat (dialysaat):
 Kalium in urine:
-Kalium: potassium
+Kalium: potassium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/potassium.sql
 kappa (beenmerg):
 kappa (bloed):
 kappa/lambda (beenmerg):
@@ -873,11 +873,11 @@ Koper (bloed): copper
 Koper (urine):
 KOPER (verz. urine):
 Kopieer en plak:
-KREAT enzym. (bloed): creatinine
+KREAT enzym. (bloed): creatinine # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/creatinine_acute_kidney_injury_failure.sql
 KREAT.KLAR (verz. urine): creatinine_clearance
 Kreat.klaring (urine): creatinine_clearance
 Kreatinine  (verz. urine):
-Kreatinine (bloed): creatinine
+Kreatinine (bloed): creatinine # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/creatinine_acute_kidney_injury_failure.sql
 Kreatinine (Jaff�)  (overig):
 Kreatinine (Jaff�) (overig):
 Kreatinine (overig):
@@ -886,12 +886,12 @@ Kreatinine (verz. urine):
 Kreatinine dialysaat (dialysaat):
 Kreatinine in urine: urine_creatinine
 Kreatinine klaring:
-Kreatinine: creatinine
-Lactaat (bloed): lactate
+Kreatinine: creatinine # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/creatinine_acute_kidney_injury_failure.sql
+Lactaat (bloed): lactate # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/lactate.sql
 Lactaat (liquor):
 Lactaat (overig):
-Laktaat Astrup: lactate
-Laktaat: lactate
+Laktaat Astrup: lactate # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/lactate.sql
+Laktaat: lactate # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/lactate.sql
 lambda (beenmerg):
 lambda (bloed):
 Lamotrigine (bloed):
@@ -909,7 +909,7 @@ LDL (Ber.) (bloed): cholesterol_LDL
 LeeftijdX:
 Lengte (Lab bepaling):
 Leuco sed (urine):
-Leuco's (bloed): leukocytes
+Leuco's (bloed): leukocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/wbc.sql
 Leuco's (overig):
 Leuco's ascitesvocht (ascitesvocht):
 Leuco's dialysaat (dialysaat):
@@ -920,7 +920,7 @@ Leuco's/uL (liquor):
 Leuco/3uL (liquor):
 Leuco/3ul:
 Leuco/ul:
-Leucocyten: leukocytes
+Leucocyten: leukocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/wbc.sql
 Levetiracetam (bloed):
 LH (bloed):
 LH in urine:
@@ -1001,7 +1001,7 @@ MCHC (bloed): MCHC
 MCHC (bloed)-LabZis2: MCHC
 MCV (bloed): MCV
 MCV (overig):
-Mean luchtweg druk (2): mean_airway_pressure
+Mean luchtweg druk (2): # mean_airway_pressure
 Mean luchtweg druk: mean_airway_pressure
 Meettemp. (bloed):
 Meropenem (bloed):
@@ -1071,19 +1071,19 @@ Myelocyten % (bloed): myelocytes
 Myelocyten (bloed):
 Myelo�d Totaal (beenmerg):
 MZD stand:
-Na (onv.ISE) (bloed):
+Na (onv.ISE) (bloed): sodium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/sodium.sql
 Natrium  (overig):
 Natrium  (verz. urine):
-Natrium (bloed): sodium
+Natrium (bloed): sodium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/sodium.sql
 Natrium (faeces verzameld):
 NATRIUM (faeces):
 NATRIUM (overig):
 Natrium (urine): urine_sodium
 Natrium (verz. urine):
-Natrium Astrup: sodium
+Natrium Astrup: sodium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/sodium.sql
 Natrium dialysaat (dialysaat):
 Natrium in urine: urine_sodium
-Natrium: sodium
+Natrium: sodium # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/sodium.sql
 NAVA  Edi Trigger:
 NAVA Edi min:
 NAVA Edi peak:
@@ -1093,9 +1093,9 @@ Nazorg Gewicht voor opname:
 NDT-syst. Stand:
 NDT-syst.:
 Nefrodrain li Stand:
-Nefrodrain li Uit:
+Nefrodrain li Uit: urine_output # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/urine_output.sql
 Nefrodrain re Stand:
-Nefrodrain re Uit:
+Nefrodrain re Uit: urine_output # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/urine_output.sql
 Negatieve filterdruk:
 Neutro's % app (bloed): neutrophils
 Neutro's app (bloed):
@@ -1106,7 +1106,7 @@ NICE Apache III Score:
 NICE Apache IV Score:
 NICE SAPS II Score:
 Niet invasieve bloeddruk diastolisch: noninvasive_diastolic_blood_pressure
-Niet invasieve bloeddruk gemiddeld: noninvasive_mean_blood_pressure
+Niet invasieve bloeddruk gemiddeld: noninvasive_mean_blood_pressure # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/mean_abp.sql
 Niet invasieve bloeddruk systolisch: noninvasive_systolic_blood_pressure
 Niet Mot. (semen):
 NIV Backup RR (Set):
@@ -1114,7 +1114,7 @@ NIV Backup Ti (Set):
 NIV leakage fraction nieuw:
 NK-cellen (beenmerg):
 NO(2):
-NO:
+"NO":
 Noradrenaline (plasma):
 Noradrenaline (serum):
 Nordiazepam (bloed):
@@ -1123,10 +1123,10 @@ Normetanefrine (verz. urine):
 Nortriptyline (bloed):
 NT-proBNP (bloed): NT_proBNP
 NT-proBNP pleuravocht (pleurapunct.):
-O2 concentratie (Set) (2): FiO2
-O2 concentratie (Set): FiO2
-O2 concentratie: FiO2
-O2 l/min: oxygen_flow
+O2 concentratie (Set) (2): # FiO2
+O2 concentratie (Set): # FiO2
+O2 concentratie: FiO2 # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pO2_FiO2_estimated.sql
+O2 l/min: oxygen_flow # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/oxygen_device.sql
 O2 Volume(2):
 O2 Volume:
 O2-Content (bloed):
@@ -1197,7 +1197,7 @@ PD2 min ingesteld:
 Peak druk:
 PEEP (gemeten)(2):
 PEEP (gemeten):
-PEEP (Set) (2): PEEP
+PEEP (Set) (2): # PEEP
 PEEP (Set): PEEP
 PEEP tot (2):
 PEEP tot:
@@ -1209,7 +1209,7 @@ Peritoneaal druk:
 Peritoneaaldialyse:
 PFD max ingesteld:
 PFD:
-pH (bloed): pH
+pH (bloed): pH # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pH.sql
 pH (faeces):
 pH (overig):
 pH (urine): urine_pH
@@ -1218,7 +1218,7 @@ pH gemeten (urine):
 PH in urine: urine_pH
 pH pleuravocht (pleurapunct.):
 pH semen (semen):
-PH: pH
+PH: pH # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pH.sql
 pH-gemeten (overig):
 pH-gemeten (verz. urine):
 Phase angle:
@@ -1243,7 +1243,7 @@ PiCCO SVV (Slagvolumevariatie):
 PiCCO Tb blood temperature:
 PiCCO_BSA:
 PiCCO_EVLWI (Extravasculair longwater index):
-Piek druk (2): peak_inspiratory_pressure
+Piek druk (2): # peak_inspiratory_pressure
 Piek druk: peak_inspiratory_pressure
 PIP: peak_inspiratory_pressure
 Plasma Amylase:
@@ -1441,19 +1441,19 @@ T4: T4
 Tacrolimus (bloed):
 Tacrolimus AUC (bloed):
 Temazepam (bloed):
-Temp Axillair:
-Temp Blaas:
-Temp Bloed: temperature
-Temp Huid:
-Temp Lies:
-Temp Oesophagus:
-Temp Oor: temperature
-Temp Oraal: temperature
-Temp Rectaal: temperature
+Temp Axillair: temperature # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/temperature.sql
+Temp Blaas: temperature 
+Temp Bloed: temperature 
+Temp Huid: temperature 
+Temp Lies: temperature 
+Temp Oesophagus: temperature 
+Temp Oor: temperature 
+Temp Oraal: temperature 
+Temp Rectaal: temperature 
 Temperatuur Bevochtiger(2):
 Temperatuur Bevochtiger:
-Temperatuur Perifeer 1:
-Temperatuur Perifeer 2:
+Temperatuur Perifeer 1: temperature 
+Temperatuur Perifeer 2: temperature 
 TempVerwarmer ingesteld:
 TempVerwarmer:
 Teruggave galvocht:
@@ -1479,11 +1479,11 @@ Thoraxdrain6 Productie:
 Thoraxdrain6 Stand:
 Thrombinetijd (bloed):
 Thrombinetijd:
-Thrombo CD61 (bloed):
-Thrombo's (bloed): thrombocytes
+Thrombo CD61 (bloed): thrombocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/platelets.sql
+Thrombo's (bloed): thrombocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/platelets.sql
 THROMBO'S (overig):
-Thrombo's citr. bloed (bloed):
-Thrombocyten: thrombocytes
+Thrombo's citr. bloed (bloed): thrombocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/platelets.sql
+Thrombocyten: thrombocytes # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/platelets.sql
 Thrombotest:
 Thyreoglobuline (bloed):
 Thyroxine Bindend Globuline (bloed):
@@ -1563,13 +1563,13 @@ Ureum (urine):
 Ureum (verz. urine):
 Ureum in urine:
 Ureum:
-UrineCAD:
-UrineIncontinentie:
-UrineSplint Li:
-UrineSplint Re:
-UrineSpontaan:
-UrineSupraPubis:
-UrineUP:
+UrineCAD: urine_output # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/urine_output.sql
+UrineIncontinentie: urine_output
+UrineSplint Li: urine_output
+UrineSplint Re: urine_output
+UrineSpontaan: urine_output
+UrineSupraPubis: urine_output
+UrineUP: urine_output
 Urinezuur  (verz. urine):
 Urinezuur (bloed):
 URINEZUUR (divers  )-LabZis2:
@@ -1660,7 +1660,7 @@ Y-GT (bloed): gamma_glutamyl_transferase
 Y-GT (divers)-LabZis2: gamma_glutamyl_transferase
 YZER verz% (overig):
 Zephyros  Freq:
-Zephyros FiO2:
+Zephyros FiO2: FiO2 # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/pO2_FiO2_estimated.sql
 Zephyros Frequentie:
 Zephyros Mve:
 Zephyros O2i:
@@ -1673,5 +1673,5 @@ Zephyros Vte:
 Zink (bloed):
 Zink:
 Zuclopentixol (bloed):
-Zuurstof toediening (bloed):
-Zuurstof toediening:
+Zuurstof toediening (bloed): # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/oxygen_device.sql
+Zuurstof toediening: # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/oxygen_device.sql
