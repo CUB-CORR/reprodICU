@@ -73,7 +73,10 @@ if __name__ == "__main__":
     # Initialize paths
     paths = reprodICUPaths()
     column_names = load_mapping("configs/COLUMN_NAMES.yaml")
-    diagnoses_imputer = DiagnosesImputer(paths=paths)
+    diagnoses_imputer = DiagnosesImputer(
+        paths=paths,
+        patient_info_location=paths.reprodICU_files_path + "patient_information.parquet",
+    )
 
     # Select datasets to extract
     if "all" in args.datasets:
