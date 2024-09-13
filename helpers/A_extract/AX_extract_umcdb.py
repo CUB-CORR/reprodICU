@@ -135,6 +135,12 @@ class UMCdbExtractor(UMCdbPaths):
             pl.scan_csv(self.listitems_path, dtypes={"value": str})
             .select(["admissionid", "item", "itemid", "value", "valueid", "measuredat"])
             .rename({"admissionid": self.icu_stay_id_col})
+            .with_columns(
+                # Replace item names with standardized names
+                pl.col("item")
+                .replace_strict(listitems_mapping, default=None)
+                .alias("item"),
+            )
             .pipe(self._extract_timeseries_helper)
         )
 
@@ -150,6 +156,12 @@ class UMCdbExtractor(UMCdbPaths):
             pl.scan_csv(self.numericitems_path, dtypes={"value": str})
             .select(["admissionid", "item", "value", "measuredat"])
             .rename({"admissionid": self.icu_stay_id_col})
+            .with_columns(
+                # Replace item names with standardized names
+                pl.col("item")
+                .replace_strict(numericitems_mapping, default=None)
+                .alias("item"),
+            )
             .pipe(self._extract_timeseries_helper)
         )
 
@@ -196,6 +208,8 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
     # compute Glasgow Coma Scale (GCS) from listitems data
+    # Implementation using item IDs as in BlendedICU
+    # https://github.com/USM-CHU-FGuyon/BlendedICU/blob/master/amsterdam_preprocessing/AmsterdamPreparator.py#L131
     def _compute_gcs(self, data: pl.LazyFrame) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "UMCdb_A_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_A_gcs.parquet")
