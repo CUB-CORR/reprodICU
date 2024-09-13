@@ -196,7 +196,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
             .with_columns(
                 pl.duration(milliseconds=(pl.col("measuredat") - pl.col("intime")))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col),
             )
@@ -284,7 +284,7 @@ class UMCdbExtractor(UMCdbPaths):
     # region medication
     # Extract medication information from the drugitems.csv file
     def extract_medications(self) -> pl.LazyFrame:
-        print("UMCdb — Extracting medications...")
+        print("UMCdb   - Extracting medications...")
 
         umcdb_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
             self.mapping_path + "MEDICATIONS.yaml", "amsterdam"
@@ -328,11 +328,11 @@ class UMCdbExtractor(UMCdbPaths):
             )
             .with_columns(
                 pl.duration(milliseconds=(pl.col(self.drug_start_col) - pl.col("intime")))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_start_col),
                 pl.duration(milliseconds=(pl.col(self.drug_end_col) - pl.col("intime")))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_end_col),
                 # Replace drug names with standardized ingredient names

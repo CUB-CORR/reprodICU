@@ -40,7 +40,7 @@ class MIMIC3Processor(MIMIC3Extractor):
         ts_inout = self._process_timeseries_inputoutput()
 
         # Combine all time series data
-        print("MIMIC3 - Combining time series data...")
+        print("MIMIC3  - Combining time series data...")
         return pl.concat([ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed")
 
     # endregion
@@ -56,7 +56,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_vitals.parquet")
 
-        print("MIMIC3 - Processing vitals data...")
+        print("MIMIC3  - Processing vitals data...")
 
         # Process vitals data
         ts_vitals = (
@@ -100,7 +100,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             # load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
 
-        print("MIMIC3 - Processing lab data...")
+        print("MIMIC3  - Processing lab data...")
 
         # Process lab data
         ts_lab = (
@@ -137,7 +137,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_inout.parquet")
 
-        print("MIMIC3 - Processing inout data...")
+        print("MIMIC3  - Processing inout data...")
 
         # Process inout data
         ts_inout = (

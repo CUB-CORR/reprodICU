@@ -33,10 +33,10 @@ class UMCdbProcessor(UMCdbExtractor):
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self):
         # Load the time series data.
-        print("UMCdb — Loading time series data...")
+        print("UMCdb   - Loading time series data...")
 
         ts_numeric = self._process_timeseries_numeric()
-        ts_listitems = pl.LazyFrame() # self._process_timeseries_listitems()
+        ts_listitems = pl.LazyFrame()  # self._process_timeseries_listitems()
 
         return pl.concat(
             [ts_numeric, ts_listitems],
@@ -52,7 +52,7 @@ class UMCdbProcessor(UMCdbExtractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "UMCdb_B_ts_numeric.parquet")
 
-        print("UMCdb — Processing numeric time series data...")
+        print("UMCdb   - Processing numeric time series data...")
 
         # Process vitals data
         ts_numeric = (
@@ -88,7 +88,7 @@ class UMCdbProcessor(UMCdbExtractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "UMCdb_B_ts_listitems.parquet")
 
-        print("UMCdb — Processing numeric time series data...")
+        print("UMCdb   - Processing numeric time series data...")
 
         # Process vitals data
         ts_listitems = (
@@ -134,6 +134,18 @@ class UMCdbConverter(UnitConverter):
         # Convert the lab values to the correct units.
         (
             data.pipe(
+                self.convert_ratio_to_percentage,
+                itemid="hematocrit",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_ratio_to_percentage,
+                itemid="saO2",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
                 itemid="creatinine",
                 labelcol=labelcol,
@@ -191,6 +203,12 @@ class UMCdbConverter(UnitConverter):
                 # same conversion due to definition of MCHC
                 self.convert_hemoglobin_mmol_L_to_g_dL,
                 itemid="MCHC",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_glucose_mmol_L_to_mg_dL,
+                itemid="glucose",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )

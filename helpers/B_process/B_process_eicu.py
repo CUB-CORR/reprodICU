@@ -48,7 +48,7 @@ class EICUProcessor(EICUExtractor):
         :rtype: pl.LazyFrame
         """
         # Load the time series data.
-        print("eICU - Loading time series data...")
+        print("eICU    - Loading time series data...")
         ts_lab = self._process_timeseries_lab()
         ts_resp = self._process_timeseries_resp()
         ts_nurse = self._process_timeseries_nurse()
@@ -56,7 +56,7 @@ class EICUProcessor(EICUExtractor):
         ts_periodics = self.extract_and_combine_periodics()
 
         # Join the time series data on the patient unit stay ID.
-        print("eICU - Joining wide time series data...")
+        print("eICU    - Joining wide time series data...")
         on = self.index_cols
 
         # NOTE: Nurse and Periodics are merged first due to duplicate columns
@@ -72,7 +72,7 @@ class EICUProcessor(EICUExtractor):
                 self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
             )
 
-        print("eICU - Returning wide time series data...")
+        print("eICU    - Returning wide time series data...")
         return pl.concat(
             [ts_lab, ts_resp, ts_inout, ts_nurse_periodics], how="diagonal_relaxed"
         ).unique()
@@ -93,7 +93,7 @@ class EICUProcessor(EICUExtractor):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU - Processing lab data...")
+        print("eICU    - Processing lab data...")
 
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_lab.parquet"):
             ts_lab = (
@@ -147,7 +147,7 @@ class EICUProcessor(EICUExtractor):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU - Processing resp data...")
+        print("eICU    - Processing resp data...")
 
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_resp.parquet"):
             ts_resp = (
@@ -189,7 +189,7 @@ class EICUProcessor(EICUExtractor):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU - Processing nurse charting data...")
+        print("eICU    - Processing nurse charting data...")
 
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_nurse.parquet"):
             ts_nurse = (
@@ -229,15 +229,15 @@ class EICUProcessor(EICUExtractor):
         Keep only the relevant inout values.
 
         The processed intake/output data in wide format is indexed by the ICU stay ID and time.
-        
+
         :return: The processed intake/output data in wide format.
         :rtype: pl.LazyFrame
         """
 
-        print("eICU - Processing intake/output data...")
+        print("eICU    - Processing intake/output data...")
 
         # Process inout data
-        print("eICU - Processing inout data...")
+        print("eICU    - Processing inout data...")
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_inout.parquet"):
             ts_inout = (
                 self.extract_time_series_intake_output()
@@ -295,7 +295,7 @@ class EICUProcessor(EICUExtractor):
         )
 
         # Return the processed diagnoses data.
-        print("eICU - Processing diagnoses data...")
+        print("eICU    - Processing diagnoses data...")
         return (
             self.extract_diagnoses()
             # Remove the dots from the ICD codes.

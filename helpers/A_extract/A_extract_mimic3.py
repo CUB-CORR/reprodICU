@@ -126,9 +126,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 # Calculate age
-                ((pl.col("INTIME") - pl.col("DOB")) / pl.duration(days=self.DAYS_IN_YEAR)).alias(
-                    self.age_col
-                ),
+                (
+                    (pl.col("INTIME") - pl.col("DOB")).truediv(pl.duration(days=self.DAYS_IN_YEAR))
+                ).alias(self.age_col),
             )
             .with_columns(
                 # Convert categorical gender to enum
@@ -146,11 +146,11 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .cast(int)
                 .alias(self.age_col),
                 # Calculate pre ICU length of stay
-                ((pl.col("INTIME") - pl.col("ADMITTIME")) / pl.duration(days=1))
+                ((pl.col("INTIME") - pl.col("ADMITTIME")).truediv(pl.duration(days=1)))
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate ICU mortality
-                ((pl.col("DEATHTIME") - pl.col("OUTTIME")) / pl.duration(hours=1))
+                ((pl.col("DEATHTIME") - pl.col("OUTTIME")).truediv(pl.duration(hours=1)))
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
                 .fill_null(False)
@@ -158,7 +158,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
                 # Calculate mortality after discharge
-                ((pl.col("DOD") - pl.col("OUTTIME")) / pl.duration(days=1))
+                ((pl.col("DOD") - pl.col("OUTTIME")).truediv(pl.duration(days=1)))
                 .cast(int)
                 .alias(self.mortality_after_col),
                 # Convert categorical admission location to enum
@@ -209,7 +209,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         if os.path.isfile(self.precalc_path + "MIMIC3_height_weight.parquet") and not force:
             return pl.scan_parquet(self.precalc_path + "MIMIC3_height_weight.parquet")
 
-        print("MIMIC3 - Extracting patient height and weight...")
+        print("MIMIC3  - Extracting patient height and weight...")
 
         # ITEMIDS = {
         #     "weight_kg_2": 224639,
@@ -310,9 +310,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 & (pl.col("OFFSET") > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF))
             )
             .with_columns(
-                (pl.col("OFFSET") / pl.duration(seconds=1))
-                .cast(float)
-                .alias(self.timeseries_time_col)
+                (pl.col("OFFSET").dt.total_seconds()).cast(float).alias(self.timeseries_time_col)
             )
             .drop(self.icu_length_of_stay_col)
             .cast({"VALUENUM": float})
@@ -467,6 +465,8 @@ class MIMIC3Extractor(MIMIC3Paths):
     # region medications
     # Extract medications from the inputevents.csv file
     def extract_medications(self) -> pl.LazyFrame:
+        print("MIMIC3  - Extracting medications...")
+
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
         )
@@ -544,11 +544,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias(self.drug_start_col),
-                (pl.col("ENDTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
-                .alias(self.drug_end_col),
+                (pl.col("ENDTIME") - pl.col("INTIME")).dt.total_seconds().alias(self.drug_end_col),
             )
             # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
@@ -573,7 +571,7 @@ class MIMIC3Extractor(MIMIC3Paths):
     # region diagnoses
     # Extract diagnoses from the diagnoses_icd.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
-        print("MIMIC3 - Extracting diagnoses...")
+        print("MIMIC3  - Extracting diagnoses...")
         diagnoses = pl.scan_csv(self.diagnoses_icd_path, dtypes={"ICD9_CODE": str}).rename(
             {
                 "SUBJECT_ID": self.person_id_col,
@@ -586,7 +584,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             diagnoses.select(self.person_id_col, self.hospital_stay_id_col, "ICD9_CODE", "SEQ_NUM")
             # include only ICU patients
             .filter(
-                pl.col(self.hospital_stay_id_col).is_in(self.icu_stay_id.select(self.hospital_stay_id_col).collect(streaming=True))
+                pl.col(self.hospital_stay_id_col).is_in(
+                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(streaming=True)
+                )
             )
             .with_columns(
                 pl.col(self.hospital_stay_id_col).cast(int),
@@ -645,10 +645,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias(self.procedure_start_col),
                 (pl.col("ENDTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias(self.procedure_end_col),
             )
             .drop("ITEMID", "STARTTIME", "ENDTIME", "INTIME")

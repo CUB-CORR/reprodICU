@@ -22,21 +22,18 @@ class PatientInformationImputer(GlobalVars):
         For missing IDs, new IDs are generated / IDs are assigned from a lower level.
         """
 
-        return (
-            data.with_columns(
-                # Add missing hospital stay IDs
-                pl.when(pl.col(self.hospital_stay_id_col) == None)
-                .then(pl.col(self.icu_stay_id_col))
-                .otherwise(pl.col(self.hospital_stay_id_col))
-                .alias(self.hospital_stay_id_col),
-                # Add missing person IDs
-                pl.when(pl.col(self.person_id_col) == None)
-                .then(pl.col(self.hospital_stay_id_col))
-                .otherwise(pl.col(self.person_id_col))
-                .alias(self.person_id_col),
-            )
-            .unique()
-        )
+        return data.with_columns(
+            # Add missing hospital stay IDs
+            pl.when(pl.col(self.hospital_stay_id_col) == None)
+            .then(pl.col(self.icu_stay_id_col))
+            .otherwise(pl.col(self.hospital_stay_id_col))
+            .alias(self.hospital_stay_id_col),
+            # Add missing person IDs
+            pl.when(pl.col(self.person_id_col) == None)
+            .then(pl.col(self.hospital_stay_id_col))
+            .otherwise(pl.col(self.person_id_col))
+            .alias(self.person_id_col),
+        ).unique()
 
 
 if __name__ == "__main__":

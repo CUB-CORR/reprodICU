@@ -1442,18 +1442,18 @@ Tacrolimus (bloed):
 Tacrolimus AUC (bloed):
 Temazepam (bloed):
 Temp Axillair: temperature # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/temperature.sql
-Temp Blaas: temperature 
-Temp Bloed: temperature 
-Temp Huid: temperature 
-Temp Lies: temperature 
-Temp Oesophagus: temperature 
-Temp Oor: temperature 
-Temp Oraal: temperature 
-Temp Rectaal: temperature 
+Temp Blaas: temperature
+Temp Bloed: temperature
+Temp Huid: temperature
+Temp Lies: temperature
+Temp Oesophagus: temperature
+Temp Oor: temperature
+Temp Oraal: temperature
+Temp Rectaal: temperature
 Temperatuur Bevochtiger(2):
 Temperatuur Bevochtiger:
-Temperatuur Perifeer 1: temperature 
-Temperatuur Perifeer 2: temperature 
+Temperatuur Perifeer 1: temperature
+Temperatuur Perifeer 2: temperature
 TempVerwarmer ingesteld:
 TempVerwarmer:
 Teruggave galvocht:

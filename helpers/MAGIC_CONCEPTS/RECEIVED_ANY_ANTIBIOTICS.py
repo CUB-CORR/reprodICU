@@ -64,7 +64,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             eicu_medication.sort(by=self.column_names["global_icu_stay_id_col"]),
             key=self.column_names["global_icu_stay_id_col"],
         )
-        
+
         # endregion
 
         # region HiRID

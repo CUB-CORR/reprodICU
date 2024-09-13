@@ -92,7 +92,7 @@ class DiagnosesHarmonizer(GlobalVars):
             .unique()
             .sort([self.global_icu_stay_id_col, self.diagnosis_start_col])
         )
-    
+
     # Helper functions
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper1(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
