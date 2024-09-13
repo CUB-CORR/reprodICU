@@ -12,15 +12,28 @@ from helpers.helper import GlobalVars
 
 
 class DiagnosesImputer(GlobalVars):
-    def __init__(self, paths) -> None:
+    def __init__(self, paths, patient_info_location: str) -> None:
         super().__init__(paths)
-        pass
+        self.patient_info_location = patient_info_location
 
     def impute_diagnoses(self, data) -> pl.LazyFrame:
         """
         Imputes missing ICD codes in the diagnoses data.
         -> maps ICD9 codes to ICD10 codes and vice versa (for inclusion / exclusion criteria down the line)
         """
+
+        IDs = (
+            pl.scan_parquet(self.patient_info_location)
+            .select(
+                [
+                    self.global_hospital_stay_id_col,
+                    self.global_icu_stay_id_col,
+                ]
+            )
+            .filter(pl.col(self.global_hospital_stay_id_col).str.starts_with("mimic"))
+            .group_by(self.global_hospital_stay_id_col)
+            .all()
+        )
 
         ICD9_TO_ICD10_MAPPING = dict(
             zip(self.ICD9_TO_ICD10_DIAGS["icd9"], self.ICD9_TO_ICD10_DIAGS["icd10"])
@@ -30,7 +43,22 @@ class DiagnosesImputer(GlobalVars):
         )
 
         return (
-            data.with_columns(
+            pl.concat(
+                [
+                    data.filter(pl.col(self.global_person_id_col).str.starts_with("mimic"))
+                    .drop(self.global_icu_stay_id_col)
+                    .join(
+                        IDs,
+                        on=[
+                            self.global_hospital_stay_id_col,
+                        ],
+                    )
+                    .explode(columns=[self.global_icu_stay_id_col]),
+                    data.filter(~pl.col(self.global_person_id_col).str.starts_with("mimic")),
+                ],
+                how="diagonal_relaxed",
+            )
+            .with_columns(
                 # Impute missing ICD9 codes
                 pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
                 .then(pl.col(self.diagnosis_icd_code_col))
