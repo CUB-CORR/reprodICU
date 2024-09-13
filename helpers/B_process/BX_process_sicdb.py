@@ -33,7 +33,7 @@ class SICdbProcessor(SICdbExtractor):
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
         # Load the time series data
-        print("SICdb — Loading time series data...")
+        print("SICdb   - Loading time series data...")
 
         ts_float = self._process_timeseries_data_float()
         ts_labs = self._process_timeseries_data_labs()
@@ -45,7 +45,7 @@ class SICdbProcessor(SICdbExtractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "SICdb_B_timeseries.parquet")
 
-        print("SICdb — Processing time series data...")
+        print("SICdb   - Processing time series data...")
 
         # Process timeseries data
         timeseries = (
@@ -78,7 +78,7 @@ class SICdbProcessor(SICdbExtractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "SICdb_B_laboratory.parquet")
 
-        print("SICdb — Processing laboratory data...")
+        print("SICdb   - Processing laboratory data...")
 
         # Process timeseries data
         timeseries = (

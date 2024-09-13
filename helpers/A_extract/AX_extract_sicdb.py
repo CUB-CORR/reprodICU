@@ -159,7 +159,7 @@ class SICdbExtractor(SICdbPaths):
     # region medication
     # Extract medication information from the medication.csv file
     def extract_medications(self) -> pl.LazyFrame:
-        print("SICdb — Extracting medications...")
+        print("SICdb   - Extracting medications...")
 
         # sicdb_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
         #     self.mapping_path + "MEDICATIONS.yaml", "sicdb"
@@ -211,7 +211,7 @@ class SICdbExtractor(SICdbPaths):
     # region diagnosis
     # Extract diagnosis information from the cases.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
-        print("SICdb — Extracting diagnoses...")
+        print("SICdb   - Extracting diagnoses...")
 
         return (
             pl.scan_csv(self.cases_path)

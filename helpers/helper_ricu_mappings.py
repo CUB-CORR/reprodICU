@@ -13,9 +13,7 @@ from helpers.helper import GlobalVars, GlobalHelpers
 
 class ricuMappings:
     def __init__(self):
-        self.ricu_concept_dict_file = (
-            Path(__file__).parent / "../mappings/_ricu/concept-dict.json"
-        )
+        self.ricu_concept_dict_file = Path(__file__).parent / "../mappings/_ricu/concept-dict.json"
         self.ricu_concept_dict = self._load_ricu_concept_dict()
 
     def _load_ricu_concept_dict(self):

@@ -39,41 +39,128 @@ class TimeseriesHarmonizer(GlobalVars):
         # Harmonize the timeseries
         timeseries_datasets = []
 
+        # if "eICU" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
+        #     )
+
+        # if "HiRID" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
+        #     )
+
+        # if "MIMIC3" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.mimic3.process_timeseries().pipe(self._concat_helper, "mimic3-")
+        #     )
+
+        # if "MIMIC4" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.mimic4.process_timeseries().pipe(self._concat_helper, "mimic4-")
+        #     )
+
+        # if "SICdb" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
+        #     )
+
+        # if "UMCdb" in self.datasets:
+        #     timeseries_datasets.append(
+        #         self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
+        #     )
+
         if "eICU" in self.datasets:
-            timeseries_datasets.append(
-                self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
+            eicu_timeseries = self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
+            eicu_unique_count = (
+                eicu_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {eicu_unique_count:6.0f} unique cases with timeseries data in eICU."
+            )
+            timeseries_datasets.append(eicu_timeseries)
 
         if "HiRID" in self.datasets:
-            timeseries_datasets.append(
-                self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
+            hirid_timeseries = self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
+            hirid_unique_count = (
+                hirid_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {hirid_unique_count:6.0f} unique cases with timeseries data in HiRID."
+            )
+            timeseries_datasets.append(hirid_timeseries)
 
         if "MIMIC3" in self.datasets:
-            timeseries_datasets.append(
-                self.mimic3.process_timeseries().pipe(self._concat_helper, "mimic3-")
+            mimic3_timeseries = self.mimic3.process_timeseries().pipe(
+                self._concat_helper, "mimic3-"
             )
+            mimic3_unique_count = (
+                mimic3_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {mimic3_unique_count:6.0f} unique cases with timeseries data in MIMIC3."
+            )
+            timeseries_datasets.append(mimic3_timeseries)
 
         if "MIMIC4" in self.datasets:
-            timeseries_datasets.append(
-                self.mimic4.process_timeseries().pipe(self._concat_helper, "mimic4-")
+            mimic4_timeseries = self.mimic4.process_timeseries().pipe(
+                self._concat_helper, "mimic4-"
             )
+            mimic4_unique_count = (
+                mimic4_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {mimic4_unique_count:6.0f} unique cases with timeseries data in MIMIC4."
+            )
+            timeseries_datasets.append(mimic4_timeseries)
 
         if "SICdb" in self.datasets:
-            timeseries_datasets.append(
-                self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
+            sicdb_timeseries = self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
+            sicdb_unique_count = (
+                sicdb_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {sicdb_unique_count:6.0f} unique cases with timeseries data in SICdb."
             )
 
         if "UMCdb" in self.datasets:
-            timeseries_datasets.append(
-                self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
+            umcdb_timeseries = self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
+            umcdb_unique_count = (
+                umcdb_timeseries.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {umcdb_unique_count:6.0f} unique cases with timeseries data in UMCdb."
+            )
+            timeseries_datasets.append(umcdb_timeseries)
 
         # Combine the timeseries data of the datasets
         return pl.concat(
             timeseries_datasets,
             how="diagonal_relaxed",
-        ).unique()
+        )
 
     # endregion
 
@@ -109,8 +196,6 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                     **{col: float for col in vitals_cols_not_index},
                 }
-                # ).pipe(
-                #     self.harmonize_vitals
             )
             .select([*index_cols, *sorted(vitals_cols_not_index)])
             .sort(index_cols)

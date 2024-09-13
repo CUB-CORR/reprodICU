@@ -27,13 +27,13 @@ class HiRIDProcessor(HiRIDExtractor):
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
         # Load the time series data
-        print("HiRID — Loading time series data...")
+        print("HiRID   - Loading time series data...")
 
         if os.path.isfile(self.precalc_path + "HiRID_B_timeseries.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "HiRID_B_timeseries.parquet")
 
-        print("HiRID — Processing time series data...")
+        print("HiRID   - Processing time series data...")
 
         # COPY THE NEEDED DATAFRAMES FROM HiRIDExtractor.extract_timeseries() HERE
         observation_mapping = self.load_mapping(self.observation_mapping_path)
@@ -111,13 +111,6 @@ class HiRIDConverter(UnitConverter):
         # Convert the lab values to the correct units.
         (
             data.pipe(
-                self.convert_blood_urea_nitrogen_from_urea,
-                itemid_urea="urea",
-                itemid_BUN="blood_urea_nitrogen",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
                 self.convert_absolute_count_to_relative,
                 itemid="lymphocytes",
                 total_itemid="leukocytes",
@@ -125,8 +118,9 @@ class HiRIDConverter(UnitConverter):
                 valuecol=valuecol,
             )
             .pipe(
-                self.convert_g_L_to_g_dL,
-                itemid="hemoglobin",
+                self.convert_blood_urea_nitrogen_from_urea,
+                itemid_urea="urea",
+                itemid_BUN="blood_urea_nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -145,6 +139,19 @@ class HiRIDConverter(UnitConverter):
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
                 itemid="glucose",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_g_L_to_g_dL,
+                itemid="hemoglobin",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                # same conversion due to definition of MCHC
+                self.convert_g_L_to_g_dL,
+                itemid="MCHC",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )

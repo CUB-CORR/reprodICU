@@ -462,75 +462,20 @@ class UnitConversions:
             .alias(valuecol)
         )
 
+    def convert_ratio_to_percentage(
+        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+    ) -> pl.LazyFrame:
+        """
+        Convert ratios to percentages (i.e., 0.23 to 23%).
+        """
+        return data.with_columns(
+            pl.when((pl.col(labelcol) == itemid) and (pl.col(valuecol) <= 2))
+            .then(pl.col(valuecol) * 100)
+            .otherwise(pl.col(valuecol))
+            .alias(valuecol)
+        )
+
 
 class UnitConverter(UnitConversions):
     def __init__(self):
         super().__init__()
-
-    # # region harmonize
-    # # Harmonize the timeseries data of the eICU, MIMIC-III and MIMIC-IV datasets
-    # def harmonize_vitals(self, data) -> pl.LazyFrame:
-    #     """
-    #     Harmonize vital values to SI units for eICU / MIMIC data.
-    #     Conversion constants were taken from: https://www.labcorp.com/resource/si-unit-conversion-table
-    #     Unfortunately, hardcoding the conversion factors is necessary as the data is not well-documented.
-    #     """
-    #     return data.with_columns(
-    #         # fix remaining bad temperature values
-    #         # NOTE: assuming 80°F as threshold for fahrenheit values
-    #         pl.when(pl.col("temperature") > 80)
-    #         .then((pl.col("temperature") - 32) * 5 / 9)
-    #         .otherwise(pl.col("temperature")),
-    #     )
-
-    # # Harmonize lab values to SI units for eICU / MIMIC data
-    # # NOTE: Not all lab values are converted as the conversion factors are not well-documented
-    # def harmonize_lab_values(self, data) -> pl.LazyFrame:
-    #     """
-    #     Harmonize lab values to SI units for eICU / MIMIC data.
-    #     Conversion constants were taken from: https://www.labcorp.com/resource/si-unit-conversion-table
-    #     Unfortunately, hardcoding the conversion factors is necessary as the data is not well-documented.
-    #     """
-    #     return data.with_columns(
-    #         # pl.col("bilirubin_direct") * 17.1,  # mg/dL to µmol/L -> not in data -> not converted
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("bilirubin_total") * 17.1,  # mg/dL to µmol/L
-    #         )
-    #         .otherwise(pl.col("bilirubin_total")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("blood_urea_nitrogen") * 0.357,  # mg/dL to mmol/L
-    #         )
-    #         .otherwise(pl.col("blood_urea_nitrogen")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("calcium") * 0.25,  # mg/dL to mmol/L
-    #         )
-    #         .otherwise(pl.col("calcium")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("creatinine") * 88.4,  # mg/dL to µmol/L
-    #         )
-    #         .otherwise(pl.col("creatinine")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("glucose") * 0.0555,  # mg/dL to mmol/L
-    #         )
-    #         .otherwise(pl.col("glucose")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("magnesium") * 0.4114,  # mg/dL to mmol/L
-    #         )
-    #         .otherwise(pl.col("magnesium")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("phosphate") * 0.323,  # mg/dL to mmol/L
-    #         )
-    #         .otherwise(pl.col("phosphate")),
-    #         pl.when(pl.col(self.global_icu_stay_id_col).str.starts_with("eicu|mimic"))
-    #         .then(
-    #             pl.col("protein_albumin") * 10,  # g/dL to g/L
-    #         )
-    #         .otherwise(pl.col("protein_albumin")),
-    #     )

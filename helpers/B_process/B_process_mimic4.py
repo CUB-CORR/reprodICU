@@ -40,7 +40,7 @@ class MIMIC4Processor(MIMIC4Extractor):
         ts_inout = self._process_timeseries_inputoutput()
 
         # Combine all time series data
-        print("MIMIC4 - Combining time series data...")
+        print("MIMIC4  - Combining time series data...")
         return pl.concat([ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed")
 
     # endregion
@@ -56,7 +56,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_vitals.parquet")
 
-        print("MIMIC4 - Processing vitals data...")
+        print("MIMIC4  - Processing vitals data...")
 
         # Process vitals data
         ts_vitals = (
@@ -100,7 +100,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             # load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_lab.parquet")
 
-        print("MIMIC4 - Processing lab data...")
+        print("MIMIC4  - Processing lab data...")
 
         # Process lab data
         ts_lab = (
@@ -138,7 +138,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             # Load the preprocessed data
             return pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_inout.parquet")
 
-        print("MIMIC4 - Processing inout data...")
+        print("MIMIC4  - Processing inout data...")
 
         # Process inout data
         ts_inout = (
@@ -387,7 +387,7 @@ class MIMIC4Converter(UnitConverter):
 #         print("MIMIC4 — Loading time series data...")
 
 #         # Process vitals data
-#         print("MIMIC4 - Processing vitals data...")
+#         print("MIMIC4  - Processing vitals data...")
 #         if not os.path.isfile(self.precalc_path + "MIMIC4_B_ts_vitals.parquet"):
 #             ts_vitals = self.extract_chartevents()
 #             ts_vitals = ts_vitals.collect(streaming=True).pivot(
@@ -427,7 +427,7 @@ class MIMIC4Converter(UnitConverter):
 #             ts_vitals = pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_vitals.parquet")
 
 #         # Process lab data
-#         print("MIMIC4 - Processing lab data...")
+#         print("MIMIC4  - Processing lab data...")
 #         if not os.path.isfile(self.precalc_path + "MIMIC4_B_ts_lab.parquet"):
 #             ts_lab = self.extract_lab_measurements()
 #             ts_lab = ts_lab.collect(streaming=True).pivot(
@@ -454,7 +454,7 @@ class MIMIC4Converter(UnitConverter):
 #             ts_lab = pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_lab.parquet")
 
 #         # Process inout data
-#         print("MIMIC4 - Processing inout data...")
+#         print("MIMIC4  - Processing inout data...")
 #         if not os.path.isfile(self.precalc_path + "MIMIC4_B_ts_inout.parquet"):
 #             ts_inout = self.extract_output_measurements()
 #             ts_inout = ts_inout.collect(streaming=True).pivot(
@@ -481,5 +481,5 @@ class MIMIC4Converter(UnitConverter):
 #             ts_inout = pl.scan_parquet(self.precalc_path + "MIMIC4_B_ts_inout.parquet")
 
 #         # Combine all time series data
-#         print("MIMIC4 - Combining time series data...")
+#         print("MIMIC4  - Combining time series data...")
 #         return pl.concat([ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed")

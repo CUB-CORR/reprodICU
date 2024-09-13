@@ -67,7 +67,7 @@ class HiRIDExtractor(HiRIDPaths):
         if os.path.isfile(self.precalc_path + "HiRID_lengths_of_stay.parquet"):
             return pl.scan_parquet(self.precalc_path + "HiRID_lengths_of_stay.parquet")
 
-        print("HiRID — Processing patient length of stay data...")
+        print("HiRID   - Processing patient length of stay data...")
 
         # The length of stay is derived from the last measurement of a timeseries variable.
         lengths_of_stay = (
@@ -96,7 +96,7 @@ class HiRIDExtractor(HiRIDPaths):
         if os.path.isfile(self.precalc_path + "HiRID_height_weight.parquet"):
             return pl.scan_parquet(self.precalc_path + "HiRID_height_weight.parquet")
 
-        print("HiRID — Processing patient height and weight data...")
+        print("HiRID   - Processing patient height and weight data...")
 
         # The height and weight are derived from the last measurement of a timeseries variable.
         variables = {10000400: self.weight_col, 10000450: self.height_col}
@@ -213,9 +213,11 @@ class HiRIDExtractor(HiRIDPaths):
                 pl.col("value").cast(float),
             )
             .with_columns(
-                ((pl.col("datetime") - pl.col("admissiontime")) / pl.duration(seconds=1)).alias(
-                    self.timeseries_time_col
-                )
+                (
+                    (pl.col("datetime") - pl.col("admissiontime"))
+                    .truediv(pl.duration(seconds=1))
+                    .round(0)
+                ).alias(self.timeseries_time_col)
             )
             .drop(["admissiontime", "datetime"])
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
@@ -248,7 +250,7 @@ class HiRIDExtractor(HiRIDPaths):
     # region pharma
     # Extract pharma information from the pharma file directory
     def extract_medications(self) -> pl.LazyFrame:
-        print("HiRID — Extracting medications...")
+        print("HiRID   - Extracting medications...")
 
         hirid_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
             self.mapping_path + "MEDICATIONS.yaml", "hirid"
@@ -270,9 +272,6 @@ class HiRIDExtractor(HiRIDPaths):
             data = (
                 pl.scan_parquet(self.pharma_path + file)
                 .select(["patientid", "pharmaid", "givenat", "givendose", "doseunit"])
-                # Cast the datetime to string to avoid the following error:
-                # polars.exceptions.SchemaError: invalid series dtype: expected `String`, got `datetime[ns]`
-                .cast({"givenat": str})
                 # Rename columns for consistency
                 .rename(
                     {
@@ -281,23 +280,30 @@ class HiRIDExtractor(HiRIDPaths):
                         "doseunit": self.drug_unit_col,
                     }
                 )
+                # Cast the datetime to string to avoid the following error:
+                # polars.exceptions.SchemaError: invalid series dtype: expected `String`, got `datetime[ns]`
+                .cast({self.icu_stay_id_col: str, "givenat": str})
                 .join(admissiontime, on=self.icu_stay_id_col)
                 .join(length_of_stay, on=self.icu_stay_id_col)
                 .with_columns(
                     pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                     pl.col("givenat").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                    pl.col(self.drug_amount_col).cast(float),
                     # Replace the pharmaid with the corresponding medication name
-                    # then the reprodICU mapping to ingredients
                     pl.col("pharmaid")
                     .cast(int)
                     .replace_strict(self._get_pharma_variables(), default=None)
-                    .replace_strict(hirid_medication_mapping, default=None),
-                    pl.col(self.drug_amount_col).cast(float),
+                    .alias(self.drug_name_col),
                 )
                 .with_columns(
                     (pl.col("givenat") - pl.col("admissiontime"))
                     .truediv(pl.duration(seconds=1))
-                    .alias(self.drug_start_col)
+                    .round(0)
+                    .alias(self.drug_start_col),
+                    # Map the medication names to the ingredients
+                    pl.col(self.drug_name_col)
+                    .replace_strict(hirid_medication_mapping, default=None)
+                    .alias(self.drug_ingredient_col),
                 )
                 .drop("admissiontime", "givenat")
                 # Remove duplicate rows
@@ -323,7 +329,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
 
             # Append the data to the DataFrame
-            pharma = pl.concat([pharma, data], how="diagonal_relaxed")
+            pharma = pl.concat([pharma, data.lazy()], how="diagonal_relaxed")
 
         return pharma
 

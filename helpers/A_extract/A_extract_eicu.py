@@ -680,7 +680,7 @@ class EICUExtractor(EICUPaths):
                     pl.col(self.drug_start_col)
                     + pl.duration(
                         hours=(pl.col("volumeoffluid").truediv(pl.col("infusionrate")))
-                    ).truediv(pl.duration(seconds=1))
+                    ).dt.total_seconds()
                 ).alias(self.drug_end_col)
             )
             # Replace drug names with mapped names

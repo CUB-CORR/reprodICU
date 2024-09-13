@@ -34,34 +34,91 @@ class MedicationHarmonizer(GlobalVars):
         medications_datasets = []
 
         if "eICU" in self.datasets:
-            medications_datasets.append(
-                self.eicu.extract_medications().pipe(self._concat_helper, "eicu-")
+            eicu_medications = self.eicu.extract_medications().pipe(self._concat_helper, "eicu-")
+            eicu_unique_count = (
+                eicu_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {eicu_unique_count:6.0f} unique cases with medication data in eICU."
+            )
+            medications_datasets.append(eicu_medications)
 
         if "HiRID" in self.datasets:
-            medications_datasets.append(
-                self.hirid.extract_medications().pipe(self._concat_helper, "hirid-")
+            hirid_medications = self.hirid.extract_medications().pipe(self._concat_helper, "hirid-")
+            hirid_unique_count = (
+                hirid_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {hirid_unique_count:6.0f} unique cases with medication data in HiRID."
+            )
+            medications_datasets.append(hirid_medications)
 
         if "MIMIC3" in self.datasets:
-            medications_datasets.append(
-                self.mimic3.extract_medications().pipe(self._concat_helper, "mimic3-")
+            mimic3_medications = self.mimic3.extract_medications().pipe(
+                self._concat_helper, "mimic3-"
             )
+            mimic3_unique_count = (
+                mimic3_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {mimic3_unique_count:6.0f} unique cases with medication data in MIMIC3."
+            )
+            medications_datasets.append(mimic3_medications)
 
         if "MIMIC4" in self.datasets:
-            medications_datasets.append(
-                self.mimic4.extract_medications().pipe(self._concat_helper, "mimic4-")
+            mimic4_medications = self.mimic4.extract_medications().pipe(
+                self._concat_helper, "mimic4-"
             )
+            mimic4_unique_count = (
+                mimic4_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {mimic4_unique_count:6.0f} unique cases with medication data in MIMIC4."
+            )
+            medications_datasets.append(mimic4_medications)
 
         if "SICdb" in self.datasets:
-            medications_datasets.append(
-                self.sicdb.extract_medications().pipe(self._concat_helper, "sicdb-")
+            sicdb_medications = self.sicdb.extract_medications().pipe(self._concat_helper, "sicdb-")
+            sicdb_unique_count = (
+                sicdb_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
+            )
+            print(
+                f"reprodICU - {sicdb_unique_count:6.0f} unique cases with medication data in SICdb."
             )
 
         if "UMCdb" in self.datasets:
-            medications_datasets.append(
-                self.umcdb.extract_medications().pipe(self._concat_helper, "umcdb-")
+            umcdb_medications = self.umcdb.extract_medications().pipe(self._concat_helper, "umcdb-")
+            umcdb_unique_count = (
+                umcdb_medications.select(self.global_icu_stay_id_col)
+                .unique()
+                .count()
+                .collect(streaming=True)
+                .to_numpy()[0][0]
             )
+            print(
+                f"reprodICU - {umcdb_unique_count:6.0f} unique cases with medication data in UMCdb."
+            )
+            medications_datasets.append(umcdb_medications)
 
         return (
             pl.concat(
