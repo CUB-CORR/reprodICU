@@ -79,6 +79,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "race": self.ethnicity_col,  # "race" is the choice of the dataset creators
                     "admission_location": self.admission_loc_col,
                     "discharge_location": self.discharge_loc_col,
+                    "admission_type": self.admission_type_col,
                     "hospital_expire_flag": self.mortality_hosp_col,
                 }
             )
@@ -88,6 +89,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.ethnicity_col,
                     self.admission_loc_col,
                     self.discharge_loc_col,
+                    self.admission_type_col,
                     self.mortality_hosp_col,
                     "admittime",
                     "dischtime",
@@ -112,6 +114,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
             .join(self._extract_patient_height_weight(icustays), on=self.icu_stay_id_col)
+            .join(self._extract_specialties(), on=self.icu_stay_id_col)
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -157,6 +160,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
+                # Convert categorical admission type to enum
+                pl.col(self.admission_type_col)
+                .replace(self.ADMISSION_TYPES_MAP)
+                .cast(self.admission_types_dtype),
+                # Convert categorical specialty to enum
+                pl.col(self.specialty_col)
+                .replace(self.SPECIALTIES_MAP)
+                .cast(self.specialties_dtype),
             )
             .select(
                 [
@@ -173,12 +184,41 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.mortality_hosp_col,
                     self.mortality_icu_col,
                     self.mortality_after_col,
+                    self.admission_type_col,
+                    self.specialty_col,
                     self.admission_loc_col,
                     self.unit_type_col,
                     self.care_site_col,
                     self.discharge_loc_col,
                 ]
             )
+        )
+
+    # endregion
+
+    # region specialties
+    # Extract specialties from the services.csv file
+    def _extract_specialties(self) -> pl.LazyFrame:
+        IDs = self.extract_patient_IDs().select(
+            self.hospital_stay_id_col, self.icu_stay_id_col, "intime"
+        )
+
+        services = pl.scan_csv(self.services_path).rename(
+            {
+                "hadm_id": self.hospital_stay_id_col,
+                "curr_service": self.specialty_col,
+            }
+        )
+
+        return (
+            services.select([self.hospital_stay_id_col, "transfertime", self.specialty_col])
+            .join(IDs, on=self.hospital_stay_id_col)
+            # Get the most recent specialty
+            .filter(pl.col("transfertime") < pl.col("intime"))
+            # Get the most recent specialty on ICU admission
+            .group_by(self.icu_stay_id_col)
+            .first()
+            .select([self.icu_stay_id_col, self.specialty_col])
         )
 
     # endregion

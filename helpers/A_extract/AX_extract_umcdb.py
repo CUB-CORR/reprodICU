@@ -34,6 +34,8 @@ class UMCdbExtractor(UMCdbPaths):
                     "heightgroup",
                     "gender",
                     "origin",
+                    "location",
+                    "urgency",
                     "destination",
                     "specialty",
                     "admittedat",
@@ -99,10 +101,20 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(self.discharge_locations_dtype)
                 .alias(self.discharge_loc_col),
                 # Convert categorical unit type to enum
-                pl.col("specialty")
+                pl.col("location")
                 .replace_strict(self.UNIT_TYPES_MAP, default="Unknown")
                 .cast(self.unit_types_dtype)
                 .alias(self.unit_type_col),
+                # Convert categorical specialty to enum
+                pl.col("specialty")
+                .replace_strict(self.SPECIALTIES_MAP, default="Unknown")
+                .cast(self.specialties_dtype)
+                .alias(self.specialty_col),
+                # Convert categorical admission type to enum
+                pl.col("urgency").cast(str)
+                .replace_strict(self.ADMISSION_TYPES_MAP, default="Unknown")
+                .cast(self.admission_types_dtype)
+                .alias(self.admission_type_col),
                 # Set hospital stay ID to none
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Set care site to the hospital name

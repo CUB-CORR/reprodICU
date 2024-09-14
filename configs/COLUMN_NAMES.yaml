@@ -11,9 +11,11 @@ pre_icu_length_of_stay_col: pre_icu_length_of_stay
 icu_length_of_stay_col: icu_length_of_stay
 hospital_length_of_stay_col: hospital_length_of_stay
 admission_loc_col: admission_location
+admission_type_col: admission_type
 discharge_loc_col: discharge_location
 care_site_col: care_site
 unit_type_col: unit_type
+specialty_col: specialty
 age_col: age
 height_col: height_in_cm
 weight_col: weight_in_kg
