@@ -22,7 +22,11 @@ class UMCdbProcessor(UMCdbExtractor):
         self.helpers = GlobalHelpers()
         self.convert = UMCdbConverter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -50,7 +54,9 @@ class UMCdbProcessor(UMCdbExtractor):
 
         if os.path.isfile(self.precalc_path + "UMCdb_B_ts_numeric.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "UMCdb_B_ts_numeric.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "UMCdb_B_ts_numeric.parquet"
+            )
 
         print("UMCdb   - Processing numeric time series data...")
 
@@ -58,7 +64,11 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_numeric = (
             self.extract_timeseries_numericitems()
             # Convert the lab values to the correct units
-            .pipe(self.convert._convert_lab_values, labelcol="item", valuecol="value")
+            .pipe(
+                self.convert._convert_lab_values,
+                labelcol="item",
+                valuecol="value",
+            )
             # Pivot the vitals data
             .collect(streaming=True).pivot(
                 on="item",
@@ -69,13 +79,19 @@ class UMCdbProcessor(UMCdbExtractor):
         )
 
         # Drop empty rows
-        droplist = list(set(ts_numeric.collect_schema().names()) - set(self.index_cols))
+        droplist = list(
+            set(ts_numeric.collect_schema().names()) - set(self.index_cols)
+        )
         ts_numeric = (
-            ts_numeric.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+            ts_numeric.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
         )
 
         # Save the preprocessed data
-        ts_numeric.sink_parquet(self.precalc_path + "UMCdb_B_ts_numeric.parquet")
+        ts_numeric.sink_parquet(
+            self.precalc_path + "UMCdb_B_ts_numeric.parquet"
+        )
 
         return ts_numeric
 
@@ -86,7 +102,9 @@ class UMCdbProcessor(UMCdbExtractor):
 
         if os.path.isfile(self.precalc_path + "UMCdb_B_ts_listitems.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "UMCdb_B_ts_listitems.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "UMCdb_B_ts_listitems.parquet"
+            )
 
         print("UMCdb   - Processing numeric time series data...")
 
@@ -94,7 +112,11 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_listitems = (
             self.extract_timeseries_listitems()
             # Convert the lab values to the correct units
-            .pipe(self.convert._convert_lab_values, labelcol="item", valuecol="value")
+            .pipe(
+                self.convert._convert_lab_values,
+                labelcol="item",
+                valuecol="value",
+            )
             # Pivot the vitals data
             .collect(streaming=True).pivot(
                 on="item",
@@ -105,13 +127,19 @@ class UMCdbProcessor(UMCdbExtractor):
         )
 
         # Drop empty rows
-        droplist = list(set(ts_listitems.collect_schema().names()) - set(self.index_cols))
+        droplist = list(
+            set(ts_listitems.collect_schema().names()) - set(self.index_cols)
+        )
         ts_listitems = (
-            ts_listitems.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+            ts_listitems.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
         )
 
         # Save the preprocessed data
-        ts_listitems.sink_parquet(self.precalc_path + "UMCdb_B_ts_listitems.parquet")
+        ts_listitems.sink_parquet(
+            self.precalc_path + "UMCdb_B_ts_listitems.parquet"
+        )
 
         return ts_listitems
 

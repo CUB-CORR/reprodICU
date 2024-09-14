@@ -22,7 +22,11 @@ class MIMIC3Processor(MIMIC3Extractor):
         self.helpers = GlobalHelpers()
         self.convert = MIMIC3Converter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -54,7 +58,9 @@ class MIMIC3Processor(MIMIC3Extractor):
 
         if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_vitals.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_vitals.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "MIMIC3_B_ts_vitals.parquet"
+            )
 
         print("MIMIC3  - Processing vitals data...")
 
@@ -79,8 +85,14 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
         # Drop empty rows
-        droplist = list(set(ts_vitals.collect_schema().names()) - set(self.index_cols))
-        ts_vitals = ts_vitals.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+        droplist = list(
+            set(ts_vitals.collect_schema().names()) - set(self.index_cols)
+        )
+        ts_vitals = (
+            ts_vitals.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
+        )
 
         # Save the preprocessed data
         ts_vitals.sink_parquet(self.precalc_path + "MIMIC3_B_ts_vitals.parquet")
@@ -98,7 +110,9 @@ class MIMIC3Processor(MIMIC3Extractor):
 
         if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_lab.parquet"):
             # load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "MIMIC3_B_ts_lab.parquet"
+            )
 
         print("MIMIC3  - Processing lab data...")
 
@@ -106,7 +120,11 @@ class MIMIC3Processor(MIMIC3Extractor):
         ts_lab = (
             self.extract_lab_measurements()
             # Convert the lab values to the correct units
-            .pipe(self.convert._convert_lab_values, labelcol="LABEL", valuecol="VALUENUM")
+            .pipe(
+                self.convert._convert_lab_values,
+                labelcol="LABEL",
+                valuecol="VALUENUM",
+            )
             # Pivot the lab data
             .collect(streaming=True).pivot(
                 on="LABEL",
@@ -117,8 +135,14 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
         # drop empty rows
-        droplist = list(set(ts_lab.collect_schema().names()) - set(self.index_cols))
-        ts_lab = ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+        droplist = list(
+            set(ts_lab.collect_schema().names()) - set(self.index_cols)
+        )
+        ts_lab = (
+            ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
+        )
         # Save the preprocessed data
         ts_lab.sink_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
 
@@ -135,7 +159,9 @@ class MIMIC3Processor(MIMIC3Extractor):
 
         if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_inout.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "MIMIC3_B_ts_inout.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "MIMIC3_B_ts_inout.parquet"
+            )
 
         print("MIMIC3  - Processing inout data...")
 
@@ -152,8 +178,14 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
         # Drop empty rows
-        droplist = list(set(ts_inout.collect_schema().names()) - set(self.index_cols))
-        ts_inout = ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+        droplist = list(
+            set(ts_inout.collect_schema().names()) - set(self.index_cols)
+        )
+        ts_inout = (
+            ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
+        )
 
         # Save the preprocessed data
         ts_inout.sink_parquet(self.precalc_path + "MIMIC3_B_ts_inout.parquet")

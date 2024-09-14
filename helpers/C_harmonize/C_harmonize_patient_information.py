@@ -32,7 +32,9 @@ class PatientInformationHarmonizer(GlobalVars):
     def harmonize_patient_information(self) -> pl.LazyFrame:
 
         if self.datasets == []:
-            raise ValueError("No datasets to harmonize the patient information from.")
+            raise ValueError(
+                "No datasets to harmonize the patient information from."
+            )
 
         patient_information_datasets = []
 
@@ -146,9 +148,9 @@ class PatientInformationHarmonizer(GlobalVars):
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col
             ),
-            pl.concat_str([pl.lit(name), pl.col(self.hospital_stay_id_col)]).alias(
-                self.global_hospital_stay_id_col
-            ),
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
+            ).alias(self.global_hospital_stay_id_col),
             pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
                 self.global_icu_stay_id_col
             ),

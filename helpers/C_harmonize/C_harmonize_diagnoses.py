@@ -53,22 +53,30 @@ class DiagnosesHarmonizer(GlobalVars):
         # Harmonize the diagnoses
         if "eICU" in self.datasets:
             diagnoses_datasets.append(
-                self.eicu.process_diagnoses().pipe(self._concat_helper1, "eicu-")
+                self.eicu.process_diagnoses().pipe(
+                    self._concat_helper1, "eicu-"
+                )
             )
 
         if "MIMIC3" in self.datasets:
             diagnoses_datasets.append(
-                self.mimic3.extract_diagnoses().pipe(self._concat_helper2, "mimic3-")
+                self.mimic3.extract_diagnoses().pipe(
+                    self._concat_helper2, "mimic3-"
+                )
             )
 
         if "MIMIC4" in self.datasets:
             diagnoses_datasets.append(
-                self.mimic4.extract_diagnoses().pipe(self._concat_helper2, "mimic4-")
+                self.mimic4.extract_diagnoses().pipe(
+                    self._concat_helper2, "mimic4-"
+                )
             )
 
         if "SICdb" in self.datasets:
             diagnoses_datasets.append(
-                self.sicdb.extract_diagnoses().pipe(self._concat_helper3, "sicdb-")
+                self.sicdb.extract_diagnoses().pipe(
+                    self._concat_helper3, "sicdb-"
+                )
             )
 
         return (
@@ -100,9 +108,9 @@ class DiagnosesHarmonizer(GlobalVars):
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col
             ),
-            pl.concat_str([pl.lit(name), pl.col(self.hospital_stay_id_col)]).alias(
-                self.global_hospital_stay_id_col
-            ),
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
+            ).alias(self.global_hospital_stay_id_col),
             pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
                 self.global_icu_stay_id_col
             ),
@@ -113,9 +121,9 @@ class DiagnosesHarmonizer(GlobalVars):
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col
             ),
-            pl.concat_str([pl.lit(name), pl.col(self.hospital_stay_id_col)]).alias(
-                self.global_hospital_stay_id_col
-            ),
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
+            ).alias(self.global_hospital_stay_id_col),
         ).lazy()
 
     def _concat_helper3(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:

@@ -34,7 +34,9 @@ class MedicationHarmonizer(GlobalVars):
         medications_datasets = []
 
         if "eICU" in self.datasets:
-            eicu_medications = self.eicu.extract_medications().pipe(self._concat_helper, "eicu-")
+            eicu_medications = self.eicu.extract_medications().pipe(
+                self._concat_helper, "eicu-"
+            )
             eicu_unique_count = (
                 eicu_medications.select(self.global_icu_stay_id_col)
                 .unique()
@@ -48,7 +50,9 @@ class MedicationHarmonizer(GlobalVars):
             medications_datasets.append(eicu_medications)
 
         if "HiRID" in self.datasets:
-            hirid_medications = self.hirid.extract_medications().pipe(self._concat_helper, "hirid-")
+            hirid_medications = self.hirid.extract_medications().pipe(
+                self._concat_helper, "hirid-"
+            )
             hirid_unique_count = (
                 hirid_medications.select(self.global_icu_stay_id_col)
                 .unique()
@@ -94,7 +98,9 @@ class MedicationHarmonizer(GlobalVars):
             medications_datasets.append(mimic4_medications)
 
         if "SICdb" in self.datasets:
-            sicdb_medications = self.sicdb.extract_medications().pipe(self._concat_helper, "sicdb-")
+            sicdb_medications = self.sicdb.extract_medications().pipe(
+                self._concat_helper, "sicdb-"
+            )
             sicdb_unique_count = (
                 sicdb_medications.select(self.global_icu_stay_id_col)
                 .unique()
@@ -107,7 +113,9 @@ class MedicationHarmonizer(GlobalVars):
             )
 
         if "UMCdb" in self.datasets:
-            umcdb_medications = self.umcdb.extract_medications().pipe(self._concat_helper, "umcdb-")
+            umcdb_medications = self.umcdb.extract_medications().pipe(
+                self._concat_helper, "umcdb-"
+            )
             umcdb_unique_count = (
                 umcdb_medications.select(self.global_icu_stay_id_col)
                 .unique()

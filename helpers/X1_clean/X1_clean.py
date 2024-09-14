@@ -23,7 +23,10 @@ class X1_Cleaner:
         # Remove rows with invalid values
         return data.with_columns(
             # Remove invalid INR values
-            pl.when(pl.col("INR") == 999999.0).then(None).otherwise(pl.col("INR")).alias("INR"),
+            pl.when(pl.col("INR") == 999999.0)
+            .then(None)
+            .otherwise(pl.col("INR"))
+            .alias("INR"),
             # Remove invalid basophils values
             pl.when(pl.col("basophils") == 999999.0)
             .then(None)
@@ -74,7 +77,10 @@ class X1_Cleaner:
             .otherwise(pl.col("hemoglobin"))
             .alias("hemoglobin"),
             # Remove invalid lactate values
-            pl.when((pl.col("lactate") == 999999.0) | (pl.col("lactate") == 1276103.0))
+            pl.when(
+                (pl.col("lactate") == 999999.0)
+                | (pl.col("lactate") == 1276103.0)
+            )
             .then(None)
             .otherwise(pl.col("lactate"))
             .alias("lactate"),
@@ -84,7 +90,9 @@ class X1_Cleaner:
             .otherwise(pl.col("lymphocytes"))
             .alias("lymphocytes"),
             # Remove invalid magnesium values
-            pl.when(pl.col("magnesium") == 999999.0).then(None).otherwise(pl.col("magnesium")),
+            pl.when(pl.col("magnesium") == 999999.0)
+            .then(None)
+            .otherwise(pl.col("magnesium")),
             # Remove invalid monocytes values
             pl.when(pl.col("monocytes") == 999999.0)
             .then(None)
@@ -96,14 +104,20 @@ class X1_Cleaner:
             .otherwise(pl.col("neutrophils"))
             .alias("neutrophils"),
             # Remove invalid pH values
-            pl.when(pl.col("pH") == 999999.0).then(None).otherwise(pl.col("pH")).alias("pH"),
+            pl.when(pl.col("pH") == 999999.0)
+            .then(None)
+            .otherwise(pl.col("pH"))
+            .alias("pH"),
             # Remove invalid paCO2 values
             pl.when(pl.col("paCO2") == 999999.0)
             .then(None)
             .otherwise(pl.col("paCO2"))
             .alias("paCO2"),
             # Remove invalid paO2 values
-            pl.when(pl.col("paO2") == 999999.0).then(None).otherwise(pl.col("paO2")).alias("paO2"),
+            pl.when(pl.col("paO2") == 999999.0)
+            .then(None)
+            .otherwise(pl.col("paO2"))
+            .alias("paO2"),
             # Remove invalid partial thromboplastin time values
             pl.when(pl.col("partial_thromboplastin_time") == 999999.0)
             .then(None)
@@ -125,7 +139,10 @@ class X1_Cleaner:
             .otherwise(pl.col("protein_albumin"))
             .alias("protein_albumin"),
             # Remove invalid saO2 values
-            pl.when(pl.col("saO2") == 999999.0).then(None).otherwise(pl.col("saO2")).alias("saO2"),
+            pl.when(pl.col("saO2") == 999999.0)
+            .then(None)
+            .otherwise(pl.col("saO2"))
+            .alias("saO2"),
             # Remove invalid sodium values
             pl.when(pl.col("sodium") == 999999.0)
             .then(None)
@@ -140,4 +157,6 @@ class X1_Cleaner:
 
 
 if __name__ == "__main__":
-    raise NotImplementedError("This script is not yet implemented as a command line tool.")
+    raise NotImplementedError(
+        "This script is not yet implemented as a command line tool."
+    )

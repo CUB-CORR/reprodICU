@@ -41,37 +41,57 @@ class TimeseriesHarmonizer(GlobalVars):
         timeseries_datasets = []
 
         if "eICU" in self.datasets:
-            eicu_timeseries = self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
-            self._print_unique_cases(eicu_timeseries, "eICU", self.global_icu_stay_id_col)
+            eicu_timeseries = self.eicu.process_timeseries().pipe(
+                self._concat_helper, "eicu-"
+            )
+            self._print_unique_cases(
+                eicu_timeseries, "eICU", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(eicu_timeseries)
 
         if "HiRID" in self.datasets:
-            hirid_timeseries = self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
-            self._print_unique_cases(hirid_timeseries, "HiRID", self.global_icu_stay_id_col)
+            hirid_timeseries = self.hirid.process_timeseries().pipe(
+                self._concat_helper, "hirid-"
+            )
+            self._print_unique_cases(
+                hirid_timeseries, "HiRID", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(hirid_timeseries)
 
         if "MIMIC3" in self.datasets:
             mimic3_timeseries = self.mimic3.process_timeseries().pipe(
                 self._concat_helper, "mimic3-"
             )
-            self._print_unique_cases(mimic3_timeseries, "MIMIC3", self.global_icu_stay_id_col)
+            self._print_unique_cases(
+                mimic3_timeseries, "MIMIC3", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(mimic3_timeseries)
 
         if "MIMIC4" in self.datasets:
             mimic4_timeseries = self.mimic4.process_timeseries().pipe(
                 self._concat_helper, "mimic4-"
             )
-            self._print_unique_cases(mimic4_timeseries, "MIMIC4", self.global_icu_stay_id_col)
+            self._print_unique_cases(
+                mimic4_timeseries, "MIMIC4", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(mimic4_timeseries)
 
         if "SICdb" in self.datasets:
-            sicdb_timeseries = self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
-            self._print_unique_cases(sicdb_timeseries, "SICdb", self.global_icu_stay_id_col)
+            sicdb_timeseries = self.sicdb.process_timeseries().pipe(
+                self._concat_helper, "sicdb-"
+            )
+            self._print_unique_cases(
+                sicdb_timeseries, "SICdb", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(sicdb_timeseries)
 
         if "UMCdb" in self.datasets:
-            umcdb_timeseries = self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
-            self._print_unique_cases(umcdb_timeseries, "UMCdb", self.global_icu_stay_id_col)
+            umcdb_timeseries = self.umcdb.process_timeseries().pipe(
+                self._concat_helper, "umcdb-"
+            )
+            self._print_unique_cases(
+                umcdb_timeseries, "UMCdb", self.global_icu_stay_id_col
+            )
             timeseries_datasets.append(umcdb_timeseries)
 
         # Combine the timeseries data of the datasets
@@ -91,8 +111,12 @@ class TimeseriesHarmonizer(GlobalVars):
         index_cols = [self.global_icu_stay_id_col, self.timeseries_time_col]
         vitals_params = pl.Series([*index_cols, *self.relevant_vital_values])
         labs_params = pl.Series([*index_cols, *self.relevant_lab_values])
-        resp_params = pl.Series([*index_cols, *self.relevant_respiratory_values])
-        inout_params = pl.Series([*index_cols, *self.relevant_intakeoutput_values])
+        resp_params = pl.Series(
+            [*index_cols, *self.relevant_respiratory_values]
+        )
+        inout_params = pl.Series(
+            [*index_cols, *self.relevant_intakeoutput_values]
+        )
 
         # Load the timeseries data
         if not os.path.isfile(path):
@@ -103,7 +127,9 @@ class TimeseriesHarmonizer(GlobalVars):
         timeseries_all_cols = pl.Series(timeseries_all.collect_schema().names())
 
         # Split off vitals
-        vitals_cols = timeseries_all_cols.filter(timeseries_all_cols.is_in(vitals_params))
+        vitals_cols = timeseries_all_cols.filter(
+            timeseries_all_cols.is_in(vitals_params)
+        )
         vitals_cols_not_index = list(set(vitals_cols) - set(index_cols))
         vitals = (
             timeseries_all.select(*vitals_cols)
@@ -120,7 +146,9 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
         # Split off labs
-        labs_cols = timeseries_all_cols.filter(timeseries_all_cols.is_in(labs_params))
+        labs_cols = timeseries_all_cols.filter(
+            timeseries_all_cols.is_in(labs_params)
+        )
         labs_cols_not_index = list(set(labs_cols) - set(index_cols))
         labs = (
             timeseries_all.select(*labs_cols)
@@ -139,9 +167,15 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
         # Split off respitory
-        resp_cols = timeseries_all_cols.filter(timeseries_all_cols.is_in(resp_params))
+        resp_cols = timeseries_all_cols.filter(
+            timeseries_all_cols.is_in(resp_params)
+        )
         resp_cols_not_index = list(set(resp_cols) - set(index_cols))
-        print({col: float for col in resp_cols_not_index}.update({"oxygen_delivery_device": str}))
+        print(
+            {col: float for col in resp_cols_not_index}.update(
+                {"oxygen_delivery_device": str}
+            )
+        )
         resp = (
             timeseries_all.select(*resp_cols)
             .pipe(self.helpers.dropna, subset=resp_cols_not_index, how="all")
@@ -151,7 +185,11 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                     **(
                         {
-                            col: float if col != "oxygen_delivery_device" else str
+                            col: (
+                                float
+                                if col != "oxygen_delivery_device"
+                                else str
+                            )
                             for col in resp_cols_not_index
                         }
                     ),
@@ -162,7 +200,9 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
         # Split off inout
-        inout_cols = timeseries_all_cols.filter(timeseries_all_cols.is_in(inout_params))
+        inout_cols = timeseries_all_cols.filter(
+            timeseries_all_cols.is_in(inout_params)
+        )
         inout_cols_not_index = list(set(inout_cols) - set(index_cols))
         inout = (
             timeseries_all.select(*inout_cols)
@@ -182,7 +222,9 @@ class TimeseriesHarmonizer(GlobalVars):
             vitals.sink_parquet("reprodICU-files/timeseries_vitals.parquet")
             labs.sink_parquet("reprodICU-files/timeseries_labs.parquet")
             resp.sink_parquet("reprodICU-files/timeseries_respiratory.parquet")
-            inout.sink_parquet("reprodICU-files/timeseries_intakeoutput.parquet")
+            inout.sink_parquet(
+                "reprodICU-files/timeseries_intakeoutput.parquet"
+            )
 
             return None
 
@@ -200,7 +242,9 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
     # Print the number of unique cases in the timeseries data
-    def _print_unique_cases(self, data: pl.LazyFrame, name: str, count_col: str) -> None:
+    def _print_unique_cases(
+        self, data: pl.LazyFrame, name: str, count_col: str
+    ) -> None:
         unique_count = (
             data.select(self.global_icu_stay_id_col)
             .unique()
@@ -208,4 +252,6 @@ class TimeseriesHarmonizer(GlobalVars):
             .collect(streaming=True)
             .to_numpy()[0][0]
         )
-        print(f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}.")
+        print(
+            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
+        )

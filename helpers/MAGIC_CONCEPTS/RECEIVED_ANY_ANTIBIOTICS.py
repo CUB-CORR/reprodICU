@@ -39,10 +39,17 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                 pl.col("drugname")
                 .str.to_lowercase()
                 .str.contains(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["eicu"][0]["regex"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "eicu"
+                    ][0]["regex"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "eicu-", "patientunitstayid", "drugname")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "eicu-",
+                "patientunitstayid",
+                "drugname",
+            )
         )
         eicu_medication = (
             pl.scan_csv(self.eicu_paths.medication_path)
@@ -52,16 +59,25 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                 pl.col("drugname")
                 .str.to_lowercase()
                 .str.contains(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["eicu"][1]["regex"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "eicu"
+                    ][1]["regex"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "eicu-", "patientunitstayid", "drugname")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "eicu-",
+                "patientunitstayid",
+                "drugname",
+            )
         )
 
         eicu_RECEIVED_ANY_ANTIBIOTICS = eicu_infusiondrug.sort(
             by=self.column_names["global_icu_stay_id_col"]
         ).merge_sorted(
-            eicu_medication.sort(by=self.column_names["global_icu_stay_id_col"]),
+            eicu_medication.sort(
+                by=self.column_names["global_icu_stay_id_col"]
+            ),
             key=self.column_names["global_icu_stay_id_col"],
         )
 
@@ -77,14 +93,22 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                 .select("patientid", "pharmaid")
                 .filter(
                     pl.col("pharmaid").is_in(
-                        self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["hirid"][0]["ids"]
+                        self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                            "hirid"
+                        ][0]["ids"]
                     )
                 )
-                .pipe(self._received_any_antibiotics_bool, "hirid-", "patientid", "pharmaid")
+                .pipe(
+                    self._received_any_antibiotics_bool,
+                    "hirid-",
+                    "patientid",
+                    "pharmaid",
+                )
             )
 
             hirid_RECEIVED_ANY_ANTIBIOTICS = pl.concat(
-                [hirid_RECEIVED_ANY_ANTIBIOTICS, hirid_pharma], how="diagonal_relaxed"
+                [hirid_RECEIVED_ANY_ANTIBIOTICS, hirid_pharma],
+                how="diagonal_relaxed",
             )
 
         # endregion
@@ -99,10 +123,17 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                 pl.col("DRUG")
                 .str.to_lowercase()
                 .str.contains(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["mimic"][0]["regex"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "mimic"
+                    ][0]["regex"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "mimic3-", "ICUSTAY_ID", "DRUG")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "mimic3-",
+                "ICUSTAY_ID",
+                "DRUG",
+            )
         )
 
         mimic3_inputevents_mv = (
@@ -111,16 +142,25 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             # Filter for antibiotics
             .filter(
                 pl.col("ITEMID").is_in(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["mimic"][1]["ids"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "mimic"
+                    ][1]["ids"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "mimic3-", "ICUSTAY_ID", "ITEMID")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "mimic3-",
+                "ICUSTAY_ID",
+                "ITEMID",
+            )
         )
 
         mimic3_RECEIVED_ANY_ANTIBIOTICS = mimic3_prescriptions.sort(
             by=self.column_names["global_icu_stay_id_col"]
         ).merge_sorted(
-            mimic3_inputevents_mv.sort(by=self.column_names["global_icu_stay_id_col"]),
+            mimic3_inputevents_mv.sort(
+                by=self.column_names["global_icu_stay_id_col"]
+            ),
             key=self.column_names["global_icu_stay_id_col"],
         )
 
@@ -148,10 +188,17 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             # Filter for antibiotics
             .filter(
                 pl.col("itemid").is_in(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["miiv"][1]["ids"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "miiv"
+                    ][1]["ids"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "mimic4-", "stay_id", "itemid")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "mimic4-",
+                "stay_id",
+                "itemid",
+            )
         )
 
         mimic4_RECEIVED_ANY_ANTIBIOTICS = mimic4_inputevents
@@ -166,10 +213,17 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             # Filter for antibiotics
             .filter(
                 pl.col("DrugID").is_in(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["sic"][0]["ids"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "sic"
+                    ][0]["ids"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "sicdb-", "CaseID", "DrugID")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "sicdb-",
+                "CaseID",
+                "DrugID",
+            )
         )
 
         # endregion
@@ -182,10 +236,17 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             # Filter for antibiotics
             .filter(
                 pl.col("itemid").is_in(
-                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["aumc"][0]["ids"],
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "aumc"
+                    ][0]["ids"],
                 )
             )
-            .pipe(self._received_any_antibiotics_bool, "umcdb-", "admissionid", "itemid")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "umcdb-",
+                "admissionid",
+                "itemid",
+            )
         )
 
         # endregion
@@ -207,16 +268,18 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         return RECEIVED_ANY_ANTIBIOTICS
 
     # region helper functions
-    def _received_any_antibiotics_bool(self, data, source_dataset, patient_id_col, drug_col_id):
+    def _received_any_antibiotics_bool(
+        self, data, source_dataset, patient_id_col, drug_col_id
+    ):
         return (
             data.group_by(patient_id_col)
             .first()
             .with_columns(
                 pl.lit(True).alias("RECEIVED_ANY_ANTIBIOTICS"),
                 # add global ICU stay ID
-                pl.concat_str([pl.lit(source_dataset), pl.col(patient_id_col)]).alias(
-                    self.column_names["global_icu_stay_id_col"]
-                ),
+                pl.concat_str(
+                    [pl.lit(source_dataset), pl.col(patient_id_col)]
+                ).alias(self.column_names["global_icu_stay_id_col"]),
             )
             .drop(patient_id_col, drug_col_id)
         )

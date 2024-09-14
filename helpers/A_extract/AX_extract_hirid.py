@@ -28,8 +28,16 @@ class HiRIDExtractor(HiRIDPaths):
 
         return (
             self._extract_admissions()
-            .join(self._extract_length_of_stay(), on=self.icu_stay_id_col, how="left")
-            .join(self._extract_patient_height_weight(), on=self.icu_stay_id_col, how="left")
+            .join(
+                self._extract_length_of_stay(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
+            .join(
+                self._extract_patient_height_weight(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
             .with_columns(
                 # Set care site
                 pl.lit("Universitätsspital Bern").alias(self.care_site_col),
@@ -57,7 +65,9 @@ class HiRIDExtractor(HiRIDPaths):
             .with_columns(
                 pl.col(self.icu_stay_id_col).cast(str),
                 # Convert the admission time to datetime
-                pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
                 # Convert the gender to the established format
                 pl.col(self.gender_col)
                 .replace({"M": "Male", "F": "Female"})
@@ -65,7 +75,9 @@ class HiRIDExtractor(HiRIDPaths):
                 # Convert the age to int
                 pl.col(self.age_col).cast(int),
                 # Convert the discharge status to the established format
-                (pl.col("discharge_status") == "alive").cast(bool).alias(self.mortality_icu_col),
+                (pl.col("discharge_status") == "alive")
+                .cast(bool)
+                .alias(self.mortality_icu_col),
             )
             .drop("discharge_status")
         )
@@ -73,7 +85,9 @@ class HiRIDExtractor(HiRIDPaths):
     def _extract_length_of_stay(self) -> pl.LazyFrame:
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_lengths_of_stay.parquet"):
-            return pl.scan_parquet(self.precalc_path + "HiRID_lengths_of_stay.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "HiRID_lengths_of_stay.parquet"
+            )
 
         print("HiRID   - Processing patient length of stay data...")
 
@@ -82,7 +96,12 @@ class HiRIDExtractor(HiRIDPaths):
             pl.scan_parquet(self.imputed_stage_path + "*.parquet")
             .select("patientid", "reldatetime")
             .drop_nulls()
-            .rename({"patientid": self.icu_stay_id_col, "reldatetime": self.icu_length_of_stay_col})
+            .rename(
+                {
+                    "patientid": self.icu_stay_id_col,
+                    "reldatetime": self.icu_length_of_stay_col,
+                }
+            )
             .cast({self.icu_stay_id_col: str})
             .group_by(self.icu_stay_id_col)
             .max()
@@ -95,14 +114,18 @@ class HiRIDExtractor(HiRIDPaths):
         )
 
         # Save precalculated data
-        lengths_of_stay.sink_parquet(self.precalc_path + "HiRID_lengths_of_stay.parquet")
+        lengths_of_stay.sink_parquet(
+            self.precalc_path + "HiRID_lengths_of_stay.parquet"
+        )
 
         return lengths_of_stay
 
     def _extract_patient_height_weight(self) -> pl.LazyFrame:
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_height_weight.parquet"):
-            return pl.scan_parquet(self.precalc_path + "HiRID_height_weight.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "HiRID_height_weight.parquet"
+            )
 
         print("HiRID   - Processing patient height and weight data...")
 
@@ -127,16 +150,28 @@ class HiRIDExtractor(HiRIDPaths):
                 # Select the relevant columns
                 .select(["patientid", "datetime", "value", "variableid"])
                 # Rename the columns for consistency
-                .rename({"patientid": self.icu_stay_id_col, "datetime": "valuedate"})
-                .cast({self.icu_stay_id_col: str, "valuedate": str, "variableid": int})
+                .rename(
+                    {"patientid": self.icu_stay_id_col, "datetime": "valuedate"}
+                )
+                .cast(
+                    {
+                        self.icu_stay_id_col: str,
+                        "valuedate": str,
+                        "variableid": int,
+                    }
+                )
                 # Drop rows with missing values
                 .drop_nulls()
                 # Join the data with the admission times
                 .join(admissiontimes, on=self.icu_stay_id_col)
                 # Convert the admission time and the value date to datetime
                 .with_columns(
-                    pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                    pl.col("valuedate").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                    pl.col("admissiontime").str.to_datetime(
+                        "%Y-%m-%d %H:%M:%S%.9f"
+                    ),
+                    pl.col("valuedate").str.to_datetime(
+                        "%Y-%m-%d %H:%M:%S%.9f"
+                    ),
                     # Replace the variableid with the corresponding variable name
                     pl.col("variableid").replace(variables, default=None),
                 )
@@ -150,7 +185,9 @@ class HiRIDExtractor(HiRIDPaths):
             )
 
             # Append the data to the DataFrame
-            height_weight = pl.concat([height_weight, data], how="diagonal_relaxed")
+            height_weight = pl.concat(
+                [height_weight, data], how="diagonal_relaxed"
+            )
 
         height_weight = (
             height_weight.collect(streaming=True)
@@ -163,7 +200,9 @@ class HiRIDExtractor(HiRIDPaths):
             .select([self.icu_stay_id_col, self.weight_col, self.height_col])
         )
 
-        height_weight.write_parquet(self.precalc_path + "HiRID_height_weight.parquet")
+        height_weight.write_parquet(
+            self.precalc_path + "HiRID_height_weight.parquet"
+        )
 
         return height_weight.lazy()
 
@@ -187,7 +226,10 @@ class HiRIDExtractor(HiRIDPaths):
         # for a more efficient processing of the data.
         for file in os.listdir(self.timeseries_path):
             data = pl.scan_parquet(self.timeseries_path + file).pipe(
-                self._extract_timeseries_helper, admissiontime, length_of_stay, observation_mapping
+                self._extract_timeseries_helper,
+                admissiontime,
+                length_of_stay,
+                observation_mapping,
             )
 
             # Append the data to the DataFrame
@@ -210,7 +252,9 @@ class HiRIDExtractor(HiRIDPaths):
             .join(admissiontime, on=self.icu_stay_id_col)
             .join(length_of_stay, on=self.icu_stay_id_col)
             .with_columns(
-                pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
                 pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                 # Replace the variableid with the corresponding variable name
                 # then the reprodICU mapping
@@ -232,15 +276,15 @@ class HiRIDExtractor(HiRIDPaths):
             .filter(
                 (
                     pl.col(self.timeseries_time_col)
-                    < pl.duration(days=pl.col(self.icu_length_of_stay_col)).truediv(
-                        pl.duration(seconds=1)
-                    )
+                    < pl.duration(
+                        days=pl.col(self.icu_length_of_stay_col)
+                    ).truediv(pl.duration(seconds=1))
                 )
                 & (
                     pl.col(self.timeseries_time_col)
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF).truediv(
-                        pl.duration(seconds=1)
-                    )
+                    > pl.duration(
+                        days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    ).truediv(pl.duration(seconds=1))
                 )
             )
             # Filter for lab names of interest
@@ -250,7 +294,10 @@ class HiRIDExtractor(HiRIDPaths):
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
             # Remove rows with empty lab results
-            .filter(pl.col("variableid").is_not_null() & (pl.col("variableid") != ""))
+            .filter(
+                pl.col("variableid").is_not_null()
+                & (pl.col("variableid") != "")
+            )
         )
 
     # endregion
@@ -260,8 +307,10 @@ class HiRIDExtractor(HiRIDPaths):
     def extract_medications(self) -> pl.LazyFrame:
         print("HiRID   - Extracting medications...")
 
-        hirid_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
-            self.mapping_path + "MEDICATIONS.yaml", "hirid"
+        hirid_medication_mapping = (
+            self.helpers.load_many_to_many_to_one_mapping(
+                self.mapping_path + "MEDICATIONS.yaml", "hirid"
+            )
         )
         admissiontime = (
             self._extract_admissions()
@@ -279,7 +328,15 @@ class HiRIDExtractor(HiRIDPaths):
             print(f"Processing file {file}...", end="\r")
             data = (
                 pl.scan_parquet(self.pharma_path + file)
-                .select(["patientid", "pharmaid", "givenat", "givendose", "doseunit"])
+                .select(
+                    [
+                        "patientid",
+                        "pharmaid",
+                        "givenat",
+                        "givendose",
+                        "doseunit",
+                    ]
+                )
                 # Rename columns for consistency
                 .rename(
                     {
@@ -294,7 +351,9 @@ class HiRIDExtractor(HiRIDPaths):
                 .join(admissiontime, on=self.icu_stay_id_col)
                 .join(length_of_stay, on=self.icu_stay_id_col)
                 .with_columns(
-                    pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                    pl.col("admissiontime").str.to_datetime(
+                        "%Y-%m-%d %H:%M:%S%.9f"
+                    ),
                     pl.col("givenat").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                     pl.col(self.drug_amount_col).cast(float),
                     # Replace the pharmaid with the corresponding medication name
@@ -322,15 +381,15 @@ class HiRIDExtractor(HiRIDPaths):
                 .filter(
                     (
                         pl.col(self.drug_start_col)
-                        < pl.duration(days=pl.col(self.icu_length_of_stay_col)).truediv(
-                            pl.duration(seconds=1)
-                        )
+                        < pl.duration(
+                            days=pl.col(self.icu_length_of_stay_col)
+                        ).truediv(pl.duration(seconds=1))
                     )
                     & (
                         pl.col(self.drug_start_col)
-                        > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF).truediv(
-                            pl.duration(seconds=1)
-                        )
+                        > pl.duration(
+                            days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                        ).truediv(pl.duration(seconds=1))
                     )
                 )
                 .drop(self.icu_length_of_stay_col)

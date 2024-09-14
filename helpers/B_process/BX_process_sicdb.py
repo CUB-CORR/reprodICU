@@ -22,7 +22,11 @@ class SICdbProcessor(SICdbExtractor):
         self.helpers = GlobalHelpers()
         self.convert = SICdbConverter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -43,7 +47,9 @@ class SICdbProcessor(SICdbExtractor):
     def _process_timeseries_data_float(self) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "SICdb_B_timeseries.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "SICdb_B_timeseries.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "SICdb_B_timeseries.parquet"
+            )
 
         print("SICdb   - Processing time series data...")
 
@@ -60,13 +66,19 @@ class SICdbProcessor(SICdbExtractor):
         )
 
         # Drop empty rows
-        droplist = list(set(timeseries.collect_schema().names()) - set(self.index_cols))
+        droplist = list(
+            set(timeseries.collect_schema().names()) - set(self.index_cols)
+        )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(self.precalc_path + "SICdb_B_timeseries.parquet")
+        timeseries.sink_parquet(
+            self.precalc_path + "SICdb_B_timeseries.parquet"
+        )
 
         return timeseries
 
@@ -76,7 +88,9 @@ class SICdbProcessor(SICdbExtractor):
     def _process_timeseries_data_labs(self) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "SICdb_B_laboratory.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "SICdb_B_laboratory.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "SICdb_B_laboratory.parquet"
+            )
 
         print("SICdb   - Processing laboratory data...")
 
@@ -99,13 +113,19 @@ class SICdbProcessor(SICdbExtractor):
         )
 
         # Drop empty rows
-        droplist = list(set(timeseries.collect_schema().names()) - set(self.index_cols))
+        droplist = list(
+            set(timeseries.collect_schema().names()) - set(self.index_cols)
+        )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all").lazy().unique()
+            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all")
+            .lazy()
+            .unique()
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(self.precalc_path + "SICdb_B_timeseries.parquet")
+        timeseries.sink_parquet(
+            self.precalc_path + "SICdb_B_timeseries.parquet"
+        )
 
         return timeseries
 
@@ -119,7 +139,10 @@ class SICdbConverter(UnitConverter):
 
     # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
-        self, data, labelcol: str = "LaboratoryID", valuecol: str = "LaboratoryValue"
+        self,
+        data,
+        labelcol: str = "LaboratoryID",
+        valuecol: str = "LaboratoryValue",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the SICdb dataset.

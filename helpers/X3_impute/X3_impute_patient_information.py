@@ -37,4 +37,6 @@ class PatientInformationImputer(GlobalVars):
 
 
 if __name__ == "__main__":
-    raise NotImplementedError("This script is not yet implemented as a command line tool.")
+    raise NotImplementedError(
+        "This script is not yet implemented as a command line tool."
+    )

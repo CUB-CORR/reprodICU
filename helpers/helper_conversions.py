@@ -27,7 +27,11 @@ class GCSCombiner:
 
         return data.with_columns(
             pl.when(pl.col(total_score) == None)
-            .then(pl.col(eye_subscore) + pl.col(motor_subscore) + pl.col(verbal_subscore))
+            .then(
+                pl.col(eye_subscore)
+                + pl.col(motor_subscore)
+                + pl.col(verbal_subscore)
+            )
             .otherwise(pl.col(total_score))
             .alias(total_score)
         )
@@ -40,7 +44,12 @@ class UnitConversions:
         pass
 
     def convert_absolute_count_to_relative(
-        self, data, itemid, total_itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self,
+        data,
+        itemid,
+        total_itemid,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
         Convert absolute counts to relative counts.
@@ -53,7 +62,12 @@ class UnitConversions:
         )
 
     def convert_temperature_F_to_C(
-        self, data, itemid_F, itemid_C, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self,
+        data,
+        itemid_F,
+        itemid_C,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
         Convert temperature values to Celsius.
@@ -64,7 +78,9 @@ class UnitConversions:
             .otherwise(pl.col(valuecol))
             .alias(valuecol)
         ).with_columns(
-            pl.when(pl.col(labelcol) == itemid_F).then(pl.lit(itemid_C)).otherwise(pl.col(labelcol))
+            pl.when(pl.col(labelcol) == itemid_F)
+            .then(pl.lit(itemid_C))
+            .otherwise(pl.col(labelcol))
         )
 
     def convert_ammonia_ug_dL_to_umol_L(
@@ -476,7 +492,12 @@ class UnitConversions:
         )
 
     def convert_mEq_L_to_mmol_L(
-        self, data, itemid, ions: int = 1, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self,
+        data,
+        itemid,
+        ions: int = 1,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
         Convert values from mEq/L to mmol/L, e.g. for sodium and potassium.

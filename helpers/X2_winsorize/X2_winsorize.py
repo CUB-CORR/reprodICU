@@ -37,7 +37,9 @@ class X2_Winsorizer:
             ]
         )
 
-    def winsorize_clip_lower_0_quantiles(data, columns: list, alpha=0.99) -> pl.LazyFrame:
+    def winsorize_clip_lower_0_quantiles(
+        data, columns: list, alpha=0.99
+    ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
         Clip the data to 0 (lower) and alpha quantile (upper bound).
@@ -51,7 +53,9 @@ class X2_Winsorizer:
 
         return data.with_columns(
             *[
-                pl.col(column).clip(0, pl.col(column).quantile(alpha)).alias(column)
+                pl.col(column)
+                .clip(0, pl.col(column).quantile(alpha))
+                .alias(column)
                 for column in columns
             ]
         )
@@ -68,12 +72,17 @@ class X2_Winsorizer:
         """
 
         return data.with_columns(
-            *[pl.col(column).clip(lower_bound=0).alias(column) for column in columns]
+            *[
+                pl.col(column).clip(lower_bound=0).alias(column)
+                for column in columns
+            ]
         )
 
 
 if __name__ == "__main__":
-    raise NotImplementedError("This script is not yet implemented as a command line tool.")
+    raise NotImplementedError(
+        "This script is not yet implemented as a command line tool."
+    )
 
 
 # # Author: Finn Fassbender

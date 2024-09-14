@@ -45,29 +45,45 @@ class UMCdbExtractor(UMCdbPaths):
                 ]
             )
             # Rename columns for consistency
-            .rename({"patientid": self.person_id_col, "admissionid": self.icu_stay_id_col})
+            .rename(
+                {
+                    "patientid": self.person_id_col,
+                    "admissionid": self.icu_stay_id_col,
+                }
+            )
             .with_columns(
                 # for age, weight and height, assume average of the group
                 pl.col("agegroup")
                 .str.replace("-|\+", "–")
                 .str.split("–")
-                .map_elements(lambda s: np.mean([int(i) for i in s if i]), return_dtype=float)
+                .map_elements(
+                    lambda s: np.mean([int(i) for i in s if i]),
+                    return_dtype=float,
+                )
                 .cast(int)
                 .alias(self.age_col),
                 pl.col("weightgroup")
                 .str.replace("-|\+", "–")
                 .str.split("–")
-                .map_elements(lambda s: np.mean([int(i) for i in s if i]), return_dtype=float)
+                .map_elements(
+                    lambda s: np.mean([int(i) for i in s if i]),
+                    return_dtype=float,
+                )
                 .cast(int)
                 .alias(self.weight_col),
                 pl.col("heightgroup")
                 .str.replace("-|\+", "–")
                 .str.split("–")
-                .map_elements(lambda s: np.mean([int(i) for i in s if i]), return_dtype=float)
+                .map_elements(
+                    lambda s: np.mean([int(i) for i in s if i]),
+                    return_dtype=float,
+                )
                 .cast(int)
                 .alias(self.height_col),
                 # Convert categorical mortality to binary
-                (pl.col("destination") == "Overleden").cast(bool).alias(self.mortality_icu_col),
+                (pl.col("destination") == "Overleden")
+                .cast(bool)
+                .alias(self.mortality_icu_col),
                 # NOTE: pre-ICU length of stay is not available in the UMCdb dataset,
                 # as there is no known hospital admission / discharge data
                 # # Calculate pre-ICU length of stay in days
@@ -81,13 +97,19 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(float)
                 .alias(self.icu_length_of_stay_col),
                 # Calculate mortality after discharge
-                pl.duration(milliseconds=(pl.col("dateofdeath") - pl.col("dischargedat")))
+                pl.duration(
+                    milliseconds=(
+                        pl.col("dateofdeath") - pl.col("dischargedat")
+                    )
+                )
                 .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.mortality_after_col),
                 # Convert categorical gender to enum
                 pl.col("gender")
-                .replace_strict({"Man": "Male", "Vrouw": "Female"}, default="Unknown")
+                .replace_strict(
+                    {"Man": "Male", "Vrouw": "Female"}, default="Unknown"
+                )
                 .cast(self.gender_dtype)
                 .alias(self.gender_col),
                 # Convert categorical admission location to enum
@@ -111,14 +133,17 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(self.specialties_dtype)
                 .alias(self.specialty_col),
                 # Convert categorical admission type to enum
-                pl.col("urgency").cast(str)
+                pl.col("urgency")
+                .cast(str)
                 .replace_strict(self.ADMISSION_TYPES_MAP, default="Unknown")
                 .cast(self.admission_types_dtype)
                 .alias(self.admission_type_col),
                 # Set hospital stay ID to none
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Set care site to the hospital name
-                pl.lit("Amsterdam Universitair Medische Centra").alias(self.care_site_col),
+                pl.lit("Amsterdam Universitair Medische Centra").alias(
+                    self.care_site_col
+                ),
             )
             .drop(
                 [
@@ -141,11 +166,22 @@ class UMCdbExtractor(UMCdbPaths):
     # region timeseries
     # Extract timeseries information from the listitems.csv file
     def extract_timeseries_listitems(self) -> pl.LazyFrame:
-        listitems_mapping = self.helpers.load_mapping(self.listitems_mapping_path)
+        listitems_mapping = self.helpers.load_mapping(
+            self.listitems_mapping_path
+        )
 
         listitems = (
             pl.scan_csv(self.listitems_path, dtypes={"value": str})
-            .select(["admissionid", "item", "itemid", "value", "valueid", "measuredat"])
+            .select(
+                [
+                    "admissionid",
+                    "item",
+                    "itemid",
+                    "value",
+                    "valueid",
+                    "measuredat",
+                ]
+            )
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
@@ -158,11 +194,15 @@ class UMCdbExtractor(UMCdbPaths):
 
         gcs = self._compute_gcs(listitems)
 
-        return listitems.drop(["valueid", "itemid"]).join(gcs, on=self.index_cols)
+        return listitems.drop(["valueid", "itemid"]).join(
+            gcs, on=self.index_cols
+        )
 
     # Extract timeseries information from the numericitems.csv file
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
-        numericitems_mapping = self.helpers.load_mapping(self.numeric_mapping_path)
+        numericitems_mapping = self.helpers.load_mapping(
+            self.numeric_mapping_path
+        )
 
         return (
             pl.scan_csv(self.numericitems_path, dtypes={"value": str})
@@ -200,14 +240,16 @@ class UMCdbExtractor(UMCdbPaths):
                     pl.col("measuredat")
                     > (
                         pl.col("intime")
-                        - pl.duration(days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF).truediv(
-                            pl.duration(milliseconds=1)
-                        )
+                        - pl.duration(
+                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                        ).truediv(pl.duration(milliseconds=1))
                     )
                 )
             )
             .with_columns(
-                pl.duration(milliseconds=(pl.col("measuredat") - pl.col("intime")))
+                pl.duration(
+                    milliseconds=(pl.col("measuredat") - pl.col("intime"))
+                )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col),
@@ -227,11 +269,20 @@ class UMCdbExtractor(UMCdbPaths):
             return pl.scan_parquet(self.precalc_path + "UMCdb_A_gcs.parquet")
 
         data = data.sort(self.index_cols).select(
-            [self.icu_stay_id_col, self.timeseries_time_col, "valueid", "itemid"]
+            [
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "valueid",
+                "itemid",
+            ]
         )
 
         data_eye = (
-            data.filter(pl.col("itemid").is_in([6732, 13077, 14470, 16628, 19635, 19638]))
+            data.filter(
+                pl.col("itemid").is_in(
+                    [6732, 13077, 14470, 16628, 19635, 19638]
+                )
+            )
             .with_columns(
                 pl.when(pl.col("itemid") == 6732)
                 .then(5 - pl.col("valueid"))
@@ -245,7 +296,11 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         data_motor = (
-            data.filter(pl.col("itemid").is_in([6734, 13072, 14476, 16634, 19636, 19639]))
+            data.filter(
+                pl.col("itemid").is_in(
+                    [6734, 13072, 14476, 16634, 19636, 19639]
+                )
+            )
             .with_columns(
                 "valueid",
                 pl.when(pl.col("itemid") == 6734)
@@ -260,7 +315,11 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         data_verbal = (
-            data.filter(pl.col("itemid").is_in([6735, 13066, 14482, 16640, 19637, 19640]))
+            data.filter(
+                pl.col("itemid").is_in(
+                    [6735, 13066, 14482, 16640, 19637, 19640]
+                )
+            )
             .with_columns(
                 "valueid",
                 pl.when(pl.col("itemid") == 6735)
@@ -281,9 +340,9 @@ class UMCdbExtractor(UMCdbPaths):
         )
         data_gcs = data_gcs.with_columns(
             (
-                data_gcs.select(["eyes_score", "motor_score", "verbal_score"]).sum_horizontal(
-                    ignore_nulls=False
-                )
+                data_gcs.select(
+                    ["eyes_score", "motor_score", "verbal_score"]
+                ).sum_horizontal(ignore_nulls=False)
             ).alias("gcs_score"),
         )
 
@@ -298,8 +357,10 @@ class UMCdbExtractor(UMCdbPaths):
     def extract_medications(self) -> pl.LazyFrame:
         print("UMCdb   - Extracting medications...")
 
-        umcdb_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
-            self.mapping_path + "MEDICATIONS.yaml", "amsterdam"
+        umcdb_medication_mapping = (
+            self.helpers.load_many_to_many_to_one_mapping(
+                self.mapping_path + "MEDICATIONS.yaml", "amsterdam"
+            )
         )
         intimes = (
             pl.scan_csv(self.admissions_path)
@@ -315,7 +376,16 @@ class UMCdbExtractor(UMCdbPaths):
 
         return (
             pl.scan_csv(self.drugitems_path)
-            .select(["admissionid", "item", "start", "stop", "administered", "administeredunit"])
+            .select(
+                [
+                    "admissionid",
+                    "item",
+                    "start",
+                    "stop",
+                    "administered",
+                    "administeredunit",
+                ]
+            )
             .rename(
                 {
                     "admissionid": self.icu_stay_id_col,
@@ -332,18 +402,24 @@ class UMCdbExtractor(UMCdbPaths):
                     pl.col(self.drug_end_col)
                     > (
                         pl.col("intime")
-                        - pl.duration(days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF).truediv(
-                            pl.duration(milliseconds=1)
-                        )
+                        - pl.duration(
+                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                        ).truediv(pl.duration(milliseconds=1))
                     )
                 )
             )
             .with_columns(
-                pl.duration(milliseconds=(pl.col(self.drug_start_col) - pl.col("intime")))
+                pl.duration(
+                    milliseconds=(
+                        pl.col(self.drug_start_col) - pl.col("intime")
+                    )
+                )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_start_col),
-                pl.duration(milliseconds=(pl.col(self.drug_end_col) - pl.col("intime")))
+                pl.duration(
+                    milliseconds=(pl.col(self.drug_end_col) - pl.col("intime"))
+                )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_end_col),
@@ -364,7 +440,10 @@ class UMCdbExtractor(UMCdbPaths):
             # Remove rows with empty lab names
             .filter(pl.col(self.drug_start_col).is_not_null())
             # Remove rows with empty lab results
-            .filter(pl.col(self.drug_name_col).is_not_null() & (pl.col(self.drug_name_col) != ""))
+            .filter(
+                pl.col(self.drug_name_col).is_not_null()
+                & (pl.col(self.drug_name_col) != "")
+            )
             .drop(["intime", "outtime", "administered", "administeredunit"])
         )
 

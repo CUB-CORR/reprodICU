@@ -19,7 +19,11 @@ class MIMIC4Extractor(MIMIC4Paths):
         self.path = paths.mimic3_source_path
         self.helpers = GlobalHelpers()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -113,19 +117,29 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
-            .join(self._extract_patient_height_weight(icustays), on=self.icu_stay_id_col, how="left")
-            .join(self._extract_specialties(), on=self.icu_stay_id_col, how="left")
+            .join(
+                self._extract_patient_height_weight(icustays),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
+            .join(
+                self._extract_specialties(), on=self.icu_stay_id_col, how="left"
+            )
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("dod").str.to_datetime("%Y-%m-%d"),  # hour and minute are not provided
+                pl.col("dod").str.to_datetime(
+                    "%Y-%m-%d"
+                ),  # hour and minute are not provided
                 pl.col("admittime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("dischtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("deathtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.icu_stay_id_col).cast(int),
                 pl.col(self.hospital_stay_id_col).cast(int),
                 pl.col(self.icu_length_of_stay_col).cast(float),
-                pl.lit("Beth Israel Deaconess Medical Center").alias(self.care_site_col),
+                pl.lit("Beth Israel Deaconess Medical Center").alias(
+                    self.care_site_col
+                ),
             )
             .with_columns(
                 # Convert categorical gender to enum
@@ -133,13 +147,23 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace({"M": "Male", "F": "Female"})
                 .cast(self.gender_dtype),
                 # Convert categorical ethnicity to enum
-                pl.col(self.ethnicity_col).replace(self.ETHNICITY_MAP).cast(self.ethnicity_dtype),
+                pl.col(self.ethnicity_col)
+                .replace(self.ETHNICITY_MAP)
+                .cast(self.ethnicity_dtype),
                 # Calculate pre ICU length of stay
-                ((pl.col("intime") - pl.col("admittime")).truediv(pl.duration(days=1)))
+                (
+                    (pl.col("intime") - pl.col("admittime")).truediv(
+                        pl.duration(days=1)
+                    )
+                )
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate ICU mortality
-                ((pl.col("deathtime") - pl.col("outtime")).truediv(pl.duration(hours=1)))
+                (
+                    (pl.col("deathtime") - pl.col("outtime")).truediv(
+                        pl.duration(hours=1)
+                    )
+                )
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
                 .fill_null(False)
@@ -147,7 +171,11 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
                 # Calculate mortality after discharge
-                ((pl.col("dod") - pl.col("outtime")).truediv(pl.duration(days=1)))
+                (
+                    (pl.col("dod") - pl.col("outtime")).truediv(
+                        pl.duration(days=1)
+                    )
+                )
                 .cast(int)
                 .alias(self.mortality_after_col),
                 # Convert categorical admission location to enum
@@ -155,7 +183,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace(self.ADMISSION_LOCATIONS_MAP)
                 .cast(self.admission_locations_dtype),
                 # Convert categorical unit type to enum
-                pl.col(self.unit_type_col).replace(self.UNIT_TYPES_MAP).cast(self.unit_types_dtype),
+                pl.col(self.unit_type_col)
+                .replace(self.UNIT_TYPES_MAP)
+                .cast(self.unit_types_dtype),
                 # Convert categorical discharge location to enum
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
@@ -211,7 +241,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         return (
-            services.select([self.hospital_stay_id_col, "transfertime", self.specialty_col])
+            services.select(
+                [self.hospital_stay_id_col, "transfertime", self.specialty_col]
+            )
             .join(IDs, on=self.hospital_stay_id_col)
             # Get the most recent specialty
             .filter(pl.col("transfertime") < pl.col("intime"))
@@ -230,10 +262,17 @@ class MIMIC4Extractor(MIMIC4Paths):
     #       Rerun the function with the force parameter set to True to recalculate the data
     #       and overwrite the parquet file
     #       Runtime: ~ 7 min
-    def _extract_patient_height_weight(self, icustays: pl.LazyFrame, force=False) -> pl.DataFrame:
+    def _extract_patient_height_weight(
+        self, icustays: pl.LazyFrame, force=False
+    ) -> pl.DataFrame:
         # check if precalculated data is available
-        if os.path.isfile(self.precalc_path + "MIMIC4_height_weight.parquet") and not force:
-            return pl.scan_parquet(self.precalc_path + "MIMIC4_height_weight.parquet")
+        if (
+            os.path.isfile(self.precalc_path + "MIMIC4_height_weight.parquet")
+            and not force
+        ):
+            return pl.scan_parquet(
+                self.precalc_path + "MIMIC4_height_weight.parquet"
+            )
 
         print("MIMIC4  - Extracting patient height and weight...")
 
@@ -331,7 +370,10 @@ class MIMIC4Extractor(MIMIC4Paths):
             .select("stay_id", "itemid", "valuenum", "charttime")
             # Rename columns for consistency
             .rename({"stay_id": self.icu_stay_id_col})
-            .join(icustays.select(self.icu_stay_id_col, "intime"), on=self.icu_stay_id_col)
+            .join(
+                icustays.select(self.icu_stay_id_col, "intime"),
+                on=self.icu_stay_id_col,
+            )
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -373,7 +415,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         # Save precalculated data
-        height_weight.write_parquet(self.precalc_path + "MIMIC4_height_weight.parquet")
+        height_weight.write_parquet(
+            self.precalc_path + "MIMIC4_height_weight.parquet"
+        )
 
         return height_weight.lazy()
 
@@ -387,7 +431,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             data.join(IDs, on=self.hospital_stay_id_col, how="left")
             .with_columns(pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"))
-            .with_columns((pl.col("charttime") - pl.col("intime")).alias("offset"))
+            .with_columns(
+                (pl.col("charttime") - pl.col("intime")).alias("offset")
+            )
             .drop("charttime", "intime")
             .with_columns(
                 pl.duration(days=pl.col(self.icu_length_of_stay_col)).alias(
@@ -396,10 +442,15 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .filter(
                 (pl.col("offset") < pl.col(self.icu_length_of_stay_col))
-                & (pl.col("offset") > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF))
+                & (
+                    pl.col("offset")
+                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
+                )
             )
             .with_columns(
-                (pl.col("offset").dt.total_seconds()).cast(float).alias(self.timeseries_time_col)
+                (pl.col("offset").dt.total_seconds())
+                .cast(float)
+                .alias(self.timeseries_time_col)
             )
             .drop(self.icu_length_of_stay_col)
             .cast({"valuenum": float})
@@ -411,7 +462,9 @@ class MIMIC4Extractor(MIMIC4Paths):
     def extract_chartevents(self) -> pl.LazyFrame:
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
-        vital_names_mapping = self.helpers.load_mapping(self.vitals_mapping_path)
+        vital_names_mapping = self.helpers.load_mapping(
+            self.vitals_mapping_path
+        )
 
         d_items = pl.scan_csv(self.d_items_path)
         chartevents = (
@@ -425,7 +478,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         return (
-            chartevents.select([self.hospital_stay_id_col, "itemid", "charttime", "valuenum"])
+            chartevents.select(
+                [self.hospital_stay_id_col, "itemid", "charttime", "valuenum"]
+            )
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -473,7 +528,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         return (
-            labevents.select([self.hospital_stay_id_col, "itemid", "charttime", "valuenum"])
+            labevents.select(
+                [self.hospital_stay_id_col, "itemid", "charttime", "valuenum"]
+            )
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -507,7 +564,9 @@ class MIMIC4Extractor(MIMIC4Paths):
     def extract_output_measurements(self) -> pl.LazyFrame:
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
-        output_names_mapping = self.helpers.load_mapping(self.outputs_mapping_path)
+        output_names_mapping = self.helpers.load_mapping(
+            self.outputs_mapping_path
+        )
 
         d_items = pl.scan_csv(self.d_items_path)
         outputevents = (
@@ -522,7 +581,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         return (
-            outputevents.select([self.hospital_stay_id_col, "itemid", "charttime", "valuenum"])
+            outputevents.select(
+                [self.hospital_stay_id_col, "itemid", "charttime", "valuenum"]
+            )
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -559,8 +620,10 @@ class MIMIC4Extractor(MIMIC4Paths):
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, "intime", self.icu_length_of_stay_col
         )
-        mimic4_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
-            self.mapping_path + "MEDICATIONS.yaml", "mimic4"
+        mimic4_medication_mapping = (
+            self.helpers.load_many_to_many_to_one_mapping(
+                self.mapping_path + "MEDICATIONS.yaml", "mimic4"
+            )
         )
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
@@ -613,21 +676,23 @@ class MIMIC4Extractor(MIMIC4Paths):
                 (pl.col("starttime") - pl.col("intime"))
                 .dt.total_seconds()
                 .alias(self.drug_start_col),
-                (pl.col("endtime") - pl.col("intime")).dt.total_seconds().alias(self.drug_end_col),
+                (pl.col("endtime") - pl.col("intime"))
+                .dt.total_seconds()
+                .alias(self.drug_end_col),
             )
             # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 (
                     pl.col(self.drug_start_col)
-                    < pl.duration(days=pl.col(self.icu_length_of_stay_col)).truediv(
-                        pl.duration(seconds=1)
-                    )
+                    < pl.duration(
+                        days=pl.col(self.icu_length_of_stay_col)
+                    ).truediv(pl.duration(seconds=1))
                 )
                 & (
                     pl.col(self.drug_start_col)
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF).truediv(
-                        pl.duration(seconds=1)
-                    )
+                    > pl.duration(
+                        days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    ).truediv(pl.duration(seconds=1))
                 )
             )
             .drop("starttime", "endtime", "intime", self.icu_length_of_stay_col)
@@ -639,22 +704,32 @@ class MIMIC4Extractor(MIMIC4Paths):
     # Extract diagnoses from the diagnoses_icd.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
         print("MIMIC4  - Extracting diagnoses...")
-        diagnoses = pl.scan_csv(self.diagnoses_icd_path, dtypes={"icd_code": str}).rename(
+        diagnoses = pl.scan_csv(
+            self.diagnoses_icd_path, dtypes={"icd_code": str}
+        ).rename(
             {
                 "subject_id": self.person_id_col,
                 "hadm_id": self.hospital_stay_id_col,
             }
         )
-        d_diagnoses = pl.scan_csv(self.d_icd_diagnoses_path, dtypes={"icd_code": str})
+        d_diagnoses = pl.scan_csv(
+            self.d_icd_diagnoses_path, dtypes={"icd_code": str}
+        )
 
         return (
             diagnoses.select(
-                self.person_id_col, self.hospital_stay_id_col, "icd_code", "icd_version", "seq_num"
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                "icd_code",
+                "icd_version",
+                "seq_num",
             )
             # include only ICU patients
             .filter(
                 pl.col(self.hospital_stay_id_col).is_in(
-                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(streaming=True)
+                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(
+                        streaming=True
+                    )
                 )
             )
             .with_columns(
@@ -685,7 +760,9 @@ class MIMIC4Extractor(MIMIC4Paths):
     # region procedures
     # Extract medications from the procedureevents.csv and procedures_icd.csv file
     def extract_procedures(self) -> pl.LazyFrame:
-        intimes = self.extract_patient_IDs().select(self.icu_stay_id_col, "intime")
+        intimes = self.extract_patient_IDs().select(
+            self.icu_stay_id_col, "intime"
+        )
         procedureevents = pl.scan_csv(self.procedureevents_path).rename(
             {
                 "subject_id": self.person_id_col,
@@ -695,16 +772,22 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
 
-        procedures_icd = pl.scan_csv(self.procedures_icd_path, dtypes={"icd_code": str}).rename(
+        procedures_icd = pl.scan_csv(
+            self.procedures_icd_path, dtypes={"icd_code": str}
+        ).rename(
             {
                 "subject_id": self.person_id_col,
                 "hadm_id": self.hospital_stay_id_col,
             }
         )
-        d_icd_procedures = pl.scan_csv(self.d_icd_procedures_path, dtypes={"icd_code": str})
+        d_icd_procedures = pl.scan_csv(
+            self.d_icd_procedures_path, dtypes={"icd_code": str}
+        )
 
         procedureevents = (
-            procedureevents.select([self.icu_stay_id_col, "starttime", "endtime", "itemid"])
+            procedureevents.select(
+                [self.icu_stay_id_col, "starttime", "endtime", "itemid"]
+            )
             .join(intimes, on=self.icu_stay_id_col)
             .join(d_items, on="itemid")
             .with_columns(
@@ -745,7 +828,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.lit(True).alias(self.procedure_discharge_col),
             )
             .join(
-                d_icd_procedures.select("icd_code", "icd_version", "long_title"),
+                d_icd_procedures.select(
+                    "icd_code", "icd_version", "long_title"
+                ),
                 on="icd_code",
             )
             .rename(
@@ -761,4 +846,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             .unique()
         )
 
-        return pl.concat([procedureevents, procedures_icd], how="diagonal_relaxed")
+        return pl.concat(
+            [procedureevents, procedures_icd], how="diagonal_relaxed"
+        )

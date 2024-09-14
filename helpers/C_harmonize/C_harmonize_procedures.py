@@ -32,17 +32,23 @@ class ProceduresHarmonizer(GlobalVars):
 
         if "eICU" in self.datasets:
             procedures_datasets.append(
-                self.eicu.extract_treatments().pipe(self._concat_helper1, "eicu-")
+                self.eicu.extract_treatments().pipe(
+                    self._concat_helper1, "eicu-"
+                )
             )
 
         if "MIMIC3" in self.datasets:
             procedures_datasets.append(
-                self.mimic3.extract_procedures().pipe(self._concat_helper2, "mimic3-")
+                self.mimic3.extract_procedures().pipe(
+                    self._concat_helper2, "mimic3-"
+                )
             )
 
         if "MIMIC4" in self.datasets:
             procedures_datasets.append(
-                self.mimic4.extract_procedures().pipe(self._concat_helper2, "mimic4-")
+                self.mimic4.extract_procedures().pipe(
+                    self._concat_helper2, "mimic4-"
+                )
             )
 
         return (
@@ -74,9 +80,9 @@ class ProceduresHarmonizer(GlobalVars):
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col
             ),
-            pl.concat_str([pl.lit(name), pl.col(self.hospital_stay_id_col)]).alias(
-                self.global_hospital_stay_id_col
-            ),
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
+            ).alias(self.global_hospital_stay_id_col),
             pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
                 self.global_icu_stay_id_col
             ),
@@ -87,7 +93,7 @@ class ProceduresHarmonizer(GlobalVars):
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col
             ),
-            pl.concat_str([pl.lit(name), pl.col(self.hospital_stay_id_col)]).alias(
-                self.global_hospital_stay_id_col
-            ),
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
+            ).alias(self.global_hospital_stay_id_col),
         )
