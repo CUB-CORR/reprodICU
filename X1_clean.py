@@ -9,7 +9,9 @@ import argparse
 import yaml
 
 # import harmonizing functions
-from helpers.C_harmonize.C_harmonize_patient_information import PatientInformationHarmonizer
+from helpers.C_harmonize.C_harmonize_patient_information import (
+    PatientInformationHarmonizer,
+)
 from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
@@ -79,14 +81,22 @@ if __name__ == "__main__":
 
     # Select tables to build
     if "all" in args.tables:
-        tables = ["patient_information", "diagnoses", "procedures", "medications", "timeseries"]
+        tables = [
+            "patient_information",
+            "diagnoses",
+            "procedures",
+            "medications",
+            "timeseries",
+        ]
     else:
         tables = args.tables
 
     # Run harmonizing
     if "patient_information" in tables:
         print("reprodICU - Combining patient information...")
-        patient_info_harmonizer = PatientInformationHarmonizer(paths=paths, datasets=datasets)
+        patient_info_harmonizer = PatientInformationHarmonizer(
+            paths=paths, datasets=datasets
+        )
 
         # Winsorize the patient information
         columns_to_winsorize = [
@@ -99,36 +109,51 @@ if __name__ == "__main__":
 
     if "diagnoses" in tables:
         print("reprodICU - Combining diagnoses...")
-        diagnoses_harmonizer = DiagnosesHarmonizer(paths=paths, datasets=datasets)
+        diagnoses_harmonizer = DiagnosesHarmonizer(
+            paths=paths, datasets=datasets
+        )
         diagnoses_harmonizer.harmonize_diagnoses().collect().write_parquet(
             paths.reprodICU_files_path + "diagnoses.parquet"
         )
 
     if "procedures" in tables:
         print("reprodICU - Combining procedures...")
-        procedures_harmonizer = ProceduresHarmonizer(paths=paths, datasets=datasets)
+        procedures_harmonizer = ProceduresHarmonizer(
+            paths=paths, datasets=datasets
+        )
         procedures_harmonizer.harmonize_procedures().collect().write_parquet(
             paths.reprodICU_files_path + "procedures.parquet"
         )
 
     if "medications" in tables:
         print("reprodICU - Combining medications...")
-        medication_harmonizer = MedicationHarmonizer(paths=paths, datasets=datasets)
+        medication_harmonizer = MedicationHarmonizer(
+            paths=paths, datasets=datasets
+        )
         medication_harmonizer.harmonize_medications().sink_parquet(
             paths.reprodICU_files_path + "medications.parquet"
         )
 
     if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
-        timeseries_harmonizer = TimeseriesHarmonizer(paths=paths, datasets=datasets)
+        timeseries_harmonizer = TimeseriesHarmonizer(
+            paths=paths, datasets=datasets
+        )
         # timeseries_harmonizer.harmonize_timeseries().sink_parquet("tempfiles/reprodICU_timeseries.parquet")
         vitals, labs, resp, inout = timeseries_harmonizer.split_timeseries(
-            paths.reprodICU_files_path + "_tempfiles/reprodICU_timeseries.parquet",
+            paths.reprodICU_files_path
+            + "_tempfiles/reprodICU_timeseries.parquet",
             save_to_default=False,
         )
-        vitals.sink_parquet(paths.reprodICU_files_path + "timeseries_vitals.parquet")
-        resp.sink_parquet(paths.reprodICU_files_path + "timeseries_respiratory.parquet")
-        inout.sink_parquet(paths.reprodICU_files_path + "timeseries_intakeoutput.parquet")
+        vitals.sink_parquet(
+            paths.reprodICU_files_path + "timeseries_vitals.parquet"
+        )
+        resp.sink_parquet(
+            paths.reprodICU_files_path + "timeseries_respiratory.parquet"
+        )
+        inout.sink_parquet(
+            paths.reprodICU_files_path + "timeseries_intakeoutput.parquet"
+        )
 
         # Winsorize the lab data
         print("reprodICU - Clean lab data...")
@@ -142,7 +167,9 @@ if __name__ == "__main__":
         print("reprodICU - No tables selected.")
         print("reprodICU - Make sure to select at least one table to build.")
         print("reprodICU - Must be one of:")
-        print("reprodICU - patient_information, diagnoses, procedures, medications, timeseries.")
+        print(
+            "reprodICU - patient_information, diagnoses, procedures, medications, timeseries."
+        )
 
     print("reprodICU - Done.")
 

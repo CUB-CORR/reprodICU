@@ -27,7 +27,9 @@ class GlobalHelpers:
         mapping = self.load_mapping(path)
         return {v: k for k, vs in mapping.items() for v in vs}
 
-    def load_many_to_many_to_one_mapping(self, path: str, database: str) -> dict:
+    def load_many_to_many_to_one_mapping(
+        self, path: str, database: str
+    ) -> dict:
         mapping = self.load_mapping(path)
         return_dict = {}
         for key, value in mapping.items():
@@ -43,9 +45,13 @@ class GlobalHelpers:
         if base_unit == "seconds":
             divided_by = 24 * 60 * 60
 
-        return data.with_columns((pl.col(col_name) / divided_by).cast(float).alias(col_name))
+        return data.with_columns(
+            (pl.col(col_name) / divided_by).cast(float).alias(col_name)
+        )
 
-    def _convert_time_to_seconds_float(self, data, col_name, base_unit="minutes"):
+    def _convert_time_to_seconds_float(
+        self, data, col_name, base_unit="minutes"
+    ):
         assert base_unit in ["hours", "minutes", "seconds"]
         if base_unit == "hours":
             multplicator = 60 * 60
@@ -54,7 +60,9 @@ class GlobalHelpers:
         if base_unit == "seconds":
             multplicator = 1
 
-        return data.with_columns((pl.col(col_name) * multplicator).cast(float).alias(col_name))
+        return data.with_columns(
+            (pl.col(col_name) * multplicator).cast(float).alias(col_name)
+        )
 
     def dropna(
         self,
@@ -75,15 +83,20 @@ class GlobalHelpers:
 
         if verbose:
             print(
-                "Dropping null and NaN values from DataFrame" + f" in columns {subset}"
+                "Dropping null and NaN values from DataFrame"
+                + f" in columns {subset}"
                 if not subset is None
                 else "" + "..."
             )
 
         if how == "any":
-            result = data.filter(pl.all_horizontal(subset.is_not_null()))  # & subset.is_not_nan()))
+            result = data.filter(
+                pl.all_horizontal(subset.is_not_null())
+            )  # & subset.is_not_nan()))
         elif how == "all":
-            result = data.filter(pl.any_horizontal(subset.is_not_null()))  # & subset.is_not_nan()))
+            result = data.filter(
+                pl.any_horizontal(subset.is_not_null())
+            )  # & subset.is_not_nan()))
         else:
             raise ValueError(f"how must be either 'any' or 'all', got {how}")
 
@@ -97,14 +110,20 @@ class GlobalVars(GlobalHelpers):
         tempfiles_path = paths.reprodICU_files_path + "_tempfiles/"
 
         # append globally configured variables as class attributes
-        for key, value in self.load_mapping(config_path + "GLOBAL_CONFIG.yaml").items():
+        for key, value in self.load_mapping(
+            config_path + "GLOBAL_CONFIG.yaml"
+        ).items():
             setattr(self, key, value)
 
-        for key, value in self.load_mapping(config_path + "COLUMN_NAMES.yaml").items():
+        for key, value in self.load_mapping(
+            config_path + "COLUMN_NAMES.yaml"
+        ).items():
             setattr(self, key, value)
 
         # append globally configured mappings as class attributes
-        self.ETHNICITY_MAP = self.load_many_to_one_mapping(mapping_path + "ETHNICITY.yaml")
+        self.ETHNICITY_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ETHNICITY.yaml"
+        )
         self.ADMISSION_LOCATIONS_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADMISSION_LOCATIONS.yaml"
         )
@@ -114,8 +133,12 @@ class GlobalVars(GlobalHelpers):
         self.DISCHARGE_LOCATIONS_MAP = self.load_many_to_one_mapping(
             mapping_path + "DISCHARGE_LOCATIONS.yaml"
         )
-        self.SPECIALTIES_MAP = self.load_many_to_one_mapping(mapping_path + "SPECIALTIES.yaml")
-        self.UNIT_TYPES_MAP = self.load_many_to_one_mapping(mapping_path + "UNIT_TYPES.yaml")
+        self.SPECIALTIES_MAP = self.load_many_to_one_mapping(
+            mapping_path + "SPECIALTIES.yaml"
+        )
+        self.UNIT_TYPES_MAP = self.load_many_to_one_mapping(
+            mapping_path + "UNIT_TYPES.yaml"
+        )
 
         # append globally configured paths as class attributes
         self.config_path = config_path
@@ -134,7 +157,9 @@ class GlobalVars(GlobalHelpers):
         # Define custom data types
         self.gender_dtype = pl.Enum(["Male", "Female", "Other", "Unknown"])
         self.mortality_dtype = pl.Enum(["Alive", "Dead", "Unknown"])
-        self.ethnicity_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "ETHNICITY.yaml"))
+        self.ethnicity_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "ETHNICITY.yaml")
+        )
         self.admission_locations_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "ADMISSION_LOCATIONS.yaml")
         )
@@ -144,21 +169,29 @@ class GlobalVars(GlobalHelpers):
         self.discharge_locations_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "DISCHARGE_LOCATIONS.yaml")
         )
-        self.specialties_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "SPECIALTIES.yaml"))
-        self.unit_types_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml"))
+        self.specialties_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "SPECIALTIES.yaml")
+        )
+        self.unit_types_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml")
+        )
 
         # Define global mappings (ICD diagnoses)
         self.ICD9_TO_ICD10_DIAGS = pl.read_csv(
-            mapping_path + "_icd_codes/icd9_diagnoses.csv", infer_schema_length=25000
+            mapping_path + "_icd_codes/icd9_diagnoses.csv",
+            infer_schema_length=25000,
         )
         self.ICD9_TO_ICD10_PROCS = pl.read_csv(
-            mapping_path + "_icd_codes/icd9_procedures.csv", infer_schema_length=25000
+            mapping_path + "_icd_codes/icd9_procedures.csv",
+            infer_schema_length=25000,
         )
         self.ICD10_TO_ICD9_DIAGS = pl.read_csv(
-            mapping_path + "_icd_codes/icd10_diagnoses.csv", infer_schema_length=25000
+            mapping_path + "_icd_codes/icd10_diagnoses.csv",
+            infer_schema_length=25000,
         )
         self.ICD10_TO_ICD9_PROCS = pl.read_csv(
-            mapping_path + "_icd_codes/icd10_procedures.csv", infer_schema_length=25000
+            mapping_path + "_icd_codes/icd10_procedures.csv",
+            infer_schema_length=25000,
         )
 
         # Select relevant variables

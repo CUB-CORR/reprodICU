@@ -30,31 +30,47 @@ class DiagnosesImputer(GlobalVars):
                     self.global_icu_stay_id_col,
                 ]
             )
-            .filter(pl.col(self.global_hospital_stay_id_col).str.starts_with("mimic"))
+            .filter(
+                pl.col(self.global_hospital_stay_id_col).str.starts_with(
+                    "mimic"
+                )
+            )
             .group_by(self.global_hospital_stay_id_col)
             .all()
         )
 
         ICD9_TO_ICD10_MAPPING = dict(
-            zip(self.ICD9_TO_ICD10_DIAGS["icd9"], self.ICD9_TO_ICD10_DIAGS["icd10"])
+            zip(
+                self.ICD9_TO_ICD10_DIAGS["icd9"],
+                self.ICD9_TO_ICD10_DIAGS["icd10"],
+            )
         )
         ICD10_TO_ICD9_MAPPING = dict(
-            zip(self.ICD10_TO_ICD9_DIAGS["icd10"], self.ICD10_TO_ICD9_DIAGS["icd9"])
+            zip(
+                self.ICD10_TO_ICD9_DIAGS["icd10"],
+                self.ICD10_TO_ICD9_DIAGS["icd9"],
+            )
         )
 
         return (
             pl.concat(
                 [
-                    data.filter(pl.col(self.global_person_id_col).str.starts_with("mimic"))
+                    data.filter(
+                        pl.col(self.global_person_id_col).str.starts_with(
+                            "mimic"
+                        )
+                    )
                     .drop(self.global_icu_stay_id_col)
                     .join(
                         IDs,
-                        on=[
-                            self.global_hospital_stay_id_col,
-                        ],
+                        on=self.global_hospital_stay_id_col,
                     )
                     .explode(columns=[self.global_icu_stay_id_col]),
-                    data.filter(~pl.col(self.global_person_id_col).str.starts_with("mimic")),
+                    data.filter(
+                        ~pl.col(self.global_person_id_col).str.starts_with(
+                            "mimic"
+                        )
+                    ),
                 ],
                 how="diagonal_relaxed",
             )
@@ -62,12 +78,20 @@ class DiagnosesImputer(GlobalVars):
                 # Impute missing ICD9 codes
                 pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
                 .then(pl.col(self.diagnosis_icd_code_col))
-                .otherwise(pl.col(self.diagnosis_icd_code_col).replace(ICD10_TO_ICD9_MAPPING))
+                .otherwise(
+                    pl.col(self.diagnosis_icd_code_col).replace(
+                        ICD10_TO_ICD9_MAPPING
+                    )
+                )
                 .alias(self.diagnosis_icd9_code_col),
                 # Impute missing ICD10 codes
                 pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
                 .then(pl.col(self.diagnosis_icd_code_col))
-                .otherwise(pl.col(self.diagnosis_icd_code_col).replace(ICD9_TO_ICD10_MAPPING))
+                .otherwise(
+                    pl.col(self.diagnosis_icd_code_col).replace(
+                        ICD9_TO_ICD10_MAPPING
+                    )
+                )
                 .alias(self.diagnosis_icd10_code_col),
             )
             .select(
@@ -89,4 +113,6 @@ class DiagnosesImputer(GlobalVars):
 
 
 if __name__ == "__main__":
-    raise NotImplementedError("This script is not yet implemented as a command line tool.")
+    raise NotImplementedError(
+        "This script is not yet implemented as a command line tool."
+    )

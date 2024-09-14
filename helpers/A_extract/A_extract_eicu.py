@@ -18,7 +18,11 @@ class EICUExtractor(EICUPaths):
         self.path = paths.eicu_source_path
         self.helpers = GlobalHelpers()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -100,11 +104,17 @@ class EICUExtractor(EICUPaths):
             .sort(self.icu_stay_id_col)
             .with_columns(
                 # Convert categorical gender to enum
-                pl.col(self.gender_col).replace("", "Unknown").cast(self.gender_dtype),
+                pl.col(self.gender_col)
+                .replace("", "Unknown")
+                .cast(self.gender_dtype),
                 # Convert categorical ethnicity to enum
-                pl.col(self.ethnicity_col).replace(self.ETHNICITY_MAP).cast(self.ethnicity_dtype),
+                pl.col(self.ethnicity_col)
+                .replace(self.ETHNICITY_MAP)
+                .cast(self.ethnicity_dtype),
                 # NOTE: ASSUMPTION: Replace age values "> 89" with 90 and convert to float
-                pl.col(self.age_col).replace("> 89", 90).cast(int, strict=False),
+                pl.col(self.age_col)
+                .replace("> 89", 90)
+                .cast(int, strict=False),
                 # Calculate pre ICU length of stay
                 # Reverse sign of hospitaladmitoffset to get pre_icu_length_of_stay
                 (0 - pl.col("hospitaladmitoffset"))
@@ -125,7 +135,10 @@ class EICUExtractor(EICUPaths):
                     (pl.col(self.mortality_icu_col) != "Expired")
                     & (pl.col(self.mortality_hosp_col) == "Expired")
                 )
-                .then(pl.col("hospitaldischargeoffset") - pl.col(self.icu_length_of_stay_col))
+                .then(
+                    pl.col("hospitaldischargeoffset")
+                    - pl.col(self.icu_length_of_stay_col)
+                )
                 .otherwise(None)
                 .alias(self.mortality_after_col),
                 # # Calculate hospital_length_of_stay as difference between hospitaldischargeoffset
@@ -138,7 +151,9 @@ class EICUExtractor(EICUPaths):
                 .replace(self.ADMISSION_LOCATIONS_MAP)
                 .cast(self.admission_locations_dtype),
                 # Convert categorical unit type to enum
-                pl.col(self.unit_type_col).replace(self.UNIT_TYPES_MAP).cast(self.unit_types_dtype),
+                pl.col(self.unit_type_col)
+                .replace(self.UNIT_TYPES_MAP)
+                .cast(self.unit_types_dtype),
                 # Convert categorical discharge location to enum
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
@@ -205,12 +220,17 @@ class EICUExtractor(EICUPaths):
 
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
-        keep_lab_names = self.relevant_lab_values + ["base_excess", "base_deficit"]
+        keep_lab_names = self.relevant_lab_values + [
+            "base_excess",
+            "base_deficit",
+        ]
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
         return (
             pl.scan_csv(self.lab_path)
-            .select(["patientunitstayid", "labname", "labresultoffset", "labresult"])
+            .select(
+                ["patientunitstayid", "labname", "labresultoffset", "labresult"]
+            )
             # Rename columns for consistency
             .rename(
                 {
@@ -286,7 +306,9 @@ class EICUExtractor(EICUPaths):
                 .replace_strict(resp_names_mapping, default=None)
                 .alias("respchartvaluelabel"),
                 # Remove percentage sign from respchartvalue and convert to float
-                pl.col("respchartvalue").str.replace("%", "").cast(float, strict=False),
+                pl.col("respchartvalue")
+                .str.replace("%", "")
+                .cast(float, strict=False),
             )
             # Filter for resp names of interest
             .filter(pl.col("respchartvaluelabel").is_in(keep_resp_names))
@@ -361,7 +383,9 @@ class EICUExtractor(EICUPaths):
                 }
             )
             # Filter for nurse names of interest
-            .filter(pl.col("nursingchartcelltypevallabel").is_in(keep_nurse_names))
+            .filter(
+                pl.col("nursingchartcelltypevallabel").is_in(keep_nurse_names)
+            )
             .drop(["nursingchartcelltypevallabel"])
             # Remove rows with empty nurse values
             .filter(pl.col("nursingchartvalue").is_not_null())
@@ -369,10 +393,19 @@ class EICUExtractor(EICUPaths):
             .unique()
             .with_columns(
                 # Convert Fahrenheit to Celsius
-                pl.when(pl.col("nursingchartcelltypevalname") == "Temperature (F)")
-                .then((pl.col("nursingchartvalue").cast(float, strict=False) - 32) * 5 / 9)
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "Temperature (F)"
+                )
+                .then(
+                    (pl.col("nursingchartvalue").cast(float, strict=False) - 32)
+                    * 5
+                    / 9
+                )
                 # Replace "Unable to score due to medication" values with None
-                .when(pl.col("nursingchartvalue") == "Unable to score due to medication")
+                .when(
+                    pl.col("nursingchartvalue")
+                    == "Unable to score due to medication"
+                )
                 .then(None)
                 # Replace empty strings with None
                 .when(pl.col("nursingchartvalue") == "")
@@ -382,7 +415,9 @@ class EICUExtractor(EICUPaths):
             )
             .with_columns(
                 # Map O2 delivery device values
-                pl.when(pl.col("nursingchartcelltypevalname") == "O2 Admin Device")
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "O2 Admin Device"
+                )
                 .then(
                     pl.col("nursingchartvalue").replace_strict(
                         nurse_oxygen_delivery_device_mapping, default=None
@@ -594,7 +629,8 @@ class EICUExtractor(EICUPaths):
 
         periodics = periodic.join(
             aperiodic,
-            on=[self.icu_stay_id_col, self.timeseries_time_col], how="outer",
+            on=[self.icu_stay_id_col, self.timeseries_time_col],
+            how="outer",
         ).rename(periodic_mapping)
 
         return periodics.select(
@@ -684,7 +720,11 @@ class EICUExtractor(EICUPaths):
                 (
                     pl.col(self.drug_start_col)
                     + pl.duration(
-                        hours=(pl.col("volumeoffluid").truediv(pl.col("infusionrate")))
+                        hours=(
+                            pl.col("volumeoffluid").truediv(
+                                pl.col("infusionrate")
+                            )
+                        )
                     ).dt.total_seconds()
                 ).alias(self.drug_end_col)
             )
@@ -710,7 +750,13 @@ class EICUExtractor(EICUPaths):
         medication = (
             pl.scan_csv(self.medication_path)
             .select(
-                ["patientunitstayid", "drugstartoffset", "drugname", "dosage", "drugstopoffset"]
+                [
+                    "patientunitstayid",
+                    "drugstartoffset",
+                    "drugname",
+                    "dosage",
+                    "drugstopoffset",
+                ]
             )
             # Rename columns for consistency
             .rename(
@@ -792,7 +838,9 @@ class EICUExtractor(EICUPaths):
             .with_columns(  # Convert columns to appropriate data types
                 [
                     # Split diagnosis codes by comma and rename column
-                    pl.col("icd9code").str.split(by=", ").alias(self.diagnosis_icd_code_col),
+                    pl.col("icd9code")
+                    .str.split(by=", ")
+                    .alias(self.diagnosis_icd_code_col),
                     # Convert diagnosisoffset to float and rename column
                     pl.col("diagnosisoffset")
                     .cast(float, strict=False)
@@ -840,7 +888,11 @@ class EICUExtractor(EICUPaths):
         """
 
         IDs = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
 
         return (

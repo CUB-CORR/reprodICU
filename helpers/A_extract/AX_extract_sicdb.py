@@ -35,9 +35,14 @@ class SICdbExtractor(SICdbPaths):
             )
             .with_columns(
                 # Convert weight to kg from g
-                pl.col(self.weight_col).truediv(1000).cast(float).alias(self.weight_col),
+                pl.col(self.weight_col)
+                .truediv(1000)
+                .cast(float)
+                .alias(self.weight_col),
                 # Convert length of stay to days
-                pl.duration(seconds=(pl.col("TimeOfStay") - pl.col("ICUOffset")))
+                pl.duration(
+                    seconds=(pl.col("TimeOfStay") - pl.col("ICUOffset"))
+                )
                 .truediv(pl.duration(days=1))
                 .alias(self.icu_length_of_stay_col),
                 # Convert gender to established dtype
@@ -111,7 +116,9 @@ class SICdbExtractor(SICdbPaths):
                 .cast(float)
                 .alias(self.timeseries_time_col),
                 # Convert parameter IDs to names, then map them
-                pl.col("DataID").replace_strict(timeseries_mapping, default=None).alias("DataID"),
+                pl.col("DataID")
+                .replace_strict(timeseries_mapping, default=None)
+                .alias("DataID"),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
@@ -144,7 +151,9 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.timeseries_time_col),
                 # Convert lab IDs to names, then map them
                 pl.col("LaboratoryID")
-                .replace_strict(self._extract_references("Laboratory"), default=None)
+                .replace_strict(
+                    self._extract_references("Laboratory"), default=None
+                )
                 .replace_strict(laboratory_mapping, default=None),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
@@ -156,7 +165,10 @@ class SICdbExtractor(SICdbPaths):
             # Remove rows with empty lab names
             .filter(pl.col("LaboratoryID").is_not_null())
             # Remove rows with empty lab results
-            .filter(pl.col("LaboratoryValue").is_not_null() & (pl.col("LaboratoryID") != ""))
+            .filter(
+                pl.col("LaboratoryValue").is_not_null()
+                & (pl.col("LaboratoryID") != "")
+            )
             # Drop columns
             .drop(["CaseOffset", "LaboratoryType"])
         )
@@ -176,11 +188,15 @@ class SICdbExtractor(SICdbPaths):
         return (
             pl.scan_csv(self.medication_path)
             .select(["CaseID", "DrugID", "Offset", "OffsetDrugEnd", "Amount"])
-            .rename({"CaseID": self.icu_stay_id_col, "Amount": self.drug_amount_col})
+            .rename(
+                {"CaseID": self.icu_stay_id_col, "Amount": self.drug_amount_col}
+            )
             .join(offsets, on=self.icu_stay_id_col)
             .with_columns(
                 # Fix medication time offset
-                (pl.col("Offset") - pl.col("CaseOffset")).cast(float).alias(self.drug_start_col),
+                (pl.col("Offset") - pl.col("CaseOffset"))
+                .cast(float)
+                .alias(self.drug_start_col),
                 (pl.col("OffsetDrugEnd") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.drug_end_col),
@@ -251,7 +267,10 @@ class SICdbExtractor(SICdbPaths):
         )
 
         return dict(
-            zip(references["ReferenceGlobalID"].to_numpy(), references["ReferenceValue"].to_numpy())
+            zip(
+                references["ReferenceGlobalID"].to_numpy(),
+                references["ReferenceValue"].to_numpy(),
+            )
         )
 
     def _extract_drug_units(self) -> pl.LazyFrame:
@@ -262,7 +281,10 @@ class SICdbExtractor(SICdbPaths):
         )
 
         return dict(
-            zip(drug_units["ReferenceValue"].to_numpy(), drug_units["ReferenceUnit"].to_numpy())
+            zip(
+                drug_units["ReferenceValue"].to_numpy(),
+                drug_units["ReferenceUnit"].to_numpy(),
+            )
         )
 
     # endregion

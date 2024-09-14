@@ -22,7 +22,11 @@ class EICUProcessor(EICUExtractor):
         self.helpers = GlobalHelpers()
         self.convert = EICUConverter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.hospital_stay_id_col, self.person_id_col]
+            [
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+            ]
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
@@ -60,11 +64,17 @@ class EICUProcessor(EICUExtractor):
         on = self.index_cols
 
         # NOTE: Nurse and Periodics are merged first due to duplicate columns
-        if not os.path.isfile(self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"):
-            ts_nurse_periodics = pl.concat([ts_nurse, ts_periodics], how="diagonal_relaxed")
+        if not os.path.isfile(
+            self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
+        ):
+            ts_nurse_periodics = pl.concat(
+                [ts_nurse, ts_periodics], how="diagonal_relaxed"
+            )
 
             # Save the preprocessed data
-            ts_nurse_periodics.sink_parquet(self.precalc_path + "EICU_B_ts_nurse_periodics.parquet")
+            ts_nurse_periodics.sink_parquet(
+                self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
+            )
 
         else:
             # Load the preprocessed data
@@ -74,7 +84,8 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Returning wide time series data...")
         return pl.concat(
-            [ts_lab, ts_resp, ts_inout, ts_nurse_periodics], how="diagonal_relaxed"
+            [ts_lab, ts_resp, ts_inout, ts_nurse_periodics],
+            how="diagonal_relaxed",
         ).unique()
 
     # endregion
@@ -107,7 +118,11 @@ class EICUProcessor(EICUExtractor):
                     valuecol="labresult",
                 )
                 # Convert the lab values to the correct units
-                .pipe(self.convert._convert_lab_values, labelcol="labname", valuecol="labresult")
+                .pipe(
+                    self.convert._convert_lab_values,
+                    labelcol="labname",
+                    valuecol="labresult",
+                )
                 # Reverse the base deficit to be negative base excess
                 # Pivot the lab values to wide format
                 .collect(streaming=True).pivot(
@@ -119,15 +134,23 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(set(ts_lab.collect_schema().names()) - set(self.index_cols))
-            ts_lab = ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all").unique().lazy()
+            droplist = list(
+                set(ts_lab.collect_schema().names()) - set(self.index_cols)
+            )
+            ts_lab = (
+                ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all")
+                .unique()
+                .lazy()
+            )
 
             # Save the preprocessed data
             ts_lab.sink_parquet(self.precalc_path + "EICU_B_ts_lab.parquet")
 
         else:
             # Load the preprocessed data
-            ts_lab = pl.scan_parquet(self.precalc_path + "EICU_B_ts_lab.parquet")
+            ts_lab = pl.scan_parquet(
+                self.precalc_path + "EICU_B_ts_lab.parquet"
+            )
 
         return ts_lab
 
@@ -162,15 +185,23 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(set(ts_resp.collect_schema().names()) - set(self.index_cols))
-            ts_resp = ts_resp.pipe(self.helpers.dropna, subset=droplist, how="all").unique().lazy()
+            droplist = list(
+                set(ts_resp.collect_schema().names()) - set(self.index_cols)
+            )
+            ts_resp = (
+                ts_resp.pipe(self.helpers.dropna, subset=droplist, how="all")
+                .unique()
+                .lazy()
+            )
 
             # Save the preprocessed data
             ts_resp.sink_parquet(self.precalc_path + "EICU_B_ts_resp.parquet")
 
         else:
             # Load the preprocessed data
-            ts_resp = pl.scan_parquet(self.precalc_path + "EICU_B_ts_resp.parquet")
+            ts_resp = pl.scan_parquet(
+                self.precalc_path + "EICU_B_ts_resp.parquet"
+            )
 
         return ts_resp
 
@@ -204,9 +235,13 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(set(ts_nurse.collect_schema().names()) - set(self.index_cols))
+            droplist = list(
+                set(ts_nurse.collect_schema().names()) - set(self.index_cols)
+            )
             ts_nurse = (
-                ts_nurse.pipe(self.helpers.dropna, subset=droplist, how="all").unique().lazy()
+                ts_nurse.pipe(self.helpers.dropna, subset=droplist, how="all")
+                .unique()
+                .lazy()
             )
 
             # Save the preprocessed data
@@ -214,7 +249,9 @@ class EICUProcessor(EICUExtractor):
 
         else:
             # Load the preprocessed data
-            ts_nurse = pl.scan_parquet(self.precalc_path + "EICU_B_ts_nurse.parquet")
+            ts_nurse = pl.scan_parquet(
+                self.precalc_path + "EICU_B_ts_nurse.parquet"
+            )
 
         return ts_nurse
 
@@ -251,9 +288,13 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(set(ts_inout.collect_schema().names()) - set(self.index_cols))
+            droplist = list(
+                set(ts_inout.collect_schema().names()) - set(self.index_cols)
+            )
             ts_inout = (
-                ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all").unique().lazy()
+                ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all")
+                .unique()
+                .lazy()
             )
 
             # Save the preprocessed data
@@ -261,7 +302,9 @@ class EICUProcessor(EICUExtractor):
 
         else:
             # Load the preprocessed data
-            ts_inout = pl.scan_parquet(self.precalc_path + "EICU_B_ts_inout.parquet")
+            ts_inout = pl.scan_parquet(
+                self.precalc_path + "EICU_B_ts_inout.parquet"
+            )
 
         return ts_inout
 
@@ -288,10 +331,16 @@ class EICUProcessor(EICUExtractor):
         """
 
         ICD9_descriptions = dict(
-            zip(self.ICD9_TO_ICD10_DIAGS["icd9"], self.ICD9_TO_ICD10_DIAGS["description"])
+            zip(
+                self.ICD9_TO_ICD10_DIAGS["icd9"],
+                self.ICD9_TO_ICD10_DIAGS["description"],
+            )
         )
         ICD10_descriptions = dict(
-            zip(self.ICD10_TO_ICD9_DIAGS["icd10"], self.ICD10_TO_ICD9_DIAGS["description"])
+            zip(
+                self.ICD10_TO_ICD9_DIAGS["icd10"],
+                self.ICD10_TO_ICD9_DIAGS["description"],
+            )
         )
 
         # Return the processed diagnoses data.
@@ -299,16 +348,22 @@ class EICUProcessor(EICUExtractor):
         return (
             self.extract_diagnoses()
             # Remove the dots from the ICD codes.
-            .with_columns(pl.col(self.diagnosis_icd_code_col).str.replace_all("\.", ""))
+            .with_columns(
+                pl.col(self.diagnosis_icd_code_col).str.replace_all("\.", "")
+            )
             # Determine the ICD version of the diagnoses.
             .with_columns(
                 pl.when(
-                    pl.col(self.diagnosis_icd_code_col).is_in(ICD9_descriptions.keys()),
+                    pl.col(self.diagnosis_icd_code_col).is_in(
+                        ICD9_descriptions.keys()
+                    ),
                 )
                 .then(pl.lit(9))
                 .otherwise(
                     pl.when(
-                        pl.col(self.diagnosis_icd_code_col).is_in(ICD10_descriptions.keys()),
+                        pl.col(self.diagnosis_icd_code_col).is_in(
+                            ICD10_descriptions.keys()
+                        ),
                     )
                     .then(pl.lit(10))
                     .otherwise(pl.lit(None))
@@ -368,7 +423,9 @@ class EICUConverter(UnitConverter):
             # Rename base_excess and base_deficit to base_excess_deficit
             .with_columns(
                 pl.when(
-                    pl.col(labelcol).is_in([base_excess_name, base_deficit_name]),
+                    pl.col(labelcol).is_in(
+                        [base_excess_name, base_deficit_name]
+                    ),
                 )
                 .then(pl.lit("base_excess_deficit"))
                 .otherwise(pl.col(valuecol))

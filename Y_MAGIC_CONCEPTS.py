@@ -9,7 +9,9 @@ import polars as pl
 import yaml
 
 from helpers.MAGIC_CONCEPTS._MAGIC_CONCEPTS import MAGIC_CONCEPTS
-from helpers.MAGIC_CONCEPTS.RECEIVED_ANY_ANTIBIOTICS import RECEIVED_ANY_ANTIBIOTICS
+from helpers.MAGIC_CONCEPTS.RECEIVED_ANY_ANTIBIOTICS import (
+    RECEIVED_ANY_ANTIBIOTICS,
+)
 
 
 def load_mapping(path: str) -> dict:
@@ -67,7 +69,9 @@ if __name__ == "__main__":
     # Extract concepts
     if "RECEIVED_ANY_ANTIBIOTICS" in concepts:
         concept_instance = RECEIVED_ANY_ANTIBIOTICS(paths, datasets)
-        concept_instance.RECEIVED_ANY_ANTIBIOTICS().collect(streaming=True).write_parquet(
+        concept_instance.RECEIVED_ANY_ANTIBIOTICS().collect(
+            streaming=True
+        ).write_parquet(
             MAGIC_CONCEPTS_PATH + "RECEIVED_ANY_ANTIBIOTICS.parquet"
         )
 

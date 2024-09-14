@@ -21,11 +21,15 @@ class EICUPaths(GlobalVars):
         self.apacheApsVar_path = eicu_path + "apacheApsVar.csv.gz"
         self.apachePatientResult_path = eicu_path + "apachePatientResult.csv.gz"
         self.apachePredVar_path = eicu_path + "apachePredVar.csv.gz"
-        self.carePlanCareProvider_path = eicu_path + "carePlanCareProvider.csv.gz"
+        self.carePlanCareProvider_path = (
+            eicu_path + "carePlanCareProvider.csv.gz"
+        )
         self.carePlanEOL_path = eicu_path + "carePlanEOL.csv.gz"
         self.carePlanGeneral_path = eicu_path + "carePlanGeneral.csv.gz"
         self.carePlanGoal_path = eicu_path + "carePlanGoal.csv.gz"
-        self.carePlanInfectiousDisease_path = eicu_path + "carePlanInfectiousDisease.csv.gz"
+        self.carePlanInfectiousDisease_path = (
+            eicu_path + "carePlanInfectiousDisease.csv.gz"
+        )
         self.customLab_path = eicu_path + "customLab.csv.gz"
         self.diagnosis_path = eicu_path + "diagnosis.csv.gz"
         self.hospital_path = eicu_path + "hospital.csv.gz"
@@ -53,13 +57,19 @@ class EICUPaths(GlobalVars):
             self.admissionDx_path = eicu_path + "admissionDx.csv"
             self.allergy_path = eicu_path + "allergy.csv"
             self.apacheApsVar_path = eicu_path + "apacheApsVar.csv"
-            self.apachePatientResult_path = eicu_path + "apachePatientResult.csv"
+            self.apachePatientResult_path = (
+                eicu_path + "apachePatientResult.csv"
+            )
             self.apachePredVar_path = eicu_path + "apachePredVar.csv"
-            self.carePlanCareProvider_path = eicu_path + "carePlanCareProvider.csv"
+            self.carePlanCareProvider_path = (
+                eicu_path + "carePlanCareProvider.csv"
+            )
             self.carePlanEOL_path = eicu_path + "carePlanEOL.csv"
             self.carePlanGeneral_path = eicu_path + "carePlanGeneral.csv"
             self.carePlanGoal_path = eicu_path + "carePlanGoal.csv"
-            self.carePlanInfectiousDisease_path = eicu_path + "carePlanInfectiousDisease.csv"
+            self.carePlanInfectiousDisease_path = (
+                eicu_path + "carePlanInfectiousDisease.csv"
+            )
             self.customLab_path = eicu_path + "customLab.csv"
             self.diagnosis_path = eicu_path + "diagnosis.csv"
             self.hospital_path = eicu_path + "hospital.csv"
@@ -76,7 +86,9 @@ class EICUPaths(GlobalVars):
             self.patient_path = eicu_path + "patient.csv"
             self.physicalExam_path = eicu_path + "physicalExam.csv"
             self.respiratoryCare_path = eicu_path + "respiratoryCare.csv"
-            self.respiratoryCharting_path = eicu_path + "respiratoryCharting.csv"
+            self.respiratoryCharting_path = (
+                eicu_path + "respiratoryCharting.csv"
+            )
             self.treatment_path = eicu_path + "treatment.csv"
             self.vitalAperiodic_path = eicu_path + "vitalAperiodic.csv"
             self.vitalPeriodic_path = eicu_path + "vitalPeriodic.csv"
@@ -84,14 +96,25 @@ class EICUPaths(GlobalVars):
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
         self.lab_mapping_path = self.eICU_mapping_path + "eicu_lab.yaml"
-        self.resp_mapping_path = self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
-        self.intakeoutput_mapping_path = self.eICU_mapping_path + "eicu_intakeOutput.yaml"
-        self.nurse_mapping_path = self.eICU_mapping_path + "eicu_nurseCharting.yaml"
-        self.nurse_oxygen_delivery_device_mapping_path = (
-            self.eICU_mapping_path + "eicu_nurseCharting_oxygenDeliveryDevices.yaml"
+        self.resp_mapping_path = (
+            self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
-        self.periodic_mapping_path = self.eICU_mapping_path + "eicu_vitalPeriodic.yaml"
-        self.medication_mapping_path = self.eICU_mapping_path + "eicu_medication.yaml"
+        self.intakeoutput_mapping_path = (
+            self.eICU_mapping_path + "eicu_intakeOutput.yaml"
+        )
+        self.nurse_mapping_path = (
+            self.eICU_mapping_path + "eicu_nurseCharting.yaml"
+        )
+        self.nurse_oxygen_delivery_device_mapping_path = (
+            self.eICU_mapping_path
+            + "eicu_nurseCharting_oxygenDeliveryDevices.yaml"
+        )
+        self.periodic_mapping_path = (
+            self.eICU_mapping_path + "eicu_vitalPeriodic.yaml"
+        )
+        self.medication_mapping_path = (
+            self.eICU_mapping_path + "eicu_medication.yaml"
+        )
 
 
 # endregion
@@ -107,14 +130,22 @@ class HiRIDPaths(GlobalVars):
         self.reference_data_path = hirid_path + "reference_data/"
         self.raw_stage_path = hirid_path + "raw_stage/"
         self.general_table_path = self.reference_data_path + "general_table.csv"
-        self.variable_reference_path = self.reference_data_path + "hirid_variable_reference.csv"
-        self.timeseries_path = self.raw_stage_path + "observation_tables/parquet/"
+        self.variable_reference_path = (
+            self.reference_data_path + "hirid_variable_reference.csv"
+        )
+        self.timeseries_path = (
+            self.raw_stage_path + "observation_tables/parquet/"
+        )
         self.pharma_path = self.raw_stage_path + "pharma_records/parquet/"
-        self.imputed_stage_path = hirid_path + "imputed_stage/imputed_stage/parquet/"
+        self.imputed_stage_path = (
+            hirid_path + "imputed_stage/imputed_stage/parquet/"
+        )
 
         # HiRID custom mapping paths
         self.hirid_mapping_path = self.mapping_path + "hirid/"
-        self.observation_mapping_path = self.hirid_mapping_path + "hirid_OBSERVATION.yaml"
+        self.observation_mapping_path = (
+            self.hirid_mapping_path + "hirid_OBSERVATION.yaml"
+        )
 
 
 # endregion
@@ -161,15 +192,23 @@ class MIMIC3Paths(GlobalVars):
             self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv"
             self.patients_path = mimic3_path + "PATIENTS.csv"
             self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv"
-            self.procedureevents_mv_path = mimic3_path + "PROCEDUREEVENTS_MV.csv"
+            self.procedureevents_mv_path = (
+                mimic3_path + "PROCEDUREEVENTS_MV.csv"
+            )
             self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv"
             self.services_path = mimic3_path + "SERVICES.csv"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
-        self.vitals_mapping_path = self.mimic3_mapping_path + "mimic3_chartevents.yaml"
-        self.labs_mapping_path = self.mimic3_mapping_path + "mimic3_labevents.yaml"
-        self.outputs_mapping_path = self.mimic3_mapping_path + "mimic3_outputevents.yaml"
+        self.vitals_mapping_path = (
+            self.mimic3_mapping_path + "mimic3_chartevents.yaml"
+        )
+        self.labs_mapping_path = (
+            self.mimic3_mapping_path + "mimic3_labevents.yaml"
+        )
+        self.outputs_mapping_path = (
+            self.mimic3_mapping_path + "mimic3_outputevents.yaml"
+        )
         # self.medication_mapping_path = self.mimic3_mapping_path + "mimic3_medication.yaml"
 
 
@@ -186,7 +225,9 @@ class MIMIC4Paths(GlobalVars):
         self.admissions_path = mimic4_path + "hosp/admissions.csv.gz"
         self.chartevents_path = mimic4_path + "icu/chartevents.csv.gz"
         self.d_icd_diagnoses_path = mimic4_path + "hosp/d_icd_diagnoses.csv.gz"
-        self.d_icd_procedures_path = mimic4_path + "hosp/d_icd_procedures.csv.gz"
+        self.d_icd_procedures_path = (
+            mimic4_path + "hosp/d_icd_procedures.csv.gz"
+        )
         self.d_items_path = mimic4_path + "icu/d_items.csv.gz"
         self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv.gz"
         self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv.gz"
@@ -205,7 +246,9 @@ class MIMIC4Paths(GlobalVars):
             self.admissions_path = mimic4_path + "hosp/admissions.csv"
             self.chartevents_path = mimic4_path + "icu/chartevents.csv"
             self.d_icd_diagnoses_path = mimic4_path + "hosp/d_icd_diagnoses.csv"
-            self.d_icd_procedures_path = mimic4_path + "hosp/d_icd_procedures.csv"
+            self.d_icd_procedures_path = (
+                mimic4_path + "hosp/d_icd_procedures.csv"
+            )
             self.d_items_path = mimic4_path + "icu/d_items.csv"
             self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv"
             self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv"
@@ -221,9 +264,15 @@ class MIMIC4Paths(GlobalVars):
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"
-        self.vitals_mapping_path = self.mimic4_mapping_path + "mimic4_chartevents.yaml"
-        self.labs_mapping_path = self.mimic4_mapping_path + "mimic4_labevents.yaml"
-        self.outputs_mapping_path = self.mimic4_mapping_path + "mimic4_outputevents.yaml"
+        self.vitals_mapping_path = (
+            self.mimic4_mapping_path + "mimic4_chartevents.yaml"
+        )
+        self.labs_mapping_path = (
+            self.mimic4_mapping_path + "mimic4_labevents.yaml"
+        )
+        self.outputs_mapping_path = (
+            self.mimic4_mapping_path + "mimic4_outputevents.yaml"
+        )
 
 
 # endregion
@@ -247,8 +296,12 @@ class SICdbPaths(GlobalVars):
 
         # SICdb custom mapping paths
         self.sicdb_mapping_path = self.mapping_path + "sicdb/"
-        self.laboratory_mapping_path = self.sicdb_mapping_path + "sicdb_Laboratory.yaml"
-        self.timeseries_mapping_path = self.sicdb_mapping_path + "sicdb_Timeseries.yaml"
+        self.laboratory_mapping_path = (
+            self.sicdb_mapping_path + "sicdb_Laboratory.yaml"
+        )
+        self.timeseries_mapping_path = (
+            self.sicdb_mapping_path + "sicdb_Timeseries.yaml"
+        )
 
 
 # region UMCdb
@@ -268,8 +321,12 @@ class UMCdbPaths(GlobalVars):
 
         # UMCdb custom mapping paths
         self.umcdb_mapping_path = self.mapping_path + "umcdb/"
-        self.numeric_mapping_path = self.umcdb_mapping_path + "umcdb_numericitems.yaml"
-        self.listitems_mapping_path = self.umcdb_mapping_path + "umcdb_listitems.yaml"
+        self.numeric_mapping_path = (
+            self.umcdb_mapping_path + "umcdb_numericitems.yaml"
+        )
+        self.listitems_mapping_path = (
+            self.umcdb_mapping_path + "umcdb_listitems.yaml"
+        )
 
 
 # endregion

@@ -31,7 +31,9 @@ class HiRIDProcessor(HiRIDExtractor):
 
         if os.path.isfile(self.precalc_path + "HiRID_B_timeseries.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(self.precalc_path + "HiRID_B_timeseries.parquet")
+            return pl.scan_parquet(
+                self.precalc_path + "HiRID_B_timeseries.parquet"
+            )
 
         print("HiRID   - Processing time series data...")
 
@@ -55,7 +57,10 @@ class HiRIDProcessor(HiRIDExtractor):
 
             # Update the counter
             counter += 1
-            print(f"Processing file {file}... \t{counter} / {counter_max}", end="\r")
+            print(
+                f"Processing file {file}... \t{counter} / {counter_max}",
+                end="\r",
+            )
 
             # Process timeseries data
             timeseries = (
@@ -67,7 +72,11 @@ class HiRIDProcessor(HiRIDExtractor):
                     observation_mapping,
                 )
                 # Convert the lab values to the correct units
-                .pipe(self.convert._convert_lab_values, labelcol="variableid", valuecol="value")
+                .pipe(
+                    self.convert._convert_lab_values,
+                    labelcol="variableid",
+                    valuecol="value",
+                )
                 # Pivot the timeseries data
                 .collect(streaming=True)
                 .pivot(
@@ -79,16 +88,23 @@ class HiRIDProcessor(HiRIDExtractor):
             )
 
             # Drop empty rows
-            droplist = list(set(timeseries.collect_schema().names()) - set(self.index_cols))
-            timeseries = timeseries.pipe(self.helpers.dropna, subset=droplist, how="all").unique()
+            droplist = list(
+                set(timeseries.collect_schema().names()) - set(self.index_cols)
+            )
+            timeseries = timeseries.pipe(
+                self.helpers.dropna, subset=droplist, how="all"
+            ).unique()
 
             # Append the data to the DataFrame
             timeseries_processed = pl.concat(
-                [timeseries_processed, timeseries.lazy()], how="diagonal_relaxed"
+                [timeseries_processed, timeseries.lazy()],
+                how="diagonal_relaxed",
             )
 
         # Save the preprocessed data
-        timeseries_processed.sink_parquet(self.precalc_path + "HiRID_B_timeseries.parquet")
+        timeseries_processed.sink_parquet(
+            self.precalc_path + "HiRID_B_timeseries.parquet"
+        )
 
         return timeseries_processed
 
