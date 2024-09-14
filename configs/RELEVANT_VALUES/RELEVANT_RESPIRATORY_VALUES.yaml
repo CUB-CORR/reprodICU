@@ -1,6 +1,6 @@
 etCO2: True
 FiO2: True
-FiO2 / oxygen_flow: True # NOTE: needs work to be useful
+# FiO2 / oxygen_flow: True # NOTE: needs work to be useful
 mean_airway_pressure: True
 # Mechanical Ventilator Mode: True  # TODO: check if this is good
 minute_volume_exhaled: True
