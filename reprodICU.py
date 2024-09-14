@@ -19,6 +19,7 @@ from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
 # import extra functions for cleaning, winsorizing, etc.
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
+from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
 
 
 def load_mapping(path: str) -> dict:
@@ -67,11 +68,25 @@ if __name__ == "__main__":
         default=["all"],
         help="What parts of the datasets to extract.",
     )
+    parser.add_argument(
+        "--DEMO",
+        action="store_true",
+        help="Create a demo dataset with a subset of the data.",
+    )
     args = parser.parse_args()
 
     # Initialize paths
     paths = reprodICUPaths()
     column_names = load_mapping("configs/COLUMN_NAMES.yaml")
+    save_path = (
+        paths.reprodICU_files_path
+        if not args.DEMO
+        else paths.reprodICU_demo_files_path
+    )
+    diagnoses_imputer = DiagnosesImputer(
+        paths=paths,
+        patient_info_location=save_path + "patient_information.parquet",
+    )
 
     # Select datasets to extract
     if "all" in args.datasets:
@@ -95,7 +110,7 @@ if __name__ == "__main__":
     if "patient_information" in tables:
         print("reprodICU - Combining patient information...")
         patient_info_harmonizer = PatientInformationHarmonizer(
-            paths=paths, datasets=datasets
+            paths=paths, datasets=datasets, DEMO=args.DEMO
         )
 
         # Winsorize the patient information
@@ -108,57 +123,52 @@ if __name__ == "__main__":
             columns=columns_to_winsorize,
             alpha=0.9995,
         ).collect(streaming=True).write_parquet(
-            paths.reprodICU_files_path + "patient_information.parquet"
+            save_path + "patient_information.parquet"
         )
 
     if "diagnoses" in tables:
         print("reprodICU - Combining diagnoses...")
         diagnoses_harmonizer = DiagnosesHarmonizer(
-            paths=paths, datasets=datasets
+            paths=paths, datasets=datasets, DEMO=args.DEMO
         )
-        diagnoses_harmonizer.harmonize_diagnoses().collect().write_parquet(
-            paths.reprodICU_files_path + "diagnoses.parquet"
+        diagnoses_harmonizer.harmonize_diagnoses().pipe(
+            diagnoses_imputer.impute_diagnoses
+        ).collect(streaming=True).write_parquet(
+            paths.reprodICU_files_path + "diagnoses_imputed.parquet"
         )
-        # diagnoses_harmonizer.harmonize_diagnoses().sink_parquet(paths.reprodICU_files_path +"diagnoses.parquet")
+        # diagnoses_harmonizer.harmonize_diagnoses().sink_parquet(save_path +"diagnoses.parquet")
 
     if "procedures" in tables:
         print("reprodICU - Combining procedures...")
         procedures_harmonizer = ProceduresHarmonizer(
-            paths=paths, datasets=datasets
+            paths=paths, datasets=datasets, DEMO=args.DEMO
         )
         procedures_harmonizer.harmonize_procedures().collect().write_parquet(
-            paths.reprodICU_files_path + "procedures.parquet"
+            save_path + "procedures.parquet"
         )
 
     if "medications" in tables:
         print("reprodICU - Combining medications...")
         medication_harmonizer = MedicationHarmonizer(
-            paths=paths, datasets=datasets
+            paths=paths, datasets=datasets, DEMO=args.DEMO
         )
         medication_harmonizer.harmonize_medications().sink_parquet(
-            paths.reprodICU_files_path + "medications.parquet"
+            save_path + "medications.parquet"
         )
 
     if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
         timeseries_harmonizer = TimeseriesHarmonizer(
-            paths=paths, datasets=datasets
+            paths=paths, datasets=datasets, DEMO=args.DEMO
         )
         # timeseries_harmonizer.harmonize_timeseries().sink_parquet("tempfiles/reprodICU_timeseries.parquet")
         vitals, labs, resp, inout = timeseries_harmonizer.split_timeseries(
-            paths.reprodICU_files_path
-            + "_tempfiles/reprodICU_timeseries.parquet",
+            save_path + "_tempfiles/reprodICU_timeseries.parquet",
             save_to_default=False,
         )
-        vitals.sink_parquet(
-            paths.reprodICU_files_path + "timeseries_vitals.parquet"
-        )
-        resp.sink_parquet(
-            paths.reprodICU_files_path + "timeseries_respiratory.parquet"
-        )
-        inout.sink_parquet(
-            paths.reprodICU_files_path + "timeseries_intakeoutput.parquet"
-        )
+        vitals.sink_parquet(save_path + "timeseries_vitals.parquet")
+        resp.sink_parquet(save_path + "timeseries_respiratory.parquet")
+        inout.sink_parquet(save_path + "timeseries_intakeoutput.parquet")
 
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
@@ -182,9 +192,7 @@ if __name__ == "__main__":
                 alpha=0.99,
             )
             .collect(streaming=True)
-            .write_parquet(
-                paths.reprodICU_files_path + "timeseries_labs.parquet"
-            )
+            .write_parquet(save_path + "timeseries_labs.parquet")
         )
 
     else:

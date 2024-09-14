@@ -19,12 +19,12 @@ from helpers.helper import GlobalVars
 
 
 class PatientInformationHarmonizer(GlobalVars):
-    def __init__(self, paths, datasets: list):
+    def __init__(self, paths, datasets: list, DEMO=False):
         super().__init__(paths)
-        self.eicu = EICUExtractor(paths)
+        self.eicu = EICUExtractor(paths, DEMO)
         self.hirid = HiRIDExtractor(paths)
-        self.mimic3 = MIMIC3Extractor(paths)
-        self.mimic4 = MIMIC4Extractor(paths)
+        self.mimic3 = MIMIC3Extractor(paths, DEMO)
+        self.mimic4 = MIMIC4Extractor(paths, DEMO)
         self.sicdb = SICdbExtractor(paths)
         self.umcdb = UMCdbExtractor(paths)
         self.datasets = datasets

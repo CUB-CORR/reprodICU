@@ -19,12 +19,12 @@ from helpers.helper_conversions import GCSCombiner
 
 
 class TimeseriesHarmonizer(GlobalVars):
-    def __init__(self, paths, datasets: list):
+    def __init__(self, paths, datasets: list, DEMO=False):
         super().__init__(paths)
-        self.eicu = EICUProcessor(paths)
+        self.eicu = EICUProcessor(paths, DEMO)
         self.hirid = HiRIDProcessor(paths)
-        self.mimic3 = MIMIC3Processor(paths)
-        self.mimic4 = MIMIC4Processor(paths)
+        self.mimic3 = MIMIC3Processor(paths, DEMO)
+        self.mimic4 = MIMIC4Processor(paths, DEMO)
         self.sicdb = SICdbProcessor(paths)
         self.umcdb = UMCdbProcessor(paths)
         self.datasets = datasets
@@ -219,11 +219,11 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
         if save_to_default:
-            vitals.sink_parquet("reprodICU-files/timeseries_vitals.parquet")
-            labs.sink_parquet("reprodICU-files/timeseries_labs.parquet")
-            resp.sink_parquet("reprodICU-files/timeseries_respiratory.parquet")
+            vitals.sink_parquet("reprodICU_files/timeseries_vitals.parquet")
+            labs.sink_parquet("reprodICU_files/timeseries_labs.parquet")
+            resp.sink_parquet("reprodICU_files/timeseries_respiratory.parquet")
             inout.sink_parquet(
-                "reprodICU-files/timeseries_intakeoutput.parquet"
+                "reprodICU_files/timeseries_intakeoutput.parquet"
             )
 
             return None
