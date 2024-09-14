@@ -108,9 +108,13 @@ class GlobalVars(GlobalHelpers):
         self.ADMISSION_LOCATIONS_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADMISSION_LOCATIONS.yaml"
         )
+        self.ADMISSION_TYPES_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADMISSION_TYPES.yaml"
+        )
         self.DISCHARGE_LOCATIONS_MAP = self.load_many_to_one_mapping(
             mapping_path + "DISCHARGE_LOCATIONS.yaml"
         )
+        self.SPECIALTIES_MAP = self.load_many_to_one_mapping(mapping_path + "SPECIALTIES.yaml")
         self.UNIT_TYPES_MAP = self.load_many_to_one_mapping(mapping_path + "UNIT_TYPES.yaml")
 
         # append globally configured paths as class attributes
@@ -134,9 +138,13 @@ class GlobalVars(GlobalHelpers):
         self.admission_locations_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "ADMISSION_LOCATIONS.yaml")
         )
+        self.admission_types_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "ADMISSION_TYPES.yaml")
+        )
         self.discharge_locations_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "DISCHARGE_LOCATIONS.yaml")
         )
+        self.specialties_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "SPECIALTIES.yaml"))
         self.unit_types_dtype = pl.Enum(self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml"))
 
         # Define global mappings (ICD diagnoses)

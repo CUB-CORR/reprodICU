@@ -143,6 +143,7 @@ class MIMIC3Paths(GlobalVars):
         self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv.gz"
         self.procedureevents_mv_path = mimic3_path + "PROCEDUREEVENTS_MV.csv.gz"
         self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv.gz"
+        self.services_path = mimic3_path + "SERVICES.csv.gz"
 
         # MIMIC-III DEMO data paths
         if DEMO == True:
@@ -162,6 +163,7 @@ class MIMIC3Paths(GlobalVars):
             self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv"
             self.procedureevents_mv_path = mimic3_path + "PROCEDUREEVENTS_MV.csv"
             self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv"
+            self.services_path = mimic3_path + "SERVICES.csv"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
@@ -196,6 +198,7 @@ class MIMIC4Paths(GlobalVars):
         self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv.gz"
         self.procedureevents_path = mimic4_path + "icu/procedureevents.csv.gz"
         self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv.gz"
+        self.services_path = mimic4_path + "hosp/services.csv.gz"
 
         # MIMIC-IV DEMO data paths
         if DEMO == True:
@@ -214,6 +217,7 @@ class MIMIC4Paths(GlobalVars):
             self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv"
             self.procedureevents_path = mimic4_path + "icu/procedureevents.csv"
             self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv"
+            self.services_path = mimic4_path + "hosp/services.csv"
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"

@@ -79,6 +79,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "ETHNICITY": self.ethnicity_col,
                     "ADMISSION_LOCATION": self.admission_loc_col,
                     "DISCHARGE_LOCATION": self.discharge_loc_col,
+                    "ADMISSION_TYPE": self.admission_type_col,
                     "HOSPITAL_EXPIRE_FLAG": self.mortality_hosp_col,
                 }
             )
@@ -88,6 +89,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.ethnicity_col,
                     self.admission_loc_col,
                     self.discharge_loc_col,
+                    self.admission_type_col,
                     self.mortality_hosp_col,
                     "ADMITTIME",
                     "DISCHTIME",
@@ -111,6 +113,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
             .join(self._extract_patient_height_weight(icustays), on=self.icu_stay_id_col)
+            .join(self._extract_specialties(), on=self.icu_stay_id_col)
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("OUTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -171,6 +174,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
+                # Convert categorical admission type to enum
+                pl.col(self.admission_type_col)
+                .replace(self.ADMISSION_TYPES_MAP)
+                .cast(self.admission_types_dtype),
+                # Convert categorical specialty to enum
+                pl.col(self.specialty_col)
+                .replace(self.SPECIALTIES_MAP)
+                .cast(self.specialties_dtype),
             )
             .select(
                 [
@@ -187,12 +198,41 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.mortality_hosp_col,
                     self.mortality_icu_col,
                     self.mortality_after_col,
+                    self.admission_type_col,
+                    self.specialty_col,
                     self.admission_loc_col,
                     self.unit_type_col,
                     self.care_site_col,
                     self.discharge_loc_col,
                 ]
             )
+        )
+
+    # endregion
+
+    # region specialties
+    # Extract specialties from the services.csv file
+    def _extract_specialties(self) -> pl.LazyFrame:
+        IDs = self.extract_patient_IDs().select(
+            self.hospital_stay_id_col, self.icu_stay_id_col, "INTIME"
+        )
+
+        services = pl.scan_csv(self.services_path).rename(
+            {
+                "HADM_ID": self.hospital_stay_id_col,
+                "CURR_SERVICE": self.specialty_col,
+            }
+        )
+
+        return (
+            services.select([self.hospital_stay_id_col, "TRANSFERTIME", self.specialty_col])
+            .join(IDs, on=self.hospital_stay_id_col)
+            # Get the most recent specialty
+            .filter(pl.col("TRANSFERTIME") < pl.col("INTIME"))
+            # Get the most recent specialty on ICU admission
+            .group_by(self.icu_stay_id_col)
+            .first()
+            .select([self.icu_stay_id_col, self.specialty_col])
         )
 
     # endregion

@@ -31,7 +31,15 @@ class HiRIDExtractor(HiRIDPaths):
             .join(self._extract_length_of_stay(), on=self.icu_stay_id_col)
             .join(self._extract_patient_height_weight(), on=self.icu_stay_id_col)
             .with_columns(
-                pl.lit("Bern University Hospital").alias(self.care_site_col),
+                # Set care site
+                pl.lit("Universitätsspital Bern").alias(self.care_site_col),
+                # Set unit type
+                # NOTE: the Bern University Hospital only has one unit type
+                # -> all ICU patients are cared for within a interdisciplinary 60-bed unit in the Department of Intensive Care Medicine
+                pl.lit("Medical-Surgical")
+                .replace(self.UNIT_TYPES_MAP)
+                .cast(self.unit_types_dtype)
+                .alias(self.unit_type_col),
             )
         )
 

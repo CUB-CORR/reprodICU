@@ -1,0 +1,150 @@
+Cardiology:
+  # MIMIC-III/-IV
+  - CMED # Cardiac Medical - for non-surgical cardiac related admissions
+  # SICdb
+  - 2. Medizin # Cardiology
+  - Intensivstation 2. Medizin # Intensive Care Cardiology
+  # UMCdb
+  - Cardiologie # Cardiology
+Cardiothoracic Surgery:
+  # MIMIC-III/-IV
+  - CSURG # Cardiac Surgery - for surgical cardiac admissions
+  - TSURG # Thoracic Surgical - surgery on the thorax, located between the neck and the abdomen
+  # SICdb
+  - Herzchirurgie # Cardiac Surgery
+  # UMCdb
+  - Cardiochirurgie # Cardiac Surgery
+  - Heelkunde Longen/Oncologie # Pulmo-oncological Surgery
+General Surgery:
+  # MIMIC-III/-IV
+  - SURG # Surgical - general surgical service not classified elsewhere
+  # SICdb
+  - Allgemeinchirurgie # General Surgery
+  - Kinderchirurgie # Pediatric Surgery
+  # UMCdb
+  - Heelkunde Gastro-enterologie # Gastroenterological Surgery
+Gynecology & Obstetrics:
+  # MIMIC-III/-IV
+  - GYN # Gynecological - female reproductive systems and breasts
+  - OBS # Obstetrics - conerned with childbirth and the care of women giving birth
+  # SICdb
+  - Gynäkologie # Gynecology
+  # UMCdb
+  - Gynaecologie # Gynecology
+  - Obstetrie # Obstetrics
+  - Verloskunde # Obstetrics
+Internal Medicine:
+  # MIMIC-III/-IV
+  - MED # Medical - general service for internal medicine
+  # SICdb
+  - 1. Medizin # Gastroenterology
+  - Endokrinologie # Endocrinology
+  - Pädiatrie # Pediatrics
+  - Pneumologie # Pulmonology
+  # UMCdb
+  - Inwendig # Internal Medicine
+  - Longziekte # Pulmonology
+  - Maag-,Darm-,Leverziekten # Gastroenterology
+  - Nefrologie # Nephrology
+  - Reumatologie # Rheumatology
+Neurosurgery:
+  # MIMIC-III/-IV
+  - NSURG # Neurologic Surgical - surgical, relating to the brain
+  # SICdb
+  - Neurochirurgie # Neurosurgery
+  # UMCdb
+  - Neurochirurgie # Neurosurgery
+Neurology:
+  # MIMIC-III/-IV
+  - NMED # Neurologic Medical - non-surgical, relating to the brain
+  # SICdb
+  - Neurologie # Neurology
+  # UMCdb
+  - Neurologie # Neurology
+Oncology:
+  # SICdb
+  - 3. Medizin # Hematology / Oncology
+  # UMCdb
+  - Hematologie # Hematology
+  - Oncologie Inwendig # Internal Oncology
+  - Heelkunde Oncologie # Oncological Surgery
+Opthalmology:
+  # MIMIC-III/-IV
+  - EYE # Eye diseases - including subspecialty services in glaucoma, cataract surgery, cornea and external diseases, and neuro-ophthalmology
+  # SICdb
+  - Augenheilkunde # Ophthalmology
+  # UMCdb
+  - Oogheelkunde # Ophthalmology
+Oral and Maxillofacial Surgery:
+  # MIMIC-III/-IV
+  - DENT # Dental - for dental/jaw related admissions
+  # SICdb
+  - Kieferchirurgie # Oral and Maxillofacial Surgery
+  # UMCdb
+  - Mondheelkunde # Oral Surgery
+Orthopedics:
+  # MIMIC-III/-IV
+  - ORTHO # Orthopaedic - surgical, relating to the musculoskeletal system
+  - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
+  # SICdb
+  - Orthopädie # Orthopedics
+  # UMCdb
+  - Orthopedie # Orthopedics
+Otolaryngology:
+  # MIMIC-III/-IV
+  - ENT # Ear, nose, and throat - conditions primarily affecting these areas
+  # SICdb
+  - HNO # Ear, Nose, and Throat
+  # UMCdb
+  - Keel, Neus & Oorarts # Ear, Nose & Throat
+Plastic Surgery:
+  # MIMIC-III/-IV
+  - PSURG # Plastic - restortation/reconstruction of the human body (including cosmetic or aesthetic)
+  # UMCdb
+  - Plastische chirurgie # Plastic Surgery
+Psychiatry:
+  # MIMIC-III/-IV
+  - PSYCH # Psychiatric - mental disorders relating to mood, behaviour, cognition, or perceptions
+  # SICdb
+  - Psychiatrie # Psychiatry
+Traumatology:
+  # MIMIC-III/-IV
+  - TRAUM # Trauma - injury or damage caused by physical harm from an external source
+  # SICdb
+  - Unfallchirurgie # Trauma Surgery
+  # UMCdb
+  - Traumatologie # Traumatology
+Urology:
+  # MIMIC-III/-IV
+  - GU # Genitourinary - reproductive organs/urinary system
+  # SICdb
+  - Urologie # Urology
+  # UMCdb
+  - Urologie # Urology
+Vascular Surgery:
+  # MIMIC-III/-IV
+  - VSURG # Vascular Surgical - surgery relating to the circulatory system
+  # SICdb
+  - Angiologie # Angiology
+  - Gefäßchirurgie # Vascular Surgery
+  # UMCdb
+  - Vaatchirurgie # Vascular Surgery
+Other:
+  # MIMIC-III/-IV
+  - NB # Newborn - infants born at the hospital
+  - NBB # Newborn baby - infants born at the hospital
+  # SICdb
+  - Dermatologie # Dermatology
+  - Externe Intensivstation # External Intensive Care
+  - Externes Krankenhaus # External Hospital
+  - Zentralambulanz (ZANE) CDK # Emergency Department
+  - Zentrale Notaufnahme # Emergency Department
+  # UMCdb
+  - Intensive Care Volwassenen # Adult Intensive Care
+Unknown:
+  # MIMIC-III/-IV
+  - ""
+  # SICdb
+  - Unknown
+  # UMCdb
+  - ders

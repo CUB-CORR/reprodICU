@@ -1,20 +1,14 @@
 Cardiac:
   - Cardiac ICU
   - Cardiac Vascular Intensive Care Unit (CVICU)
-  - Cardiologie
   - CCU
   - CCU-CTICU
   - Coronary Care Unit (CCU)
-Gastrosurgery:
-  - Heelkunde Gastro-enterologie
-  - Maag-,Darm-,Leverziekten
 Neurological:
   - Neuro ICU
   - Neuro Intermediate
   - Neuro Stepdown
   - Neuro Surgical Intensive Care Unit (Neuro SICU)
-  - Neurochirurgie
-  - Neurologie
   - NICU
   # MIMIC-IV 3.0
   - Neurology
@@ -25,6 +19,8 @@ Medical:
   - MICU
   # MIMIC-IV 3.0
   - Medicine/Cardiology Intermediate
+  # UMCdb
+  - MC
 Medical-Surgical:
   - Med-Surg ICU
   - Medical/Surgical Intensive Care Unit (MICU/SICU)
@@ -33,46 +29,31 @@ Medical-Surgical:
   # MIMIC-IV 3.0
   - Intensive Care Unit (ICU)
   - Med/Surg
+  # UMCdb
+  - IC&MC
+  - MC&IC
 Surgical:
-  - Cardiochirurgie
   - CSICU
   - CSRU
   - CTICU
   - PACU
   - SICU
   - Surgical Intensive Care Unit (SICU)
-  - Vaatchirurgie
+  # MIMIC-IV 3.0
+  - Surgery/Vascular/Intermediate
   # SICdb
   - CWIN # Chirurgie West-Intensivstation - CWIN
   - INBD # Intensivstation INBD
   - INIC # Intermediate Care Station - INIC
-  # MIMIC-IV 3.0
-  - Surgery/Vascular/Intermediate
+  # UMCdb
+  - IC
 Trauma:
   - Trauma SICU (TSICU)
-  - Traumatologie
   - TSICU
   # MIMIC-IV 3.0
   - Surgery/Trauma
 Other:
-  - ders
-  - Gynaecologie
-  - Heelkunde Longen/Oncologie
-  - Heelkunde Oncologie
-  - Hematologie
-  - Inwendig
-  - Keel, Neus & Oorarts
-  - Longziekte
-  - Mondheelkunde
-  - Nefrologie
-  - Obstetrie
-  - Oncologie Inwendig
-  - Oogheelkunde
-  - Orthopedie
-  - Plastische chirurgie
-  - Reumatologie
-  - Urologie
-  - Verloskunde
+  - Other
 Unknown:
   - Unknown
   - unknown

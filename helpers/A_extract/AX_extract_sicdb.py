@@ -50,6 +50,12 @@ class SICdbExtractor(SICdbPaths):
                 .replace_strict(self.ADMISSION_LOCATIONS_MAP, default=None)
                 .cast(self.admission_locations_dtype)
                 .alias(self.admission_loc_col),
+                # Convert specialty to established dtype
+                pl.col("ReferringUnit")
+                .replace_strict(self._extract_references("ReferringUnit"))
+                .replace_strict(self.SPECIALTIES_MAP, default=None)
+                .cast(self.specialties_dtype)
+                .alias(self.specialty_col),
                 # Convert unit type to established dtype
                 pl.col("HospitalUnit")
                 .replace_strict(self._extract_references("HospitalUnit"))
