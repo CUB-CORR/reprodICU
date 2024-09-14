@@ -225,8 +225,44 @@ class EICUProcessor(EICUExtractor):
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_nurse.parquet"):
             ts_nurse = (
                 self.extract_time_series_nurse()
+                # Split oxygen_flow / FiO2 into oxygen_flow and FiO2
+                .with_columns(
+                    pl.when(
+                        pl.col("oxygen_delivery_device").is_in(
+                            [
+                                "ambu_bag",
+                                "high_flow_nasal_cannula",
+                                "facemask",
+                                "nasal cannula",
+                                "nebulizer",
+                                "non_rebreather_mask",
+                            ]
+                        )
+                        & pl.col("oxygen_flow").is_null()
+                    )
+                    .then(pl.col("oxygen_flow / FiO2"))
+                    .otherwise(pl.col("oxygen_flow"))
+                    .alias("oxygen_flow"),
+                    pl.when(
+                        pl.col("oxygen_delivery_device").is_in(
+                            [
+                                "BiPAP",
+                                "CPAP",
+                                "t_piece",
+                                "tracheostomy",
+                                "ventilator",
+                            ]
+                        )
+                        & pl.col("FiO2").is_null()
+                    )
+                    .then(pl.col("oxygen_flow / FiO2"))
+                    .otherwise(pl.col("FiO2"))
+                    .alias("FiO2"),
+                )
+                .drop("oxygen_flow / FiO2")
                 # Pivot the nurse values to wide format
-                .collect(streaming=True).pivot(
+                .collect(streaming=True)
+                .pivot(
                     on="nursingchartcelltypevalname",
                     index=self.index_cols,
                     values="nursingchartvalue",
@@ -428,8 +464,8 @@ class EICUConverter(UnitConverter):
                     ),
                 )
                 .then(pl.lit("base_excess_deficit"))
-                .otherwise(pl.col(valuecol))
-                .alias(valuecol),
+                .otherwise(pl.col(labelcol))
+                .alias(labelcol),
             )
         )
 

@@ -2,8 +2,8 @@ alkaline_phosphatase: True
 ALT: True
 anion_gap: True
 AST: True
-base_deficit: True # -> necessary for base_excess_deficit fixing in eICU
-base_excess: True # -> necessary for base_excess_deficit fixing in eICU
+# base_deficit: True # -> necessary for base_excess_deficit fixing in eICU
+# base_excess: True # -> necessary for base_excess_deficit fixing in eICU
 base_excess_deficit: True
 basophils: True
 bicarbonate: True
