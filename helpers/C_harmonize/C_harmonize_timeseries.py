@@ -15,6 +15,7 @@ from helpers.B_process.BX_process_sicdb import SICdbProcessor
 from helpers.B_process.BX_process_umcdb import UMCdbProcessor
 from helpers.helper import GlobalVars
 from helpers.helper import GlobalHelpers
+from helpers.helper_conversions import GCSCombiner
 
 
 class TimeseriesHarmonizer(GlobalVars):
@@ -39,121 +40,38 @@ class TimeseriesHarmonizer(GlobalVars):
         # Harmonize the timeseries
         timeseries_datasets = []
 
-        # if "eICU" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
-        #     )
-
-        # if "HiRID" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
-        #     )
-
-        # if "MIMIC3" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.mimic3.process_timeseries().pipe(self._concat_helper, "mimic3-")
-        #     )
-
-        # if "MIMIC4" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.mimic4.process_timeseries().pipe(self._concat_helper, "mimic4-")
-        #     )
-
-        # if "SICdb" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
-        #     )
-
-        # if "UMCdb" in self.datasets:
-        #     timeseries_datasets.append(
-        #         self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
-        #     )
-
         if "eICU" in self.datasets:
             eicu_timeseries = self.eicu.process_timeseries().pipe(self._concat_helper, "eicu-")
-            eicu_unique_count = (
-                eicu_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {eicu_unique_count:6.0f} unique cases with timeseries data in eICU."
-            )
+            self._print_unique_cases(eicu_timeseries, "eICU", self.global_icu_stay_id_col)
             timeseries_datasets.append(eicu_timeseries)
 
         if "HiRID" in self.datasets:
             hirid_timeseries = self.hirid.process_timeseries().pipe(self._concat_helper, "hirid-")
-            hirid_unique_count = (
-                hirid_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {hirid_unique_count:6.0f} unique cases with timeseries data in HiRID."
-            )
+            self._print_unique_cases(hirid_timeseries, "HiRID", self.global_icu_stay_id_col)
             timeseries_datasets.append(hirid_timeseries)
 
         if "MIMIC3" in self.datasets:
             mimic3_timeseries = self.mimic3.process_timeseries().pipe(
                 self._concat_helper, "mimic3-"
             )
-            mimic3_unique_count = (
-                mimic3_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {mimic3_unique_count:6.0f} unique cases with timeseries data in MIMIC3."
-            )
+            self._print_unique_cases(mimic3_timeseries, "MIMIC3", self.global_icu_stay_id_col)
             timeseries_datasets.append(mimic3_timeseries)
 
         if "MIMIC4" in self.datasets:
             mimic4_timeseries = self.mimic4.process_timeseries().pipe(
                 self._concat_helper, "mimic4-"
             )
-            mimic4_unique_count = (
-                mimic4_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {mimic4_unique_count:6.0f} unique cases with timeseries data in MIMIC4."
-            )
+            self._print_unique_cases(mimic4_timeseries, "MIMIC4", self.global_icu_stay_id_col)
             timeseries_datasets.append(mimic4_timeseries)
 
         if "SICdb" in self.datasets:
             sicdb_timeseries = self.sicdb.process_timeseries().pipe(self._concat_helper, "sicdb-")
-            sicdb_unique_count = (
-                sicdb_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {sicdb_unique_count:6.0f} unique cases with timeseries data in SICdb."
-            )
+            self._print_unique_cases(sicdb_timeseries, "SICdb", self.global_icu_stay_id_col)
+            timeseries_datasets.append(sicdb_timeseries)
 
         if "UMCdb" in self.datasets:
             umcdb_timeseries = self.umcdb.process_timeseries().pipe(self._concat_helper, "umcdb-")
-            umcdb_unique_count = (
-                umcdb_timeseries.select(self.global_icu_stay_id_col)
-                .unique()
-                .count()
-                .collect(streaming=True)
-                .to_numpy()[0][0]
-            )
-            print(
-                f"reprodICU - {umcdb_unique_count:6.0f} unique cases with timeseries data in UMCdb."
-            )
+            self._print_unique_cases(umcdb_timeseries, "UMCdb", self.global_icu_stay_id_col)
             timeseries_datasets.append(umcdb_timeseries)
 
         # Combine the timeseries data of the datasets
@@ -272,7 +190,7 @@ class TimeseriesHarmonizer(GlobalVars):
 
     # endregion
 
-    # Helper functions
+    # region helpers
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         return data.with_columns(
@@ -280,3 +198,14 @@ class TimeseriesHarmonizer(GlobalVars):
                 self.global_icu_stay_id_col
             )
         )
+
+    # Print the number of unique cases in the timeseries data
+    def _print_unique_cases(self, data: pl.LazyFrame, name: str, count_col: str) -> None:
+        unique_count = (
+            data.select(self.global_icu_stay_id_col)
+            .unique()
+            .count()
+            .collect(streaming=True)
+            .to_numpy()[0][0]
+        )
+        print(f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}.")
