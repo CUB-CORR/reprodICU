@@ -226,7 +226,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         return (
             services.select([self.hospital_stay_id_col, "TRANSFERTIME", self.specialty_col])
-            .join(IDs, on=self.hospital_stay_id_col)
+            .join(IDs, on=self.hospital_stay_id_col, how="outer")
             # Get the most recent specialty
             .filter(pl.col("TRANSFERTIME") < pl.col("INTIME"))
             # Get the most recent specialty on ICU admission
@@ -282,7 +282,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
             # Rename columns for consistency
             .rename({"ICUSTAY_ID": self.icu_stay_id_col})
-            .join(icustays.select(self.icu_stay_id_col, "INTIME"), on=self.icu_stay_id_col)
+            .join(icustays.select(self.icu_stay_id_col, "INTIME"), on=self.icu_stay_id_col, how="outer")
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -676,7 +676,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         procedureevents_mv = (
             procedureevents_mv.select([self.icu_stay_id_col, "STARTTIME", "ENDTIME", "ITEMID"])
-            .join(intimes, on=self.icu_stay_id_col)
+            .join(intimes, on=self.icu_stay_id_col, how="left")
             .join(d_items, on="ITEMID")
             .with_columns(
                 pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
