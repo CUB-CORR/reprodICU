@@ -112,8 +112,8 @@ class MIMIC3Extractor(MIMIC3Paths):
         return (
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
-            .join(self._extract_patient_height_weight(icustays), on=self.icu_stay_id_col)
-            .join(self._extract_specialties(), on=self.icu_stay_id_col)
+            .join(self._extract_patient_height_weight(icustays), on=self.icu_stay_id_col, how="left")
+            .join(self._extract_specialties(), on=self.icu_stay_id_col, how="left")
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("OUTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
