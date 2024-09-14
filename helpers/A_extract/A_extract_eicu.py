@@ -49,7 +49,6 @@ class EICUExtractor(EICUPaths):
         - Care site
         - Discharge location
 
-
         :return: A polars LazyFrame with the extracted patient information.
         :rtype: pl.LazyFrame
         """
@@ -372,6 +371,12 @@ class EICUExtractor(EICUPaths):
                 # Convert Fahrenheit to Celsius
                 pl.when(pl.col("nursingchartcelltypevalname") == "Temperature (F)")
                 .then((pl.col("nursingchartvalue").cast(float, strict=False) - 32) * 5 / 9)
+                # Replace "Unable to score due to medication" values with None
+                .when(pl.col("nursingchartvalue") == "Unable to score due to medication")
+                .then(None)
+                # Replace empty strings with None
+                .when(pl.col("nursingchartvalue") == "")
+                .then(None)
                 .otherwise(pl.col("nursingchartvalue"))
                 .alias("nursingchartvalue"),
             )

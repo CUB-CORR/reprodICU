@@ -10,3 +10,7 @@ noninvasive_diastolic_blood_pressure: True
 noninvasive_mean_blood_pressure: True
 central_venous_pressure: True
 intracranial_pressure: True
+glasgow_coma_score: True
+glasgow_coma_score_eye: True
+glasgow_coma_score_verbal: True
+glasgow_coma_score_motor: True

@@ -7,6 +7,32 @@
 import polars as pl
 
 
+# Enables the easy combination of Glasgow Coma Scale (GCS) components.
+# ASSUMPTION: data is in wide format, after pivoting.
+class GCSCombiner:
+    def __init__(self):
+        pass
+
+    def combine_gcs_components(
+        self,
+        data,
+        eye_subscore: str = "glasgow_coma_score_eye",
+        motor_subscore: str = "glasgow_coma_score_motor",
+        verbal_subscore: str = "glasgow_coma_score_verbal",
+        total_score: str = "glasgow_coma_score",
+    ) -> pl.LazyFrame:
+        """
+        Combine the GCS components to the GCS total score.
+        """
+
+        return data.with_columns(
+            pl.when(pl.col(total_score) == None)
+            .then(pl.col(eye_subscore) + pl.col(motor_subscore) + pl.col(verbal_subscore))
+            .otherwise(pl.col(total_score))
+            .alias(total_score)
+        )
+
+
 # Enables the easy conversion of the data.
 # ASSUMPTION: data is in long format, before pivoting.
 class UnitConversions:
@@ -469,7 +495,7 @@ class UnitConversions:
         Convert ratios to percentages (i.e., 0.23 to 23%).
         """
         return data.with_columns(
-            pl.when((pl.col(labelcol) == itemid) and (pl.col(valuecol) <= 2))
+            pl.when((pl.col(labelcol) == itemid) & (pl.col(valuecol) <= 2))
             .then(pl.col(valuecol) * 100)
             .otherwise(pl.col(valuecol))
             .alias(valuecol)

@@ -12,7 +12,7 @@ import os
 
 from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
 from helpers.helper import GlobalHelpers
-from helpers.helper_unit_conversions import UnitConverter
+from helpers.helper_conversions import UnitConverter
 
 
 class MIMIC4Processor(MIMIC4Extractor):
