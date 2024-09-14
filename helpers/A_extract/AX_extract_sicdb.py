@@ -43,7 +43,8 @@ class SICdbExtractor(SICdbPaths):
                 # Convert gender to established dtype
                 pl.col("Sex")
                 .replace_strict({735: "Male", 736: "Female"}, default="Unknown")
-                .cast(self.gender_dtype),
+                .cast(self.gender_dtype)
+                .alias(self.gender_col),
                 # Convert admission origin to established dtype
                 pl.col("ReferringUnit")
                 .replace_strict(self._extract_references("ReferringUnit"))
