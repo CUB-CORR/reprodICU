@@ -594,7 +594,7 @@ class EICUExtractor(EICUPaths):
 
         periodics = periodic.join(
             aperiodic,
-            on=[self.icu_stay_id_col, self.timeseries_time_col],
+            on=[self.icu_stay_id_col, self.timeseries_time_col], how="outer",
         ).rename(periodic_mapping)
 
         return periodics.select(
@@ -788,7 +788,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": "active_upon_discharge",
                 }
             )
-            .join(self.icu_stay_id, on=self.icu_stay_id_col)
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
             .with_columns(  # Convert columns to appropriate data types
                 [
                     # Split diagnosis codes by comma and rename column
@@ -862,7 +862,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.procedure_discharge_col,
                 }
             )
-            .join(IDs, on=self.icu_stay_id_col)
+            .join(IDs, on=self.icu_stay_id_col, how="outer")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.procedure_start_col,
