@@ -13,8 +13,8 @@ from helpers.helper import GlobalHelpers
 
 
 class EICUExtractor(EICUPaths):
-    def __init__(self, paths):
-        super().__init__(paths)
+    def __init__(self, paths, DEMO=False):
+        super().__init__(paths, DEMO)
         self.path = paths.eicu_source_path
         self.helpers = GlobalHelpers()
         self.icu_stay_id = self.extract_patient_information().select(

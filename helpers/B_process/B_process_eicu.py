@@ -16,8 +16,8 @@ from helpers.helper_conversions import UnitConverter
 
 
 class EICUProcessor(EICUExtractor):
-    def __init__(self, paths):
-        super().__init__(paths)
+    def __init__(self, paths, DEMO=False):
+        super().__init__(paths, DEMO)
         self.path = paths.eicu_source_path
         self.helpers = GlobalHelpers()
         self.convert = EICUConverter()
@@ -72,7 +72,8 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Save the preprocessed data
-            ts_nurse_periodics.sink_parquet(
+            # ts_nurse_periodics.sink_parquet(
+            ts_nurse_periodics.collect(streaming=True).write_parquet(
                 self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
             )
 
@@ -225,41 +226,41 @@ class EICUProcessor(EICUExtractor):
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_nurse.parquet"):
             ts_nurse = (
                 self.extract_time_series_nurse()
-                # Split oxygen_flow / FiO2 into oxygen_flow and FiO2
-                .with_columns(
-                    pl.when(
-                        pl.col("oxygen_delivery_device").is_in(
-                            [
-                                "ambu_bag",
-                                "high_flow_nasal_cannula",
-                                "facemask",
-                                "nasal cannula",
-                                "nebulizer",
-                                "non_rebreather_mask",
-                            ]
-                        )
-                        & pl.col("oxygen_flow").is_null()
-                    )
-                    .then(pl.col("oxygen_flow / FiO2"))
-                    .otherwise(pl.col("oxygen_flow"))
-                    .alias("oxygen_flow"),
-                    pl.when(
-                        pl.col("oxygen_delivery_device").is_in(
-                            [
-                                "BiPAP",
-                                "CPAP",
-                                "t_piece",
-                                "tracheostomy",
-                                "ventilator",
-                            ]
-                        )
-                        & pl.col("FiO2").is_null()
-                    )
-                    .then(pl.col("oxygen_flow / FiO2"))
-                    .otherwise(pl.col("FiO2"))
-                    .alias("FiO2"),
-                )
-                .drop("oxygen_flow / FiO2")
+                # # Split oxygen_flow / FiO2 into oxygen_flow and FiO2
+                # .with_columns(
+                #     pl.when(
+                #         pl.col("oxygen_delivery_device").is_in(
+                #             [
+                #                 "ambu_bag",
+                #                 "high_flow_nasal_cannula",
+                #                 "facemask",
+                #                 "nasal cannula",
+                #                 "nebulizer",
+                #                 "non_rebreather_mask",
+                #             ]
+                #         )
+                #         & pl.col("oxygen_flow").is_null()
+                #     )
+                #     .then(pl.col("oxygen_flow / FiO2"))
+                #     .otherwise(pl.col("oxygen_flow"))
+                #     .alias("oxygen_flow"),
+                #     pl.when(
+                #         pl.col("oxygen_delivery_device").is_in(
+                #             [
+                #                 "BiPAP",
+                #                 "CPAP",
+                #                 "t_piece",
+                #                 "tracheostomy",
+                #                 "ventilator",
+                #             ]
+                #         )
+                #         & pl.col("FiO2").is_null()
+                #     )
+                #     .then(pl.col("oxygen_flow / FiO2"))
+                #     .otherwise(pl.col("FiO2"))
+                #     .alias("FiO2"),
+                # )
+                # .drop("oxygen_flow / FiO2")
                 # Pivot the nurse values to wide format
                 .collect(streaming=True)
                 .pivot(

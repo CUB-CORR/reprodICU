@@ -104,10 +104,15 @@ class GlobalHelpers:
 
 
 class GlobalVars(GlobalHelpers):
-    def __init__(self, paths) -> None:
+    def __init__(self, paths, DEMO=False) -> None:
         config_path = "configs/"
         mapping_path = "mappings/"
-        tempfiles_path = paths.reprodICU_files_path + "_tempfiles/"
+        reprodICU_files_path = (
+            paths.reprodICU_files_path
+            if not DEMO
+            else paths.reprodICU_demo_files_path
+        )
+        tempfiles_path = reprodICU_files_path + "_tempfiles/"
 
         # append globally configured variables as class attributes
         for key, value in self.load_mapping(

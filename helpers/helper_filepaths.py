@@ -11,7 +11,7 @@ from helpers.helper import GlobalVars
 # region eICU
 class EICUPaths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        super().__init__(paths)
+        super().__init__(paths, DEMO)
         eicu_path = paths.eicu_source_path
 
         # eICU raw data paths
@@ -53,6 +53,7 @@ class EICUPaths(GlobalVars):
 
         # eICU DEMO data paths
         if DEMO == True:
+            eicu_path = paths.eicu_demo_source_path
             self.admissionDrug_path = eicu_path + "admissionDrug.csv"
             self.admissionDx_path = eicu_path + "admissionDx.csv"
             self.allergy_path = eicu_path + "allergy.csv"
@@ -154,7 +155,7 @@ class HiRIDPaths(GlobalVars):
 # region MIMIC-III
 class MIMIC3Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        super().__init__(paths)
+        super().__init__(paths, DEMO)
         mimic3_path = paths.mimic3_source_path
 
         # MIMIC-III raw data paths
@@ -178,6 +179,7 @@ class MIMIC3Paths(GlobalVars):
 
         # MIMIC-III DEMO data paths
         if DEMO == True:
+            mimic3_path = paths.mimic3_demo_source_path
             self.admissions_path = mimic3_path + "ADMISSIONS.csv"
             self.chartevents_path = mimic3_path + "CHARTEVENTS.csv"
             self.d_icd_diagnoses_path = mimic3_path + "D_ICD_DIAGNOSES.csv"
@@ -218,7 +220,7 @@ class MIMIC3Paths(GlobalVars):
 # region MIMIC-IV
 class MIMIC4Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        super().__init__(paths)
+        super().__init__(paths, DEMO)
         mimic4_path = paths.mimic4_source_path
 
         # MIMIC-IV raw data paths
@@ -243,6 +245,7 @@ class MIMIC4Paths(GlobalVars):
 
         # MIMIC-IV DEMO data paths
         if DEMO == True:
+            mimic4_path = paths.mimic4_demo_source_path
             self.admissions_path = mimic4_path + "hosp/admissions.csv"
             self.chartevents_path = mimic4_path + "icu/chartevents.csv"
             self.d_icd_diagnoses_path = mimic4_path + "hosp/d_icd_diagnoses.csv"
