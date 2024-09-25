@@ -47,6 +47,7 @@ class HiRIDExtractor(HiRIDPaths):
                 pl.lit("Medical-Surgical")
                 .replace(self.UNIT_TYPES_MAP)
                 .cast(self.unit_types_dtype)
+                .first()
                 .alias(self.unit_type_col),
             )
         )
