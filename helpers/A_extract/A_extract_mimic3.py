@@ -290,14 +290,6 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         print("MIMIC3  - Extracting patient height and weight...")
 
-        # ITEMIDS = {
-        #     "weight_kg_2": 224639,
-        #     "weight_kg": 226512,
-        #     "weight_lbs": 226531,
-        #     "height_inch": 226707,
-        #     "height_cm": 226730,
-        # }
-
         ITEMIDS = {
             762: self.weight_col,  # Admit Wt [carevue]
             763: self.weight_col,  # Daily Weight [carevue]
