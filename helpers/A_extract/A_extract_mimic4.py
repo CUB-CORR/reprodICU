@@ -586,7 +586,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 {
                     "label": self.drug_name_col,
                     "amount": self.drug_amount_col,
-                    "amountuom": self.drug_unit_col,
+                    "amountuom": self.drug_amount_unit_col,
                 }
             )
             # Replace drug names with mapped names

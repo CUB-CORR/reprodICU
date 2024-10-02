@@ -209,7 +209,7 @@ class SICdbExtractor(SICdbPaths):
                 # Get drug units
                 pl.col(self.drug_name_col)
                 .replace_strict(self._extract_drug_units(), default=None)
-                .alias(self.drug_unit_col),
+                .alias(self.drug_amount_unit_col),
             )
             # .with_columns(
             #     # Map medication names to harmonized names

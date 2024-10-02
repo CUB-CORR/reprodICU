@@ -152,9 +152,12 @@ if __name__ == "__main__":
         medication_harmonizer = MedicationHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
-        medication_harmonizer.harmonize_medications().sink_parquet(
-            save_path + "medications.parquet"
-        )
+        # medication_harmonizer.harmonize_medications().sink_parquet(
+        #     save_path + "medications.parquet"
+        # )
+        medication_harmonizer.harmonize_medications().collect(
+            streaming=True
+        ).write_parquet(save_path + "medications.parquet")
 
     if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
