@@ -433,7 +433,7 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("administeredunit")
                 # .replace(self.DRUG_UNIT_MAPPING)
                 # .cast(self.drug_unit_dtype)
-                .alias(self.drug_unit_col),
+                .alias(self.drug_amount_unit_col),
             )
             # Remove duplicate rows
             .unique()

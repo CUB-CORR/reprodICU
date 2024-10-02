@@ -343,7 +343,7 @@ class HiRIDExtractor(HiRIDPaths):
                     {
                         "patientid": self.icu_stay_id_col,
                         "givendose": self.drug_amount_col,
-                        "doseunit": self.drug_unit_col,
+                        "doseunit": self.drug_amount_unit_col,
                     }
                 )
                 # Cast the datetime to string to avoid the following error:

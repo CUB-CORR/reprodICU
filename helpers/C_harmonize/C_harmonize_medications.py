@@ -139,6 +139,9 @@ class MedicationHarmonizer(GlobalVars):
                     self.drug_ingredient_col,
                     self.drug_name_col,
                     self.drug_amount_col,
+                    self.drug_amount_unit_col,
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
                     self.drug_start_col,
                     self.drug_end_col,
                 ]
