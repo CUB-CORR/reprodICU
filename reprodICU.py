@@ -91,6 +91,8 @@ if __name__ == "__main__":
     # Select datasets to extract
     if "all" in args.datasets:
         datasets = ["eICU", "HiRID", "MIMIC3", "MIMIC4", "SICdb", "UMCdb"]
+        if args.DEMO:
+            datasets = ["eICU", "MIMIC3", "MIMIC4"]
     else:
         datasets = args.datasets
 
