@@ -3,7 +3,7 @@
 24 hr Creatinine:
 24 hr Protein:
 25-OH Vitamin D:
-"<Albumin>": protein_albumin
+"<Albumin>": # protein_albumin -> refers to albumin in CSF
 Absolute A1c:
 Absolute Basophil Count: # basophils -> only use relative counts
 Absolute CD3 Count:
