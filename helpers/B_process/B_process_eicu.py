@@ -51,6 +51,13 @@ class EICUProcessor(EICUExtractor):
         :return: The processed time series data in wide format.
         :rtype: pl.LazyFrame
         """
+
+        # Load preexisting data if available
+        if os.path.isfile(self.precalc_path + "EICU_B_timeseries.parquet"):
+            return pl.scan_parquet(
+                self.precalc_path + "EICU_B_timeseries.parquet"
+            )
+
         # Load the time series data.
         print("eICU    - Loading time series data...")
         ts_lab = self._process_timeseries_lab()
@@ -84,10 +91,12 @@ class EICUProcessor(EICUExtractor):
             )
 
         print("eICU    - Returning wide time series data...")
-        return pl.concat(
+        timeseries = pl.concat(
             [ts_lab, ts_resp, ts_inout, ts_nurse_periodics],
             how="diagonal_relaxed",
-        ).unique()
+        ).sort(self.index_cols)
+        timeseries.sink_parquet(self.precalc_path + "EICU_B_timeseries.parquet")
+        return timeseries
 
     # endregion
 
@@ -262,8 +271,7 @@ class EICUProcessor(EICUExtractor):
                 # )
                 # .drop("oxygen_flow / FiO2")
                 # Pivot the nurse values to wide format
-                .collect(streaming=True)
-                .pivot(
+                .collect(streaming=True).pivot(
                     on="nursingchartcelltypevalname",
                     index=self.index_cols,
                     values="nursingchartvalue",

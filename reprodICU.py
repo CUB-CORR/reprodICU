@@ -166,14 +166,18 @@ if __name__ == "__main__":
         timeseries_harmonizer = TimeseriesHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
-        # timeseries_harmonizer.harmonize_timeseries().sink_parquet("tempfiles/reprodICU_timeseries.parquet")
-        vitals, labs, resp, inout = timeseries_harmonizer.split_timeseries(
-            save_path + "_tempfiles/reprodICU_timeseries.parquet",
-            save_to_default=False,
+        print("reprodICU - Splitting timeseries...")
+        # timeseries_harmonizer.harmonize_split_timeseries(save_path + "_tempfiles/reprodICU_timeseries.parquet")
+        vitals, labs, resp, inout = (
+            timeseries_harmonizer.harmonize_split_timeseries(
+                save_to_default=False
+            )
         )
+        print("reprodICU - Saving timeseries...")
         vitals.sink_parquet(save_path + "timeseries_vitals.parquet")
         resp.sink_parquet(save_path + "timeseries_respiratory.parquet")
         inout.sink_parquet(save_path + "timeseries_intakeoutput.parquet")
+        labs.sink_parquet(save_path + "timeseries_labs.parquet")
 
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
@@ -182,6 +186,7 @@ if __name__ == "__main__":
             column_names["timeseries_time_col"],
             "base_excess_deficit",
         ]
+        labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
         columns_to_winsorize = list(
             set(labs.collect_schema().names()) - set(columns_to_exclude)
         )
@@ -197,7 +202,7 @@ if __name__ == "__main__":
                 alpha=0.99,
             )
             .collect(streaming=True)
-            .write_parquet(save_path + "timeseries_labs.parquet")
+            .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
         )
 
     else:

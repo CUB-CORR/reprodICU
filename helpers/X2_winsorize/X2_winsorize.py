@@ -54,7 +54,7 @@ class X2_Winsorizer:
         return data.with_columns(
             *[
                 pl.col(column)
-                .clip(0, pl.col(column).quantile(alpha))
+                .clip(pl.lit(0), pl.col(column).quantile(alpha))
                 .alias(column)
                 for column in columns
             ]
