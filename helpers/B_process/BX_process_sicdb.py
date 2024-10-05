@@ -36,19 +36,31 @@ class SICdbProcessor(SICdbExtractor):
     # region timeseries
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
+        # Load preexisting data if available
+        if os.path.isfile(self.precalc_path + "SICdb_B_timeseries.parquet"):
+            return pl.scan_parquet(
+                self.precalc_path + "SICdb_B_timeseries.parquet"
+            )
+
         # Load the time series data
         print("SICdb   - Loading time series data...")
 
         ts_float = self._process_timeseries_data_float()
         ts_labs = self._process_timeseries_data_labs()
 
-        return pl.concat([ts_float, ts_labs], how="diagonal_relaxed")
+        timeseries = pl.concat(
+            [ts_float, ts_labs], how="diagonal_relaxed"
+        ).sort(self.index_cols)
+        timeseries.sink_parquet(
+            self.precalc_path + "SICdb_B_timeseries.parquet"
+        )
+        return timeseries
 
     def _process_timeseries_data_float(self) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "SICdb_B_timeseries.parquet"):
+        if os.path.isfile(self.precalc_path + "SICdb_B_ts_float.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(
-                self.precalc_path + "SICdb_B_timeseries.parquet"
+                self.precalc_path + "SICdb_B_ts_float.parquet"
             )
 
         print("SICdb   - Processing time series data...")
@@ -76,9 +88,7 @@ class SICdbProcessor(SICdbExtractor):
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(
-            self.precalc_path + "SICdb_B_timeseries.parquet"
-        )
+        timeseries.sink_parquet(self.precalc_path + "SICdb_B_ts_float.parquet")
 
         return timeseries
 
@@ -86,10 +96,10 @@ class SICdbProcessor(SICdbExtractor):
 
     # region lab values
     def _process_timeseries_data_labs(self) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "SICdb_B_laboratory.parquet"):
+        if os.path.isfile(self.precalc_path + "SICdb_B_ts_labs.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(
-                self.precalc_path + "SICdb_B_laboratory.parquet"
+                self.precalc_path + "SICdb_B_ts_labs.parquet"
             )
 
         print("SICdb   - Processing laboratory data...")
@@ -123,9 +133,7 @@ class SICdbProcessor(SICdbExtractor):
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(
-            self.precalc_path + "SICdb_B_timeseries.parquet"
-        )
+        timeseries.sink_parquet(self.precalc_path + "SICdb_B_ts_labs.parquet")
 
         return timeseries
 

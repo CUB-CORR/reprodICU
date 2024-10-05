@@ -36,16 +36,24 @@ class UMCdbProcessor(UMCdbExtractor):
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self):
+        # Load preexisting data if available
+        if os.path.isfile(self.precalc_path + "UMCdb_B_timeseries.parquet"):
+            return pl.scan_parquet(
+                self.precalc_path + "UMCdb_B_timeseries.parquet"
+            )
+
         # Load the time series data.
         print("UMCdb   - Loading time series data...")
 
         ts_numeric = self._process_timeseries_numeric()
-        ts_listitems = pl.LazyFrame()  # self._process_timeseries_listitems()
+        # ts_listitems = self._process_timeseries_listitems()
 
-        return pl.concat(
-            [ts_numeric, ts_listitems],
-            how="diagonal_relaxed",
+        # timeseries = pl.concat([ts_numeric, ts_listitems], how="diagonal_relaxed")
+        timeseries = ts_numeric.sort(self.index_cols)
+        timeseries.sink_parquet(
+            self.precalc_path + "UMCdb_B_timeseries.parquet"
         )
+        return timeseries
 
     def _process_timeseries_numeric(self) -> pl.LazyFrame:
         """

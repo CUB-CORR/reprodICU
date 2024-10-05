@@ -103,10 +103,20 @@ class HiRIDProcessor(HiRIDExtractor):
 
         # Save the preprocessed data
         timeseries_processed.sink_parquet(
+            self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
+        )
+        # NOTE: if process stops due to insufficient memory, use the following
+        # lines instead within a terminal at the precalc_path:
+        # pl.scan_parquet("HiRID_B_timeseries_unsorted.parquet").sort(
+        #     "icu_stay_id", "time_relative_to_admission"
+        # ).sink_parquet("HiRID_B_timeseries.parquet")
+        timeseries = pl.scan_parquet(
+            self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
+        ).sort(self.index_cols)
+        timeseries.sink_parquet(
             self.precalc_path + "HiRID_B_timeseries.parquet"
         )
-
-        return timeseries_processed
+        return timeseries
 
     # endregion
 

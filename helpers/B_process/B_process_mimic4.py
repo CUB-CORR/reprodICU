@@ -36,6 +36,12 @@ class MIMIC4Processor(MIMIC4Extractor):
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self):
+        # Load preexisting data if available
+        if os.path.isfile(self.precalc_path + "MIMIC4_B_timeseries.parquet"):
+            return pl.scan_parquet(
+                self.precalc_path + "MIMIC4_B_timeseries.parquet"
+            )
+
         # Load the time series data.
         print("MIMIC4 — Loading time series data...")
 
@@ -45,7 +51,13 @@ class MIMIC4Processor(MIMIC4Extractor):
 
         # Combine all time series data
         print("MIMIC4  - Combining time series data...")
-        return pl.concat([ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed")
+        timeseries = pl.concat(
+            [ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed"
+        ).sort(self.index_cols)
+        timeseries.sink_parquet(
+            self.precalc_path + "MIMIC4_B_timeseries.parquet"
+        )
+        return timeseries
 
     # endregion
 
