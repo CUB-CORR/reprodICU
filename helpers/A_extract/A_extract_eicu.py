@@ -121,7 +121,10 @@ class EICUExtractor(EICUPaths):
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate ICU mortality
-                (pl.col(self.mortality_icu_col) == "Expired").cast(bool),
+                pl.when(pl.col(self.mortality_icu_col) != "")
+                .then(pl.col(self.mortality_icu_col) == "Expired")
+                .otherwise(None)
+                .cast(bool),
                 # # Convert categorical mortality to enum
                 # (
                 #     pl.col(self.mortality_icu_col)
@@ -129,7 +132,10 @@ class EICUExtractor(EICUPaths):
                 #     .cast(self.mortality_dtype)
                 # ),
                 # Calculate hospital mortality
-                (pl.col(self.mortality_hosp_col) == "Expired").cast(bool),
+                pl.when(pl.col(self.mortality_hosp_col) != "")
+                .then(pl.col(self.mortality_hosp_col) == "Expired")
+                .otherwise(None)
+                .cast(bool),
                 # Calculate mortality after discharge
                 pl.when(
                     (pl.col(self.mortality_icu_col) != "Expired")

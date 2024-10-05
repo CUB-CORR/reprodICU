@@ -76,7 +76,9 @@ class HiRIDExtractor(HiRIDPaths):
                 # Convert the age to int
                 pl.col(self.age_col).cast(int),
                 # Convert the discharge status to the established format
-                (pl.col("discharge_status") == "alive")
+                pl.when(pl.col("discharge_status") != "")
+                .then(pl.col("discharge_status") == "dead")
+                .otherwise(None)
                 .cast(bool)
                 .alias(self.mortality_icu_col),
             )
