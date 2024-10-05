@@ -83,10 +83,6 @@ if __name__ == "__main__":
         if not args.DEMO
         else paths.reprodICU_demo_files_path
     )
-    diagnoses_imputer = DiagnosesImputer(
-        paths=paths,
-        patient_info_location=save_path + "patient_information.parquet",
-    )
 
     # Select datasets to extract
     if "all" in args.datasets:
@@ -114,6 +110,7 @@ if __name__ == "__main__":
         patient_info_harmonizer = PatientInformationHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
+        patient_info_imputer = PatientInformationImputer(paths=paths)
 
         # Winsorize the patient information
         columns_to_winsorize = [
@@ -128,11 +125,26 @@ if __name__ == "__main__":
             save_path + "patient_information.parquet"
         )
 
+        # Impute the patient information
+        patient_info_imputer.impute_patient_IDs(
+            data=pl.scan_parquet(save_path + "patient_information.parquet")
+        ).pipe(
+            patient_info_imputer.impute_patient_anthropometrics,
+            n_neighbors=5,
+        ).collect(streaming=True).write_parquet(
+            save_path + "patient_information_imputed.parquet"
+        )
+
     if "diagnoses" in tables:
         print("reprodICU - Combining diagnoses...")
         diagnoses_harmonizer = DiagnosesHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
+        diagnoses_imputer = DiagnosesImputer(
+            paths=paths,
+            patient_info_location=save_path + "patient_information.parquet",
+        )
+
         diagnoses_harmonizer.harmonize_diagnoses().pipe(
             diagnoses_imputer.impute_diagnoses
         ).collect(streaming=True).write_parquet(
