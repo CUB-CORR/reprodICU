@@ -166,7 +166,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 )
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
-                .fill_null(False)
+                # .fill_null(False)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
@@ -198,6 +198,17 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col(self.specialty_col)
                 .replace(self.SPECIALTIES_MAP)
                 .cast(self.specialties_dtype),
+            )
+            # Fill missing ICU mortality values with False if patient was
+            # discharged from hospital alive
+            .with_columns(
+                pl.when(
+                    pl.col(self.mortality_icu_col).is_null()
+                    & pl.col(self.mortality_hosp_col).eq(False)
+                )
+                .then(False)
+                .otherwise(pl.col(self.mortality_icu_col))
+                .alias(self.mortality_icu_col)
             )
             .select(
                 [

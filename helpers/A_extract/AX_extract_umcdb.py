@@ -81,7 +81,9 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.height_col),
                 # Convert categorical mortality to binary
-                (pl.col("destination") == "Overleden")
+                pl.when(pl.col("destination") != "")
+                .then(pl.col("destination") == "Overleden")
+                .otherwise(None)
                 .cast(bool)
                 .alias(self.mortality_icu_col),
                 # NOTE: pre-ICU length of stay is not available in the UMCdb dataset,

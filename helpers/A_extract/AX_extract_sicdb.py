@@ -75,10 +75,18 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.discharge_locations_dtype)
                 .alias(self.discharge_loc_col),
                 # Convert mortality to established dtype
-                (pl.col("DischargeState") == 2202)  # "lebend"
+                pl.when(pl.col("DischargeState") == 2202)  # "lebend"
+                .then(False)
+                .when(pl.col("DischargeState") == 2215)  # "verstorben"
+                .then(True)
+                .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                (pl.col("HospitalDischargeType") == 2026)  # "Survived"
+                pl.when(pl.col("HospitalDischargeType") == 2026)  # "Survived"
+                .then(False)
+                .when(pl.col("HospitalDischargeType") == 2028)  # "Deceased"
+                .then(True)
+                .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
