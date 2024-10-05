@@ -715,7 +715,7 @@ class EICUExtractor(EICUPaths):
             # Get unit from drugname
             .with_columns(
                 pl.col(self.drug_name_col)
-                .str.extract(r"\((.*?)\)$")
+                .str.extract(r".*\((.*?)\)$")
                 .alias(self.drug_rate_unit_col)
             )
             # Replace drug names with mapped names
@@ -726,6 +726,11 @@ class EICUExtractor(EICUPaths):
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
+            # Remove rows with empty drug rates
+            .filter(
+                pl.col(self.drug_rate_col).is_not_null()
+                | (pl.col(self.drug_rate_col) != "")
+            )
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
