@@ -52,6 +52,9 @@ class HiRIDExtractor(HiRIDPaths):
             )
         )
 
+    # endregion
+
+    # region admissions
     def _extract_admissions(self) -> pl.LazyFrame:
         return (
             pl.scan_csv(self.general_table_path, dtypes={"admissiontime": str})
@@ -85,6 +88,9 @@ class HiRIDExtractor(HiRIDPaths):
             .drop("discharge_status")
         )
 
+    # endregion
+
+    # region len of stay
     def _extract_length_of_stay(self) -> pl.LazyFrame:
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_lengths_of_stay.parquet"):
@@ -123,6 +129,9 @@ class HiRIDExtractor(HiRIDPaths):
 
         return lengths_of_stay
 
+    # endregion
+
+    # region h/weight
     def _extract_patient_height_weight(self) -> pl.LazyFrame:
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_height_weight.parquet"):
@@ -338,6 +347,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "givenat",
                         "givendose",
                         "doseunit",
+                        "infusionid",
                     ]
                 )
                 # Rename columns for consistency
@@ -369,7 +379,7 @@ class HiRIDExtractor(HiRIDPaths):
                     (pl.col("givenat") - pl.col("admissiontime"))
                     .truediv(pl.duration(seconds=1))
                     .round(0)
-                    .alias(self.drug_start_col),
+                    .alias(self.drug_end_col),
                     # Map the medication names to the ingredients
                     pl.col(self.drug_name_col)
                     .replace_strict(hirid_medication_mapping, default=None)
@@ -383,13 +393,13 @@ class HiRIDExtractor(HiRIDPaths):
                 # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
                 .filter(
                     (
-                        pl.col(self.drug_start_col)
+                        pl.col(self.drug_end_col)
                         < pl.duration(
                             days=pl.col(self.icu_length_of_stay_col)
                         ).truediv(pl.duration(seconds=1))
                     )
                     & (
-                        pl.col(self.drug_start_col)
+                        pl.col(self.drug_end_col)
                         > pl.duration(
                             days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
                         ).truediv(pl.duration(seconds=1))
@@ -400,6 +410,143 @@ class HiRIDExtractor(HiRIDPaths):
 
             # Append the data to the DataFrame
             pharma = pl.concat([pharma, data.lazy()], how="diagonal_relaxed")
+
+        # Get infusion duration where possible, by checking whether the drugname reappears
+        # on next log entry (as determined by a different offset)
+        # 1. Get list of log entry offsets for each patient
+        pharma_offsets = (
+            pharma.select(self.icu_stay_id_col, self.drug_end_col, "infusionid")
+            .unique()
+            .sort([self.icu_stay_id_col, "infusionid", self.drug_end_col])
+            .with_columns(
+                pl.col(self.drug_end_col)
+                .shift(1)
+                .over(self.icu_stay_id_col, "infusionid")
+                .alias("prev_drug_end"),
+                pl.col(self.drug_end_col)
+                .shift(-1)
+                .over(self.icu_stay_id_col, "infusionid")
+                .alias("next_drug_end"),
+            )
+        )
+
+        pharma = (
+            pharma.join(
+                pharma_offsets,
+                on=[self.icu_stay_id_col, self.drug_end_col, "infusionid"],
+                how="left",
+            )
+            # Sort by patient ID, drug name and drug start time
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                "infusionid",
+                self.drug_end_col,
+                "prev_drug_end",  # sometimes, there is the same drug given twice at the same time
+            )
+            # NOTE: Convert drug_amount to drug_rates
+            .with_columns(
+                (
+                    (pl.col(self.drug_amount_col) * 60 * 60)
+                    / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
+                )
+                .round(1)
+                .alias(self.drug_rate_col),
+                (pl.col(self.drug_amount_unit_col) + pl.lit("/hr")).alias(
+                    self.drug_rate_unit_col
+                ),
+            )
+            # 2. Check if drug is continued from the previous log entry
+            #    and if it is continued in the next log entry
+            .with_columns(
+                # Check if drug is continued from the previous log entry
+                pl.when(pl.col("prev_drug_end").is_not_null())
+                .then(
+                    pl.when(
+                        # Check if the previous drug is the same as the current drug
+                        pl.col(self.drug_name_col)
+                        == pl.col(self.drug_name_col).shift(1),
+                        # Check if the previous drug end time is the previous log entry time
+                        pl.col("prev_drug_end")
+                        == pl.col(self.drug_end_col).shift(1),
+                        # Check if the drug rate is the same as the previous drug rate
+                        pl.col(self.drug_rate_col)
+                        == pl.col(self.drug_rate_col).shift(1),
+                    )
+                    .then(pl.lit("continued"))
+                    .otherwise(pl.lit("started"))
+                )
+                .otherwise(None)
+                .alias("drug_status_prev"),
+                # Check if drug is continued in the next log entry
+                pl.when(
+                    # Check if the next drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(-1),
+                    # Check if the next drug end time is the next log entry time
+                    pl.col("next_drug_end")
+                    == pl.col(self.drug_end_col).shift(-1),
+                    # Check if the drug rate is the same as the next drug rate
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(-1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("discontinued"))
+                .alias("drug_status_next"),
+            )
+            # Filter for rows where the drug status changes
+            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
+            # 3. Get the end time of the drug if it is discontinued
+            .with_columns(
+                pl.when(pl.col("drug_status_next") == "discontinued")
+                .then("prev_drug_end")
+                .otherwise(None)
+                .alias(self.drug_start_col)
+            )
+            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
+            .with_columns(
+                pl.when(
+                    pl.col("drug_status_prev").shift(1) == "started",
+                    pl.col("drug_status_next").shift(1) == "continued",
+                    pl.col("drug_status_prev") == "continued",
+                    pl.col("drug_status_next") == "discontinued",
+                    # Check if the previous drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(1),
+                    # Check if the drug amount is the same as the previous drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(1),
+                )
+                .then(pl.col("prev_drug_end").shift(1))
+                .otherwise(pl.col("prev_drug_end"))
+                .alias(self.drug_start_col)
+            )
+            # 5. filter out duplicate rows (same drug, same start time, same rate, different end time)
+            .filter(pl.col(self.drug_start_col).is_not_null())
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                self.drug_start_col,
+                self.drug_rate_col,
+                self.drug_end_col,
+            )
+            .group_by(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                self.drug_start_col,
+                self.drug_rate_col,
+                maintain_order=True,
+            )
+            .last()
+            # 6. Remove the helper columns
+            .drop(
+                "prev_drug_end",
+                "next_drug_end",
+                "drug_status_prev",
+                "drug_status_next",
+                "infusionid",
+            )
+        )
 
         return pharma
 
