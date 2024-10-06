@@ -188,16 +188,32 @@ class SICdbExtractor(SICdbPaths):
     def extract_medications(self) -> pl.LazyFrame:
         print("SICdb   - Extracting medications...")
 
-        # sicdb_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
-        #     self.mapping_path + "MEDICATIONS.yaml", "sicdb"
-        # )
+        sicdb_medication_mapping = (
+            self.helpers.load_many_to_many_to_one_mapping(
+                self.mapping_path + "MEDICATIONS.yaml", "sicdb"
+            )
+        )
         offsets = self._get_offsets()
 
         return (
             pl.scan_csv(self.medication_path)
-            .select(["CaseID", "DrugID", "Offset", "OffsetDrugEnd", "Amount"])
+            .select(
+                [
+                    "CaseID",
+                    "DrugID",
+                    "Offset",
+                    "OffsetDrugEnd",
+                    "IsSingleDose",
+                    "Amount",
+                    "AmountPerMinute",
+                ]
+            )
             .rename(
-                {"CaseID": self.icu_stay_id_col, "Amount": self.drug_amount_col}
+                {
+                    "CaseID": self.icu_stay_id_col,
+                    "Amount": self.drug_amount_col,
+                    "AmountPerMinute": self.drug_rate_col,
+                }
             )
             .join(offsets, on=self.icu_stay_id_col)
             .with_columns(
@@ -218,13 +234,40 @@ class SICdbExtractor(SICdbPaths):
                 pl.col(self.drug_name_col)
                 .replace_strict(self._extract_drug_units(), default=None)
                 .alias(self.drug_amount_unit_col),
+                # Get drug rate units
+                pl.col(self.drug_name_col)
+                .replace_strict(self._extract_drug_units(), default=None)
+                .str.replace(r"$", "/min")
+                .alias(self.drug_rate_unit_col),
             )
-            # .with_columns(
-            #     # Map medication names to harmonized names
-            #     pl.col(self.drug_name_col)
-            #     .replace_strict(sicdb_medication_mapping, default=None)
-            #     .alias(self.drug_ingredient_col),
-            # )
+            .with_columns(
+                # Change rates from grams per minute to milligrams per minute
+                pl.when(pl.col(self.drug_rate_unit_col) == "g/min")
+                .then(pl.col(self.drug_rate_col) * 1000)
+                .otherwise(pl.col(self.drug_rate_col))
+                .alias(self.drug_rate_col),
+                pl.when(pl.col(self.drug_rate_unit_col) == "g/min")
+                .then(pl.lit("mg/min"))
+                .otherwise(pl.col(self.drug_rate_unit_col))
+                .alias(self.drug_rate_unit_col),
+            )
+            .with_columns(
+                # Drop rates for single dose medications
+                pl.when(pl.col("IsSingleDose") == 1)
+                .then(None)
+                .otherwise(pl.col(self.drug_rate_col))
+                .alias(self.drug_rate_col),
+                pl.when(pl.col("IsSingleDose") == 1)
+                .then(None)
+                .otherwise(pl.col(self.drug_rate_unit_col))
+                .alias(self.drug_rate_unit_col),
+            )
+            .with_columns(
+                # Map medication names to harmonized names
+                pl.col(self.drug_name_col)
+                .replace_strict(sicdb_medication_mapping, default=None)
+                .alias(self.drug_ingredient_col),
+            )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Remove duplicate rows
@@ -286,6 +329,12 @@ class SICdbExtractor(SICdbPaths):
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == "Drug")
             .select(["ReferenceValue", "ReferenceUnit"])
+            .with_columns(
+                pl.col("ReferenceUnit")
+                .str.replace(r"g\\h", "g/hr")
+                .str.replace(r"hr\\kg", "kg/hr")
+                .alias("ReferenceUnit")
+            )
         )
 
         return dict(
