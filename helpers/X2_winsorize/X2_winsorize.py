@@ -10,8 +10,8 @@ import polars as pl
 
 
 class X2_Winsorizer:
-    def __init__(self, paths):
-        self.paths = paths
+    def __init__(self):
+        pass
 
     def winsorize_quantiles(data, columns: list, alpha=0.99) -> pl.LazyFrame:
         """
@@ -75,6 +75,28 @@ class X2_Winsorizer:
             *[
                 pl.col(column).clip(lower_bound=0).alias(column)
                 for column in columns
+            ]
+        )
+
+    def winsorize_clip_multiple(
+        data, columns: list, lower: list, upper: list
+    ) -> pl.LazyFrame:
+        """
+        Winsorize the data to remove outliers.
+        Clip the data to the specified lower and upper bounds.
+
+        :param data: The data to be winsorized.
+        :param columns: The columns to be winsorized.
+
+        :return: The winsorized data.
+        """
+
+        return data.with_columns(
+            *[
+                pl.col(column)
+                .clip(lower_bound=_lower, upper_bound=_upper)
+                .alias(column)
+                for column, _lower, _upper in zip(columns, lower, upper)
             ]
         )
 
