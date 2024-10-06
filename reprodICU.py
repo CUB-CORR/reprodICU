@@ -20,6 +20,9 @@ from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 # import extra functions for cleaning, winsorizing, etc.
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
 from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
+from helpers.X3_impute.X3_impute_patient_information import (
+    PatientInformationImputer,
+)
 
 
 def load_mapping(path: str) -> dict:

@@ -70,6 +70,7 @@ class PatientInformationImputer(GlobalVars):
             self.gender_col,
             self.ethnicity_col,
             self.care_site_col,
+            self.unit_type_col,  # to ensure Newborns are not imputed with adult values
         ]
 
         # function for replacing categorical values with numerical values
@@ -107,6 +108,10 @@ class PatientInformationImputer(GlobalVars):
                 pl.col(self.care_site_col)
                 .pipe(replace_categorical_with_numerical, self.care_site_col)
                 .alias(self.care_site_col),
+                pl.col(self.unit_type_col)
+                .cast(str)
+                .pipe(replace_categorical_with_numerical, self.unit_type_col)
+                .alias(self.unit_type_col),
             )
             .collect()
             .to_pandas()
@@ -137,6 +142,12 @@ class PatientInformationImputer(GlobalVars):
             .otherwise(pl.col(self.weight_col))
             .round(decimals=1)
             .alias(self.weight_col),
+        ).with_columns(
+            # Drop heights for Newborns since there is no reliable data available
+            pl.when(pl.col(self.unit_type_col) == "Neonatal")
+            .then(None)
+            .otherwise(pl.col(self.height_col))
+            .alias(self.height_col),
         )
 
 

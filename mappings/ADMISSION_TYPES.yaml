@@ -18,10 +18,12 @@ Urgent:
 Elective:
   # MIMIC-III/-IV
   - ELECTIVE
-  - NEWBORN
   # MIMIC-IV
   - SURGICAL SAME DAY ADMISSION
   # UMCdb
   - "0"
+Newborn:
+  # MIMIC-III/-IV
+  - NEWBORN
 Unknown:
   - ""
