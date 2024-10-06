@@ -450,3 +450,288 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
     # endregion
+
+    # region APACHE
+    # Extract APACHE admission information from the listitems.csv file
+    def extract_APACHE_admission(self) -> pl.LazyFrame:
+        NICE = [18669, 18671]
+        LEVEL0_ITEMIDS = [
+            13110,  # D_Hoofdgroep
+            16651,  # DMC_Hoofdgroep, Medium Care
+            18588,  # Apache II Hoofdgroep
+            16997,  # APACHE IV Groepen
+            18669,  # NICE APACHEII diagnosen
+            18671,  # NICE APACHEIV diagnosen
+        ]
+        LEVEL1_ITEMIDS = [
+            13111,  # D_Subgroep_Thoraxchirurgie
+            16669,  # DMC_Subgroep_Thoraxchirurgie
+            13112,  # D_Subgroep_Algemene chirurgie
+            16665,  # DMC_Subgroep_Algemene chirurgie
+            13113,  # D_Subgroep_Neurochirurgie
+            16667,  # DMC_Subgroep_Neurochirurgie
+            13114,  # D_Subgroep_Neurologie
+            16668,  # DMC_Subgroep_Neurologie
+            13115,  # D_Subgroep_Interne geneeskunde
+            16666,  # DMC_Subgroep_Interne geneeskunde
+        ]
+        SURGICAL_ITEMIDS = [
+            13116,  # D_Thoraxchirurgie_CABG en Klepchirurgie
+            16671,  # DMC_Thoraxchirurgie_CABG en Klepchirurgie
+            13117,  # D_Thoraxchirurgie_Cardio anders
+            16672,  # DMC_Thoraxchirurgie_Cardio anders
+            13118,  # D_Thoraxchirurgie_Aorta chirurgie
+            16670,  # DMC_Thoraxchirurgie_Aorta chirurgie
+            13119,  # D_Thoraxchirurgie_Pulmonale chirurgie
+            16673,  # DMC_Thoraxchirurgie_Pulmonale chirurgie
+            13121,  # D_Algemene chirurgie_Buikchirurgie
+            16643,  # DMC_Algemene chirurgie_Buikchirurgie
+            13123,  # D_Algemene chirurgie_Endocrinologische chirurgie
+            16644,  # DMC_Algemene chirurgie_Endocrinologische chirurgi
+            13145,  # D_Algemene chirurgie_KNO/Overige
+            16645,  # DMC_Algemene chirurgie_KNO/Overige
+            13125,  # D_Algemene chirurgie_Orthopedische chirurgie
+            16646,  # DMC_Algemene chirurgie_Orthopedische chirurgie
+            13122,  # D_Algemene chirurgie_Transplantatie chirurgie
+            16647,  # DMC_Algemene chirurgie_Transplantatie chirurgie
+            13124,  # D_Algemene chirurgie_Trauma
+            16648,  # DMC_Algemene chirurgie_Trauma
+            13126,  # D_Algemene chirurgie_Urogenitaal
+            16649,  # DMC_Algemene chirurgie_Urogenitaal
+            13120,  # D_Algemene chirurgie_Vaatchirurgie
+            16650,  # DMC_Algemene chirurgie_Vaatchirurgie
+            13128,  # D_Neurochirurgie _Vasculair chirurgisch
+            16661,  # DMC_Neurochirurgie _Vasculair chirurgisch
+            13129,  # D_Neurochirurgie _Tumor chirurgie
+            16660,  # DMC_Neurochirurgie _Tumor chirurgie
+            13130,  # D_Neurochirurgie_Overige
+            16662,  # DMC_Neurochirurgie_Overige
+            18596,  # Apache II Operatief  Gastr-intenstinaal
+            18597,  # Apache II Operatief Cardiovasculair
+            18598,  # Apache II Operatief Hematologisch
+            18599,  # Apache II Operatief Metabolisme
+            18600,  # Apache II Operatief Neurologisch
+            18601,  # Apache II Operatief Renaal
+            18602,  # Apache II Operatief Respiratoir
+            17008,  # APACHEIV Post-operative cardiovascular
+            17009,  # APACHEIV Post-operative gastro-intestinal
+            17010,  # APACHEIV Post-operative genitourinary
+            17011,  # APACHEIV Post-operative hematology
+            17012,  # APACHEIV Post-operative metabolic
+            17013,  # APACHEIV Post-operative musculoskeletal /skin
+            17014,  # APACHEIV Post-operative neurologic
+            17015,  # APACHEIV Post-operative respiratory
+            17016,  # APACHEIV Post-operative transplant
+            17017,  # APACHEIV Post-operative trauma
+        ]
+        LEVEL2_ITEMIDS = SURGICAL_ITEMIDS + [
+            13141,  # D_Algemene chirurgie_Algemeen
+            16642,  # DMC_Algemene chirurgie_Algemeen
+            13133,  # D_Interne Geneeskunde_Cardiovasculair
+            16653,  # DMC_Interne Geneeskunde_Cardiovasculair
+            13134,  # D_Interne Geneeskunde_Pulmonaal
+            16658,  # DMC_Interne Geneeskunde_Pulmonaal
+            13135,  # D_Interne Geneeskunde_Abdominaal
+            16652,  # DMC_Interne Geneeskunde_Abdominaal
+            13136,  # D_Interne Geneeskunde_Infectieziekten
+            16655,  # DMC_Interne Geneeskunde_Infectieziekten
+            13137,  # D_Interne Geneeskunde_Metabool
+            16656,  # DMC_Interne Geneeskunde_Metabool
+            13138,  # D_Interne Geneeskunde_Renaal
+            16659,  # DMC_Interne Geneeskunde_Renaal
+            13139,  # D_Interne Geneeskunde_Hematologisch
+            16654,  # DMC_Interne Geneeskunde_Hematologisch
+            13140,  # D_Interne Geneeskunde_Overige
+            16657,  # DMC_Interne Geneeskunde_Overige
+            13131,  # D_Neurologie_Vasculair neurologisch
+            16664,  # DMC_Neurologie_Vasculair neurologisch
+            13132,  # D_Neurologie_Overige
+            16663,  # DMC_Neurologie_Overige
+            13127,  # D_KNO/Overige
+            18589,  # Apache II Non-Operatief Cardiovasculair
+            18590,  # Apache II Non-Operatief Gastro-intestinaal
+            18591,  # Apache II Non-Operatief Hematologisch
+            18592,  # Apache II Non-Operatief Metabolisme
+            18593,  # Apache II Non-Operatief Neurologisch
+            18594,  # Apache II Non-Operatief Renaal
+            18595,  # Apache II Non-Operatief Respiratoir
+            16998,  # APACHE IV Non-operative cardiovascular
+            16999,  # APACHE IV Non-operative Gastro-intestinal
+            17000,  # APACHE IV Non-operative genitourinary
+            17001,  # APACHEIV  Non-operative haematological
+            17002,  # APACHEIV  Non-operative metabolic
+            17003,  # APACHEIV Non-operative musculo-skeletal
+            17004,  # APACHEIV Non-operative neurologic
+            17005,  # APACHEIV Non-operative respiratory
+            17006,  # APACHEIV Non-operative transplant
+            17007,  # APACHEIV Non-operative trauma
+            # # Both NICE APACHEII/IV also count towards surgical if valueid in correct range
+            18669,  # NICE APACHEII diagnosen
+            18671,  # NICE APACHEIV diagnosen
+        ]
+
+        def string_aggfunc(x):
+            """Concatenate unique string entries"""
+            return "; ".join(v for v in x.unique())
+
+        listitems = (
+            pl.scan_csv(self.listitems_path)
+            .rename({"admissionid": self.icu_stay_id_col})
+            .with_columns(
+                pl.when(pl.col("itemid") == 18671)  # NICE APACHEIV diagnosen
+                .then(6)
+                .when(pl.col("itemid") == 18669)  # NICE APACHEII diagnosen
+                .then(5)
+                .when(pl.col("itemid").is_between(16998, 17017))  # APACHE IV
+                .then(4)
+                .when(pl.col("itemid").is_between(18589, 18602))  # Apache II
+                .then(3)
+                .when(pl.col("itemid").is_between(13116, 13145))  # D_Hoofdgroep
+                .then(2)
+                .when(
+                    pl.col("itemid").is_between(16642, 16673)
+                )  # DMC_Hoofdgroep
+                .then(1)
+                .otherwise(None)
+                .cast(int, strict=False)
+                .alias("typeid"),
+            )
+        )
+
+        diagnosis_groups = listitems.filter(
+            pl.col("itemid").is_in(LEVEL0_ITEMIDS)
+        )
+        diagnosis_groups = (
+            diagnosis_groups.rename(
+                {
+                    "value": "diagnosis_group",
+                    "valueid": "diagnosis_group_id",
+                }
+            )
+            .with_columns(
+                pl.when(pl.col("itemid").is_in(NICE))
+                .then(pl.col("diagnosis_group").str.split(" - ").list.get(0))
+                .otherwise(pl.col("diagnosis_group"))
+                .alias("diagnosis_group"),
+            )
+            .unique()
+            .sort(self.icu_stay_id_col, "typeid", "updatedat", descending=True)
+            .with_columns(
+                pl.int_range(pl.len())
+                .over(self.icu_stay_id_col)
+                .alias("rownum")
+            )
+        )
+
+        diagnosis_subgroups = (
+            listitems.filter(pl.col("itemid").is_in(LEVEL1_ITEMIDS))
+            .rename(
+                {
+                    "value": "diagnosis_subgroup",
+                    "valueid": "diagnosis_subgroup_id",
+                }
+            )
+            .sort(self.icu_stay_id_col, "updatedat", descending=True)
+            .with_columns(
+                pl.int_range(pl.len())
+                .over(self.icu_stay_id_col)
+                .alias("rownum")
+            )
+        )
+
+        diagnoses = (
+            listitems.filter(pl.col("itemid").is_in(LEVEL2_ITEMIDS))
+            .rename(
+                {
+                    "value": "diagnosis",
+                    "valueid": "diagnosis_id",
+                }
+            )
+            .sort(self.icu_stay_id_col, "updatedat", descending=True)
+            .with_columns(
+                pl.when(pl.col("itemid").is_in(NICE))
+                .then(
+                    pl.col("diagnosis")
+                    .str.replace(" -Coronair", " - Coronair")
+                    .str.split(" - ")
+                    .list.get(0)
+                )
+                .otherwise(pl.col("diagnosis"))
+                .alias("diagnosis"),
+                pl.int_range(pl.len())
+                .over(self.icu_stay_id_col)
+                .alias("rownum"),
+                pl.when(pl.col("itemid").is_in(SURGICAL_ITEMIDS))
+                .then(True)
+                .when(
+                    pl.col("itemid") == 18669,
+                    pl.col("diagnosis_id").is_between(1, 26),
+                )
+                .then(True)
+                .when(
+                    pl.col("itemid") == 18671,
+                    pl.col("diagnosis_id").is_between(222, 452),
+                )
+                .then(True)
+                .otherwise(False)
+                .alias("surgical"),
+            )
+            .cast({"diagnosis": str, "diagnosis_id": str, "surgical": bool})
+            .group_by(self.icu_stay_id_col, "typeid", "updatedat")
+            .agg(
+                pl.col("diagnosis"),
+                pl.col("diagnosis_id"),
+                pl.col("surgical").first(),
+            )
+            .explode("diagnosis", "diagnosis_id")
+            .with_columns(
+                pl.col("typeid")
+                .cast(str)
+                .replace(
+                    {
+                        "6": "NICE APACHE IV",
+                        "5": "NICE APACHE II",
+                        "4": "APACHE IV",
+                        "3": "APACHE II",
+                        "2": "Legacy ICU",
+                        "1": "Legacy MCU",
+                    }
+                )
+                .alias("diagnosis_type"),
+            )
+            .unique()
+            .sort(self.icu_stay_id_col, "typeid", "updatedat", descending=True)
+            .with_columns(
+                pl.int_range(pl.len())
+                .over(self.icu_stay_id_col)
+                .alias("rownum")
+            )
+            .drop("typeid")
+        )
+
+        print(diagnoses.head(10).collect())
+
+        diagnoses.collect(streaming=True).write_parquet(
+            "UMCdb_diagnoses.parquet"
+        )
+
+        return (
+            pl.scan_csv(self.listitems_path)
+            .select(
+                [
+                    "admissionid",
+                    "item",
+                    "itemid",
+                    "value",
+                    "valueid",
+                    "measuredat",
+                ]
+            )
+            .rename({"admissionid": self.icu_stay_id_col})
+            .with_columns(
+                # Replace item names with standardized names
+                pl.col("item")
+                .replace_strict(self.APACHE_MAPPING, default=None)
+                .alias("item"),
+            )
+        )
