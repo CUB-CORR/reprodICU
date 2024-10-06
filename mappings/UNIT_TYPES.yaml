@@ -9,9 +9,11 @@ Neurological:
   - Neuro Intermediate
   - Neuro Stepdown
   - Neuro Surgical Intensive Care Unit (Neuro SICU)
-  - NICU
   # MIMIC-IV 3.0
   - Neurology
+Neonatal:
+  # MIMIC-III
+  - NICU
 Medical:
   - Intensive Care Volwassenen
   - Medical Intensive Care Unit (MICU)
