@@ -38,6 +38,11 @@ class HiRIDExtractor(HiRIDPaths):
                 on=self.icu_stay_id_col,
                 how="left",
             )
+            .join(
+                self.extract_admit_diagnoses(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
             .with_columns(
                 # Set care site
                 pl.lit("Universitätsspital Bern").alias(self.care_site_col),
@@ -219,6 +224,50 @@ class HiRIDExtractor(HiRIDPaths):
         return height_weight.lazy()
 
     # endregion
+
+    # region admitDX
+    def extract_admit_diagnoses(self) -> pl.LazyFrame:
+        # check if precalculated data is available
+        if os.path.isfile(self.precalc_path + "HiRID_admitDX.parquet"):
+            return pl.scan_parquet(self.precalc_path + "HiRID_admitDX.parquet")
+
+        print("HiRID   - Extracting admission diagnoses...")
+
+        # Load the mapping of the diagnoses
+        hirid_diagnosis_mapping = self.load_mapping(self.apache_mapping_path)
+
+        # Create an empty DataFrame to store the admission diagnoses data
+        admitDX = pl.LazyFrame()
+
+        # Since each case has it's data in only one file, iterating over the files specifically allows
+        # for a more efficient processing of the data.
+        for file in os.listdir(self.timeseries_path):
+            # Extract the data from the file
+            data = (
+                pl.scan_parquet(self.timeseries_path + file)
+                .select("patientid", "datetime", "variableid", "value")
+                .rename({"patientid": self.icu_stay_id_col})
+                .filter(pl.col("variableid").is_in([9990002, 9990004]))
+            )
+
+            # Append the data to the DataFrame
+            admitDX = pl.concat([admitDX, data], how="diagonal_relaxed")
+
+        admitDX = (
+            admitDX.sort(self.icu_stay_id_col, "datetime")
+            .group_by(self.icu_stay_id_col)
+            .agg(pl.col("value").first())
+            .with_columns(
+                pl.col("value")
+                .replace(hirid_diagnosis_mapping, default=None)
+                .alias(self.admission_diagnosis_col)
+            )
+            .select(self.icu_stay_id_col, self.admission_diagnosis_col)
+        )
+
+        admitDX.sink_parquet(self.precalc_path + "HiRID_admitDX.parquet")
+
+        return admitDX
 
     # region timeseries
     # Extract timeseries information from the timeseries file directory

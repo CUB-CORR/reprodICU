@@ -22,6 +22,18 @@ class SICdbExtractor(SICdbPaths):
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
+        diagnosis_mapping = (
+            pl.read_csv(
+                self.mapping_path + "_icd_codes/icd_diagnoses_apache.csv",
+                separator=";",
+            )
+            .select("ICD", "APACHE_Group")
+            .to_pandas()
+        )
+        diagnosis_mapping_dict = dict(
+            zip(diagnosis_mapping["ICD"], diagnosis_mapping["APACHE_Group"])
+        )
+
         return (
             pl.scan_csv(self.cases_path)
             .rename(
@@ -31,6 +43,7 @@ class SICdbExtractor(SICdbPaths):
                     "AgeOnAdmission": self.age_col,
                     "HeightOnAdmission": self.height_col,
                     "WeightOnAdmission": self.weight_col,
+                    "ICD10Main": self.admission_diagnosis_col,
                 }
             )
             .with_columns(
@@ -97,6 +110,10 @@ class SICdbExtractor(SICdbPaths):
                 pl.lit("Landeskrankenhaus Salzburg").alias(self.care_site_col),
                 # Create empty HospitalStayID column
                 pl.lit(None).alias(self.hospital_stay_id_col),
+                # Convert admission diagnosis to APACHE group
+                pl.col(self.admission_diagnosis_col).replace(
+                    diagnosis_mapping_dict, default=None
+                ),
             )
         )
 
