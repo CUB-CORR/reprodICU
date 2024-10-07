@@ -1,0 +1,484 @@
+ICD;ICD_Description;APACHE_Group
+XXXXXX;Source;https://ccmdb.kuality.ca/index.php?title=APACHE_Acute_Dxs_in_ICD10_codes
+J67.90;Allergic bronchopulmonary aspergillosis (ABPA);Non-operative - Respiratory - Aspiration / Poisoning
+J67.99;Hypersensitivity pneumonitis (extrinsic allergic alveoliltis), NOS;Non-operative - Respiratory - Aspiration / Poisoning
+J68.3;Reactive airways dysfunction syndrome (RADS);Non-operative - Respiratory - Aspiration / Poisoning
+J68.9;Respiratory conditions due to inhalation of chemicals, gases, fumes, vapors, NOS;Non-operative - Respiratory - Aspiration / Poisoning
+J69.0;Aspiration pneumonitis;Non-operative - Respiratory - Aspiration / Poisoning
+J70.0;Radiation pneumonitis (acute or chronic);Non-operative - Respiratory - Aspiration / Poisoning
+J70.4;Interstitial lung disease, drug-induced (acute or chronic);Non-operative - Respiratory - Aspiration / Poisoning
+J70.5;Respiratory conditions due to smoke inhalation;Non-operative - Respiratory - Aspiration / Poisoning
+J45.901;Asthma, acute exacerbation;Non-operative - Respiratory - Asthma / Allergy
+J45.909;Asthma, without acute exacerbation;Non-operative - Respiratory - Asthma / Allergy
+J45.91;Status asthmaticus;Non-operative - Respiratory - Asthma / Allergy
+I25.5;Cardiomyopathy, ischemic;Non-operative - Cardiovascular - Congestive heart failure
+I42.0;Cardiomyopathy, dilated;Non-operative - Cardiovascular - Congestive heart failure
+I42.1;Cardiomyopathy, hypertrophic obstructive (HOCM, IHSS);Non-operative - Cardiovascular - Congestive heart failure
+I42.6;Cardiomyopathy, alcoholic;Non-operative - Cardiovascular - Congestive heart failure
+I42.7;Cardiomyopathy, due to infection, drugs or external agents NOS;Non-operative - Cardiovascular - Congestive heart failure
+I42.9;Cardiomyopathy, NOS;Non-operative - Cardiovascular - Congestive heart failure
+I50.0;Congestive heart failure, NOS;Non-operative - Cardiovascular - Congestive heart failure
+I50.1;Congestive heart failure with pulmonary edema;Non-operative - Cardiovascular - Congestive heart failure
+I50.9;Heart failure, NOS;Non-operative - Cardiovascular - Congestive heart failure
+J42;Bronchitis, chronic, infectious or noninfectious;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J43.9;Pulmonary emphysema or bullous disease without COPD;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J44.1;COPD, acute exacerbation;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J44.8;COPD, without exacerbation;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J45.901;Asthma, acute exacerbation;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J45.909;Asthma, without acute exacerbation;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+J45.91;Status asthmaticus;Non-operative - Respiratory - Chronic obstructive pulmonary disease
+I46.1;Sudden cardiac death (and died);Non-operative - Cardiovascular - Cardiac arrest
+I46.9;Cardiac arrest;Non-operative - Cardiovascular - Cardiac arrest
+R57.0;Shock, cardiogenic;Non-operative - Cardiovascular - Cardiogenic shock
+I01;Acute rheumatic fever with heart involvement;Non-operative - Cardiovascular - Hypertension
+I09;Rheumatic heart disease, chronic;Non-operative - Cardiovascular - Hypertension
+I10;Hypertension, essential (primary);Non-operative - Cardiovascular - Hypertension
+I10.1;Hypertension, malignant;Non-operative - Cardiovascular - Hypertension
+I09;Rheumatic heart disease, chronic;Non-operative - Cardiovascular
+I23.1;Acute myocardial infarction complication of atrial septal defect (ASD);Non-operative - Cardiovascular
+I23.2;Acute myocardial infarction complication of ventricular septal defect (VSD);Non-operative - Cardiovascular
+I23.3;Acute myocardial infarction complication of cardiac rupture;Non-operative - Cardiovascular
+I23.6;Acute myocardial infarction complication of cardiac (intracardiac) mural thrombus;Non-operative - Cardiovascular
+I23.88;Acute myocardial infarction complication, NOS;Non-operative - Cardiovascular
+I25.1;Coronary artery disease, chronic (atherosclerosis, chronic ischemic heart disease);Non-operative - Cardiovascular
+I25.2;Past history, myocardial infarction (old MI);Non-operative - Cardiovascular
+I25.3;Myocardial aneurysm (any part);Non-operative - Cardiovascular
+I25.5;Cardiomyopathy, ischemic;Non-operative - Cardiovascular
+I31.1;Pericarditis, chronic;Non-operative - Cardiovascular
+I34.0;Mitral valve insufficiency (regurgitation);Non-operative - Cardiovascular
+I34.1;Mitral valve prolapse;Non-operative - Cardiovascular
+I34.2;Mitral valve stenosis;Non-operative - Cardiovascular
+I34.9;Mitral valve disorder, NOS;Non-operative - Cardiovascular
+I35.0;Aortic valve stenosis;Non-operative - Cardiovascular
+I35.1;Aortic valve insufficiency (regurgitation);Non-operative - Cardiovascular
+I35.9;Aortic valve disorder, NOS;Non-operative - Cardiovascular
+I36.0;Tricuspid valve stenosis;Non-operative - Cardiovascular
+I36.1;Tricuspid valve insufficiency;Non-operative - Cardiovascular
+I36.9;Tricuspid valve disorder, NOS;Non-operative - Cardiovascular
+I37.0;Pulmonary valve stenosis;Non-operative - Cardiovascular
+I37.1;Pulmonary valve insufficiency (regurgitation);Non-operative - Cardiovascular
+I37.9;Pulmonary valve disorder, NOS;Non-operative - Cardiovascular
+I38;Endocarditis, infective, chronic;Non-operative - Cardiovascular
+I42.0;Cardiomyopathy, dilated;Non-operative - Cardiovascular
+I42.1;Cardiomyopathy, hypertrophic obstructive (HOCM, IHSS);Non-operative - Cardiovascular
+I42.6;Cardiomyopathy, alcoholic;Non-operative - Cardiovascular
+I42.7;Cardiomyopathy, due to infection, drugs or external agents NOS;Non-operative - Cardiovascular
+I42.9;Cardiomyopathy, NOS;Non-operative - Cardiovascular
+I50.0;Congestive heart failure, NOS;Non-operative - Cardiovascular
+I50.1;Congestive heart failure with pulmonary edema;Non-operative - Cardiovascular
+I50.9;Heart failure, NOS;Non-operative - Cardiovascular
+I20.0;Angina pectoris, unstable;Non-operative - Cardiovascular - Coronary artery disease
+I20.9;Angina pectoris, stable or NOS;Non-operative - Cardiovascular - Coronary artery disease
+I21.3;Myocardial infarction (STEMI), acute (AMI), transmural (Q-wave);Non-operative - Cardiovascular - Coronary artery disease
+I21.4;Myocardial infarction (NSTEMI), acute (AMI), subendocardial/non-transmural (non-Q-wave);Non-operative - Cardiovascular - Coronary artery disease
+I21.9;Myocardial infarction, acute (AMI), NOS;Non-operative - Cardiovascular - Coronary artery disease
+I23.1;Acute myocardial infarction complication of atrial septal defect (ASD);Non-operative - Cardiovascular - Coronary artery disease
+I23.2;Acute myocardial infarction complication of ventricular septal defect (VSD);Non-operative - Cardiovascular - Coronary artery disease
+I23.3;Acute myocardial infarction complication of cardiac rupture;Non-operative - Cardiovascular - Coronary artery disease
+I23.6;Acute myocardial infarction complication of cardiac (intracardiac) mural thrombus;Non-operative - Cardiovascular - Coronary artery disease
+I23.88;Acute myocardial infarction complication, NOS;Non-operative - Cardiovascular - Coronary artery disease
+I24.1;Acute myocardial infarction complication of Dressler's syndrome (postmyocardial infarction syndrome);Non-operative - Cardiovascular - Coronary artery disease
+I24.9;Ischemic heart disease, acute NOS;Non-operative - Cardiovascular - Coronary artery disease
+I25.1;Coronary artery disease, chronic (atherosclerosis, chronic ischemic heart disease);Non-operative - Cardiovascular - Coronary artery disease
+I25.2;Past history, myocardial infarction (old MI);Non-operative - Cardiovascular - Coronary artery disease
+I25.3;Myocardial aneurysm (any part);Non-operative - Cardiovascular - Coronary artery disease
+I25.5;Cardiomyopathy, ischemic;Non-operative - Cardiovascular - Coronary artery disease
+S06.4;Epidural hemorrhage, injury/trauma;Operative - Craniotomy for intracerebral, subdural, subarachnoid hemorrhage
+S06.5;Subdural hemorrhage/hematoma, injury/trauma;Operative - Craniotomy for intracerebral, subdural, subarachnoid hemorrhage
+S06.6;Subarachnoid hemorrhage, injury/trauma;Operative - Craniotomy for intracerebral, subdural, subarachnoid hemorrhage
+S06.8;Intracranial hemorrhage, injury/trauma;Operative - Craniotomy for intracerebral, subdural, subarachnoid hemorrhage
+C72.0;Spinal cord, primary malignancy;Operative - Craniotomy for neoplasm
+C72.9;Central nervous system NOS, primary malignancy;Operative - Craniotomy for neoplasm
+E14.10;Diabetic ketoacidosis (DKA);Non-operative - Metabolic/Endocrine - Diabetic ketoacidosis
+I71.0;Aortic dissection (any part);Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.1;Aortic aneurysm, abdominal with rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.2;Aortic aneurysm, thoracic without mention of rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.3;Aortic aneurysm, thoracic with rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.4;Aortic aneurysm, abdominal without mention of rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.8;Aortic aneurysm, NOS with rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+I71.9;Aortic aneurysm, NOS without mention of rupture;Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+F10.0;Alcohol (ethanol) acute intoxication (drunkenness);Non-operative - Neurology - Drug overdose
+F11.0;Opioid/narcotic, acute intoxication;Non-operative - Neurology - Drug overdose
+F12.0;Cannabis/cannabinoids, acute intoxication;Non-operative - Neurology - Drug overdose
+F13.0;Sedative or hypnotic, acute intoxication;Non-operative - Neurology - Drug overdose
+F14.0;Cocaine, acute intoxication;Non-operative - Neurology - Drug overdose
+F15.0;Stimulants incl methamphetamine, acute intoxication;Non-operative - Neurology - Drug overdose
+F16.0;Hallucinogen, acute intoxication;Non-operative - Neurology - Drug overdose
+F18.0;Solvent (organic, inhaled or ingested), intoxication, acute;Non-operative - Neurology - Drug overdose
+F19.0;Psychoactive substance NOS, acute intoxication;Non-operative - Neurology - Drug overdose
+T38.3;Insulin or other antidiabetes drug, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T38.8;Hormone or hormone agonist NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T39.0;Aspirin or other salicylate or NSAID, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T39.1;Acetaminophen (tylenol, paracematol), overdose/toxicity;Non-operative - Neurology - Drug overdose
+T39.3;Nonsteroidal antiinflammatory drug (NSAID), overdose/toxicity;Non-operative - Neurology - Drug overdose
+T40.5;Cocaine, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T40.6;Opioid/narcotic, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T40.9;Hallucinogen, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T41;Anesthetic gas, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T42.4;Benzodiazepine, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T42.6;Antiseizure drug NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T42.7;Sedative or hypnotic, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T43.0;Tricyclic antidepressant, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T43.2;Antidepressant drug NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T43.6;Stimulants incl. methamphetamine, poisoning;Non-operative - Neurology - Drug overdose
+T43.9;Psychiatric drug NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T44.7;Beta-blocker, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T45.1;Antineoplastic/chemotherapy or immunosuppressive drugs, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T45.5;Anticoagulant, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T45.6;Thrombolytic drug, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T46.1;Calcium channel blocker, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T46.2;Anti-arrhythmic, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T46.9;Cardiac/cardiovascular drug NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T48.1;Neuromuscular blocker/paralytic, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T50.9;Drug or biological substance/agent NOS, overdose/toxicity;Non-operative - Neurology - Drug overdose
+T51.0;Alcohol (ethanol), poisoning;Non-operative - Neurology - Drug overdose
+T51.8;Toxic alcohols, poisoning;Non-operative - Neurology - Drug overdose
+T52;Solvent (organic, inhaled or ingested), poisoning;Non-operative - Neurology - Drug overdose
+T54.2;Acid, poisoning;Non-operative - Neurology - Drug overdose
+T54.3;Alkali, poisoning;Non-operative - Neurology - Drug overdose
+T54.9;Acid or alkali (not specified which) or other corrosive substance, poisoning;Non-operative - Neurology - Drug overdose
+T56;Metal or their compounds or inorganic substances NOS, poisoning;Non-operative - Neurology - Drug overdose
+T58;Carbon monoxide, poisoning;Non-operative - Neurology - Drug overdose
+T59;Chemical gases or fumes or vapors NOS, poisoning;Non-operative - Neurology - Drug overdose
+T60;Pesticides, poisoning;Non-operative - Neurology - Drug overdose
+T62.9;Food, poisoning;Non-operative - Neurology - Drug overdose
+T63;Venomous animals, poisoning;Non-operative - Neurology - Drug overdose
+K22.14;Ulcer of esophagus, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K22.6;Mallory-Weiss tear/syndrome, with or without hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K25.4;Gastric ulcer, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K26.4;Duodenal ulcer, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K27.4;Peptic ulcer, site unspecified, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K31.80;Angiodysplasia of stomach or duodenum, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K31.88;Dieulafoy's lesion of stomach or duodenum, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K55.20;Angiodysplasia of colon, with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K63.80;Angiodysplasia of small intestine with hemorrhage;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K92.0;Hematemesis;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K92.1;Melena or Hematochezia;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+K92.2;Gastrointestinal hemorrhage (GI bleed), not specified if lower or upper;Non-operative - Gastrointestinal - Gastrointestinal bleeding
+A01;Typhoid fever or Paratyphoid fever (due to Salmonella typhi or Salmonella enterica);Non-operative - Gastrointestinal
+A02.0;Salmonella enteritis;Non-operative - Gastrointestinal
+A02.8;Salmonella species;Non-operative - Gastrointestinal
+A03;Shigellosis (dysentery due to Shigella species);Non-operative - Gastrointestinal
+A04.7;Clostridium difficile infection (C. diff);Non-operative - Gastrointestinal
+A04.9;Gastrointestinal infection (gastroenteritis, colitis), bacterial, NOS;Non-operative - Gastrointestinal
+A05.1;Botulism (due to Clostridium botulinum toxin);Non-operative - Gastrointestinal
+A05.9;Food poisoning (due to foodborne bacterial toxin), NOS;Non-operative - Gastrointestinal
+A06.0;Amoebiasis (amoebic dysentery due to Entamoeba histolytica);Non-operative - Gastrointestinal
+A06.8;Entamoeba histolytica (amoebic infection of non-intestinal sites);Non-operative - Gastrointestinal
+A07;Gastrointestinal infection (gastroenteritis, colitis), protozoal, NOS;Non-operative - Gastrointestinal
+A08;Gastrointestinal infection (gastroenteritis, colitis), viral;Non-operative - Gastrointestinal
+A09;Gastrointestinal infection (gastroenteritis, colitis), bug NOS;Non-operative - Gastrointestinal
+B16;Hepatitis B, acute;Non-operative - Gastrointestinal
+B17.1;Hepatitis C, acute;Non-operative - Gastrointestinal
+B17.9;Viral hepatitis, acute, NOS;Non-operative - Gastrointestinal
+B18.1;Hepatitis B, chronic;Non-operative - Gastrointestinal
+B18.2;Hepatitis C, chronic;Non-operative - Gastrointestinal
+B18.9;Viral hepatitis, chronic, NOS;Non-operative - Gastrointestinal
+K22.15;Ulcer of esophagus, with perforation;Operative - Gastrointestinal perforation or obstruction
+K22.2;Esophagus, obstruction or compression or stricture or stenosis;Operative - Gastrointestinal perforation or obstruction
+K22.3;Perforation/rupture of esophagus, nontraumatic, NOS;Operative - Gastrointestinal perforation or obstruction
+K25.5;Gastric ulcer with perforation;Operative - Gastrointestinal perforation or obstruction
+K26.5;Duodenal ulcer with perforation;Operative - Gastrointestinal perforation or obstruction
+K27.5;Peptic ulcer, site unspecified, with perforation;Operative - Gastrointestinal perforation or obstruction
+K31.1;Pyloric stenosis;Operative - Gastrointestinal perforation or obstruction
+K31.5;Duodenum, obstruction;Operative - Gastrointestinal perforation or obstruction
+K46.0;Abdominal hernia, with obstruction, incarceration or strangulation;Operative - Gastrointestinal perforation or obstruction
+K56.5;Intestinal adhesion(s) with obstruction;Operative - Gastrointestinal perforation or obstruction
+K56.6;Intestinal obstruction, NOS (small or large bowel);Operative - Gastrointestinal perforation or obstruction
+K57.8;Diverticulitis, small or large intestine (diverticular disease with perforation or abscess);Operative - Gastrointestinal perforation or obstruction
+K63.1;Intestinal perforation, nontraumatic;Operative - Gastrointestinal perforation or obstruction
+K80.81;Cholelithiasis or choledolithiasis (gallstones), with obstruction of gallbladder or bile duct;Operative - Gastrointestinal perforation or obstruction
+K82.0;Gallbladder or bile duct obstruction;Operative - Gastrointestinal perforation or obstruction
+K82.2;Gallbladder or bile duct perforation or rupture;Operative - Gastrointestinal perforation or obstruction
+C16;Stomach, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C17;Small intestine, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C18;Colon (large intestine), primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C20;Rectum or anus, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C22;Liver, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C23;Gallbladder, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C24;Biliary tract, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C25;Pancreas, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C26.1;Spleen, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C26.9;GI organ NOS, primary malignancy;Operative - Gastrointestinal surgery for neoplasm
+C78.6;Peritoneum, metastatic malignancy to it (also code primary site);Operative - Gastrointestinal surgery for neoplasm
+C78.7;Liver or biliary system, metastatic malignancy to it (also code primary site);Operative - Gastrointestinal surgery for neoplasm
+C78.8;Gastrointestinal system NOS, metastatic malignancy to it (also code primary site);Operative - Gastrointestinal surgery for neoplasm
+S01;Head, open wound, injury/trauma;Non-operative - Trauma - Head trauma
+S02.0;Skull, fracture, injury/trauma;Non-operative - Trauma - Head trauma
+S02.5;Tooth, fracture (broken tooth), injury/trauma;Non-operative - Trauma - Head trauma
+S02.9;Head bones NOS, fracture, injury/trauma;Non-operative - Trauma - Head trauma
+S03;Head, joints or ligaments, dislocation/sprain/strain, injury/trauma;Non-operative - Trauma - Head trauma
+S04;Cranial nerve, wound/injury/trauma;Non-operative - Trauma - Head trauma
+S05;Eye (globe), wound/injury/trauma;Non-operative - Trauma - Head trauma
+S06.0;Brain, concussion, injury/trauma;Non-operative - Trauma - Head trauma
+S06.1;Brain, cerebral edema, injury/trauma;Non-operative - Trauma - Head trauma
+S06.2;Brain injury, diffuse (TBI), injury/trauma;Non-operative - Trauma - Head trauma
+S06.3;Brain injury, focal (TBI), injury/trauma;Non-operative - Trauma - Head trauma
+S06.4;Epidural hemorrhage, injury/trauma;Non-operative - Trauma - Head trauma
+S06.5;Subdural hemorrhage/hematoma, injury/trauma;Non-operative - Trauma - Head trauma
+S06.6;Subarachnoid hemorrhage, injury/trauma;Non-operative - Trauma - Head trauma
+S06.8;Intracranial hemorrhage, injury/trauma;Non-operative - Trauma - Head trauma
+S06.9;Brain/intracranial injury NOS, injury/trauma;Non-operative - Trauma - Head trauma
+S09.2;Eardrum (tympanic membrane), rupture, injury/trauma;Non-operative - Trauma - Head trauma
+S09.9;Head NOS, wound/injury/trauma;Non-operative - Trauma - Head trauma
+S10;Neck, superficial injury/trauma (minor, contusion);Non-operative - Trauma - Head trauma
+I15.0;Hypertension, renovascular;Non-operative - Cardiovascular - Hypertension
+I15.8;Hypertension, secondary, NOS;Non-operative - Cardiovascular - Hypertension
+R57.1;Shock, hypovolemic shock or hemorrhagic shock;Non-operative - Cardiovascular - Hemorrhagic shock / hypovolemia
+E03;Hypothyroidism;Non-operative - Metabolic/Endocrine
+E03.5;Myxedema with coma;Non-operative - Metabolic/Endocrine
+E03.9;Myxedema NOS;Non-operative - Metabolic/Endocrine
+E04;Goiter without hyperthyroidism (nontoxic goiter);Non-operative - Metabolic/Endocrine
+E05.5;Thyroid storm or crisis (severe thyrotoxicosis);Non-operative - Metabolic/Endocrine
+E05.9;Hyperthyroidism (with or without goiter);Non-operative - Metabolic/Endocrine
+E06.0;Thyroiditis, acute;Non-operative - Metabolic/Endocrine
+E06.1;Thyroiditis, subacute;Non-operative - Metabolic/Endocrine
+E06.2;Thyroiditis, chronic;Non-operative - Metabolic/Endocrine
+E06.3;Thyroiditis, autoimmune;Non-operative - Metabolic/Endocrine
+E06.9;Thyroiditis, NOS;Non-operative - Metabolic/Endocrine
+E07.81;Sick euthyroid syndrome;Non-operative - Metabolic/Endocrine
+E07.9;Thyroid disorder, NOS;Non-operative - Metabolic/Endocrine
+E10.6;Diabetes mellitus type 1, with chronic complication (code complications separately);Non-operative - Metabolic/Endocrine
+E10.9;Diabetes mellitus type 1, without chronic complications;Non-operative - Metabolic/Endocrine
+E11.6;Diabetes mellitus type 2, with chronic complication (code complications separately);Non-operative - Metabolic/Endocrine
+E11.9;Diabetes mellitus type 2 without chronic complications;Non-operative - Metabolic/Endocrine
+E14.0;Diabetic coma;Non-operative - Metabolic/Endocrine
+E14.10;Diabetic ketoacidosis (DKA);Non-operative - Metabolic/Endocrine - Diabetic ketoacidosis
+E14.2;Diabetes mellitus chronic complication: Nephropathy;Non-operative - Metabolic/Endocrine
+E14.3;Diabetes mellitus chronic complication: Retinopathy;Non-operative - Metabolic/Endocrine
+E14.4;Diabetes mellitus chronic complication: Neuropathy;Non-operative - Metabolic/Endocrine
+E14.5;Diabetes mellitus chronic complication: Cardiovascular;Non-operative - Metabolic/Endocrine
+E14.6;Diabetes mellitus, type not specified, with chronic complication (code complications separately);Non-operative - Metabolic/Endocrine
+E14.60;Diabetes mellitus chronic complication: Musculoskeletal;Non-operative - Metabolic/Endocrine
+E14.63;Hypoglycemia, in diabetes;Non-operative - Metabolic/Endocrine
+E14.64;Diabetes mellitus, in poor control;Non-operative - Metabolic/Endocrine
+E14.68;Diabetes mellitus chronic complication NOS;Non-operative - Metabolic/Endocrine
+E14.7;Diabetes mellitus chronic complication: Foot ulcer;Non-operative - Metabolic/Endocrine
+E14.9;Diabetes mellitus, type not specified, without chronic complications;Non-operative - Metabolic/Endocrine
+E16.2;Hypoglycemia;Non-operative - Metabolic/Endocrine
+E20;Hypoparathyroidism;Non-operative - Metabolic/Endocrine
+E21.3;Hyperparathyroidism;Non-operative - Metabolic/Endocrine
+E21.4;Parathyroid disorder, NOS;Non-operative - Metabolic/Endocrine
+E22.2;Syndrome of inappropriate secretion of antidiuretic hormone (SIADH);Non-operative - Metabolic/Endocrine
+E22.9;Hyperpituitarism;Non-operative - Metabolic/Endocrine
+E23.0;Hypopituitarism (pituitary insufficiency), NOS;Non-operative - Metabolic/Endocrine
+E23.2;Diabetes insipidus, neurogenic/central (DI);Non-operative - Metabolic/Endocrine
+E23.7;Pituitary disorder, NOS;Non-operative - Metabolic/Endocrine
+E24.2;Cushing's syndrome, drug-induced;Non-operative - Metabolic/Endocrine
+E24.9;Cushing's syndrome, NOS;Non-operative - Metabolic/Endocrine
+E25;Adrenogenital disorders;Non-operative - Metabolic/Endocrine
+E26;Hyperaldosteronism;Non-operative - Metabolic/Endocrine
+E27.1;Adrenal insufficiency, primary (Addison's disease);Non-operative - Metabolic/Endocrine
+E27.2;Adrenal insufficiency, severe (Adrenal crisis, Addisonian crisis);Non-operative - Metabolic/Endocrine
+E27.3;Adrenal insufficiency, drug-induced (i.e. due to steroid administration);Non-operative - Metabolic/Endocrine
+E27.4;Adrenal insufficiency, NOS;Non-operative - Metabolic/Endocrine
+E27.5;Hyperadrenal state, NOS;Non-operative - Metabolic/Endocrine
+E27.9;Adrenal gland disorder, NOS;Non-operative - Metabolic/Endocrine
+E28.2;Polycystic ovaries, polycystic ovary syndrome;Non-operative - Metabolic/Endocrine
+E28.9;Ovarian dysfunction, NOS;Non-operative - Metabolic/Endocrine
+E29;Testicular dysfunction, NOS;Non-operative - Metabolic/Endocrine
+E30;Disorder of puberty;Non-operative - Metabolic/Endocrine
+E31;Polyglandular dysfunction;Non-operative - Metabolic/Endocrine
+E32;Disorder of thymus, NOS;Non-operative - Metabolic/Endocrine
+E34.0;Carcinoid syndrome;Non-operative - Metabolic/Endocrine
+E34.9;Endocrine disorder, NOS;Non-operative - Metabolic/Endocrine
+E46;Malnutrition;Non-operative - Metabolic/Endocrine
+E51.2;Wernicke's encephalopathy (Wernicke-Korsakoff syndrome);Non-operative - Metabolic/Endocrine
+E51.9;Thiamine deficiency;Non-operative - Metabolic/Endocrine
+E55;Vitamin D deficiency;Non-operative - Metabolic/Endocrine
+E56.1;Vitamin K deficiency;Non-operative - Metabolic/Endocrine
+E56.9;Vitamin deficiency, NOS;Non-operative - Metabolic/Endocrine
+E63;Nutritional deficiency, NOS;Non-operative - Metabolic/Endocrine
+E66.2;Obesity-hypoventilation syndrome (Pickwick syndrome);Non-operative - Metabolic/Endocrine
+E66.8;Obesity, morbid (severe, BMI gte 40);Non-operative - Metabolic/Endocrine
+E66.9;Obesity, NOS (BMI 30.0 to 39.9);Non-operative - Metabolic/Endocrine
+E67;Hypervitamin disorder (vitamin excess, any);Non-operative - Metabolic/Endocrine
+E70;Phenylketonuria;Non-operative - Metabolic/Endocrine
+E70.3;Albinism (albino);Non-operative - Metabolic/Endocrine
+E72.9;Disorder of amino-acid metabolism, NOS;Non-operative - Metabolic/Endocrine
+E73;Lactose deficiency/intolerance;Non-operative - Metabolic/Endocrine
+E74;Disorder of carbohydrate metabolism;Non-operative - Metabolic/Endocrine
+E75;Disorder of sphingolipid metabolism, and other lipid storage disorders;Non-operative - Metabolic/Endocrine
+E76;Disorder of glycosaminoglycan metabolism;Non-operative - Metabolic/Endocrine
+E77;Disorder of glycoprotein metabolism;Non-operative - Metabolic/Endocrine
+E78.5;Hyperlipidemia, any type;Non-operative - Metabolic/Endocrine
+E78.9;Disorder of lipoprotein metabolism NOS;Non-operative - Metabolic/Endocrine
+E79;Disorder of purine and pyrimidine metabolism;Non-operative - Metabolic/Endocrine
+E80.2;Porphyria;Non-operative - Metabolic/Endocrine
+E80.7;Disorder of bilirubin metabolism;Non-operative - Metabolic/Endocrine
+E83.0;Disorder of copper metabolism;Non-operative - Metabolic/Endocrine
+E83.10;Hemochromatosis;Non-operative - Metabolic/Endocrine
+E83.19;Disorder of iron metabolism, NOS;Non-operative - Metabolic/Endocrine
+E83.3;Hyperphosphatemia, hypophosphotemia or other disorder of phosphate metabolism, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E83.41;Hypermagnesemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E83.42;Hypomagnesemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E83.51;Hypocalcemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E83.52;Hypercalcemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E83.9;Disorder of mineral metabolism, NOS;Non-operative - Metabolic/Endocrine
+E84;Cystic fibrosis;Non-operative - Metabolic/Endocrine
+E85;Amyloidosis (primary or secondary);Non-operative - Metabolic/Endocrine
+E86;Dehydration (volume depletion, hypovolemia);Non-operative - Metabolic/Endocrine
+E87.0;Hypernatremia / hyperosmolarity, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E87.1;Hyponatremia / hypoosmolarity, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E87.2;Acidosis, NOS;Non-operative - Metabolic/Endocrine
+E87.3;Alkalosis;Non-operative - Metabolic/Endocrine
+E87.5;Hyperkalemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E87.6;Hypokalemia, severe or symptomatic;Non-operative - Metabolic/Endocrine
+E87.7;Fluid overload;Non-operative - Metabolic/Endocrine
+E87.8;Electrolyte disorder, NOS;Non-operative - Metabolic/Endocrine
+E88.01;Alpha-1 antitrypsin deficiency;Non-operative - Metabolic/Endocrine
+E88.3;Tumor lysis syndrome;Non-operative - Metabolic/Endocrine
+E88.80;Metabolic Syndrome (Syndrome X);Non-operative - Metabolic/Endocrine
+E88.9;Metabolic disorder, NOS;Non-operative - Metabolic/Endocrine
+N01;Nephritic syndrome, rapidly progressive;Non-operative - Metabolic/Endocrine
+N03;Nephritic syndrome, chronic;Non-operative - Metabolic/Endocrine
+N04;Nephrotic syndrome;Non-operative - Metabolic/Endocrine
+N05;Nephritic syndrome, NOS;Non-operative - Metabolic/Endocrine
+N10;Kidney infection, acute (pyelonephritis);Non-operative - Metabolic/Endocrine
+N11;Kidney infection, chronic (pyelonephritis);Non-operative - Metabolic/Endocrine
+N12;Kidney, tubulo-interstitial nephritis/disease;Non-operative - Metabolic/Endocrine
+N13.3;Kidney, hydronephrosis;Non-operative - Metabolic/Endocrine
+N13.4;Ureter, hydroureter;Non-operative - Metabolic/Endocrine
+N13.7;Kidney, vesicoureteral reflux nephropathy/uropathy;Non-operative - Metabolic/Endocrine
+N13.9;Kidney, obstructive or reflux nephropathy/uropathy;Non-operative - Metabolic/Endocrine
+N14;Kidney, nephropathy, drug or toxin induced;Non-operative - Metabolic/Endocrine
+N15.1;Kidney, renal abscess or perinephric abscess;Non-operative - Metabolic/Endocrine
+N17.0;Kidney, acute tubular necrosis (ATN);Non-operative - Metabolic/Endocrine
+N17.9;Kidney, acute renal failure NOS;Non-operative - Metabolic/Endocrine
+N18.1;Chronic kidney disease (chronic renal insufficiency, uremia) Stage 1, GFR GT 90;Non-operative - Metabolic/Endocrine
+N18.2;Chronic kidney disease (chronic renal insufficiency, uremia) Stage 2, GFR 60-89;Non-operative - Metabolic/Endocrine
+N18.3;Chronic kidney disease (chronic renal insufficiency, uremia) Stage 3, GFR 30-59;Non-operative - Metabolic/Endocrine
+N18.4;Chronic kidney disease (chronic renal insufficiency, uremia) Stage 4, GFR 15-29;Non-operative - Metabolic/Endocrine
+N18.5;Chronic kidney disease (end-stage renal/kidney disease, ESRD), Stage 5, GFR LT 15;Non-operative - Metabolic/Endocrine
+N18.9;Chronic kidney/renal disease, NOS (stage unspecified);Non-operative - Metabolic/Endocrine
+N19;Kidney, renal failure/insufficiency/uremia, unspecified as acute or chronic;Non-operative - Metabolic/Endocrine
+N23;Urinary tract stone (calculus, renal colic);Non-operative - Metabolic/Endocrine
+N25.0;Kidney, renal osteodystrophy;Non-operative - Metabolic/Endocrine
+N25.1;Diabetes insipidus (DI), nephrogenic;Non-operative - Metabolic/Endocrine
+N25.8;Kidney, renal tubular acidosis (RTA, all types);Non-operative - Metabolic/Endocrine
+N25.9;Kidney, renal tubular disorder, NOS;Non-operative - Metabolic/Endocrine
+N27.9;Kidney, small kidney (atrophy, one or both) of unknown cause;Non-operative - Metabolic/Endocrine
+N28.0;Kidney, infarction or ischemia;Non-operative - Metabolic/Endocrine
+N28.1;Kidney, renal cyst;Non-operative - Metabolic/Endocrine
+N28.9;Kidney or ureter, disorder NOS;Non-operative - Metabolic/Endocrine
+N30.0;Bladder, cystitis, acute infectious;Non-operative - Metabolic/Endocrine
+N30.2;Bladder, cystitis, chronic;Non-operative - Metabolic/Endocrine
+N30.4;Bladder, cystitis, radiation-induced;Non-operative - Metabolic/Endocrine
+N30.9;Bladder, cystitis NOS;Non-operative - Metabolic/Endocrine
+N31;Neurogenic (neuropathic) bladder;Non-operative - Metabolic/Endocrine
+N32.2;Bladder, fistula, to anywhere;Non-operative - Metabolic/Endocrine
+N32.4;Bladder, rupture/perforation, nontraumatic;Non-operative - Metabolic/Endocrine
+N32.9;Bladder, disorder NOS;Non-operative - Metabolic/Endocrine
+N34;Urethra, infectious or noninfectious urethritis;Non-operative - Metabolic/Endocrine
+N35;Urethra, urethral stricture;Non-operative - Metabolic/Endocrine
+N36;Urethra, disorder NOS;Non-operative - Metabolic/Endocrine
+N39.0;Urinary tract infection, NOS;Non-operative - Metabolic/Endocrine
+N39.9;Urinary system, disorder NOS;Non-operative - Metabolic/Endocrine
+C33;Trachea, primary malignancy;Non-operative - Respiratory - Neoplasm
+C34;Lung and/or bronchus, primary malignancy;Non-operative - Respiratory - Neoplasm
+C37;Thymus, primary malignancy;Non-operative - Respiratory - Neoplasm
+C38.0;Heart, primary malignancy;Non-operative - Respiratory - Neoplasm
+C38.3;Mediastinum, primary malignancy;Non-operative - Respiratory - Neoplasm
+C38.4;Pleura, primary malignancy;Non-operative - Respiratory - Neoplasm
+C39;Respiratory system NOS, primary malignancy;Non-operative - Respiratory - Neoplasm
+A18;Mycobacterium tuberculosis (M. TB);Non-operative - Neurology
+A28.9;Zoonotic bacterial disease (directly transmitted from animal);Non-operative - Neurology
+A30;Leprosy (due to Mycobacterium leprae) (Hansen's disease);Non-operative - Neurology
+A31.2;Mycobacterium avium-intracellulare (MAC);Non-operative - Neurology
+A31.8;Nontuberculous mycobacteria;Non-operative - Neurology
+A32;Listeria;Non-operative - Neurology
+A35;Tetanus infection (due to toxoid of Clostridium tetani);Non-operative - Neurology
+A36;Diptheria (due to Corynebacterium diphtheriae toxin);Non-operative - Neurology
+A37;Whooping cough (Pertussis) (due to Bordetella pertussis);Non-operative - Neurology
+A38;Scarlet fever;Non-operative - Neurology
+A39;Neisseria meningitidis (meningococcus);Non-operative - Neurology
+A41.52;Serratia species;Non-operative - Neurology
+A42;Actinomyces (actinomycosis);Non-operative - Neurology
+A43;Nocardia (nocardiosis);Non-operative - Neurology
+A48.0;Gas gangrene (usually due to Clostridium perfringens);Non-operative - Neurology
+A48.1;Legionella;Non-operative - Neurology
+A48.3;Toxic shock syndrome;Non-operative - Neurology
+A48.8;Bacterial infection, NOS;Non-operative - Neurology
+A49.9;Bacteremia;Non-operative - Neurology
+A53;Treponema pallidum (Syphilis);Non-operative - Neurology
+A54;Neisseria gonorrhea (gonococcus);Non-operative - Neurology
+A56;Chlamydia trachomatis (bug responsible for regular sexually transmitted chlamydia);Non-operative - Neurology
+A64;Sexually transmitted (venereal) infections, NOS;Non-operative - Neurology
+A69.2;Lyme disease OR for buglist Borrelia burgdorferi or B. mayonii;Non-operative - Neurology
+A69.21;Lyme meningitis (due to Borrelia burgdorferi or Borrelia mayonii);Non-operative - Neurology
+A81.0;Creutzfeldt-Jakob disease;Non-operative - Neurology
+A81.1;Subacute sclerosing panencephalitis (SSPE) (caused by Measles virus);Non-operative - Neurology
+A81.2;Progressive Multifocal Leukoencephalopathy (PML);Non-operative - Neurology
+A82;Rabies OR for buglist rabies virus;Non-operative - Neurology
+A83;Mosquito-borne viruses (causes of encephalitis);Non-operative - Neurology
+A84;Tick-borne viruses (causes of encephalitis);Non-operative - Neurology
+G02.0;Meningitis, viral - incl West Nile;Non-operative - Neurology
+G02.1;Meningitis, fungal;Non-operative - Neurology
+G02.8;Meningitis, infectious NOS;Non-operative - Neurology
+G03.0;Noninfectious (aseptic) meningitis;Non-operative - Neurology
+G04.9;Encephalitis, meningoencephalitis, myelitis, encephalomyelitis, noninfectious;Non-operative - Neurology
+G05.0;Encephalitis, meningoencephalitis, myelitis, encephalomyelitis, bacterial;Non-operative - Neurology
+G05.1;Encephalitis, meningoencephalitis, myelitis, encephalomyelitis, viral;Non-operative - Neurology
+G05.2;Encephalitis, meningoencephalitis, myelitis, encephalomyelitis, infectious NOS;Non-operative - Neurology
+G06.0;Intracranial abscess;Non-operative - Neurology
+G06.1;Intraspinal abscess;Non-operative - Neurology
+G08;Intracranial or intraspinous veins or venous sinuses, septic thromboembolism;Non-operative - Neurology
+G10;Huntington's disease/chorea;Non-operative - Neurology
+J95.81;Transfusion-related acute lung injury (TRALI, form of ARDS);Non-operative - Respiratory - Non-cardiogenic pulmonary edema
+I26.90;Pulmonary embolism (thromboembolism), septic;Non-operative - Respiratory - Pulmonary embolism
+I27.82;Pulmonary embolism (thromboembolism), chronic;Non-operative - Respiratory - Pulmonary embolism
+O88.0;Pulmonary embolism, obstetrical, air embolism;Non-operative - Respiratory - Pulmonary embolism
+O88.1;Pulmonary embolism, obstetrical, amniotic fluid embolism;Non-operative - Respiratory - Pulmonary embolism
+O88.2;Pulmonary embolism (thromboembolism), obstetrical;Non-operative - Respiratory - Pulmonary embolism
+O88.3;Pulmonary embolism, septic obstetrical thromboembolism;Non-operative - Respiratory - Pulmonary embolism
+J96.09;Respiratory failure (insufficiency) NOS, acute;Operative - Respiratory insufficiency after surgery
+J96.99;Respiratory failure (insufficiency) NOS, not specified as acute or chronic;Operative - Respiratory insufficiency after surgery
+R06.89;Hypercapnia (hypercarbia);Operative - Respiratory insufficiency after surgery
+R09.02;Hypoxemia (hypoxia);Operative - Respiratory insufficiency after surgery
+R09.2;Respiratory arrest;Non-operative - Respiratory - Post respiratory arrest
+J03;Tonsillitis, acute;Non-operative - Respiratory - Infection
+J04;Laryngitis or tracheitis, acute;Non-operative - Respiratory - Infection
+J05.1;Epiglotittis, acute;Non-operative - Respiratory - Infection
+J06;Upper respiratory infection, acute NOS;Non-operative - Respiratory - Infection
+J11;Influenza virus NOS -- should almost never be used;Non-operative - Respiratory - Infection
+J11.0;Influenza pneumonia;Non-operative - Respiratory - Infection
+J11.1;Influenza without pneumonia but with other respiratory manifestations;Non-operative - Respiratory - Infection
+J11.8;Influenza with nonrespiratory manifestations;Non-operative - Respiratory - Infection
+J12;Pneumonia, viral;Non-operative - Respiratory - Infection
+J15;Pneumonia, bacterial;Non-operative - Respiratory - Infection
+J17.2;Pneumonia, fungal/yeast;Non-operative - Respiratory - Infection
+J18;Pneumonia, NOS;Non-operative - Respiratory - Infection
+J22;Lower respiratory tract infection, acute infectious;Non-operative - Respiratory - Infection
+J01;Sinusitis, acute;Non-operative - Respiratory
+J02;Pharyngitis, acute;Non-operative - Respiratory
+J03;Tonsillitis, acute;Non-operative - Respiratory
+J04;Laryngitis or tracheitis, acute;Non-operative - Respiratory
+J05.1;Epiglotittis, acute;Non-operative - Respiratory
+J06;Upper respiratory infection, acute NOS;Non-operative - Respiratory
+I44.0;Atrioventricular block, 1st degree;Non-operative - Cardiovascular - Rhythm disturbance
+I44.1;Atrioventricular block, 2nd degree;Non-operative - Cardiovascular - Rhythm disturbance
+I44.2;Atrioventricular block, 3rd degree (complete heart block);Non-operative - Cardiovascular - Rhythm disturbance
+I44.7;Left bundle branch block;Non-operative - Cardiovascular - Rhythm disturbance
+I45.1;Right bundle branch block;Non-operative - Cardiovascular - Rhythm disturbance
+I45.6;Wolff-Parkinson-White Syndrome (WPW, pre-excitation syndrome);Non-operative - Cardiovascular - Rhythm disturbance
+I45.9;Cardiac conduction system disorder, NOS;Non-operative - Cardiovascular - Rhythm disturbance
+I47.1;Supraventricular tachycardia, paroxysmal;Non-operative - Cardiovascular - Rhythm disturbance
+I47.2;Ventricular tachycardia;Non-operative - Cardiovascular - Rhythm disturbance
+I49.0;Ventricular fibrillation;Non-operative - Cardiovascular - Rhythm disturbance
+I49.5;Sick sinus syndrome (SSS, tachy-brady syndrome);Non-operative - Cardiovascular - Rhythm disturbance
+I49.9;Cardiac arrhythmia, NOS;Non-operative - Cardiovascular - Rhythm disturbance
+R57.2;Shock, septic;Non-operative - Cardiovascular - Sepsis
+R65.0;Sepsis (SIRS due to infection, without acute organ failure);Non-operative - Cardiovascular - Sepsis
+R65.1;Severe sepsis;Non-operative - Cardiovascular - Sepsis
+R56.0;Seizure, febrile (febrile seizure);Non-operative - Neurology - Seizure disorder
+R56.88;Seizure, NOS;Non-operative - Neurology - Seizure disorder
+C33;Trachea, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C34;Lung and/or bronchus, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C37;Thymus, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C38.0;Heart, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C38.3;Mediastinum, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C38.4;Pleura, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C39;Respiratory system NOS, primary malignancy;Operative - Thoracic surgery for respiratory neoplasm
+C78.0;Lung, metastatic malignancy to it (also code primary site);Operative - Thoracic surgery for respiratory neoplasm
+C78.2;Pleura, metastatic malignancy to it (also code primary site);Operative - Thoracic surgery for respiratory neoplasm
+C78.3;Respiratory system NOS, metastatic malignancy to it (also code primary site);Operative - Thoracic surgery for respiratory neoplasm

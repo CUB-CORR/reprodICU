@@ -12,6 +12,7 @@ icu_length_of_stay_col: icu_length_of_stay
 hospital_length_of_stay_col: hospital_length_of_stay
 admission_loc_col: admission_location
 admission_type_col: admission_type
+admission_diagnosis_col: admission_diagnosis_apache
 discharge_loc_col: discharge_location
 care_site_col: care_site
 unit_type_col: unit_type

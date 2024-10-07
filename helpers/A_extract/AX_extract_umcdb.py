@@ -51,6 +51,11 @@ class UMCdbExtractor(UMCdbPaths):
                     "admissionid": self.icu_stay_id_col,
                 }
             )
+            .join(
+                self.extract_APACHE_admission(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
             .with_columns(
                 # for age, weight and height, assume average of the group
                 pl.col("agegroup")
@@ -454,6 +459,8 @@ class UMCdbExtractor(UMCdbPaths):
     # region APACHE
     # Extract APACHE admission information from the listitems.csv file
     def extract_APACHE_admission(self) -> pl.LazyFrame:
+        APACHE_mapping = self.helpers.load_mapping(self.apache_mapping_path)
+
         NICE = [18669, 18671]
         LEVEL0_ITEMIDS = [
             13110,  # D_Hoofdgroep
@@ -570,10 +577,6 @@ class UMCdbExtractor(UMCdbPaths):
             18671,  # NICE APACHEIV diagnosen
         ]
 
-        def string_aggfunc(x):
-            """Concatenate unique string entries"""
-            return "; ".join(v for v in x.unique())
-
         listitems = (
             pl.scan_csv(self.listitems_path)
             .rename({"admissionid": self.icu_stay_id_col})
@@ -623,6 +626,10 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
+        diagnosis_groups.collect(streaming=True).write_parquet(
+            "UMCdb_diagnosis_groups.parquet"
+        )
+
         diagnosis_subgroups = (
             listitems.filter(pl.col("itemid").is_in(LEVEL1_ITEMIDS))
             .rename(
@@ -637,6 +644,10 @@ class UMCdbExtractor(UMCdbPaths):
                 .over(self.icu_stay_id_col)
                 .alias("rownum")
             )
+        )
+
+        diagnosis_subgroups.collect(streaming=True).write_parquet(
+            "UMCdb_diagnosis_subgroups.parquet"
         )
 
         diagnoses = (
@@ -709,29 +720,18 @@ class UMCdbExtractor(UMCdbPaths):
             .drop("typeid")
         )
 
-        print(diagnoses.head(10).collect())
-
         diagnoses.collect(streaming=True).write_parquet(
             "UMCdb_diagnoses.parquet"
         )
 
         return (
-            pl.scan_csv(self.listitems_path)
-            .select(
-                [
-                    "admissionid",
-                    "item",
-                    "itemid",
-                    "value",
-                    "valueid",
-                    "measuredat",
-                ]
-            )
-            .rename({"admissionid": self.icu_stay_id_col})
+            diagnoses.group_by(self.icu_stay_id_col)
+            .first()
+            .select(self.icu_stay_id_col, "diagnosis")
+            .rename({"diagnosis": self.admission_diagnosis_col})
             .with_columns(
-                # Replace item names with standardized names
-                pl.col("item")
-                .replace_strict(self.APACHE_MAPPING, default=None)
-                .alias("item"),
+                pl.col(self.admission_diagnosis_col).replace(
+                    APACHE_mapping, default=None
+                )
             )
         )

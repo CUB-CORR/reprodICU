@@ -102,6 +102,11 @@ class EICUExtractor(EICUPaths):
                 }
             )
             .sort(self.icu_stay_id_col)
+            .join(
+                self.extract_admission_diagnoses(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
             .with_columns(
                 # Convert categorical gender to enum
                 pl.col(self.gender_col)
@@ -192,6 +197,8 @@ class EICUExtractor(EICUPaths):
                     self.height_col,
                     self.weight_col,
                     self.ethnicity_col,
+                    self.admission_type_col,
+                    self.admission_diagnosis_col,
                     self.pre_icu_length_of_stay_col,
                     self.icu_length_of_stay_col,
                     self.mortality_hosp_col,
@@ -206,6 +213,81 @@ class EICUExtractor(EICUPaths):
         )
 
     # endregion
+
+    # region admitDX
+    # Extract admission diagnosis information from the admissionDx.csv file
+    def extract_admission_diagnoses(self) -> pl.LazyFrame:
+        """
+        Extracts admission diagnosis information from the admissionDx.csv file.
+
+        :return: A polars LazyFrame with the extracted admission diagnosis information.
+        :rtype: pl.LazyFrame
+        """
+
+        return (
+            pl.scan_csv(self.admissionDx_path)
+            .select("patientunitstayid", "admitdxpath", "admitdxname")
+            .rename({"patientunitstayid": self.icu_stay_id_col})
+            .with_columns(
+                # Admission Type
+                pl.when(
+                    pl.col("admitdxpath") == "admission diagnosis|Elective|Yes"
+                )
+                .then(pl.lit("Elective"))
+                .when(
+                    pl.col("admitdxpath") == "admission diagnosis|Elective|No"
+                )
+                .then(pl.lit("Emergency"))
+                .otherwise(None)
+                .alias(self.admission_type_col),
+                # something with ?
+                # "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
+                # Admission Diagnosis
+                pl.when(
+                    pl.col("admitdxpath").str.starts_with(
+                        "admission diagnosis|All Diagnosis|"
+                    )
+                )
+                .then(
+                    pl.col("admitdxpath")
+                    .str.replace("admission diagnosis\|All Diagnosis\|", "")
+                    .str.replace("\|Diagnosis\|", " - ")
+                    .str.replace("\|", " - ")
+                    # clean comments
+                    .str.replace(
+                        " (with or without respiratory arrest; for respiratory arrest see Respiratory System)",
+                        "",
+                    )
+                    .str.replace(
+                        " (for gastrointestinal bleeding GI-see GI system) (for trauma see Trauma)",
+                        "",
+                    )
+                    .str.replace(
+                        " (for cerebrovascular accident-see Neurological System)",
+                        "",
+                    )
+                    .str.replace(", Do not include shock states", "")
+                    .str.replace(
+                        " (for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV)",
+                        "",
+                    )
+                    .str.replace("-no structural brain disease", "")
+                    .str.replace(", for fractures due to trauma see Trauma", "")
+                    # harmonize comments
+                    .str.replace("Hematoma subdural", "Hematoma, subdural")
+                    .str.replace("Hematoma-epidural", "Hematoma, epidural")
+                )
+                .otherwise(None)
+                .alias(self.admission_diagnosis_col),
+            )
+            .group_by(self.icu_stay_id_col)
+            .first()
+            .select(
+                self.icu_stay_id_col,
+                self.admission_type_col,
+                self.admission_diagnosis_col,
+            )
+        )
 
     # region lab TS
     # Extract time series information for lab values from the lab.csv file

@@ -42,7 +42,7 @@ class PatientInformationHarmonizer(GlobalVars):
             patient_information_datasets.append(
                 self.eicu.extract_patient_information()
                 .pipe(self._concat_helper1, "eicu-")
-                .with_columns(pl.lit("eICU").alias(self.database_col))
+                .with_columns(pl.lit("eICU-CRD").alias(self.database_col))
             )
 
         if "HiRID" in self.datasets:
@@ -100,6 +100,7 @@ class PatientInformationHarmonizer(GlobalVars):
                     self.height_col,
                     self.weight_col,
                     self.ethnicity_col,
+                    self.admission_diagnosis_col,
                     self.admission_type_col,
                     self.specialty_col,
                     self.admission_loc_col,

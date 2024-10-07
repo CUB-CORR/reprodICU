@@ -3,6 +3,9 @@ Other ICU:
   - Other ICU
   - CCU/IC zelfde ziekenhuis # CCU/IC of the same hospital
   - CCU/IC ander ziekenhuis # CCU/IC of another hospital
+  # UMCdb
+  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
+  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
   # SICdb
   - Externe Intensivstation # External Intensive Care Unit
   - Intensivstation 2. Medizin # Intensive Care Unit 2. Medizin
@@ -10,6 +13,7 @@ Emergency:
   - EMERGENCY ROOM
   - EMERGENCY ROOM ADMIT
   - Emergency Department
+  # UMCdb
   - Eerste Hulp afdeling zelfde ziekenhuis # First Aid Department of the same hospital
   - Eerste Hulp afdeling ander ziekenhuis # First Aid Department of another hospital
   # SICdb
@@ -27,36 +31,18 @@ Operating Room:
   - Operatiekamer vanaf verpleegafdeling zelfde ziekenhuis # Operating room from ward of same hospital
   - operating room from emergency department of the same hospital # Operating room from the Emergency Department of the same hospital
   - PACU
-Other:
-  - PHYSICIAN REFERRAL
-  - TRANSFER FROM HOSPITAL
-  - TRANSFER FROM HOSP/EXTRAM
-  - TRANSFER FROM SKILLED NUR
-  - TRANSFER FROM OTHER HEALT
-  - CLINIC REFERRAL
-  - HMO REFERRAL/SICK
-  - TRSF WITHIN THIS FACILITY
-  - CLINIC REFERRAL/PREMATURE
-  - PHYS REFERRAL/NORMAL DELI
-  - TRANSFER FROM SKILLED NURSING FACILITY
-  - INTERNAL TRANSFER TO OR FROM PSYCH
-  - Floor
+Recovery Room:
   - Recovery Room
-  - Step-Down Unit (SDU)
-  - Other Hospital
-  - Acute Care/Floor
-  - Chest Pain Center
-  - ICU to SDU
-  - Observation
-  - Anders # Other
-  - Verpleegafdeling zelfde ziekenhuis # Nursing ward of the same hospital
-  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
-  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
-  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
+  # UMCdb
   - Recovery zelfde ziekenhuis (alleen bij niet geplande IC-opname) # Recovery same hospital (only in case of unplanned ICU admission)
   - Recovery ander ziekenhuis # Recovery from another hospital
-  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
-  - Other
+Hospital Ward:
+  - TRANSFER FROM HOSPITAL
+  - Floor
+  - Acute Care/Floor
+  # UMCdb
+  - Verpleegafdeling zelfde ziekenhuis # Nursing ward of the same hospital
+  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
   # SICdb
   - 1. Medizin
   - 2. Medizin
@@ -81,6 +67,26 @@ Other:
   - Pädiatrie
   - Unfallchirurgie
   - Urologie
+Other:
+  - PHYSICIAN REFERRAL
+  - TRANSFER FROM HOSP/EXTRAM
+  - TRANSFER FROM SKILLED NUR
+  - TRANSFER FROM OTHER HEALT
+  - CLINIC REFERRAL
+  - HMO REFERRAL/SICK
+  - TRSF WITHIN THIS FACILITY
+  - CLINIC REFERRAL/PREMATURE
+  - PHYS REFERRAL/NORMAL DELI
+  - TRANSFER FROM SKILLED NURSING FACILITY
+  - INTERNAL TRANSFER TO OR FROM PSYCH
+  - Step-Down Unit (SDU)
+  - Other Hospital
+  - Chest Pain Center
+  - ICU to SDU
+  - Observation
+  - Anders # Other
+  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
+  - Other
 Unknown:
   - INFORMATION NOT AVAILABLE
   - "** INFO NOT AVAILABLE **"

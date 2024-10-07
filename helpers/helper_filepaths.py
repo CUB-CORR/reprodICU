@@ -147,6 +147,9 @@ class HiRIDPaths(GlobalVars):
         self.observation_mapping_path = (
             self.hirid_mapping_path + "hirid_OBSERVATION.yaml"
         )
+        self.apache_mapping_path = (
+            self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml"
+        )
 
 
 # endregion
@@ -329,6 +332,9 @@ class UMCdbPaths(GlobalVars):
         )
         self.listitems_mapping_path = (
             self.umcdb_mapping_path + "umcdb_listitems.yaml"
+        )
+        self.apache_mapping_path = (
+            self.umcdb_mapping_path + "umcdb_APACHE.yaml"
         )
 
 
