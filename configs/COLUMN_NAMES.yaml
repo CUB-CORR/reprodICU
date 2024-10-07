@@ -1,6 +1,7 @@
 person_id_col: person_id
 hospital_stay_id_col: hospital_stay_id
 icu_stay_id_col: icu_stay_id
+icu_stay_seq_num_col: icu_stay_seq_number
 global_person_id_col: global_person_id
 global_hospital_stay_id_col: global_hospital_stay_id
 global_icu_stay_id_col: global_icu_stay_id

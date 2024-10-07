@@ -26,29 +26,29 @@ class UMCdbExtractor(UMCdbPaths):
         return (
             pl.scan_csv(self.admissions_path)
             .select(
-                [
-                    "patientid",
-                    "admissionid",
-                    "agegroup",
-                    "weightgroup",
-                    "heightgroup",
-                    "gender",
-                    "origin",
-                    "location",
-                    "urgency",
-                    "destination",
-                    "specialty",
-                    "admittedat",
-                    "lengthofstay",
-                    "dischargedat",
-                    "dateofdeath",
-                ]
+                "patientid",
+                "admissionid",
+                "admissioncount",
+                "agegroup",
+                "weightgroup",
+                "heightgroup",
+                "gender",
+                "origin",
+                "location",
+                "urgency",
+                "destination",
+                "specialty",
+                "admittedat",
+                "lengthofstay",
+                "dischargedat",
+                "dateofdeath",
             )
             # Rename columns for consistency
             .rename(
                 {
                     "patientid": self.person_id_col,
                     "admissionid": self.icu_stay_id_col,
+                    "admissioncount": self.icu_stay_seq_num_col,
                 }
             )
             .join(
@@ -601,11 +601,9 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        diagnosis_groups = listitems.filter(
-            pl.col("itemid").is_in(LEVEL0_ITEMIDS)
-        )
         diagnosis_groups = (
-            diagnosis_groups.rename(
+            listitems.filter(pl.col("itemid").is_in(LEVEL0_ITEMIDS))
+            .rename(
                 {
                     "value": "diagnosis_group",
                     "valueid": "diagnosis_group_id",

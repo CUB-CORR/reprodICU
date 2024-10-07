@@ -71,7 +71,7 @@ class EICUExtractor(EICUPaths):
                     "admissionweight",
                     "unittype",
                     "unitadmitsource",
-                    # "unitvisitnumber",
+                    "unitvisitnumber",
                     "unitdischargelocation",
                     "unitdischargestatus",
                     "unitdischargeoffset",
@@ -85,20 +85,21 @@ class EICUExtractor(EICUPaths):
             .rename(
                 {
                     "uniquepid": self.person_id_col,
-                    "patientunitstayid": self.icu_stay_id_col,
                     "patienthealthsystemstayid": self.hospital_stay_id_col,
+                    "patientunitstayid": self.icu_stay_id_col,
                     "gender": self.gender_col,
                     "age": self.age_col,
                     "ethnicity": self.ethnicity_col,
                     "admissionheight": self.height_col,
                     "admissionweight": self.weight_col,
                     "unittype": self.unit_type_col,
-                    "unitdischargestatus": self.mortality_icu_col,
                     "unitadmitsource": self.admission_loc_col,
+                    "unitvisitnumber": self.icu_stay_seq_num_col,
                     "unitdischargelocation": self.discharge_loc_col,
+                    "unitdischargestatus": self.mortality_icu_col,
                     "unitdischargeoffset": self.icu_length_of_stay_col,
-                    "hospitaldischargestatus": self.mortality_hosp_col,
                     "hospitalid": self.care_site_col,
+                    "hospitaldischargestatus": self.mortality_hosp_col,
                 }
             )
             .sort(self.icu_stay_id_col)
@@ -192,6 +193,7 @@ class EICUExtractor(EICUPaths):
                     self.icu_stay_id_col,
                     self.hospital_stay_id_col,
                     self.person_id_col,
+                    self.icu_stay_seq_num_col,
                     self.gender_col,
                     self.age_col,
                     self.height_col,
