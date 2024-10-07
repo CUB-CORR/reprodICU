@@ -1,0 +1,15 @@
+01-Drips: drug
+02-Fluids (Crystalloids): fluid (crystalloid)
+03-IV Fluid Bolus: fluid
+04-Fluids (Colloids): fluid (colloid)
+05-Med Bolus: drug
+06-Insulin (Non IV): drug (hormones / vitamins / minerals)
+07-Blood Products: blood product
+08-Antibiotics (IV): drug (antibiotic)
+09-Antibiotics (Non IV): drug (antibiotic)
+10-Prophylaxis (IV): drug
+11-Prophylaxis (Non IV): drug
+12-Parenteral Nutrition: parenteral
+13-Enteral Nutrition: enteral
+14-Oral/Gastric Intake: other
+16-Pre Admission: other

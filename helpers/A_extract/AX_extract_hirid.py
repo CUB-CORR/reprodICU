@@ -374,6 +374,13 @@ class HiRIDExtractor(HiRIDPaths):
                 self.mapping_path + "MEDICATIONS.yaml", "hirid"
             )
         )
+        hirid_drug_class_mapping = self.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
+        hirid_drug_administration_route_mapping = self.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
+
         admissiontime = (
             self._extract_admissions()
             .select([self.icu_stay_id_col, "admissiontime"])
@@ -397,7 +404,9 @@ class HiRIDExtractor(HiRIDPaths):
                         "givenat",
                         "givendose",
                         "doseunit",
+                        "route",
                         "infusionid",
+                        "subtypeid",
                     ]
                 )
                 # Rename columns for consistency
@@ -406,6 +415,8 @@ class HiRIDExtractor(HiRIDPaths):
                         "patientid": self.icu_stay_id_col,
                         "givendose": self.drug_amount_col,
                         "doseunit": self.drug_amount_unit_col,
+                        "route": self.drug_admin_route_col,
+                        "subtypeid": self.drug_class_col,
                     }
                 )
                 # Cast the datetime to string to avoid the following error:
@@ -434,6 +445,20 @@ class HiRIDExtractor(HiRIDPaths):
                     pl.col(self.drug_name_col)
                     .replace_strict(hirid_medication_mapping, default=None)
                     .alias(self.drug_ingredient_col),
+                    # Map the medication classes
+                    pl.col(self.drug_class_col)
+                    .cast(str)
+                    .replace_strict(
+                        hirid_drug_class_mapping,
+                        default=None,
+                        return_dtype=pl.String,
+                    ),
+                    # Map the medication administration routes
+                    pl.col(self.drug_admin_route_col).replace_strict(
+                        hirid_drug_administration_route_mapping,
+                        default=None,
+                        return_dtype=pl.String,
+                    ),
                 )
                 .drop("admissiontime", "givenat")
                 # Remove duplicate rows

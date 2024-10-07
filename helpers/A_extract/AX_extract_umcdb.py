@@ -369,6 +369,13 @@ class UMCdbExtractor(UMCdbPaths):
                 self.mapping_path + "MEDICATIONS.yaml", "amsterdam"
             )
         )
+        umcdb_drug_administration_route_mapping = self.helpers.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
+        umcdb_drug_class_mapping = self.helpers.load_mapping(
+            self.drug_class_mapping_path
+        )
+
         intimes = (
             pl.scan_csv(self.admissions_path)
             .select(["admissionid", "admittedat", "dischargedat"])
@@ -384,14 +391,15 @@ class UMCdbExtractor(UMCdbPaths):
         return (
             pl.scan_csv(self.drugitems_path)
             .select(
-                [
-                    "admissionid",
-                    "item",
-                    "start",
-                    "stop",
-                    "administered",
-                    "administeredunit",
-                ]
+                "admissionid",
+                "item",
+                "start",
+                "stop",
+                "ordercategory",
+                "administered",
+                "administeredunit",
+                "rate",
+                "rateunit",
             )
             .rename(
                 {
@@ -399,6 +407,10 @@ class UMCdbExtractor(UMCdbPaths):
                     "item": self.drug_name_col,
                     "start": self.drug_start_col,
                     "stop": self.drug_end_col,
+                    "administered": self.drug_amount_col,
+                    "administeredunit": self.drug_amount_unit_col,
+                    "rate": self.drug_rate_col,
+                    "rateunit": self.drug_rate_unit_col,
                 }
             )
             .join(intimes, on=self.icu_stay_id_col)
@@ -416,6 +428,7 @@ class UMCdbExtractor(UMCdbPaths):
                 )
             )
             .with_columns(
+                # Calculate drug start times relative to ICU admission
                 pl.duration(
                     milliseconds=(
                         pl.col(self.drug_start_col) - pl.col("intime")
@@ -424,6 +437,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_start_col),
+                # Calculate drug end times relative to ICU admission
                 pl.duration(
                     milliseconds=(pl.col(self.drug_end_col) - pl.col("intime"))
                 )
@@ -434,14 +448,24 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col)
                 .replace(umcdb_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
-                # Format drug amount
-                pl.col("administered").cast(float).alias(self.drug_amount_col),
                 # Convert administered unit to enum
-                pl.col("administeredunit")
+                # pl.col(self.drug_amount_unit_col)
                 # .replace(self.DRUG_UNIT_MAPPING)
-                # .cast(self.drug_unit_dtype)
-                .alias(self.drug_amount_unit_col),
+                # .cast(self.drug_unit_dtype),
+                # Replace drug rate units
+                pl.col(self.drug_rate_unit_col)
+                .replace({"ml/uur": "ml/hr", "ml/dag": "ml/day"})
+                .alias(self.drug_rate_unit_col),
+                # Replace drug administration routes
+                pl.col("ordercategory")
+                .replace(umcdb_drug_administration_route_mapping, default=None)
+                .alias(self.drug_admin_route_col),
+                # Replace drug classes
+                pl.col("ordercategory")
+                .replace(umcdb_drug_class_mapping, default=None)
+                .alias(self.drug_class_col),
             )
+            .cast({self.drug_amount_col: float, self.drug_rate_col: float})
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -451,7 +475,7 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col).is_not_null()
                 & (pl.col(self.drug_name_col) != "")
             )
-            .drop(["intime", "outtime", "administered", "administeredunit"])
+            .drop("intime", "outtime")
         )
 
     # endregion
