@@ -104,6 +104,17 @@ alteplase:
     - Alteplase (TPA)
   sicdb:
     - Alteplase
+amikacin:
+  blended: 1790868
+  amsterdam:
+    - Amikacine (Amukin)
+  eicu:
+    - Amikacin Inj 700 mg in Sodium Chloride 0.9% 250 ml (ml/hr)
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 amiodarone:
   blended: 1309944
   amsterdam: []
@@ -204,11 +215,21 @@ amlodipine:
 amoxicillin:
   blended: 1713332
   amsterdam:
-    - Amoxicilline/Clavulaanzuur (Augmentin)
     - PantoPac
     - Amoxicilline (Clamoxyl/Flemoxin)
   eicu:
     - "AMOXICILLIN                                                                                                                                                                                                                                                    "
+  hirid:
+    - Clamoxyl Inj Lsg
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
+amoxicillin / clavulanate:
+  blended: 36029811
+  amsterdam:
+    - Amoxicilline/Clavulaanzuur (Augmentin)
+  eicu:
     - "AMOXICILLIN-CLAVULANATE ER                                                                                                                                                                                                                                     "
     - "AMOXICILLIN/POTASSIUM CLAVULANATE                                                                                                                                                                                                                              "
     - "AMOXICILLIN-CLAVULANATE POTASS                                                                                                                                                                                                                                 "
@@ -219,7 +240,6 @@ amoxicillin:
     - Augmentin 2.2 Inf Lsg
     - Augmentin Tabl 625 mg
     - Augmentin AD Tbl 1 g
-    - Clamoxyl Inj Lsg
   mimic: []
   mimic3: []
   mimic4: []
@@ -521,6 +541,16 @@ azithromycin:
     - Azithromycin
   sicdb:
     - Azithromycin
+aztreonam:
+  blended: 1715117
+  amsterdam:
+    - Aztreonam (Azactam)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 bisacodyl:
   blended: 924939
   amsterdam:
@@ -721,6 +751,26 @@ cefepime:
     - Cefepime
   sicdb:
     - Cefepim
+cefotaxime:
+  blended: 1774470
+  amsterdam:
+    - Cefotaxim (Claforan)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
+cefuroxime:
+  blended: 1778162
+  amsterdam:
+    - Cefuroxim (Zinacef)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 ceftazidime:
   blended: 1776684
   amsterdam:
@@ -763,6 +813,17 @@ ceftriaxone:
     - Ceftriaxone
   sicdb:
     - Ceftriaxon
+chloramphenicol:
+  blended: 990069
+  amsterdam:
+    - Chlooramfenicol
+    - Chlooramfenicol (Globenicol)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 ciprofloxacin:
   blended: 1797513
   amsterdam:
@@ -850,6 +911,16 @@ cisatracurium:
   sicdb:
     - Cisatracurium
     - Cisatracurium besilat
+claritromycin:
+  blended: 1750500
+  amsterdam:
+    - Claritromycine (Klacid)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 clindamycin:
   blended: 997881
   amsterdam:
@@ -929,6 +1000,29 @@ clonidine:
     - ClonidinePerHour
     - ClonidinePerHourWeight
     - ClonidinePerHourrWeight
+colistin:
+  blended: 901845
+  amsterdam:
+    - Belcomycine (Colistinesulfaat) 4 x dgs
+    - Belcomycine (Colistinesulfaat) 6 x dgs
+    - Colistine
+    - Colistine Inhalatie
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
+daptomycin:
+  blended: 1786617
+  amsterdam:
+    - Daptomycine (Cubicin)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 desmopressin:
   blended: 1517070
   amsterdam:
@@ -1200,6 +1294,16 @@ dopamine:
     - Dopamine
   sicdb:
     - DOPamin
+doxycycline:
+  blended: 1738521
+  amsterdam:
+    - Doxycycline (Vibramycine)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 enoximone:
   blended: 19063454
   amsterdam:
@@ -1306,7 +1410,8 @@ eptifibatide:
   sicdb: []
 erythromycin:
   blended: 1746940
-  amsterdam: []
+  amsterdam:
+    - Erythromycine (Erythrocine)
   eicu:
     - "ERYTHROMYCIN                                                                                                                                                                                                                                                   "
     - "ERYTHROMYCIN BASE                                                                                                                                                                                                                                              "
@@ -2755,6 +2860,26 @@ morphine:
   sicdb:
     - Morphin
     - Morphinsulfat
+moxifloxacin:
+  blended: 1716903
+  amsterdam:
+    - Moxifloxacin (Avelox)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
+neomycin:
+  blended: 915981
+  amsterdam:
+    - Neomycine sulfaat
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 neostigmine:
   blended: 717136
   amsterdam:
@@ -2842,6 +2967,16 @@ nimodipine:
   mimic4: []
   sicdb:
     - NiMODipin
+nitrofurantoin:
+  blended: 920293
+  amsterdam:
+    - Nitrofurantoïne ( Furadantine)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 nitroglycerin:
   blended: 1361711
   amsterdam:
@@ -3003,6 +3138,16 @@ norepinephrine:
     - Norepinephrin
     - NorepinephrinPerHour
     - NorepinephrinPerHourWeight
+norfloxacin:
+  blended: 1721543
+  amsterdam:
+    - Norfloxacine (Noroxin)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 octreotide:
   blended: 1522957
   amsterdam:
@@ -3049,6 +3194,16 @@ pancuronium:
   mimic3: []
   mimic4: []
   sicdb: []
+penicillin G:
+  blended: 1728416
+  amsterdam:
+    - Benzylpenicilline (Penicilline)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 pentobarbital:
   blended: 730729
   amsterdam:
@@ -3067,6 +3222,16 @@ pentobarbital:
     - Pentobarbital
   mimic4:
     - Pentobarbital
+  sicdb: []
+phenethicillin:
+  blended: 19088795
+  amsterdam:
+    - Feneticilline (Broxil)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
   sicdb: []
 phenylephrine:
   blended: 1135766
@@ -3180,7 +3345,8 @@ phenytoin:
     - Phenytoin
 piperacillin:
   blended: 1746114
-  amsterdam: []
+  amsterdam:
+    - Piperacilline (Pipcil)
   eicu:
     - PIPERACILLIN SOD-TAZOBACTAM SO 3-0.375 G IV SOLR
     - piperacillin-tazobactam
@@ -3342,6 +3508,16 @@ rocuronium:
     - Rocuronium
   sicdb:
     - ROCuronium
+silver sulfadiazine:
+  blended: 966956
+  amsterdam:
+    - Zilversulfadiazine (Flammazine)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 simvastatin:
   blended: 1539403
   amsterdam:
@@ -3411,8 +3587,8 @@ sufentanil:
     - SUFentanil
     - SufentanilePerHour
     - SufentanilePerHourWeight
-sulfamethoxazole:
-  blended: 1836430
+sulfamethoxazole / trimethoprim:
+  blended: 36029301 # 1836430 / 1705674
   amsterdam:
     - Co-Trimoxazol (Bactrimel)
     - Co-trimoxazol forte (Bactrimel)
@@ -3425,9 +3601,9 @@ sulfamethoxazole:
     - "BACTRIM DS                                                                                                                                                                                                                                                     "
     - Bactrim + D5W (ml/hr)
   hirid:
-    - "II;VII;IX;X;C;S: Beriplex P/N 500 TS Inj Lsg"
-    - Thyroxin TS Amp 500 ug/5ml
-    - Haemopressin TS Inj Lsg
+    # - "II;VII;IX;X;C;S: Beriplex P/N 500 TS Inj Lsg"
+    # - Thyroxin TS Amp 500 ug/5ml
+    # - Haemopressin TS Inj Lsg
     - Bactrim forte Lacktbl
     - Bactrim Inf Lsg
     - Bactrim Amp. 400/80 mg Inf Lsg
@@ -3441,6 +3617,26 @@ sulfamethoxazole:
   sicdb:
     - Sulfametoxazol+Trimethoprim
     - Trimethoprim/Sulfametoxazol
+tigecycline:
+  blended: 1786617
+  amsterdam:
+    - Tigecycline (Tygacil)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
+tetracycline:
+  blended: 1836948
+  amsterdam:
+    - Tetracycline
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 thiopental:
   blended: 700253
   amsterdam:
@@ -3472,6 +3668,17 @@ tirofiban:
     - Tirofiban (Aggrastat)
   sicdb:
     - Tirofiban
+tobramycin:
+  blended: 902722
+  amsterdam:
+    - Tobramycine (Obracin)
+    - Tobramycine oogzalf (Tobrex)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 tramadol:
   blended: 1103314
   amsterdam:
@@ -3623,7 +3830,7 @@ vasopressin (USP):
     - Vasopressin
   mimic4:
     - Vasopressin
-  sicdb: 
+  sicdb:
     - Vasopressin
 vecuronium:
   blended: 19012598
@@ -4310,7 +4517,6 @@ NaCl:
     - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
     - Meropenem IV 2 gm in Sodium Chloride 0.9% 100 ml (ml/hr)
     - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml ()
-    - Amikacin Inj 700 mg in Sodium Chloride 0.9% 250 ml (ml/hr)
     - .9 NS (ml/hr)
     - .9 NSS (ml/hr)
     - 09% NS
