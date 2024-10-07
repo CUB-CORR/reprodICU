@@ -396,10 +396,14 @@ class UMCdbExtractor(UMCdbPaths):
                 "start",
                 "stop",
                 "ordercategory",
-                "administered",
-                "administeredunit",
-                "rate",
-                "rateunit",
+                # "administered",
+                # "administeredunit", -> actual doses, to be integrated
+                "doserateperkg",
+                "dose",
+                "doseunit",
+                "doserateunit",
+                # "rate",
+                # "rateunit",
             )
             .rename(
                 {
@@ -407,10 +411,10 @@ class UMCdbExtractor(UMCdbPaths):
                     "item": self.drug_name_col,
                     "start": self.drug_start_col,
                     "stop": self.drug_end_col,
-                    "administered": self.drug_amount_col,
-                    "administeredunit": self.drug_amount_unit_col,
-                    "rate": self.drug_rate_col,
-                    "rateunit": self.drug_rate_unit_col,
+                    # "administered": self.drug_amount_col,
+                    # "administeredunit": self.drug_amount_unit_col,
+                    # "rate": self.drug_rate_col,
+                    # "rateunit": self.drug_rate_unit_col,
                 }
             )
             .join(intimes, on=self.icu_stay_id_col)
@@ -453,9 +457,10 @@ class UMCdbExtractor(UMCdbPaths):
                 # .replace(self.DRUG_UNIT_MAPPING)
                 # .cast(self.drug_unit_dtype),
                 # Replace drug rate units
-                pl.col(self.drug_rate_unit_col)
-                .replace({"ml/uur": "ml/hr", "ml/dag": "ml/day"})
-                .alias(self.drug_rate_unit_col),
+                pl.col("doseunit").replace({"µg": "mcg"}),
+                pl.col("doserateunit").replace(
+                    {"uur": "hr", "dag": "day", "min": "min"}
+                ),
                 # Replace drug administration routes
                 pl.col("ordercategory")
                 .replace(umcdb_drug_administration_route_mapping, default=None)
@@ -464,6 +469,36 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("ordercategory")
                 .replace(umcdb_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
+            )
+            # assign to rate or amount column based on availability
+            .with_columns(
+                # drug amounts
+                pl.when(pl.col("doserateunit").is_null())
+                .then(pl.col("dose"))
+                .otherwise(None)
+                .alias(self.drug_amount_col),
+                pl.when(pl.col("doserateunit").is_null())
+                .then(pl.col("doseunit"))
+                .otherwise(None)
+                .alias(self.drug_amount_unit_col),
+                # drug rates
+                pl.when(pl.col("doserateunit").is_not_null())
+                .then(pl.col("dose"))
+                .otherwise(None)
+                .alias(self.drug_rate_col),
+                pl.when(pl.col("doserateunit").is_not_null())
+                .then(
+                    pl.concat_str(
+                        pl.col("doseunit"),
+                        pl.lit("/"),
+                        pl.when(pl.col("doserateperkg") == 1)
+                        .then(pl.lit("kg/"))
+                        .otherwise(pl.lit("")),
+                        pl.col("doserateunit"),
+                    )
+                )
+                .otherwise(None)
+                .alias(self.drug_rate_unit_col),
             )
             .cast({self.drug_amount_col: float, self.drug_rate_col: float})
             # Remove duplicate rows
