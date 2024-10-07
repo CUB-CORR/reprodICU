@@ -27,3 +27,10 @@ Newborn:
   - NEWBORN
 Unknown:
   - ""
+Emergency Surgical: []
+Urgent Surgical: []
+Elective Surgical: []
+Emergency Medical: []
+Urgent Medical: []
+Elective Medical: []
+Medical: []
