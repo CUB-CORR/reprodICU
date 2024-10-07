@@ -588,63 +588,88 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.mapping_path + "MEDICATIONS.yaml", "mimic3"
             )
         )
+        mimic3_drug_administration_route_mapping = self.helpers.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
+        mimic3_drug_class_mapping = self.helpers.load_mapping(
+            self.drug_class_mapping_path
+        )
 
         d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL")
         inputevents_mv = (
             pl.scan_csv(self.inputevents_mv_path, dtypes={"AMOUNT": float})
-            .rename(
-                {
-                    "HADM_ID": self.hospital_stay_id_col,
-                    "ICUSTAY_ID": self.icu_stay_id_col,
-                }
-            )
             .select(
-                [
-                    self.hospital_stay_id_col,
-                    self.icu_stay_id_col,
-                    "STARTTIME",
-                    "ENDTIME",
-                    "ITEMID",
-                    "AMOUNT",
-                    "AMOUNTUOM",
-                ]
+                "HADM_ID",
+                "ICUSTAY_ID",
+                "STARTTIME",
+                "ENDTIME",
+                "ITEMID",
+                "AMOUNT",
+                "AMOUNTUOM",
+                "RATE",
+                "RATEUOM",
+                "ORDERCATEGORYNAME",
+            )
+            .with_columns(
+                pl.col("ORDERCATEGORYNAME")
+                .replace(mimic3_drug_administration_route_mapping, default=None)
+                .alias(self.drug_admin_route_col),
+                pl.col("ORDERCATEGORYNAME")
+                .replace(mimic3_drug_class_mapping, default=None)
+                .alias(self.drug_class_col),
+                # Rename units
+                pl.col("RATEUOM")
+                .str.replace("grams", "g")
+                .str.replace("hour", "hr")
+                .str.replace("mL", "ml")
+                .str.replace("mEq\.", "mEq")
+                .str.replace("units", "U"),
             )
         )
         inputevents_cv = (
             pl.scan_csv(self.inputevents_cv_path, dtypes={"AMOUNT": float})
-            .rename(
-                {
-                    "HADM_ID": self.hospital_stay_id_col,
-                    "ICUSTAY_ID": self.icu_stay_id_col,
-                    # NOTE: dirty, but necessary to join with inputevents_mv
-                    "CHARTTIME": "STARTTIME",
-                }
-            )
             .select(
-                [
-                    self.hospital_stay_id_col,
-                    self.icu_stay_id_col,
-                    "STARTTIME",
-                    "ITEMID",
-                    "AMOUNT",
-                    "AMOUNTUOM",
-                ]
+                "HADM_ID",
+                "ICUSTAY_ID",
+                "CHARTTIME",
+                "ITEMID",
+                "AMOUNT",
+                "AMOUNTUOM",
+                "RATE",
+                "RATEUOM",
+                "ORIGINALROUTE",
+            )
+            # NOTE: dirty, but necessary to join with inputevents_mv
+            .rename({"CHARTTIME": "STARTTIME"})
+            .with_columns(
+                pl.col("ORIGINALROUTE")
+                .replace(mimic3_drug_administration_route_mapping, default=None)
+                .alias(self.drug_admin_route_col),
+                # Rename units
+                pl.col("RATEUOM")
+                .str.replace("hr", "/hr")
+                .str.replace("min", "/min")
+                .str.replace("kg", "/kg"),
             )
         )
 
         return (
             pl.concat([inputevents_mv, inputevents_cv], how="diagonal_relaxed")
+            .rename(
+                {
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "ICUSTAY_ID": self.icu_stay_id_col,
+                    "AMOUNT": self.drug_amount_col,
+                    "AMOUNTUOM": self.drug_amount_unit_col,
+                    "RATE": self.drug_rate_col,
+                    "RATEUOM": self.drug_rate_unit_col,
+                }
+            )
             .join(d_items, on="ITEMID")
             .drop(self.hospital_stay_id_col, "ITEMID")
             .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
-            .rename(
-                {
-                    "LABEL": self.drug_name_col,
-                    "AMOUNT": self.drug_amount_col,
-                    "AMOUNTUOM": self.drug_amount_unit_col,
-                }
-            )
+            .rename({"LABEL": self.drug_name_col})
             # Replace drug names with mapped names
             .with_columns(
                 pl.col(self.drug_name_col)

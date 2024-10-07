@@ -35,6 +35,8 @@ diagnosis_discharge_col: diagnosis_active_on_discharge
 diagnosis_description_col: diagnosis_description
 drug_name_col: drug_name
 drug_ingredient_col: drug_ingredient
+drug_admin_route_col: drug_administration_route
+drug_class_col: drug_class
 drug_start_col: drug_start_relative_to_admission
 drug_end_col: drug_end_relative_to_admission
 drug_amount_col: drug_amount

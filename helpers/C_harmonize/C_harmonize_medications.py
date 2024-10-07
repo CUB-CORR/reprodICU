@@ -97,6 +97,8 @@ class MedicationHarmonizer(GlobalVars):
                     self.global_icu_stay_id_col,
                     self.drug_ingredient_col,
                     self.drug_name_col,
+                    self.drug_class_col,
+                    self.drug_admin_route_col,
                     self.drug_amount_col,
                     self.drug_amount_unit_col,
                     self.drug_rate_col,
@@ -105,9 +107,14 @@ class MedicationHarmonizer(GlobalVars):
                     self.drug_end_col,
                 ]
             )
-            .with_columns(
-                pl.col(self.drug_amount_col).cast(float, strict=False),
-                pl.col(self.drug_rate_col).cast(float, strict=False),
+            .cast(
+                {
+                    self.drug_amount_col: float,
+                    self.drug_rate_col: float,
+                    self.drug_class_col: str,
+                    self.drug_admin_route_col: str,
+                },
+                strict=False,
             )
             .unique()
             .sort([self.global_icu_stay_id_col, self.drug_start_col])

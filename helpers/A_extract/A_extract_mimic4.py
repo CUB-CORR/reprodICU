@@ -573,26 +573,52 @@ class MIMIC4Extractor(MIMIC4Paths):
                 self.mapping_path + "MEDICATIONS.yaml", "mimic4"
             )
         )
+        mimic4_drug_administration_route_mapping = self.helpers.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
+        mimic4_drug_class_mapping = self.helpers.load_mapping(
+            self.drug_class_mapping_path
+        )
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
         inputevents = (
             pl.scan_csv(self.inputevents_path)
+            .select(
+                "hadm_id",
+                "stay_id",
+                "starttime",
+                "endtime",
+                "itemid",
+                "amount",
+                "amountuom",
+                "rate",
+                "rateuom",
+                "ordercategoryname",
+            )
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
                     "stay_id": self.icu_stay_id_col,
+                    "amount": self.drug_amount_col,
+                    "amountuom": self.drug_amount_unit_col,
+                    "rate": self.drug_rate_col,
+                    "rateuom": self.drug_rate_unit_col,
                 }
             )
-            .select(
-                [
-                    self.hospital_stay_id_col,
-                    self.icu_stay_id_col,
-                    "starttime",
-                    "endtime",
-                    "itemid",
-                    "amount",
-                    "amountuom",
-                ]
+            .with_columns(
+                pl.col("ordercategoryname")
+                .replace(mimic4_drug_administration_route_mapping, default=None)
+                .alias(self.drug_admin_route_col),
+                pl.col("ordercategoryname")
+                .replace(mimic4_drug_class_mapping, default=None)
+                .alias(self.drug_class_col),
+                # Rename units
+                pl.col(self.drug_rate_unit_col)
+                .str.replace("grams", "g")
+                .str.replace("hour", "hr")
+                .str.replace("mL", "ml")
+                .str.replace("mEq\.", "mEq")
+                .str.replace("units", "U"),
             )
         )
 
@@ -601,13 +627,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .drop(self.hospital_stay_id_col, "itemid")
             .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
-            .rename(
-                {
-                    "label": self.drug_name_col,
-                    "amount": self.drug_amount_col,
-                    "amountuom": self.drug_amount_unit_col,
-                }
-            )
+            .rename({"label": self.drug_name_col})
             # Replace drug names with mapped names
             .with_columns(
                 pl.col(self.drug_name_col)

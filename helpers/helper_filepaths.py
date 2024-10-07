@@ -150,6 +150,13 @@ class HiRIDPaths(GlobalVars):
         self.apache_mapping_path = (
             self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml"
         )
+        self.drug_administration_route_mapping_path = (
+            self.hirid_mapping_path
+            + "hirid_PHARMA_drug_administration_route.yaml"
+        )
+        self.drug_class_mapping_path = (
+            self.hirid_mapping_path + "hirid_PHARMA_drug_class.yaml"
+        )
 
 
 # endregion
@@ -215,6 +222,13 @@ class MIMIC3Paths(GlobalVars):
             self.mimic3_mapping_path + "mimic3_outputevents.yaml"
         )
         # self.medication_mapping_path = self.mimic3_mapping_path + "mimic3_medication.yaml"
+        self.drug_administration_route_mapping_path = (
+            self.mimic3_mapping_path
+            + "mimic3_inputevents_drug_administration_route.yaml"
+        )
+        self.drug_class_mapping_path = (
+            self.mimic3_mapping_path + "mimic3_inputevents_drug_class.yaml"
+        )
 
 
 # endregion
@@ -279,6 +293,13 @@ class MIMIC4Paths(GlobalVars):
         self.outputs_mapping_path = (
             self.mimic4_mapping_path + "mimic4_outputevents.yaml"
         )
+        self.drug_administration_route_mapping_path = (
+            self.mimic4_mapping_path
+            + "mimic4_inputevents_drug_administration_route.yaml"
+        )
+        self.drug_class_mapping_path = (
+            self.mimic4_mapping_path + "mimic4_inputevents_drug_class.yaml"
+        )
 
 
 # endregion
@@ -333,8 +354,13 @@ class UMCdbPaths(GlobalVars):
         self.listitems_mapping_path = (
             self.umcdb_mapping_path + "umcdb_listitems.yaml"
         )
-        self.apache_mapping_path = (
-            self.umcdb_mapping_path + "umcdb_APACHE.yaml"
+        self.apache_mapping_path = self.umcdb_mapping_path + "umcdb_APACHE.yaml"
+        self.drug_administration_route_mapping_path = (
+            self.umcdb_mapping_path
+            + "umcdb_drugitems_drug_administration_route.yaml"
+        )
+        self.drug_class_mapping_path = (
+            self.umcdb_mapping_path + "umcdb_drugitems_drug_class.yaml"
         )
 
 

@@ -802,17 +802,18 @@ class EICUExtractor(EICUPaths):
                     "infusionrate": self.drug_rate_col,
                 }
             )
-            # Get unit from drugname
             .with_columns(
+                # Get unit from drugname
                 pl.col(self.drug_name_col)
                 .str.extract(r".*\((.*?)\)$")
-                .alias(self.drug_rate_unit_col)
-            )
-            # Replace drug names with mapped names
-            .with_columns(
+                .alias(self.drug_rate_unit_col),
+                # Replace drug names with mapped names
                 pl.col(self.drug_name_col)
                 .replace_strict(eicu_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
+                # Set administration route
+                pl.lit("intravenous")
+                .alias(self.drug_admin_route_col),
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
@@ -828,7 +829,7 @@ class EICUExtractor(EICUPaths):
                 base_unit="minutes",
             )
             .sort(
-                [self.icu_stay_id_col, self.drug_name_col, self.drug_start_col]
+                self.icu_stay_id_col, self.drug_name_col, self.drug_start_col
             )
         )
 
