@@ -263,6 +263,7 @@ class HiRIDExtractor(HiRIDPaths):
                 .alias(self.admission_diagnosis_col)
             )
             .select(self.icu_stay_id_col, self.admission_diagnosis_col)
+            .cast({self.icu_stay_id_col: str})
         )
 
         admitDX.sink_parquet(self.precalc_path + "HiRID_admitDX.parquet")

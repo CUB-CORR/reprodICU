@@ -199,6 +199,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace(self.SPECIALTIES_MAP)
                 .cast(self.specialties_dtype),
             )
+            # Calculate ICU stay sequence number
+            .sort(self.person_id_col, "intime")
+            .with_columns(
+                pl.int_range(pl.len())
+                .over(self.person_id_col)
+                .alias(self.icu_stay_seq_num_col)
+            )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
             .with_columns(
@@ -215,6 +222,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.icu_stay_id_col,
                     self.hospital_stay_id_col,
                     self.person_id_col,
+                    self.icu_stay_seq_num_col,
                     self.gender_col,
                     self.age_col,
                     self.height_col,

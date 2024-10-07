@@ -115,6 +115,13 @@ class SICdbExtractor(SICdbPaths):
                     diagnosis_mapping_dict, default=None
                 ),
             )
+            # Calculate ICU stay sequence number
+            .sort(self.person_id_col, "OffsetAfterFirstAdmission")
+            .with_columns(
+                pl.int_range(pl.len())
+                .over(self.person_id_col)
+                .alias(self.icu_stay_seq_num_col)
+            )
         )
 
     # endregion
