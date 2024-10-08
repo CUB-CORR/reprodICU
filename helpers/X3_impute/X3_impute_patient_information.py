@@ -27,19 +27,19 @@ class PatientInformationImputer(GlobalVars):
 
         return data.with_columns(
             # Add missing hospital stay IDs
-            pl.when(pl.col(self.hospital_stay_id_col).is_null())
-            .then(pl.col(self.icu_stay_id_col))
-            .otherwise(pl.col(self.hospital_stay_id_col))
-            .alias(self.hospital_stay_id_col),
+            pl.when(pl.col(self.global_hospital_stay_id_col).is_null())
+            .then(pl.col(self.global_icu_stay_id_col))
+            .otherwise(pl.col(self.global_hospital_stay_id_col))
+            .alias(self.global_hospital_stay_id_col),
             # Add missing person IDs
-            pl.when(pl.col(self.person_id_col).is_null())
-            .then(pl.col(self.hospital_stay_id_col))
-            .otherwise(pl.col(self.person_id_col))
-            .alias(self.person_id_col),
+            pl.when(pl.col(self.global_person_id_col).is_null())
+            .then(pl.col(self.global_hospital_stay_id_col))
+            .otherwise(pl.col(self.global_person_id_col))
+            .alias(self.global_person_id_col),
         )
 
     def impute_patient_anthropometrics(
-        self, data, n_neighbors: int = 2
+        self, data: pl.LazyFrame, n_neighbors: int = 2
     ) -> pl.LazyFrame:
         """
         Imputes missing anthropometric data.
@@ -74,7 +74,9 @@ class PatientInformationImputer(GlobalVars):
         ]
 
         # function for replacing categorical values with numerical values
-        def replace_categorical_with_numerical(column, col_name: str):
+        def replace_categorical_with_numerical(
+            column, col_name: str
+        ) -> pl.LazyFrame:
             return column.replace(
                 data.select(col_name).collect().to_series().unique(),
                 np.arange(
