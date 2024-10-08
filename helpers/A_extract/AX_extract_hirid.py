@@ -89,6 +89,11 @@ class HiRIDExtractor(HiRIDPaths):
                 .otherwise(None)
                 .cast(bool)
                 .alias(self.mortality_icu_col),
+                pl.when(pl.col("discharge_status") == "dead")
+                .then(True)
+                .otherwise(None)
+                .cast(bool)
+                .alias(self.mortality_hosp_col),
             )
             .drop("discharge_status")
         )
