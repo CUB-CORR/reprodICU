@@ -240,10 +240,18 @@ class EICUExtractor(EICUPaths):
                     pl.col("admitdxpath") == "admission diagnosis|Elective|No"
                 )
                 .then(pl.lit("Emergency"))
+                .when(
+                    pl.col("admitdxpath")
+                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|Yes"
+                )
+                .then(pl.lit("Surgical"))
+                .when(
+                    pl.col("admitdxpath")
+                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
+                )
+                .then(pl.lit("Medical"))
                 .otherwise(None)
                 .alias(self.admission_type_col),
-                # something with ?
-                # "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
                 # Admission Diagnosis
                 pl.when(
                     pl.col("admitdxpath").str.starts_with(
@@ -282,8 +290,14 @@ class EICUExtractor(EICUPaths):
                 .otherwise(None)
                 .alias(self.admission_diagnosis_col),
             )
+            .sort(self.icu_stay_id_col, "admitdxpath")
             .group_by(self.icu_stay_id_col)
-            .first()
+            .agg(
+                pl.col(self.admission_diagnosis_col).first(),
+                pl.col(self.admission_type_col)
+                .str.concat(" ")
+                .str.strip_chars(),
+            )
             .select(
                 self.icu_stay_id_col,
                 self.admission_type_col,
