@@ -91,6 +91,11 @@ class UMCdbExtractor(UMCdbPaths):
                 .otherwise(None)
                 .cast(bool)
                 .alias(self.mortality_icu_col),
+                pl.when(pl.col("destination") == "Overleden")
+                .then(pl.lit(True))
+                .otherwise(None)
+                .cast(bool)
+                .alias(self.mortality_hosp_col),
                 # NOTE: pre-ICU length of stay is not available in the UMCdb dataset,
                 # as there is no known hospital admission / discharge data
                 # # Calculate pre-ICU length of stay in days
