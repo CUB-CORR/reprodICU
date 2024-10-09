@@ -34,58 +34,46 @@ class MedicationHarmonizer(GlobalVars):
         medications_datasets = []
 
         if "eICU" in self.datasets:
-            eicu_medications = self.eicu.extract_medications().pipe(
-                self._concat_helper, "eicu-"
+            medications_datasets.append(
+                self.eicu.extract_medications()
+                .pipe(self._concat_helper, "eicu-")
+                .pipe(self._print_unique_cases, "eICU")
             )
-            self._print_unique_cases(
-                eicu_medications, "eICU", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(eicu_medications)
 
         if "HiRID" in self.datasets:
-            hirid_medications = self.hirid.extract_medications().pipe(
-                self._concat_helper, "hirid-"
+            medications_datasets.append(
+                self.hirid.extract_medications()
+                .pipe(self._concat_helper, "hirid-")
+                .pipe(self._print_unique_cases, "HiRID")
             )
-            self._print_unique_cases(
-                hirid_medications, "HiRID", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(hirid_medications)
 
         if "MIMIC3" in self.datasets:
-            mimic3_medications = self.mimic3.extract_medications().pipe(
-                self._concat_helper, "mimic3-"
+            medications_datasets.append(
+                self.mimic3.extract_medications()
+                .pipe(self._concat_helper, "mimic3-")
+                .pipe(self._print_unique_cases, "MIMIC3")
             )
-            self._print_unique_cases(
-                mimic3_medications, "MIMIC3", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(mimic3_medications)
 
         if "MIMIC4" in self.datasets:
-            mimic4_medications = self.mimic4.extract_medications().pipe(
-                self._concat_helper, "mimic4-"
+            medications_datasets.append(
+                self.mimic4.extract_medications()
+                .pipe(self._concat_helper, "mimic4-")
+                .pipe(self._print_unique_cases, "MIMIC4")
             )
-            self._print_unique_cases(
-                mimic4_medications, "MIMIC4", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(mimic4_medications)
 
         if "SICdb" in self.datasets:
-            sicdb_medications = self.sicdb.extract_medications().pipe(
-                self._concat_helper, "sicdb-"
+            medications_datasets.append(
+                self.sicdb.extract_medications()
+                .pipe(self._concat_helper, "sicdb-")
+                .pipe(self._print_unique_cases, "SICdb")
             )
-            self._print_unique_cases(
-                sicdb_medications, "SICdb", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(sicdb_medications)
 
         if "UMCdb" in self.datasets:
-            umcdb_medications = self.umcdb.extract_medications().pipe(
-                self._concat_helper, "umcdb-"
+            medications_datasets.append(
+                self.umcdb.extract_medications()
+                .pipe(self._concat_helper, "umcdb-")
+                .pipe(self._print_unique_cases, "UMCdb")
             )
-            self._print_unique_cases(
-                umcdb_medications, "UMCdb", self.global_icu_stay_id_col
-            )
-            medications_datasets.append(umcdb_medications)
 
         return (
             pl.concat(
@@ -93,19 +81,17 @@ class MedicationHarmonizer(GlobalVars):
                 how="diagonal_relaxed",
             )
             .select(
-                [
-                    self.global_icu_stay_id_col,
-                    self.drug_ingredient_col,
-                    self.drug_name_col,
-                    self.drug_class_col,
-                    self.drug_admin_route_col,
-                    self.drug_amount_col,
-                    self.drug_amount_unit_col,
-                    self.drug_rate_col,
-                    self.drug_rate_unit_col,
-                    self.drug_start_col,
-                    self.drug_end_col,
-                ]
+                self.global_icu_stay_id_col,
+                self.drug_ingredient_col,
+                self.drug_name_col,
+                self.drug_class_col,
+                self.drug_admin_route_col,
+                self.drug_amount_col,
+                self.drug_amount_unit_col,
+                self.drug_rate_col,
+                self.drug_rate_unit_col,
+                self.drug_start_col,
+                self.drug_end_col,
             )
             .cast(
                 {
@@ -117,7 +103,7 @@ class MedicationHarmonizer(GlobalVars):
                 strict=False,
             )
             .unique()
-            .sort([self.global_icu_stay_id_col, self.drug_start_col])
+            .sort(self.global_icu_stay_id_col, self.drug_start_col)
         )
 
     # Helper functions
@@ -129,10 +115,10 @@ class MedicationHarmonizer(GlobalVars):
             )
         )
 
-    # Print the number of unique cases in the timeseries data
+    # Print the number of unique cases in the medication data
     def _print_unique_cases(
-        self, data: pl.LazyFrame, name: str, count_col: str
-    ) -> None:
+        self, data: pl.LazyFrame, name: str
+    ) -> pl.LazyFrame:
         unique_count = (
             data.select(self.global_icu_stay_id_col)
             .unique()
@@ -141,5 +127,7 @@ class MedicationHarmonizer(GlobalVars):
             .to_numpy()[0][0]
         )
         print(
-            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
+            f"reprodICU - {unique_count:6.0f} unique cases with medication data in {name}."
         )
+
+        return data
