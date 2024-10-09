@@ -68,35 +68,35 @@ class GlobalHelpers:
         self,
         data: pl.LazyFrame,
         how: str = "any",
-        subset: Optional[Union[str, Sequence[str]]] = None,
-        verbose: bool = False,
+        subset_cols: Optional[Union[str, Sequence[str]]] = None,
+        verbose: bool = True,
     ) -> pl.LazyFrame:
         """
         Remove null and NaN values from polars DataFrame.
         Modified from https://stackoverflow.com/a/73978691
         """
 
-        if subset is None:
-            subset = pl.all()
-        else:
-            subset = pl.col(subset)
-
         if verbose:
             print(
-                "Dropping null and NaN values from DataFrame"
-                + f" in columns {subset}"
-                if not subset is None
+                "Dropping null, NaN and empty string values from DataFrame"
+                + f" in columns {subset_cols}"
+                if not subset_cols is None
                 else "" + "..."
             )
 
+        subset = pl.all() if subset_cols is None else pl.col(subset_cols)
+        subset_is_na = (
+            subset.is_null()
+            | (subset.cast(str) == "NaN")
+            | (subset.cast(str) == "")
+        )
+
         if how == "any":
-            result = data.filter(
-                pl.all_horizontal(subset.is_not_null())
-            )  # & subset.is_not_nan()))
+            result = data.filter(~pl.any_horizontal(subset_is_na))
         elif how == "all":
-            result = data.filter(
-                pl.any_horizontal(subset.is_not_null())
-            )  # & subset.is_not_nan()))
+            result = data.filter(~pl.all_horizontal(subset_is_na))
+        elif how == "onlynull":
+            result = data.filter(subset.is_not_null())
         else:
             raise ValueError(f"how must be either 'any' or 'all', got {how}")
 

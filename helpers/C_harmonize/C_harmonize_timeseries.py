@@ -375,17 +375,15 @@ class TimeseriesHarmonizer(GlobalVars):
             timeseries_inout.append(umcdb_timeseries.select(*umcdb_inout))
 
         # Combine the timeseries data of the datasets
-        _vitals = pl.concat(
-            timeseries_vitals,
-            how="diagonal_relaxed",
-        )
-        vitals_cols_not_index = list(
-            set(_vitals.collect_schema().names()) - set(self.index_cols)
-        )
-        # print(_vitals.collect_schema().names())
+        vitals = pl.concat(timeseries_vitals, how="diagonal_relaxed")
+        vitals_cols = vitals.collect_schema().names()
+        vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols))
         vitals = (
-            _vitals.unique(self.index_cols)
-            .pipe(self.helpers.dropna, subset=vitals_cols_not_index, how="all")
+            vitals.pipe(
+                self.helpers.dropna,
+                "all",
+                vitals_cols_not_index,
+            )
             .cast(
                 {  # Convert all columns to float
                     self.global_icu_stay_id_col: str,
@@ -395,19 +393,15 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             .select([*self.index_cols, *sorted(vitals_cols_not_index)])
             .sort(self.index_cols)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
         )
 
-        _labs = pl.concat(
-            timeseries_labs,
-            how="diagonal_relaxed",
-        )
-        labs_cols_not_index = list(
-            set(_labs.collect_schema().names()) - set(self.index_cols)
-        )
-        # print(_labs.collect_schema().names())
+        labs = pl.concat(timeseries_labs, how="diagonal_relaxed")
+        labs_cols = labs.collect_schema().names()
+        labs_cols_not_index = list(set(labs_cols) - set(self.index_cols))
         labs = (
-            _labs.unique(self.index_cols)
-            .pipe(self.helpers.dropna, subset=labs_cols_not_index, how="all")
+            labs.pipe(self.helpers.dropna, "all", labs_cols_not_index)
             .cast(
                 {  # Convert all columns to float
                     self.global_icu_stay_id_col: str,
@@ -417,50 +411,38 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             .select([*self.index_cols, *sorted(labs_cols_not_index)])
             .sort(self.index_cols)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
         )
 
-        _resp = pl.concat(
-            timeseries_resp,
-            how="diagonal_relaxed",
-        )
-        resp_cols_not_index = list(
-            set(_resp.collect_schema().names()) - set(self.index_cols)
-        )
-        # print(_resp.collect_schema().names())
+        resp = pl.concat(timeseries_resp, how="diagonal_relaxed")
+        resp_cols = resp.collect_schema().names()
+        resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
         resp = (
-            _resp.unique(self.index_cols)
-            .pipe(self.helpers.dropna, subset=resp_cols_not_index, how="all")
+            resp.pipe(self._print_unique_cases, "respiratory before drop").pipe(self.helpers.dropna, "all", resp_cols_not_index)
             .cast(
                 {  # Convert all columns to float, except for oxygen_delivery_device
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
-                    **(
-                        {
-                            col: (
-                                float
-                                if col != "oxygen_delivery_device"
-                                else str
-                            )
+                    **{
+                        col: (float if col != "oxygen_delivery_device" else str)
                             for col in resp_cols_not_index
-                        }
-                    ),
+                    },
                 }
             )
             .select([*self.index_cols, *sorted(resp_cols_not_index)])
             .sort(self.index_cols)
+            .pipe(self._print_unique_cases, "respiratory before unique")
+            .unique(self.index_cols)
+            .pipe(self._print_unique_cases, "respiratory after unique")
+            .sort(self.index_cols)
         )
 
-        _inout = pl.concat(
-            timeseries_inout,
-            how="diagonal_relaxed",
-        )
-        inout_cols_not_index = list(
-            set(_inout.collect_schema().names()) - set(self.index_cols)
-        )
-        # print(_inout.collect_schema().names())
+        inout = pl.concat(timeseries_inout, how="diagonal_relaxed")
+        inout_cols = inout.collect_schema().names()
+        inout_cols_not_index = list(set(inout_cols) - set(self.index_cols))
         inout = (
-            _inout.unique(self.index_cols)
-            .pipe(self.helpers.dropna, subset=inout_cols_not_index, how="all")
+            inout.pipe(self.helpers.dropna, "all", inout_cols_not_index)
             .cast(
                 {  # Convert all columns to float
                     self.global_icu_stay_id_col: str,
@@ -470,20 +452,27 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             .select([*self.index_cols, *sorted(inout_cols_not_index)])
             .sort(self.index_cols)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
         )
 
         if save_to_default:
-            vitals.sink_parquet(
+            print("reprodICU - Saving timeseries...")
+            print("reprodICU - Saving vitals...")
+            vitals.pipe(self._print_unique_cases, "vitals").sink_parquet(
                 self.paths.reprodICU_files_path + "timeseries_vitals.parquet"
             )
-            labs.sink_parquet(
+            print("reprodICU - Saving labs...")
+            labs.pipe(self._print_unique_cases, "labs").sink_parquet(
                 self.paths.reprodICU_files_path + "timeseries_labs.parquet"
             )
-            resp.sink_parquet(
+            print("reprodICU - Saving respiratory...")
+            resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
                 self.paths.reprodICU_files_path
                 + "timeseries_respiratory.parquet"
             )
-            inout.sink_parquet(
+            print("reprodICU - Saving intakeoutput...")
+            inout.pipe(self._print_unique_cases, "inout").sink_parquet(
                 self.paths.reprodICU_files_path
                 + "timeseries_intakeoutput.parquet"
             )
@@ -504,9 +493,7 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
     # Print the number of unique cases in the timeseries data
-    def _print_unique_cases(
-        self, data: pl.LazyFrame, name: str, count_col: str
-    ) -> None:
+    def _print_unique_cases(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         unique_count = (
             data.select(self.global_icu_stay_id_col)
             .unique()
@@ -517,3 +504,5 @@ class TimeseriesHarmonizer(GlobalVars):
         print(
             f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
         )
+
+        return data

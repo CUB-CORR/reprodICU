@@ -91,7 +91,7 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_numeric.collect_schema().names()) - set(self.index_cols)
         )
         ts_numeric = (
-            ts_numeric.pipe(self.helpers.dropna, subset=droplist, how="all")
+            ts_numeric.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )
@@ -139,7 +139,7 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_listitems.collect_schema().names()) - set(self.index_cols)
         )
         ts_listitems = (
-            ts_listitems.pipe(self.helpers.dropna, subset=droplist, how="all")
+            ts_listitems.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )

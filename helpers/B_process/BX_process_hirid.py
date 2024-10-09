@@ -26,9 +26,6 @@ class HiRIDProcessor(HiRIDExtractor):
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
-        # Load the time series data
-        print("HiRID   - Loading time series data...")
-
         if os.path.isfile(self.precalc_path + "HiRID_B_timeseries.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(
@@ -92,7 +89,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 set(timeseries.collect_schema().names()) - set(self.index_cols)
             )
             timeseries = timeseries.pipe(
-                self.helpers.dropna, subset=droplist, how="all"
+                self.helpers.dropna, subset_cols=droplist, how="all"
             ).unique()
 
             # Append the data to the DataFrame

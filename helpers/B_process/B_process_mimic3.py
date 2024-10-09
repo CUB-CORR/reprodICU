@@ -101,7 +101,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             set(ts_vitals.collect_schema().names()) - set(self.index_cols)
         )
         ts_vitals = (
-            ts_vitals.pipe(self.helpers.dropna, subset=droplist, how="all")
+            ts_vitals.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )
@@ -151,7 +151,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             set(ts_lab.collect_schema().names()) - set(self.index_cols)
         )
         ts_lab = (
-            ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all")
+            ts_lab.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )
@@ -194,7 +194,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             set(ts_inout.collect_schema().names()) - set(self.index_cols)
         )
         ts_inout = (
-            ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all")
+            ts_inout.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )

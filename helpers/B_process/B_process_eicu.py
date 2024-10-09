@@ -148,7 +148,7 @@ class EICUProcessor(EICUExtractor):
                 set(ts_lab.collect_schema().names()) - set(self.index_cols)
             )
             ts_lab = (
-                ts_lab.pipe(self.helpers.dropna, subset=droplist, how="all")
+                ts_lab.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
                 .unique()
                 .lazy()
             )
@@ -199,7 +199,7 @@ class EICUProcessor(EICUExtractor):
                 set(ts_resp.collect_schema().names()) - set(self.index_cols)
             )
             ts_resp = (
-                ts_resp.pipe(self.helpers.dropna, subset=droplist, how="all")
+                ts_resp.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
                 .unique()
                 .lazy()
             )
@@ -284,7 +284,7 @@ class EICUProcessor(EICUExtractor):
                 set(ts_nurse.collect_schema().names()) - set(self.index_cols)
             )
             ts_nurse = (
-                ts_nurse.pipe(self.helpers.dropna, subset=droplist, how="all")
+                ts_nurse.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
                 .unique()
                 .lazy()
             )
@@ -337,7 +337,7 @@ class EICUProcessor(EICUExtractor):
                 set(ts_inout.collect_schema().names()) - set(self.index_cols)
             )
             ts_inout = (
-                ts_inout.pipe(self.helpers.dropna, subset=droplist, how="all")
+                ts_inout.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
                 .unique()
                 .lazy()
             )

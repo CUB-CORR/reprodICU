@@ -82,7 +82,7 @@ class SICdbProcessor(SICdbExtractor):
             set(timeseries.collect_schema().names()) - set(self.index_cols)
         )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all")
+            timeseries.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )
@@ -127,7 +127,7 @@ class SICdbProcessor(SICdbExtractor):
             set(timeseries.collect_schema().names()) - set(self.index_cols)
         )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset=droplist, how="all")
+            timeseries.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
             .lazy()
             .unique()
         )
