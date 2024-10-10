@@ -191,7 +191,9 @@ amikacin:
   sicdb: []
 amiodarone:
   blended: 1309944
-  amsterdam: []
+  amsterdam:
+    - Amiodaron Onderhoudsdosis
+    - Amiodaron Oplaaddosis
   eicu:
     - Amiodarone (ml/hr)
     - AMIODARONE HCL 200 MG PO TABS
@@ -1390,7 +1392,8 @@ enoximone:
   sicdb: []
 epinephrine:
   blended: 1343916
-  amsterdam: []
+  amsterdam:
+    - Adrenaline (Epinefrine)
   eicu:
     - EPINEPHrine
     - Epinephrine (ml/hr)
@@ -2339,13 +2342,15 @@ ketorolac:
   sicdb: []
 labetalol:
   blended: 1386957
-  amsterdam: []
+  amsterdam:
+    - Labetalol (Trandate)
   eicu:
     - Labetalol (mg/min)
   hirid: []
   mimic: []
   mimic3:
     - Labetolol
+    - Labetalol
   mimic4:
     - Labetalol
   sicdb:
@@ -2637,7 +2642,8 @@ meropenem:
     - Meropenem
 methadone:
   blended: 1103640
-  amsterdam: []
+  amsterdam:
+    - Methadon (Symoron)
   eicu:
     - "METHADONE HCL                                                                                                                                                                                                                                                  "
     - "METHADONE                                                                                                                                                                                                                                                      "
@@ -3359,6 +3365,7 @@ phenylephrine:
   blended: 1135766
   amsterdam:
     - Fenylefrine (phenylephrine)
+    - Fenylefrine
   eicu:
     - Phenylephrine (ml/hr)
     - Phenylephrine (mcg/min)
@@ -5062,6 +5069,7 @@ sodium chloride:
     - nss (ml/hr)
     - .45NSS (ml/hr)
     - .45 NSS (ml/hr)
+    - 1/2 NSS
     - 1/2 NS (ml/hr)
     - 1/2NSS (ml/hr)
     - 1/2 NSS (ml/hr)
@@ -5076,6 +5084,7 @@ sodium chloride:
     - 0.9% NSS Venous Sheath (ml/hr)
     - NS (ml/hr)
     - NSS (ml/hr)
+    - NSS  (ml/hr)
     - NSS Bolus
     - NSS Bolus (ml/hr)
     - NSS control (ml/hr)
