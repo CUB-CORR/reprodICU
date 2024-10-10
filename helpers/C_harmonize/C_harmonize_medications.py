@@ -13,6 +13,7 @@ from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
 from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
+from helpers.helper import GlobalHelpers
 
 
 class MedicationHarmonizer(GlobalVars):
@@ -24,12 +25,17 @@ class MedicationHarmonizer(GlobalVars):
         self.mimic4 = MIMIC4Extractor(paths, DEMO)
         self.sicdb = SICdbExtractor(paths)
         self.umcdb = UMCdbExtractor(paths)
+        self.helpers = GlobalHelpers()
         self.datasets = datasets
 
     def harmonize_medications(self) -> pl.LazyFrame:
 
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the medications from.")
+
+        medication_class_mapping = self.helpers.load_many_to_one_mapping(
+            self.mapping_path + "MEDICATIONS_CLASSES.yaml"
+        )
 
         medications_datasets = []
 
@@ -79,6 +85,15 @@ class MedicationHarmonizer(GlobalVars):
             pl.concat(
                 medications_datasets,
                 how="diagonal_relaxed",
+            )
+            # add missing drug class information
+            # NOTE: -> refactor into imputation?
+            # NOTE: -> prob yes, since one also needs to deal with boluses
+            .with_columns(
+                pl.when(pl.col(self.drug_name_col).is_in(medication_class_mapping.keys()))
+                .then(pl.col(self.drug_name_col).replace(medication_class_mapping))
+                .otherwise(pl.col(self.drug_class_col))
+                .alias(self.drug_class_col)
             )
             .select(
                 self.global_icu_stay_id_col,
