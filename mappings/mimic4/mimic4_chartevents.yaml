@@ -1301,7 +1301,7 @@ PA Catheter Zero/Calibrate:
 PA Line cm Mark:
 Pad Change/Hour:
 PAEDP:
-Pain (0-10):
+Pain (0-10): numeric_pain_rating_scale
 Pain Assessment Method:
 Pain Cause:
 Pain Control:
@@ -1762,7 +1762,7 @@ RIC Phlebitis Scale:
 RIC placed in outside facility:
 RIC Reason Discontinued:
 RIC Site Appear:
-Richmond-RAS Scale:
+Richmond-RAS Scale: richmond_agitation_sedation_scale
 Right Ventricular Assist Device Flow:
 Riker-SAS Scale:
 Risk Factors for Pressure Injury:
