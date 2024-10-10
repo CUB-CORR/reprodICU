@@ -30,8 +30,8 @@ Operating Room:
   - Operating Room
   - Operatiekamer vanaf verpleegafdeling zelfde ziekenhuis # Operating room from ward of same hospital
   - operating room from emergency department of the same hospital # Operating room from the Emergency Department of the same hospital
-  - PACU
 Recovery Room:
+  - PACU
   - Recovery Room
   # UMCdb
   - Recovery zelfde ziekenhuis (alleen bij niet geplande IC-opname) # Recovery same hospital (only in case of unplanned ICU admission)
