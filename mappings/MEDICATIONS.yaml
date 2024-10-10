@@ -47,6 +47,80 @@ acyclovir:
     - Acyclovir
   sicdb:
     - Aciclovir
+albumin human (USP):
+  blended: 1344143
+  amsterdam:
+    - Albumine 20%
+  hirid: []
+  eicu:
+    - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
+    - 25% ALBUMIN (ml/hr)
+    - 250 ML  -  ALBUMIN HUMAN 5 % IV SOLN
+    - 5% ALBUMIN (ml/hr)
+    - 5% Albumin (ml/hr)
+    - 5% albumin (ml/hr)
+    - 5%Albumin (ml/hr)
+    - 50 ML  -  ALBUMIN HUMAN 25 % IV SOLN
+    - ALBUMIN (ml/hr)
+    - ALBUMIN 25% (ml/hr)
+    - ALBUMIN 25% 100 ML INJ
+    - ALBUMIN 5% (ml/hr)
+    - ALBUMIN 5% 250 ML INJ
+    - ALBUMIN 5% 500 ML INJ
+    - ALBUMIN HUMAN 25 % IV SOLN
+    - ALBUMIN HUMAN 25%
+    - ALBUMIN HUMAN 5 % IV SOLN
+    - ALBUMIN HUMAN 5 % IV SOLP
+    - ALBUMIN HUMAN 5%
+    - ALbumin (ml/hr)
+    - Albumin
+    - Albumin  (ml/hr)
+    - Albumin (ml/hr)
+    - Albumin 25 G (ml/hr)
+    - Albumin 25%
+    - "Albumin 25% "
+    - Albumin 25%  (ml/hr)
+    - Albumin 25% (ml/hr)
+    - Albumin 25G (ml/hr)
+    - Albumin 25G/100ml (ml/hr)
+    - Albumin 5%
+    - Albumin 5% (ml/hr)
+    - Albumin 5% 25G (ml/hr)
+    - Albumin 5% 25gm/250ml  (ml/hr)
+    - Albumin Human 25% Inj 100 ml (ml/hr)
+    - Albumin25% (ml/hr)
+    - albumin
+    - albumin  (ml/hr)
+    - albumin (human) (PLASBUMIN-5) 5% infusion 25 g
+    - albumin (ml/hr)
+    - albumin 25%  (ml/hr)
+    - albumin 25% (ml/hr)
+    - albumin 5%
+    - albumin 5% (ml/hr)
+    - albumin human
+    - albumin5% (ml/hr)
+    - albumine (ml/hr)
+  mimic: []
+  mimic3:
+    - 25% Albumin
+    - ALBUMIN
+    - Albumin
+    - Albumin (human) 25%
+    - Albumin 12.5%
+    - Albumin 25%
+    - Albumin 5%
+    - OR Albumin
+    - Serum Albumin 5%
+    - albumin
+    - albumin 12.5%
+  mimic4:
+    - Albumin 25%
+    - Albumin 5%
+  sicdb:
+    - Humanalbumin 20%
+    - Humanalbumin 20% (Albunorm)
+    - Humanalbumin 5%
+    - Humanalbumin 5% (Albunorm)
 alteplase:
   blended: 1347450
   amsterdam:
@@ -1706,6 +1780,8 @@ gentamicin:
   amsterdam:
     - Gentamicine (Garamycin)
     - Dexamethason/gentamicine oogzalf (Dexamytrex)
+    - Gentamycine  1% oogdruppels
+    - Gentamycine intrathecaal
   eicu:
     - "GENTAMICIN SULFATE                                                                                                                                                                                                                                             "
     - "GENTAMICIN SULFATE IN NS                                                                                                                                                                                                                                       "
@@ -1925,6 +2001,18 @@ hydrocodone:
   mimic3: []
   mimic4: []
   sicdb: []
+hydrocortisone:
+  blended: 975125
+  amsterdam:
+    - Hydrocortison (Solu Cortef)
+    - Hydrocortison acetaat (crème)
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb:
+    - Hydrocortison
 hydromorphone:
   blended: 1126658
   amsterdam: []
@@ -2601,10 +2689,42 @@ methylprednisolone:
     - Solumedrol 40 mg
     - Solumedrol 500 mg
   mimic: []
-  mimic3: []
+  mimic3:
+    - METHYLPRED 450MG/HR
+    - METHYLPREDNISOLONE
+    - METHYLPREDNISONE
+    - METHYLPREDNISONE GTT
+    - Methylpred
+    - Methylprednisolone
+    - Methylprednisone
+    - methylprednisolone
+    - SOLUMEDROL DRIP
+    - SOLUMEDROL DRIP.
+    - SOLUMEDROL DRIPMG/HR
+    - SOLUMEDROL GTT
+    - SOLUMEDROL MG/KG/HR
+    - Solumedrol
+    - Solumedrol gtt
+    - Solumedrol mg/kg/min
+    - solumedrol 10575/500
+    - solumedrol drip
   mimic4: []
   sicdb:
     - MethylPREDNIsolon
+methylene blue:
+  blended: 19092140
+  amsterdam:
+    - Methyleenblauw IV (Methylthionide cloride)
+    - Methyleenblauw IV (Methylthionide cloride)X
+    - Methyleenblauw NIET IV (Methylthionide cloride)
+  eicu:
+    - Methylene Blue (mg/kg/hr)
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb:
+    - Methylenblau
 metoclopramide:
   blended: 906780
   amsterdam:
@@ -3040,6 +3160,7 @@ nitroglycerin:
     - Nitroglycerin
   mimic3:
     - Nitroglycerin
+    - Nitroglycerine-k
   mimic4:
     - Nitroglycerin
   sicdb:
@@ -3132,6 +3253,7 @@ norepinephrine:
     - Norepinephrine
   mimic3:
     - Norepinephrine
+    - Levophed-k
   mimic4:
     - Norepinephrine
   sicdb:
@@ -3905,10 +4027,19 @@ xylometazoline:
   mimic3: []
   mimic4: []
   sicdb: []
-dextrose:
-  blended: 0
-  amsterdam: []
+glucose:
+  blended: 1560524
+  amsterdam:
+    - Glucose 10%
+    - Glucose 20%
+    - Glucose 30 %
+    - Glucose 40%
+    - Glucose 40% spuit
+    - Glucose 5 %
+    - Glucose 5% spuit
   eicu:
+    - D10W
+    - D5W
     - D5W (ml/hr)
     - "50 ML SYRINGE : DEXTROSE 50 % IV SOLN"
     - DEXTROSE 50% 25 GRAM/50 ML SYR
@@ -3918,36 +4049,25 @@ dextrose:
     - DEXTROSE 50 % IV SOLN
     - "DEXTROSE 5% IN WATER (D5W) IV : 1000 ML BAG"
     - Dextrose 50%
-    - DEXTROSE 5%-NACL 0.9%
     - VANCOMYCIN HCL IN DEXTROSE 1 GM/200ML IV SOLN
     - "37.5 G TUBE : DEXTROSE (DIABETIC USE) 40 % PO GEL"
     - DEXTROSE 50% ABBOJECT
     - DEXTROSE 50 % IN WATER (D50W) IV SYRINGE
     - DEXTROSE 50% VIAL
     - dextrose 50 % inj
-    - "DEXTROSE 5% IN NORMAL SALINE IV : 1000 ML BAG"
-    - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
     - DEXTROSE 50% INJ
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
     - DEXTROSE 50% SYRINGE
     - "50 ML SYRINGE: DEXTROSE 50 % IV SOLN"
     - "50 ml syringe : dextrose 50 % iv soln"
     - ceFAZolin (ANCEF) in Dextrose ivpb 2 g
-    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
     - "50 ML VIAL : DEXTROSE 50 % IV SOLN"
     - DEXTROSE 50% 25 GRAM/50 ML INJ
     - DEXTROSE 40 % ORAL GEL
-    - "DEXTROSE 5%-1/2 NORMAL SALINE IV : 1000 ML BAG"
     - DEXTROSE 5%/NACL 0.45%
     - DEXTROSE 5 % IV SOLN
     - Dextrose 50% in Water
     - dextrose 50 % in water (D50W) injection 15 mL
     - dextrose 50% in water
-    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - DEXTROSE-NACL 5-0.45 % IV SOLN
     - dextrose 50 % injection 50 mL
     - dextrose 50 % (D50W) syringe
     - Dextrose 5% SSO
@@ -4020,10 +4140,7 @@ dextrose:
     - Norepinephrine STD 4 mg Dextrose 5% 500 ml (mcg/min)
     - Mannitol gtt(100gm/500mL) 50 g Dextrose 5% 500 ml (Unknown)
     - Anticoagulant Citrate Dextrose Sol A (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 75 mL (ml/hr)
     - Volume (mL)-dextrose 5 % bolus 250 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
     - Dexmedetomidine Inj 400 Mcg in Dextrose 5% 100 ml ()
     - Amiodarone Inj 450 mg in Dextrose 5% (Aviva) 250 ml ()
     - Diltiazem Inj 125 mg in Dextrose 5% 100 ml ()
@@ -4045,6 +4162,395 @@ dextrose:
     - POTassium PHOSphate INJ 20 mm in Dextrose 5% 250 ml (ml/hr)
     - Cefazolin Sod Inj 2 gm in Dextrose 5% 50 ml (ml/hr)
     - Ceftriaxone 1 Gram/Dextrose 100 ml (ml/hr)
+    - D5/LR/40mEq potassium (ml/hr)
+    - D5/LR + MVI (ml/hr)
+    - D5/LR (ml/hr)
+    - D5/ LR (ml/hr)
+    - D5W LR (ml/hr)
+    - D5W/LR (ml/hr)
+    - D5W & LR (ml/hr)
+    - D5LR+MVI (ml/hr)
+    - D5LR with 10mEq potassium (ml/hr)
+    - D5LR with 10mEq potassium
+    - D5LR with 10 meq K (ml/hr)
+    - D5LR w/40meq K (ml/hr)
+    - D5LR w 40kcl (ml/hr)
+    - D5LR MVI (ml/hr)
+    - D5LR (ml/hr)
+    - D5LR
+    - D5LR/10meqKCL (ml/hr)
+    - D5LR20K (ml/hr)
+    - D5LRMVI (ml/hr)
+    - D5LRw/40KCl (ml/hr)
+    - D5% LR w/ 40 K (ml/hr)
+    - D5 LR with 30meq K (ml/hr)
+    - D5 LR  (ml/hr)
+    - D5 LR
+    - D5 LR w/40KCL (ml/hr)
+    - D5 LR w/ multivitamins (ml/hr)
+    - D5 LR w/ multivitamins
+    - D5 LR w/ 40 k (ml/hr)
+    - D5 LR w/ 40 k
+    - D5 LR 40K (ml/hr)
+    - D5 LR 30mEqK
+    - D5 LR 30mEqK (ml/hr)
+    - D5 LR (ml/hr)
+    - D5
+    - D5/NS (ml/hr)
+    - D5/NS  (ml/hr)
+    - D5/0.9NSS (ml/hr)
+    - D5/0.9NS w/40mEq K (ml/hr)
+    - D5/0.9NS (ml/hr)
+    - D5/0.9%NS (ml/hr)
+    - D5/0.9%NS
+    - D5/0.9% NS w/20KCl (ml/hr)
+    - D5/0.9 NS c 40 K+ (ml/hr)
+    - D5/0.9 (ml/hr)
+    - D5/0.5NS (ml/hr)
+    - D5/0.5NS
+    - D5/0.45NSS (ml/hr)
+    - D5/0.45NS/K+40meq (ml/hr)
+    - D5/0.45NS/K (ml/hr)
+    - D5/0.45NS w 20meq K (ml/hr)
+    - D5/0.45NS (ml/hr)
+    - D5/0.45NS
+    - D5/NS/20MEQKCL
+    - D5/0.45/40KCL (ml/hr)
+    - D5/NS/20MEQKCL (ml/hr)
+    - D5/NSS (ml/hr)
+    - D51/2 WITH mvi (ml/hr)
+    - D51/2 Saline (ml/hr)
+    - D51/2 NSS (ml/hr)
+    - D51/2 NS/20KCL (ml/hr)
+    - D51/2 NS (ml/hr)
+    - D51/2 (ml/hr)
+    - D51/2
+    - D50.9%NS (ml/hr)
+    - D50.9%NS
+    - D50.9 (ml/hr)
+    - D50.9
+    - D50.45NS20K (ml/hr)
+    - D50.45NS (ml/hr)
+    - D50.45NS
+    - D50.45%ns 40KCL (ml/hr)
+    - D50 (ml/hr)
+    - D50  (ml/hr)
+    - D50
+    - D5/W (ml/hr)
+    - D5/W
+    - D5/NSS 0.45% (ml/hr)
+    - D5/NS0.9%  (ml/hr)
+    - D51/2+10KCL (ml/hr)
+    - D5/0.45%NaCl (ml/hr)
+    - D5/0.45%NS + MVI (ml/hr)
+    - D5.9NSS
+    - D5.9NS (ml/hr)
+    - D5.45nss (ml/hr)
+    - D5.45NSw/40meqK (ml/hr)
+    - D5.45NSw/40Kcl (ml/hr)
+    - D5.45NSw/20KCl (ml/hr)
+    - D5.45NSS + MVI (ml/hr)
+    - D5.45NSS (ml/hr)
+    - D5.45NS/20KCL (ml/hr)
+    - D5.45NS w/MVI (ml/hr)
+    - D5.45NS (ml/hr)
+    - D5.45NS
+    - D5.45+20kcl (ml/hr)
+    - D5.45% NS (ml/hr)
+    - D5.45 with thimaine and folic acid (ml/hr)
+    - D5.45 w/ folic acid, &thiamine (ml/hr)
+    - D5.45 WITH 20 MEQ (ml/hr)
+    - D5.45 W/ 20KCL (ml/hr)
+    - D5.45 Saline (ml/hr)
+    - D5.45 NS (ml/hr)
+    - D5.45 NS  (ml/hr)
+    - D5.9NSS (ml/hr)
+    - D5/0.45%NaCl
+    - D5/ 0.45 NS (ml/hr)
+    - D5/ 0.45%NS (ml/hr)
+    - D5/0.45%NS (ml/hr)
+    - D5/0.45%/NaCl+40mEq potassium (ml/hr)
+    - D5/0.45% NS (ml/hr)
+    - D5/0.45 NSS (ml/hr)
+    - D5/0.45 NS (ml/hr)
+    - D5/0.45 (ml/hr)
+    - D5/.9NS w 20meq K (ml/hr)
+    - D5/.9NS (ml/hr)
+    - D5/.45Ns+20KCl (ml/hr)
+    - D5/.45NaCl MVI (ml/hr)
+    - D5/.45NSS/40KCL (ml/hr)
+    - D5/.45NSS c MVI (ml/hr)
+    - D5/.45NSS (ml/hr)
+    - D5/.45NSS
+    - D5/.45NS + 20 K (ml/hr)
+    - D5/.45NS (ml/hr)
+    - D5/.45%NaCl (ml/hr)
+    - D5/ NS (ml/hr)
+    - D5/ 0.9NSS (ml/hr)
+    - D5/ 0.9%NSS (ml/hr)
+    - D5/ 0.45%NS
+    - D51/2NS
+    - D51/2NS (ml/hr)
+    - D51/2NS w/ 20meqK (ml/hr)
+    - D5W w/150MEQ NaHC03 (ml/hr)
+    - D5W w/ Bicardb (ml/hr)
+    - D5W w/ Anbx (ml/hr)
+    - D5W w/ 40mEq K+ (ml/hr)
+    - D5W w/ 40KCL
+    - D5W per GTube (ml/hr)
+    - D5W flush (ml/hr)
+    - D5W c 20K (ml/hr)
+    - D5W W/40K (ml/hr)
+    - D5W W/40K
+    - D5W 1/2NS (ml/hr)
+    - D5W 1/2NS
+    - D5W 0.9NSS (ml/hr)
+    - D5W 0.45NS (ml/hr)
+    - D5W / 0.45NS (ml/hr)
+    - D5W .45% NS (ml/hr)
+    - D5W +20KCL (ml/hr)
+    - D5W +10KCL (ml/hr)
+    - D5W + MVI (ml/hr)
+    - D5W + 40K (ml/hr)
+    - D5W w/ABX
+    - D5W + 40 meq potassium acetate/L (ml/hr)
+    - D5W w/ABX (ml/hr)
+    - D5W.45NS (ml/hr)
+    - D5w +atbx (ml/hr)
+    - D5w (ml/hr)
+    - D5w
+    - D5c  0.45NS (ml/hr)
+    - D5`1/2NS (ml/hr)
+    - D5\0.9 NSS (ml/hr)
+    - D5Ww/3ampNaHC03 (ml/hr)
+    - D5W1/2NS (ml/hr)
+    - D5W/60 Kphos (ml/hr)
+    - D5W/150 mEq Bicard (ml/hr)
+    - D5W/0.45NS (ml/hr)
+    - D5W/0.45%NS+MVI (ml/hr)
+    - D5W/0.45%NS (ml/hr)
+    - D5W/.9%NS (ml/hr)
+    - D5W/.45%NS + 40 mEq K (ml/hr)
+    - D5W/.45%NS (ml/hr)
+    - D5W/.45% NS + 20 mEq K (ml/hr)
+    - D5W/ 0.45NS (ml/hr)
+    - D5W/ 0.45% NS/ 40 MEQ K (ml/hr)
+    - D5W/ 0.45% NS/ 20meqK (ml/hr)
+    - D5W+150meqSodiumBicarm (ml/hr)
+    - D5W
+    - D5RL (ml/hr)
+    - D5@ (ml/hr)
+    - D545 (ml/hr)
+    - D51/2nss w 20kcl (ml/hr)
+    - D51/2ns with 20kcl/l (ml/hr)
+    - D51/2ns with 20kcl/l
+    - D51/2ns (ml/hr)
+    - D51/2NSS 20MEQKCL (ml/hr)
+    - D51/2NSS (ml/hr)
+    - D51/2NSKCL (ml/hr)
+    - D51/2NS20KCL (ml/hr)
+    - D51/2NS20K (ml/hr)
+    - D51/2NS with 20K (ml/hr)
+    - D5NaBi-carb (ml/hr)
+    - D5NSS.45 c 75 mEq (ml/hr)
+    - D5NSS w/ MVI (ml/hr)
+    - D5NSS (ml/hr)
+    - D5NS1/4 (ml/hr)
+    - D5NS/40KCL (ml/hr)
+    - D5NS+40mEq Potassiuum (ml/hr)
+    - D5NS with MVI (ml/hr)
+    - D5NS with MVI
+    - D5NS w/40KCL (ml/hr)
+    - D5.45 (ml/hr)
+    - D5NS w/40KCL
+    - D5NS w/ Multivits (ml/hr)
+    - D5NS w/ 20KCL (ml/hr)
+    - D5NS MVI  (ml/hr)
+    - "D5NS MVI "
+    - D5NS 40meqK+ (ml/hr)
+    - D5NS +20KCL (ml/hr)
+    - D5NS (ml/hr)
+    - D5NS  (ml/hr)
+    - D5NS
+    - D5N (ml/hr)
+    - D5NS w/20K (ml/hr)
+    - D5.45
+    - D5.9 (ml/hr)
+    - D5. 45NaCL (ml/hr)
+    - D5 1/2 NS w/ 40K
+    - D5 1/2 NS w/ 10 mEq K+ (ml/hr)
+    - D5 1/2 NS multi vit (ml/hr)
+    - D5 1/2 NS W 20KCL (ml/hr)
+    - D5 1/2 NS 20KCL (ml/hr)
+    - D5 1/2 NS +20KCL
+    - D5 1/2 NS (ml/hr)
+    - D5 1/2 NS
+    - D5 1/2 20KCL (ml/hr)
+    - D5 1/2 20KCL
+    - D5 1/2 20K (ml/hr)
+    - D5 1/2 +KLCL 40meq (ml/hr)
+    - D5 1/2 +KLC 20meq (ml/hr)
+    - D5 1/2 +20k (ml/hr)
+    - D5 1/2 +20KCL (ml/hr)
+    - D5 1/2 + MVI (ml/hr)
+    - D5 1/2 (ml/hr)
+    - D5 1/2
+    - D5 0.9NSS (ml/hr)
+    - D5 0.9NS (ml/hr)
+    - D5 0.9%NSS (ml/hr)
+    - D5 1/2 NS w/ 40K (ml/hr)
+    - D5 1/2 NS w/ 40meq K (ml/hr)
+    - D5 1/2 NS w/20meq K+ (ml/hr)
+    - D5 1/2 NS w/K (ml/hr)
+    - D5 1/2NS 40mEq (ml/hr)
+    - D5 1/2NS 20KCL (ml/hr)
+    - D5 1/2NS 20KCL
+    - D5 1/2NS +KCl 10 mEq (ml/hr)
+    - D5 1/2NS + 40 mEq K (ml/hr)
+    - D5 1/2NS (ml/hr)
+    - D5 1/2NS
+    - D5 1/2 with 10KCl (ml/hr)
+    - D5 1/2 w/folic+B1 (ml/hr)
+    - D5 1/2 w/ 20KCL (ml/hr)
+    - D5 0.9% (ml/hr)
+    - D5 1/2 nss (ml/hr)
+    - D5 1/2 Nss  (ml/hr)
+    - D5 1/2 NSS w/ 40KCL (ml/hr)
+    - D5 1/2 NSS w/ 40KCL
+    - D5.2NS (ml/hr)
+    - D5 1/2 NSS (ml/hr)
+    - D5 1/2 NSS  (ml/hr)
+    - D5 1/2 NS with 40KCL (ml/hr)
+    - D5 1/2 NS with 20meq K (ml/hr)
+    - D5 1/2 NS with 20meq K
+    - D5 1/2 NS with 10k+ (ml/hr)
+    - D5 1/2 W/20K (ml/hr)
+    - D5 0.9%
+    - D5 0.9 NS (ml/hr)
+    - D5 0.45NaCl (ml/hr)
+    - D5 .9 NSS
+    - D5 .45NSS (ml/hr)
+    - D5 .45NS w/ 20KCL (ml/hr)
+    - D5 .45NS (ml/hr)
+    - D5 .45%NS w/fol/thiam. (ml/hr)
+    - D5 .45%NS (ml/hr)
+    - D5 .45% NS (ml/hr)
+    - D5 .45 NS (ml/hr)
+    - D5 .45 (ml/hr)
+    - D5 .45 % NS (ml/hr)
+    - D5 .9 NSS (ml/hr)
+    - D5 .45
+    - D5 -1/2NS (ml/hr)
+    - D5 -1/2NS
+    - D5 + 40K (ml/hr)
+    - D5 (ml/hr)
+    - D5 & 1/2NS (ml/hr)
+    - D5 & 0.45NS w MVI (ml/hr)
+    - D5 & 0.45NS (ml/hr)
+    - D5  1/2 NS (ml/hr)
+    - D5  1/2 NS
+    - D5  0.45% NS (ml/hr)
+    - D5 .20 NS (ml/hr)
+    - D5 1/2NS KCL10 (ml/hr)
+    - D5 / 0.45% NSS (ml/hr)
+    - D5 0,9 NS  (ml/hr)
+    - D5 0.45NS w/10K+ (ml/hr)
+    - D5 0.45NS (ml/hr)
+    - D5 0.45%NSS (ml/hr)
+    - D5 0.45%NS w/ 40mEq K (ml/hr)
+    - D5 0.45%NS (ml/hr)
+    - D5 0.45%NS  (ml/hr)
+    - D5 0.45%NS
+    - D5 0.45% ns (ml/hr)
+    - D5 0.45% NSS (ml/hr)
+    - D5 0.45% NS (ml/hr)
+    - "D5 0,9 NS "
+    - D5 0.45% NS
+    - D5 0.45% (ml/hr)
+    - D5 0.45 NSS (ml/hr)
+    - D5 0.45 NS (ml/hr)
+    - D5 0.45 NS  (ml/hr)
+    - D5 0.45 NS
+    - D5 0.45 50meq (ml/hr)
+    - D5 0.45 + 40mEq Potassium (ml/hr)
+    - D5 0.45 (ml/hr)
+    - D5 0.45 %NS (ml/hr)
+    - D5 0.2%NSS (ml/hr)
+    - D5 0.45% 20k (ml/hr)
+    - D5 1/2NS W/20K  (ml/hr)
+    - D5 1/2 NSS 40kcl (ml/hr)
+    - D5 1/2NS w/ 10K+ (ml/hr)
+    - D5 w/ 150mEq (ml/hr)
+    - D5 ns + 20k (ml/hr)
+    - D5 in 0.9NS with vitamins (ml/hr)
+    - D5 in 0.9NS (ml/hr)
+    - D5 c 40 mEq K+ (ml/hr)
+    - D5 c 40 K+ (ml/hr)
+    - D5 W/ 40K
+    - D5 W (ml/hr)
+    - D5 Normal Saline (ml/hr)
+    - D5 NSS w/ MVI (ml/hr)
+    - D5 w/ 40 mEq K+ (ml/hr)
+    - D5 NSS w/ 20KCL (ml/hr)
+    - D5 NSS
+    - D5 NS w 20K (ml/hr)
+    - D5 NS 40K (ml/hr)
+    - D5 NS 0.2% (ml/hr)
+    - D5 NS +20 K (ml/hr)
+    - D5 NS (ml/hr)
+    - D5 NS  (ml/hr)
+    - D5 NS
+    - D5 NORMAL SALINE (ml/hr)
+    - D5 NORMAL SALINE
+    - D5 1/2NS w/  20KCL (ml/hr)
+    - D5 w/0.45% NS (ml/hr)
+    - D5 w/Acetylcysteine (ml/hr)
+    - D5 with glucagon (mg/hr)
+    - D5-1/2NS + 20KCL (ml/hr)
+    - D5-1/2NS (ml/hr)
+    - D5+MVI (ml/hr)
+    - D5+KLC 40meq (ml/hr)
+    - D5+40KCL (ml/hr)
+    - D5+1/2NSS+MVI+Thiamine+Folic Acid (ml/hr)
+    - D5+1/2 NSS (ml/hr)
+    - D5+0.45NSS (ml/hr)
+    - D5+0.45%NSS40K (ml/hr)
+    - D5+0.45%NS+potphos (ml/hr)
+    - D5+0.45%NS+potphos
+    - D5+.45NS+MVI (ml/hr)
+    - D5+ 0.45% NS (ml/hr)
+    - D5& 0.9NS with MVI (ml/hr)
+    - D5%W (ml/hr)
+    - D5%W
+    - D5%NS (ml/hr)
+    - D5%/0.9%NS (ml/hr)
+    - D5% 0.45%NS (ml/hr)
+    - D5% (ml/hr)
+    - D5 N (ml/hr)
+    - D5 N
+    - D5 NSS (ml/hr)
+    - D5w0.45 NSS (ml/hr)
+    - D5 Electrolye Bag (ml/hr)
+    - D5 1/4 WITH 20KCL (ml/hr)
+    - D5 Electrolye Bag
+    - D5 1/4  (ml/hr)
+    - D5 1/2NSS (ml/hr)
+    - D5 45NS (ml/hr)
+    - D5 1/2nss
+    - D5 45%NS (ml/hr)
+    - D5 1/2NSS MVI (ml/hr)
+    - D5 1/4NS (ml/hr)
+    - D5 1/2NSS w/ MVI (ml/hr)
+    - D5 1/4ns (ml/hr)
+    - D5 40K 1/2NS (ml/hr)
+    - D5 45NS
+    - D5 1/2NS with 40mEq K (ml/hr)
+    - D5 1/2NS w/ 20K  (ml/hr)
+    - D5 1/2NS w/ 40mEq K+ (ml/hr)
+    - D5 1/2NS w/MVI
+    - D5 1/2NS w/MVI (ml/hr)
+    - D5 1/2NS with 20meq Potassium (ml/hr)
+    - D5 1/2nss (ml/hr)
   hirid: []
   mimic:
     - Dextrose 5%
@@ -4055,12 +4561,56 @@ dextrose:
     - Dextrose 30%
   mimic3:
     - D5W
+    - D10W
     - Dextrose 5%
     - Dextrose 50%
     - Dextrose 10%
     - Dextrose 20%
     - Dextrose 40%
     - Dextrose 30%
+    - D5W&Mucomyst
+    - D51/4 w/40meq Kcl
+    - D50
+    - D5W/20GM CA GLU
+    - D50% (50g/100cc
+    - D50.45%NS + 60MQ KCL
+    - D5W/0.9NS with meds
+    - D5W/10GM CAGLUC
+    - D5W/154MEQ NAACETATE
+    - D5LR
+    - D5W/CAGLU 40GMS
+    - D5W/Ca Gluc 20Gm
+    - D5 1/2NS
+    - D5W/amino acid 4.25
+    - D5.45 60K
+    - D50
+    - D5W w/40meq K
+    - D5 LR with 40mEq K
+    - D5NS 40K
+    - D5RL
+    - D5NS
+    - D5RL 20KCL
+    - D5W & 40Gm CaGluc
+    - D5 Normal Saline
+    - D5 Ringers Lact
+    - D5 Aminosyn 3.5
+    - D5W 10%ALCOHOL
+    - D5W w/30mmolNaPhos
+    - D5LR W/40K
+    - D5W 20GMS CA GLUC
+    - D5W 50 meq Ca Acetat
+    - D5W 500ml bolus
+    - D5W Bolus
+    - D5/.45NS
+    - D5/.2NS
+    - D5W flush
+    - D5W w/20gm CaGluc
+    - D5W 15mM Phos/22MEQK
+    - D5W w/ 40gms cagluc
+    - D5LR 40K
+    - D5 0.25%NS 20mEq KCl
+    - D5LR 20KCL
+    - D5 1/4NS
   mimic4:
     - Dextrose 5%
     - Dextrose 50%
@@ -4068,6 +4618,10 @@ dextrose:
     - Dextrose 20%
     - Dextrose 40%
     - Dextrose 30%
+    - D5 1/2NS
+    - D5 1/4NS
+    - D5NS
+    - D5LR
   sicdb: []
 gelofusine:
   blended: 0
@@ -4078,7 +4632,8 @@ gelofusine:
   mimic: []
   mimic3: []
   mimic4: []
-  sicdb: []
+  sicdb:
+    - Gelofusin
 thiamine:
   blended: 19137312
   amsterdam:
@@ -4181,7 +4736,7 @@ thiamine:
     - Thiamin
     - Thiamin+Pyridoxin+Cyanocobalamin
     - Thiaminhydrochlorid
-NaCl:
+sodium chloride:
   blended: 967823
   amsterdam:
     - NaCl 0,45%/Glucose 2,5%
@@ -4221,7 +4776,6 @@ NaCl:
     - POTASSIUM CHLORIDE IN NACL 40 MEQ IN 250 ML (PREMIX)
     - DEXMEDETOMIDINE HCL IN NACL 200 MCG/50ML IV SOLN
     - NaCl 0.9%
-    - DEXTROSE-NACL 5-0.45 % IV SOLN
     - 100 ML  -  METRONIDAZOLE IN NACL 5-0.79 MG/ML-% IV SOLN
     - NaCl 0.9% ADV
     - 0.9% NaCl (ml/hr)
@@ -4240,12 +4794,9 @@ NaCl:
     - 2% NaCl (ml/hr)
     - NaCl 0.9% (ml/hr)
     - 0.9% NACL (ml/hr)
-    - D5/0.45 NaCl (ml/hr)
     - 0.9% nacl
     - 3% Nacl (ml/hr)
     - 3 % NaCl (ml/hr)
-    - d5/0.45% nacl/10K (ml/hr)
-    - D5 0.9% NaCl W 10 mEq KCl (ml/hr)
     - "LEVETIRACETAM-NACL                                                                                                                                                                                                                                             "
     - "HEPARIN SODIUM IN 0.45% NACL                                                                                                                                                                                                                                   "
     - "HEPARIN SODIUM IN 0.9% NACL                                                                                                                                                                                                                                    "
@@ -4254,17 +4805,12 @@ NaCl:
     - 1.8 NaCL (ml/hr)
     - NaCl (ml/hr)
     - NACL c 10%dextrose (ml/hr)
-    - D5 0.2% NaCl/20K (ml/hr)
     - NaCL 0.2% (ml/hr)
-    - Dextrose 5%/NaCl 0.45%
-    - D5/0.9% NaCl (ml/hr)
     - ".45 NaCl (ml/hr)"
     - 0.45% NACL
     - 0.45% NACL (ml/hr)
     - NACL
     - 0.45% NaCl + Sodium Bicarbonate (ml/hr)
-    - D5 0.9% NaCl (ml/hr)
-    - d5 0.45% nacl (ml/hr)
     - NACL 1.8% (ml/hr)
     - 1.8%  NaCl (ml/hr)
     - NaCL 3% (ml/hr)
@@ -4282,17 +4828,9 @@ NaCl:
     - 3 NACL (ml/hr)
     - sterile water with 38.5meq NaCl (ml/hr)
     - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
-    - D5W/.45 NaCL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 75 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
     - NaCL 0.9% Calcium gluconate (ml/hr)
-    - D10W 0.45 NaCl (ml/hr)
-    - D5/0.45% NaCl/40mEq KCL (ml/hr)
-    - D5 NaCl 0.9% (ml/hr)
     - 0.45 NaCL (ml/hr)
     - 0.9 NACL (ml/hr)
-    - D10% /NaCl 0.45% (ml/hr)
     - 3% Hypertonic NaCl (ml/hr)
     - 0.9% NaCl (venous sheath) (ml/hr)
     - 23.4% nacl (ml/hr)
@@ -4484,15 +5022,13 @@ NaCl:
     - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 2600 ml (Unknown)
     - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
     - Other Med 20 Units Sodium Chloride 0.9% 2000 ml (units/hr)
-    - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM
-      PHOSPHATE 30 MMOL (Unknown)
+    - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
     - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
     - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
     - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
     - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
     - Volume (mL)-sodium chloride 0.9 % bolus 100 mL (ml/hr)
-    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL
-      LINE)
+    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
     - Volume (mL)-sodium chloride 0.9 % bolus 125 mL (ml/hr)
     - Volume (mL)-sodium chloride 0.9 % bolus 300 mL (ml/hr)
     - Volume (mL)-sodium chloride 0.9 % bolus 700 mL (ml/hr)
@@ -4557,6 +5093,9 @@ NaCl:
     - NaCl 3% (Hypertonic Saline)
     - NaCl 23.4%
   mimic3:
+    - .45% Normal Saline
+    - Sodium Chloride
+    - D5/.45NS
     - NaCl 0.9%
     - NaCl 0.45%
     - NaCl 3% (Hypertonic Saline)
@@ -4573,6 +5112,49 @@ NaCl:
     - Natriumchlorid Sachet
     - Natriumchlorid10%
     - ZzNatriumchlorid 0,9%
+sodium chloride / glucose:
+  blended: 0
+  amsterdam: []
+  eicu:
+    - D5NSS (ml/hr)
+    - D5 NS w 20K (ml/hr)
+    - D5W c 20K (ml/hr)
+    - DEXTROSE-NACL 5-0.45 % IV SOLN
+    - D5/0.45 NaCl (ml/hr)
+    - d5/0.45% nacl/10K (ml/hr)
+    - D5 0.9% NaCl W 10 mEq KCl (ml/hr)
+    - D5 0.2% NaCl/20K (ml/hr)
+    - Dextrose 5%/NaCl 0.45%
+    - D5/0.9% NaCl (ml/hr)
+    - D5 0.9% NaCl (ml/hr)
+    - d5 0.45% nacl (ml/hr)
+    - D5W/.45 NaCL (ml/hr)
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 75 mL (ml/hr)
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
+    - D10W 0.45 NaCl (ml/hr)
+    - D5/0.45% NaCl/40mEq KCL (ml/hr)
+    - D5 NaCl 0.9% (ml/hr)
+    - D10% /NaCl 0.45% (ml/hr)
+    - DEXTROSE 5%-NACL 0.9%
+    - "DEXTROSE 5% IN NORMAL SALINE IV : 1000 ML BAG"
+    - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
+    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
+    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
+    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
+    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
+    - "DEXTROSE 5%-1/2 NORMAL SALINE IV : 1000 ML BAG"
+    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
+    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
+    - DEXTROSE-NACL 5-0.45 % IV SOLN
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 75 mL (ml/hr)
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
+    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb: []
 polyethylene glycols:
   blended: 948515
   amsterdam:
@@ -4586,7 +5168,7 @@ polyethylene glycols:
   sicdb:
     - Macrogol
     - Macrogol 3350
-KCl:
+potassium chloride:
   blended: 19049105
   amsterdam:
     - Kaliumchloride (KCL)
@@ -5052,6 +5634,8 @@ sodium bicarbonate:
     - Natriumbicarbonaat  8,4%
     - Natriumbicarbonaat capsule
   eicu:
+    - "D5+150meqNaHco3 "
+    - D5 with150MEQ HC03 (ml/hr)
     - " bicarb 2amps (ml/hr)"
     - " D5 W/100meq Bicarb (ml/hr)"
     - " D5 W/100meq Bicarb"
@@ -5577,6 +6161,16 @@ sodium bicarbonate:
     - sodium bicarb IVP
     - sodiumbicarb 100meq
     - soduim bicarbonate
+    - D5W with 3amps NaHC3
+    - D5w 150meq bicab
+    - D51/4NS+100MeqNaHCO3
+    - D5 WITH 3 AMPS BICAB
+    - D5W 150meq NAHCO3
+    - D5W & 150 MEQ NAHCO3
+    - D5 0.45N/S+NAHCO3
+    - D5W +3 Amps NaHco3
+    - D5W +NaHcO3
+    - D5W W/ NAHCO3 150MEQ
   mimic4:
     - sodium bic
     - sodium bicarb
@@ -5587,7 +6181,7 @@ sodium bicarbonate:
   sicdb:
     - Natriumhydrogencarbonat
     - Natrium hydrogencarbonat
-Lactated Ringers:
+Lactated Ringer's:
   blended: 0
   amsterdam:
     - Ri-Lac (Ringers lactaat)
@@ -5596,17 +6190,59 @@ Lactated Ringers:
     - LR (ml/hr)
     - LR  (ml/hr)
     - Lactated Ringers (ml/hr)
+    - 1000 ML  -  LACTATED RINGERS IV SOLN
+    - "1000 ML : LACTATED RINGERS IV SOLN"
+    - "1000 ML BAG : LACTATED RINGERS IV SOLP"
+    - LACTATE RINGERS (ml/hr)
+    - LACTATED RINGER  (ml/hr)
+    - "LACTATED RINGER'S 1,000 ML BAG"
+    - "LACTATED RINGER'S 1,000 ML BAG."
+    - LACTATED RINGERSf
+    - LACTATED RINGERS (ml/hr)
+    - LACTATED RINGERS 1000 ML LVP
+    - "LACTATED RINGERS IV : 1000 ML BAG"
+    - LACTATED RINGERS IV SOLN
+    - LACTATED RINGERS IV SOLN BOLUS
+    - LACTATED RINGERS IV SOLP
+    - Lac Ringers (ml/hr)
+    - Lactated RIngers (ml/hr)
+    - Lactated Ringer (ml/hr)
+    - Lactated Ringer's (ml/hr)
+    - Lactated Ringers
+    - Lactated Ringers  (ml/hr)
+    - Lactated Ringers (ml/hr)
+    - Lactated Ringers Injection
+    - "Lactated Ringers Injection 1,000 mL"
+    - Lactated Ringers x1L (ml/hr)
+    - Lactated ringer (ml/hr)
+    - Lactated ringers
+    - Lactated ringers (ml/hr)
+    - "RINGERS SOLUTION,LACTATED"
+    - "Volume (mL)-lactated ringers bolus 1,000 mL"
+    - "Volume (mL)-lactated ringers bolus 1,000 mL (ml/hr)"
+    - Volume (mL)-lactated ringers bolus 300 mL (ml/hr)
+    - Volume (mL)-lactated ringers bolus 500 mL (ml/hr)
+    - Volume (mL)-lactated ringers bolus 750 mL (ml/hr)
+    - lactated ringer's (ml/hr)
+    - lactated ringers (ml/hr)
   hirid: []
   mimic: []
   mimic3:
     - LR
     - Lactated Ringers
+    - LR BOLUS
+    - LR Bolus
+    - LR bolus
+    - lr bolus
+    - OR LR
   mimic4:
     - LR
   sicdb: []
+# BLOOD PRODUCTS
 Packed Red Blood Cells:
   blended: 0
-  amsterdam: []
+  amsterdam:
+    - Gefiltreerde Ery's
   eicu:
     - RBCs (ml/hr)
     - pRBC
@@ -5615,20 +6251,124 @@ Packed Red Blood Cells:
     - PRBC (ml/hr)
     - PRBCs (ml/hr)
     - PRBC's (ml/hr)
+    - packed cells (ml/hr)
+    - packed red blood cells (ml/hr)
+    - Packed RBCs (ml/hr)
+    - Volume-Transfuse RBC
+    - Volume-Transfuse RBC (ml/hr)
+    - Volume-Transfuse Unmatched O-Neg RBC (ml/hr)
   hirid:
     - Intravenous blood transfusion of packed cells
   mimic: []
   mimic3:
+    - Pre admit PRBC
     - PRBC's
     - Packed RBC's
     - Packed Red Blood Cells
     - OR Packed RBC's
+    - OR Packed RBC Intake
+    - PACU Packed RBC Intake
+    - packed cells pacu
   mimic4:
+    - OR Packed RBC Intake
+    - PACU Packed RBC Intake
     - Packed Red Blood Cells
   sicdb: []
+Fresh Frozen Plasma:
+  blended: 0
+  amsterdam:
+    - Fresh Frozen Plasma
+  eicu:
+    - FFP
+    - FFP (ml/hr)
+    - plasma (ml/hr)
+    - Fresh Frozen Plasma (ml/hr)
+    - Plasma (ml/hr)
+    - Volume-Transfuse fresh frozen plasma
+    - Volume-Transfuse fresh frozen plasma (ml/hr)
+    - fresh frozen plasma (ml/hr)
+  hirid:
+    - Transfusion of plasma (FFP)
+  mimic: []
+  mimic3:
+    - Pre admit FFP
+    - FFP
+    - Fresh Frozen Plasma
+    - OR FFP
+    - OR FFP Intake
+  mimic4:
+    - Fresh Frozen Plasma
+  sicdb: []
+Platelets:
+  blended: 0
+  amsterdam:
+    - Thrombocyten suspensie
+  eicu:
+    - Volume-Transfuse Pheresed Platelets
+    - Volume-Transfuse Pheresed Platelets (ml/hr)
+    - Volume-Transfuse pheresed platelets
+    - Volume-Transfuse pheresed platelets (ml/hr)
+    - Volume-Transfuse platelet pheresis (ml/hr)
+    - plat (ml/hr)
+    - platelets (ml/hr)
+    - plt (ml/hr)
+    - plts (ml/hr)
+    - PLATELETS (ml/hr)
+    - PLT (ml/hr)
+    - PLTS (ml/hr)
+    - PLTs (ml/hr)
+    - Platelet (ml/hr)
+    - Platelets
+    - Platelets
+    - Platelets  (ml/hr)
+    - Platelets (ml/hr)
+    - Platlets (ml/hr)
+  hirid:
+    - Platelet transfusion
+  mimic: []
+  mimic3:
+    - OR Platelet Intake
+    - OR Platelets
+    - PACU Platelet Intake
+    - Platelets
+  mimic4:
+    - Platelets
+  sicdb: []
+Cryoprecipitate:
+  blended: 0
+  amsterdam:
+    - Cryoprecipitate
+  hirid:
+    - Cryoprecipitate
+  eicu:
+    - cryo (ml/hr)
+    - CRYO (ml/hr)
+    - Cryo (ml/hr)
+    - Cryoprecipitate (ml/hr)
+  mimic: []
+  mimic3:
+    - Cryoprecipitate
+    - OR CRYO
+    - OR Cryo
+    - OR Cryocipretate
+    - OR Cryoprecipitate
+    - OR Cryoprecipitate Intake
+    - OR cryo
+    - cryo
+    - cryo or
+    - or cryo
+    - or cryoprecipate
+  mimic4:
+    - Cryoprecipitate
+    - OR Cryoprecipitate Intake
+  sicdb: []
+# NUTRITION
 Parenteral Nutrition:
   blended: 0
-  amsterdam: []
+  amsterdam:
+    - Nutriflex  48/150
+    - Nutriflex Basal 32/125
+    - Nutriflex Lipid Plus
   eicu:
     - TPN
     - TPN (ml/hr)
@@ -5650,6 +6390,22 @@ Enteral Nutrition:
   amsterdam:
     - Nutrison Protein Plus
     - Nutrison Standaard
+    - Nutrison Concentrated
+    - Nutrison Concentrated 40 oud
+    - Nutrison Concentrated oud
+    - Nutrison Energy
+    - Nutrison Energy Multi Fibre
+    - Nutrison Energy oud
+    - Nutrison Multi Fibre
+    - Nutrison Multi Fibre oud
+    - Nutrison Peptisorb
+    - Nutrison Protein Plus
+    - Nutrison Protein Plus Multi Fibre
+    - Nutrison Proteïn Plus oud
+    - Nutrison Soya
+    - Nutrison Standaard
+    - Nutrison Standaard oud
+    - Nutrison Sterilized water
   eicu:
     - EN
     - EN (ml/hr)
@@ -5661,20 +6417,4 @@ Enteral Nutrition:
   mimic3:
     - EN
   mimic4: []
-  sicdb: []
-Fresh Frozen Plasma:
-  blended: 0
-  amsterdam:
-    - Fresh Frozen Plasma
-  eicu:
-    - FFP
-    - FFP (ml/hr)
-  hirid:
-    - Fresh Frozen Plasma
-  mimic: []
-  mimic3:
-    - FFP
-    - Fresh Frozen Plasma
-  mimic4:
-    - Fresh Frozen Plasma
   sicdb: []
