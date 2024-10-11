@@ -363,5 +363,74 @@ class UMCdbPaths(GlobalVars):
             self.umcdb_mapping_path + "umcdb_drugitems_drug_class.yaml"
         )
 
+        # UMCdb LOINC mapping paths
+        self.umcdb_loinc_mapping_path = (
+            self.mapping_path + "AMSTEL_data_mappings/"
+        )
+        self.admissions_gender_mapping_path = (
+            self.umcdb_loinc_mapping_path + "admissions_gender.usagi.csv"
+        )
+        self.admissions_origin_mapping_path = (
+            self.umcdb_loinc_mapping_path + "admissions_origin.usagi.csv"
+        )
+        self.admissions_specialty_mapping_path = (
+            self.umcdb_loinc_mapping_path + "admissions_specialty.usagi.csv"
+        )
+        self.drugitems_administeredunit_mapping_path = (
+            self.umcdb_loinc_mapping_path
+            + "drugitems_administeredunit.usagi.csv"
+        )
+        self.drugitems_item_mapping_path = (
+            self.umcdb_loinc_mapping_path + "drugitems_item.usagi.csv"
+        )
+        self.drugitems_ordercategory_mapping_path = (
+            self.umcdb_loinc_mapping_path + "drugitems_ordercategory.usagi.csv"
+        )
+        self.freetextitems_item_mapping_path = (
+            self.umcdb_loinc_mapping_path + "freetextitems_item.usagi.csv"
+        )
+        self.freetextitems_value_mapping_path = (
+            self.umcdb_loinc_mapping_path + "freetextitems_value.usagi.csv"
+        )
+        self.listitems_item_mapping_path = (
+            self.umcdb_loinc_mapping_path + "listitems_item.usagi.csv"
+        )
+        self.listitems_value_mapping_path = (
+            self.umcdb_loinc_mapping_path + "listitems_value.usagi.csv"
+        )
+        self.numericitems_lab_mapping_path = (
+            self.umcdb_loinc_mapping_path + "numericitems_lab.usagi.csv"
+        )
+        self.numericitems_other_mapping_path = (
+            self.umcdb_loinc_mapping_path + "numericitems_other.usagi.csv"
+        )
+        self.numericitems_tag_mapping_path = (
+            self.umcdb_loinc_mapping_path + "numericitems_tag.usagi.csv"
+        )
+        self.numericitems_unit_mapping_path = (
+            self.umcdb_loinc_mapping_path + "numericitems_unit.usagi.csv"
+        )
+        self.procedureorderitems_item_mapping_path = (
+            self.umcdb_loinc_mapping_path + "procedureorderitems_item.usagi.csv"
+        )
+        self.processitems_item_mapping_path = (
+            self.umcdb_loinc_mapping_path + "processitems_item.usagi.csv"
+        )
+        self.providers_mapping_path = (
+            self.umcdb_loinc_mapping_path + "providers.usagi.csv"
+        )
+        self.reason_for_admission_mapping_path = (
+            self.umcdb_loinc_mapping_path + "reason_for_admission.usagi.csv"
+        )
+        self.source_to_concept_map_mapping_path = (
+            self.umcdb_loinc_mapping_path + "source_to_concept_map.csv"
+        )
+        self.source_to_value_map_mapping_path = (
+            self.umcdb_loinc_mapping_path + "source_to_value_map.csv"
+        )
+        self.specimen_source_mapping_path = (
+            self.umcdb_loinc_mapping_path + "specimen_source.usagi.csv"
+        )
+
 
 # endregion

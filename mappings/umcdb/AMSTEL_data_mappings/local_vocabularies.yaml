@@ -1,0 +1,101 @@
+# This `local_vocabulary.yaml` file contains the definitions for creating the
+# source_to_concept_map table from the OHDSI Usagi mapping files.
+#
+# Unfortunately, the current CDM does not contain a standardized way to store
+# the additional mapping types (e.g. MAPS_TO, MAPS_TO_VALUE, MAPS_TO_TYPE,
+# MAPS_TO_UNIT)
+# in one of the standard tables.
+
+admissions_gender:
+  MAPS_TO: AUMC Gender
+
+admissions_origin:
+  MAPS_TO: AUMC Origin
+
+admissions_destination:
+  MAPS_TO: AUMC Destination
+
+admissions_specialty:
+  MAPS_TO: AUMC Specialty
+
+drugitems_administeredunit:
+  MAPS_TO: AUMC Unit
+
+drugitems_item:
+  MAPS_TO: AUMC Drug
+  MAPS_TO_TYPE: AUMC Drug Route
+
+drugitems_ordercategory:
+  MAPS_TO: AUMC Route
+
+freetextitems_item:
+  MAPS_TO: AUMC Text
+
+freetextitems_value:
+  MAPS_TO: AUMC Text Value
+
+# Listitems contain categorical observations/measurements. Some concepts don't
+# have a corresponding concept in the MEAS VALUE domain, and are better handled
+# as a DEVICE, PROCEDURE or CONDITION.
+listitems_item:
+  MAPS_TO: AUMC List
+  MAPS_TO_TYPE: AUMC Qualifier
+
+# while the distinction between MEASUREMENT and OBSERVATION is largely semantic
+# the current CDM requires value_as_concept_id from the 'Meas Value' domain for
+# records in MEASUREMENT
+listitems_meas_value:
+  MAPS_TO: AUMC Meas Value
+  MAPS_TO_UNIT: AUMC List Unit
+
+# all other observation in listitem can be considered either OBSERVATION,
+# DEVICE, or PROCEDURE
+listitems_obs_value:
+  MAPS_TO: AUMC Obs Value
+  MAPS_TO_UNIT: AUMC List Unit
+  MAPS_TO_TYPE: AUMC Qualifier
+
+listitems_device:
+  MAPS_TO: AUMC Device
+
+listitems_procedure:
+  MAPS_TO: AUMC Procedure
+
+listitems_condition:
+  MAPS_TO: AUMC Condition
+
+numericitems_lab:
+  MAPS_TO: AUMC Laboratory
+  MAPS_TO_UNIT: AUMC Numeric Unit
+
+# Some concept in the source database have missing units (e.g. 'None' or
+# 'Geen'). During the mapping process in Usage these have been manually
+# added after running the DataQualityDashboard checks.
+# The ETL has been modified to first use the unit from `AUMC Numeric Unit`
+# and otherwise the (default) mapped unit from `AUMC Unit`
+numericitems_other:
+  MAPS_TO: AUMC Numeric
+  MAPS_TO_UNIT: AUMC Numeric Unit
+
+numericitems_tag:
+  MAPS_TO: AUMC Tag
+
+numericitems_unit:
+  MAPS_TO: AUMC Unit
+
+procedureorderitems_item:
+  MAPS_TO: AUMC Procedure Order
+  MAPS_TO_TYPE: AUMC Qualifier
+
+processitems_item:
+  MAPS_TO: AUMC Process
+  MAPS_TO_VALUE: AUMC Anatomic Site
+
+providers:
+  MAPS_TO: AUMC Provider
+
+reason_for_admission:
+  MAPS_TO: AUMC Diagnosis
+
+specimen_source:
+  MAPS_TO: AUMC Specimen Source
