@@ -1,0 +1,4 @@
+sourceCode,sourceName,sourceFrequency,sourceAutoAssignedConceptIds,matchScore,mappingStatus,equivalence,statusSetBy,statusSetOn,conceptId,conceptName,domainId,mappingType,comment,createdBy,createdOn,assignedReviewer
+,,496,,0.00,APPROVED,EQUAL,Patrick Thoral,1689116556241,0,Unmapped,,MAPS_TO,,,0,
+Vrouw,Woman,7875,,0.04,APPROVED,EQUAL,Patrick Thoral,1685232007842,8532,FEMALE,Gender,MAPS_TO,,Patrick Thoral,1685231997064,
+Man,man,14735,,0.11,APPROVED,EQUAL,Patrick Thoral,1685232011175,8507,MALE,Gender,MAPS_TO,,<auto>,1685231963760,
