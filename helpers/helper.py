@@ -23,6 +23,10 @@ class GlobalHelpers:
         mapping = self.load_mapping(path)
         return list(mapping.keys())
 
+    def load_mapping_true_keys(self, path: str) -> list:
+        mapping = self.load_mapping(path)
+        return list(k for k, v in mapping.items() if v)
+
     def load_many_to_one_mapping(self, path: str) -> dict:
         mapping = self.load_mapping(path)
         return {v: k for k, vs in mapping.items() for v in vs}
@@ -36,7 +40,9 @@ class GlobalHelpers:
             return_dict.update({v: key for v in value[database]})
         return return_dict
 
-    def _convert_time_to_days_float(self, data, col_name, base_unit="minutes"):
+    def _convert_time_to_days_float(
+        self, data: pl.LazyFrame, col_name: str, base_unit: str = "minutes"
+    ):
         assert base_unit in ["hours", "minutes", "seconds"]
         if base_unit == "hours":
             divided_by = 24
@@ -50,8 +56,8 @@ class GlobalHelpers:
         )
 
     def _convert_time_to_seconds_float(
-        self, data, col_name, base_unit="minutes"
-    ):
+        self, data: pl.LazyFrame, col_name: str, base_unit: str = "minutes"
+    ) -> pl.LazyFrame:
         assert base_unit in ["hours", "minutes", "seconds"]
         if base_unit == "hours":
             multplicator = 60 * 60
@@ -148,6 +154,7 @@ class GlobalVars(GlobalHelpers):
         # append globally configured paths as class attributes
         self.config_path = config_path
         self.relevant_values_path = config_path + "RELEVANT_VALUES/"
+        self.relevant_OMOP_values_path = config_path + "RELEVANT_VALUES_OMOP/"
         self.mapping_path = mapping_path
         self.precalc_path = tempfiles_path
 
@@ -200,16 +207,16 @@ class GlobalVars(GlobalHelpers):
         )
 
         # Select relevant variables
-        self.relevant_lab_values = self.load_mapping_keys(
+        self.relevant_lab_values = self.load_mapping_true_keys(
             self.relevant_values_path + "RELEVANT_LABS.yaml"
         )
-        self.relevant_respiratory_values = self.load_mapping_keys(
+        self.relevant_respiratory_values = self.load_mapping_true_keys(
             self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
         )
-        self.relevant_vital_values = self.load_mapping_keys(
+        self.relevant_vital_values = self.load_mapping_true_keys(
             self.relevant_values_path + "RELEVANT_VITALS.yaml"
         )
-        self.relevant_intakeoutput_values = self.load_mapping_keys(
+        self.relevant_intakeoutput_values = self.load_mapping_true_keys(
             self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
         )
 
@@ -218,4 +225,66 @@ class GlobalVars(GlobalHelpers):
             + self.relevant_respiratory_values
             + self.relevant_vital_values
             + self.relevant_intakeoutput_values
+        )
+
+        self.relevant_lab_values_pre_conversion = [
+            "base_excess",  # for base_excess conversion in eICU
+            "base_deficit",  # for base_excess conversion in eICU
+            "Temperature Fahrenheit",  # for temperature conversion in MIMIC
+            "Temperature Celsius",  # for temperature conversion in MIMIC
+            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
+            "Bilirubin.total [Mass/volume] in Serum or Plasma",
+            "Calcium [Mass/volume] in Blood",
+            "Calcium.ionized [Mass/volume] in Blood",
+            "Cholesterol [Moles/volume] in Serum or Plasma",
+            "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
+            "Cholesterol in LDL [Moles/volume] in Serum or Plasma",
+            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+            "Cortisol [Moles/volume] in Serum or Plasma",
+            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+            "Creatinine [Moles/volume] in Blood",
+            "Creatinine [Moles/volume] in Serum or Plasma",
+            "Creatinine [Moles/volume] in Urine",
+            "Glucose [Moles/volume] in Blood",
+            "Glucose [Moles/volume] in Serum or Plasma",
+            "Hemoglobin [Moles/volume] in Blood",
+            "Iron [Mass/volume] in Serum or Plasma",
+            "Iron binding capacity [Mass/volume] in Serum or Plasma",
+            "Lymphocytes [#/volume] in Blood",
+            "Magnesium [Mass/volume] in Serum or Plasma",
+            "MCHC [Moles/volume]",
+            "Phosphate [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+            "Triglyceride [Moles/volume] in Blood",
+            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
+            "Urea [Mass/volume] in Serum or Plasma",
+            "Urea nitrogen [Mass/volume] in Serum or Plasma",
+        ]
+
+        self.all_values = (
+            self.relevant_lab_values_pre_conversion + self.all_relevant_values
+        )
+
+        # Select relevant OMOP variables
+        self.relevant_OMOP_lab_values = self.load_mapping_true_keys(
+            self.relevant_OMOP_values_path + "RELEVANT_LABS.yaml"
+        )
+        self.relevant_OMOP_respiratory_values = self.load_mapping_true_keys(
+            self.relevant_OMOP_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
+        )
+        self.relevant_OMOP_vital_values = self.load_mapping_true_keys(
+            self.relevant_OMOP_values_path + "RELEVANT_VITALS.yaml"
+        )
+        self.relevant_OMOP_intakeoutput_values = self.load_mapping_true_keys(
+            self.relevant_OMOP_values_path
+            + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
+        )
+
+        self.all_relevant_OMOP_values = (
+            self.relevant_OMOP_lab_values
+            + self.relevant_OMOP_respiratory_values
+            + self.relevant_OMOP_vital_values
+            + self.relevant_OMOP_intakeoutput_values
         )

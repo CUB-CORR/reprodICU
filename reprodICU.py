@@ -6,6 +6,8 @@
 # It can be called with command line arguments to specify the source datasets to be extracted.
 
 import argparse
+import os
+import polars as pl
 import yaml
 
 # import harmonizing functions
@@ -18,16 +20,58 @@ from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
 # import extra functions for cleaning, winsorizing, etc.
+from helpers.X1_clean.X1_clean_patient_information import (
+    PatientInformationCleaner,
+)
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
 from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
 from helpers.X3_impute.X3_impute_patient_information import (
     PatientInformationImputer,
 )
+from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 
 
 def load_mapping(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
+
+
+def create_overview(save_path: str) -> None:
+    """Create an overview of the data extracted and harmonized."""
+    # Create DataFrame to store the overview, initialize columns for each dataset
+    overview = pl.scan_parquet(
+        save_path + "patient_information.parquet"
+    ).select(["Global ICU Stay ID", "Source Database"])
+
+    # Add columns for each table
+    tables = [
+        "diagnoses_imputed",
+        # "procedures",
+        "medications",
+        "timeseries_vitals",
+        "timeseries_labs",
+        "timeseries_respiratory",
+        "timeseries_intakeoutput",
+    ]
+
+    for table in tables:
+        # print(f"Adding {table} to overview...")
+        overview = (
+            overview.join(
+                pl.scan_parquet(save_path + table + ".parquet")
+                .select("Global ICU Stay ID", pl.nth(1))
+                .group_by("Global ICU Stay ID")
+                .len()
+                .rename({"len": table}),
+                on="Global ICU Stay ID",
+                how="left",
+            )
+            .collect()
+            .lazy()
+        )
+
+    # Save the overview to a parquet file
+    overview.sink_parquet(save_path + "overview.parquet")
 
 
 class reprodICUPaths:
@@ -113,6 +157,7 @@ if __name__ == "__main__":
         patient_info_harmonizer = PatientInformationHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
+        patient_info_cleaner = PatientInformationCleaner(paths=paths)
         patient_info_imputer = PatientInformationImputer(paths=paths)
 
         # Winsorize the patient information
@@ -122,6 +167,8 @@ if __name__ == "__main__":
         ]
         (
             patient_info_harmonizer.harmonize_patient_information()
+            .pipe(patient_info_cleaner.clean_patient_information)
+            .pipe(patient_info_cleaner.remove_bad_patient_information)
             .pipe(
                 X2_Winsorizer.winsorize_clip_lower_0_quantiles,
                 columns=columns_to_winsorize,
@@ -132,13 +179,15 @@ if __name__ == "__main__":
         )
 
         # Impute the patient information
-        patient_info_imputer.impute_patient_IDs(
-            data=pl.scan_parquet(save_path + "patient_information.parquet")
-        ).pipe(
-            patient_info_imputer.impute_patient_anthropometrics,
-            n_neighbors=5,
-        ).collect(streaming=True).write_parquet(
-            save_path + "patient_information_imputed.parquet"
+        (
+            pl.scan_parquet(save_path + "patient_information.parquet")
+            .pipe(patient_info_imputer.impute_patient_IDs)
+            .pipe(
+                patient_info_imputer.impute_patient_anthropometrics,
+                n_neighbors=5,
+            )
+            .collect(streaming=True)
+            .write_parquet(save_path + "patient_information_imputed.parquet")
         )
 
     if "diagnoses" in tables:
@@ -185,6 +234,7 @@ if __name__ == "__main__":
         timeseries_harmonizer = TimeseriesHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
+        timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=args.DEMO)
         print("reprodICU - Splitting timeseries...")
         # Default paths are used for saving the timeseries data
         # vitals -> timeseries_vitals.parquet
@@ -218,6 +268,18 @@ if __name__ == "__main__":
             .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
         )
 
+        # # Impute the timeseries data
+        # print("reprodICU - Imputing timeseries data...")
+        # # Impute the vitals data
+        # vitals = pl.scan_parquet(save_path + "timeseries_vitals.parquet")
+        # (
+        #     vitals.pipe(
+        #         timeseries_imputer.impute_timeseries,
+        #         resolution_in_seconds=300,
+        #         keep_preadmission_data=True,
+        #     )
+        # )
+
     else:
         print("reprodICU - No tables selected.")
         print("reprodICU - Make sure to select at least one table to build.")
@@ -225,6 +287,10 @@ if __name__ == "__main__":
         print(
             "reprodICU - patient_information, diagnoses, procedures, medications, timeseries."
         )
+
+    # Create an overview of the data extracted and harmonized
+    print("reprodICU - Creating overview...")
+    create_overview(save_path)
 
     print("reprodICU - Done.")
 

@@ -28,9 +28,7 @@ class HiRIDProcessor(HiRIDExtractor):
     def process_timeseries(self) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "HiRID_B_timeseries.parquet"):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "HiRID_B_timeseries.parquet"
-            )
+            return pl.scan_parquet(self.precalc_path + "HiRID_B_timeseries.parquet")
 
         print("HiRID   - Processing time series data...")
 
@@ -82,15 +80,13 @@ class HiRIDProcessor(HiRIDExtractor):
                     values="value",
                     aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
                 )
+                # Convert the wide lab values to the correct units
+                .pipe(self.convert._convert_wide_lab_values)
             )
 
             # Drop empty rows
-            droplist = list(
-                set(timeseries.collect_schema().names()) - set(self.index_cols)
-            )
-            timeseries = timeseries.pipe(
-                self.helpers.dropna, "all", droplist, False
-            ).unique()
+            droplist = list(set(timeseries.collect_schema().names()) - set(self.index_cols))
+            timeseries = timeseries.pipe(self.helpers.dropna, "all", droplist, False).unique()
 
             # Append the data to the DataFrame
             timeseries_processed = pl.concat(
@@ -99,9 +95,7 @@ class HiRIDProcessor(HiRIDExtractor):
             )
 
         # Save the preprocessed data
-        timeseries_processed.sink_parquet(
-            self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
-        )
+        timeseries_processed.sink_parquet(self.precalc_path + "HiRID_B_timeseries_unsorted.parquet")
         # NOTE: if process stops due to insufficient memory, use the following
         # lines instead within a terminal at the precalc_path:
         # pl.scan_parquet("HiRID_B_timeseries_unsorted.parquet").sort(
@@ -110,9 +104,7 @@ class HiRIDProcessor(HiRIDExtractor):
         timeseries = pl.scan_parquet(
             self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
         ).sort(self.index_cols)
-        timeseries.sink_parquet(
-            self.precalc_path + "HiRID_B_timeseries.parquet"
-        )
+        timeseries.sink_parquet(self.precalc_path + "HiRID_B_timeseries.parquet")
         return timeseries
 
     # endregion
@@ -125,22 +117,15 @@ class HiRIDConverter(UnitConverter):
 
     # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
-        self, data, labelcol: str = "variableid", valuecol: str = "value"
+        self, data: pl.LazyFrame, labelcol: str = "variableid", valuecol: str = "value"
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the HiRID dataset.
         """
 
         # Convert the lab values to the correct units.
-        (
+        return (
             data.pipe(
-                self.convert_absolute_count_to_relative,
-                itemid="Lymphocytes [#/volume] in Blood",
-                total_itemid="Leukocytes [#/volume] in Blood",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
                 self.convert_urea_nitrogen_from_urea,
                 itemid_urea="Urea [Moles/volume] in Venous blood",
                 itemid_BUN="Urea nitrogen [Moles/volume] in Serum or Plasma",
@@ -181,7 +166,6 @@ class HiRIDConverter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Lymphocytes [#/volume] in Blood": "Lymphocytes/100 leukocytes in Blood",
                         "Creatinine [Moles/volume] in Blood": "Creatinine [Mass/volume] in Blood",
                         "Glucose [Moles/volume] in Serum or Plasma": "Glucose [Mass/volume] in Blood",
                     }
@@ -189,7 +173,20 @@ class HiRIDConverter(UnitConverter):
             )
         )
 
-        return data
+    def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Convert the lab values of the HiRID dataset.
+        """
+
+        return data.pipe(
+            self.convert_absolute_count_to_relative,
+            itemcol="Lymphocytes [#/volume] in Blood",
+            total_itemcol="Leukocytes [#/volume] in Blood",
+        ).rename(
+            {
+                "Lymphocytes [#/volume] in Blood": "Lymphocytes/100 leukocytes in Blood",
+            }
+        )
 
 
 # endregion

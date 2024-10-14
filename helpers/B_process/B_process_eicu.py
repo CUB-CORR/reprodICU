@@ -522,14 +522,17 @@ class EICUConverter(UnitConverter):
 
     # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
-        self, data, labelcol: str = "labname", valuecol: str = "labresult"
+        self,
+        data: pl.LazyFrame,
+        labelcol: str = "labname",
+        valuecol: str = "labresult",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the eICU dataset.
         """
 
         # Convert the lab values to the correct units.
-        (
+        return (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
                 itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",

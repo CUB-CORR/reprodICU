@@ -165,14 +165,17 @@ class UMCdbConverter(UnitConverter):
 
     # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
-        self, data, labelcol: str = "variableid", valuecol: str = "value"
+        self,
+        data: pl.LazyFrame,
+        labelcol: str = "variableid",
+        valuecol: str = "value",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the UMCdb dataset.
         """
 
         # Convert the lab values to the correct units.
-        (
+        return (
             data.pipe(
                 self.convert_ratio_to_percentage,
                 itemid="Hematocrit [Volume Fraction] of Blood",
@@ -275,8 +278,6 @@ class UMCdbConverter(UnitConverter):
                 )
             )
         )
-
-        return data
 
 
 # endregion
