@@ -216,9 +216,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Calculate ICU stay sequence number
             .sort(self.person_id_col, "INTIME")
             .with_columns(
-                pl.int_range(pl.len())
-                .over(self.person_id_col)
-                .alias(self.icu_stay_seq_num_col)
+                (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
+                    self.icu_stay_seq_num_col
+                )
             )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
@@ -232,28 +232,26 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.mortality_icu_col)
             )
             .select(
-                [
-                    self.icu_stay_id_col,
-                    self.hospital_stay_id_col,
-                    self.person_id_col,
-                    self.icu_stay_seq_num_col,
-                    self.gender_col,
-                    self.age_col,
-                    self.height_col,
-                    self.weight_col,
-                    self.ethnicity_col,
-                    self.pre_icu_length_of_stay_col,
-                    self.icu_length_of_stay_col,
-                    self.mortality_hosp_col,
-                    self.mortality_icu_col,
-                    self.mortality_after_col,
-                    self.admission_type_col,
-                    self.specialty_col,
-                    self.admission_loc_col,
-                    self.unit_type_col,
-                    self.care_site_col,
-                    self.discharge_loc_col,
-                ]
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+                self.icu_stay_seq_num_col,
+                self.gender_col,
+                self.age_col,
+                self.height_col,
+                self.weight_col,
+                self.ethnicity_col,
+                self.pre_icu_length_of_stay_col,
+                self.icu_length_of_stay_col,
+                self.mortality_hosp_col,
+                self.mortality_icu_col,
+                self.mortality_after_col,
+                self.admission_type_col,
+                self.specialty_col,
+                self.admission_loc_col,
+                self.unit_type_col,
+                self.care_site_col,
+                self.discharge_loc_col,
             )
         )
 
@@ -325,29 +323,27 @@ class MIMIC3Extractor(MIMIC3Paths):
         }
 
         KEEPIDS = [*ITEMIDS.keys()]
-        KEEPITEMS = [*ITEMIDS.values()]
 
         height_weight = (
             pl.scan_csv(self.chartevents_path)
             .select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
             # Rename columns for consistency
             .rename({"ICUSTAY_ID": self.icu_stay_id_col})
+            .filter(pl.col("ITEMID").is_in(KEEPIDS))
             .join(
                 icustays.select(self.icu_stay_id_col, "INTIME"),
                 on=self.icu_stay_id_col,
-                how="outer",
+                how="left",
             )
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("ITEMID").replace_strict(ITEMIDS, default=None),
             )
-            .drop_nulls("ITEMID")
             .filter(
                 (pl.col("CHARTTIME") - pl.col("INTIME")).le(
                     pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
-                ),
-                pl.col("ITEMID").is_in(KEEPITEMS),
+                )
             )
             .drop("INTIME", "CHARTTIME")
             .with_columns(
@@ -371,7 +367,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 index=self.icu_stay_id_col,
                 on="ITEMID",
                 values="VALUENUM",
-                aggregate_function="max",  # NOTE: -> or mean?
+                aggregate_function="mean",  # NOTE: -> or mean?
             )
             .select([self.icu_stay_id_col, self.weight_col, self.height_col])
             .cast({self.weight_col: float, self.height_col: float})
@@ -388,7 +384,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
     # region TS helper
     # make available the common processing steps for the MIMIC-III timeseries
-    def extract_timeseries_helper(self, data) -> pl.LazyFrame:
+    def extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         IDs = self.extract_patient_IDs()
 
         return (
@@ -398,13 +394,11 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET")
             )
             .drop("CHARTTIME", "INTIME")
-            .with_columns(
-                pl.duration(days=pl.col(self.icu_length_of_stay_col)).alias(
-                    self.icu_length_of_stay_col
-                ),
-            )
             .filter(
-                (pl.col("OFFSET") < pl.col(self.icu_length_of_stay_col))
+                (
+                    pl.col("OFFSET")
+                    < pl.duration(days=pl.col(self.icu_length_of_stay_col))
+                )
                 & (
                     pl.col("OFFSET")
                     > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
@@ -428,72 +422,140 @@ class MIMIC3Extractor(MIMIC3Paths):
         vital_names_mapping = self.helpers.load_mapping(
             self.vitals_mapping_path
         )
-
-        d_items = pl.scan_csv(self.d_items_path)
-        chartevents = (
-            pl.scan_csv(self.chartevents_path)
-            # Rename columns for consistency
-            .rename(
-                {
-                    "HADM_ID": self.hospital_stay_id_col,
-                }
+        d_items = (
+            pl.scan_csv(self.d_items_path)
+            .select("ITEMID", "LABEL")
+            .with_columns(
+                pl.col("LABEL").replace(vital_names_mapping, default=None)
+            )
+            # Filter for names of interest
+            .filter(
+                pl.col("LABEL").is_not_null(),
+                pl.col("LABEL").is_in(self.all_values),
             )
         )
 
-        return (
-            chartevents.select(
-                [self.hospital_stay_id_col, "ITEMID", "CHARTTIME", "VALUENUM"]
+        meas_chartevents_main_data = (
+            pl.scan_csv(self.meas_chartevents_main_path)
+            .select("itemid (omop_source_code)", "label", "omop_concept_name")
+            .with_columns(
+                pl.when(pl.col("label") == "Temperature Celsius")
+                .then(pl.lit("Temperature"))
+                .otherwise(pl.col("omop_concept_name"))
+                .alias("omop_concept_name")
             )
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
+            .drop("label")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "ITEMID",
+                    "omop_concept_name": "LABEL",
+                }
+            )
+            .with_columns(
+                pl.col("LABEL").replace(
+                    {
+                        "Systolic blood pressure": "Invasive systolic arterial pressure",
+                        "Diastolic blood pressure": "Invasive diastolic arterial pressure",
+                        "Mean blood pressure": "Invasive mean arterial pressure",
+                        "Systolic blood pressure by Noninvasive": "Non-invasive systolic arterial pressure",
+                        "Diastolic blood pressure by Noninvasive": "Non-invasive diastolic arterial pressure",
+                        "Mean blood pressure by Noninvasive": "Non-invasive mean arterial pressure",
+                        "Glasgow coma score verbal": "Glasgow Coma Score verbal",
+                        "Glasgow coma score motor": "Glasgow Coma Score motor",
+                        "Glasgow coma score eye opening": "Glasgow Coma Score eye opening",
+                        "Body temperature": "Temperature",
+                        "Intracranial pressure (ICP)": "Intracranial pressure",
+                        "Central venous pressure (CVP)": "Central venous pressure",
+                    }
+                )
+            )
+            # Filter for names of interest
+            .filter(pl.col("LABEL").is_in(self.all_values))
+        )
+
+        # meas_chartevents_main_data.sink_parquet(
+        #     "meas_chartevents_main_data.parquet"
+        # )
+
+        # # Filter for names of interest
+        # meas_chartevents_main_data.filter(
+        #     pl.col("LABEL").is_in(self.all_values)
+        # ).sink_parquet("meas_chartevents_main_data_filtered.parquet")
+
+        return (
+            pl.scan_csv(self.chartevents_path)
+            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
+            # Rename columns for consistency
+            .rename({"HADM_ID": self.hospital_stay_id_col})
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
-            .join(d_items.select("ITEMID", "LABEL"), on="ITEMID")
-            .drop("ITEMID")
-            # Keep only relevant columns
+            .join(meas_chartevents_main_data, on="ITEMID", how="left")
+            .join(d_items, on="ITEMID", how="left", suffix="_d_items")
             .with_columns(
-                # Replace lab names with mapped names
-                pl.col("LABEL")
-                .replace_strict(vital_names_mapping, default=None)
+                pl.when(pl.col("LABEL").is_null())
+                .then(pl.col("LABEL_d_items"))
+                .otherwise(pl.col("LABEL"))
                 .alias("LABEL")
             )
-            # Filter for lab names of interest
-            .filter(pl.col("LABEL").is_in(self.all_relevant_values))
+            .drop("ITEMID", "LABEL_d_items")
+            # .pipe(self._print_unique_cases, "VITAL 3 HERE -4")
+            # Remove rows with empty names
+            .filter(pl.col("LABEL").is_not_null())  # & (pl.col("LABEL") != ""))
+            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3.7")
+            # Remove rows with empty values
+            .filter(pl.col("VALUENUM").is_not_null())
+            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3.5")
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty lab names
-            .filter(pl.col("VALUENUM").is_not_null())
-            # Remove rows with empty lab results
-            .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
+            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3")
         )
 
     # endregion
+
+    # region helpers
+    # Print the number of unique cases in the timeseries data
+    def _print_unique_cases(
+        self, data: pl.LazyFrame, name: str
+    ) -> pl.LazyFrame:
+        unique_count = (
+            data.select(self.icu_stay_id_col)
+            .unique()
+            .count()
+            .collect(streaming=True)
+            .to_numpy()[0][0]
+        )
+        print(
+            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
+        )
+
+        return data
 
     # region lab TS
     # Extract lab measurements from the labevents.csv file
     def extract_lab_measurements(self) -> pl.LazyFrame:
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
-        lab_names_mapping = self.helpers.load_mapping(self.labs_mapping_path)
-
-        d_labitems = pl.scan_csv(self.d_labitems_path)
-        labevents = (
-            pl.scan_csv(self.labevents_path)
-            # Rename columns for consistency
+        d_labitems_to_loinc_data = (
+            pl.scan_csv(self.d_labitems_to_loinc_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
             .rename(
                 {
-                    "HADM_ID": self.hospital_stay_id_col,
+                    "itemid (omop_source_code)": "ITEMID",
+                    "omop_concept_name": "LABEL",
                 }
             )
+            # Filter for lab names of interest
+            .filter(pl.col("LABEL").is_in(self.all_values))
         )
 
         return (
-            labevents.select(
-                [self.hospital_stay_id_col, "ITEMID", "CHARTTIME", "VALUENUM"]
-            )
+            pl.scan_csv(self.labevents_path)
+            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
+            # Rename columns for consistency
+            .rename({"HADM_ID": self.hospital_stay_id_col})
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -501,23 +563,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
-            .join(d_labitems.select("ITEMID", "LABEL"), on="ITEMID")
+            .join(d_labitems_to_loinc_data, on="ITEMID", how="left")
             .drop("ITEMID")
-            # Keep only relevant columns
-            .with_columns(
-                # Replace lab names with mapped names
-                pl.col("LABEL")
-                .replace_strict(lab_names_mapping, default=None)
-                .alias("LABEL")
-            )
-            # Filter for lab names of interest
-            .filter(pl.col("LABEL").is_in(self.all_relevant_values))
+            # Remove rows with empty lab names
+            .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
+            # Remove rows with empty lab results
+            .filter(pl.col("VALUENUM").is_not_null())
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty lab names
-            .filter(pl.col("VALUENUM").is_not_null())
-            # Remove rows with empty lab results
-            .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
         )
 
     # endregion
@@ -527,26 +580,24 @@ class MIMIC3Extractor(MIMIC3Paths):
     def extract_output_measurements(self) -> pl.LazyFrame:
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
-        output_names_mapping = self.helpers.load_mapping(
-            self.outputs_mapping_path
-        )
-
-        d_items = pl.scan_csv(self.d_items_path)
-        outputevents = (
-            pl.scan_csv(self.outputevents_path, infer_schema_length=100000)
-            # Rename columns for consistency
+        outputevents_to_loinc_data = (
+            pl.scan_csv(self.outputevents_to_loinc_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
             .rename(
                 {
-                    "HADM_ID": self.hospital_stay_id_col,
-                    "VALUE": "VALUENUM",
+                    "itemid (omop_source_code)": "ITEMID",
+                    "omop_concept_name": "LABEL",
                 }
             )
+            # Filter for names of interest
+            .filter(pl.col("LABEL").is_in(self.all_values))
         )
 
         return (
-            outputevents.select(
-                [self.hospital_stay_id_col, "ITEMID", "CHARTTIME", "VALUENUM"]
-            )
+            pl.scan_csv(self.outputevents_path, infer_schema_length=100000)
+            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE")
+            # Rename columns for consistency
+            .rename({"HADM_ID": self.hospital_stay_id_col, "VALUE": "VALUENUM"})
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -554,23 +605,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
-            .join(d_items.select("ITEMID", "LABEL"), on="ITEMID")
+            .join(outputevents_to_loinc_data, on="ITEMID", how="left")
             .drop("ITEMID")
-            # Keep only relevant columns
-            .with_columns(
-                # Replace lab names with mapped names
-                pl.col("LABEL")
-                .replace_strict(output_names_mapping, default=None)
-                .alias("LABEL")
-            )
-            # Filter for lab names of interest
-            .filter(pl.col("LABEL").is_in(self.all_relevant_values))
+            # Remove rows with empty names
+            .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
+            # Remove rows with empty values
+            .filter(pl.col("VALUENUM").is_not_null())
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty lab names
-            .filter(pl.col("VALUENUM").is_not_null())
-            # Remove rows with empty lab results
-            .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
         )
 
     # endregion
@@ -597,7 +639,9 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL")
         inputevents_mv = (
-            pl.scan_csv(self.inputevents_mv_path, dtypes={"AMOUNT": float})
+            pl.scan_csv(
+                self.inputevents_mv_path, schema_overrides={"AMOUNT": float}
+            )
             .select(
                 "HADM_ID",
                 "ICUSTAY_ID",
@@ -627,7 +671,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
         inputevents_cv = (
-            pl.scan_csv(self.inputevents_cv_path, dtypes={"AMOUNT": float})
+            pl.scan_csv(
+                self.inputevents_cv_path, schema_overrides={"AMOUNT": float}
+            )
             .select(
                 "HADM_ID",
                 "ICUSTAY_ID",
@@ -715,7 +761,7 @@ class MIMIC3Extractor(MIMIC3Paths):
     def extract_diagnoses(self) -> pl.LazyFrame:
         print("MIMIC3  - Extracting diagnoses...")
         diagnoses = pl.scan_csv(
-            self.diagnoses_icd_path, dtypes={"ICD9_CODE": str}
+            self.diagnoses_icd_path, schema_overrides={"ICD9_CODE": str}
         ).rename(
             {
                 "SUBJECT_ID": self.person_id_col,
@@ -723,7 +769,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             }
         )
         d_diagnoses = pl.scan_csv(
-            self.d_icd_diagnoses_path, dtypes={"ICD9_CODE": str}
+            self.d_icd_diagnoses_path, schema_overrides={"ICD9_CODE": str}
         )
 
         return (
@@ -782,7 +828,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL")
 
         procedures_icd = pl.scan_csv(
-            self.procedures_icd_path, dtypes={"ICD9_CODE": str}
+            self.procedures_icd_path, schema_overrides={"ICD9_CODE": str}
         ).rename(
             {
                 "SUBJECT_ID": self.person_id_col,
@@ -790,7 +836,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             }
         )
         d_icd_procedures = pl.scan_csv(
-            self.d_icd_procedures_path, dtypes={"ICD9_CODE": str}
+            self.d_icd_procedures_path, schema_overrides={"ICD9_CODE": str}
         )
 
         procedureevents_mv = (

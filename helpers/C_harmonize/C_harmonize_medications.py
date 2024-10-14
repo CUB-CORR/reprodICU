@@ -33,8 +33,11 @@ class MedicationHarmonizer(GlobalVars):
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the medications from.")
 
-        medication_class_mapping = self.helpers.load_many_to_one_mapping(
-            self.mapping_path + "MEDICATIONS_CLASSES.yaml"
+        fluids_class_mapping = self.helpers.load_many_to_one_mapping(
+            self.mapping_path + "MEDICATIONS_FLUIDS_CLASSES.yaml"
+        )
+        drugs_class_mapping = self.helpers.load_mapping(
+            self.mapping_path + "MEDICATIONS_DRUGS_CLASSES.yaml"
         )
 
         medications_datasets = []
@@ -90,10 +93,33 @@ class MedicationHarmonizer(GlobalVars):
             # NOTE: -> refactor into imputation?
             # NOTE: -> prob yes, since one also needs to deal with boluses
             .with_columns(
-                pl.when(pl.col(self.drug_name_col).is_in(medication_class_mapping.keys()))
-                .then(pl.col(self.drug_name_col).replace(medication_class_mapping))
+                pl.when(
+                    pl.col(self.drug_name_col).is_in(
+                        fluids_class_mapping.keys()
+                    )
+                )
+                .then(pl.col(self.drug_name_col).replace(fluids_class_mapping))
+                .when(
+                    pl.col(self.drug_ingredient_col).is_in(
+                        drugs_class_mapping.keys()
+                    )
+                )
+                .then(
+                    pl.col(self.drug_ingredient_col).replace(
+                        drugs_class_mapping
+                    )
+                )
                 .otherwise(pl.col(self.drug_class_col))
-                .alias(self.drug_class_col)
+                .alias(self.drug_class_col),
+                # harmonize units
+                pl.col(self.drug_amount_unit_col)
+                .str.replace("mL", "ml")
+                .str.replace(r"^U$", "units")
+                .str.replace("µ", "mc")
+                .str.replace("grams", "g")
+                .str.replace("mEQ", "mEq")
+                .str.replace("mEq\.", "mEq")
+                .alias(self.drug_amount_unit_col),
             )
             .select(
                 self.global_icu_stay_id_col,

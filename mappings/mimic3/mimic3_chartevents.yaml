@@ -25,19 +25,19 @@ ALT: ALT
 Anion gap: anion_gap
 Apnea Interval:
 Apnea Time Interval:
-ART BP Diastolic: invasive_diastolic_blood_pressure
-ART BP mean: invasive_mean_blood_pressure
-ART BP Systolic: invasive_systolic_blood_pressure
+ART BP Diastolic: Invasive diastolic arterial pressure
+ART BP mean: Invasive mean arterial pressure
+ART BP Systolic: Invasive systolic arterial pressure
 Art.pH: pH
 Arterial Base Excess: base_excess_deficit
 Arterial Blood Pressure Alarm - High:
 Arterial Blood Pressure Alarm - Low:
-Arterial Blood Pressure diastolic: invasive_diastolic_blood_pressure
-Arterial Blood Pressure mean: invasive_mean_blood_pressure
-Arterial Blood Pressure systolic: invasive_systolic_blood_pressure
-Arterial BP [Diastolic]: invasive_diastolic_blood_pressure
-Arterial BP [Systolic]: invasive_systolic_blood_pressure
-Arterial BP Mean: invasive_mean_blood_pressure
+Arterial Blood Pressure diastolic: Invasive diastolic arterial pressure
+Arterial Blood Pressure mean: Invasive mean arterial pressure
+Arterial Blood Pressure systolic: Invasive systolic arterial pressure
+Arterial BP [Diastolic]: Invasive diastolic arterial pressure
+Arterial BP [Systolic]: Invasive systolic arterial pressure
+Arterial BP Mean: Invasive mean arterial pressure
 Arterial CO2 Pressure: paCO2
 Arterial CO2(Calc): paCO2
 Arterial Line Dressing Occlusive:
@@ -61,9 +61,9 @@ Birth Weight    (kg):
 BloodGlucose: glucose
 BP Alarm [High]:
 BP Alarm [Low]:
-BP Cuff [Diastolic]:
-BP Cuff [Mean]:
-BP Cuff [Systolic]:
+BP Cuff [Diastolic]: Non-invasive diastolic arterial pressure
+BP Cuff [Mean]: Non-invasive mean arterial pressure
+BP Cuff [Systolic]: Non-invasive systolic arterial pressure
 Braden Activity:
 Braden Friction/Shear:
 Braden Mobility:
@@ -85,7 +85,7 @@ calprevflg:
 CaO2: saO2
 Carbon Dioxide:
 Cardiac Index:
-Central Venous Pressure: central_venous_pressure
+Central Venous Pressure: Central Venous Pressure
 Central Venous Pressure  Alarm - Low:
 Central Venous Pressure Alarm - High:
 Chloride: chloride
@@ -101,7 +101,7 @@ CPP: cerebral_perfusion_pressure # cerebral perfusion pressure
 Creatinine: creatinine
 Creatinine (0-1.3): creatinine
 Currently experiencing pain:
-CVP: central_venous_pressure
+CVP: Central Venous Pressure
 CVP Alarm [High]:
 CVP Alarm [Low]:
 Daily Weight:
@@ -118,7 +118,7 @@ ETOH:
 ETT Size:
 ETT Taped at (cm):
 Expiratory Ratio:
-Eye Opening: glasgow_coma_score_eye
+Eye Opening: Glasgow Coma Score eye opening
 Fibrinogen (150-400): fibrinogen
 Fingerstick Glucose: glucose_bedside
 FIO2: FiO2
@@ -132,10 +132,10 @@ Flow-by Sensitivity:
 Flowrate (cc/min):
 Flowrate (l/m):
 Fspn High:
-GCS - Eye Opening: glasgow_coma_score_eye
-GCS - Motor Response: glasgow_coma_score_motor
-GCS - Verbal Response: glasgow_coma_score_verbal
-GCS Total: glasgow_coma_score
+GCS - Eye Opening: Glasgow Coma Score eye opening
+GCS - Motor Response: Glasgow Coma Score motor
+GCS - Verbal Response: Glasgow Coma Score verbal
+GCS Total: Glasgow Coma Score total
 Gender:
 Glucometer:
 Glucose: glucose
@@ -168,7 +168,7 @@ HR Alarm [Low]:
 Humidity Temp [Meas]:
 I:E Ratio:
 IABP Mean:
-ICP: intracranial_pressure
+ICP: Intracranial pressure
 INR: INR
 INR (2-4 ref. range): INR
 Inspiratory Ratio:
@@ -196,9 +196,9 @@ Lymphs: lymphocytes
 LYMPHS: lymphocytes
 Magnesium: magnesium
 Magnesium (1.6-2.6): magnesium
-Manual BP [Diastolic]: noninvasive_diastolic_blood_pressure
-Manual BP [Systolic]: noninvasive_systolic_blood_pressure
-Manual BP Mean(calc): noninvasive_mean_blood_pressure
+Manual BP [Diastolic]: Non-invasive diastolic arterial pressure
+Manual BP [Systolic]: Non-invasive systolic arterial pressure
+Manual BP Mean(calc): Non-invasive mean arterial pressure
 Marital Status:
 Mean Airway Pressure: mean_airway_pressure
 Mean PAW [Meas]: mean_airway_pressure
@@ -209,22 +209,22 @@ Minute Volume Alarm - Low:
 Minute Volume(Obser): minute_volume_patient
 MONOs: monocytes
 Monos: monocytes
-Motor Response: glasgow_coma_score_motor
-NBP [Diastolic]: noninvasive_diastolic_blood_pressure
-NBP [Systolic]: noninvasive_systolic_blood_pressure
+Motor Response: Glasgow Coma Score motor
+NBP [Diastolic]: Non-invasive diastolic arterial pressure
+NBP [Systolic]: Non-invasive systolic arterial pressure
 NBP Alarm [High]:
 NBP Alarm [Low]:
-NBP Mean: noninvasive_mean_blood_pressure
+NBP Mean: Non-invasive mean arterial pressure
 NEUTS: neutrophils
-Non Invasive Blood Pressure diastolic: noninvasive_diastolic_blood_pressure
-Non Invasive Blood Pressure mean: noninvasive_mean_blood_pressure
-Non Invasive Blood Pressure systolic: noninvasive_systolic_blood_pressure
+Non Invasive Blood Pressure diastolic: Non-invasive diastolic arterial pressure
+Non Invasive Blood Pressure mean: Non-invasive mean arterial pressure
+Non Invasive Blood Pressure systolic: Non-invasive systolic arterial pressure
 Non-Invasive Blood Pressure Alarm - High:
 Non-Invasive Blood Pressure Alarm - Low:
 O2 Flow: oxygen_flow
 O2 Flow (lpm): oxygen_flow
 "O2 Flow (lpm) #2": oxygen_flow
-O2 saturation pulseoxymetry: spO2
+O2 saturation pulseoxymetry: Peripheral oxygen saturation
 O2 Saturation Pulseoxymetry Alarm - High:
 O2 Saturation Pulseoxymetry Alarm - Low:
 Orientation to Person:
@@ -294,15 +294,15 @@ Resp Alarm - High:
 Resp Alarm - Low:
 Resp Alarm [High]:
 Resp Alarm [Low]:
-Resp Rate: respiratory_rate_measured
+Resp Rate: Respiratory rate
 Resp Rate (Spont): respiratory_rate_patient
 Resp Rate (Total): respiratory_rate_total
-Respiratory Rate: respiratory_rate_measured
+Respiratory Rate: Respiratory rate
 Respiratory Rate (Set): respiratory_rate_vent_set
 Respiratory Rate (spontaneous): respiratory_rate_patient
 Respiratory Rate (Total): respiratory_rate_total
 Respiratory Rate Set: respiratory_rate_vent_set
-SaO2: spO2
+SaO2: # Peripheral oxygen saturation
 SaO2 Alarm [High]:
 SaO2 Alarm [Low]:
 See chart for initial patient assessment:
@@ -317,7 +317,7 @@ Sodium: sodium
 Sodium (135-148): sodium
 Sodium (serum): sodium
 Sodium (whole blood): # NOTE: which one to use?
-SpO2: spO2
+SpO2: Peripheral oxygen saturation
 SpO2 Alarm [High]:
 SpO2 Alarm [Low]:
 SpO2 Desat Limit:
@@ -336,15 +336,15 @@ Tank A psi.:
 Tank B psi.:
 TCO2        (21-30): # NOTE: what is this?
 TCO2 (calc) Arterial: # NOTE: what is this?
-Temp Axillary [F]: temperature_F
-Temp Rectal [F]: temperature_F
-Temp Skin [C]: temperature
-Temp/Iso/Warmer [Temperature, degrees C]: temperature
-Temperature C: temperature
-Temperature C (calc): temperature
-Temperature F: temperature_F
-Temperature F (calc): temperature_F
-Temperature Fahrenheit: temperature_F
+Temp Axillary [F]: Temperature Fahrenheit
+Temp Rectal [F]: Temperature Fahrenheit
+Temp Skin [C]: Temperature
+Temp/Iso/Warmer [Temperature, degrees C]: Temperature
+Temperature C: Temperature
+Temperature C (calc): Temperature
+Temperature F: Temperature Fahrenheit
+Temperature F (calc): Temperature Fahrenheit
+Temperature Fahrenheit: Temperature Fahrenheit
 Tidal Volume (Obser): tidal_volume_measured
 Tidal Volume (observed): tidal_volume_patient
 Tidal Volume (set): tidal_volume_vent_set
@@ -370,7 +370,7 @@ Ventricular Pacemaker [Sensitivity]:
 Ventricular Pacemaker Sense [mA]:
 Ventricular Pacemaker Sense [mV]:
 Ventricular Pacemaker Threshold [Value]:
-Verbal Response: glasgow_coma_score_verbal
+Verbal Response: Glasgow Coma Score verbal
 Visual / hearing deficit:
 Vt [Spontaneous]: tidal_volume_patient
 Vt [Ventilator]: tidal_volume_vent_set

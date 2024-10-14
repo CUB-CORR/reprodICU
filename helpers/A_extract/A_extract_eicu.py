@@ -322,12 +322,6 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
-        keep_lab_names = self.relevant_lab_values + [
-            "base_excess",
-            "base_deficit",
-        ]
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
         return (
@@ -349,7 +343,7 @@ class EICUExtractor(EICUPaths):
                 .alias("labname")
             )
             # Filter for lab names of interest
-            .filter(pl.col("labname").is_in(keep_lab_names))
+            .filter(pl.col("labname").is_in(self.all_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -461,7 +455,7 @@ class EICUExtractor(EICUPaths):
             "Bedside Glucose",
             "O2 L/%",
             "O2 Admin Device",
-            # "Sedation Scale/Score/Goal",
+            "Sedation Scale/Score/Goal",
             # "Delirium Scale/Score",
         ]
         nurse_names_mapping = self.load_mapping(self.nurse_mapping_path)
@@ -469,7 +463,7 @@ class EICUExtractor(EICUPaths):
             self.nurse_oxygen_delivery_device_mapping_path
         )
 
-        return (
+        nurseCharting = (
             pl.scan_csv(self.nurseCharting_path)
             .select(
                 [
@@ -485,25 +479,58 @@ class EICUExtractor(EICUPaths):
                     "patientunitstayid": self.icu_stay_id_col,
                     "nursingchartoffset": self.timeseries_time_col,
                 }
-            )
-            # Filter for nurse names of interest
+            )  # Filter for nurse names of interest
             .filter(
                 pl.col("nursingchartcelltypevallabel").is_in(keep_nurse_names)
             )
-            .drop(["nursingchartcelltypevallabel"])
             # Remove rows with empty nurse values
-            .filter(pl.col("nursingchartvalue").is_not_null())
+            .drop_nulls(
+                [
+                    "nursingchartcelltypevallabel",
+                    "nursingchartcelltypevalname",
+                    "nursingchartvalue",
+                ]
+            )
             # Remove duplicate rows
             .unique()
+        )
+
+        nurseCharting_RASS = nurseCharting.filter(
+            pl.col("nursingchartvalue") == "Sedation Score",
+            pl.col(self.timeseries_time_col).is_in(
+                nurseCharting.filter(
+                    pl.col("nursingchartcelltypevalname") == "Sedation Score",
+                    pl.col("nursingchartvalue") == "RASS",
+                )
+                .select(self.timeseries_time_col)
+                .collect(streaming=True)
+                .to_series()
+            ),
+        )
+
+        return (
+            pl.concat(
+                [
+                    nurseCharting.filter(
+                        pl.col("nursingchartcelltypevallabel")
+                        != "Sedation Scale/Score/Goal"
+                    ),
+                    nurseCharting_RASS,
+                ],
+                how="vertical_relaxed",
+            )
+            .drop(["nursingchartcelltypevallabel"])
             .with_columns(
                 # Convert Fahrenheit to Celsius
                 pl.when(
                     pl.col("nursingchartcelltypevalname") == "Temperature (F)"
                 )
                 .then(
-                    (pl.col("nursingchartvalue").cast(float, strict=False) - 32)
-                    * 5
-                    / 9
+                    pl.col("nursingchartvalue")
+                    .cast(float, strict=False)
+                    .sub(32)
+                    .mul(9)
+                    .truediv(5)
                 )
                 # Replace "Unable to score due to medication" values with None
                 .when(
@@ -534,6 +561,8 @@ class EICUExtractor(EICUPaths):
                 .replace_strict(nurse_names_mapping, default=None)
                 .alias("nursingchartcelltypevalname"),
             )
+            # Remove rows with empty nurse values
+            .drop_nulls(["nursingchartcelltypevalname", "nursingchartvalue"])
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -731,20 +760,16 @@ class EICUExtractor(EICUPaths):
         periodic = self.extract_time_series_periodic()
         aperiodic = self.extract_time_series_aperiodic()
 
-        periodics = periodic.join(
-            aperiodic,
-            on=[self.icu_stay_id_col, self.timeseries_time_col],
-            how="outer",
+        periodics = pl.concat(
+            [periodic, aperiodic], how="diagonal_relaxed"
         ).rename(periodic_mapping)
+        periodics_cols = periodics.collect_schema().names()
 
         return periodics.select(
-            [
-                self.icu_stay_id_col,
-                self.timeseries_time_col,
-            ]
+            [self.icu_stay_id_col, self.timeseries_time_col]
             + list(
-                set(periodics.collect_schema().names()).intersection(
-                    set(self.relevant_vital_values + ["temperature_F"])
+                set(periodics_cols).intersection(
+                    set(self.relevant_vital_values + ["Temperature Fahrenheit"])
                 )
             )
         )

@@ -167,17 +167,17 @@ Arm Immobilizer:
 ART Blood Pressure Alarm - High:
 ART Blood Pressure Alarm - Low:
 ART Blood Pressure Alarm Source:
-ART BP Diastolic: invasive_diastolic_blood_pressure
-ART BP Mean: invasive_mean_blood_pressure
-ART BP Systolic: invasive_systolic_blood_pressure
+ART BP Diastolic: Invasive diastolic arterial pressure
+ART BP Mean: Invasive mean arterial pressure
+ART BP Systolic: Invasive systolic arterial pressure
 Art Bubble On (CH):
 ART Lumen Volume:
 Arterial Base Excess:
 Arterial Blood Pressure Alarm - High:
 Arterial Blood Pressure Alarm - Low:
-Arterial Blood Pressure diastolic: invasive_diastolic_blood_pressure
-Arterial Blood Pressure mean: invasive_mean_blood_pressure
-Arterial Blood Pressure systolic: invasive_systolic_blood_pressure
+Arterial Blood Pressure diastolic: Invasive diastolic arterial pressure
+Arterial Blood Pressure mean: Invasive mean arterial pressure
+Arterial Blood Pressure systolic: Invasive systolic arterial pressure
 Arterial CO2 Pressure: paCO2
 Arterial Line Discontinued:
 Arterial Line Dressing Occlusive:
@@ -301,7 +301,7 @@ CCO PAC Site Appear:
 CCO PAC Waveform Appear:
 CCO PAC Zero/Calibrate:
 "Central Venous O2% Sat":
-Central Venous Pressure: central_venous_pressure
+Central Venous Pressure: Central Venous Pressure
 Central Venous Pressure  Alarm - Low:
 Central Venous Pressure Alarm - High:
 Cerebellar - Finger -> Nose:
@@ -623,9 +623,9 @@ Fundus Character:
 Fundus Location (Breadth):
 Gag Reflex:
 Gait/Transferring:
-GCS - Eye Opening: glasgow_coma_score_eye
-GCS - Motor Response: glasgow_coma_score_motor
-GCS - Verbal Response: glasgow_coma_score_verbal
+GCS - Eye Opening: Glasgow Coma Score eye opening
+GCS - Motor Response: Glasgow Coma Score motor
+GCS - Verbal Response: Glasgow Coma Score verbal
 GcsApacheIIScore:
 GCSEyeApacheIIValue:
 GCSMotorApacheIIValue:
@@ -683,7 +683,7 @@ Head of Bed:
 Head of Bed Measurement:
 Headache:
 Health Care Proxy:
-Heart Rate: heart_rate
+Heart Rate: Heart rate
 Heart rate Alarm - High:
 Heart Rate Alarm - Low:
 Heart Rhythm:
@@ -1084,8 +1084,8 @@ Insulin pump:
 Interpreter:
 Intra Aortic Ballon Pump Setting:
 Intra Aortic Balloon Pump Setting:
-Intra Cranial Pressure: intracranial_pressure
-"Intra Cranial Pressure #2": intracranial_pressure
+Intra Cranial Pressure: Intracranial Pressure
+"Intra Cranial Pressure #2": Intracranial Pressure
 "Intra Cranial Pressure #2 Alarm - High":
 "Intra Cranial Pressure #2 Alarm - Low":
 Intra Cranial Pressure Alarm - High:
@@ -1142,10 +1142,10 @@ LUE Sensation:
 LUE Temp:
 LUL Lung Sounds:
 Magnesium: magnesium
-Manual Blood Pressure Diastolic Left: noninvasive_diastolic_blood_pressure
-Manual Blood Pressure Diastolic Right: noninvasive_diastolic_blood_pressure
-Manual Blood Pressure Systolic Left: noninvasive_systolic_blood_pressure
-Manual Blood Pressure Systolic Right: noninvasive_systolic_blood_pressure
+Manual Blood Pressure Diastolic Left: Non-invasive diastolic arterial pressure
+Manual Blood Pressure Diastolic Right: Non-invasive diastolic arterial pressure
+Manual Blood Pressure Systolic Left: Non-invasive systolic arterial pressure
+Manual Blood Pressure Systolic Right: Non-invasive systolic arterial pressure
 MAP_ApacheIV:
 MapApacheIIScore:
 MapApacheIIValue:
@@ -1232,9 +1232,9 @@ Nitric Oxide Tank Pressure:
 NIV Mask:
 NMB Medication:
 No Pressure Injury Present:
-Non Invasive Blood Pressure diastolic: noninvasive_diastolic_blood_pressure
-Non Invasive Blood Pressure mean: noninvasive_mean_blood_pressure
-Non Invasive Blood Pressure systolic: noninvasive_systolic_blood_pressure
+Non Invasive Blood Pressure diastolic: Non-invasive diastolic arterial pressure
+Non Invasive Blood Pressure mean: Non-invasive mean arterial pressure
+Non Invasive Blood Pressure systolic: Non-invasive systolics arterial pressure
 Non-Invasive Blood Pressure Alarm - High:
 Non-Invasive Blood Pressure Alarm - Low:
 Non-Violent Restraints:
@@ -1251,7 +1251,7 @@ O2 Consumption:
 O2 Delivery Device(s): # NOTE: take a closer look at this variable
 O2 Flow: oxygen_flow
 O2 Flow (additional cannula): oxygen_flow
-O2 saturation pulseoxymetry: spO2
+O2 saturation pulseoxymetry: Peripheral oxygen saturation
 O2 Saturation Pulseoxymetry Alarm - High:
 O2 Saturation Pulseoxymetry Alarm - Low:
 OCAT - Lips Tongue Gums Palate:
@@ -1301,7 +1301,7 @@ PA Catheter Zero/Calibrate:
 PA Line cm Mark:
 Pad Change/Hour:
 PAEDP:
-Pain (0-10): numeric_pain_rating_scale
+Pain (0-10): Numeric Pain Rating Scale
 Pain Assessment Method:
 Pain Cause:
 Pain Control:
@@ -1722,7 +1722,7 @@ Respiratory:
 Respiratory Effort:
 Respiratory Pattern:
 Respiratory Quotient:
-Respiratory Rate: respiratory_rate_measured
+Respiratory Rate: Respiratory rate
 Respiratory Rate (Set): respiratory_rate_vent_set
 Respiratory Rate (spontaneous): respiratory_rate_patient
 Respiratory Rate (Total): respiratory_rate_total
@@ -1762,7 +1762,7 @@ RIC Phlebitis Scale:
 RIC placed in outside facility:
 RIC Reason Discontinued:
 RIC Site Appear:
-Richmond-RAS Scale: richmond_agitation_sedation_scale
+Richmond-RAS Scale: Richmond agitation-sedation scale
 Right Ventricular Assist Device Flow:
 Riker-SAS Scale:
 Risk Factors for Pressure Injury:
@@ -1888,7 +1888,7 @@ Speed (VAD):
 Spiritual Support:
 SpO2 Desat Limit:
 Spont RR: respiratory_rate_patient
-Spont Vt: tidal_volum_patient
+Spont Vt: tidal_volume_patient
 Spontaneous Movement:
 Sputum Amount:
 Sputum Color:
@@ -1987,8 +1987,8 @@ TCO2 (calc) Venous:
 Teaching directed toward:
 TempApacheIIScore:
 TempApacheIIValue:
-Temperature Celsius: temperature
-Temperature Fahrenheit: temperature_F
+Temperature Celsius: Temperature
+Temperature Fahrenheit: Temperature Fahrenheit
 Temperature Site:
 TemperatureF_ApacheIV:
 Temporary Atrial Capture:

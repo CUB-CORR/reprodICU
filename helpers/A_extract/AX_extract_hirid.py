@@ -62,7 +62,9 @@ class HiRIDExtractor(HiRIDPaths):
     # region admissions
     def _extract_admissions(self) -> pl.LazyFrame:
         return (
-            pl.scan_csv(self.general_table_path, dtypes={"admissiontime": str})
+            pl.scan_csv(
+                self.general_table_path, schema_overrides={"admissiontime": str}
+            )
             # Rename columns for consistency
             .rename(
                 {
@@ -278,7 +280,7 @@ class HiRIDExtractor(HiRIDPaths):
     # region timeseries
     # Extract timeseries information from the timeseries file directory
     def extract_timeseries(self) -> pl.LazyFrame:
-        observation_mapping = self.load_mapping(self.observation_mapping_path)
+        # observation_mapping = self.load_mapping(self.observation_mapping_path)
         admissiontime = (
             self._extract_admissions()
             .select([self.icu_stay_id_col, "admissiontime"])
@@ -296,7 +298,7 @@ class HiRIDExtractor(HiRIDPaths):
                 self._extract_timeseries_helper,
                 admissiontime,
                 length_of_stay,
-                observation_mapping,
+                # observation_mapping,
             )
 
             # Append the data to the DataFrame
@@ -309,7 +311,7 @@ class HiRIDExtractor(HiRIDPaths):
         data: pl.LazyFrame,
         admissiontime: pl.LazyFrame,
         length_of_stay: pl.LazyFrame,
-        observation_mapping: dict,
+        # observation_mapping: dict,
     ) -> pl.LazyFrame:
         return (
             data.select(["patientid", "datetime", "variableid", "value"])
@@ -327,8 +329,10 @@ class HiRIDExtractor(HiRIDPaths):
                 # then the reprodICU mapping
                 pl.col("variableid")
                 .cast(int)
-                .replace_strict(self._get_observation_variables(), default=None)
-                .replace_strict(observation_mapping, default=None),
+                .replace_strict(
+                    self._get_observation_variables(), default=None
+                ),
+                # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
             )
             .with_columns(
@@ -354,8 +358,8 @@ class HiRIDExtractor(HiRIDPaths):
                     ).truediv(pl.duration(seconds=1))
                 )
             )
-            # Filter for lab names of interest
-            .filter(pl.col("variableid").is_in(self.all_relevant_values))
+            # Filter for names of interest
+            .filter(pl.col("variableid").is_in(self.all_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -646,6 +650,16 @@ class HiRIDExtractor(HiRIDPaths):
             self._get_variable_reference()
             .filter(pl.col("Source Table") == "Observation")
             .drop("Source Table")
+        ).with_columns(
+            # Fix bad mappings (wrong units or spelling unequal to reprodICU harmonization)
+            pl.col("Variable Name").replace(
+                {
+                    "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                    "Glasgow Coma Score verbal response subscore": "Glasgow Coma Score verbal",
+                    "Glasgow Coma Score motor response subscore": "Glasgow Coma Score motor",
+                    "Glasgow Coma Score eye opening subscore": "Glasgow Coma Score eye opening",
+                }
+            )
         )
 
         return dict(

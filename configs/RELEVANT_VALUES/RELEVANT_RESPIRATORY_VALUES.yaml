@@ -1,24 +1,44 @@
-etCO2: True
-FiO2: True
+etCO2: True # etCO2 (in mmHg) 4353940
+FiO2: True # FiO2 (in %) 4353936
 # FiO2 / oxygen_flow: True # NOTE: needs work to be useful
-mean_airway_pressure: True
+mean_airway_pressure: True # Mean airway pressure (in cmH2O) 42527086
 # Mechanical Ventilator Mode: True  # TODO: check if this is good
-minute_volume_exhaled: True
-minute_volume_patient: True
-minute_volume_vent_set: True
+minute_volume_exhaled: True # Expiratory minute volume (in mL/min) 4144329
+minute_volume_patient: True # Spontaneous minute volume (in mL/min) 4108000 
+minute_volume_vent_set: True # Ventilator delivered minute volume (in mL/min) 4353717
 oxygen_delivery_device: True
-oxygen_flow: True
+oxygen_flow: True # Delivered oxygen flow rate (in L/min) 4141684
 # peak_pressure: False -> replaced by peak_inspiratory_pressure
-peak_inspiratory_pressure: True
-PEEP: True
-plateau_pressure: True
+peak_inspiratory_pressure: True # Peak inspiratory pressure (in cmH2O) 4101694
+PEEP: True # Positive end expiratory pressure (in cmH2O) 4353713
+plateau_pressure: True # Airway plateau pressure (in cmH2O) 4089935
 pressure_support: True
-respiratory_rate_patient: True
-respiratory_rate_total: True
-respiratory_rate_vent_set: True
+respiratory_rate_patient: True # Rate of spontaneous respiration (in /min) 4154772
+respiratory_rate_total: True 
+respiratory_rate_vent_set: True # Ventilator rate (in /min) 4108138
 # saO2: False # NOTE: this is also in the lab values
 tidal_volume_exhaled: True
 tidal_volume_exhaled_patient: True
 tidal_volume_exhaled_vent: True
 tidal_volume_per_ideal_body_weight: True
 tidal_volume_vent_set: True
+
+# NEEDED VARS
+# Ventilator mode (e.g. assist-control, pressure support, etc.)
+# Ventilator airway code (e.g. intubated, tracheostomy, non-invasive, etc.)
+
+# # https://athena.ohdsi.org/search-terms/terms/4029625
+# # Tidal volume
+# Expiratory tidal volume 44782827 SNOMED
+# Inspiratory tidal volume 44782826 SNOMED
+# Mandatory tidal volume 4353946 SNOMED
+# Spontaneous tidal volume 4108448 SNOMED
+
+# # https://athena.ohdsi.org/search-terms/terms/4264979
+# # Ventilator observable
+# Inspiratory pressure setting 4215838 SNOMED
+# Minute volume setting 4221044 SNOMED
+# Positive end expiratory pressure setting 4216746 SNOMED
+# Tidal volume setting 4220163 SNOMED
+# Ventilator flow output 4353960 SNOMED
+# Ventilator rate 4108138 SNOMED
