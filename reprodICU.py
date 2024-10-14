@@ -120,12 +120,15 @@ if __name__ == "__main__":
             column_names["weight_col"],
             column_names["height_col"],
         ]
-        patient_info_harmonizer.harmonize_patient_information().pipe(
-            X2_Winsorizer.winsorize_clip_lower_0_quantiles,
-            columns=columns_to_winsorize,
-            alpha=0.9995,
-        ).collect(streaming=True).write_parquet(
-            save_path + "patient_information.parquet"
+        (
+            patient_info_harmonizer.harmonize_patient_information()
+            .pipe(
+                X2_Winsorizer.winsorize_clip_lower_0_quantiles,
+                columns=columns_to_winsorize,
+                alpha=0.9995,
+            )
+            .collect(streaming=True)
+            .write_parquet(save_path + "patient_information.parquet")
         )
 
         # Impute the patient information
@@ -148,20 +151,22 @@ if __name__ == "__main__":
             patient_info_location=save_path + "patient_information.parquet",
         )
 
-        diagnoses_harmonizer.harmonize_diagnoses().pipe(
-            diagnoses_imputer.impute_diagnoses
-        ).collect(streaming=True).write_parquet(
-            paths.reprodICU_files_path + "diagnoses_imputed.parquet"
+        (
+            diagnoses_harmonizer.harmonize_diagnoses()
+            .pipe(diagnoses_imputer.impute_diagnoses)
+            .collect(streaming=True)
+            .write_parquet(save_path + "diagnoses_imputed.parquet")
         )
-        # diagnoses_harmonizer.harmonize_diagnoses().sink_parquet(save_path +"diagnoses.parquet")
 
     if "procedures" in tables:
         print("reprodICU - Combining procedures...")
         procedures_harmonizer = ProceduresHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
-        procedures_harmonizer.harmonize_procedures().collect().write_parquet(
-            save_path + "procedures.parquet"
+        (
+            procedures_harmonizer.harmonize_procedures()
+            .collect()
+            .write_parquet(save_path + "procedures.parquet")
         )
 
     if "medications" in tables:
@@ -169,12 +174,11 @@ if __name__ == "__main__":
         medication_harmonizer = MedicationHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
-        # medication_harmonizer.harmonize_medications().sink_parquet(
-        #     save_path + "medications.parquet"
-        # )
-        medication_harmonizer.harmonize_medications().collect(
-            streaming=True
-        ).write_parquet(save_path + "medications.parquet")
+        (
+            medication_harmonizer.harmonize_medications()
+            .collect(streaming=True)
+            .write_parquet(save_path + "medications.parquet")
+        )
 
     if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
@@ -182,29 +186,23 @@ if __name__ == "__main__":
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
         print("reprodICU - Splitting timeseries...")
-        # timeseries_harmonizer.harmonize_split_timeseries(save_path + "_tempfiles/reprodICU_timeseries.parquet")
-        vitals, labs, resp, inout = (
-            timeseries_harmonizer.harmonize_split_timeseries(
-                save_to_default=False
-            )
-        )
-        print("reprodICU - Saving timeseries...")
-        vitals.sink_parquet(save_path + "timeseries_vitals.parquet")
-        resp.sink_parquet(save_path + "timeseries_respiratory.parquet")
-        inout.sink_parquet(save_path + "timeseries_intakeoutput.parquet")
-        labs.sink_parquet(save_path + "timeseries_labs.parquet")
+        # Default paths are used for saving the timeseries data
+        # vitals -> timeseries_vitals.parquet
+        # labs -> timeseries_labs.parquet
+        # resp -> timeseries_respiratory.parquet
+        # inout -> timeseries_intakeoutput.parquet
+        timeseries_harmonizer.harmonize_split_timeseries(save_to_default=True)
 
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
         columns_to_exclude = [
             column_names["global_icu_stay_id_col"],
             column_names["timeseries_time_col"],
-            "base_excess_deficit",
+            "Base excess in Arterial blood by calculation",
         ]
         labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
-        columns_to_winsorize = list(
-            set(labs.collect_schema().names()) - set(columns_to_exclude)
-        )
+        labs_cols = labs.collect_schema().names()
+        columns_to_winsorize = list(set(labs_cols) - set(columns_to_exclude))
         (
             labs.pipe(
                 X2_Winsorizer.winsorize_clip_lower_0_quantiles,
@@ -213,7 +211,7 @@ if __name__ == "__main__":
             )
             .pipe(
                 X2_Winsorizer.winsorize_quantiles,
-                columns=["base_excess_deficit"],
+                columns=["Base excess in Arterial blood by calculation"],
                 alpha=0.99,
             )
             .collect(streaming=True)

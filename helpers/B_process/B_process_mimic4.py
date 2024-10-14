@@ -47,12 +47,12 @@ class MIMIC4Processor(MIMIC4Extractor):
 
         ts_vitals = self._process_timeseries_vitals()
         ts_lab = self._process_timeseries_labevents()
-        ts_inout = self._process_timeseries_inputoutput()
+        # ts_inout = self._process_timeseries_inputoutput()
 
         # Combine all time series data
         print("MIMIC4  - Combining time series data...")
         timeseries = pl.concat(
-            [ts_vitals, ts_lab, ts_inout], how="diagonal_relaxed"
+            [ts_vitals, ts_lab], how="diagonal_relaxed"
         ).sort(self.index_cols)
         timeseries.sink_parquet(
             self.precalc_path + "MIMIC4_B_timeseries.parquet"
@@ -67,7 +67,7 @@ class MIMIC4Processor(MIMIC4Extractor):
         """
         Processes the vital data of the MIMIC4 dataset.
         """
-
+        pl.Config.set_verbose(True)
         if os.path.isfile(self.precalc_path + "MIMIC4_B_ts_vitals.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(
@@ -82,8 +82,8 @@ class MIMIC4Processor(MIMIC4Extractor):
             # Convert temperature from Fahrenheit to Celsius
             .pipe(
                 self.convert.convert_temperature_F_to_C,
-                itemid_F="temperature_F",
-                itemid_C="temperature_C",
+                itemid_F="Temperature Fahrenheit",
+                itemid_C="Temperature",
                 labelcol="label",
                 valuecol="valuenum",
             )
@@ -97,13 +97,13 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
 
         # Drop empty rows
-        droplist = list(
-            set(ts_vitals.collect_schema().names()) - set(self.index_cols)
-        )
+        ts_vitals_cols = ts_vitals.collect_schema().names()
+        droplist = list(set(ts_vitals_cols) - set(self.index_cols))
         ts_vitals = (
-            ts_vitals.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
-            .lazy()
+            ts_vitals.lazy()
+            .pipe(self.helpers.dropna, "all", droplist, False)
             .unique()
+            .sort(self.index_cols)
         )
 
         # Save the preprocessed data
@@ -147,13 +147,13 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
 
         # drop empty rows
-        droplist = list(
-            set(ts_lab.collect_schema().names()) - set(self.index_cols)
-        )
+        ts_lab_cols = ts_lab.collect_schema().names()
+        droplist = list(set(ts_lab_cols) - set(self.index_cols))
         ts_lab = (
-            ts_lab.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
-            .lazy()
+            ts_lab.lazy()
+            .pipe(self.helpers.dropna, "all", droplist, False)
             .unique()
+            .sort(self.index_cols)
         )
 
         # Save the preprocessed data
@@ -191,13 +191,13 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
 
         # Drop empty rows
-        droplist = list(
-            set(ts_inout.collect_schema().names()) - set(self.index_cols)
-        )
+        ts_inout_cols = ts_inout.collect_schema().names()
+        droplist = list(set(ts_inout_cols) - set(self.index_cols))
         ts_inout = (
-            ts_inout.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
-            .lazy()
+            ts_inout.lazy()
+            .pipe(self.helpers.dropna, "all", droplist, False)
             .unique()
+            .sort(self.index_cols)
         )
 
         # Save the preprocessed data
@@ -207,13 +207,31 @@ class MIMIC4Processor(MIMIC4Extractor):
 
     # endregion
 
+    # region helpers
+    # Print the number of unique cases in the timeseries data
+    def _print_unique_cases(
+        self, data: pl.LazyFrame, name: str
+    ) -> pl.LazyFrame:
+        unique_count = (
+            data.select(self.icu_stay_id_col)
+            .unique()
+            .count()
+            .collect(streaming=True)
+            .to_numpy()[0][0]
+        )
+        print(
+            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
+        )
+
+        return data
+
 
 # region convert
 class MIMIC4Converter(UnitConverter):
     def __init__(self):
         super().__init__()
 
-    # Convert the lab values of the eICU dataset.
+    # Convert the lab values of the MIMIC-IV dataset.
     def _convert_lab_values(
         self, data, labelcol: str = "label", valuecol: str = "valuenum"
     ) -> pl.LazyFrame:
@@ -224,44 +242,44 @@ class MIMIC4Converter(UnitConverter):
         # Convert the lab values to the correct units.
         (
             data.pipe(
-                self.convert_ammonia_ug_dL_to_umol_L,
-                itemid="ammonia",
+                self.convert_bilirubin_mg_dL_to_umol_L,
+                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="bilirubin_direct",
+                itemid="Bilirubin.indirect [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="bilirubin_indirect",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="bilirubin_total",
+                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-                itemid="blood_urea_nitrogen",
+                itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="calcium",
+                itemid="Calcium [Mass/volume] in Blood",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_calcium_mg_dL_to_mmol_L,
+                itemid="Calcium.ionized [Mass/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="CKMB",
+                itemid="Creatine kinase.MB [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -277,13 +295,19 @@ class MIMIC4Converter(UnitConverter):
             # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="CRP",
+                itemid="C reactive protein [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_FEU_to_DDU,
+                itemid="Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_mg_L,
-                itemid="d_dimers",
+                itemid="Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -303,90 +327,111 @@ class MIMIC4Converter(UnitConverter):
             # )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="iron",
+                itemid="Iron [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_iron_ug_dL_to_umol_L,
+                itemid="Iron binding capacity [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="magnesium",
+                itemid="Magnesium [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="myoglobin",
+                itemid="Myoglobin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             # MCHC is in %, however this is equal to g/dL due to the definition of MCHC
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="phosphate",
+                itemid="Phosphate [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             # Potassium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="protein_albumin",
+                itemid="Albumin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="protein_prealbumin",
+                itemid="Prealbumin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="protein_total",
+                itemid="Protein [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             # Sodium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="T3",
+                itemid="Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="T4",
+                itemid="Thyroxine (T4) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="T4_free",
+                itemid="Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="troponin_I",
+                itemid="Troponin I.cardiac [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="troponin_T",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
-                self.convert_iron_ug_dL_to_umol_L,
-                itemid="total_iron_binding_capacity",
+                itemid="Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="vitamin_B12",
+                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
+            )
+            .with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.indirect [Mass/volume] in Serum or Plasma": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
+                        "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
+                        "Calcium [Mass/volume] in Blood": "Calcium [Moles/volume] in Blood",
+                        "Calcium.ionized [Mass/volume] in Blood": "Calcium.ionized [Moles/volume] in Blood",
+                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
+                        "Iron [Mass/volume] in Serum or Plasma": "Iron [Moles/volume] in Serum or Plasma",
+                        "Iron binding capacity [Mass/volume] in Serum or Plasma": "Iron binding capacity [Moles/volume] in Serum or Plasma",
+                        "Magnesium [Mass/volume] in Serum or Plasma": "Magnesium [Moles/volume] in Serum or Plasma",
+                        "Phosphate [Mass/volume] in Serum or Plasma": "Phosphate [Moles/volume] in Serum or Plasma",
+                        "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma": "Triiodothyronine (T3) [Moles/volume] in Serum or Plasma",
+                        "Thyroxine (T4) [Mass/volume] in Serum or Plasma": "Thyroxine (T4) [Moles/volume] in Serum or Plasma",
+                        "Thyroxine (T4) free [Mass/volume] in Serum or Plasma": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
+                        "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma": "Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma",
+                    }
+                )
             )
         )
 

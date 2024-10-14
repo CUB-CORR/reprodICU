@@ -35,7 +35,7 @@ class HiRIDProcessor(HiRIDExtractor):
         print("HiRID   - Processing time series data...")
 
         # COPY THE NEEDED DATAFRAMES FROM HiRIDExtractor.extract_timeseries() HERE
-        observation_mapping = self.load_mapping(self.observation_mapping_path)
+        # observation_mapping = self.load_mapping(self.observation_mapping_path)
         admissiontime = (
             self._extract_admissions()
             .select([self.icu_stay_id_col, "admissiontime"])
@@ -66,7 +66,7 @@ class HiRIDProcessor(HiRIDExtractor):
                     self._extract_timeseries_helper,
                     admissiontime,
                     length_of_stay,
-                    observation_mapping,
+                    # observation_mapping,
                 )
                 # Convert the lab values to the correct units
                 .pipe(
@@ -89,7 +89,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 set(timeseries.collect_schema().names()) - set(self.index_cols)
             )
             timeseries = timeseries.pipe(
-                self.helpers.dropna, subset_cols=droplist, how="all"
+                self.helpers.dropna, "all", droplist, False
             ).unique()
 
             # Append the data to the DataFrame
@@ -135,48 +135,57 @@ class HiRIDConverter(UnitConverter):
         (
             data.pipe(
                 self.convert_absolute_count_to_relative,
-                itemid="lymphocytes",
-                total_itemid="leukocytes",
+                itemid="Lymphocytes [#/volume] in Blood",
+                total_itemid="Leukocytes [#/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
-                self.convert_blood_urea_nitrogen_from_urea,
-                itemid_urea="urea",
-                itemid_BUN="blood_urea_nitrogen",
+                self.convert_urea_nitrogen_from_urea,
+                itemid_urea="Urea [Moles/volume] in Venous blood",
+                itemid_BUN="Urea nitrogen [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_creatinine_umol_L_to_mg_dL,
-                itemid="creatinine",
+                itemid="Creatinine [Moles/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_L_to_mg_dL,
-                itemid="fibrinogen",
+                itemid="Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="glucose",
+                itemid="Glucose [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_L_to_g_dL,
-                itemid="hemoglobin",
+                itemid="Hemoglobin [Mass/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 # same conversion due to definition of MCHC
                 self.convert_g_L_to_g_dL,
-                itemid="MCHC",
+                itemid="MCHC [Mass/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
+            )
+            .with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        "Lymphocytes [#/volume] in Blood": "Lymphocytes/100 leukocytes in Blood",
+                        "Creatinine [Moles/volume] in Blood": "Creatinine [Mass/volume] in Blood",
+                        "Glucose [Moles/volume] in Serum or Plasma": "Glucose [Mass/volume] in Blood",
+                    }
+                )
             )
         )
 

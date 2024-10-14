@@ -1,13 +1,32 @@
-urine_output: True
+Blood loss.total intraoperative [Volume] Estimated: True
+Fluid output biliary drain: True
+Fluid output cerebral ventricle drain: True
+Fluid output chest tube: True
+Fluid output gastric tube: True
+Fluid output pericardial drain: True
+Fluid output peritoneal drain: True
+Fluid output subarachnoid drain: True
+Fluid output wound drain: True
+Output.stool [Volume]: True
+Urine output: True
 # NOTE: ALL OTHER VARIABLES NEED A LOT OF WORK
-# stool_output: True
-# dialysis_output: True
+# output_dialyis: True # needs RRT variable
+# output_liquor: True
+# output_stool: True
 # output_other: True
 # output_total: True
-# dialysis_input: True
+# input_blood: True # from medications table
+# input_dialysis: True # needs RRT variable
+# input_liquid: True # from medications table
+# input_nutrition: True # from medications table
+# input_transfusion: True # from medications table
+# input_other: True # from medications table
 # input_total: True
-# input_liquid: True
-# input_blood: True
-# input_transfusion: True
-# input_nutrition: True
-# input_other: True
+
+
+# HiRID
+# Hourly urine volume
+# Measurement of output from drain <- Liquor
+# Fluid balance <- cumulative
+# Infusion of saline solution <- cumulative
+# Intravenous fluid colloid administration <- cumulative

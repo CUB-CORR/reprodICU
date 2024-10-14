@@ -58,6 +58,16 @@ class SICdbExtractor(SICdbPaths):
                 )
                 .truediv(pl.duration(days=1))
                 .alias(self.icu_length_of_stay_col),
+                # # Get pre-ICU length of stay in days
+                # (
+                #     pl.duration(
+                #         days=pl.col("HospitalStayDays")
+                #         - (pl.col("HospitalDischargeDay") - 1)
+                #     )
+                #     - pl.duration(seconds=pl.col("TimeOfStay"))
+                # )
+                # .truediv(pl.duration(days=1))
+                # .alias(self.pre_icu_length_of_stay_col),
                 # Convert gender to established dtype
                 pl.col("Sex")
                 .replace_strict({735: "Male", 736: "Female"}, default="Unknown")
@@ -156,9 +166,9 @@ class SICdbExtractor(SICdbPaths):
             # Calculate ICU stay sequence number
             .sort(self.person_id_col, "OffsetAfterFirstAdmission")
             .with_columns(
-                pl.int_range(pl.len())
-                .over(self.person_id_col)
-                .alias(self.icu_stay_seq_num_col)
+                (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
+                    self.icu_stay_seq_num_col
+                )
             )
         )
 
@@ -193,7 +203,7 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
-            .filter(pl.col("DataID").is_in(self.all_relevant_values))
+            .filter(pl.col("DataID").is_in(self.all_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names
@@ -207,7 +217,7 @@ class SICdbExtractor(SICdbPaths):
     # region laboratory
     # Extract laboratory information from the laboratory.csv file
     def extract_laboratory_timeseries(self) -> pl.LazyFrame:
-        laboratory_mapping = self.load_mapping(self.laboratory_mapping_path)
+        # laboratory_mapping = self.load_mapping(self.laboratory_mapping_path)
         offsets = self._get_offsets()
 
         return (
@@ -220,16 +230,14 @@ class SICdbExtractor(SICdbPaths):
                 .cast(float)
                 .alias(self.timeseries_time_col),
                 # Convert lab IDs to names, then map them
-                pl.col("LaboratoryID")
-                .replace_strict(
-                    self._extract_references("Laboratory"), default=None
-                )
-                .replace_strict(laboratory_mapping, default=None),
+                pl.col("LaboratoryID").replace_strict(
+                    self._extract_references_LOINC("Laboratory"), default=None
+                ),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant lab values
-            .filter(pl.col("LaboratoryID").is_in(self.all_relevant_values))
+            .filter(pl.col("LaboratoryID").is_in(self.all_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -386,6 +394,20 @@ class SICdbExtractor(SICdbPaths):
             )
         )
 
+    def _extract_references_LOINC(self, ReferenceName: str) -> dict:
+        references = (
+            pl.read_csv(self.d_references_path)
+            .filter(pl.col("ReferenceName") == ReferenceName)
+            .select(["ReferenceGlobalID", "LOINC_long"])
+        )
+
+        return dict(
+            zip(
+                references["ReferenceGlobalID"].to_numpy(),
+                references["LOINC_long"].to_numpy(),
+            )
+        )
+
     def _extract_drug_units(self) -> pl.LazyFrame:
         drug_units = (
             pl.read_csv(self.d_references_path)
@@ -421,3 +443,5 @@ class SICdbExtractor(SICdbPaths):
             )
             .drop(["ICUOffset", "OffsetAfterFirstAdmission"])
         )
+
+    # endregion

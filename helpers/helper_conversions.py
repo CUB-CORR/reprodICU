@@ -122,16 +122,16 @@ class UnitConversions:
             .alias(valuecol)
         )
 
-    def convert_blood_urea_nitrogen_from_urea(
+    def convert_urea_nitrogen_from_urea(
         self,
         data,
         itemid_urea="urea",
-        itemid_BUN: str = "blood_urea_nitrogen",
+        itemid_BUN: str = "urea_nitrogen",
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
-        Convert blood urea nitrogen values from urea.
+        Convert urea nitrogen values from urea.
         """
         return data.with_columns(
             pl.when(pl.col(labelcol) == itemid_urea)
@@ -240,6 +240,24 @@ class UnitConversions:
             .then(pl.col(valuecol) * 0.0363)
             .otherwise(pl.col(valuecol))
             .alias(valuecol)
+        )
+
+    def convert_FEU_to_DDU(
+        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+    ) -> pl.LazyFrame:
+        """
+        Convert D-Dimer values from FEU to DDU.
+        """
+        return data.with_columns(
+            pl.when(pl.col(labelcol) == itemid)
+            .then(pl.col(valuecol) / 2)
+            .otherwise(pl.col(valuecol))
+            .alias(valuecol),
+            # Replace FEU with DDU in the label
+            pl.when(pl.col(labelcol) == itemid)
+            .then(pl.col(labelcol).str.replace("FEU", "DDU"))
+            .otherwise(pl.col(labelcol))
+            .alias(labelcol),
         )
 
     def convert_hemoglobin_mmol_L_to_g_dL(

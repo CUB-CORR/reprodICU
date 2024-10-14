@@ -167,6 +167,7 @@ class MIMIC3Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
         super().__init__(paths, DEMO)
         mimic3_path = paths.mimic3_source_path
+        mimic4_path = paths.mimic4_source_path
 
         # MIMIC-III raw data paths
         self.admissions_path = mimic3_path + "ADMISSIONS.csv.gz"
@@ -228,6 +229,42 @@ class MIMIC3Paths(GlobalVars):
         )
         self.drug_class_mapping_path = (
             self.mimic3_mapping_path + "mimic3_inputevents_drug_class.yaml"
+        )
+
+        # MIMIC-IV LOINC mapping paths (also used for MIMIC-III)
+        self.mimic4_mapping_path = self.mapping_path + "mimic4/"
+        self.mimic_loinc_mapping_path = (
+            self.mimic4_mapping_path + "mimic-code_mapping/"
+        )
+        self.d_labitems_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
+        )
+        self.inputevents_to_rxnorm_path = (
+            self.mimic_loinc_mapping_path + "inputevents_to_rxnorm.csv"
+        )
+        self.lab_itemid_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "lab_itemid_to_loinc.csv"
+        )
+        self.meas_chartevents_main_path = (
+            self.mimic_loinc_mapping_path + "meas_chartevents_main.csv"
+        )
+        self.waveforms_summary_path = (
+            self.mimic_loinc_mapping_path + "waveforms-summary.csv"
+        )
+        self.proc_itemid_path = (
+            self.mimic_loinc_mapping_path + "proc_itemid.csv"
+        )
+        self.outputevents_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "outputevents_to_loinc.csv"
+        )
+        self.proc_datetimeevents_path = (
+            self.mimic_loinc_mapping_path + "proc_datetimeevents.csv"
+        )
+        self.meas_chartevents_value_path = (
+            self.mimic_loinc_mapping_path + "meas_chartevents_value.csv"
+        )
+        self.numerics_summary_path = (
+            self.mimic_loinc_mapping_path + "numerics-summary.csv"
         )
 
 
@@ -301,6 +338,41 @@ class MIMIC4Paths(GlobalVars):
             self.mimic4_mapping_path + "mimic4_inputevents_drug_class.yaml"
         )
 
+        # MIMIC-IV LOINC mapping paths
+        self.mimic_loinc_mapping_path = (
+            self.mimic4_mapping_path + "mimic-code_mapping/"
+        )
+        self.d_labitems_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
+        )
+        self.inputevents_to_rxnorm_path = (
+            self.mimic_loinc_mapping_path + "inputevents_to_rxnorm.csv"
+        )
+        self.lab_itemid_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "lab_itemid_to_loinc.csv"
+        )
+        self.meas_chartevents_main_path = (
+            self.mimic_loinc_mapping_path + "meas_chartevents_main.csv"
+        )
+        self.waveforms_summary_path = (
+            self.mimic_loinc_mapping_path + "waveforms-summary.csv"
+        )
+        self.proc_itemid_path = (
+            self.mimic_loinc_mapping_path + "proc_itemid.csv"
+        )
+        self.outputevents_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "outputevents_to_loinc.csv"
+        )
+        self.proc_datetimeevents_path = (
+            self.mimic_loinc_mapping_path + "proc_datetimeevents.csv"
+        )
+        self.meas_chartevents_value_path = (
+            self.mimic_loinc_mapping_path + "meas_chartevents_value.csv"
+        )
+        self.numerics_summary_path = (
+            self.mimic_loinc_mapping_path + "numerics-summary.csv"
+        )
+
 
 # endregion
 
@@ -365,7 +437,7 @@ class UMCdbPaths(GlobalVars):
 
         # UMCdb LOINC mapping paths
         self.umcdb_loinc_mapping_path = (
-            self.mapping_path + "AMSTEL_data_mappings/"
+            self.umcdb_mapping_path + "AMSTEL_data_mappings/"
         )
         self.admissions_gender_mapping_path = (
             self.umcdb_loinc_mapping_path + "admissions_gender.usagi.csv"

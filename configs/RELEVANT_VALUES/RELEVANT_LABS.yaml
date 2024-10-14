@@ -1,98 +1,96 @@
-alkaline_phosphatase: True
-ALT: True
-anion_gap: True
-AST: True
-# base_deficit: True # -> necessary for base_excess_deficit fixing in eICU
-# base_excess: True # -> necessary for base_excess_deficit fixing in eICU
-base_excess_deficit: True
-basophils: True
-bicarbonate: True
-bilirubin_total: True
-blood_urea_nitrogen: True
-calcium: True
-chloride: True
-creatinine: True
-eosinophiles: True
-erythrocytes: True
-# FiO2: False # -> respiratory value
-glucose: True
-glucose_bedside: True
-hematocrit: True
-hemoglobin: True
-INR: True
-lactate: True
-leukocytes: True
-lymphocytes: True
-magnesium: True
-MCH: True
-MCHC: True
-MCV: True
-monocytes: True
-# MPV: False # -> too specific
-neutrophils: True
-paCO2: True
-paO2: True
-partial_thromboplastin_time: True
-pH: True
-phosphate: True
-potassium: True
-protein_albumin: True
-protein_total: True
-prothrombin_time: True
-RDW: True
-saO2: True
-sodium: True
-thrombocytes: True
-troponin_I: True
-urine_specific_gravity: True
+# serum_ketones
+Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma: True # ALT
+Albumin [Mass/volume] in Serum or Plasma: True # protein_albumin
+Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma: True # alkaline_phosphatase
+Ammonia [Moles/volume] in Blood: True # ammonia
+Amylase [Enzymatic activity/volume] in Serum or Plasma: True # amylase
+Anion gap in Blood: True # anion_gap
+aPTT in Platelet poor plasma by Coagulation assay: True # partial_thromboplastin_time
+Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma: True # AST
+Band form neutrophils/100 leukocytes in Blood: True # banded_neutrophils # Band form neutrophils/100 leukocytes in Blood by Manual count
+Base excess in Arterial blood by calculation: True # base_excess_deficit
+Basophils/100 leukocytes in Blood: True # basophils
+Bicarbonate [Moles/volume] in Arterial blood: True # bicarbonate
+Bilirubin.direct [Moles/volume] in Serum or Plasma: True # bilirubin_direct
+Bilirubin.indirect [Moles/volume] in Serum or Plasma: False # bilirubin_indirect
+Bilirubin.total [Moles/volume] in Serum or Plasma: True # bilirubin_total
+C reactive protein [Mass/volume] in Serum or Plasma: True # CRP
+Calcium [Moles/volume] in Blood: True # calcium
+Calcium.ionized [Moles/volume] in Blood: True # Arterial blood: True # calcium
+Carbon dioxide [Partial pressure] in Arterial blood: True # paCO2
+Carboxyhemoglobin/Hemoglobin.total in Arterial blood: True # carboxyhemoglobin
+Chloride [Moles/volume] in Blood: True # Arterial blood: True # chloride
+Cholesterol [Mass/volume] in Serum or Plasma: True # cholesterol_total
+Cholesterol in HDL [Mass/volume] in Serum or Plasma: True # cholesterol_HDL
+Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation: True # cholesterol_LDL
+Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma: True # vitamin_B12
+Cortisol [Mass/volume] in Serum or Plasma: False # cortisol
+Creatine kinase [Enzymatic activity/volume] in Serum or Plasma: True # CK
+Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma: True # CK-MB
+Creatinine [Mass/volume] in Serum or Plasma: True # creatinine
+Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma: True # d_dimers
+Eosinophils/100 leukocytes in Blood: True # eosinophils
+Erythrocyte distribution width [Ratio]: True # RDW / red_cell_distribution_width
+Erythrocyte sedimentation rate by Westergren method: True # erythrocyte_sedimentation_rate
+Erythrocytes [#/volume] in Blood: True # erythrocytes
+Ferritin [Mass/volume] in Serum or Plasma: True # ferritin
+Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay: True # fibrinogen
+Folate [Mass/volume] in Serum or Plasma: True # folate
+Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma: True # gamma_glutamyl_transferase
+Glucose [Mass/volume] in Serum or Plasma: True # glucose / glucose_bedside
+Haptoglobin [Mass/volume] in Serum or Plasma: True # haptoglobin
+Hematocrit [Volume Fraction] of Blood: True # hematocrit
+Hemoglobin [Mass/volume] in Blood: True # hemoglobin
+INR in Platelet poor plasma by Coagulation assay: True # INR
+Iron [Moles/volume] in Serum or Plasma: True # iron
+Iron binding capacity [Moles/volume] in Serum or Plasma: False # total_iron_binding_capacity
+Lactate [Moles/volume] in Arterial blood: True # lactate
+Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma: True # lactate_dehydrogenase
+Leukocytes [#/volume] in Blood: True # leukocytes
+Lipase [Enzymatic activity/volume] in Serum or Plasma: True # lipase
+Lymphocytes/100 leukocytes in Blood: True # lymphocytes
+Magnesium [Moles/volume] in Serum or Plasma: True # magnesium
+MCH [Entitic mass]: True # MCH
+MCHC [Mass/volume]: True # MCHC
+MCV [Entitic volume]: True # MCV
+Methemoglobin/Hemoglobin.total in Arterial blood: True # methemoglobin
+Monocytes/100 leukocytes in Blood: True # monocytes
+Myoglobin [Mass/volume] in Serum or Plasma: True # myoglobin
+Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma: True # NTproBNP
+Neutrophils/100 leukocytes in Blood: True # neutrophils
+Osmolality of Serum or Plasma: True # serum_osmolality
+Oxygen [Partial pressure] in Arterial blood: True # paO2
+Oxygen saturation in Arterial blood: True # saO2
+Oxyhemoglobin/Hemoglobin.total in Arterial blood: True # oxyhemoglobin
+pH of Arterial blood: True # pH
+Phosphate [Moles/volume] in Serum or Plasma: True # phosphate
+Platelets [#/volume] in Blood: True # thrombocytes
+Potassium [Moles/volume] in Blood: True # Arterial blood: True # potassium
+Prealbumin [Mass/volume] in Serum or Plasma: True # protein_prealbumin
+Protein [Mass/volume] in Serum or Plasma: True # protein_total
+Prothrombin time (PT): True # prothrombin_time
+Reticulocytes/100 erythrocytes in Blood: True # reticulocytes
+Segmented neutrophils/100 leukocytes in Blood: True # segmented_neutrophils
+Sodium [Moles/volume] in Blood: True # Arterial blood: True # sodium
+Thyrotropin [Units/volume] in Serum or Plasma: True # TSH
+Thyroxine (T4) [Moles/volume] in Serum or Plasma: True # T4
+Thyroxine (T4) free [Moles/volume] in Serum or Plasma: True # T4_free
+Transferrin [Mass/volume] in Serum or Plasma: True # transferrin
+Triglyceride [Mass/volume] in Serum or Plasma: True # triglycerides
+Triiodothyronine (T3) [Moles/volume] in Serum or Plasma: True # T3
+Troponin I.cardiac [Mass/volume] in Serum or Plasma: True # troponin_I
+Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method: True # troponin_T
+Urate [Mass/volume] in Serum or Plasma: True # uric_acid
+Urea nitrogen [Moles/volume] in Serum or Plasma: True # blood_urea_nitrogen
 
-# ammonia: True
-amylase: True
-banded_neutrophils: True
-# bilirubin_direct: True
-# bilirubin_indirect: True
-# carboxyhemoglobin: True
-cholesterol_HDL: True
-cholesterol_LDL: True
-cholesterol_total: True
-CK: True
-CK-MB: True
-# cortisol: True
-CRP: True
-d_dimers: True
-eosinophils: True
-# erythrocyte_sedimentation_rate: True
-# ferritin: True
-fibrinogen: True
-# folate: True
-gamma_glutamyl_transferase: True
-haptoglobin: True
-# iron: True
-lactate_dehydrogenase: True
-lipase: True
-# methemoglobin: True
-# myoglobin: True
-# NTproBNP: True
-# oxyhemoglobin: True
-# protein_prealbumin: True
-red_cell_distribution_width: True
-reticulocytes: True
-# serum_ketones: True
-serum_osmolality: True
-# T3: True
-# T4: True
-# T4_free: True
-# total_iron_binding_capacity: True
-# transferrin: True
-triglycerides: True
-troponin_T: True
-TSH: True
-# uric_acid: True
-urine_creatinine: True
-# urine_ketones: True
-# urine_leukocytes: True
-# urine_nitrogen_24h: True
-urine_osmolality: True
-# urine_protein_24h: True
-# urine_sodium: True
-# vitamin_B12: True
+# URINE
+Creatinine [Mass/volume] in Urine: True # urine_creatinine
+Creatinine [Mass/volume] in 24 hour Urine: False # urine_creatinine_24h
+Ketones [Mass/volume] in Urine by Test strip: True # urine_ketones
+Leukocytes [#/volume] in Urine by Test strip: True # urine_leukocytes
+Nitrite [Presence] in Urine by Test strip: True # urine_nitrogen_24h
+Osmolality of Urine: True # urine_osmolality
+Protein [Mass/volume] in Urine: True # urine_protein
+Protein [Mass/volume] in 24 hour Urine: True # urine_protein_24h
+Sodium [Moles/volume] in Urine: True # urine_sodium
+Specific gravity of Urine by Test strip: True # urine_specific_gravity

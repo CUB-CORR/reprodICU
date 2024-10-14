@@ -1,13 +1,13 @@
-701: invasive_systolic_blood_pressure
-702: invasive_diastolic_blood_pressure
-703: invasive_mean_blood_pressure
-704: noninvasive_systolic_blood_pressure
-705: noninvasive_diastolic_blood_pressure
-706: noninvasive_mean_blood_pressure
-707: heart_rate
+701: Invasive systolic arterial pressure
+702: Invasive diastolic arterial pressure
+703: Invasive mean arterial pressure
+704: Non-invasive systolic arterial pressure
+705: Non-invasive diastolic arterial pressure
+706: Non-invasive mean arterial pressure
+707: Heart rate
 708:
-709: temperature
-710: spO2
+709: Temperature
+710: Peripheral oxygen saturation
 711: PEEP
 712: mean_airway_pressure
 713: minute_volume_exhaled_patient
@@ -15,9 +15,9 @@
 716: etCO2
 717: tidal_volume_inhaled_patient
 718: tidal_volume_exhaled_patient
-719: respiratory_rate_patient
+719: Respiratory rate
 723:
-724: heart_rate
+724: # Heart rate # -> preferring ECG over ABP for heart rate
 725: urine_output
 726:
 727:
@@ -26,7 +26,7 @@
 730:
 731:
 732:
-2018: central_venous_pressure
+2018: Central venous pressure
 2019: minute_volume_total
 2020: pressure_support
 2021: ie_ratio
@@ -51,19 +51,19 @@
 2289:
 2290:
 2305:
-2309:
-2310:
-2311:
-2312:
-2313:
-2314:
-2315:
-2316:
-2317:
-2318:
-2319:
-2320:
-2321:
+2309: Fluid output chest tube
+2310: Fluid output chest tube
+2311: Fluid output chest tube
+2312: Fluid output chest tube
+2313: Fluid output chest tube
+2314: Fluid output wound drain
+2315: Fluid output wound drain
+2316: Fluid output wound drain
+2317: Fluid output wound drain
+2318: Fluid output wound drain
+2319: Fluid output wound drain
+2320: Fluid output wound drain
+2321: Fluid output wound drain
 2322:
 3035: peak_inspiratory_pressure
 3036:
@@ -74,5 +74,5 @@
 3071:
 3120: compliance_dynamic
 3121:
-3122: numeric_pain_rating_scale
-3123: richmond_agitation_sedation_scale
+3122: Numeric Pain Rating Scale
+3123: Richmond agitation-sedation scale

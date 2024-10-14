@@ -91,7 +91,9 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_numeric.collect_schema().names()) - set(self.index_cols)
         )
         ts_numeric = (
-            ts_numeric.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+            ts_numeric.pipe(
+                self.helpers.dropna, subset_cols=droplist, how="all"
+            )
             .lazy()
             .unique()
         )
@@ -114,7 +116,7 @@ class UMCdbProcessor(UMCdbExtractor):
                 self.precalc_path + "UMCdb_B_ts_listitems.parquet"
             )
 
-        print("UMCdb   - Processing numeric time series data...")
+        print("UMCdb   - Processing list time series data...")
 
         # Process vitals data
         ts_listitems = (
@@ -139,7 +141,9 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_listitems.collect_schema().names()) - set(self.index_cols)
         )
         ts_listitems = (
-            ts_listitems.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+            ts_listitems.pipe(
+                self.helpers.dropna, subset_cols=droplist, how="all"
+            )
             .lazy()
             .unique()
         )
@@ -171,94 +175,104 @@ class UMCdbConverter(UnitConverter):
         (
             data.pipe(
                 self.convert_ratio_to_percentage,
-                itemid="hematocrit",
+                itemid="Hematocrit [Volume Fraction] of Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ratio_to_percentage,
-                itemid="saO2",
+                itemid="Oxygen saturation in Arterial blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
-                itemid="creatinine",
+                itemid="Creatinine [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
-                itemid="urine_creatinine",
+                itemid="Creatinine [Moles/volume] in Urine",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="cholesterol_HDL",
+                itemid="Cholesterol in HDL [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="cholesterol_LDL",
+                itemid="Cholesterol in LDL [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="cholesterol_total",
+                itemid="Cholesterol [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_cortisol_nmol_L_to_ug_dL,
-                itemid="cortisol",
+                itemid="Cortisol [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_L_to_mg_dL,
-                itemid="fibriogen",
+                itemid="Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="glucose",
+                itemid="Glucose [Moles/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_hemoglobin_mmol_L_to_g_dL,
-                itemid="hemoglobin",
+                itemid="Hemoglobin [Moles/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 # same conversion due to definition of MCHC
                 self.convert_hemoglobin_mmol_L_to_g_dL,
-                itemid="MCHC",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
-                self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="glucose",
+                itemid="MCHC [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_triglycerides_mmol_L_to_mg_dL,
-                itemid="triglycerides",
+                itemid="Triglyceride [Moles/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ug_L_to_ng_L,
-                itemid="troponin_T",
+                itemid="Troponin T.cardiac [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
+            )
+            .with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        "Creatinine [Moles/volume] in Serum or Plasma": "Creatinine [Mass/volume] in Serum or Plasma",
+                        "Creatinine [Moles/volume] in Urine": "Creatinine [Mass/volume] in Urine",
+                        "Cholesterol in HDL [Moles/volume] in Serum or Plasma": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
+                        "Cholesterol in LDL [Moles/volume] in Serum or Plasma": "Cholesterol in LDL [Mass/volume] in Serum or Plasma",
+                        "Cholesterol [Moles/volume] in Serum or Plasma": "Cholesterol [Mass/volume] in Serum or Plasma",
+                        "Cortisol [Moles/volume] in Serum or Plasma": "Cortisol [Mass/volume] in Serum or Plasma",
+                        "Glucose [Moles/volume] in Blood": "Glucose [Mass/volume] in Blood",
+                        "Hemoglobin [Moles/volume] in Blood": "Hemoglobin [Mass/volume] in Blood",
+                        "MCHC [Moles/volume]": "MCHC [Mass/volume]",
+                        "Triglyceride [Moles/volume] in Blood": "Triglyceride [Mass/volume] in Blood",
+                    }
+                )
             )
         )
 

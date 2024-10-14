@@ -76,7 +76,7 @@ Urea [Moles/volume] in Venous blood: # urea
 Creatinine [Moles/volume] in Blood: creatinine
 Creatinine [Moles/volume] in Urine: urine_creatinine
 Sodium [Moles/volume] in Urine: urine_sodium
-Urea [Moles/volume] in Urine: urea # don't forget to convert to blood_urea_nitrogen -> done!
+Urea [Moles/volume] in Urine: # urea # don't forget to convert to blood_urea_nitrogen -> done!
 Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma: AST
 Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma: ALT
 Bilirubin.total [Moles/volume] in Serum or Plasma: bilirubin_total

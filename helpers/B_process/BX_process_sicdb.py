@@ -34,33 +34,31 @@ class SICdbProcessor(SICdbExtractor):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
     # region timeseries
-    # Processes and combines the time series data of the eICU dataset.
-    def process_timeseries(self) -> pl.LazyFrame:
-        # Load preexisting data if available
+    # # Processes and combines the time series data of the eICU dataset.
+    # def process_timeseries(self) -> pl.LazyFrame:
+    #     # Load preexisting data if available
+    #     if os.path.isfile(self.precalc_path + "SICdb_B_timeseries.parquet"):
+    #         return pl.scan_parquet(
+    #             self.precalc_path + "SICdb_B_timeseries.parquet"
+    #         )
+
+    #     # Load the time series data
+    #     print("SICdb   - Loading time series data...")
+
+    #     ts_float = self._process_timeseries_data_float()
+    #     ts_labs = self._process_timeseries_data_labs()
+
+    #     timeseries = ts_float.sort(self.index_cols)
+    #     timeseries.sink_parquet(
+    #         self.precalc_path + "SICdb_B_timeseries.parquet"
+    #     )
+    #     return timeseries
+
+    def process_timeseries_data_float(self) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "SICdb_B_timeseries.parquet"):
-            return pl.scan_parquet(
-                self.precalc_path + "SICdb_B_timeseries.parquet"
-            )
-
-        # Load the time series data
-        print("SICdb   - Loading time series data...")
-
-        ts_float = self._process_timeseries_data_float()
-        ts_labs = self._process_timeseries_data_labs()
-
-        timeseries = pl.concat(
-            [ts_float, ts_labs], how="diagonal_relaxed"
-        ).sort(self.index_cols)
-        timeseries.sink_parquet(
-            self.precalc_path + "SICdb_B_timeseries.parquet"
-        )
-        return timeseries
-
-    def _process_timeseries_data_float(self) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "SICdb_B_ts_float.parquet"):
             # Load the preprocessed data
             return pl.scan_parquet(
-                self.precalc_path + "SICdb_B_ts_float.parquet"
+                self.precalc_path + "SICdb_B_timeseries.parquet"
             )
 
         print("SICdb   - Processing time series data...")
@@ -82,24 +80,29 @@ class SICdbProcessor(SICdbExtractor):
             set(timeseries.collect_schema().names()) - set(self.index_cols)
         )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
             .lazy()
+            .sort(self.index_cols)
             .unique()
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(self.precalc_path + "SICdb_B_ts_float.parquet")
+        timeseries.sink_parquet(
+            self.precalc_path + "SICdb_B_timeseries.parquet"
+        )
 
         return timeseries
 
     # endregion
 
     # region lab values
-    def _process_timeseries_data_labs(self) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "SICdb_B_ts_labs.parquet"):
+    def process_timeseries_data_labs(self) -> pl.LazyFrame:
+        if os.path.isfile(
+            self.precalc_path + "SICdb_B_timeseries_labs.parquet"
+        ):
             # Load the preprocessed data
             return pl.scan_parquet(
-                self.precalc_path + "SICdb_B_ts_labs.parquet"
+                self.precalc_path + "SICdb_B_timeseries_labs.parquet"
             )
 
         print("SICdb   - Processing laboratory data...")
@@ -127,13 +130,16 @@ class SICdbProcessor(SICdbExtractor):
             set(timeseries.collect_schema().names()) - set(self.index_cols)
         )
         timeseries = (
-            timeseries.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
             .lazy()
+            .sort(self.index_cols)
             .unique()
         )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(self.precalc_path + "SICdb_B_ts_labs.parquet")
+        timeseries.sink_parquet(
+            self.precalc_path + "SICdb_B_timeseries_labs.parquet"
+        )
 
         return timeseries
 
@@ -159,9 +165,9 @@ class SICdbConverter(UnitConverter):
         # Convert the lab values to the correct units.
         (
             data.pipe(
-                self.convert_blood_urea_nitrogen_from_urea,
-                itemid_urea="urea",
-                itemid_BUN="blood_urea_nitrogen",
+                self.convert_urea_nitrogen_from_urea,
+                itemid_urea="Urea [Mass/volume] in Serum or Plasma",
+                itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )

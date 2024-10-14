@@ -58,44 +58,38 @@ class EICUProcessor(EICUExtractor):
                 self.precalc_path + "EICU_B_timeseries.parquet"
             )
 
+        pl.Config.set_verbose(True)
+
         # Load the time series data.
         print("eICU    - Loading time series data...")
-        ts_lab = self._process_timeseries_lab()
-        ts_resp = self._process_timeseries_resp()
+        # ts_lab = self._process_timeseries_lab()
+        # ts_resp = self._process_timeseries_resp()
         ts_nurse = self._process_timeseries_nurse()
-        ts_inout = self._process_timeseries_inout()
-        ts_periodics = self.extract_and_combine_periodics()
+        # ts_inout = self._process_timeseries_inout()
+        ts_periodics = self._process_periodics()
 
         # Join the time series data on the patient unit stay ID.
         print("eICU    - Joining wide time series data...")
-        on = self.index_cols
 
-        # NOTE: Nurse and Periodics are merged first due to duplicate columns
-        if not os.path.isfile(
-            self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
-        ):
-            ts_nurse_periodics = pl.concat(
-                [ts_nurse, ts_periodics], how="diagonal_relaxed"
-            )
+        timeseries = pl.concat([ts_nurse, ts_periodics], how="diagonal_relaxed")
 
-            # Save the preprocessed data
-            # ts_nurse_periodics.sink_parquet(
-            ts_nurse_periodics.collect(streaming=True).write_parquet(
-                self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
-            )
+        # Save the preprocessed data
+        timeseries.sink_parquet(
+            self.precalc_path + "EICU_B_timeseries_unsorted.parquet"
+        )
 
-        else:
-            # Load the preprocessed data
-            ts_nurse_periodics = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_nurse_periodics.parquet"
-            )
-
-        print("eICU    - Returning wide time series data...")
-        timeseries = pl.concat(
-            [ts_lab, ts_resp, ts_inout, ts_nurse_periodics],
-            how="diagonal_relaxed",
+        # NOTE: if process stops due to insufficient memory, use the following
+        # lines instead within a terminal at the precalc_path:
+        # pl.scan_parquet("EICU_B_timeseries_unsorted.parquet").sort(
+        #     "icu_stay_id", "time_relative_to_admission"
+        # ).sink_parquet("HiRID_B_timeseries.parquet")
+        print("eICU    - Sorting wide time series data...")
+        timeseries = pl.scan_parquet(
+            self.precalc_path + "EICU_B_timeseries_unsorted.parquet"
         ).sort(self.index_cols)
+
         timeseries.sink_parquet(self.precalc_path + "EICU_B_timeseries.parquet")
+
         return timeseries
 
     # endregion
@@ -103,7 +97,7 @@ class EICUProcessor(EICUExtractor):
     # region lab
     # Process lab data, i.e. extract and pivot lab data.
     # Keep only the relevant lab values.
-    def _process_timeseries_lab(self):
+    def process_timeseries_lab(self):
         """
         Process lab data, i.e. extract and pivot lab data.
         Keep only the relevant lab values.
@@ -116,7 +110,9 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Processing lab data...")
 
-        if not os.path.isfile(self.precalc_path + "EICU_B_ts_lab.parquet"):
+        if not os.path.isfile(
+            self.precalc_path + "EICU_B_timeseries_labs.parquet"
+        ):
             ts_lab = (
                 self.extract_time_series_lab()
                 # Combine base_excess and base_deficit into one column base_excess_deficit
@@ -144,22 +140,24 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(
-                set(ts_lab.collect_schema().names()) - set(self.index_cols)
-            )
+            ts_lab_cols = ts_lab.collect_schema().names()
+            droplist = list(set(ts_lab_cols) - set(self.index_cols))
             ts_lab = (
-                ts_lab.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+                ts_lab.pipe(self.helpers.dropna, "all", droplist, False)
                 .unique()
+                .sort(self.index_cols)
                 .lazy()
             )
 
             # Save the preprocessed data
-            ts_lab.sink_parquet(self.precalc_path + "EICU_B_ts_lab.parquet")
+            ts_lab.sink_parquet(
+                self.precalc_path + "EICU_B_timeseries_labs.parquet"
+            )
 
         else:
             # Load the preprocessed data
             ts_lab = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_lab.parquet"
+                self.precalc_path + "EICU_B_timeseries_labs.parquet"
             )
 
         return ts_lab
@@ -195,12 +193,12 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(
-                set(ts_resp.collect_schema().names()) - set(self.index_cols)
-            )
+            ts_resp_cols = ts_resp.collect_schema().names()
+            droplist = list(set(ts_resp_cols) - set(self.index_cols))
             ts_resp = (
-                ts_resp.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+                ts_resp.pipe(self.helpers.dropna, "all", droplist, False)
                 .unique()
+                .sort(self.index_cols)
                 .lazy()
             )
 
@@ -280,12 +278,12 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(
-                set(ts_nurse.collect_schema().names()) - set(self.index_cols)
-            )
+            ts_nurse_cols = ts_nurse.collect_schema().names()
+            droplist = list(set(ts_nurse_cols) - set(self.index_cols))
             ts_nurse = (
-                ts_nurse.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+                ts_nurse.pipe(self.helpers.dropna, "all", droplist, False)
                 .unique()
+                .sort(self.index_cols)
                 .lazy()
             )
 
@@ -319,7 +317,6 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Processing intake/output data...")
 
         # Process inout data
-        print("eICU    - Processing inout data...")
         if not os.path.isfile(self.precalc_path + "EICU_B_ts_inout.parquet"):
             ts_inout = (
                 self.extract_time_series_intake_output()
@@ -333,12 +330,12 @@ class EICUProcessor(EICUExtractor):
             )
 
             # Drop empty rows
-            droplist = list(
-                set(ts_inout.collect_schema().names()) - set(self.index_cols)
-            )
+            ts_inout_cols = ts_inout.collect_schema().names()
+            droplist = list(set(ts_inout_cols) - set(self.index_cols))
             ts_inout = (
-                ts_inout.pipe(self.helpers.dropna, subset_cols=droplist, how="all")
+                ts_inout.pipe(self.helpers.dropna, "all", droplist, False)
                 .unique()
+                .sort(self.index_cols)
                 .lazy()
             )
 
@@ -352,6 +349,51 @@ class EICUProcessor(EICUExtractor):
             )
 
         return ts_inout
+
+    # endregion
+
+    # region periodics
+    # Process periodic data, i.e. extract and combine (a)periodic data.
+    def _process_periodics(self):
+        """
+        Process inout data, i.e. extract (a)periodic data.
+        Keep only the relevant inout values.
+
+        The processed intake/output data in wide format is indexed by the ICU stay ID and time.
+
+        :return: The processed intake/output data in wide format.
+        :rtype: pl.LazyFrame
+        """
+
+        print("eICU    - Processing (a)periodic data...")
+
+        # Process inout data
+        if not os.path.isfile(
+            self.precalc_path + "EICU_B_ts_periodics.parquet"
+        ):
+            ts_periodics = self.extract_and_combine_periodics()
+
+            # Drop empty rows
+            ts_periodics_cols = ts_periodics.collect_schema().names()
+            droplist = list(set(ts_periodics_cols) - set(self.index_cols))
+            ts_periodics = (
+                ts_periodics.pipe(self.helpers.dropna, "all", droplist, False)
+                .unique()
+                .sort(self.index_cols)
+            )
+
+            # Save the preprocessed data
+            ts_periodics.sink_parquet(
+                self.precalc_path + "EICU_B_ts_periodics.parquet"
+            )
+
+        else:
+            # Load the preprocessed data
+            ts_periodics = pl.scan_parquet(
+                self.precalc_path + "EICU_B_ts_periodics.parquet"
+            )
+
+        return ts_periodics
 
     # endregion
 
@@ -472,7 +514,7 @@ class EICUConverter(UnitConverter):
                         [base_excess_name, base_deficit_name]
                     ),
                 )
-                .then(pl.lit("base_excess_deficit"))
+                .then(pl.lit("Base excess in Arterial blood by calculation"))
                 .otherwise(pl.col(labelcol))
                 .alias(labelcol),
             )
@@ -490,31 +532,37 @@ class EICUConverter(UnitConverter):
         (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="bilirubin_direct",
+                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="bilirubin_total",
+                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-                itemid="blood_urea_nitrogen",
+                itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="calcium",
+                itemid="Calcium [Mass/volume] in Blood",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_calcium_mg_dL_to_mmol_L,
+                itemid="Calcium.ionized [Mass/volume] in Blood",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="CKMB",
+                itemid="Creatine kinase.MB [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -530,7 +578,7 @@ class EICUConverter(UnitConverter):
             # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="CRP",
+                itemid="C reactive protein [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -550,87 +598,108 @@ class EICUConverter(UnitConverter):
             # )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="iron",
+                itemid="Iron [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="magnesium",
+                itemid="Magnesium [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="myoglobin",
+                itemid="Myoglobin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="phosphate",
+                itemid="Phosphate [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="protein_albumin",
+                itemid="Albumin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="protein_prealbumin",
+                itemid="Prealbumin [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="protein_total",
+                itemid="Protein [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="T3",
+                itemid="Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="T4",
+                itemid="Thyroxine (T4) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="T4_free",
+                itemid="Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="troponin_I",
+                itemid="Troponin I.cardiac [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="troponin_T",
+                itemid="Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="total_iron_binding_capacity",
+                itemid="Iron binding capacity [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="vitamin_B12",
+                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
+            )
+            .with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.indirect [Mass/volume] in Serum or Plasma": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
+                        "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
+                        "Calcium [Mass/volume] in Blood": "Calcium [Moles/volume] in Blood",
+                        "Calcium.ionized [Mass/volume] in Blood": "Calcium.ionized [Moles/volume] in Blood",
+                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
+                        "Iron [Mass/volume] in Serum or Plasma": "Iron [Moles/volume] in Serum or Plasma",
+                        "Iron binding capacity [Mass/volume] in Serum or Plasma": "Iron binding capacity [Moles/volume] in Serum or Plasma",
+                        "Magnesium [Mass/volume] in Serum or Plasma": "Magnesium [Moles/volume] in Serum or Plasma",
+                        "Phosphate [Mass/volume] in Serum or Plasma": "Phosphate [Moles/volume] in Serum or Plasma",
+                        "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma": "Triiodothyronine (T3) [Moles/volume] in Serum or Plasma",
+                        "Thyroxine (T4) [Mass/volume] in Serum or Plasma": "Thyroxine (T4) [Moles/volume] in Serum or Plasma",
+                        "Thyroxine (T4) free [Mass/volume] in Serum or Plasma": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
+                        "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma": "Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma",
+                    }
+                )
             )
         )
 

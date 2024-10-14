@@ -175,19 +175,17 @@ class UMCdbExtractor(UMCdbPaths):
 
     # endregion
 
-    # region timeseries
+    # region listitems
     # Extract timeseries information from the listitems.csv file
     def extract_timeseries_listitems(self) -> pl.LazyFrame:
-        listitems_mapping = self.helpers.load_mapping(
-            self.listitems_mapping_path
-        )
+        pl.Config.set_verbose(True)
 
         listitems = (
-            pl.scan_csv(self.listitems_path, dtypes={"value": str})
+            pl.scan_csv(self.listitems_path, schema_overrides={"value": str})
             .select(
                 [
                     "admissionid",
-                    "item",
+                    # "item",
                     "itemid",
                     "value",
                     "valueid",
@@ -197,8 +195,8 @@ class UMCdbExtractor(UMCdbPaths):
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
-                pl.col("item")
-                .replace_strict(listitems_mapping, default=None)
+                pl.col("itemid")
+                .replace_strict(self._extract_list_references(), default=None)
                 .alias("item"),
             )
             .pipe(self._extract_timeseries_helper)
@@ -210,25 +208,39 @@ class UMCdbExtractor(UMCdbPaths):
             gcs, on=self.index_cols
         )
 
+    # endregion
+
+    # region numeric
     # Extract timeseries information from the numericitems.csv file
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
-        numericitems_mapping = self.helpers.load_mapping(
-            self.numeric_mapping_path
+        pl.Config.set_verbose(True)
+
+        data = pl.scan_csv(
+            self.numericitems_path, schema_overrides={"value": str}
         )
 
-        return (
-            pl.scan_csv(self.numericitems_path, dtypes={"value": str})
-            .select(["admissionid", "item", "value", "measuredat"])
+        print(self._extract_numeric_references())
+
+        print("before",data.head(10).collect(streaming=True))
+
+        data = (
+            data.select(["admissionid", "itemid", "value", "measuredat"])
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
-                pl.col("item")
-                .replace_strict(numericitems_mapping, default=None)
+                pl.col("itemid")
+                .replace(self._extract_numeric_references(), default=None)
                 .alias("item"),
             )
-            .pipe(self._extract_timeseries_helper)
         )
 
+        print("after",data.head(10).collect(streaming=True))
+
+        return data.pipe(self._extract_timeseries_helper)
+
+    # endregion
+
+    # region ts helper
     # filter and rename columns for timeseries data
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         intimes = (
@@ -267,12 +279,15 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.timeseries_time_col),
             )
             # Filter only relevant timeseries values
-            .filter(pl.col("item").is_in(self.all_relevant_values))
+            .filter(pl.col("item").is_in(self.all_values))
             .drop(["measuredat", "intime", "outtime"])
             # Convert values to numbers, if possible, ignore if not
             .cast({"value": float}, strict=False)
         )
 
+    # endregion
+
+    # region gcs
     # compute Glasgow Coma Scale (GCS) from listitems data
     # Implementation using item IDs as in BlendedICU
     # https://github.com/USM-CHU-FGuyon/BlendedICU/blob/master/amsterdam_preprocessing/AmsterdamPreparator.py#L131
@@ -797,3 +812,72 @@ class UMCdbExtractor(UMCdbPaths):
                 )
             )
         )
+
+    # endregion
+
+    # region references
+    # Extract the information from the d_references.csv file
+    def _extract_numeric_references(self) -> dict:
+        references = (
+            pl.concat(
+                [
+                    pl.read_csv(self.numericitems_lab_mapping_path),
+                    pl.read_csv(self.numericitems_other_mapping_path),
+                    pl.read_csv(self.numericitems_tag_mapping_path),
+                    pl.read_csv(self.numericitems_unit_mapping_path),
+                ],
+                how="diagonal_relaxed",
+            )
+            .with_columns(
+                pl.col("conceptName").replace(
+                    {
+                        "Invasive Systolic blood pressure": "Invasive systolic arterial pressure",
+                        "Invasive Diastolic blood pressure": "Invasive diastolic arterial pressure",
+                        "Invasive Mean blood pressure": "Invasive mean arterial pressure",
+                        "Systolic blood pressure by Noninvasive": "Non-invasive systolic arterial pressure",
+                        "Diastolic blood pressure by Noninvasive": "Non-invasive diastolic arterial pressure",
+                        "Mean blood pressure by Noninvasive": "Non-invasive mean arterial pressure",
+                        "Heart rate.beat-to-beat by EKG": "Heart rate",
+                    }
+                )
+            )
+            # .filter(pl.col("equivalence") == "EQUAL")
+            .select(["sourceCode", "conceptName"])
+            .cast({"sourceCode": int}, strict=False)
+            
+        )
+
+        references.filter(~pl.col("conceptName").is_in(self.all_values)).write_parquet("UMCdb_numeric_references.parquet")
+
+        references = references.filter(pl.col("conceptName").is_in(self.all_values))
+
+        return dict(
+            zip(
+                references["sourceCode"].to_numpy(),
+                references["conceptName"].to_numpy(),
+            )
+        )
+
+    # Extract the information from the d_references.csv file
+    def _extract_list_references(self) -> dict:
+        references = (
+            pl.concat(
+                [
+                    pl.read_csv(self.listitems_item_mapping_path),
+                    pl.read_csv(self.listitems_value_mapping_path),
+                ],
+                how="diagonal_relaxed",
+            )
+            #.filter(pl.col("equivalence") == "EQUAL")
+            .select(["sourceCode", "conceptName"])
+            .filter(pl.col("conceptName").is_in(self.all_values))
+        )
+
+        return dict(
+            zip(
+                references["sourceCode"].to_numpy(),
+                references["conceptName"].to_numpy(),
+            )
+        )
+
+    # endregion
