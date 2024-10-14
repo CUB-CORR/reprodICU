@@ -232,14 +232,17 @@ class MIMIC3Converter(UnitConverter):
 
     # Convert the lab values of the MIMIC-III dataset.
     def _convert_lab_values(
-        self, data, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self,
+        data: pl.LazyFrame,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the MIMIC dataset.
         """
 
         # Convert the lab values to the correct units.
-        (
+        return (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
                 itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
@@ -431,8 +434,6 @@ class MIMIC3Converter(UnitConverter):
                 )
             )
         )
-
-        return data
 
 
 # endregion

@@ -54,15 +54,15 @@ class TimeseriesHarmonizer(GlobalVars):
         resp_prms = pl.Series(
             [*self.index_cols, *self.relevant_respiratory_values]
         )
-        # inout_prms = pl.Series(
-        #     [*self.index_cols, *self.relevant_intakeoutput_values]
-        # )
+        inout_prms = pl.Series(
+            [*self.index_cols, *self.relevant_intakeoutput_values]
+        )
 
         # Harmonize the timeseries
         timeseries_vitals = []
         timeseries_labs = []
         timeseries_resp = []
-        # timeseries_inout = []
+        timeseries_inout = []
 
         if "eICU" in self.datasets:
             eicu_timeseries = self.eicu.process_timeseries().pipe(
@@ -80,12 +80,12 @@ class TimeseriesHarmonizer(GlobalVars):
             eicu_labs = labs_prms.filter(labs_prms.is_in(eicu_ts_lab_names))
 
             # TODO: in/out calculation including medication
-            # eicu_inout = inout_prms.filter(inout_prms.is_in(eicu_ts_names))
+            eicu_inout = inout_prms.filter(inout_prms.is_in(eicu_ts_names))
 
             timeseries_vitals.append(eicu_timeseries.select(*eicu_vitals))
             timeseries_resp.append(eicu_timeseries.select(*eicu_resp))
             timeseries_labs.append(eicu_timeseries_labs.select(*eicu_labs))
-            # timeseries_inout.append(eicu_timeseries.select(*eicu_inout))
+            timeseries_inout.append(eicu_timeseries.select(*eicu_inout))
 
         if "HiRID" in self.datasets:
             hirid_timeseries = self.hirid.process_timeseries().pipe(
@@ -96,12 +96,12 @@ class TimeseriesHarmonizer(GlobalVars):
             hirid_vitals = vital_prms.filter(vital_prms.is_in(hirid_ts_names))
             hirid_resp = resp_prms.filter(resp_prms.is_in(hirid_ts_names))
             hirid_labs = labs_prms.filter(labs_prms.is_in(hirid_ts_names))
-            # hirid_inout = inout_prms.filter(inout_prms.is_in(hirid_ts_names))
+            hirid_inout = inout_prms.filter(inout_prms.is_in(hirid_ts_names))
 
             timeseries_vitals.append(hirid_timeseries.select(*hirid_vitals))
             timeseries_resp.append(hirid_timeseries.select(*hirid_resp))
             timeseries_labs.append(hirid_timeseries.select(*hirid_labs))
-            # timeseries_inout.append(hirid_timeseries.select(*hirid_inout))
+            timeseries_inout.append(hirid_timeseries.select(*hirid_inout))
 
         if "MIMIC3" in self.datasets:
             mimic3_timeseries = self.mimic3.process_timeseries().pipe(
@@ -112,12 +112,12 @@ class TimeseriesHarmonizer(GlobalVars):
             mimic3_vitals = vital_prms.filter(vital_prms.is_in(mimic3_ts_names))
             mimic3_resp = resp_prms.filter(resp_prms.is_in(mimic3_ts_names))
             mimic3_labs = labs_prms.filter(labs_prms.is_in(mimic3_ts_names))
-            # mimic3_inout = inout_prms.filter(inout_prms.is_in(mimic3_ts_names))
+            mimic3_inout = inout_prms.filter(inout_prms.is_in(mimic3_ts_names))
 
             timeseries_vitals.append(mimic3_timeseries.select(*mimic3_vitals))
             timeseries_resp.append(mimic3_timeseries.select(*mimic3_resp))
             timeseries_labs.append(mimic3_timeseries.select(*mimic3_labs))
-            # timeseries_inout.append(mimic3_timeseries.select(*mimic3_inout))
+            timeseries_inout.append(mimic3_timeseries.select(*mimic3_inout))
 
         if "MIMIC4" in self.datasets:
             mimic4_timeseries = self.mimic4.process_timeseries().pipe(
@@ -128,12 +128,12 @@ class TimeseriesHarmonizer(GlobalVars):
             mimic4_vitals = vital_prms.filter(vital_prms.is_in(mimic4_ts_names))
             mimic4_resp = resp_prms.filter(resp_prms.is_in(mimic4_ts_names))
             mimic4_labs = labs_prms.filter(labs_prms.is_in(mimic4_ts_names))
-            # mimic4_inout = inout_prms.filter(inout_prms.is_in(mimic4_ts_names))
+            mimic4_inout = inout_prms.filter(inout_prms.is_in(mimic4_ts_names))
 
             timeseries_vitals.append(mimic4_timeseries.select(*mimic4_vitals))
             timeseries_resp.append(mimic4_timeseries.select(*mimic4_resp))
             timeseries_labs.append(mimic4_timeseries.select(*mimic4_labs))
-            # timeseries_inout.append(mimic4_timeseries.select(*mimic4_inout))
+            timeseries_inout.append(mimic4_timeseries.select(*mimic4_inout))
 
         if "SICdb" in self.datasets:
             sicdb_timeseries = self.sicdb.process_timeseries_data_float().pipe(
@@ -148,7 +148,7 @@ class TimeseriesHarmonizer(GlobalVars):
             sicdb_ts_names = sicdb_timeseries.collect_schema().names()
             sicdb_vitals = vital_prms.filter(vital_prms.is_in(sicdb_ts_names))
             sicdb_resp = resp_prms.filter(resp_prms.is_in(sicdb_ts_names))
-            # sicdb_inout = inout_prms.filter(inout_prms.is_in(sicdb_ts_names))
+            sicdb_inout = inout_prms.filter(inout_prms.is_in(sicdb_ts_names))
 
             sicdb_ts_lab_names = sicdb_timeseries_lab.collect_schema().names()
             sicdb_labs = labs_prms.filter(labs_prms.is_in(sicdb_ts_lab_names))
@@ -156,7 +156,7 @@ class TimeseriesHarmonizer(GlobalVars):
             timeseries_vitals.append(sicdb_timeseries.select(*sicdb_vitals))
             timeseries_resp.append(sicdb_timeseries.select(*sicdb_resp))
             timeseries_labs.append(sicdb_timeseries_lab.select(*sicdb_labs))
-            # timeseries_inout.append(sicdb_timeseries.select(*sicdb_inout))
+            timeseries_inout.append(sicdb_timeseries.select(*sicdb_inout))
 
         if "UMCdb" in self.datasets:
             umcdb_timeseries = self.umcdb.process_timeseries().pipe(
@@ -167,12 +167,12 @@ class TimeseriesHarmonizer(GlobalVars):
             umcdb_vitals = vital_prms.filter(vital_prms.is_in(umcdb_ts_names))
             umcdb_resp = resp_prms.filter(resp_prms.is_in(umcdb_ts_names))
             umcdb_labs = labs_prms.filter(labs_prms.is_in(umcdb_ts_names))
-            # umcdb_inout = inout_prms.filter(inout_prms.is_in(umcdb_ts_names))
+            umcdb_inout = inout_prms.filter(inout_prms.is_in(umcdb_ts_names))
 
             timeseries_vitals.append(umcdb_timeseries.select(*umcdb_vitals))
             timeseries_resp.append(umcdb_timeseries.select(*umcdb_resp))
             timeseries_labs.append(umcdb_timeseries.select(*umcdb_labs))
-            # timeseries_inout.append(umcdb_timeseries.select(*umcdb_inout))
+            timeseries_inout.append(umcdb_timeseries.select(*umcdb_inout))
 
         # Combine the timeseries data of the datasets
         vitals = pl.concat(timeseries_vitals, how="diagonal_relaxed")
@@ -236,23 +236,23 @@ class TimeseriesHarmonizer(GlobalVars):
             .sort(self.index_cols)
         )
 
-        # inout = pl.concat(timeseries_inout, how="diagonal_relaxed")
-        # inout_cols = inout.collect_schema().names()
-        # inout_cols_not_index = list(set(inout_cols) - set(self.index_cols))
-        # inout = (
-        #     inout.pipe(self.helpers.dropna, "all", inout_cols_not_index)
-        #     .cast(
-        #         {  # Convert all columns to float
-        #             self.global_icu_stay_id_col: str,
-        #             self.timeseries_time_col: float,
-        #             **{col: float for col in inout_cols_not_index},
-        #         }
-        #     )
-        #     .select([*self.index_cols, *sorted(inout_cols_not_index)])
-        #     .sort(self.index_cols)
-        #     .unique(self.index_cols)
-        #     .sort(self.index_cols)
-        # )
+        inout = pl.concat(timeseries_inout, how="diagonal_relaxed")
+        inout_cols = inout.collect_schema().names()
+        inout_cols_not_index = list(set(inout_cols) - set(self.index_cols))
+        inout = (
+            inout.pipe(self.helpers.dropna, "all", inout_cols_not_index)
+            .cast(
+                {  # Convert all columns to float
+                    self.global_icu_stay_id_col: str,
+                    self.timeseries_time_col: float,
+                    **{col: float for col in inout_cols_not_index},
+                }
+            )
+            .select([*self.index_cols, *sorted(inout_cols_not_index)])
+            .sort(self.index_cols)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
+        )
 
         if save_to_default:
             print("reprodICU - Saving timeseries...")
@@ -268,11 +268,11 @@ class TimeseriesHarmonizer(GlobalVars):
             resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
                 self.save_path + "timeseries_respiratory.parquet"
             )
-            # print("reprodICU - Saving intakeoutput...")
-            # inout.pipe(self._print_unique_cases, "inout").sink_parquet(
-            #     self.save_path
-            #     + "timeseries_intakeoutput.parquet"
-            # )
+            print("reprodICU - Saving intakeoutput...")
+            inout.pipe(self._print_unique_cases, "inout").sink_parquet(
+                self.save_path
+                + "timeseries_intakeoutput.parquet"
+            )
 
             return None
 

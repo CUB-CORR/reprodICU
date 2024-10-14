@@ -703,9 +703,9 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        diagnosis_groups.collect(streaming=True).write_parquet(
-            "UMCdb_diagnosis_groups.parquet"
-        )
+        # diagnosis_groups.collect(streaming=True).write_parquet(
+        #     "UMCdb_diagnosis_groups.parquet"
+        # )
 
         diagnosis_subgroups = (
             listitems.filter(pl.col("itemid").is_in(LEVEL1_ITEMIDS))
@@ -723,9 +723,9 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        diagnosis_subgroups.collect(streaming=True).write_parquet(
-            "UMCdb_diagnosis_subgroups.parquet"
-        )
+        # diagnosis_subgroups.collect(streaming=True).write_parquet(
+        #     "UMCdb_diagnosis_subgroups.parquet"
+        # )
 
         diagnoses = (
             listitems.filter(pl.col("itemid").is_in(LEVEL2_ITEMIDS))
@@ -797,9 +797,9 @@ class UMCdbExtractor(UMCdbPaths):
             .drop("typeid")
         )
 
-        diagnoses.collect(streaming=True).write_parquet(
-            "UMCdb_diagnoses.parquet"
-        )
+        # diagnoses.collect(streaming=True).write_parquet(
+        #     "UMCdb_diagnoses.parquet"
+        # )
 
         return (
             diagnoses.group_by(self.icu_stay_id_col)

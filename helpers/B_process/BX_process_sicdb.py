@@ -154,7 +154,7 @@ class SICdbConverter(UnitConverter):
     # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
         self,
-        data,
+        data: pl.LazyFrame,
         labelcol: str = "LaboratoryID",
         valuecol: str = "LaboratoryValue",
     ) -> pl.LazyFrame:
@@ -163,17 +163,13 @@ class SICdbConverter(UnitConverter):
         """
 
         # Convert the lab values to the correct units.
-        (
-            data.pipe(
-                self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Mass/volume] in Serum or Plasma",
-                itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
+        return data.pipe(
+            self.convert_urea_nitrogen_from_urea,
+            itemid_urea="Urea [Mass/volume] in Serum or Plasma",
+            itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
+            labelcol=labelcol,
+            valuecol=valuecol,
         )
-
-        return data
 
 
 # endregion

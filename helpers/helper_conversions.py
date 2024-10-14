@@ -43,22 +43,21 @@ class UnitConversions:
     def __init__(self):
         pass
 
+    # CAVE: THIS ASSUMES WIDE FORMAT
     def convert_absolute_count_to_relative(
         self,
         data,
-        itemid,
-        total_itemid,
-        labelcol: str = "LABEL",
-        valuecol: str = "VALUENUM",
+        itemcol: str,
+        total_itemcol: str,
     ) -> pl.LazyFrame:
         """
         Convert absolute counts to relative counts.
         """
         return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol).truediv(pl.col(total_itemid)))
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
+            pl.when(pl.col(itemcol).is_not_null() & pl.col(total_itemcol).is_not_null())
+            .then(pl.col(itemcol).truediv(pl.col(total_itemcol)))
+            .otherwise(None)
+            .alias(itemcol)
         )
 
     def convert_temperature_F_to_C(
