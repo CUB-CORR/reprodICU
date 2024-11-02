@@ -895,13 +895,7 @@ class EICUExtractor(EICUPaths):
                 how="left",
             )
             # Sort by patient ID, drug name and drug start time
-            .sort(
-                [
-                    self.icu_stay_id_col,
-                    self.drug_name_col,
-                    self.drug_start_col,
-                ]
-            )
+            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
             # 2. Check if drug is continued from the previous log entry
             #    and if it is continued in the next log entry
             .with_columns(
@@ -1049,7 +1043,7 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
-        return (
+        diagnosis = (
             pl.scan_csv(self.path + "diagnosis.csv.gz")
             .select(  # Select columns of interest
                 [
@@ -1064,7 +1058,7 @@ class EICUExtractor(EICUPaths):
             .rename(
                 {
                     "patientunitstayid": self.icu_stay_id_col,
-                    "activeupondischarge": "active_upon_discharge",
+                    "activeupondischarge": self.diagnosis_discharge_col,
                 }
             )
             .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
@@ -1097,7 +1091,129 @@ class EICUExtractor(EICUPaths):
             .unique()
             # Remove rows with empty diagnosis codes
             .filter(pl.col(self.diagnosis_icd_code_col) != "")
+            # Drop the doubled diagnoses with different priorities (keep the most severe one).
+            .group_by(
+                self.icu_stay_id_col,
+                self.diagnosis_icd_code_col,
+                self.diagnosis_start_col,
+            )
+            .agg(
+                pl.all().sort_by(self.diagnosis_priority_col).first(),
+            )
         )
+
+        # Get continued diagnoses where possible, by checking whether the diagnosis reappears
+        # on next log entry (as determined by a different offset)
+        # 1. Get list of log entry offsets for each patient
+        diagnosis_offsets = (
+            diagnosis.select(self.icu_stay_id_col, self.diagnosis_start_col)
+            .unique()
+            .sort([self.icu_stay_id_col, self.diagnosis_start_col])
+            .with_columns(
+                pl.col(self.diagnosis_start_col)
+                .shift(1)
+                .over(self.icu_stay_id_col)
+                .alias("prev_diag_start"),
+                pl.col(self.diagnosis_start_col)
+                .shift(-1)
+                .over(self.icu_stay_id_col)
+                .alias("next_diag_start"),
+            )
+        )
+
+        diagnosis = (
+            diagnosis.join(
+                diagnosis_offsets,
+                on=[self.icu_stay_id_col, self.diagnosis_start_col],
+                how="left",
+            )
+            # Sort by patient ID, diagnosis code and diagnosis start time
+            .sort(
+                self.icu_stay_id_col,
+                self.diagnosis_icd_code_col,
+                self.diagnosis_start_col,
+            )
+            # 2. Check if diagnosis is continued from the previous log entry
+            #    and if it is continued in the next log entry
+            .with_columns(
+                # Check if diagnosis is continued from the previous log entry
+                pl.when(
+                    # Check if the previous diagnosis is the same as the current diagnosis
+                    pl.col(self.diagnosis_icd_code_col)
+                    == pl.col(self.diagnosis_icd_code_col).shift(1),
+                    # Check if the previous diagnosis start time is the previous log entry time
+                    pl.col("prev_diag_start")
+                    == pl.col(self.diagnosis_start_col).shift(1),
+                    # Check if the diagnosis priority is the same as the previous diagnosis priority
+                    pl.col(self.diagnosis_priority_col)
+                    == pl.col(self.diagnosis_priority_col).shift(1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("started"))
+                .alias("diag_status_prev"),
+                # Check if diagnosis is continued in the next log entry
+                pl.when(
+                    # Check if the next diagnosis is the same as the current diagnosis
+                    pl.col(self.diagnosis_icd_code_col)
+                    == pl.col(self.diagnosis_icd_code_col).shift(-1),
+                    # Check if the next diagnosis start time is the next log entry time
+                    pl.col("next_diag_start")
+                    == pl.col(self.diagnosis_start_col).shift(-1),
+                    # Check if the diagnosis priority is the same as the previous diagnosis priority
+                    pl.col(self.diagnosis_priority_col)
+                    == pl.col(self.diagnosis_priority_col).shift(-1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("discontinued"))
+                .alias("diag_status_next"),
+            )
+            # # Filter for rows where the diagnosis status changes
+            .filter(pl.col("diag_status_prev") != pl.col("diag_status_next"))
+            # 3. Get the end time of the diagnosis if it is discontinued
+            .with_columns(
+                pl.when(pl.col("diag_status_next") == "discontinued")
+                .then(pl.col("next_diag_start"))
+                .otherwise(None)
+                .alias(self.diagnosis_end_col)
+            )
+            # Sort by patient ID, diagnosis code and diagnosis start time
+            .sort(
+                self.icu_stay_id_col,
+                self.diagnosis_icd_code_col,
+                self.diagnosis_start_col,
+            )
+            # 4. Combine rows where the diagnosis is started, continued, then discontinued in the next row
+            .with_columns(
+                pl.when(
+                    pl.col("diag_status_prev").shift(1) == "started",
+                    pl.col("diag_status_next").shift(1) == "continued",
+                    pl.col("diag_status_prev") == "continued",
+                    pl.col("diag_status_next") == "discontinued",
+                    # Check if the previous diagnosis is the same as the current diagnosis
+                    pl.col(self.diagnosis_icd_code_col)
+                    == pl.col(self.diagnosis_icd_code_col).shift(1),
+                )
+                .then(pl.col(self.diagnosis_start_col).shift(1))
+                .otherwise(pl.col(self.diagnosis_start_col))
+                .alias(self.diagnosis_start_col)
+            )
+            # 5. Remove the helper columns
+            .drop(
+                "prev_diag_start",
+                "next_diag_start",
+                "diag_status_prev",
+                "diag_status_next",
+            )
+            # 6. Set diagnosis active upon discharge to True if it is not discontinued
+            .with_columns(
+                pl.when(pl.col(self.diagnosis_end_col).is_null())
+                .then(True)
+                .otherwise(pl.col(self.diagnosis_discharge_col))
+                .alias(self.diagnosis_discharge_col)
+            ).unique()
+        )
+
+        return diagnosis
 
     # endregion
 

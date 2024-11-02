@@ -85,17 +85,16 @@ class DiagnosesHarmonizer(GlobalVars):
                 how="diagonal_relaxed",
             )
             .select(
-                [
-                    self.global_person_id_col,
-                    self.global_hospital_stay_id_col,
-                    self.global_icu_stay_id_col,
-                    self.diagnosis_icd_code_col,
-                    self.diagnosis_icd_version_col,
-                    self.diagnosis_start_col,
-                    self.diagnosis_priority_col,
-                    self.diagnosis_discharge_col,
-                    self.diagnosis_description_col,
-                ]
+                self.global_person_id_col,
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
+                self.diagnosis_icd_code_col,
+                self.diagnosis_icd_version_col,
+                self.diagnosis_start_col,
+                self.diagnosis_end_col,
+                self.diagnosis_priority_col,
+                self.diagnosis_discharge_col,
+                self.diagnosis_description_col,
             )
             .unique()
             .sort([self.global_icu_stay_id_col, self.diagnosis_start_col])
