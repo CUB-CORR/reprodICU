@@ -25,10 +25,8 @@ class DiagnosesImputer(GlobalVars):
         IDs = (
             pl.scan_parquet(self.patient_info_location)
             .select(
-                [
-                    self.global_hospital_stay_id_col,
-                    self.global_icu_stay_id_col,
-                ]
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
             )
             .filter(
                 pl.col(self.global_hospital_stay_id_col).str.starts_with(
@@ -95,20 +93,19 @@ class DiagnosesImputer(GlobalVars):
                 .alias(self.diagnosis_icd10_code_col),
             )
             .select(
-                [
-                    self.global_person_id_col,
-                    self.global_hospital_stay_id_col,
-                    self.global_icu_stay_id_col,
-                    self.diagnosis_icd9_code_col,
-                    self.diagnosis_icd10_code_col,
-                    self.diagnosis_start_col,
-                    self.diagnosis_priority_col,
-                    self.diagnosis_discharge_col,
-                    self.diagnosis_description_col,
-                ]
+                self.global_person_id_col,
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
+                self.diagnosis_icd9_code_col,
+                self.diagnosis_icd10_code_col,
+                self.diagnosis_start_col,
+                self.diagnosis_end_col,
+                self.diagnosis_priority_col,
+                self.diagnosis_discharge_col,
+                self.diagnosis_description_col,
             )
             .unique()
-            .sort([self.global_icu_stay_id_col, self.diagnosis_start_col])
+            .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)
         )
 
 
