@@ -472,6 +472,10 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col)
                 .replace(umcdb_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
+                # Replace drug names with OMOP concepts
+                pl.col(self.drug_name_col)
+                .replace_strict(self._extract_drug_references(), default=None)
+                .alias(self.drug_name_OMOP_col),
                 # Convert administered unit to enum
                 # pl.col(self.drug_amount_unit_col)
                 # .replace(self.DRUG_UNIT_MAPPING)
@@ -816,7 +820,7 @@ class UMCdbExtractor(UMCdbPaths):
     # endregion
 
     # region references
-    # Extract the information from the d_references.csv file
+    # Extract the information from the numericitems_XXX.usagi.csv files
     def _extract_numeric_references(self) -> dict:
         references = (
             pl.concat(
@@ -858,7 +862,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-    # Extract the information from the d_references.csv file
+    # Extract the information from the listitems_XXX.usagi.csv file
     def _extract_list_references(self) -> dict:
         references = (
             pl.concat(
@@ -876,6 +880,28 @@ class UMCdbExtractor(UMCdbPaths):
         return dict(
             zip(
                 references["sourceCode"].to_numpy(),
+                references["conceptName"].to_numpy(),
+            )
+        )
+
+    # Extract the information from the drugitems_XXX.usagi.csv files
+    def _extract_drug_references(self) -> dict:
+        references = (
+            pl.concat(
+                [
+                    pl.read_csv(self.drug_administration_route_mapping_path),
+                    pl.read_csv(self.drugitems_item_mapping_path),
+                    pl.read_csv(self.drug_class_mapping_path),
+                ],
+                how="diagonal_relaxed",
+            )
+            #.filter(pl.col("equivalence") == "EQUAL")
+            .select(["sourceName", "conceptName"])
+        )
+
+        return dict(
+            zip(
+                references["sourceName"].to_numpy(),
                 references["conceptName"].to_numpy(),
             )
         )

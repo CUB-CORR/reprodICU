@@ -35,6 +35,7 @@ diagnosis_priority_col: Diagnosis Priority # diagnosis_priority
 diagnosis_discharge_col: Diagnosis Active on Discharge # diagnosis_active_on_discharge
 diagnosis_description_col: Diagnosis Description # diagnosis_description
 drug_name_col: Drug Name # drug_name
+drug_name_OMOP_col: Drug Name (OMOP) # drug_name_omop
 drug_ingredient_col: Drug Ingredient # drug_ingredient
 drug_admin_route_col: Drug Administration Route # drug_administration_route
 drug_class_col: Drug Class # drug_class
