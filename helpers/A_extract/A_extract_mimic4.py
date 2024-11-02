@@ -595,6 +595,16 @@ class MIMIC4Extractor(MIMIC4Paths):
         mimic4_drug_class_mapping = self.helpers.load_mapping(
             self.drug_class_mapping_path
         )
+        inputevents_to_rxnorm_data = (
+            pl.scan_csv(self.inputevents_to_rxnorm_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "itemid",
+                    "omop_concept_name": "label_OMOP",
+                }
+            )
+        )
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
         inputevents = (
@@ -640,10 +650,16 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         return (
             inputevents.join(d_items, on="itemid")
+            .join(inputevents_to_rxnorm_data, on="itemid", how="left")
             .drop(self.hospital_stay_id_col, "itemid")
             .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
-            .rename({"label": self.drug_name_col})
+            .rename(
+                {
+                    "label": self.drug_name_col,
+                    "label_OMOP": self.drug_name_OMOP_col,
+                }
+            )
             # Replace drug names with mapped names
             .with_columns(
                 pl.col(self.drug_name_col)
