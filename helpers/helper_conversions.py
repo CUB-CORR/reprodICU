@@ -24,7 +24,6 @@ class GCSCombiner:
         """
         Combine the GCS components to the GCS total score.
         """
-
         return data.with_columns(
             pl.when(pl.col(total_score) == None)
             .then(
@@ -82,44 +81,76 @@ class UnitConversions:
             .otherwise(pl.col(labelcol))
         )
 
-    def convert_ammonia_ug_dL_to_umol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+    def GENERIC_CONVERTER(
+        self,
+        data: pl.LazyFrame,
+        itemid: str,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
+        structfield: str = None,
+        factor: float = 1,
     ) -> pl.LazyFrame:
+        """
+        Convert values from one unit to another.
+        """
+
+        if structfield is not None:
+            return (
+                data.unnest(valuecol)
+                .with_columns(
+                    pl.when(pl.col(labelcol) == itemid)
+                    .then(pl.col("value") * factor)
+                    .otherwise(pl.col("value"))
+                    .alias("value")
+                )
+                .select(
+                    pl.exclude("value", "source", "method"),
+                    pl.struct(
+                        value="value", source="source", method="method"
+                    ).alias(valuecol),
+                )
+            )
+        
+        return data.with_columns(
+            pl.when(pl.col(labelcol) == itemid)
+            .then(pl.col(valuecol) * factor)
+            .otherwise(pl.col(valuecol))
+            .alias(valuecol)
+        )
+
+    def convert_ammonia_ug_dL_to_umol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert ammonia values from µg/dL to µmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.59)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.59, **kwargs)
 
-    def convert_bilirubin_mg_dL_to_umol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_bilirubin_mg_dL_to_umol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert bilirubin total values from mg/dL to µmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 17.1)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=17.1, **kwargs)
+
+    def convert_bilirubin_umol_L_to_mg_dL(self, data, **kwargs) -> pl.LazyFrame:
+        """
+        Convert bilirubin total values from µmol/L to mg/dL.
+        """
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.0585, **kwargs)
 
     def convert_blood_urea_nitrogen_mg_dL_to_mmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert blood urea nitrogen values from mg/dL to mmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.357)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.357, **kwargs)
+
+    def convert_blood_urea_nitrogen_mmol_L_to_mg_dL(
+        self, data, **kwargs
+    ) -> pl.LazyFrame:
+        """
+        Convert blood urea nitrogen values from mmol/L to mg/dL.
+        """
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.357, **kwargs)
 
     def convert_urea_nitrogen_from_urea(
         self,
@@ -128,13 +159,37 @@ class UnitConversions:
         itemid_BUN: str = "urea_nitrogen",
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
+        structfield: str = None,
     ) -> pl.LazyFrame:
         """
         Convert urea nitrogen values from urea.
         """
+
+        if structfield is not None:
+
+            return (
+                data.unnest(valuecol)
+                .with_columns(
+                    pl.when(pl.col(labelcol) == itemid_urea)
+                    .then(pl.col("value") * 0.467)
+                    .otherwise(pl.col("value"))
+                    .alias("value"),
+                    pl.when(pl.col(labelcol) == itemid_urea)
+                    .then(pl.lit(itemid_BUN))
+                    .otherwise(pl.col(labelcol))
+                    .alias(labelcol),
+                )
+                .select(
+                    pl.exclude("value", "source", "method"),
+                    pl.struct(
+                        value="value", source="source", method="method"
+                    ).alias(valuecol),
+                )
+            )
+
         return data.with_columns(
             pl.when(pl.col(labelcol) == itemid_urea)
-            .then(pl.col(valuecol) * 0.357)
+            .then(pl.col(valuecol) * 0.467)
             .otherwise(pl.col(valuecol))
             .alias(valuecol),
             pl.when(pl.col(labelcol) == itemid_urea)
@@ -143,22 +198,13 @@ class UnitConversions:
             .alias(labelcol),
         )
 
-    def convert_calcium_mg_dL_to_mmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_calcium_mg_dL_to_mmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert calcium values from mg/dL to mmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.25)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.2495, **kwargs)
 
-    def convert_CKMB_ng_mL_to_U_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_CKMB_ng_mL_to_U_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert CKMB values from ng/mL to U/L.
         Does nothing, but is used for consistency.
@@ -169,80 +215,52 @@ class UnitConversions:
 
         1 ng/mL = 1 * 0.01667 * 60 U/L = 1 U/L
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 1)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1, **kwargs)
 
     def convert_creatinine_mg_dL_to_umol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert creatinine values from mg/dL to µmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 88.4)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=88.4, **kwargs)
 
     def convert_creatinine_umol_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert creatinine values from µmol/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) / 88.4)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 88.4, **kwargs)
 
     def convert_creatinine_mmol_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert creatinine values from mmol/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 11.312)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=11.312, **kwargs)
 
     def convert_cholesterol_mmol_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert total cholesterol values from mmol/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 38.665)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=38.665, **kwargs)
 
-    def convert_cortisol_nmol_L_to_ug_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_cortisol_nmol_L_to_ug_dL(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert cortisol values from nmol/L to µg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.0363)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.0363, **kwargs)
 
     def convert_FEU_to_DDU(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self,
+        data,
+        itemid: str,
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
         """
         Convert D-Dimer values from FEU to DDU.
@@ -259,259 +277,141 @@ class UnitConversions:
             .alias(labelcol),
         )
 
-    def convert_hemoglobin_mmol_L_to_g_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_folate_nmol_L_to_ng_mL(self, data, **kwargs) -> pl.LazyFrame:
         """
-        Convert hemoglobin values from mmol/L to g/dL.
+        Convert folate values from nmol/L to ng/mL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 1.61)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=2.265, **kwargs)
 
-    def convert_glucose_mg_dL_to_mmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_glucose_mg_dL_to_mmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert glucose values from mg/dL to mmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.0555)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.0555, **kwargs)
 
-    def convert_glucose_mmol_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_glucose_mmol_L_to_mg_dL(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert glucose values from mmol/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) / 0.0555)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.0555, **kwargs)
 
-    def convert_iron_ug_dL_to_umol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_hemoglobin_mmol_L_to_g_dL(self, data, **kwargs) -> pl.LazyFrame:
+        """
+        Convert hemoglobin values from mmol/L to g/dL.
+        """
+        return data.pipe(self.GENERIC_CONVERTER, factor=1.61, **kwargs)
+
+    def convert_iron_ug_dL_to_umol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert iron values from µg/dL to µmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.179)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.179, **kwargs)
 
-    def convert_magnesium_mg_dL_to_mmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_magnesium_mg_dL_to_mmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert magnesium values from mg/dL to mmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.4114)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.4114, **kwargs)
 
-    def convert_phosphate_mg_dL_to_mmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_phosphate_mg_dL_to_mmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert phosphate values from mg/dL to mmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.323)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.323, **kwargs)
 
-    def convert_T3_ng_dL_to_nmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_T3_ng_dL_to_nmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert T3 values from ng/dL to nmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.0154)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.0154, **kwargs)
 
     def convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert T4 values from µg/dL to nmol/L or from ng/dL to pmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 12.9)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=12.9, **kwargs)
 
     def convert_triglycerides_mmol_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
+        self, data, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert triglycerides values from mmol/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 88.5)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=88.5, **kwargs)
 
-    def convert_VitB12_pg_mL_to_pmol_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_urate_umol_L_to_mg_dL(self, data, **kwargs) -> pl.LazyFrame:
+        """
+        Convert urate values from µmol/L to mg/dL.
+        """
+        return data.pipe(self.GENERIC_CONVERTER, factor=16.9, **kwargs)
+
+    def convert_VitB12_pg_mL_to_pmol_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert Vitamin B12 values from pg/mL to pmol/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 0.738)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.738, **kwargs)
 
-    def convert_g_dL_to_g_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_g_dL_to_g_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from g/dL to g/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 10)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=10, **kwargs)
 
-    def convert_g_L_to_g_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_g_L_to_g_dL(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from g/L to g/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) / 10)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 10, **kwargs)
 
-    def convert_g_L_to_mg_dL(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_g_L_to_mg_dL(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from g/L to mg/dL.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 100)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=100, **kwargs)
 
-    def convert_mg_dL_to_mg_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_mg_dL_to_mg_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from mg/dL to mg/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 10)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=10, **kwargs)
 
-    def convert_ng_L_to_ug_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_ng_L_to_ug_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from ng/L to µg/L.
-        Does nothing, but is used for consistency.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) / 1000)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 1000, **kwargs)
 
-    def convert_ug_L_to_ng_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_ug_L_to_ng_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from µg/L to ng/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 1000)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1000, **kwargs)
 
-    def convert_ng_mL_to_ug_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_ng_mL_to_ug_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from ng/mL to µg/L.
         Does nothing, but is used for consistency.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol))
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1, **kwargs)
 
-    def convert_ng_mL_to_mg_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_ng_mL_to_mg_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from ng/mL to mg/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) / 1000)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 1000, **kwargs)
 
-    def convert_ng_mL_to_ng_L(
-        self, data, itemid, labelcol: str = "LABEL", valuecol: str = "VALUENUM"
-    ) -> pl.LazyFrame:
+    def convert_ng_mL_to_ng_L(self, data, **kwargs) -> pl.LazyFrame:
         """
         Convert values from ng/mL to ng/L.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * 1000)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=1000, **kwargs)
 
     def convert_mEq_L_to_mmol_L(
         self,
         data,
-        itemid,
+        itemid: str,
         ions: int = 1,
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
