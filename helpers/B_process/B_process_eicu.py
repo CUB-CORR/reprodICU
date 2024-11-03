@@ -58,8 +58,6 @@ class EICUProcessor(EICUExtractor):
                 self.precalc_path + "EICU_B_timeseries.parquet"
             )
 
-        pl.Config.set_verbose(True)
-
         # Load the time series data.
         print("eICU    - Loading time series data...")
         # ts_lab = self._process_timeseries_lab()
@@ -545,12 +543,13 @@ class EICUConverter(UnitConverter):
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
-            .pipe(
-                self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-                itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
+            # prefer mg/dL over mmol/L
+            # .pipe(
+            #     self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
+            #     itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
+            #     labelcol=labelcol,
+            #     valuecol=valuecol,
+            # )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
                 itemid="Calcium [Mass/volume] in Blood",
@@ -689,7 +688,7 @@ class EICUConverter(UnitConverter):
                         "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
                         "Bilirubin.indirect [Mass/volume] in Serum or Plasma": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
                         "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
-                        "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
+                        # "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
                         "Calcium [Mass/volume] in Blood": "Calcium [Moles/volume] in Blood",
                         "Calcium.ionized [Mass/volume] in Blood": "Calcium.ionized [Moles/volume] in Blood",
                         "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
@@ -705,8 +704,6 @@ class EICUConverter(UnitConverter):
                 )
             )
         )
-
-        return data
 
 
 # endregion

@@ -29,6 +29,49 @@ class MIMIC3Extractor(MIMIC3Paths):
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
         )
 
+        self.other_values = [
+            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
+            "Bilirubin.total [Mass/volume] in Serum or Plasma",
+            "Calcium [Mass/volume] in Blood",
+            "Calcium.ionized [Mass/volume] in Blood",
+            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+            "Iron [Mass/volume] in Serum or Plasma",
+            "Iron binding capacity [Mass/volume] in Serum or Plasma",
+            "Magnesium [Mass/volume] in Serum or Plasma",
+            "Phosphate [Mass/volume] in Serum or Plasma",
+            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+            "Ammonia [Moles/volume] in Plasma",
+            "Bicarbonate [Moles/volume] in Blood",
+            "Carboxyhemoglobin/Hemoglobin.total in Blood",
+            "Methehemoglobin/Hemoglobin.total in Blood",
+            "Oxyhemoglobin/Hemoglobin.total in Blood",
+            "Leukocytes [#/volume] in Blood by Automated count",
+            "Basophils/100 leukocytes in Blood by Automated count",
+            "Eosinophils/100 leukocytes in Blood by Automated count",
+            "Lymphocytes/100 leukocytes in Blood by Automated count",
+            "Monocytes/100 leukocytes in Blood by Automated count",
+            "Neutrophils/100 leukocytes in Blood by Automated count",
+            "Erythrocyte distribution width [Ratio] by Automated count",
+            "Erythrocytes [#/volume] in Blood by Automated count",
+            "Platelets [#/volume] in Blood by Automated count",
+            "MCH [Entitic mass] by Automated count",
+            "MCHC [Mass/volume] by Automated count",
+            "MCV [Entitic volume] by Automated count",
+            "Troponin T.cardiac [Mass/volume] in Serum or Plasma",
+            "Basophils [#/volume] in Blood by Automated count",
+            "Eosinophils [#/volume] in Blood by Automated count",
+            "Lymphocytes [#/volume] in Blood by Automated count",
+            "Monocytes [#/volume] in Blood by Automated count",
+            "Neutrophils [#/volume] in Blood by Automated count",
+            "Reticulocytes [#/volume] in Blood",
+            "Reticulocytes [#/volume] in Blood by Automated count",
+            "Reticulocytes [#/volume] in Blood by Manual count",
+        ]
+
     # region IDs
     # Extract the patient IDs that are used in the MIMIC-III dataset
     def extract_patient_IDs(self) -> pl.LazyFrame:
@@ -431,7 +474,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Filter for names of interest
             .filter(
                 pl.col("LABEL").is_not_null(),
-                pl.col("LABEL").is_in(self.all_values),
+                pl.col("LABEL").is_in(self.all_values + self.other_values),
             )
         )
 
@@ -470,7 +513,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
             )
             # Filter for names of interest
-            .filter(pl.col("LABEL").is_in(self.all_values))
+            .filter(pl.col("LABEL").is_in(self.all_values + self.other_values))
         )
 
         # meas_chartevents_main_data.sink_parquet(
@@ -479,7 +522,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # # Filter for names of interest
         # meas_chartevents_main_data.filter(
-        #     pl.col("LABEL").is_in(self.all_values)
+        #     pl.col("LABEL").is_in(self.all_values + self.other_values)
         # ).sink_parquet("meas_chartevents_main_data_filtered.parquet")
 
         return (
@@ -548,7 +591,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 }
             )
             # Filter for lab names of interest
-            .filter(pl.col("LABEL").is_in(self.all_values))
+            # .filter(pl.col("LABEL").is_in(self.all_values + self.other_values))
         )
 
         return (
@@ -590,7 +633,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 }
             )
             # Filter for names of interest
-            .filter(pl.col("LABEL").is_in(self.all_values))
+            .filter(pl.col("LABEL").is_in(self.all_values + self.other_values))
         )
 
         return (

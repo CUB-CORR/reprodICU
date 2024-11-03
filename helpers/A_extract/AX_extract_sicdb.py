@@ -19,6 +19,42 @@ class SICdbExtractor(SICdbPaths):
         self.path = paths.sicdb_source_path
         self.helpers = GlobalHelpers()
 
+        self.other_values = [
+            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+            "Bilirubin.total [Mass/volume] in Serum or Plasma",
+            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+            "Iron [Mass/volume] in Serum or Plasma",
+            "Anion gap 4 in Arterial blood",
+            "Band form neutrophils/100 leukocytes in Blood by Manual count",
+            "Basophils/100 leukocytes in Blood by Manual count",
+            "Eosinophils/100 leukocytes in Blood by Manual count",
+            "Lymphocytes/100 leukocytes in Blood by Manual count",
+            "Monocytes/100 leukocytes in Blood by Manual count",
+            "Segmented neutrophils/100 leukocytes in Blood by Manual count",
+            "Calcium [Moles/volume] in Serum or Plasma",
+            "Calcium.ionized [Moles/volume] in Arterial blood",
+            "Chloride [Moles/volume] in Arterial blood",
+            "Chloride [Moles/volume] in Serum or Plasma",
+            "Erythrocyte distribution width [Ratio] by Automated count",
+            "Hematocrit [Volume Fraction] of Arterial blood",
+            "Monocytes/100 leukocytes in Blood by Manual count",
+            "Fractional oxyhemoglobin in Arterial blood",
+            "Potassium [Moles/volume] in Arterial blood",
+            "Potassium [Moles/volume] in Serum or Plasma",
+            "Sodium [Moles/volume] in Arterial blood",
+            "Sodium [Moles/volume] in Serum or Plasma",
+            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+            "Urea [Mass/volume] in Serum or Plasma",
+            "Band form neutrophils [#/volume] in Blood by Manual count",
+            "Basophils [#/volume] in Blood",
+            "Eosinophils [#/volume] in Blood by Manual count",
+            "Lymphocytes [#/volume] in Blood by Manual count",
+            "Monocytes [#/volume] in Blood by Manual count",
+            "Neutrophils [#/volume] in Blood",
+            "Neutrophils [#/volume] in Blood by Manual count",
+            "Reticulocytes [#/volume] in Blood",
+        ]
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -203,7 +239,7 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
-            .filter(pl.col("DataID").is_in(self.all_values))
+            .filter(pl.col("DataID").is_in(self.all_values + self.other_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names
@@ -237,7 +273,7 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant lab values
-            .filter(pl.col("LaboratoryID").is_in(self.all_values))
+            .filter(pl.col("LaboratoryID").is_in(self.all_values + self.other_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names

@@ -28,6 +28,23 @@ class EICUExtractor(EICUPaths):
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
         )
 
+        self.other_values = [
+            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
+            "Bilirubin.total [Mass/volume] in Serum or Plasma",
+            "Calcium [Mass/volume] in Blood",
+            "Calcium.ionized [Mass/volume] in Blood",
+            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+            "Iron [Mass/volume] in Serum or Plasma",
+            "Iron binding capacity [Mass/volume] in Serum or Plasma",
+            "Magnesium [Mass/volume] in Serum or Plasma",
+            "Phosphate [Mass/volume] in Serum or Plasma",
+            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
+            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+        ]
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -343,7 +360,7 @@ class EICUExtractor(EICUPaths):
                 .alias("labname")
             )
             # Filter for lab names of interest
-            .filter(pl.col("labname").is_in(self.all_values))
+            .filter(pl.col("labname").is_in(self.all_values + self.other_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
