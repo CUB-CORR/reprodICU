@@ -12,6 +12,7 @@ albumin: Albumin [Mass/volume] in Serum or Plasma # protein_albumin
 alkaline phos.: Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma # alkaline_phosphatase
 ALT (SGPT): Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma # ALT
 Amikacin - peak: # Medication levels in blood
+Amikacin - random: # Medication levels in blood
 Amikacin - trough: # Medication levels in blood
 ammonia: Ammonia [Moles/volume] in Blood # ammonia
 amylase: Amylase [Enzymatic activity/volume] in Serum or Plasma # amylase
@@ -24,7 +25,7 @@ bedside glucose: Glucose [Mass/volume] in Serum or Plasma # glucose_bedside
 bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 BNP: # BNP
 BUN: Urea nitrogen [Mass/volume] in Serum or Plasma # blood_urea_nitrogen
-calcium: # calcium # NEEDS UNIT CONVERSION !
+calcium: Calcium [Moles/volume] in Blood # calcium # NEEDS UNIT CONVERSION !
 Carbamazepine: # Medication levels in blood
 Carboxyhemoglobin: Carboxyhemoglobin/Hemoglobin.total in Arterial blood # carboxyhemoglobin
 cd 4:
@@ -37,6 +38,7 @@ CPK: Creatine kinase [Enzymatic activity/volume] in Serum or Plasma # CK
 creatinine: Creatinine [Mass/volume] in Serum or Plasma # creatinine
 CRP-hs:
 CRP: C reactive protein [Mass/volume] in Serum or Plasma # CRP
+Cyclosporin: # Medication levels in blood
 Device: # Respiratory parameter
 Digoxin: # Medication levels in blood
 direct bilirubin: Bilirubin.direct [Mass/volume] in Serum or Plasma # bilirubin_direct
@@ -59,7 +61,9 @@ HCO3: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 Hct: Hematocrit [Volume Fraction] of Blood # hematocrit
 HDL: Cholesterol in HDL [Mass/volume] in Serum or Plasma # cholesterol_HDL
 Hgb: Hemoglobin [Mass/volume] in Blood # hemoglobin
+HIV 1&2 AB:
 HSV 1&2 IgG AB:
+HSV 1&2 IgG AB titer:
 ionized calcium: Calcium.ionized [Mass/volume] in Blood # NEEDS UNIT CONVERSION !
 lactate: Lactate [Moles/volume] in Arterial blood # lactate
 LDH: Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma # lactate_dehydrogenase
@@ -67,6 +71,8 @@ LDL: Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation # choles
 lipase: Lipase [Enzymatic activity/volume] in Serum or Plasma # lipase
 Lithium: # Medication levels in blood
 LPM O2: # Respiratory parameter
+Legionella pneumophila Ab:
+Lidocaine: # Medication levels in blood
 magnesium: Magnesium [Mass/volume] in Serum or Plasma # magnesium # NEEDS UNIT CONVERSION !
 MCH: MCH [Entitic mass] # MCH
 MCHC: MCHC [Mass/volume] # MCHC
@@ -75,6 +81,7 @@ Methemoglobin: Methemoglobin/Hemoglobin.total in Arterial blood # methemoglobin
 Mode: # Respiratory parameter
 MPV: # MPV
 myoglobin: Myoglobin [Mass/volume] in Serum or Plasma # myoglobin
+NAPA:
 O2 Content: # Respiratory parameter
 O2 Sat (%): Oxygen saturation in Arterial blood # saO2
 Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total in Arterial blood # oxyhemoglobin
@@ -91,6 +98,7 @@ potassium: Potassium [Moles/volume] in Blood # potassium
 prealbumin: Prealbumin [Mass/volume] in Serum or Plasma # protein_prealbumin
 Pressure Control: # Respiratory parameter
 Pressure Support: # Respiratory parameter
+Procainamide: # Medication levels in blood
 prolactin:
 protein - CSF:
 protein C:
@@ -103,13 +111,14 @@ RBC: Erythrocytes [#/volume] in Blood # erythrocytes
 RDW: Erythrocyte distribution width [Ratio] # red_cell_distribution_width
 Respiratory Rate:
 reticulocyte count: Reticulocytes/100 erythrocytes in Blood # reticulocytes
+RPR titer:
 salicylate: # Medication levels in blood
 serum ketones: # serum_ketones
 serum osmolality: Osmolality of Serum or Plasma # serum_osmolality
 Site: # Respiratory parameter
 sodium: Sodium [Moles/volume] in Blood # sodium
 Spontaneous Rate: # Respiratory parameter
-T3: Triiodothyronine (T3) Free [Moles/volume] in Serum or Plasma # T3
+T3: Triiodothyronine (T3) [Moles/volume] in Serum or Plasma # T3
 T3RU: # T3 resin uptake
 T4: Thyroxine (T4) [Mass/volume] in Serum or Plasma # T4_total
 Tacrolimus-FK506: # Medication levels in blood
@@ -129,11 +138,12 @@ troponin - I: Troponin I.cardiac [Mass/volume] in Serum or Plasma # troponin_I
 troponin - T: Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method # troponin_T
 TSH: Thyrotropin [Units/volume] in Serum or Plasma # TSH
 TV: # Respiratory parameter
-uric acid: uric_acid
+uric acid: Urate [Mass/volume] in Serum or Plasma # uric_acid
 urinary creatinine: Creatinine [Mass/volume] in Urine # urine_creatinine
 urinary osmolality: Osmolality of Urine # urine_osmolality
 urinary sodium: Sodium [Moles/volume] in Urine # urine_sodium
 urinary specific gravity: Specific gravity of Urine by Test strip # urine_specific_gravity
+Vancomycin - peak:
 Vancomycin - random: # Medication levels in blood
 Vancomycin - trough: # Medication levels in blood
 Vent Other: # Respiratory parameter
@@ -142,6 +152,7 @@ Vitamin B12: Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma # vitamin_
 WBC x 1000: Leukocytes [#/volume] in Blood # leukocytes
 WBC's in body fluid:
 WBC's in cerebrospinal fluid:
+WBC's in pericardial fluid:
 WBC's in peritoneal fluid:
 WBC's in pleural fluid:
 WBC's in synovial fluid:
