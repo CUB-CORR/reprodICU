@@ -89,7 +89,7 @@ Creatinine [Mass/volume] in Urine: True # urine_creatinine
 Creatinine [Mass/volume] in 24 hour Urine: False # urine_creatinine_24h
 Ketones [Mass/volume] in Urine by Test strip: True # urine_ketones
 Leukocytes [#/volume] in Urine by Test strip: True # urine_leukocytes
-Nitrite [Presence] in Urine by Test strip: True # urine_nitrogen_24h
+# Nitrite [Presence] in Urine by Test strip: True # urine_nitrogen_24h
 Osmolality of Urine: True # urine_osmolality
 Protein [Mass/volume] in Urine: True # urine_protein
 Protein [Mass/volume] in 24 hour Urine: True # urine_protein_24h

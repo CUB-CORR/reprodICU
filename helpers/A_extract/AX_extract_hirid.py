@@ -19,6 +19,26 @@ class HiRIDExtractor(HiRIDPaths):
         self.path = paths.hirid_source_path
         self.helpers = GlobalHelpers()
 
+        self.other_values = [
+            "Creatinine [Moles/volume] in Blood",
+            "Creatinine [Moles/volume] in Urine",
+            "Glucose [Moles/volume] in Serum or Plasma",
+            "Urea nitrogen [Moles/volume] in Serum or Plasma",
+            "Alkaline phosphatase [Enzymatic activity/volume] in Blood",
+            "Creatine kinase panel - Serum or Plasma",
+            "Erythrocyte sedimentation rate",
+            "Ferritin [Mass/volume] in Blood",
+            "INR in Blood by Coagulation assay",
+            "MCHC [Mass/volume] in Cord blood",
+            "Magnesium [Moles/volume] in Blood",
+            "Phosphate [Moles/volume] in Blood",
+            "aPTT in Blood by Coagulation assay",
+            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+            "Lactate [Mass/volume] in Arterial blood",
+            "Urea [Moles/volume] in Venous blood",
+            "Lymphocytes [#/volume] in Blood",
+        ]
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -359,7 +379,9 @@ class HiRIDExtractor(HiRIDPaths):
                 )
             )
             # Filter for names of interest
-            .filter(pl.col("variableid").is_in(self.all_values))
+            .filter(
+                pl.col("variableid").is_in(self.all_values + self.other_values)
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names

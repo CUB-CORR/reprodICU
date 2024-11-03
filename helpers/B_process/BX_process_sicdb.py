@@ -163,12 +163,126 @@ class SICdbConverter(UnitConverter):
         """
 
         # Convert the lab values to the correct units.
-        return data.pipe(
-            self.convert_urea_nitrogen_from_urea,
-            itemid_urea="Urea [Mass/volume] in Serum or Plasma",
-            itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
-            labelcol=labelcol,
-            valuecol=valuecol,
+        return (
+            data.pipe(
+                self.convert_bilirubin_mg_dL_to_umol_L,
+                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_bilirubin_mg_dL_to_umol_L,
+                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_VitB12_pg_mL_to_pmol_L,
+                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_iron_ug_dL_to_umol_L,
+                itemid="Iron [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_urea_nitrogen_from_urea,
+                itemid_urea="Urea [Mass/volume] in Serum or Plasma",
+                itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
+                        "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma": "Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma",
+                        "Iron [Mass/volume] in Serum or Plasma": "Iron [Mass/volume] in Blood",
+                        # NOTE: rename for consistency
+                        "Anion gap 4 in Arterial blood": "Anion gap in Blood",
+                        "Band form neutrophils/100 leukocytes in Blood by Manual count": "Band form neutrophils/100 leukocytes in Blood",
+                        "Basophils/100 leukocytes in Blood by Manual count": "Basophils/100 leukocytes in Blood",
+                        "Eosinophils/100 leukocytes in Blood by Manual count": "Eosinophils/100 leukocytes in Blood",
+                        "Lymphocytes/100 leukocytes in Blood by Manual count": "Lymphocytes/100 leukocytes in Blood",
+                        "Monocytes/100 leukocytes in Blood by Manual count": "Monocytes/100 leukocytes in Blood",
+                        "Segmented neutrophils/100 leukocytes in Blood by Manual count": "Segmented neutrophils/100 leukocytes in Blood",
+                        "Calcium [Moles/volume] in Serum or Plasma": "Calcium [Moles/volume] in Blood",
+                        "Calcium.ionized [Moles/volume] in Arterial blood": "Calcium.ionized [Moles/volume] in Blood",
+                        "Chloride [Moles/volume] in Arterial blood": "Chloride [Moles/volume] in Blood",
+                        "Chloride [Moles/volume] in Serum or Plasma": "Chloride [Moles/volume] in Blood",
+                        "Erythrocyte distribution width [Ratio] by Automated count": "Erythrocyte distribution width [Ratio]",
+                        "Hematocrit [Volume Fraction] of Arterial blood": "Hematocrit [Volume Fraction] of Blood",
+                        "Monocytes/100 leukocytes in Blood by Manual count": "Monocytes/100 leukocytes in Blood",
+                        "Fractional oxyhemoglobin in Arterial blood": "Oxyhemoglobin/Hemoglobin.total in Arterial blood",
+                        "Potassium [Moles/volume] in Arterial blood": "Potassium [Moles/volume] in Blood",
+                        "Potassium [Moles/volume] in Serum or Plasma": "Potassium [Moles/volume] in Blood",
+                        "Sodium [Moles/volume] in Arterial blood": "Sodium [Moles/volume] in Blood",
+                        "Sodium [Moles/volume] in Serum or Plasma": "Sodium [Moles/volume] in Blood",
+                        # NOTE: fixing wrong unit
+                        "Thyroxine (T4) free [Mass/volume] in Serum or Plasma": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
+                    }
+                )
+            )
+        )
+
+    def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Convert the lab values of the SICdb dataset.
+        """
+
+        return (
+            data.pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Band form neutrophils [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Band form neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Basophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Basophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Eosinophils [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Eosinophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Lymphocytes [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Lymphocytes/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Monocytes [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Monocytes/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Neutrophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Neutrophils [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Reticulocytes [#/volume] in Blood",
+                total_itemcol="Erythrocytes [#/volume] in Blood",
+                goal_itemcol="Reticulocytes/100 erythrocytes in Blood",
+            )
         )
 
 

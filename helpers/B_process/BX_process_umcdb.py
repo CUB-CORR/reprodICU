@@ -84,6 +84,8 @@ class UMCdbProcessor(UMCdbExtractor):
                 values="value",
                 aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
             )
+            # Convert the wide lab values to the correct units
+            .pipe(self.convert._convert_wide_lab_values)
         )
 
         # Drop empty rows
@@ -189,6 +191,18 @@ class UMCdbConverter(UnitConverter):
                 valuecol=valuecol,
             )
             .pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.conjugated [Moles/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.total [Moles/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
                 itemid="Creatinine [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
@@ -225,8 +239,20 @@ class UMCdbConverter(UnitConverter):
                 valuecol=valuecol,
             )
             .pipe(
+                self.convert_CKMB_ng_mL_to_U_L,
+                itemid="Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
                 self.convert_g_L_to_mg_dL,
                 itemid="Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_folate_nmol_L_to_ng_mL,
+                itemid="Folate [Moles/volume] in Serum or Plasma",
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
@@ -261,21 +287,139 @@ class UMCdbConverter(UnitConverter):
                 labelcol=labelcol,
                 valuecol=valuecol,
             )
+            .pipe(
+                self.convert_urate_umol_L_to_mg_dL,
+                itemid="Urate [Moles/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_urea_nitrogen_from_urea,
+                itemid_urea="Urea [Moles/volume] in Blood",
+                itemid_BUN="Urea nitrogen [Moles/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
+            .pipe(
+                self.convert_blood_urea_nitrogen_mmol_L_to_mg_dL,
+                itemid="Urea nitrogen [Moles/volume] in Serum or Plasma",
+                labelcol=labelcol,
+                valuecol=valuecol,
+            )
             .with_columns(
                 pl.col(labelcol).replace(
                     {
+                        "Bilirubin.conjugated [Moles/volume] in Serum or Plasma": "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                        "Billirubin.total [Moles/volume] in Serum or Plasma": "Bilirubin.total [Mass/volume] in Serum or Plasma",
                         "Creatinine [Moles/volume] in Serum or Plasma": "Creatinine [Mass/volume] in Serum or Plasma",
                         "Creatinine [Moles/volume] in Urine": "Creatinine [Mass/volume] in Urine",
                         "Cholesterol in HDL [Moles/volume] in Serum or Plasma": "Cholesterol in HDL [Mass/volume] in Serum or Plasma",
                         "Cholesterol in LDL [Moles/volume] in Serum or Plasma": "Cholesterol in LDL [Mass/volume] in Serum or Plasma",
                         "Cholesterol [Moles/volume] in Serum or Plasma": "Cholesterol [Mass/volume] in Serum or Plasma",
                         "Cortisol [Moles/volume] in Serum or Plasma": "Cortisol [Mass/volume] in Serum or Plasma",
-                        "Glucose [Moles/volume] in Blood": "Glucose [Mass/volume] in Blood",
+                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
+                        "Folate [Moles/volume] in Serum or Plasma": "Folate [Mass/volume] in Serum or Plasma",
+                        "Glucose [Moles/volume] in Blood": "Glucose [Mass/volume] in in Serum or Plasma",
                         "Hemoglobin [Moles/volume] in Blood": "Hemoglobin [Mass/volume] in Blood",
                         "MCHC [Moles/volume]": "MCHC [Mass/volume]",
-                        "Triglyceride [Moles/volume] in Blood": "Triglyceride [Mass/volume] in Blood",
+                        "Triglyceride [Moles/volume] in Blood": "Triglyceride [Mass/volume] in Serum or Plasma",
+                        "Urate [Moles/volume] in Serum or Plasma": "Urate [Mass/volume] in Serum or Plasma",
+                        # NOTE: rename for consistency with other datasets
+                        "Carboxyhemoglobin/Hemoglobin.total in Blood": "Carboxyhemoglobin/Hemoglobin.total in Arterial blood",
+                        "Methehemoglobin/Hemoglobin.total in Blood": "Methehemoglobin/Hemoglobin.total in Arterial blood",
+                        "Oxyhemoglobin/Hemoglobin.total in Blood": "Oxyhemoglobin/Hemoglobin.total in Arterial blood",
+                        "Base excess in Blood by calculation": "Base excess in Arterial blood by calculation",
+                        "Bicarbonate [Moles/volume] in Blood": "Bicarbonate [Moles/volume] in Arterial blood",
+                        "Calcium [Moles/volume] in Serum or Plasma": "Calcium [Moles/volume] in Blood",
+                        "Erythrocyte sedimentation rate": "Erythrocyte sedimentation rate by Westergren method",
+                        "Ferritin [Mass/volume] in Blood": "Ferritin [Mass/volume] in Serum or Plasma",
+                        "Hematocrit [Pure volume fraction] of Blood by Automated count": "Hematocrit [Volume Fraction] of Blood",
+                        "INR in Blood by Coagulation assay": "INR in Platelet poor plasma by Coagulation assay",
+                        "Lactate [Moles/volume] in Blood": "Lactate [Moles/volume] in Arterial blood",
+                        "MCH [Entitic substance]": "MCH [Entitic mass]",
+                        "MCV [Entitic volume] by Automated count": "MCV [Entitic volume]",
+                        "Neutrophils/100 leukocytes in Blood by Automated count": "Neutrophils/100 leukocytes in Blood",
+                        "Carbon dioxide [Partial pressure] in Blood": "Carbon dioxide [Partial pressure] in Arterial blood",
+                        "Oxygen [Partial pressure] in Blood": "Oxygen [Partial pressure] in Arterial blood",
+                        "Oxygen saturation [Pure mass fraction] in Blood": "Oxygen saturation in Arterial blood",
+                        "Transferrin [Mass/volume] in Blood": "Transferrin [Mass/volume] in Serum or Plasma",
+                        "Troponin T.cardiac [Mass/volume] in Serum or Plasma": "Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
+                        "Troponin T.cardiac [Mass/volume] in Blood": "Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
+                        "aPTT in Blood by Coagulation assay": "aPTT in Platelet poor plasma by Coagulation assay",
+                        "pH of Blood": "pH of Arterial blood",
+                        # NOTE: fix wrong units
+                        # NOTE: FIXED
+                        # "Cobalamin (Vitamin B12) [Mass/volume] in Blood": "Cobalamin (Vitamin B12) [Moles/volume] in Blood",
                     }
                 )
+            )
+        )
+
+    def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Convert the lab values of the UMCdb dataset.
+        """
+
+        return (
+            data.pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Band form neutrophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Band form neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Basophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Basophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Eosinophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Eosinophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Eosinophils [#/volume] in Blood by Automated count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Eosinophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Eosinophils [#/volume] in Blood by Manual count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Eosinophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Lymphocytes [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Lymphocytes/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Monocytes [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Monocytes/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Neutrophils [#/volume] in Blood by Automated count",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Segmented neutrophils [#/volume] in Blood",
+                total_itemcol="Leukocytes [#/volume] in Blood",
+                goal_itemcol="Segmented neutrophils/100 leukocytes in Blood",
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Reticulocytes [#/volume] in Blood",
+                total_itemcol="Erythrocytes [#/volume] in Blood",
+                goal_itemcol="Reticulocytes/100 erythrocytes in Blood",
             )
         )
 

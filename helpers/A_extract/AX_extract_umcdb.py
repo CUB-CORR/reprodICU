@@ -20,6 +20,57 @@ class UMCdbExtractor(UMCdbPaths):
         self.helpers = GlobalHelpers()
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
+        self.other_values = [
+            "Bilirubin.conjugated [Moles/volume] in Serum or Plasma",
+            "Billirubin.total [Moles/volume] in Serum or Plasma",
+            "Creatinine [Moles/volume] in Serum or Plasma",
+            "Creatinine [Moles/volume] in Urine",
+            "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
+            "Cholesterol in LDL [Moles/volume] in Serum or Plasma",
+            "Cholesterol [Moles/volume] in Serum or Plasma",
+            "Cortisol [Moles/volume] in Serum or Plasma",
+            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+            "Folate [Moles/volume] in Serum or Plasma",
+            "Glucose [Moles/volume] in Blood",
+            "Hemoglobin [Moles/volume] in Blood",
+            "MCHC [Moles/volume]",
+            "Triglyceride [Moles/volume] in Blood",
+            "Urate [Moles/volume] in Serum or Plasma",
+            "Carboxyhemoglobin/Hemoglobin.total in Blood",
+            "Methehemoglobin/Hemoglobin.total in Blood",
+            "Oxyhemoglobin/Hemoglobin.total in Blood",
+            "Base excess in Blood by calculation",
+            "Bicarbonate [Moles/volume] in Blood",
+            "Calcium [Moles/volume] in Serum or Plasma",
+            "Erythrocyte sedimentation rate",
+            "Ferritin [Mass/volume] in Blood",
+            "Hematocrit [Pure volume fraction] of Blood by Automated count",
+            "INR in Blood by Coagulation assay",
+            "Lactate [Moles/volume] in Blood",
+            "MCH [Entitic substance]",
+            "MCV [Entitic volume] by Automated count",
+            "Neutrophils/100 leukocytes in Blood by Automated count",
+            "Carbon dioxide [Partial pressure] in Blood",
+            "Oxygen [Partial pressure] in Blood",
+            "Oxygen saturation [Pure mass fraction] in Blood",
+            "Transferrin [Mass/volume] in Blood",
+            "Troponin T.cardiac [Mass/volume] in Serum or Plasma",
+            "Troponin T.cardiac [Mass/volume] in Blood",
+            "aPTT in Blood by Coagulation assay",
+            "pH of Blood",
+            "Urea [Moles/volume] in Blood",
+            "Band form neutrophils [#/volume] in Blood",
+            "Basophils [#/volume] in Blood",
+            "Eosinophils [#/volume] in Blood",
+            "Eosinophils [#/volume] in Blood by Automated count",
+            "Eosinophils [#/volume] in Blood by Manual count",
+            "Lymphocytes [#/volume] in Blood",
+            "Monocytes [#/volume] in Blood",
+            "Neutrophils [#/volume] in Blood by Automated count",
+            "Segmented neutrophils [#/volume] in Blood",
+            "Reticulocytes [#/volume] in Blood",
+        ]
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -221,7 +272,7 @@ class UMCdbExtractor(UMCdbPaths):
 
         print(self._extract_numeric_references())
 
-        print("before",data.head(10).collect(streaming=True))
+        print("before", data.head(10).collect(streaming=True))
 
         data = (
             data.select(["admissionid", "itemid", "value", "measuredat"])
@@ -234,7 +285,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        print("after",data.head(10).collect(streaming=True))
+        print("after", data.head(10).collect(streaming=True))
 
         return data.pipe(self._extract_timeseries_helper)
 
@@ -269,8 +320,7 @@ class UMCdbExtractor(UMCdbPaths):
                         ).truediv(pl.duration(milliseconds=1))
                     )
                 )
-            )
-            .with_columns(
+            ).with_columns(
                 pl.duration(
                     milliseconds=(pl.col("measuredat") - pl.col("intime"))
                 )
@@ -279,7 +329,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.timeseries_time_col),
             )
             # Filter only relevant timeseries values
-            .filter(pl.col("item").is_in(self.all_values))
+            .filter(pl.col("item").is_in(self.all_values + self.other_values))
             .drop(["measuredat", "intime", "outtime"])
             # Convert values to numbers, if possible, ignore if not
             .cast({"value": float}, strict=False)
@@ -848,12 +898,11 @@ class UMCdbExtractor(UMCdbPaths):
             # .filter(pl.col("equivalence") == "EQUAL")
             .select(["sourceCode", "conceptName"])
             .cast({"sourceCode": int}, strict=False)
-            
         )
 
-        references.filter(~pl.col("conceptName").is_in(self.all_values)).write_parquet("UMCdb_numeric_references.parquet")
-
-        references = references.filter(pl.col("conceptName").is_in(self.all_values))
+        references = references.filter(
+            pl.col("conceptName").is_in(self.all_values + self.other_values)
+        )
 
         return dict(
             zip(
@@ -872,9 +921,10 @@ class UMCdbExtractor(UMCdbPaths):
                 ],
                 how="diagonal_relaxed",
             )
-            #.filter(pl.col("equivalence") == "EQUAL")
-            .select(["sourceCode", "conceptName"])
-            .filter(pl.col("conceptName").is_in(self.all_values))
+            # .filter(pl.col("equivalence") == "EQUAL")
+            .select(["sourceCode", "conceptName"]).filter(
+                pl.col("conceptName").is_in(self.all_values + self.other_values)
+            )
         )
 
         return dict(
@@ -895,7 +945,7 @@ class UMCdbExtractor(UMCdbPaths):
                 ],
                 how="diagonal_relaxed",
             )
-            #.filter(pl.col("equivalence") == "EQUAL")
+            # .filter(pl.col("equivalence") == "EQUAL")
             .select(["sourceName", "conceptName"])
         )
 
