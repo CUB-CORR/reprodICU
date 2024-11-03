@@ -273,7 +273,11 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant lab values
-            .filter(pl.col("LaboratoryID").is_in(self.all_values + self.other_values))
+            .filter(
+                pl.col("LaboratoryID").is_in(
+                    self.all_values + self.other_values
+                )
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -285,6 +289,30 @@ class SICdbExtractor(SICdbPaths):
             )
             # Drop columns
             .drop(["CaseOffset", "LaboratoryType"])
+            # MAKE STRUCT
+            .with_columns(
+                pl.col("LaboratoryID")
+                .str.split_exact(by=" by ", n=1)
+                .struct.rename_fields(["variable_source", "method"])
+                .alias("fields1")
+            )
+            .unnest("fields1")
+            .with_columns(
+                pl.col("variable_source")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "source"])
+                .alias("fields2")
+            )
+            .unnest("fields2")
+            .select(
+                pl.col(self.icu_stay_id_col),
+                pl.col(self.timeseries_time_col),
+                pl.col("variable").alias("LaboratoryID"),
+                pl.struct(
+                    value="LaboratoryValue", source="source", method="method"
+                ).alias("LaboratoryValue"),
+            )
         )
 
     # endregion
