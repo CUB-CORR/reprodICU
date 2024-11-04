@@ -45,23 +45,14 @@ class MIMIC3Processor(MIMIC3Extractor):
         # Load the time series data.
         print("MIMIC3 — Loading time series data...")
 
-        ts_vitals = self._process_timeseries_vitals()
-        ts_lab = self._process_timeseries_labevents()
+        ts_vitals = self._process_timeseries_vitals().sort(self.index_cols)
         # ts_inout = self._process_timeseries_inputoutput()
 
-        # Combine all time series data
-        print("MIMIC3  - Combining time series data...")
-        timeseries = pl.concat(
-            [ts_vitals, ts_lab], how="diagonal_relaxed"
-        ).sort(self.index_cols)
-        # timeseries.sink_parquet(
-        #     self.precalc_path + "MIMIC3_B_timeseries.parquet"
-        # )
-        timeseries.collect(streaming=True).write_parquet(
+        ts_vitals.collect(streaming=True).write_parquet(
             self.precalc_path + "MIMIC3_B_timeseries.parquet"
         )
 
-        return timeseries
+        return ts_vitals
 
     # endregion
 
@@ -139,35 +130,35 @@ class MIMIC3Processor(MIMIC3Extractor):
             .pipe(
                 self.convert._convert_lab_values,
                 labelcol="LABEL",
-                valuecol="VALUENUM",
+                valuecol="value_struct",
+                structfield="value",
             )
             # Pivot the lab data
             .collect(streaming=True).pivot(
                 on="LABEL",
                 index=self.index_cols,
-                values="VALUENUM",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                values="value_struct",
+                aggregate_function="first",
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
         )
 
-        # drop empty rows
-        ts_lab_cols = ts_lab.collect_schema().names()
-        droplist = list(set(ts_lab_cols) - set(self.index_cols))
-        ts_lab = (
-            ts_lab.lazy()
-            .pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-        )
+        # # drop empty rows
+        # ts_lab_cols = ts_lab.collect_schema().names()
+        # droplist = list(set(ts_lab_cols) - set(self.index_cols))
+        # ts_lab = (
+        #     ts_lab.lazy()
+        #     .pipe(self.helpers.dropna, "all", droplist, False)
+        #     .unique()
+        #     .sort(self.index_cols)
+        # )
+
         # Save the preprocessed data
         # ts_lab.sink_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
-        ts_lab.collect(streaming=True).write_parquet(
-            self.precalc_path + "MIMIC3_B_ts_lab.parquet"
-        )
+        ts_lab.write_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
 
-        return ts_lab
+        return ts_lab.lazy()
 
     # endregion
 
@@ -245,6 +236,7 @@ class MIMIC3Converter(UnitConverter):
         data: pl.LazyFrame,
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
+        structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the MIMIC dataset.
@@ -254,46 +246,52 @@ class MIMIC3Converter(UnitConverter):
         return (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.direct [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.indirect [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.indirect [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.total [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # prefer mg/dL over mmol/L
             # .pipe(
             #     self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-            #     itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
+            #     itemid="Urea nitrogen [Mass/volume]",
             #     labelcol=labelcol,
             #     valuecol=valuecol,
             # )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium [Mass/volume] in Blood",
+                itemid="Calcium [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized [Mass/volume] in Blood",
+                itemid="Calcium.ionized [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+                itemid="Creatine kinase.MB [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # NOTE: Experience from clinical practice:
             # Creatinine is more commonly referred to in mg/dL, so this conversion is not necessary
@@ -305,21 +303,24 @@ class MIMIC3Converter(UnitConverter):
             # )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="C reactive protein [Mass/volume] in Serum or Plasma",
+                itemid="C reactive protein [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_FEU_to_DDU,
-                itemid="Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma",
+                itemid="Fibrin D-dimer FEU [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_mg_L,
-                itemid="Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma",
+                itemid="Fibrin D-dimer DDU [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # NOTE: Experience from clinical practice:
             # Glucose is more commonly referred to in mg/dL, so this conversion is not necessary
@@ -337,129 +338,123 @@ class MIMIC3Converter(UnitConverter):
             # )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume] in Serum or Plasma",
+                itemid="Iron [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron binding capacity [Mass/volume] in Serum or Plasma",
+                itemid="Iron binding capacity [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="Magnesium [Mass/volume] in Serum or Plasma",
+                itemid="Magnesium [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="Myoglobin [Mass/volume] in Serum or Plasma",
+                itemid="Myoglobin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # MCHC is in %, however this is equal to g/dL due to the definition of MCHC
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="Phosphate [Mass/volume] in Serum or Plasma",
+                itemid="Phosphate [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # Potassium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Albumin [Mass/volume] in Serum or Plasma",
+                itemid="Albumin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="Prealbumin [Mass/volume] in Serum or Plasma",
+                itemid="Prealbumin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Protein [Mass/volume] in Serum or Plasma",
+                itemid="Protein [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # Sodium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
+                itemid="Triiodothyronine (T3) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) [Mass/volume] in Serum or Plasma",
+                itemid="Thyroxine (T4) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+                itemid="Thyroxine (T4) free [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin I.cardiac [Mass/volume] in Serum or Plasma",
+                itemid="Troponin I.cardiac [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin T.cardiac [Mass/volume] in Serum or Plasma",
+                itemid="Troponin T.cardiac [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                        "Bilirubin.indirect [Mass/volume] in Serum or Plasma": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
-                        "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
-                        # "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
-                        "Calcium [Mass/volume] in Blood": "Calcium [Moles/volume] in Blood",
-                        "Calcium.ionized [Mass/volume] in Blood": "Calcium.ionized [Moles/volume] in Blood",
-                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
-                        "Iron [Mass/volume] in Serum or Plasma": "Iron [Moles/volume] in Serum or Plasma",
-                        "Iron binding capacity [Mass/volume] in Serum or Plasma": "Iron binding capacity [Moles/volume] in Serum or Plasma",
-                        "Magnesium [Mass/volume] in Serum or Plasma": "Magnesium [Moles/volume] in Serum or Plasma",
-                        "Phosphate [Mass/volume] in Serum or Plasma": "Phosphate [Moles/volume] in Serum or Plasma",
-                        "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma": "Triiodothyronine (T3) [Moles/volume] in Serum or Plasma",
-                        "Thyroxine (T4) [Mass/volume] in Serum or Plasma": "Thyroxine (T4) [Moles/volume] in Serum or Plasma",
-                        "Thyroxine (T4) free [Mass/volume] in Serum or Plasma": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
-                        "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma": "Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma",
-                        # NOTE: renamed for consistency
-                        "Ammonia [Moles/volume] in Plasma": "Ammonia [Moles/volume] in Blood",
-                        "Bicarbonate [Moles/volume] in Blood": "Bicarbonate [Moles/volume] in Arterial blood",
-                        "Carboxyhemoglobin/Hemoglobin.total in Blood": "Carboxyhemoglobin/Hemoglobin.total in Arterial blood",
-                        "Methehemoglobin/Hemoglobin.total in Blood": "Methehemoglobin/Hemoglobin.total in Arterial blood",
-                        "Oxyhemoglobin/Hemoglobin.total in Blood": "Oxyhemoglobin/Hemoglobin.total in Arterial blood",
-                        "Leukocytes [#/volume] in Blood by Automated count": "Leukocytes [#/volume] in Blood",
-                        "Basophils/100 leukocytes in Blood by Automated count": "Basophils/100 leukocytes in Blood",
-                        "Eosinophils/100 leukocytes in Blood by Automated count": "Eosinophils/100 leukocytes in Blood",
-                        "Lymphocytes/100 leukocytes in Blood by Automated count": "Lymphocytes/100 leukocytes in Blood",
-                        "Monocytes/100 leukocytes in Blood by Automated count": "Monocytes/100 leukocytes in Blood",
-                        "Neutrophils/100 leukocytes in Blood by Automated count": "Neutrophils/100 leukocytes in Blood",
-                        "Erythrocyte distribution width [Ratio] by Automated count": "Erythrocyte distribution width [Ratio]",
-                        "Erythrocytes [#/volume] in Blood by Automated count": "Erythrocytes [#/volume] in Blood",
-                        "Platelets [#/volume] in Blood by Automated count": "Platelets [#/volume] in Blood",
-                        "MCH [Entitic mass] by Automated count": "MCH [Entitic mass]",
-                        "MCHC [Mass/volume] by Automated count": "MCHC [Mass/volume]",
-                        "MCV [Entitic volume] by Automated count": "MCV [Entitic volume]",
-                        #
-                        "Troponin T.cardiac [Mass/volume] in Serum or Plasma": "Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
+                        "Bilirubin.direct [Mass/volume]": "Bilirubin.direct [Moles/volume]",
+                        "Bilirubin.indirect [Mass/volume]": "Bilirubin.indirect [Moles/volume]",
+                        "Bilirubin.total [Mass/volume]": "Bilirubin.total [Moles/volume]",
+                        # "Urea nitrogen [Mass/volume]": "Urea nitrogen [Moles/volume]",
+                        "Calcium [Mass/volume]": "Calcium [Moles/volume]",
+                        "Calcium.ionized [Mass/volume]": "Calcium.ionized [Moles/volume]",
+                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
+                        "Iron [Mass/volume]": "Iron [Moles/volume]",
+                        "Iron binding capacity [Mass/volume]": "Iron binding capacity [Moles/volume]",
+                        "Magnesium [Mass/volume]": "Magnesium [Moles/volume]",
+                        "Phosphate [Mass/volume]": "Phosphate [Moles/volume]",
+                        "Triiodothyronine (T3) [Mass/volume]": "Triiodothyronine (T3) [Moles/volume]",
+                        "Thyroxine (T4) [Mass/volume]": "Thyroxine (T4) [Moles/volume]",
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                        "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
                         # NOTE: do sth with this
                         # Protein [Mass/time] in 24 hour Urine
                     }
@@ -473,67 +468,75 @@ class MIMIC3Converter(UnitConverter):
         """
 
         absolute_leukos = [
-            "Basophils [#/volume] in Blood by Automated count",
-            "Eosinophils [#/volume] in Blood by Automated count",
-            "Lymphocytes [#/volume] in Blood by Automated count",
-            "Monocytes [#/volume] in Blood by Automated count",
-            "Neutrophils [#/volume] in Blood by Automated count",
+            "Basophils [#/volume]",
+            "Eosinophils [#/volume]",
+            "Lymphocytes [#/volume]",
+            "Monocytes [#/volume]",
+            "Neutrophils [#/volume]",
         ]
         absolute_erys = [
-            "Reticulocytes [#/volume] in Blood",
-            "Reticulocytes [#/volume] in Blood by Automated count",
-            "Reticulocytes [#/volume] in Blood by Manual count",
+            "Reticulocytes [#/volume]",
+            "Reticulocytes [#/volume]",
+            "Reticulocytes [#/volume]",
         ]
 
         return (
             data
             # .pipe(
             #     self.convert_absolute_count_to_relative,
-            #     itemcol="Basophils [#/volume] in Blood by Automated count",
-            #     total_itemcol="Leukocytes [#/volume] in Blood",
-            #     goal_itemcol="Basophils/100 leukocytes in Blood",
+            #     itemcol="Basophils [#/volume]",
+            #     total_itemcol="Leukocytes [#/volume]",
+            #     goal_itemcol="Basophils/100 leukocytes",
+            #     structfield="value",
             # )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Eosinophils [#/volume] in Blood by Automated count",
-                total_itemcol="Leukocytes [#/volume] in Blood",
-                goal_itemcol="Eosinophils/100 leukocytes in Blood",
+                itemcol="Eosinophils [#/volume]",
+                total_itemcol="Leukocytes [#/volume]",
+                goal_itemcol="Eosinophils/100 leukocytes",
+                structfield="value",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Lymphocytes [#/volume] in Blood by Automated count",
-                total_itemcol="Leukocytes [#/volume] in Blood",
-                goal_itemcol="Lymphocytes/100 leukocytes in Blood",
+                itemcol="Lymphocytes [#/volume]",
+                total_itemcol="Leukocytes [#/volume]",
+                goal_itemcol="Lymphocytes/100 leukocytes",
+                structfield="value",
             )
             # .pipe(
             #     self.convert_absolute_count_to_relative,
-            #     itemcol="Monocytes [#/volume] in Blood by Automated count",
-            #     total_itemcol="Leukocytes [#/volume] in Blood",
-            #     goal_itemcol="Monocytes/100 leukocytes in Blood",
+            #     itemcol="Monocytes [#/volume]",
+            #     total_itemcol="Leukocytes [#/volume]",
+            #     goal_itemcol="Monocytes/100 leukocytes",
+            #     structfield="value",
             # )
             # .pipe(
             #     self.convert_absolute_count_to_relative,
-            #     itemcol="Neutrophils [#/volume] in Blood by Automated count",
-            #     total_itemcol="Leukocytes [#/volume] in Blood",
-            #     goal_itemcol="Neutrophils/100 leukocytes in Blood",
+            #     itemcol="Neutrophils [#/volume]",
+            #     total_itemcol="Leukocytes [#/volume]",
+            #     goal_itemcol="Neutrophils/100 leukocytes",
+            #     structfield="value",
             # )
             # .pipe(
             #     self.convert_absolute_count_to_relative,
-            #     itemcol="Reticulocytes [#/volume] in Blood",
-            #     total_itemcol="Erythrocytes [#/volume] in Blood",
-            #     goal_itemcol="Reticulocytes/100 erythrocytes in Blood",
+            #     itemcol="Reticulocytes [#/volume]",
+            #     total_itemcol="Erythrocytes [#/volume]",
+            #     goal_itemcol="Reticulocytes/100 erythrocytes",
+            #     structfield="value",
             # )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Reticulocytes [#/volume] in Blood by Automated count",
-                total_itemcol="Erythrocytes [#/volume] in Blood",
-                goal_itemcol="Reticulocytes/100 erythrocytes in Blood",
+                itemcol="Reticulocytes [#/volume]",
+                total_itemcol="Erythrocytes [#/volume]",
+                goal_itemcol="Reticulocytes/100 erythrocytes",
+                structfield="value",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Reticulocytes [#/volume] in Blood by Manual count",
-                total_itemcol="Erythrocytes [#/volume] in Blood",
-                goal_itemcol="Reticulocytes/100 erythrocytes in Blood",
+                itemcol="Reticulocytes [#/volume]",
+                total_itemcol="Erythrocytes [#/volume]",
+                goal_itemcol="Reticulocytes/100 erythrocytes",
+                structfield="value",
             )
         )
 

@@ -26,10 +26,16 @@ class HiRIDProcessor(HiRIDExtractor):
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "HiRID_B_timeseries.parquet"):
+        if os.path.isfile(
+            self.precalc_path + "HiRID_B_timeseries.parquet"
+        ) and os.path.isfile(
+            self.precalc_path + "HiRID_B_timeseries_labs.parquet"
+        ):
             # Load the preprocessed data
             return pl.scan_parquet(
                 self.precalc_path + "HiRID_B_timeseries.parquet"
+            ), pl.scan_parquet(
+                self.precalc_path + "HiRID_B_timeseries_labs.parquet"
             )
 
         print("HiRID   - Processing time series data...")
@@ -43,11 +49,17 @@ class HiRIDProcessor(HiRIDExtractor):
         )
         length_of_stay = self._extract_length_of_stay()
 
-        if not os.path.isfile(
-            self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
+        if not (
+            os.path.isfile(
+                self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
+            )
+            and os.path.isfile(
+                self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
+            )
         ):
             # Create an empty DataFrame to store the timeseries data
             timeseries_processed = pl.LazyFrame()
+            timeseries_labs_processed = pl.LazyFrame()
 
             # Since each case has it's data in only one file, iterating over the files specifically allows
             # for a more efficient processing of the data.
@@ -63,30 +75,11 @@ class HiRIDProcessor(HiRIDExtractor):
                 )
 
                 # Process timeseries data
-                timeseries = (
-                    pl.scan_parquet(self.timeseries_path + file)
-                    .pipe(
-                        self._extract_timeseries_helper,
-                        admissiontime,
-                        length_of_stay,
-                        # observation_mapping,
-                    )
-                    # Convert the lab values to the correct units
-                    .pipe(
-                        self.convert._convert_lab_values,
-                        labelcol="variableid",
-                        valuecol="value",
-                    )
-                    # Pivot the timeseries data
-                    .collect(streaming=True)
-                    .pivot(
-                        on="variableid",
-                        index=self.index_cols,
-                        values="value",
-                        aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-                    )
-                    # Convert the wide lab values to the correct units
-                    .pipe(self.convert._convert_wide_lab_values)
+                timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
+                    self._extract_timeseries_helper,
+                    admissiontime,
+                    length_of_stay,
+                    # observation_mapping,
                 )
 
                 # Drop empty rows
@@ -98,15 +91,59 @@ class HiRIDProcessor(HiRIDExtractor):
                     self.helpers.dropna, "all", droplist, False
                 ).unique()
 
+                # Separate the lab values from the rest
+                timeseries_labs = (
+                    timeseries.pipe(
+                        self._extract_timeseries_labs_helper
+                    )  # Convert the lab values to the correct units
+                    .pipe(
+                        self.convert._convert_lab_values,
+                        labelcol="variableid",
+                        valuecol="value_struct",
+                    )
+                    # Pivot the timeseries data
+                    .collect(streaming=True)
+                    .pivot(
+                        on="variableid",
+                        index=self.index_cols,
+                        values="value_struct",
+                        aggregate_function="first",
+                    )
+                    # Convert the wide lab values to the correct units
+                    .pipe(self.convert._convert_wide_lab_values)
+                )
+
+                timeseries = (
+                    timeseries.filter(
+                        ~pl.col("variableid").is_in(
+                            self.relevant_lab_values + self.other_lab_values
+                        )
+                    )
+                    # Pivot the timeseries data
+                    .collect(streaming=True).pivot(
+                        on="variableid",
+                        index=self.index_cols,
+                        values="value",
+                        aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                    )
+                )
+
                 # Append the data to the DataFrame
                 timeseries_processed = pl.concat(
                     [timeseries_processed, timeseries.lazy()],
+                    how="diagonal_relaxed",
+                )
+                timeseries_labs_processed = pl.concat(
+                    [timeseries_labs_processed, timeseries_labs.lazy()],
                     how="diagonal_relaxed",
                 )
 
             # Save the preprocessed data
             timeseries_processed.sink_parquet(
                 self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
+            )
+            timeseries_labs_processed.sink_parquet(
+                self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
             )
 
         # NOTE: if process stops due to insufficient memory, use the following
@@ -120,7 +157,15 @@ class HiRIDProcessor(HiRIDExtractor):
         timeseries.sink_parquet(
             self.precalc_path + "HiRID_B_timeseries.parquet"
         )
-        return timeseries
+
+        timeseries_labs = pl.scan_parquet(
+            self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
+        ).sort(self.index_cols)
+        timeseries_labs.sink_parquet(
+            self.precalc_path + "HiRID_B_timeseries_labs.parquet"
+        )
+
+        return timeseries, timeseries_labs
 
     # endregion
 
@@ -135,7 +180,8 @@ class HiRIDConverter(UnitConverter):
         self,
         data: pl.LazyFrame,
         labelcol: str = "variableid",
-        valuecol: str = "value",
+        valuecol: str = "value_struct",
+        structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the HiRID dataset.
@@ -144,82 +190,66 @@ class HiRIDConverter(UnitConverter):
         # Convert the lab values to the correct units.
         return (
             data.pipe(
-                self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Moles/volume] in Venous blood",
-                itemid_BUN="Urea nitrogen [Moles/volume] in Serum or Plasma",
-                labelcol=labelcol,
-                valuecol=valuecol,
-            )
-            .pipe(
                 self.convert_creatinine_umol_L_to_mg_dL,
-                itemid="Creatinine [Moles/volume] in Blood",
+                itemid="Creatinine [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-            )
-            .pipe(
-                self.convert_creatinine_umol_L_to_mg_dL,
-                itemid="Creatinine [Moles/volume] in Urine",
-                labelcol=labelcol,
-                valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_g_L_to_mg_dL,
-                itemid="Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay",
+                itemid="Fibrinogen [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="Glucose [Moles/volume] in Serum or Plasma",
+                itemid="Glucose [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_g_L_to_g_dL,
-                itemid="Hemoglobin [Mass/volume] in Blood",
+                itemid="Hemoglobin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 # same conversion due to definition of MCHC
                 self.convert_g_L_to_g_dL,
-                itemid="MCHC [Mass/volume] in Blood",
+                itemid="MCHC [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Moles/volume] in Venous blood",
-                itemid_BUN="Urea nitrogen [Moles/volume] in Serum or Plasma",
+                itemid_urea="Urea [Moles/volume]",
+                itemid_BUN="Urea nitrogen [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_blood_urea_nitrogen_mmol_L_to_mg_dL,
-                itemid="Urea nitrogen [Moles/volume] in Serum or Plasma",
+                itemid="Urea nitrogen [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Creatinine [Moles/volume] in Blood": "Creatinine [Mass/volume] in Blood",
-                        "Creatinine [Moles/volume] in Urine": "Creatinine [Mass/volume] in Urine",
-                        "Glucose [Moles/volume] in Serum or Plasma": "Glucose [Mass/volume] in Serum or Plasma",
-                        "Urea nitrogen [Moles/volume] in Serum or Plasma": "Urea nitrogen [Mass/volume] in Serum or Plasma",
-                        # NOTE: rename for consistency
-                        "Alkaline phosphatase [Enzymatic activity/volume] in Blood": "Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma",
-                        "Creatine kinase panel - Serum or Plasma": "Creatine kinase [Enzymatic activity/volume] in Serum or Plasma",
-                        "Erythrocyte sedimentation rate": "Erythrocyte sedimentation rate by Westergren method",
-                        "Ferritin [Mass/volume] in Blood": "Ferritin [Mass/volume] in Serum or Plasma",
-                        "INR in Blood by Coagulation assay": "INR in Platelet poor plasma by Coagulation assay",
-                        "MCHC [Mass/volume] in Cord blood": "MCHC [Mass/volume] in Blood",
-                        "Magnesium [Moles/volume] in Blood": "Magnesium [Mass/volume] in Serum or Plasma",
-                        "Phosphate [Moles/volume] in Blood": "Phosphate [Mass/volume] in Serum or Plasma",
-                        "aPTT in Blood by Coagulation assay": "aPTT in Platelet poor plasma by Coagulation assay",
+                        "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
+                        "Glucose [Moles/volume]": "Glucose [Mass/volume]",
+                        "Urea nitrogen [Moles/volume]": "Urea nitrogen [Mass/volume]",
                         # NOTE: fix wrong unit
-                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
-                        "Lactate [Mass/volume] in Arterial blood": "Lactate [Moles/volume] in Arterial blood",
+                        "Creatine kinase panel - Serum or Plasma": "Creatine kinase [Enzymatic activity/volume]",
+                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
+                        "Lactate [Mass/volume]": "Lactate [Moles/volume]",
                     }
                 )
             )
@@ -232,9 +262,10 @@ class HiRIDConverter(UnitConverter):
 
         return data.pipe(
             self.convert_absolute_count_to_relative,
-            itemcol="Lymphocytes [#/volume] in Blood",
-            total_itemcol="Leukocytes [#/volume] in Blood",
-            goal_itemcol="Lymphocytes/100 leukocytes in Blood",
+            itemcol="Lymphocytes [#/volume]",
+            total_itemcol="Leukocytes [#/volume]",
+            goal_itemcol="Lymphocytes/100 leukocytes",
+            structfield="value",
         )
 
 
