@@ -73,6 +73,7 @@ def drug_exposure(
     medications: pl.LazyFrame,
     patient_information: pl.LazyFrame,
 ) -> pl.LazyFrame:
+    print("reprOMOPIZE - drug_exposure")
 
     ID = (
         patient_information.select(
@@ -196,6 +197,8 @@ def drug_exposure(
 # (physical or organizational) units where healthcare delivery is practiced
 # (offices, wards, hospitals, clinics, etc.
 def care_site(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprOMOPIZE - care_site")
+
     # Extract the care site information
     care_site = (
         patient_information.select("Care Site")
@@ -236,6 +239,7 @@ def care_site(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 def condition_occurrence(
     CONCEPT: pl.LazyFrame, diagnoses: pl.LazyFrame
 ) -> pl.LazyFrame:
+    print("reprOMOPIZE - condition_occurrence")
 
     ID = patient_information.with_columns(
         ###########
@@ -372,6 +376,8 @@ def condition_occurrence(
 # The LOCATION table represents a generic way to capture physical location or
 # address information of Persons and Care Sites.
 def location(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprOMOPIZE - location")
+
     # Adresses of the known institutions
     # HiRID:
     # Universitätsspital Bern
@@ -499,6 +505,7 @@ def measurement(
     timeseries_labs: pl.LazyFrame,
     timeseries_resp: pl.LazyFrame,
 ) -> pl.LazyFrame:
+    print("reprOMOPIZE - measurement")
 
     ID = (
         patient_information.select(
@@ -523,9 +530,9 @@ def measurement(
         pl.col("concept_class_id") == "Clinical Observation",
     ).select("concept_id", "concept_name")
 
-    def _unpivot(data: pl.LazyFrame) -> pl.LazyFrame:
+    def _make_datetime(data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        unpivot the data
+        make time columns to datetime
         """
         return (
             data.join(ID, on="Global ICU Stay ID", how="left")
@@ -556,11 +563,79 @@ def measurement(
                 .dt.date()
                 .alias("measurement_date"),
             )
-            .unpivot(
-                index=["person_id", "measurement_date", "measurement_datetime"],
-                variable_name="variable_name",
-                value_name="value_as_number",
+        )
+
+    def _destruct(data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        de-struct the data, i.e. unpack the structs into separate columns
+        makes a list unpivoted dataframes, returns them concatenated
+        """
+
+        def _unshuffle(col):
+            """
+            column with name NAME and fields STRUCT.value, STRUCT.source and STRUCT.method
+            to columns with NAME + STRUCT.source + STRUCT.method and field STRUCT.value
+            """
+            return pl.struct(
+                pl.col(col)
+                .struct.with_fields(
+                    pl.field("value").alias("value_as_number"),
+                    pl.concat_str(
+                        col,
+                        pl.lit(" in "),
+                        pl.field("source"),
+                        pl.lit(" by "),
+                        pl.field("method"),
+                    )
+                    .str.replace(" in  by ", " by ")
+                    .str.replace(" by $", "")
+                    .alias("variable_name"),
+                )
+                .struct.field("value_as_number", "variable_name")
+            ).alias(col)
+
+        cols = data.collect_schema().names()
+        dtyp = data.collect_schema().dtypes()
+
+        destructed_ = []
+        struct_cols = [
+            col for col, dtype in zip(cols, dtyp) if type(dtype) is pl.Struct
+        ]
+
+        for col in struct_cols:
+            destructed_.append(
+                data.select(
+                    "person_id",
+                    "measurement_date",
+                    "measurement_datetime",
+                    _unshuffle(col),
+                )
+                .unnest(col)
+                .drop_nulls("value_as_number")
             )
+
+        print("reprOMOPIZE - measurement - de-structing done")
+
+        return pl.concat(destructed_, how="vertical")
+
+    def _unpivot(data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        unpivot the data
+        """
+        return data.unpivot(
+            index=["person_id", "measurement_date", "measurement_datetime"],
+            variable_name="variable_name",
+            value_name="value_as_number",
+        )
+
+    def _conceptualize(data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        add the concept_id to the data
+        """
+        print("reprOMOPIZE - measurement - adding concept_id")
+
+        return (
+            data
             # Create the measurement_concept_id column with the concept_id of the Measurement
             .join(
                 CONCEPTS,
@@ -576,9 +651,13 @@ def measurement(
     # Extract the measurement information
     return (
         pl.concat(
-            [timeseries_vitals.pipe(_unpivot), timeseries_labs.pipe(_unpivot)],
+            [
+                timeseries_vitals.pipe(_make_datetime).pipe(_unpivot),
+                timeseries_labs.pipe(_make_datetime).pipe(_destruct),
+            ],
             how="vertical",
         )
+        .pipe(_conceptualize)
         .with_row_index("measurement_id")
         .pipe(add_missing_fields, "measurement")
     )
@@ -592,6 +671,8 @@ def measurement(
 # database. It contains records that uniquely identify each person or patient,
 # and some demographic information.
 def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprOMOPIZE - person")
+
     # Dates of the databases
     # eICU: 2014 to 2015
     # HiRID: 2008-01 to 2016-06
@@ -672,6 +753,8 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # medical staff is delivering the service during the Visit, and (iii) whether
 # the Visit is transient or for a longer period involving a stay in bed.
 def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprOMOPIZE - visit_occurrence")
+
     # Extract the visit occurrence information
     return (
         patient_information.with_columns(
@@ -801,7 +884,7 @@ def other():
         if ((table + ".parquet") not in os.listdir(OUTPATH)) and (
             (table.upper() + ".parquet") not in os.listdir(OUTPATH)
         ):
-            print(f"Adding missing table: {table}")
+            print(f"reprOMOPIZE - adding missing table: {table}")
             pl.DataFrame().pipe(add_missing_fields, table).write_parquet(
                 OUTPATH + table + ".parquet"
             )
@@ -833,9 +916,7 @@ if __name__ == "__main__":
     )
     medications = pl.scan_parquet(INPATH + "medications.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
-    timeseries_labs = pl.scan_parquet(
-        INPATH + "timeseries_labs_winsorized.parquet"
-    )
+    timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
 
     # Parquetize the OMOP vocabulary files
@@ -843,6 +924,8 @@ if __name__ == "__main__":
         # Check if the file is already parquetized
         if os.path.isfile(OUTPATH + file[:-4] + ".parquet"):
             continue
+
+        print(f"reprOMOPIZE - parquetizing vocab {file}")
 
         pl.scan_csv(
             OUTPATH + "OMOP_vocabulary/" + file,
@@ -881,13 +964,13 @@ if __name__ == "__main__":
     drug_exposure(CONCEPT, medications, patient_information).collect(
         streaming=True
     ).write_parquet(OUTPATH + "drug_exposure.parquet")
-    # measurement(
-    #     CONCEPT,
-    #     patient_information,
-    #     timeseries_vitals,
-    #     timeseries_labs,
-    #     timeseries_resp,
-    # ).collect(streaming=True).write_parquet(OUTPATH + "measurement.parquet")
+    measurement(
+        CONCEPT,
+        patient_information,
+        timeseries_vitals,
+        timeseries_labs,
+        timeseries_resp,
+    ).collect(streaming=True).write_parquet(OUTPATH + "measurement.parquet")
 
     # Add missing tables
     other()
