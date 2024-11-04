@@ -4,6 +4,7 @@
 # Enables the easy import of the data paths.
 
 import polars as pl
+import os
 
 from helpers.helper import GlobalVars
 
@@ -418,6 +419,30 @@ class UMCdbPaths(GlobalVars):
         self.procedureorderitems_path = umcdb_path + "procedureorderitems.csv"
         self.processitems_path = umcdb_path + "processitems.csv"
 
+        # PARQUETIZE FOR MORE EFFICIENT DATA PROCESSING
+        for path in [
+            self.admissions_path,
+            self.drugitems_path,
+            self.freetextitems_path,
+            self.listitems_path,
+            self.numericitems_path,
+            self.procedureorderitems_path,
+            self.processitems_path,
+        ]:
+            if not os.path.isfile(
+                path.replace(".csv", ".parquet").replace(".gz", "")
+            ):
+                self._parquetize(path)
+
+            self.admissions_path = umcdb_path + "admissions.parquet"
+            self.drugitems_path = umcdb_path + "drugitems.parquet"
+            self.freetextitems_path = umcdb_path + "freetextitems.parquet"
+            self.listitems_path = umcdb_path + "listitems.parquet"
+            self.numericitems_path = umcdb_path + "numericitems.parquet"
+            self.procedureorderitems_path = umcdb_path + "procedureorderitems.parquet"
+            self.processitems_path = umcdb_path + "processitems.parquet"
+            
+
         # UMCdb custom mapping paths
         self.umcdb_mapping_path = self.mapping_path + "umcdb/"
         self.numeric_mapping_path = (
@@ -502,6 +527,12 @@ class UMCdbPaths(GlobalVars):
         )
         self.specimen_source_mapping_path = (
             self.umcdb_loinc_mapping_path + "specimen_source.usagi.csv"
+        )
+
+    def _parquetize(self, path):
+        print(f"UMCdb   - parquetizing {path}")
+        return pl.scan_csv(path, schema_overrides={"value": str}).sink_parquet(
+            path.replace(".csv", ".parquet").replace(".gz", "")
         )
 
 
