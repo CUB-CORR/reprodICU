@@ -49,19 +49,79 @@ class UnitConversions:
         itemcol: str,
         total_itemcol: str,
         goal_itemcol: str = None,
+        structfield: str = None,
     ) -> pl.LazyFrame:
         """
         Convert absolute counts to relative counts.
         """
-        data = data.with_columns(
-            pl.when(
-                pl.col(itemcol).is_not_null()
-                & pl.col(total_itemcol).is_not_null()
+
+        if structfield is not None:
+            data = (
+                data.with_columns(
+                    # Rename the columns for the unnest
+                    pl.col(itemcol).struct.rename_fields(
+                        [
+                            "itemcol_value",
+                            "itemcol_source",
+                            "itemcol_method",
+                        ]
+                    ),
+                    pl.col(total_itemcol).struct.rename_fields(
+                        [
+                            "total_itemcol_value",
+                            "total_itemcol_source",
+                            "total_itemcol_method",
+                        ]
+                    ),
+                )
+                .unnest(itemcol)
+                .unnest(total_itemcol)
+                .with_columns(
+                    pl.when(
+                        pl.col("itemcol_value").is_not_null()
+                        & pl.col("total_itemcol_value").is_not_null()
+                    )
+                    .then(
+                        pl.col("itemcol_value").truediv(
+                            pl.col("total_itemcol_value")
+                        )
+                    )
+                    .otherwise(None)
+                    .alias("itemcol_value")
+                )
+                # Combine the columns back into a struct again
+                .select(
+                    pl.exclude(
+                        "itemcol_value",
+                        "itemcol_source",
+                        "itemcol_method",
+                        "total_itemcol_value",
+                        "total_itemcol_source",
+                        "total_itemcol_method",
+                    ),
+                    pl.struct(
+                        value="itemcol_value",
+                        source="itemcol_source",
+                        method="itemcol_method",
+                    ).alias(itemcol),
+                    pl.struct(
+                        value="total_itemcol_value",
+                        source="total_itemcol_source",
+                        method="total_itemcol_method",
+                    ).alias(total_itemcol),
+                )
             )
-            .then(pl.col(itemcol).truediv(pl.col(total_itemcol)))
-            .otherwise(None)
-            .alias(itemcol)
-        )
+
+        else:
+            data = data.with_columns(
+                pl.when(
+                    pl.col(itemcol).is_not_null()
+                    & pl.col(total_itemcol).is_not_null()
+                )
+                .then(pl.col(itemcol).truediv(pl.col(total_itemcol)))
+                .otherwise(None)
+                .alias(itemcol)
+            )
 
         if goal_itemcol is None:
             return data
@@ -182,7 +242,7 @@ class UnitConversions:
     def convert_urea_nitrogen_from_urea(
         self,
         data: pl.LazyFrame,
-        itemid_urea="urea",
+        itemid_urea: str = "urea",
         itemid_BUN: str = "urea_nitrogen",
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
@@ -193,7 +253,6 @@ class UnitConversions:
         """
 
         if structfield is not None:
-
             return (
                 data.unnest(valuecol)
                 .with_columns(
@@ -294,10 +353,33 @@ class UnitConversions:
         itemid: str,
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
+        structfield: str = None,
     ) -> pl.LazyFrame:
         """
         Convert D-Dimer values from FEU to DDU.
         """
+
+        if structfield is not None:
+            return (
+                data.unnest(valuecol)
+                .with_columns(
+                    pl.when(pl.col(labelcol) == itemid)
+                    .then(pl.col("value") / 2)
+                    .otherwise(pl.col("value"))
+                    .alias("value"),
+                    pl.when(pl.col(labelcol) == itemid)
+                    .then(pl.col(labelcol).str.replace("FEU", "DDU"))
+                    .otherwise(pl.col(labelcol))
+                    .alias(labelcol),
+                )
+                .select(
+                    pl.exclude("value", "source", "method"),
+                    pl.struct(
+                        value="value", source="source", method="method"
+                    ).alias(valuecol),
+                )
+            )
+
         return data.with_columns(
             pl.when(pl.col(labelcol) == itemid)
             .then(pl.col(valuecol) / 2)
@@ -476,22 +558,12 @@ class UnitConversions:
         return data.pipe(self.GENERIC_CONVERTER, factor=1000, **kwargs)
 
     def convert_mEq_L_to_mmol_L(
-        self,
-        data: pl.LazyFrame,
-        itemid: str,
-        ions: int = 1,
-        labelcol: str = "LABEL",
-        valuecol: str = "VALUENUM",
+        self, data: pl.LazyFrame, ions: int = 1, **kwargs
     ) -> pl.LazyFrame:
         """
         Convert values from mEq/L to mmol/L, e.g. for sodium and potassium.
         """
-        return data.with_columns(
-            pl.when(pl.col(labelcol) == itemid)
-            .then(pl.col(valuecol) * ions)
-            .otherwise(pl.col(valuecol))
-            .alias(valuecol)
-        )
+        return data.pipe(self.GENERIC_CONVERTER, factor=ions, **kwargs)
 
     def convert_ratio_to_percentage(
         self,
@@ -499,10 +571,31 @@ class UnitConversions:
         itemid: str,
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
+        structfield: str = None,
     ) -> pl.LazyFrame:
         """
         Convert ratios to percentages (i.e., 0.23 to 23%).
         """
+
+        if structfield is not None:
+            return (
+                data.unnest(valuecol)
+                .with_columns(
+                    pl.when(
+                        (pl.col(labelcol) == itemid) & (pl.col("value") <= 2)
+                    )
+                    .then(pl.col("value") * 100)
+                    .otherwise(pl.col("value"))
+                    .alias("value"),
+                )
+                .select(
+                    pl.exclude("value", "source", "method"),
+                    pl.struct(
+                        value="value", source="source", method="method"
+                    ).alias(valuecol),
+                )
+            )
+
         return data.with_columns(
             pl.when((pl.col(labelcol) == itemid) & (pl.col(valuecol) <= 2))
             .then(pl.col(valuecol) * 100)

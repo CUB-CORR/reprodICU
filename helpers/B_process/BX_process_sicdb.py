@@ -123,17 +123,7 @@ class SICdbProcessor(SICdbExtractor):
                 values="LaboratoryValue",
                 aggregate_function="first",  # NOTE: mean is used here -> check if this is sensible
             )
-        )
-
-        # Drop empty rows
-        droplist = list(
-            set(timeseries.collect_schema().names()) - set(self.index_cols)
-        )
-        timeseries = (
-            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
             .lazy()
-            .sort(self.index_cols)
-            .unique()
         )
 
         # Save the preprocessed data
@@ -157,6 +147,7 @@ class SICdbConverter(UnitConverter):
         data: pl.LazyFrame,
         labelcol: str = "LaboratoryID",
         valuecol: str = "LaboratoryValue",
+        structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the SICdb dataset.
@@ -166,39 +157,39 @@ class SICdbConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.direct [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-                structfield="value",
+                structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.total [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-                structfield="value",
+                structfield=structfield,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-                structfield="value",
+                structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume] in Serum or Plasma",
+                itemid="Iron [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-                structfield="value",
+                structfield=structfield,
             )
             .pipe(
                 self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Mass/volume] in Serum or Plasma",
-                itemid_BUN="Urea nitrogen [Mass/volume] in Serum or Plasma",
+                itemid_urea="Urea [Mass/volume]",
+                itemid_BUN="Urea nitrogen [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
-                structfield="value",
+                structfield=structfield,
             )
             .with_columns(
                 pl.col(labelcol).replace(

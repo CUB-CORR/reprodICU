@@ -106,11 +106,11 @@ class EICUProcessor(EICUExtractor):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU    - Processing lab data...")
-
         if not os.path.isfile(
             self.precalc_path + "EICU_B_timeseries_labs.parquet"
         ):
+            print("eICU    - Processing lab data...")
+
             ts_lab = (
                 self.extract_time_series_lab()
                 # Combine base_excess and base_deficit into one column base_excess_deficit
@@ -119,33 +119,37 @@ class EICUProcessor(EICUExtractor):
                     base_excess_name="base_excess",
                     base_deficit_name="base_deficit",
                     labelcol="labname",
-                    valuecol="labresult",
+                    valuecol="value_struct",
+                    structfield="value",
                 )
                 # Convert the lab values to the correct units
                 .pipe(
                     self.convert._convert_lab_values,
                     labelcol="labname",
-                    valuecol="labresult",
+                    valuecol="value_struct",
+                    structfield="value",
                 )
                 # Reverse the base deficit to be negative base excess
                 # Pivot the lab values to wide format
-                .collect(streaming=True).pivot(
+                .collect(streaming=True)
+                .pivot(
                     on="labname",
                     index=self.index_cols,
-                    values="labresult",
-                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                    values="value_struct",
+                    aggregate_function="first",
                 )
-            )
-
-            # Drop empty rows
-            ts_lab_cols = ts_lab.collect_schema().names()
-            droplist = list(set(ts_lab_cols) - set(self.index_cols))
-            ts_lab = (
-                ts_lab.pipe(self.helpers.dropna, "all", droplist, False)
-                .unique()
-                .sort(self.index_cols)
                 .lazy()
             )
+
+            # # Drop empty rows
+            # ts_lab_cols = ts_lab.collect_schema().names()
+            # droplist = list(set(ts_lab_cols) - set(self.index_cols))
+            # ts_lab = (
+            #     ts_lab.pipe(self.helpers.dropna, "all", droplist, False)
+            #     .unique()
+            #     .sort(self.index_cols)
+            #     .lazy()
+            # )
 
             # Save the preprocessed data
             ts_lab.sink_parquet(
@@ -491,19 +495,20 @@ class EICUConverter(UnitConverter):
         base_deficit_name: str,
         labelcol: str = "labname",
         valuecol: str = "labresult",
+        structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Combine base_excess and base_deficit into one column base_excess_deficit.
         """
 
         return (
-            data.with_columns(
+            data.unnest(valuecol).with_columns(
                 pl.when(
                     pl.col(labelcol) == base_deficit_name,
                 )
-                .then(pl.col(valuecol) * -1)
-                .otherwise(pl.col(valuecol))
-                .alias(valuecol),
+                .then(pl.col(structfield) * -1)
+                .otherwise(pl.col(structfield))
+                .alias(structfield),
             )
             # Rename base_excess and base_deficit to base_excess_deficit
             .with_columns(
@@ -512,9 +517,14 @@ class EICUConverter(UnitConverter):
                         [base_excess_name, base_deficit_name]
                     ),
                 )
-                .then(pl.lit("Base excess in Arterial blood by calculation"))
+                .then(pl.lit("Base excess"))
                 .otherwise(pl.col(labelcol))
                 .alias(labelcol),
+            )
+            # Combine the columns back into a struct again
+            .select(
+                pl.exclude("value", "source", "method"),
+                pl.struct("value", "source", "method").alias(valuecol),
             )
         )
 
@@ -524,6 +534,7 @@ class EICUConverter(UnitConverter):
         data: pl.LazyFrame,
         labelcol: str = "labname",
         valuecol: str = "labresult",
+        structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Convert the lab values of the eICU dataset.
@@ -533,40 +544,45 @@ class EICUConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.direct [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.total [Mass/volume] in Serum or Plasma",
+                itemid="Bilirubin.total [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # prefer mg/dL over mmol/L
             # .pipe(
             #     self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-            #     itemid="Urea nitrogen [Mass/volume] in Serum or Plasma",
+            #     itemid="Urea nitrogen [Mass/volume]",
             #     labelcol=labelcol,
             #     valuecol=valuecol,
             # )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium [Mass/volume] in Blood",
+                itemid="Calcium [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized [Mass/volume] in Blood",
+                itemid="Calcium.ionized [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="Creatine kinase.MB [Mass/volume] in Serum or Plasma",
+                itemid="Creatine kinase.MB [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # NOTE: Experience from clinical practice:
             # Creatinine is more commonly referred to in mg/dL, so this conversion is not necessary
@@ -580,9 +596,10 @@ class EICUConverter(UnitConverter):
             # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="C reactive protein [Mass/volume] in Serum or Plasma",
+                itemid="C reactive protein [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             # NOTE: Experience from clinical practice:
             # Glucose is more commonly referred to in mg/dL, so this conversion is not necessary
@@ -600,106 +617,120 @@ class EICUConverter(UnitConverter):
             # )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume] in Serum or Plasma",
+                itemid="Iron [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="Magnesium [Mass/volume] in Serum or Plasma",
+                itemid="Magnesium [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="Myoglobin [Mass/volume] in Serum or Plasma",
+                itemid="Myoglobin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="Phosphate [Mass/volume] in Serum or Plasma",
+                itemid="Phosphate [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Albumin [Mass/volume] in Serum or Plasma",
+                itemid="Albumin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="Prealbumin [Mass/volume] in Serum or Plasma",
+                itemid="Prealbumin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Protein [Mass/volume] in Serum or Plasma",
+                itemid="Protein [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
+                itemid="Triiodothyronine (T3) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) [Mass/volume] in Serum or Plasma",
+                itemid="Thyroxine (T4) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
+                itemid="Thyroxine (T4) free [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin I.cardiac [Mass/volume] in Serum or Plasma",
+                itemid="Troponin I.cardiac [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method",
+                itemid="Troponin T.cardiac [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron binding capacity [Mass/volume] in Serum or Plasma",
+                itemid="Iron binding capacity [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
+                structfield=structfield,
             )
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                        "Bilirubin.indirect [Mass/volume] in Serum or Plasma": "Bilirubin.indirect [Moles/volume] in Serum or Plasma",
-                        "Bilirubin.total [Mass/volume] in Serum or Plasma": "Bilirubin.total [Moles/volume] in Serum or Plasma",
-                        # "Urea nitrogen [Mass/volume] in Serum or Plasma": "Urea nitrogen [Moles/volume] in Serum or Plasma",
-                        "Calcium [Mass/volume] in Blood": "Calcium [Moles/volume] in Blood",
-                        "Calcium.ionized [Mass/volume] in Blood": "Calcium.ionized [Moles/volume] in Blood",
-                        "Creatine kinase.MB [Mass/volume] in Serum or Plasma": "Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma",
-                        "Iron [Mass/volume] in Serum or Plasma": "Iron [Moles/volume] in Serum or Plasma",
-                        "Iron binding capacity [Mass/volume] in Serum or Plasma": "Iron binding capacity [Moles/volume] in Serum or Plasma",
-                        "Magnesium [Mass/volume] in Serum or Plasma": "Magnesium [Moles/volume] in Serum or Plasma",
-                        "Phosphate [Mass/volume] in Serum or Plasma": "Phosphate [Moles/volume] in Serum or Plasma",
-                        "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma": "Triiodothyronine (T3) [Moles/volume] in Serum or Plasma",
-                        "Thyroxine (T4) [Mass/volume] in Serum or Plasma": "Thyroxine (T4) [Moles/volume] in Serum or Plasma",
-                        "Thyroxine (T4) free [Mass/volume] in Serum or Plasma": "Thyroxine (T4) free [Moles/volume] in Serum or Plasma",
-                        "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma": "Cobalamin (Vitamin B12) [Moles/volume] in Serum or Plasma",
+                        "Bilirubin.direct [Mass/volume]": "Bilirubin.direct [Moles/volume]",
+                        "Bilirubin.indirect [Mass/volume]": "Bilirubin.indirect [Moles/volume]",
+                        "Bilirubin.total [Mass/volume]": "Bilirubin.total [Moles/volume]",
+                        # "Urea nitrogen [Mass/volume]": "Urea nitrogen [Moles/volume]",
+                        "Calcium [Mass/volume]": "Calcium [Moles/volume]",
+                        "Calcium.ionized [Mass/volume]": "Calcium.ionized [Moles/volume]",
+                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
+                        "Iron [Mass/volume]": "Iron [Moles/volume]",
+                        "Iron binding capacity [Mass/volume]": "Iron binding capacity [Moles/volume]",
+                        "Magnesium [Mass/volume]": "Magnesium [Moles/volume]",
+                        "Phosphate [Mass/volume]": "Phosphate [Moles/volume]",
+                        "Triiodothyronine (T3) [Mass/volume]": "Triiodothyronine (T3) [Moles/volume]",
+                        "Thyroxine (T4) [Mass/volume]": "Thyroxine (T4) [Moles/volume]",
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                        "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
                     }
                 )
             )

@@ -243,14 +243,22 @@ if __name__ == "__main__":
         # inout -> timeseries_intakeoutput.parquet
         timeseries_harmonizer.harmonize_split_timeseries(save_to_default=True)
 
+        # Remove the lab data metadata
+        print("reprodICU - Removing lab data metadata...")
+        labs = (
+            pl.scan_parquet(save_path + "timeseries_labs.parquet")
+            .pipe(timeseries_harmonizer.remove_metadata)
+            .sink_parquet(save_path + "timeseries_labs_no_meta.parquet")
+        )
+
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
         columns_to_exclude = [
             column_names["global_icu_stay_id_col"],
             column_names["timeseries_time_col"],
-            "Base excess in Arterial blood by calculation",
+            "Base excess",
         ]
-        labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
+        labs = pl.scan_parquet(save_path + "timeseries_labs_no_meta.parquet")
         labs_cols = labs.collect_schema().names()
         columns_to_winsorize = list(set(labs_cols) - set(columns_to_exclude))
         (
@@ -261,11 +269,13 @@ if __name__ == "__main__":
             )
             .pipe(
                 X2_Winsorizer.winsorize_quantiles,
-                columns=["Base excess in Arterial blood by calculation"],
+                columns=["Base excess"],
                 alpha=0.99,
             )
             .collect(streaming=True)
-            .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
+            .write_parquet(
+                save_path + "timeseries_labs_no_meta_winsorized.parquet"
+            )
         )
 
         # # Impute the timeseries data

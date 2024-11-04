@@ -18,8 +18,9 @@ class HiRIDExtractor(HiRIDPaths):
         super().__init__(paths)
         self.path = paths.hirid_source_path
         self.helpers = GlobalHelpers()
+        self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-        self.other_values = [
+        self.other_lab_values = [
             "Creatinine [Moles/volume] in Blood",
             "Creatinine [Moles/volume] in Urine",
             "Glucose [Moles/volume] in Serum or Plasma",
@@ -310,21 +311,33 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Create an empty DataFrame to store the timeseries data
         timeseries = pl.LazyFrame()
+        timeseries_labs = pl.LazyFrame()
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
         for file in os.listdir(self.timeseries_path):
-            data = pl.scan_parquet(self.timeseries_path + file).pipe(
+            data_ = pl.scan_parquet(self.timeseries_path + file).pipe(
                 self._extract_timeseries_helper,
                 admissiontime,
                 length_of_stay,
                 # observation_mapping,
             )
 
+            # Separate the lab values from the rest
+            data_labs = data_.pipe(self._extract_timeseries_labs_helper)
+            data = data_.filter(
+                ~pl.col("variableid").is_in(
+                    self.relevant_lab_values + self.other_lab_values
+                )
+            )
+
             # Append the data to the DataFrame
             timeseries = pl.concat([timeseries, data], how="diagonal_relaxed")
+            timeseries_labs = pl.concat(
+                [timeseries_labs, data_labs], how="diagonal_relaxed"
+            )
 
-        return timeseries
+        return timeseries, timeseries_labs
 
     def _extract_timeseries_helper(
         self,
@@ -380,7 +393,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
             # Filter for names of interest
             .filter(
-                pl.col("variableid").is_in(self.all_values + self.other_values)
+                pl.col("variableid").is_in(self.all_values + self.other_lab_values)
             )
             # Remove duplicate rows
             .unique()
@@ -394,6 +407,47 @@ class HiRIDExtractor(HiRIDPaths):
         )
 
     # endregion
+
+    # region ts labs
+    def _extract_timeseries_labs_helper(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
+        return (
+            data.filter(
+                pl.col("variableid").is_in(
+                    self.relevant_lab_values + self.other_lab_values
+                )
+            )
+            # MAKE STRUCT
+            .with_columns(
+                pl.col("variableid")
+                .str.split_exact(by=" by ", n=1)
+                .struct.rename_fields(["variable_source", "method"])
+                .alias("fields1")
+            )
+            .unnest("fields1")
+            .with_columns(
+                pl.col("variable_source")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "source"])
+                .alias("fields2")
+            )
+            .unnest("fields2")
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                pl.col("variable")
+                .str.replace("inHDL", "in HDL")
+                .str.replace("inLDL", "in LDL")
+                .alias("variableid"),
+                pl.struct(
+                    value="value", source="source", method="method"
+                ).alias("value_struct"),
+            )
+        )
 
     # region pharma
     # Extract pharma information from the pharma file directory

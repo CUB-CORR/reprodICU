@@ -19,7 +19,7 @@ class SICdbExtractor(SICdbPaths):
         self.path = paths.sicdb_source_path
         self.helpers = GlobalHelpers()
 
-        self.other_values = [
+        self.other_lab_values = [
             "Bilirubin.direct [Mass/volume] in Serum or Plasma",
             "Bilirubin.total [Mass/volume] in Serum or Plasma",
             "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
@@ -239,7 +239,7 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
-            .filter(pl.col("DataID").is_in(self.all_values + self.other_values))
+            .filter(pl.col("DataID").is_in(self.all_values + self.other_lab_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names
@@ -275,7 +275,7 @@ class SICdbExtractor(SICdbPaths):
             # Filter only relevant lab values
             .filter(
                 pl.col("LaboratoryID").is_in(
-                    self.all_values + self.other_values
+                    self.all_values + self.other_lab_values
                 )
             )
             # Remove duplicate rows
@@ -299,6 +299,8 @@ class SICdbExtractor(SICdbPaths):
             .unnest("fields1")
             .with_columns(
                 pl.col("variable_source")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
                 .str.replace(" (in|of) ", " INOF ")
                 .str.split_exact(by=" INOF ", n=1)
                 .struct.rename_fields(["variable", "source"])
@@ -306,9 +308,12 @@ class SICdbExtractor(SICdbPaths):
             )
             .unnest("fields2")
             .select(
-                pl.col(self.icu_stay_id_col),
-                pl.col(self.timeseries_time_col),
-                pl.col("variable").alias("LaboratoryID"),
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                pl.col("variable")
+                .str.replace("inHDL", "in HDL")
+                .str.replace("inLDL", "in LDL")
+                .alias("LaboratoryID"),
                 pl.struct(
                     value="LaboratoryValue", source="source", method="method"
                 ).alias("LaboratoryValue"),

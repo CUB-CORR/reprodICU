@@ -20,7 +20,7 @@ class UMCdbExtractor(UMCdbPaths):
         self.helpers = GlobalHelpers()
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-        self.other_values = [
+        self.other_lab_values = [
             "Bilirubin.conjugated [Moles/volume] in Serum or Plasma",
             "Billirubin.total [Moles/volume] in Serum or Plasma",
             "Creatinine [Moles/volume] in Serum or Plasma",
@@ -75,7 +75,7 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         return (
-            pl.scan_csv(self.admissions_path)
+            pl.scan_parquet(self.admissions_path)
             .select(
                 "patientid",
                 "admissionid",
@@ -232,7 +232,7 @@ class UMCdbExtractor(UMCdbPaths):
         pl.Config.set_verbose(True)
 
         listitems = (
-            pl.scan_csv(self.listitems_path, schema_overrides={"value": str})
+            pl.scan_parquet(self.listitems_path)
             .select(
                 [
                     "admissionid",
@@ -262,20 +262,24 @@ class UMCdbExtractor(UMCdbPaths):
     # endregion
 
     # region numeric
-    # Extract timeseries information from the numericitems.csv file
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
-        pl.Config.set_verbose(True)
-
-        data = pl.scan_csv(
-            self.numericitems_path, schema_overrides={"value": str}
+        return self._extract_timeseries_numericitems().filter(
+            ~pl.col("item").is_in(
+                self.relevant_lab_values + self.other_lab_values
+            )
         )
 
-        print(self._extract_numeric_references())
+    # Separate the lab values from the rest
+    def extract_timeseries_labs(self) -> pl.LazyFrame:
+        return self._extract_timeseries_labs_helper(
+            self._extract_timeseries_numericitems()
+        )
 
-        print("before", data.head(10).collect(streaming=True))
-
-        data = (
-            data.select(["admissionid", "itemid", "value", "measuredat"])
+    # Extract timeseries information from the numericitems.csv file
+    def _extract_timeseries_numericitems(self) -> pl.LazyFrame:
+        return (
+            pl.scan_parquet(self.numericitems_path)
+            .select(["admissionid", "itemid", "value", "measuredat"])
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
@@ -283,11 +287,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .replace(self._extract_numeric_references(), default=None)
                 .alias("item"),
             )
-        )
-
-        print("after", data.head(10).collect(streaming=True))
-
-        return data.pipe(self._extract_timeseries_helper)
+        ).pipe(self._extract_timeseries_helper)
 
     # endregion
 
@@ -295,7 +295,7 @@ class UMCdbExtractor(UMCdbPaths):
     # filter and rename columns for timeseries data
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         intimes = (
-            pl.scan_csv(self.admissions_path)
+            pl.scan_parquet(self.admissions_path)
             .select(["admissionid", "admittedat", "dischargedat"])
             .rename(
                 {
@@ -320,7 +320,8 @@ class UMCdbExtractor(UMCdbPaths):
                         ).truediv(pl.duration(milliseconds=1))
                     )
                 )
-            ).with_columns(
+            )
+            .with_columns(
                 pl.duration(
                     milliseconds=(pl.col("measuredat") - pl.col("intime"))
                 )
@@ -329,13 +330,57 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.timeseries_time_col),
             )
             # Filter only relevant timeseries values
-            .filter(pl.col("item").is_in(self.all_values + self.other_values))
+            .filter(
+                pl.col("item").is_in(self.all_values + self.other_lab_values)
+            )
             .drop(["measuredat", "intime", "outtime"])
             # Convert values to numbers, if possible, ignore if not
             .cast({"value": float}, strict=False)
         )
 
     # endregion
+
+    # region ts labs
+    # Extract lab information from the numericitems.csv file
+    def _extract_timeseries_labs_helper(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
+        return (
+            data.filter(
+                pl.col("item").is_in(
+                    self.relevant_lab_values + self.other_lab_values
+                )
+            )
+            # MAKE STRUCT
+            .with_columns(
+                pl.col("item")
+                .str.split_exact(by=" by ", n=1)
+                .struct.rename_fields(["variable_source", "method"])
+                .alias("fields1")
+            )
+            .unnest("fields1")
+            .with_columns(
+                pl.col("variable_source")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "source"])
+                .alias("fields2")
+            )
+            .unnest("fields2")
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                pl.col("variable")
+                .str.replace("inHDL", "in HDL")
+                .str.replace("inLDL", "in LDL")
+                .alias("item"),
+                pl.struct(
+                    value="value", source="source", method="method"
+                ).alias("value_struct"),
+            )
+        )
 
     # region gcs
     # compute Glasgow Coma Scale (GCS) from listitems data
@@ -447,7 +492,7 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         intimes = (
-            pl.scan_csv(self.admissions_path)
+            pl.scan_parquet(self.admissions_path)
             .select(["admissionid", "admittedat", "dischargedat"])
             .rename(
                 {
@@ -459,7 +504,7 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         return (
-            pl.scan_csv(self.drugitems_path)
+            pl.scan_parquet(self.drugitems_path)
             .select(
                 "admissionid",
                 "item",
@@ -711,7 +756,7 @@ class UMCdbExtractor(UMCdbPaths):
         ]
 
         listitems = (
-            pl.scan_csv(self.listitems_path)
+            pl.scan_parquet(self.listitems_path)
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 pl.when(pl.col("itemid") == 18671)  # NICE APACHEIV diagnosen
@@ -901,7 +946,7 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         references = references.filter(
-            pl.col("conceptName").is_in(self.all_values + self.other_values)
+            pl.col("conceptName").is_in(self.all_values + self.other_lab_values)
         )
 
         return dict(
@@ -923,7 +968,9 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # .filter(pl.col("equivalence") == "EQUAL")
             .select(["sourceCode", "conceptName"]).filter(
-                pl.col("conceptName").is_in(self.all_values + self.other_values)
+                pl.col("conceptName").is_in(
+                    self.all_values + self.other_lab_values
+                )
             )
         )
 

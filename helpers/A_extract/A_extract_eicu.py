@@ -28,7 +28,7 @@ class EICUExtractor(EICUPaths):
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
         )
 
-        self.other_values = [
+        self.other_lab_values = [
             "Bilirubin.direct [Mass/volume] in Serum or Plasma",
             "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
             "Bilirubin.total [Mass/volume] in Serum or Plasma",
@@ -360,7 +360,9 @@ class EICUExtractor(EICUPaths):
                 .alias("labname")
             )
             # Filter for lab names of interest
-            .filter(pl.col("labname").is_in(self.all_values + self.other_values))
+            .filter(
+                pl.col("labname").is_in(self.all_values + self.other_lab_values)
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -372,6 +374,35 @@ class EICUExtractor(EICUPaths):
                 self.helpers._convert_time_to_seconds_float,
                 self.timeseries_time_col,
                 base_unit="minutes",
+            )
+            # MAKE STRUCT
+            .with_columns(
+                pl.col("labname")
+                .str.split_exact(by=" by ", n=1)
+                .struct.rename_fields(["variable_source", "method"])
+                .alias("fields1")
+            )
+            .unnest("fields1")
+            .with_columns(
+                pl.col("variable_source")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "source"])
+                .alias("fields2")
+            )
+            .unnest("fields2")
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                pl.col("variable")
+                .str.replace("inHDL", "in HDL")
+                .str.replace("inLDL", "in LDL")
+                .alias("labname"),
+                pl.struct(
+                    value="labresult", source="source", method="method"
+                ).alias("value_struct"),
             )
         )
 

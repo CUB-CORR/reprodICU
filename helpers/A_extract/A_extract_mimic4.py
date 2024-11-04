@@ -29,7 +29,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             [self.icu_stay_id_col, self.icu_length_of_stay_col]
         )
 
-        self.other_values = [
+        self.other_lab_values = [
             "Bilirubin.direct [Mass/volume] in Serum or Plasma",
             "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
             "Bilirubin.total [Mass/volume] in Serum or Plasma",
@@ -462,7 +462,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # Filter for names of interest
             .filter(
                 pl.col("label").is_not_null(),
-                pl.col("label").is_in(self.all_values + self.other_values),
+                pl.col("label").is_in(self.all_values + self.other_lab_values),
             )
         )
 
@@ -503,7 +503,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 )
             )
             # Filter for names of interest
-            .filter(pl.col("label").is_in(self.all_values + self.other_values))
+            .filter(pl.col("label").is_in(self.all_values + self.other_lab_values))
         )
 
         return (
@@ -550,7 +550,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             # Filter for lab names of interest
-            # .filter(pl.col("label").is_in(self.all_values + self.other_values))
+            # .filter(pl.col("label").is_in(self.all_values + self.other_lab_values))
         )
 
         return (
@@ -573,6 +573,37 @@ class MIMIC4Extractor(MIMIC4Paths):
             .filter(pl.col("valuenum").is_not_null())
             # Remove duplicate rows
             .unique()
+            # Cast valuenum to float
+            .cast({"valuenum": float})
+            # MAKE STRUCT
+            .with_columns(
+                pl.col("label")
+                .str.split_exact(by=" by ", n=1)
+                .struct.rename_fields(["variable_source", "method"])
+                .alias("fields1")
+            )
+            .unnest("fields1")
+            .with_columns(
+                pl.col("variable_source")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "source"])
+                .alias("fields2")
+            )
+            .unnest("fields2")
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                pl.col("variable")
+                .str.replace("inHDL", "in HDL")
+                .str.replace("inLDL", "in LDL")
+                .alias("label"),
+                pl.struct(
+                    value="valuenum", source="source", method="method"
+                ).alias("value_struct"),
+            )
         )
 
     # endregion
@@ -592,7 +623,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             # Filter for names of interest
-            .filter(pl.col("label").is_in(self.all_values + self.other_values))
+            .filter(pl.col("label").is_in(self.all_values + self.other_lab_values))
         )
 
         return (
