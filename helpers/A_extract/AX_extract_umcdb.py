@@ -634,6 +634,77 @@ class UMCdbExtractor(UMCdbPaths):
 
     # endregion
 
+    # region procedures
+    # Extract procedure information from the procedures.csv file
+    def extract_procedures(self) -> pl.LazyFrame:
+        print("UMCdb   - Extracting procedures...")
+        intimes = (
+            pl.scan_parquet(self.admissions_path)
+            .select(["patientid", "admissionid", "admittedat", "dischargedat"])
+            .rename(
+                {
+                    "patientid": self.person_id_col,
+                    "admissionid": self.icu_stay_id_col,
+                    "admittedat": "intime",
+                    "dischargedat": "outtime",
+                }
+            )
+        )
+
+        procedureorderitems = (
+            pl.scan_parquet(self.procedureorderitems_path)
+            .select("admissionid", "itemid", "registeredat")
+            .rename(
+                {"admissionid": self.icu_stay_id_col, "registeredat": "start"}
+            )
+        )
+
+        processitems = (
+            pl.scan_parquet(self.processitems_path)
+            .select("admissionid", "itemid", "start", "stop")
+            .rename({"admissionid": self.icu_stay_id_col})
+        )
+
+        return (
+            pl.concat(
+                [procedureorderitems, processitems], how="diagonal_relaxed"
+            )
+            .join(intimes, on=self.icu_stay_id_col, how="left")
+            # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            .filter(
+                (pl.col("start") < pl.col("outtime"))
+                & (
+                    pl.col("start")
+                    > (
+                        pl.col("intime")
+                        - pl.duration(
+                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                        ).truediv(pl.duration(milliseconds=1))
+                    )
+                )
+            )
+            .with_columns(
+                # Calculate procedure start / end times relative to ICU admission
+                pl.duration(milliseconds=(pl.col("start") - pl.col("intime")))
+                .dt.total_seconds()
+                .cast(float)
+                .alias(self.procedure_start_col),
+                pl.duration(milliseconds=(pl.col("stop") - pl.col("intime")))
+                .dt.total_seconds()
+                .cast(float)
+                .alias(self.procedure_end_col),
+                # Replace procedure ids with standardized names
+                pl.col("itemid")
+                .replace_strict(
+                    self._extract_procedure_references(), default=None
+                )
+                .alias(self.procedure_description_col),
+            )
+            .drop(["start", "stop", "intime", "outtime"])
+        )
+
+    # endregion
+
     # region APACHE
     # Extract APACHE admission information from the listitems.csv file
     def extract_APACHE_admission(self) -> pl.LazyFrame:
@@ -999,6 +1070,28 @@ class UMCdbExtractor(UMCdbPaths):
         return dict(
             zip(
                 references["sourceName"].to_numpy(),
+                references["conceptName"].to_numpy(),
+            )
+        )
+
+    # Extract the information from the processitems_item.usagi.csv
+    # and procedureorderitems_item.usagi.csv files
+    def _extract_procedure_references(self) -> dict:
+        references = (
+            pl.concat(
+                [
+                    pl.read_csv(self.procedureorderitems_item_mapping_path),
+                    pl.read_csv(self.processitems_item_mapping_path),
+                ],
+                how="diagonal_relaxed",
+            )
+            # .filter(pl.col("equivalence") == "EQUAL")
+            .select(["sourceCode", "conceptName"])
+        )
+
+        return dict(
+            zip(
+                references["sourceCode"].to_numpy(),
                 references["conceptName"].to_numpy(),
             )
         )

@@ -9,6 +9,7 @@ import polars as pl
 from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
 from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
+from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
 
 
@@ -20,7 +21,7 @@ class ProceduresHarmonizer(GlobalVars):
         self.mimic3 = MIMIC3Extractor(paths, DEMO)
         self.mimic4 = MIMIC4Extractor(paths, DEMO)
         # self.sicdb = SICdbExtractor(paths)
-        # self.umcdb = UMCdbExtractor(paths)
+        self.umcdb = UMCdbExtractor(paths)
         self.datasets = datasets
 
     def harmonize_procedures(self) -> pl.LazyFrame:
@@ -51,6 +52,13 @@ class ProceduresHarmonizer(GlobalVars):
                 )
             )
 
+        if "UMCdb" in self.datasets:
+            procedures_datasets.append(
+                self.umcdb.extract_procedures().pipe(
+                    self._concat_helper3, "umcdb-"
+                )
+            )
+
         return (
             pl.concat(
                 procedures_datasets,
@@ -60,17 +68,18 @@ class ProceduresHarmonizer(GlobalVars):
                 [
                     self.global_person_id_col,
                     self.global_hospital_stay_id_col,
-                    # self.global_icu_stay_id_col,
+                    self.global_icu_stay_id_col,
                     self.procedure_icd_code_col,
                     self.procedure_icd_version_col,
+                    self.procedure_category_col,
                     self.procedure_start_col,
+                    self.procedure_end_col,
                     self.procedure_priority_col,
                     self.procedure_discharge_col,
                     self.procedure_description_col,
                 ]
             )
             .unique()
-            .drop_nulls(self.procedure_discharge_col)
         )
 
     # Helper functions
@@ -96,4 +105,14 @@ class ProceduresHarmonizer(GlobalVars):
             pl.concat_str(
                 [pl.lit(name), pl.col(self.hospital_stay_id_col)]
             ).alias(self.global_hospital_stay_id_col),
+        )
+
+    def _concat_helper3(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
+        return data.with_columns(
+            pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
+                self.global_person_id_col
+            ),
+            pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
+                self.global_icu_stay_id_col
+            ),
         )

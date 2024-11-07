@@ -168,7 +168,6 @@ class MIMIC3Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
         super().__init__(paths, DEMO)
         mimic3_path = paths.mimic3_source_path
-        mimic4_path = paths.mimic4_source_path
 
         # MIMIC-III raw data paths
         self.admissions_path = mimic3_path + "ADMISSIONS.csv.gz"
@@ -177,6 +176,7 @@ class MIMIC3Paths(GlobalVars):
         self.d_icd_procedures_path = mimic3_path + "D_ICD_PROCEDURES.csv.gz"
         self.d_items_path = mimic3_path + "D_ITEMS.csv.gz"
         self.d_labitems_path = mimic3_path + "D_LABITEMS.csv.gz"
+        self.datetimeevents_path = mimic3_path + "DATETIMEEVENTS.csv.gz"
         self.diagnoses_icd_path = mimic3_path + "DIAGNOSES_ICD.csv.gz"
         self.icustays_path = mimic3_path + "ICUSTAYS.csv.gz"
         self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.csv.gz"
@@ -198,6 +198,7 @@ class MIMIC3Paths(GlobalVars):
             self.d_icd_procedures_path = mimic3_path + "D_ICD_PROCEDURES.csv"
             self.d_items_path = mimic3_path + "D_ITEMS.csv"
             self.d_labitems_path = mimic3_path + "D_LABITEMS.csv"
+            self.datetimeevents_path = mimic3_path + "DATETIMEEVENTS.csv"
             self.diagnoses_icd_path = mimic3_path + "DIAGNOSES_ICD.csv"
             self.icustays_path = mimic3_path + "ICUSTAYS.csv"
             self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.csv"
@@ -287,6 +288,7 @@ class MIMIC4Paths(GlobalVars):
         )
         self.d_items_path = mimic4_path + "icu/d_items.csv.gz"
         self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv.gz"
+        self.datetimeevents_path = mimic4_path + "icu/datetimeevents.csv.gz"
         self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv.gz"
         self.icustays_path = mimic4_path + "icu/icustays.csv.gz"
         self.inputevents_path = mimic4_path + "icu/inputevents.csv.gz"
@@ -309,6 +311,7 @@ class MIMIC4Paths(GlobalVars):
             )
             self.d_items_path = mimic4_path + "icu/d_items.csv"
             self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv"
+            self.datetimeevents_path = mimic4_path + "icu/datetimeevents.csv"
             self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv"
             self.icustays_path = mimic4_path + "icu/icustays.csv"
             self.inputevents_path = mimic4_path + "icu/inputevents.csv"
@@ -439,9 +442,10 @@ class UMCdbPaths(GlobalVars):
             self.freetextitems_path = umcdb_path + "freetextitems.parquet"
             self.listitems_path = umcdb_path + "listitems.parquet"
             self.numericitems_path = umcdb_path + "numericitems.parquet"
-            self.procedureorderitems_path = umcdb_path + "procedureorderitems.parquet"
+            self.procedureorderitems_path = (
+                umcdb_path + "procedureorderitems.parquet"
+            )
             self.processitems_path = umcdb_path + "processitems.parquet"
-            
 
         # UMCdb custom mapping paths
         self.umcdb_mapping_path = self.mapping_path + "umcdb/"

@@ -49,6 +49,7 @@ procedure_icd_code_col: Procedure ICD Code # procedure_icd_code
 procedure_icd9_code_col: Procedure ICD-9 Code # procedure_icd9_code
 procedure_icd10_code_col: Procedure ICD-10 Code # procedure_icd10_code
 procedure_icd_version_col: Procedure ICD Code Version # procedure_icd_version
+procedure_category_col: Procedure Category
 procedure_start_col: Procedure Start Relative to Admission (seconds) # procedure_start_relative_to_admission
 procedure_end_col: Procedure End Relative to Admission (seconds) # procedure_end_relative_to_admission
 procedure_priority_col: Procedure Priority # procedure_priority
