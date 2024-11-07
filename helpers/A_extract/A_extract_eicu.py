@@ -1284,6 +1284,8 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
+        print("eICU   - Extracting procedures...")
+
         IDs = self.extract_patient_information().select(
             [
                 self.icu_stay_id_col,

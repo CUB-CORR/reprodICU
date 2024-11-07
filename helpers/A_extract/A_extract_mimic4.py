@@ -503,7 +503,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 )
             )
             # Filter for names of interest
-            .filter(pl.col("label").is_in(self.all_values + self.other_lab_values))
+            .filter(
+                pl.col("label").is_in(self.all_values + self.other_lab_values)
+            )
         )
 
         return (
@@ -623,7 +625,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             # Filter for names of interest
-            .filter(pl.col("label").is_in(self.all_values + self.other_lab_values))
+            .filter(
+                pl.col("label").is_in(self.all_values + self.other_lab_values)
+            )
         )
 
         return (
@@ -834,36 +838,59 @@ class MIMIC4Extractor(MIMIC4Paths):
     # region procedures
     # Extract procedures from the procedureevents.csv and procedures_icd.csv file
     def extract_procedures(self) -> pl.LazyFrame:
+        print("MIMIC4  - Extracting procedures...")
+
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, "intime"
         )
-        procedureevents = pl.scan_csv(self.procedureevents_path).rename(
-            {
-                "subject_id": self.person_id_col,
-                "hadm_id": self.hospital_stay_id_col,
-                "stay_id": self.icu_stay_id_col,
-            }
-        )
-        d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
 
-        procedures_icd = pl.scan_csv(
-            self.procedures_icd_path, schema_overrides={"icd_code": str}
-        ).rename(
-            {
-                "subject_id": self.person_id_col,
-                "hadm_id": self.hospital_stay_id_col,
-            }
-        )
+        # d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL"
         d_icd_procedures = pl.scan_csv(
             self.d_icd_procedures_path, schema_overrides={"icd_code": str}
         )
+        proc_itemid_data = (
+            pl.scan_csv(self.proc_itemid_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "itemid",
+                    "omop_concept_name": "label",
+                }
+            )
+        )
+        proc_datetimeevents_data = (
+            pl.scan_csv(self.proc_datetimeevents_path)
+            .filter(pl.col("omop_domain_id") == "Procedure")
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "itemid",
+                    "omop_concept_name": "label",
+                }
+            )
+        )
 
         procedureevents = (
-            procedureevents.select(
-                [self.icu_stay_id_col, "starttime", "endtime", "itemid"]
+            pl.scan_csv(self.procedureevents_path)
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "hadm_id": self.hospital_stay_id_col,
+                    "stay_id": self.icu_stay_id_col,
+                }
             )
-            .join(intimes, on=self.icu_stay_id_col)
-            .join(d_items, on="itemid")
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                "ordercategoryname",
+                "starttime",
+                "endtime",
+                "itemid",
+            )
+            .join(intimes, on=self.icu_stay_id_col, how="left")
+            # .join(d_items, on="itemid")
+            .join(proc_itemid_data, on="itemid", how="left")
             .with_columns(
                 pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -880,6 +907,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .drop("itemid", "starttime", "endtime", "intime")
             .rename(
                 {
+                    "ordercategoryname": self.procedure_category_col,
                     "label": self.procedure_description_col,
                 }
             )
@@ -888,14 +916,21 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         procedures_icd = (
-            procedures_icd.select(
-                [
-                    self.person_id_col,
-                    self.hospital_stay_id_col,
-                    "icd_code",
-                    "icd_version",
-                    "seq_num",
-                ]
+            pl.scan_csv(
+                self.procedures_icd_path, schema_overrides={"icd_code": str}
+            )
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "hadm_id": self.hospital_stay_id_col,
+                }
+            )
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                "icd_code",
+                "icd_version",
+                "seq_num",
             )
             .with_columns(
                 # NOTE: all ICD procedures in MIMIC are on discharge for billing purposes
@@ -920,8 +955,42 @@ class MIMIC4Extractor(MIMIC4Paths):
             .unique()
         )
 
+        datetimeevents = (
+            pl.scan_csv(self.datetimeevents_path)
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "hadm_id": self.hospital_stay_id_col,
+                    "stay_id": self.icu_stay_id_col,
+                }
+            )
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                "itemid",
+                "value",
+            )
+            .join(intimes, on=self.icu_stay_id_col, how="left")
+            .join(proc_datetimeevents_data, on="itemid", how="left")
+            .with_columns(
+                pl.col("value").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .with_columns(
+                (pl.col("value") - pl.col("intime"))
+                .dt.total_seconds()
+                .alias(self.procedure_start_col)
+            )
+            .drop("intime", "value")
+            .rename({"label": self.procedure_description_col})
+            .drop_nulls(self.procedure_description_col)
+            .unique()
+        )
+
         return pl.concat(
-            [procedureevents, procedures_icd], how="diagonal_relaxed"
+            [procedureevents, procedures_icd, datetimeevents],
+            how="diagonal_relaxed",
         )
 
     # endregion
