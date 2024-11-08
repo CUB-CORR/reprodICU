@@ -1,8 +1,9 @@
 # Author: Finn Fassbender
 # Last modified: 2024-09-05
 
-# Description: This script extracts the so called MAGIC CONCEPT "RECEIVED_ANY_ANTIBIOTICS" directly from the source datasets.
-# The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package.
+# Description: This script extracts the so called MAGIC CONCEPT "Received ANY Antibiotics" directly from the source datasets.
+# The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package and/or
+# available prewritten code snippets where indicated.
 
 import polars as pl
 import os
@@ -30,7 +31,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         """
 
         # region eICU
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - eICU")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - eICU")
         eicu_infusiondrug = (
             pl.scan_csv(self.eicu_paths.infusionDrug_path)
             .select("patientunitstayid", "drugname")
@@ -84,7 +85,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region HiRID
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - HiRID")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - HiRID")
         hirid_RECEIVED_ANY_ANTIBIOTICS = pl.LazyFrame()
 
         for file in os.listdir(self.hirid_paths.pharma_path):
@@ -114,7 +115,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region MIMIC-III
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - MIMIC-III")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - MIMIC-III")
         mimic3_prescriptions = (
             pl.scan_csv(self.mimic3_paths.prescriptions_path)
             .select("ICUSTAY_ID", "DRUG")
@@ -167,7 +168,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region MIMIC-IV
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - MIMIC-IV")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - MIMIC-IV")
         # NOTE: MIMIC-IV prescriptions do not include ICU stay IDs
         # mimic4_prescriptions = (
         #     pl.scan_csv(self.mimic4_paths.prescriptions_path)
@@ -206,7 +207,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region SICdb
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - SICdb")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - SICdb")
         sicdb_RECEIVED_ANY_ANTIBIOTICS = (
             pl.scan_csv(self.sicdb_paths.medication_path)
             .select("CaseID", "DrugID")
@@ -229,9 +230,9 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region UMCdb
-        print("MAGIC_CONCEPTS: RECEIVED_ANY_ANTIBIOTICS - UMCdb")
+        # print("MAGIC_CONCEPTS: Received ANY Antibiotics - UMCdb")
         umcdb_RECEIVED_ANY_ANTIBIOTICS = (
-            pl.scan_csv(self.umcdb_paths.drugitems_path)
+            pl.scan_parquet(self.umcdb_paths.drugitems_path)
             .select("admissionid", "itemid")
             # Filter for antibiotics
             .filter(
@@ -252,6 +253,8 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         # endregion
 
         # region ALL
+        print("MAGIC_CONCEPTS: Received ANY Antibiotics")
+        
         RECEIVED_ANY_ANTIBIOTICS = pl.concat(
             [
                 eicu_RECEIVED_ANY_ANTIBIOTICS,
@@ -275,7 +278,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             data.group_by(patient_id_col)
             .first()
             .with_columns(
-                pl.lit(True).alias("RECEIVED_ANY_ANTIBIOTICS"),
+                pl.lit(True).alias("Received ANY Antibiotics"),
                 # add global ICU stay ID
                 pl.concat_str(
                     [pl.lit(source_dataset), pl.col(patient_id_col)]
