@@ -1296,13 +1296,12 @@ class EICUExtractor(EICUPaths):
 
         return (
             pl.scan_csv(self.treatment_path)
-            .select(  # Select columns of interest
-                [
-                    "patientunitstayid",
-                    "treatmentoffset",
-                    "treatmentstring",
-                    "activeupondischarge",
-                ]
+            # Select columns of interest
+            .select(
+                "patientunitstayid",
+                "treatmentoffset",
+                "treatmentstring",
+                "activeupondischarge",
             )
             # Rename columns for consistency
             .rename(
@@ -1313,6 +1312,86 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.procedure_discharge_col,
                 }
             )
+            .with_columns(
+                # TODO: make less hacky
+                pl.col(self.procedure_description_col)
+                .str.replace_all("\|", " - ")
+                .str.to_titlecase()
+                .str.replace_many(
+                    {
+                        "Ace ": "ACE ",
+                        "Afb": "AFB",
+                        "Aicd": "AICD",
+                        "Arb": "ARB",
+                        "Avm": "AVM",
+                        "Azt": "AZT",
+                        "Bal ": "BAL ",
+                        "Bivad": "BIVAD",
+                        "Cabg": "CABG",
+                        "Ccm": "CCM",
+                        "Coa ": "CoA ",
+                        "Cpap": "CPAP",
+                        "Csf": "CSF",
+                        "Ct": "CT",
+                        "Ddavp": "DDAVP",
+                        "Dvt": "DVT",
+                        "Eeg": "EEG",
+                        "Emg": "EMG",
+                        "Ent": "ENT",
+                        "Ercp": "ERCP",
+                        "Fio": "FIO",
+                        "Gi": "GI",
+                        "Hiv": "HIV",
+                        "Hmg": "HMG",
+                        "Ich": "ICH",
+                        "Iiia": "IIIA",
+                        "Iii": "III",
+                        "Ii": "II",
+                        "Iib": "IIB",
+                        "Inh ": "INH ",
+                        "Iv": "IV",
+                        "Ivc": "IVC",
+                        "Ivig": "IVIG",
+                        "Lr": "LR",
+                        "Lvad": "LVAD",
+                        "Mri": "MRI",
+                        "Mtb": "MTB",
+                        "Ns": "NS",
+                        "Nsaid": "NSAID",
+                        "Okt": "OKT",
+                        "Or ": "OR ",
+                        "Pbs": "PBS",
+                        "Pca": "PCA",
+                        "Peep": "PEEP",
+                        "Peg": "PEG",
+                        "Prbc": "PRBC",
+                        "Ppn": "PPN",
+                        "Rvad": "RVAD",
+                        "Sled": "SLED",
+                        "Ssri": "SSRI",
+                        "Tc": "TC",
+                        "Tips": "TIPS",
+                        "Tpn": "TPN",
+                        "Tsh": "TSH",
+                        "Vii": "VII",
+                        "Vk": "VK",
+                        "Vte": "VTE",
+                        # SPECIAL CASES
+                        "pco2": "pCO2",
+                        "To": "to",
+                        "And": "and",
+                        "Of": "of",
+                        "Ml": "mL",
+                        "Min": "min",
+                        "Kg": "kg",
+                        "Via": "via",
+                        ""
+                        # and slash without space before
+                        "/ ": " / ",
+                    }
+                )
+                .str.replace("  / ", " / ")
+            )
             .join(IDs, on=self.icu_stay_id_col, how="outer")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -1321,13 +1400,11 @@ class EICUExtractor(EICUPaths):
             )
             .cast({self.procedure_discharge_col: bool})
             .select(
-                [
-                    self.person_id_col,
-                    self.hospital_stay_id_col,
-                    self.icu_stay_id_col,
-                    self.procedure_start_col,
-                    self.procedure_description_col,
-                    self.procedure_discharge_col,
-                ]
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                self.procedure_start_col,
+                self.procedure_description_col,
+                self.procedure_discharge_col,
             )
         )
