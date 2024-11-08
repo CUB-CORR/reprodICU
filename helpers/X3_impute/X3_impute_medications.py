@@ -35,6 +35,8 @@ class MedicationImputer(GlobalVars):
                 .then(pl.col(self.drug_rate_col))
                 .when(pl.col(self.drug_rate_unit_col) == "mcg/min")
                 .then(pl.col(self.drug_rate_col) / pl.col(self.weight_col) * 60)
+                .when(pl.col(self.drug_rate_unit_col) == "mcg/kg/min")
+                .then(pl.col(self.drug_rate_col) * 60)
                 .when(pl.col(self.drug_rate_unit_col) == "mg/day")
                 .then(
                     pl.col(self.drug_rate_col)
@@ -56,6 +58,7 @@ class MedicationImputer(GlobalVars):
                     * 1000
                 )
                 .otherwise(None)
+                .round(2)
                 .alias(self.drug_rate_common_col)
             )
             .select(
@@ -77,6 +80,7 @@ class MedicationImputer(GlobalVars):
                 {
                     self.drug_amount_col: float,
                     self.drug_rate_col: float,
+                    self.drug_rate_common_col: float,
                     self.drug_class_col: str,
                     self.drug_admin_route_col: str,
                 },

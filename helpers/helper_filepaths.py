@@ -117,6 +117,9 @@ class EICUPaths(GlobalVars):
         self.medication_mapping_path = (
             self.eICU_mapping_path + "eicu_medication.yaml"
         )
+        self.drug_administration_route_mapping_path = (
+            self.eICU_mapping_path + "eicu_medication_routeadmin.yaml"
+        )
 
 
 # endregion
