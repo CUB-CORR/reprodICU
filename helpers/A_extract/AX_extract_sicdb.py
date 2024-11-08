@@ -239,7 +239,9 @@ class SICdbExtractor(SICdbPaths):
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
-            .filter(pl.col("DataID").is_in(self.all_values + self.other_lab_values))
+            .filter(
+                pl.col("DataID").is_in(self.all_values + self.other_lab_values)
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names
@@ -428,7 +430,7 @@ class SICdbExtractor(SICdbPaths):
 
         return (
             pl.scan_csv(self.cases_path)
-            .select(["CaseID", "PatientID", "ICD10Main"])
+            .select("CaseID", "PatientID", "ICD10Main")
             .rename(
                 {
                     "CaseID": self.icu_stay_id_col,
@@ -444,6 +446,34 @@ class SICdbExtractor(SICdbPaths):
                 pl.lit(1).alias(self.diagnosis_priority_col),
                 pl.lit(10).alias(self.diagnosis_icd_version_col),
                 # Diagnosis descriptions are available, but only in German
+            )
+        )
+
+    # region procedures
+    # Extract procedure information from the data_range.csv file
+    def extract_procedures(self) -> pl.LazyFrame:
+        print("SICdb   - Extracting procedures...")
+
+        IDs = pl.scan_csv(self.cases_path).select("CaseID", "PatientID")
+
+        return (
+            pl.scan_csv(self.data_range_path)
+            .join(IDs, on="CaseID")
+            .select("CaseID", "PatientID", "DataID", "Offset", "OffsetEnd")
+            .rename(
+                {
+                    "PatientID": self.person_id_col,
+                    "CaseID": self.icu_stay_id_col,
+                    "Offset": self.procedure_start_col,
+                    "OffsetEnd": self.procedure_end_col,
+                }
+            )
+            .with_columns(
+                pl.col("DataID")
+                .replace(
+                    self.load_mapping(self.device_mapping_path), default=None
+                )
+                .alias(self.procedure_description_col),
             )
         )
 
