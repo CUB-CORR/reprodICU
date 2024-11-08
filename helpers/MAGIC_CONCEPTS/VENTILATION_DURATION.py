@@ -173,7 +173,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     | pl.col("Ventilator Mode").ne_missing(
                         pl.col("Ventilator Mode").shift(-1)
                     ),
-                    pl.col("Ventilator Mode") == "active",
                 )
                 .with_columns(
                     pl.when(
@@ -200,6 +199,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                         / (60 * 60)
                     ).alias("Ventilation Duration (hours)")
                 )
+                .filter(pl.col("Ventilator Mode") == "active")
             )
 
             hirid_VENTILATION_DURATION = pl.concat(
