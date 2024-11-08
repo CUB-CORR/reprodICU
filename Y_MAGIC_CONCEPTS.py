@@ -9,11 +9,9 @@ import argparse
 import polars as pl
 import yaml
 
-from helpers.MAGIC_CONCEPTS._MAGIC_CONCEPTS import MAGIC_CONCEPTS
-from helpers.MAGIC_CONCEPTS.RECEIVED_ANY_ANTIBIOTICS import (
-    RECEIVED_ANY_ANTIBIOTICS,
+from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS_REPOSITORY import (
+    MAGIC_CONCEPTS_REPOSITORY,
 )
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATION import VENTILATION_DURATION
 
 
 def load_mapping(path: str) -> dict:
@@ -65,23 +63,16 @@ if __name__ == "__main__":
     # Initialize paths
     paths = reprodICUPaths()
     column_names = load_mapping("configs/COLUMN_NAMES.yaml")
-    _MAGIC_CONCEPTS = MAGIC_CONCEPTS(paths, datasets)
+    MAGIC_CONCEPTS = MAGIC_CONCEPTS_REPOSITORY(paths, datasets)
     MAGIC_CONCEPTS_PATH = paths.reprodICU_files_path + "MAGIC_CONCEPTS/"
 
+    # Assert concepts exist
+    for concept in concepts:
+        if concept not in MAGIC_CONCEPTS.magic_concepts_dict:
+            raise ValueError(f"reprodICU - No concept found for {concept}.")
+
     # Extract concepts
-    if "RECEIVED_ANY_ANTIBIOTICS" in concepts:
-        concept_instance = RECEIVED_ANY_ANTIBIOTICS(paths, datasets)
-        concept_instance.RECEIVED_ANY_ANTIBIOTICS().collect(
-            streaming=True
-        ).write_parquet(
-            MAGIC_CONCEPTS_PATH + "RECEIVED_ANY_ANTIBIOTICS.parquet"
+    for concept in concepts:
+        MAGIC_CONCEPTS.get_magic_concept(concept).collect().write_parquet(
+            MAGIC_CONCEPTS_PATH + f"{concept}.parquet"
         )
-
-    if "VENTILATION_DURATION" in concepts:
-        concept_instance = VENTILATION_DURATION(paths, datasets)
-        concept_instance.VENTILATION_DURATION().collect(
-            streaming=True
-        ).write_parquet(MAGIC_CONCEPTS_PATH + "VENTILATION_DURATION.parquet")
-
-    else:
-        raise ValueError(f"reprodICU - No concept found for {concepts}.")
