@@ -171,6 +171,7 @@ if __name__ == "__main__":
             patient_info_harmonizer.harmonize_patient_information()
             .pipe(patient_info_cleaner.clean_patient_information)
             .pipe(patient_info_cleaner.remove_bad_patient_information)
+            .pipe(patient_info_cleaner.add_good_patient_information)
             .pipe(
                 X2_Winsorizer.winsorize_clip_lower_0_quantiles,
                 columns=columns_to_winsorize,
@@ -178,18 +179,6 @@ if __name__ == "__main__":
             )
             .collect(streaming=True)
             .write_parquet(save_path + "patient_information.parquet")
-        )
-
-        # Impute the patient information
-        (
-            pl.scan_parquet(save_path + "patient_information.parquet")
-            .pipe(patient_info_imputer.impute_patient_IDs)
-            .pipe(
-                patient_info_imputer.impute_patient_anthropometrics,
-                n_neighbors=5,
-            )
-            .collect(streaming=True)
-            .write_parquet(save_path + "patient_information_imputed.parquet")
         )
 
     # region diags
@@ -299,6 +288,44 @@ if __name__ == "__main__":
         #         resolution_in_seconds=300,
         #         keep_preadmission_data=True,
         #     )
+        # )
+
+    # region info 2
+    if "patient_information" in tables:
+        # Add availability information to the patient information
+        print("reprodICU - Adding data availability to patient information...")
+        (
+            pl.scan_parquet(save_path + "patient_information.parquet")
+            .pipe(
+                patient_info_cleaner.add_data_availability_information,
+                diagnoses=save_path + "diagnoses_imputed.parquet",
+                medications=save_path + "medications_imputed.parquet",
+                procedures=save_path + "procedures.parquet",
+                timeseries_labs=save_path + "timeseries_labs.parquet",
+                timeseries_vitals=save_path + "timeseries_vitals.parquet",
+                timeseries_resp=save_path + "timeseries_respiratory.parquet",
+                timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
+            )
+            .sink_parquet(
+                save_path + "patient_information_with_data_availability.parquet"
+            )
+        )
+        os.remove(save_path + "patient_information.parquet")
+        os.rename(
+            save_path + "patient_information_with_data_availability.parquet",
+            save_path + "patient_information.parquet",
+        )
+
+        # # Impute the patient information
+        # (
+        #     pl.scan_parquet(save_path + "patient_information.parquet")
+        #     .pipe(patient_info_imputer.impute_patient_IDs)
+        #     .pipe(
+        #         patient_info_imputer.impute_patient_anthropometrics,
+        #         n_neighbors=5,
+        #     )
+        #     .collect(streaming=True)
+        #     .write_parquet(save_path + "patient_information_imputed.parquet")
         # )
 
     # region overview

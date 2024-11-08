@@ -126,16 +126,52 @@ class PatientInformationCleaner(GlobalVars):
             .alias(self.mortality_icu_col),
         )
 
-    def add_data_availability_information(self, data) -> pl.LazyFrame:
+    def add_data_availability_information(
+        self,
+        data: pl.LazyFrame,
+        diagnoses: str,
+        medications: str,
+        procedures: str,
+        timeseries_labs: str,
+        timeseries_vitals: str,
+        timeseries_resp: str,
+        timeseries_inout: str,
+    ) -> pl.LazyFrame:
         """
         Adds information about the availability of the data in the other
         tables of the dataset.
         """
 
-        return data.with_columns(
-            # Add columns for the availability of the data
-            # If ICU Stay ID is present in the other tables, the data is available
-        )
+        for table, table_name in zip(
+            [
+                diagnoses,
+                medications,
+                procedures,
+                timeseries_labs,
+                timeseries_vitals,
+                timeseries_resp,
+                timeseries_inout,
+            ],
+            [
+                "Table: Diagnoses",
+                "Table: Medications",
+                "Table: Procedures",
+                "Table: Timeseries (Laboratory results)",
+                "Table: Timeseries (Vitals)",
+                "Table: Timeseries (Respiratory data)",
+                "Table: Timeseries (In/Out data)",
+            ],
+        ):
+            data = data.join(
+                pl.scan_parquet(table)
+                .group_by(self.global_icu_stay_id_col)
+                .agg(pl.len())
+                .rename({"len": table_name}),
+                on=self.global_icu_stay_id_col,
+                how="left",
+            )
+
+        return data
 
 
 if __name__ == "__main__":
