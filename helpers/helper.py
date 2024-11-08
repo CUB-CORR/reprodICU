@@ -266,25 +266,3 @@ class GlobalVars(GlobalHelpers):
         self.all_values = (
             self.relevant_lab_values_pre_conversion + self.all_relevant_values
         )
-
-        # Select relevant OMOP variables
-        self.relevant_OMOP_lab_values = self.load_mapping_true_keys(
-            self.relevant_OMOP_values_path + "RELEVANT_LABS.yaml"
-        )
-        self.relevant_OMOP_respiratory_values = self.load_mapping_true_keys(
-            self.relevant_OMOP_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
-        )
-        self.relevant_OMOP_vital_values = self.load_mapping_true_keys(
-            self.relevant_OMOP_values_path + "RELEVANT_VITALS.yaml"
-        )
-        self.relevant_OMOP_intakeoutput_values = self.load_mapping_true_keys(
-            self.relevant_OMOP_values_path
-            + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
-        )
-
-        self.all_relevant_OMOP_values = (
-            self.relevant_OMOP_lab_values
-            + self.relevant_OMOP_respiratory_values
-            + self.relevant_OMOP_vital_values
-            + self.relevant_OMOP_intakeoutput_values
-        )
