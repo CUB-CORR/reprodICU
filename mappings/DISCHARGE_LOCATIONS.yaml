@@ -1,6 +1,4 @@
 Hospital:
-  - Acute Care/Floor
-  - ACUTE HOSPITAL
   - CHRONIC/LONG TERM ACUTE CARE
   - Floor
   - HEALTHCARE FACILITY
@@ -8,8 +6,6 @@ Hospital:
   - Other Hospital
   - Other Internal
   - SHORT TERM HOSPITAL
-  - Step-Down Unit (SDU)
-  - Telemetry
   # SICdb
   - 1. Medizin
   - 2. Medizin
@@ -28,7 +24,6 @@ Hospital:
   - Neurologie
   - Orthopädie
   - Pneumologie
-  - Psychiatrie
   - Pädiatrie
   - RCU
   - Unfallchirurgie
@@ -72,15 +67,23 @@ Nursing Facility:
   - Skilled Nursing Facility
   - SNF
   - SNF-MEDICAID ONLY CERTIF
+  - ICF
+Psychiatric Facility:
+  - DISCH-TRAN TO PSYCH HOSP
+  - PSYCH FACILITY
+  # SICdb
+  - Psychiatrie
+High-Dependency Unit:
+  - Acute Care/Floor
+  - ACUTE HOSPITAL
+  - Step-Down Unit (SDU)
+  - Telemetry
 Other:
   - DISC-TRAN CANCER/CHLDRN H
   - DISC-TRAN TO FEDERAL HC
-  - DISCH-TRAN TO PSYCH HOSP
-  - ICF
   - Other
   - Other External
   - OTHER FACILITY
-  - PSYCH FACILITY
   # UMCdb specific ward numbers
   - "1"
   - "2"
