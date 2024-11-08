@@ -372,6 +372,134 @@ def condition_occurrence(
 # endregion
 
 
+# region DEVICE_EXPOSURE
+# The Device domain captures information about a person’s exposure to a foreign
+# physical object or instrument which is used for diagnostic or therapeutic
+# purposes through a mechanism beyond chemical action. Devices include
+# implantable objects (e.g. pacemakers, stents, artificial joints), medical
+# equipment and supplies (e.g. bandages, crutches, syringes), other instruments
+# used in medical procedures (e.g. sutures, defibrillators) and material used
+# in clinical care (e.g. adhesives, body material, dental material, surgical
+# material).
+def device_exposure(
+    CONCEPT: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    procedures: pl.LazyFrame,
+) -> pl.LazyFrame:
+    print("reprOMOPIZE - device_exposure")
+
+    ID = (
+        patient_information.select(
+            "Global ICU Stay ID",
+            "Global Person ID",
+            "Pre-ICU Length of Stay (days)",
+        )
+        .with_columns(
+            ###########
+            # PERSON_ID
+            # Create the person_id column with a hash of the Global Person ID
+            pl.col("Global Person ID")
+            .hash()
+            .alias("person_id"),
+        )
+        .select(
+            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
+        )
+    )
+    CONCEPTS = CONCEPT.filter(
+        pl.col("domain_id") == "Device",
+        pl.col("concept_class_id") == "Physical Object",
+    ).select("concept_id", "concept_name")
+
+    return (
+        procedures.join(ID, on="Global ICU Stay ID", how="left")
+        .join(
+            CONCEPTS,
+            left_on="Procedure Description",
+            right_on="concept_name",
+            how="left",
+        )
+        .rename({"concept_id": "device_concept_id"})
+        .with_columns(
+            #####################
+            # VISIT_OCCURRENCE_ID
+            # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
+            pl.col("Global ICU Stay ID").hash().alias("visit_occurrence_id"),
+            ################################
+            # DEVICE_EXPOSURE_START_DATETIME
+            # Create the device_exposure_start_datetime column with the datetime of the device exposure
+            (
+                pl.datetime(
+                    year=2000, month=1, day=1, hour=0, minute=0, second=0
+                )
+                + pl.duration(
+                    seconds=pl.col(
+                        "Procedure Start Relative to Admission (seconds)"
+                    )
+                )
+                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
+                .then(
+                    pl.duration(
+                        seconds=pl.col("Pre-ICU Length of Stay (days)")
+                        * SECONDS_IN_DAY
+                    )
+                )
+                .otherwise(pl.duration(days=0))
+            ).alias("device_exposure_start_datetime"),
+            ##############################
+            # DEVICE_EXPOSURE_END_DATETIME
+            # Create the device_exposure_end_datetime column with the datetime of the device exposure
+            (
+                pl.datetime(
+                    year=2000, month=1, day=1, hour=0, minute=0, second=0
+                )
+                + pl.duration(
+                    seconds=pl.col(
+                        "Procedure End Relative to Admission (seconds)"
+                    )
+                )
+                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
+                .then(
+                    pl.duration(
+                        seconds=pl.col("Pre-ICU Length of Stay (days)")
+                        * SECONDS_IN_DAY
+                    )
+                )
+                .otherwise(pl.duration(days=0))
+            ).alias("device_exposure_end_datetime"),
+            ########################
+            # DEVICE_TYPE_CONCEPT_ID
+            # 32817 = EHR
+            pl.lit(32817).alias("device_type_concept_id"),
+            ########################
+            # DEVICE_SOURCE_VALUE
+            # Create the device_source_value column with the Procedure for backreference
+            pl.col("Procedure Description").alias("device_source_value"),
+        )
+        .with_columns(
+            ############################
+            # DEVICE_EXPOSURE_START_DATE
+            # Create the device_exposure_start_date column with the date of the device exposure
+            pl.col("device_exposure_start_datetime")
+            .dt.date()
+            .alias("device_exposure_start_date"),
+            ##########################
+            # DEVICE_EXPOSURE_END_DATE
+            # Create the device_exposure_end_date column with the date of the device exposure
+            pl.col("device_exposure_end_datetime")
+            .dt.date()
+            .alias("device_exposure_end_date"),
+        )
+        .drop_nulls("device_concept_id")
+        .with_row_index("device_exposure_id")
+        .pipe(add_missing_fields, "device_exposure")
+        .unique()
+    )
+
+
+# endregion
+
+
 # region LOCATION
 # The LOCATION table represents a generic way to capture physical location or
 # address information of Persons and Care Sites.
@@ -744,6 +872,127 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # endregion
 
 
+# region PROCEDURE_OCCURRENCE
+# This table contains records of activities or processes ordered by, or carried
+# out by, a healthcare provider on the patient with a diagnostic or therapeutic
+# purpose.
+def procedure_occurrence(
+    CONCEPT: pl.LazyFrame, procedures: pl.LazyFrame
+) -> pl.LazyFrame:
+    print("reprOMOPIZE - procedure_occurrence")
+
+    ID = (
+        patient_information.select(
+            "Global ICU Stay ID",
+            "Global Person ID",
+            "Pre-ICU Length of Stay (days)",
+        )
+        .with_columns(
+            ###########
+            # PERSON_ID
+            # Create the person_id column with a hash of the Global Person ID
+            pl.col("Global Person ID")
+            .hash()
+            .alias("person_id"),
+        )
+        .select(
+            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
+        )
+    )
+    CONCEPTS = CONCEPT.filter(
+        pl.col("domain_id") == "Device",
+        pl.col("concept_class_id") == "Physical Object",
+    ).select("concept_id", "concept_name")
+
+    return (
+        procedures.join(ID, on="Global ICU Stay ID", how="left")
+        .join(
+            CONCEPTS,
+            left_on="Procedure Description",
+            right_on="concept_name",
+            how="left",
+        )
+        .rename({"concept_id": "procedure_concept_id"})
+        .with_columns(
+            #####################
+            # VISIT_OCCURRENCE_ID
+            # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
+            pl.col("Global ICU Stay ID").hash().alias("visit_occurrence_id"),
+            ################################
+            # PROCEDURE_START_DATETIME
+            # Create the procedure_start_datetime column with the datetime of the device exposure
+            (
+                pl.datetime(
+                    year=2000, month=1, day=1, hour=0, minute=0, second=0
+                )
+                + pl.duration(
+                    seconds=pl.col(
+                        "Procedure Start Relative to Admission (seconds)"
+                    )
+                )
+                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
+                .then(
+                    pl.duration(
+                        seconds=pl.col("Pre-ICU Length of Stay (days)")
+                        * SECONDS_IN_DAY
+                    )
+                )
+                .otherwise(pl.duration(days=0))
+            ).alias("procedure_start_datetime"),
+            ##############################
+            # PROCEDURE_END_DATETIME
+            # Create the procedure_end_datetime column with the datetime of the device exposure
+            (
+                pl.datetime(
+                    year=2000, month=1, day=1, hour=0, minute=0, second=0
+                )
+                + pl.duration(
+                    seconds=pl.col(
+                        "Procedure End Relative to Admission (seconds)"
+                    )
+                )
+                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
+                .then(
+                    pl.duration(
+                        seconds=pl.col("Pre-ICU Length of Stay (days)")
+                        * SECONDS_IN_DAY
+                    )
+                )
+                .otherwise(pl.duration(days=0))
+            ).alias("procedure_end_datetime"),
+            ########################
+            # PROCEDURE_TYPE_CONCEPT_ID
+            # 32817 = EHR
+            pl.lit(32817).alias("procedure_type_concept_id"),
+            ########################
+            # PROCEDURE_SOURCE_VALUE
+            # Create the procedure_source_value column with the Procedure for backreference
+            pl.col("Procedure Description").alias("procedure_source_value"),
+        )
+        .with_columns(
+            ############################
+            # PROCEDURE_START_DATE
+            # Create the procedure_start_date column with the date of the device exposure
+            pl.col("procedure_start_datetime")
+            .dt.date()
+            .alias("procedure_start_date"),
+            ##########################
+            # PROCEDURE_END_DATE
+            # Create the procedure_end_date column with the date of the device exposure
+            pl.col("procedure_end_datetime")
+            .dt.date()
+            .alias("procedure_end_date"),
+        )
+        .drop_nulls("procedure_concept_id")
+        .with_row_index("procedure_occurrence_id")
+        .pipe(add_missing_fields, "procedure_occurrence")
+        .unique()
+    )
+
+
+# endregion
+
+
 # region VISIT_OCCURRENCE
 # This table contains Events where Persons engage with the healthcare system
 # for a duration of time. They are often also called “Encounters”. Visits are
@@ -911,10 +1160,11 @@ if __name__ == "__main__":
     INPATH = args.input
     OUTPATH = args.output
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
+    medications = pl.scan_parquet(INPATH + "medications_imputed.parquet")
     patient_information = pl.scan_parquet(
         INPATH + "patient_information_imputed.parquet"
     )
-    medications = pl.scan_parquet(INPATH + "medications.parquet")
+    procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
@@ -952,9 +1202,15 @@ if __name__ == "__main__":
     condition_occurrence(CONCEPT, diagnoses).collect().write_parquet(
         OUTPATH + "condition_occurrence.parquet"
     )
+    device_exposure(
+        CONCEPT, patient_information, procedures
+    ).collect().write_parquet(OUTPATH + "device_exposure.parquet")
     location(patient_information).sink_parquet(OUTPATH + "location.parquet")
     person(patient_information).collect().write_parquet(
         OUTPATH + "person.parquet"
+    )
+    procedure_occurrence(CONCEPT, procedures).collect().write_parquet(
+        OUTPATH + "procedure_occurrence.parquet"
     )
     visit_occurrence(patient_information).sink_parquet(
         OUTPATH + "visit_occurrence.parquet"
