@@ -329,7 +329,7 @@ if __name__ == "__main__":
         # )
 
     # region overview
-    else:
+    elif len(tables) == 0:
         print("reprodICU - No tables selected.")
         print("reprodICU - Make sure to select at least one table to build.")
         print("reprodICU - Must be one of:")
