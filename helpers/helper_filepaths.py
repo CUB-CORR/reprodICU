@@ -405,6 +405,9 @@ class SICdbPaths(GlobalVars):
         self.timeseries_mapping_path = (
             self.sicdb_mapping_path + "sicdb_Timeseries.yaml"
         )
+        self.device_mapping_path = (
+            self.sicdb_mapping_path + "sicdb_Devices.yaml"
+        )
 
 
 # region UMCdb
