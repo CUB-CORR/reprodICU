@@ -27,6 +27,122 @@ abciximab:
     - Abciximab (Reopro)
   sicdb:
     - Abciximab
+acetaminophen:
+  blended: 1125315
+  amsterdam:
+    - Paracetamol
+    - Paracetamol-codeïne
+  eicu:
+    - "ACETAMINOPHEN"
+    - "ACETAMINOPHEN 325 MG PO TABS"
+    - "acetaMINOPHEN 325 MG TAB"
+    - "acetaminophen"
+    - "ACETAMINOPHEN 650 MG RE SUPP"
+    - "acetaMINOPHEN 650MG RECT SUPP"
+    - "ACETAMINOPHEN  325 MG ORAL TAB"
+    - "acetaminophen (TYLENOL) tab 650 mg"
+    - "acetaminophen (TYLENOL) tablet 650 mg"
+    - "ACETAMINOPHEN 1,000 MG/100 ML (10 MG/ML) IV SOLN"
+    - "ACETAMINOPHEN 500 MG PO TABS"
+    - "ACETAMINOPHEN 325 MG TABLET"
+    - "acetaminophen 325 mg po tabs"
+    - "ACETAMINOPHEN 650 MG RECTAL SUPPOSITORY"
+    - "20.3 ML CUP : ACETAMINOPHEN 160 MG/5ML PO SOLN"
+    - "ACETAMINOPHEN  650 MG RECT SUPP"
+    - "ACETAMINOPHEN 325 MG RECTAL SUPPOSITORY"
+    - "ACETAMINOPHEN 10 MG/ML 100 ML VIAL"
+    - "acetaminophen (TYLENOL) tab 975 mg"
+    - "ACETAMINOPHEN  500 MG ORAL TAB"
+    - "Acetaminophen TAB"
+    - "ACETAMINOPHEN TAB"
+    - TYLENOL
+    - Tylenol
+    - acetaminophen (TYLENOL) tab 650 mg
+    - acetaminophen (TYLENOL) tablet 650 mg
+    - "TYLENOL                                                                                                                                                                                                                                                        "
+    - acetaminophen (TYLENOL) tab 975 mg
+    - "TYLENOL-CODEINE NO.3                                                                                                                                                                                                                                           "
+    - "TYLENOL EXTRA STRENGTH                                                                                                                                                                                                                                         "
+    - "TYLENOL PM EXTRA STRENGTH                                                                                                                                                                                                                                      "
+    - "TYLENOL ARTHRITIS                                                                                                                                                                                                                                              "
+    - "TYLENOL-CODEINE NO.4                                                                                                                                                                                                                                           "
+    - "TYLENOL 8 HOUR                                                                                                                                                                                                                                                 "
+    - "TYLENOL W/CODEINE NO.3                                                                                                                                                                                                                                         "
+    - "TYLENOL COLD SEVERE CONGESTION                                                                                                                                                                                                                                 "
+    - "TYLENOL PM                                                                                                                                                                                                                                                     "
+    - "TYLENOL EXTRA STRENGTH ARTHRIT                                                                                                                                                                                                                                 "
+    - ACETAMINOPHEN 325 MG PO TABS
+    - ACETAMINOPHEN
+    - acetaMINOPHEN 325 MG TAB
+    - HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS
+    - ACETAMINOPHEN 650 MG RE SUPP
+    - acetaminophen
+    - acetaMINOPHEN 650MG RECT SUPP
+    - OXYCODONE-ACETAMINOPHEN 5-325 MG PO TABS
+    - ACETAMINOPHEN  325 MG ORAL TAB
+    - acetaminophen (TYLENOL) tab 650 mg
+    - acetaminophen (TYLENOL) tablet 650 mg
+    - ACETAMINOPHEN 500 MG PO TABS
+    - ACETAMINOPHEN 1,000 MG/100 ML (10 MG/ML) IV SOLN
+    - ACETAMINOPHEN 325 MG TABLET
+    - HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET
+    - acetaminophen 325 mg po tabs
+    - HYDROCODONE-ACETAMINOPHEN 10-325 MG PO TABS
+    - HYDROcodone-acetaminophen
+    - ACETAMINOPHEN 650 MG RECTAL SUPPOSITORY
+    - ACETAMINOPHEN  650 MG RECT SUPP
+    - "ACETAMINOPHEN                                                                                                                                                                                                                                                  "
+    - ACETAMINOPHEN 325 MG RECTAL SUPPOSITORY
+    - ACETAMINOPHEN  500 MG ORAL TAB
+    - "20.3 ML CUP : ACETAMINOPHEN 160 MG/5ML PO SOLN"
+    - ACETAMINOPHEN 10 MG/ML 100 ML VIAL
+    - acetaminophen (TYLENOL) tab 975 mg
+    - ACETAMINOPHEN TAB
+    - oxycodone-acetaminophen 5-325 mg po tabs
+    - Acetaminophen TAB
+    - oxyCODONE-acetaminophen
+    - acetaminophen-oxyCODONE 325 mg-5 mg oral tablet
+    - "HYDROCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                      "
+    - "HYDROCODONE BITARTRATE/ACETAMINOPHEN                                                                                                                                                                                                                           "
+    - "OXYCODONE HCL-ACETAMINOPHEN                                                                                                                                                                                                                                    "
+    - "HYDROCODONE BIT/ACETAMINOPHEN                                                                                                                                                                                                                                  "
+    - "ACETAMINOPHEN-CODEINE                                                                                                                                                                                                                                          "
+    - "OXYCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                        "
+    - "OXYCODONE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                    "
+    - "ACETAMINOPHEN WITH CODEINE PHOSPHATE                                                                                                                                                                                                                           "
+    - "BUTALBITAL-ACETAMINOPHEN-CAFFE                                                                                                                                                                                                                                 "
+    - "ACETAMINOPHEN EXTRA STRENGTH                                                                                                                                                                                                                                   "
+    - "TRAMADOL HCL-ACETAMINOPHEN                                                                                                                                                                                                                                     "
+    - "ACETAMINOPHEN 8 HOUR                                                                                                                                                                                                                                           "
+    - "ACETAMINOPHEN-DIPHENHYDRAMINE                                                                                                                                                                                                                                  "
+    - "ACETAMINOPHEN ER                                                                                                                                                                                                                                               "
+    - "HYDROCODONE W/ACETAMINOPHEN                                                                                                                                                                                                                                    "
+    - "BUTALBITAL/ACETAMINOPHEN                                                                                                                                                                                                                                       "
+    - "TRAMADOL HCL/ACETAMINOPHEN                                                                                                                                                                                                                                     "
+    - "HYDROCODONE/ACETAMINOPHEN                                                                                                                                                                                                                                      "
+    - "ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                                         "
+    - "ACETAMINOPHEN ES                                                                                                                                                                                                                                               "
+    - "DEXTROMETHORPHAN HBR/ACETAMINOPHEN/DOXYLAMINE                                                                                                                                                                                                                  "
+    - "ACETAMINOPHEN/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                              "
+    - "ACETAMINOPHEN-BUTALBITAL                                                                                                                                                                                                                                       "
+    - "PHENYLEPHRINE HCL/ACETAMINOPHEN/CHLORPHENIRAMINE                                                                                                                                                                                                               "
+    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
+    - "CHLORPHENIRAMINE/DEXTROMETHORPHAN/ACETAMINOPHEN/GUAIFENESIN                                                                                                                                                                                                    "
+    - "SALICYLAMIDE/ACETAMINOPHEN/PHENYLTOLOXAMINE                                                                                                                                                                                                                    "
+    - "ACETAMINOPHEN W-CODEINE                                                                                                                                                                                                                                        "
+    - "PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                "
+    - "ACETAMINOPHEN PM                                                                                                                                                                                                                                               "
+    - "BUTALBITAL/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                              "
+    - acetaminophen (ml/hr)
+  hirid: []
+  mimic:
+    - Acetaminophen-IV
+  mimic3:
+    - Acetaminophen-IV
+  mimic4:
+    - Acetaminophen-IV
+  sicdb:
+    - Paracetamol
 acyclovir:
   blended: 1703687
   amsterdam:
@@ -327,19 +443,28 @@ ampicillin:
   eicu:
     - "AMPICILLIN SODIUM                                                                                                                                                                                                                                              "
     - Ampicillin (ml/hr)
-    - "UNASYN                                                                                                                                                                                                                                                         "
   hirid: []
   mimic:
     - Ampicillin
-    - Ampicillin/Sulbactam (Unasyn)
   mimic3:
-    - Ampicillin/Sulbactam (Unasyn)
     - Ampicillin
   mimic4:
     - Ampicillin
-    - Ampicillin/Sulbactam (Unasyn)
   sicdb:
     - Ampicillin
+ampicillin / sulbactam:
+  blended: 36029195
+  amsterdam: []
+  eicu:
+    - "UNASYN                                                                                                                                                                                                                                                         "
+  hirid: []
+  mimic:
+    - Ampicillin/Sulbactam (Unasyn)
+  mimic3:
+    - Ampicillin/Sulbactam (Unasyn)
+  mimic4:
+    - Ampicillin/Sulbactam (Unasyn)
+  sicdb:
     - Ampicillin/Sulbactam
 angiotensin II:
   blended: 963889
@@ -461,69 +586,6 @@ aspirin:
     - "IRON ASP.GLYCIN & FUMARATE /VIT C/FA/MV COMB 11/CA-THREONATE                                                                                                                                                                                                   "
     - "PRENATAL NO.29/IRON CARB & ASP.GLYCINATE/FA/DHA/FISH OIL                                                                                                                                                                                                       "
     - "IRON ASP GLY&PS CMPLX/ASCORB.CAL/VIT B12/FA/CA-THR/SUCC.ACID                                                                                                                                                                                                   "
-    - ACETAMINOPHEN 325 MG PO TABS
-    - ACETAMINOPHEN
-    - acetaMINOPHEN 325 MG TAB
-    - HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS
-    - ACETAMINOPHEN 650 MG RE SUPP
-    - acetaminophen
-    - acetaMINOPHEN 650MG RECT SUPP
-    - OXYCODONE-ACETAMINOPHEN 5-325 MG PO TABS
-    - ACETAMINOPHEN  325 MG ORAL TAB
-    - acetaminophen (TYLENOL) tab 650 mg
-    - acetaminophen (TYLENOL) tablet 650 mg
-    - ACETAMINOPHEN 500 MG PO TABS
-    - ACETAMINOPHEN 1,000 MG/100 ML (10 MG/ML) IV SOLN
-    - ACETAMINOPHEN 325 MG TABLET
-    - HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET
-    - acetaminophen 325 mg po tabs
-    - HYDROCODONE-ACETAMINOPHEN 10-325 MG PO TABS
-    - HYDROcodone-acetaminophen
-    - ACETAMINOPHEN 650 MG RECTAL SUPPOSITORY
-    - ACETAMINOPHEN  650 MG RECT SUPP
-    - "ACETAMINOPHEN                                                                                                                                                                                                                                                  "
-    - ACETAMINOPHEN 325 MG RECTAL SUPPOSITORY
-    - ACETAMINOPHEN  500 MG ORAL TAB
-    - "20.3 ML CUP : ACETAMINOPHEN 160 MG/5ML PO SOLN"
-    - ACETAMINOPHEN 10 MG/ML 100 ML VIAL
-    - acetaminophen (TYLENOL) tab 975 mg
-    - ACETAMINOPHEN TAB
-    - oxycodone-acetaminophen 5-325 mg po tabs
-    - Acetaminophen TAB
-    - oxyCODONE-acetaminophen
-    - acetaminophen-oxyCODONE 325 mg-5 mg oral tablet
-    - "HYDROCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                      "
-    - "HYDROCODONE BITARTRATE/ACETAMINOPHEN                                                                                                                                                                                                                           "
-    - "OXYCODONE HCL-ACETAMINOPHEN                                                                                                                                                                                                                                    "
-    - "HYDROCODONE BIT/ACETAMINOPHEN                                                                                                                                                                                                                                  "
-    - "ACETAMINOPHEN-CODEINE                                                                                                                                                                                                                                          "
-    - "OXYCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                        "
-    - "OXYCODONE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                    "
-    - "ACETAMINOPHEN WITH CODEINE PHOSPHATE                                                                                                                                                                                                                           "
-    - "BUTALBITAL-ACETAMINOPHEN-CAFFE                                                                                                                                                                                                                                 "
-    - "ACETAMINOPHEN EXTRA STRENGTH                                                                                                                                                                                                                                   "
-    - "TRAMADOL HCL-ACETAMINOPHEN                                                                                                                                                                                                                                     "
-    - "ACETAMINOPHEN 8 HOUR                                                                                                                                                                                                                                           "
-    - "ACETAMINOPHEN-DIPHENHYDRAMINE                                                                                                                                                                                                                                  "
-    - "ACETAMINOPHEN ER                                                                                                                                                                                                                                               "
-    - "HYDROCODONE W/ACETAMINOPHEN                                                                                                                                                                                                                                    "
-    - "BUTALBITAL/ACETAMINOPHEN                                                                                                                                                                                                                                       "
-    - "TRAMADOL HCL/ACETAMINOPHEN                                                                                                                                                                                                                                     "
-    - "HYDROCODONE/ACETAMINOPHEN                                                                                                                                                                                                                                      "
-    - "ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                                         "
-    - "ACETAMINOPHEN ES                                                                                                                                                                                                                                               "
-    - "DEXTROMETHORPHAN HBR/ACETAMINOPHEN/DOXYLAMINE                                                                                                                                                                                                                  "
-    - "ACETAMINOPHEN/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                              "
-    - "ACETAMINOPHEN-BUTALBITAL                                                                                                                                                                                                                                       "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN/CHLORPHENIRAMINE                                                                                                                                                                                                               "
-    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
-    - "CHLORPHENIRAMINE/DEXTROMETHORPHAN/ACETAMINOPHEN/GUAIFENESIN                                                                                                                                                                                                    "
-    - "SALICYLAMIDE/ACETAMINOPHEN/PHENYLTOLOXAMINE                                                                                                                                                                                                                    "
-    - "ACETAMINOPHEN W-CODEINE                                                                                                                                                                                                                                        "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                "
-    - "ACETAMINOPHEN PM                                                                                                                                                                                                                                               "
-    - "BUTALBITAL/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                              "
-    - acetaminophen (ml/hr)
   hirid:
     - Aspirin Tbl 100 mg
     - Aspirin cardio Tbl 300 mg
@@ -538,12 +600,9 @@ aspirin:
     - Dafalgan Supp 600 mg
     - Dafalgan ODIS Schmelz Tabl 500 mg
     - Benuron supp 1000 mg
-  mimic:
-    - Acetaminophen-IV
-  mimic3:
-    - Acetaminophen-IV
-  mimic4:
-    - Acetaminophen-IV
+  mimic: []
+  mimic3: []
+  mimic4: []
   sicdb:
     - Acetylsalicylat
     - Acetylsalicyls
@@ -846,7 +905,8 @@ cefuroxime:
   mimic: []
   mimic3: []
   mimic4: []
-  sicdb: []
+  sicdb:
+    - Cefuroxim
 ceftazidime:
   blended: 1776684
   amsterdam:
@@ -987,7 +1047,7 @@ cisatracurium:
   sicdb:
     - Cisatracurium
     - Cisatracurium besilat
-claritromycin:
+clarithromycin:
   blended: 1750500
   amsterdam:
     - Claritromycine (Klacid)
@@ -1119,6 +1179,7 @@ desmopressin:
 dexamethasone:
   blended: 1518254
   amsterdam:
+    - Dexamethason
     - Dexamethason/framycetine/gramicidine oordruppels (Sofradex)
     - Dexamethason/gentamicine oogzalf (Dexamytrex)
   eicu:
@@ -1366,6 +1427,7 @@ dopamine:
     - Dopamine
   mimic3:
     - Dopamine
+    - Dopamine Drip
   mimic4:
     - Dopamine
   sicdb:
@@ -1635,6 +1697,9 @@ fentanyl:
   mimic3:
     - Fentanyl
     - Fentanyl (Concentrate)
+    - Fentanyl Drip
+    - Fentanyl (Conc)
+    - Fentanyl Base
   mimic4:
     - Fentanyl
     - Fentanyl (Concentrate)
@@ -2020,6 +2085,7 @@ hydromorphone:
   blended: 1126658
   amsterdam: []
   eicu:
+    - Hydromorephone PCA (ml/hr)
     - 1 ML  -  HYDROMORPHONE HCL 1 MG/ML IJ SOLN
     - HYDROmorphone
     - HYDROMORPHONE (PF)  1 MG/ML INJ SYRINGE
@@ -2091,10 +2157,12 @@ hydromorphone:
   mimic:
     - Hydromorphone (Dilaudid)
   mimic3:
+    - Dilaudid
     - Hydromorphone (Dilaudid)
   mimic4:
     - Hydromorphone (Dilaudid)
   sicdb:
+    - HYDROmorphon
     - HYDROmorphone
     - HYDROmorphon retard
 hypromellose:
@@ -2130,6 +2198,7 @@ insulin:
     - LANTUS (insuline glargine)
     - Mixtard (Insuline) 30-70
   eicu:
+    - LANTUS
     - INSULIN-LISPRO (rDNA) *UNIT* INJ
     - Insulin (ml/hr)
     - Insulin (units/hr)
@@ -2261,6 +2330,7 @@ insulin:
     - Insulin - Humalog 75/25
     - Insulin - U500
   mimic3:
+    - Regular Insulin
     - Insulin
     - Insulin - Regular
     - Insulin - Humalog
@@ -2346,6 +2416,7 @@ labetalol:
     - Labetalol (Trandate)
   eicu:
     - Labetalol (mg/min)
+    - LABETALOL HCL
   hirid: []
   mimic: []
   mimic3:
@@ -2758,6 +2829,46 @@ metoclopramide:
   mimic4: []
   sicdb:
     - Metoclopramid
+metoprolol:
+  blended: 1307046
+  amsterdam: []
+  eicu:
+    - LOPRESSOR
+    - meTOPROLOL tartrate
+    - metoPROLOL
+    - metoprolol
+    - metoprolol (LOPRESSOR) tab 12.5 mg
+    - metoprolol (LOPRESSOR) tab 25 mg
+    - metoprolol tartrate
+    - metoprolol tartrate (LOPRESSOR) inj 5 mg
+    - metoprolol tartrate 25 mg po tabs
+    - METOPROLOL
+    - METOPROLOL 1 MG/ML 5ML SDV INJ
+    - METOPROLOL INJ
+    - METOPROLOL SUCCINATE
+    - METOPROLOL SUCCINATE ER 25 MG PO TB24
+    - METOPROLOL SUCCINATE ER 50 MG PO TB24
+    - METOPROLOL TARTRATE
+    - METOPROLOL TARTRATE  25 MG ORAL TAB
+    - METOPROLOL TARTRATE 1 MG/ML IV SOLN
+    - METOPROLOL TARTRATE 12.5 MG HALF TABLET
+    - METOPROLOL TARTRATE 25 MG PO TABS
+    - METOPROLOL TARTRATE 25 MG TAB
+    - METOPROLOL TARTRATE 25 MG TABLET
+    - METOPROLOL TARTRATE 5 MG/5 ML IV SOLN
+    - METOPROLOL TARTRATE 50 MG PO TABS
+    - METOPROLOL TARTRATE 50 MG TAB
+  hirid:
+    - Metoprolol Tartrat Tbl 10 mg
+  mimic:
+    - Metoprolol
+  mimic3:
+    - LOPRESSOR IV
+    - Metoprolol
+  mimic4:
+    - Metoprolol
+  sicdb:
+    - Metoprolol
 metronidazole:
   blended: 1707164
   amsterdam:
@@ -3166,6 +3277,7 @@ nitroglycerin:
     - Nitroglycerin
   mimic3:
     - Nitroglycerin
+    - Nitroglycerine
     - Nitroglycerine-k
   mimic4:
     - Nitroglycerin
@@ -3260,6 +3372,7 @@ norepinephrine:
   mimic3:
     - Norepinephrine
     - Levophed-k
+    - Levophed
   mimic4:
     - Norepinephrine
   sicdb:
@@ -3322,6 +3435,59 @@ pancuronium:
   mimic3: []
   mimic4: []
   sicdb: []
+pantoprazole:
+  blended: 948078
+  amsterdam:
+    - PantoPac
+    - Pantoprazol (Pantozol)
+  eicu:
+    - PANTOPRAZOLE
+    - PANTOPRAZOLE 40 MG EC TAB
+    - PANTOPRAZOLE 40 MG INJ
+    - PANTOPRAZOLE 40 MG INTRAVENOUS SOLUTION
+    - PANTOPRAZOLE 40 MG IV RECON SOLN
+    - PANTOPRAZOLE 40 MG ORAL ENT COAT TAB
+    - PANTOPRAZOLE 40 MG TABLET,DELAYED RELEASE
+    - PANTOPRAZOLE 40 MG in 100 mL NS
+    - PANTOPRAZOLE DR
+    - PANTOPRAZOLE SOD
+    - PANTOPRAZOLE SODIUM
+    - PANTOPRAZOLE SODIUM 40 MG IV SOLR
+    - PANTOPRAZOLE SODIUM 40 MG PO TBEC
+    - Pantoprazole
+    - Pantoprazole ()
+    - Pantoprazole (Unknown)
+    - Pantoprazole (mcg/kg/hr)
+    - Pantoprazole (mg/hr)
+    - Pantoprazole (mg/hr) (mg/hr)
+    - Pantoprazole (mg/kg/hr)
+    - Pantoprazole (ml/hr)
+    - Pantoprazole(Protonix) (mg/hr)
+    - pantoprazole
+    - pantoprazole (PROTONIX) injection 40 mg
+    - pantoprazole (PROTONIX) tablet 40 mg
+    - pantoprazole sodium 40 mg iv solr
+  hirid:
+    - Pavulon inj 2 mg/ml
+  mimic: []
+  mimic3:
+    - PANTOPRAZOLE
+    - PANTOPRAZOLE GTT
+    - Pantoprazole
+    - Pantoprazole (Protonix)
+    - Pantoprazole 8mg/hr
+    - Pantoprazole gtt
+    - pantaprazole
+    - pantaprozole
+    - pantopralole
+    - pantoprazole
+    - pantoprazole 8mg/hr
+    - pantoprazole gtt
+    - pantoprazole mg/hr
+  mimic4:
+    - Pantoprazole (Protonix)
+  sicdb:
+    - Pantoprazol
 penicillin G:
   blended: 1728416
   amsterdam:
@@ -3419,22 +3585,6 @@ phenylephrine:
     - "NOREL AD                                                                                                                                                                                                                                                       "
     - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
     - "ROBAFEN DM COUGH                                                                                                                                                                                                                                               "
-    - TYLENOL
-    - Tylenol
-    - acetaminophen (TYLENOL) tab 650 mg
-    - acetaminophen (TYLENOL) tablet 650 mg
-    - "TYLENOL                                                                                                                                                                                                                                                        "
-    - acetaminophen (TYLENOL) tab 975 mg
-    - "TYLENOL-CODEINE NO.3                                                                                                                                                                                                                                           "
-    - "TYLENOL EXTRA STRENGTH                                                                                                                                                                                                                                         "
-    - "TYLENOL PM EXTRA STRENGTH                                                                                                                                                                                                                                      "
-    - "TYLENOL ARTHRITIS                                                                                                                                                                                                                                              "
-    - "TYLENOL-CODEINE NO.4                                                                                                                                                                                                                                           "
-    - "TYLENOL 8 HOUR                                                                                                                                                                                                                                                 "
-    - "TYLENOL W/CODEINE NO.3                                                                                                                                                                                                                                         "
-    - "TYLENOL COLD SEVERE CONGESTION                                                                                                                                                                                                                                 "
-    - "TYLENOL PM                                                                                                                                                                                                                                                     "
-    - "TYLENOL EXTRA STRENGTH ARTHRIT                                                                                                                                                                                                                                 "
     - Neosynephrine (mcg/min)
   hirid: []
   mimic:
@@ -3443,6 +3593,7 @@ phenylephrine:
     - Phenylephrine (200/250)
   mimic3:
     - Phenylephrine
+    - Neosynephrine
     - Neosynephrine-k
   mimic4:
     - Phenylephrine
@@ -3606,6 +3757,17 @@ ranitidine:
     - Ranitidine (Prophylaxis)
   sicdb:
     - Ranitidin
+remifentanil:
+  blended: 19016749
+  amsterdam:
+    - Remifentanyl
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb:
+    - Remifentanil
 rocuronium:
   blended: 19003953
   amsterdam:
@@ -3766,6 +3928,19 @@ tetracycline:
   mimic3: []
   mimic4: []
   sicdb: []
+terlipressin:
+  blended: 19119253
+  amsterdam:
+    - Terlipressine (Glypressin)
+  eicu: []
+  hirid:
+    - Glypressin Inj Lsg
+    - Haemopressin TS Inj Lsg
+  mimic: []
+  mimic3: []
+  mimic4: []
+  sicdb:
+    - Terlipressin
 thiopental:
   blended: 700253
   amsterdam:
@@ -3953,7 +4128,20 @@ vasopressin (USP):
   eicu:
     - Vasopressin
     - Vasopressin (units/min)
-  hirid: []
+    - VASOPRESSIN 60 UNITS in 100 mL NS
+    - VAsopressin (units/min)
+    - Vasopressin ()
+    - Vasopressin (Unknown)
+    - Vasopressin (mcg/kg/min)
+    - Vasopressin (mcg/min)
+    - Vasopressin (mg/hr)
+    - Vasopressin (mg/min)
+    - Vasopressin (ml/hr)
+    - Vasopressin (units/hr)
+    - Vasopressin (units/kg/min)
+  hirid:
+    - Vasopressin inj 20 U/ml
+    - Vasopressin inf 0.4 U/ml
   mimic: []
   mimic3:
     - Vasopressin
@@ -4045,6 +4233,7 @@ glucose:
     - Glucose 5 %
     - Glucose 5% spuit
   eicu:
+    - D10 (ml/hr)
     - D10W
     - D5W
     - D5W (ml/hr)
@@ -4128,7 +4317,6 @@ glucose:
     - dextrose 10% in water
     - dextrose 10% in water (ml/hr)
     - 5% Dextrose w/ 150 mEq bicarb (ml/hr)
-    - Dextrose 5%/NaCl 0.45%
     - 10% dextrose (ml/hr)
     - dextrose 10% (ml/hr)
     - Mannitol gtt(25gms/500mL) 25 g Dextrose 5% 500 ml (Unknown)
@@ -4203,102 +4391,12 @@ glucose:
     - D5 LR 30mEqK (ml/hr)
     - D5 LR (ml/hr)
     - D5
-    - D5/NS (ml/hr)
-    - D5/NS  (ml/hr)
-    - D5/0.9NSS (ml/hr)
-    - D5/0.9NS w/40mEq K (ml/hr)
-    - D5/0.9NS (ml/hr)
-    - D5/0.9%NS (ml/hr)
-    - D5/0.9%NS
-    - D5/0.9% NS w/20KCl (ml/hr)
-    - D5/0.9 NS c 40 K+ (ml/hr)
-    - D5/0.9 (ml/hr)
-    - D5/0.5NS (ml/hr)
-    - D5/0.5NS
-    - D5/0.45NSS (ml/hr)
-    - D5/0.45NS/K+40meq (ml/hr)
-    - D5/0.45NS/K (ml/hr)
-    - D5/0.45NS w 20meq K (ml/hr)
-    - D5/0.45NS (ml/hr)
-    - D5/0.45NS
-    - D5/NS/20MEQKCL
-    - D5/0.45/40KCL (ml/hr)
-    - D5/NS/20MEQKCL (ml/hr)
-    - D5/NSS (ml/hr)
-    - D51/2 WITH mvi (ml/hr)
-    - D51/2 Saline (ml/hr)
-    - D51/2 NSS (ml/hr)
-    - D51/2 NS/20KCL (ml/hr)
-    - D51/2 NS (ml/hr)
-    - D51/2 (ml/hr)
-    - D51/2
-    - D50.9%NS (ml/hr)
-    - D50.9%NS
-    - D50.9 (ml/hr)
-    - D50.9
-    - D50.45NS20K (ml/hr)
-    - D50.45NS (ml/hr)
-    - D50.45NS
-    - D50.45%ns 40KCL (ml/hr)
     - D50 (ml/hr)
     - D50  (ml/hr)
     - D50
     - D5/W (ml/hr)
     - D5/W
-    - D5/NSS 0.45% (ml/hr)
-    - D5/NS0.9%  (ml/hr)
     - D51/2+10KCL (ml/hr)
-    - D5/0.45%NaCl (ml/hr)
-    - D5/0.45%NS + MVI (ml/hr)
-    - D5.9NSS
-    - D5.9NS (ml/hr)
-    - D5.45nss (ml/hr)
-    - D5.45NSw/40meqK (ml/hr)
-    - D5.45NSw/40Kcl (ml/hr)
-    - D5.45NSw/20KCl (ml/hr)
-    - D5.45NSS + MVI (ml/hr)
-    - D5.45NSS (ml/hr)
-    - D5.45NS/20KCL (ml/hr)
-    - D5.45NS w/MVI (ml/hr)
-    - D5.45NS (ml/hr)
-    - D5.45NS
-    - D5.45+20kcl (ml/hr)
-    - D5.45% NS (ml/hr)
-    - D5.45 with thimaine and folic acid (ml/hr)
-    - D5.45 w/ folic acid, &thiamine (ml/hr)
-    - D5.45 WITH 20 MEQ (ml/hr)
-    - D5.45 W/ 20KCL (ml/hr)
-    - D5.45 Saline (ml/hr)
-    - D5.45 NS (ml/hr)
-    - D5.45 NS  (ml/hr)
-    - D5.9NSS (ml/hr)
-    - D5/0.45%NaCl
-    - D5/ 0.45 NS (ml/hr)
-    - D5/ 0.45%NS (ml/hr)
-    - D5/0.45%NS (ml/hr)
-    - D5/0.45%/NaCl+40mEq potassium (ml/hr)
-    - D5/0.45% NS (ml/hr)
-    - D5/0.45 NSS (ml/hr)
-    - D5/0.45 NS (ml/hr)
-    - D5/0.45 (ml/hr)
-    - D5/.9NS w 20meq K (ml/hr)
-    - D5/.9NS (ml/hr)
-    - D5/.45Ns+20KCl (ml/hr)
-    - D5/.45NaCl MVI (ml/hr)
-    - D5/.45NSS/40KCL (ml/hr)
-    - D5/.45NSS c MVI (ml/hr)
-    - D5/.45NSS (ml/hr)
-    - D5/.45NSS
-    - D5/.45NS + 20 K (ml/hr)
-    - D5/.45NS (ml/hr)
-    - D5/.45%NaCl (ml/hr)
-    - D5/ NS (ml/hr)
-    - D5/ 0.9NSS (ml/hr)
-    - D5/ 0.9%NSS (ml/hr)
-    - D5/ 0.45%NS
-    - D51/2NS
-    - D51/2NS (ml/hr)
-    - D51/2NS w/ 20meqK (ml/hr)
     - D5W w/150MEQ NaHC03 (ml/hr)
     - D5W w/ Bicardb (ml/hr)
     - D5W w/ Anbx (ml/hr)
@@ -4759,340 +4857,396 @@ sodium chloride:
     - NaCl 0,9% Neusspray
     - Research NaCL 0,9%
   eicu:
-    - DEXTROSE 5%-NACL 0.9%
-    - NaCl 0.9% MBP
-    - DEXT 5%-NACL 0.45% 1000 ML LVP
-    - DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN
-    - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - DEXT 5%-NACL 0.45%-KCL 20MEQ LVP
-    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
-    - DEXT 5%-NACL 0.9% 1000 ML LVP
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - NaCl 0.9% Bolus
-    - NACL 0.9% (1566)
-    - DEXTROSE 5%/NACL 0.45%
-    - HEPARIN (PORCINE) IN NACL 100-0.45 UNIT/ML-% IJ SOLN
-    - POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
-    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
+    - Normal Saline
+    - 0.9% Normal Saline (ml/hr)
+    - Hypertonic Saline 3% (ml/hr)
+    - Hypertonic Saline (ml/hr)
+    - " 3% NACL (ml/hr)"
+    - ".45 NaCl (ml/hr)"
+    - "100 ML BAG : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+    - "100 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
     - "100 ML NDC : DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN"
-    - 0.9%  NaCl infusion
-    - 1000 ML  -  POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
+    - "1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "1000 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
+    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
+    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
+    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "1000 ml flex cont : sodium chloride 0.9 % iv soln"
+    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
     - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - POTASSIUM CHLORIDE IN NACL 40 MEQ IN 250 ML (PREMIX)
-    - DEXMEDETOMIDINE HCL IN NACL 200 MCG/50ML IV SOLN
-    - NaCl 0.9%
-    - 100 ML  -  METRONIDAZOLE IN NACL 5-0.79 MG/ML-% IV SOLN
-    - NaCl 0.9% ADV
-    - 0.9% NaCl (ml/hr)
-    - 3% NaCl (ml/hr)
-    - 0.9% nacl (ml/hr)
-    - 3% NACL (ml/hr)
-    - NACL (ml/hr)
-    - 0.9 NaCl (ml/hr)
-    - 1.8% NaCl (ml/hr)
-    - NaCl 3% (ml/hr)
-    - 0.45% NaCl (ml/hr)
-    - 0.9% NaCl
-    - "NOREPINEPHRINE BITAR-0.9% NACL                                                                                                                                                                                                                                 "
-    - 1.8 NACL (ml/hr)
-    - 1.8 % NaCl (ml/hr)
-    - 2% NaCl (ml/hr)
-    - NaCl 0.9% (ml/hr)
-    - 0.9% NACL (ml/hr)
-    - 0.9% nacl
-    - 3% Nacl (ml/hr)
-    - 3 % NaCl (ml/hr)
-    - "LEVETIRACETAM-NACL                                                                                                                                                                                                                                             "
+    - "1000 ML FLEX CONT: SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "150 ml flex cont : sodium chloride 0.9 % iv soln"
+    - "250 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "250 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "250 ml flex cont : sodium chloride 0.9 % iv soln"
+    - "500 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "500 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+    - "500 ml : sodium chloride 0.9 % iv soln"
+    - "500 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "ATROPINE SULFATE IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                      "
+    - "DEXTRAN 40 IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                            "
+    - "DEXTROSE 5 % AND 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                         "
+    - "DIPHENHYDRAMINE HCL IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
     - "HEPARIN SODIUM IN 0.45% NACL                                                                                                                                                                                                                                   "
     - "HEPARIN SODIUM IN 0.9% NACL                                                                                                                                                                                                                                    "
     - "KCL IN DEXTROSE AND NACL                                                                                                                                                                                                                                       "
-    - 0.9% NACL BOLUS (ml/hr)
-    - 1.8 NaCL (ml/hr)
-    - NaCl (ml/hr)
-    - NACL c 10%dextrose (ml/hr)
-    - NaCL 0.2% (ml/hr)
-    - ".45 NaCl (ml/hr)"
-    - 0.45% NACL
-    - 0.45% NACL (ml/hr)
-    - NACL
-    - 0.45% NaCl + Sodium Bicarbonate (ml/hr)
-    - NACL 1.8% (ml/hr)
-    - 1.8%  NaCl (ml/hr)
-    - NaCL 3% (ml/hr)
-    - 3% nacl (ml/hr)
-    - 1.8 NaCl (ml/hr)
-    - 1.8 nacl (ml/hr)
-    - 23.4% NaCl (ml/hr)
-    - 1.8% NaCL (ml/hr)
-    - NACL 20MEQ KCL (ml/hr)
-    - 3 nacl (ml/hr)
-    - IVF NaCl 0.45% (ml/hr)
-    - 3% NaCL (ml/hr)
-    - 3% NaCL  (ml/hr)
-    - 0.9% NACL
-    - 3 NACL (ml/hr)
-    - sterile water with 38.5meq NaCl (ml/hr)
-    - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
-    - NaCL 0.9% Calcium gluconate (ml/hr)
-    - 0.45 NaCL (ml/hr)
-    - 0.9 NACL (ml/hr)
-    - 3% Hypertonic NaCl (ml/hr)
-    - 0.9% NaCl (venous sheath) (ml/hr)
-    - 23.4% nacl (ml/hr)
-    - NaCl 3% Hypertonic (ml/hr)
-    - " 3% NACL (ml/hr)"
-    - NaCL ).45% with MVI (ml/hr)
-    - D5%./NaCl 0.45% (ml/hr)
-    - D5 0.45 NaCl (ml/hr)
-    - SODIUM CHLORIDE 0.9% 1000 ML LVP
-    - "SODIUM CHLORIDE 0.9 % IV : 1000 ML"
-    - SODIUM CHLORIDE 0.9%
-    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "SODIUM CHLORIDE 0.9 % SYRINGE : 10 ML SYRINGE"
-    - 1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
-    - 500 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
-    - Sodium Chloride 0.9% 1,000 ML BAG
-    - SODIUM CHLORIDE 0.9% 1000 ML PB
-    - "1000 ML FLEX CONT: SODIUM CHLORIDE 0.9 % IV SOLN"
-    - SODIUM CHLORIDE
-    - SODIUM CHLORIDE 0.9% 250 ML LVP
-    - SODIUM CHLORIDE 0.9 % IV SOLP
-    - SODIUM CHLORIDE 0.9% 500 ML LVP
-    - SODIUM CHLORIDE 0.9 % IJ SOLN
-    - "250 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "SODIUM CHLORIDE 0.9 % IV : 500 ML"
-    - SODIUM CHLORIDE 0.9 % IV SOLN
-    - Sodium Chloride 0.9% 1,000 mL
-    - 250 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
-    - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - sodium chloride 0.9 % flush peripheral lok 3 mL
-    - SODIUM CHLORIDE 0.9% 500 ML PB
-    - "1000 ml flex cont : sodium chloride 0.9 % iv soln"
-    - SODIUM CHLORIDE 0.9% 1,000 ML BAG
-    - "500 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - Sodium Chloride 0.9%
-    - SODIUM CHLORIDE BACTERIOSTATIC 0.9 % INJ SOLN
-    - SODIUM CHLORIDE 0.9 % IV BOLUS
-    - "1000 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
-    - SODIUM CHLORIDE 0.9 % SYRINGE 10 ML SYRINGE
-    - SODIUM CHLORIDE 0.9% 250 ML PB
-    - SODIUM CHLORIDE 0.45% 1000 ML LVP
-    - sodium chloride 0.9%
-    - SODIUM CHLORIDE 0.9% P.F.
-    - Sodium Chloride 0.9% 500 ML BAG
-    - sodium chloride 0.9% (NS) infusion
-    - SODIUM CHLORIDE FLUSH 0.9 % IV SOLN 10 ML PREFILL SYRINGE
-    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
-    - sodium chloride infusion 0.9%
-    - Sodium Chloride 0.9% FLUSH
-    - sodium chloride 0.9 %
-    - SODIUM CHLORIDE 0.9 % IV SOLN BOLUS
-    - SODIUM CHLORIDE 0.9% 50 ML PB
-    - "SODIUM CHLORIDE 0.9 % IV : 250 ML"
-    - SODIUM CHLORIDE 0.9 % IV 250 ML BAG
-    - "100 ML BAG : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
-    - MAGNESIUM SULFATE 2G/SODIUM CHLORIDE 0.9% 100ML STOCK BAG
-    - SODIUM CHLORIDE 0.9% 500 ML BAG
-    - sodium chloride 0.9% flush 10 mL
-    - SODIUM CHLORIDE 0.9% 100 ML PB
-    - sodium chloride
-    - SODIUM CHLORIDE 0.9 % BOLUS
-    - "500 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
-    - SODIUM CHLORIDE 0.9 % INJ SYRINGE
-    - SODIUM CHLORIDE 0.9% 1000 ML
-    - "500 ml : sodium chloride 0.9 % iv soln"
-    - SODIUM CHLORIDE FLUSH
-    - Sodium Chloride 0.9%  SSO
-    - SODIUM CHLORIDE 0.9%SOLP (1000 ML)
-    - SODIUM CHLORIDE 0.45%
-    - "100 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - SODIUM CHLORIDE 0.9 % IV 1000 ML BAG
-    - sodium chloride 0.9 % flush 10 mL
-    - sodium chloride 0.9% (NS) bolus 1,000 mL
-    - "250 ml flex cont : sodium chloride 0.9 % iv soln"
-    - Sodium Chloride 0.9% Syringe SSO
-    - Insulin 250 Units Sodium Chloride 0.9% 250 ml (units/hr)
-    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 250 ml  Premix (mcg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 500 mL (ml/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL (ml/hr)
-    - "150 ml flex cont : sodium chloride 0.9 % iv soln"
-    - Dexmedetomidine(Precedex) 400 mcg Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
-    - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
-      (ml/hr)
-    - 3% Sodium Chloride IVF Infused (ml/hr)
-    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/min)
-    - Aminocaproic acid MAX 25 g Sodium Chloride 0.9% 250 ml (Unknown)
-    - Pantoprazole (Protonix) 80 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - NiCARDipine (premix) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 250 mL (ml/hr)
-    - Morphine 250 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
-    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - NiCARDipine (std) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
-    - Diltiazem (Cardizem) 125 mg Sodium Chloride 0.9% 125 ml (mg/hr)
-    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - "SODIUM CHLORIDE                                                                                                                                                                                                                                                "
-    - Phenylephrine  MAX 100 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Volume (mL)-sodium chloride 0.9 % bolus 750 mL (ml/hr)
-    - HYDROmorphone (Dilaudid) 50 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
-    - Octreotide 500 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
-    - LORazepam (Ativan) 100 mg Sodium Chloride 0.9% 100 ml  Premix (mg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 500 mL
-    - EPINEPHrine(Adrenalin)MAX 30 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL (ml/hr)
-    - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
-    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 1000 ml (mcg/kg/min)
-    - NiCARDipine (max) 100 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
-    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL
-      LINE) (ml/hr)
-    - Esmolol (Brevibloc) 2500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Aminocaproic acid STD 1 g Sodium Chloride 0.9% 50 ml (Unknown)
-    - Cisatracurium (Nimbex)MAX 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
-    - Sodium Chloride 0.9% 1,000 ml (ml/hr)
-    - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - "DIPHENHYDRAMINE HCL IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
-    - Naloxone(Narcan)-Obtunded 8 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - Calcium CHLORIDE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - Labetalol STD 500 mg Sodium Chloride 0.9% 500 ml (mg/min)
-    - Sodium Chloride 0.9% 500 ml (ml/hr)
-    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/kg/hr)
-    - Furosemide (Lasix) STD 250 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - Bivalirudin (Angiomax) 125 mg Sodium Chloride 0.9% 25 ml (mg/kg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 200 mL (ml/hr)
-    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (Unknown)
-    - "SODIUM CHLORIDE FOR INHALATION                                                                                                                                                                                                                                 "
-    - Sodium Chloride 3% (ml/hr)
-    - Vecuronium (Norcuron) 100 mg Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml ()
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - 0.9% Sodium Chloride (ml/hr)
-    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/hr)
-    - Volume (mL)-sodium chloride 0.45 % bolus 500 mL (ml/hr)
-    - 0.9% sodium chloride (ml/hr)
-    - "DEXTRAN 40 IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                            "
-    - Morphine 250 mg Sodium Chloride 0.9% 500 ml  Premix (mg/hr)
-    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
-    - Calcium Gluconate 2,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - SODIUM CHLORIDE 3% (ml/hr)
-    - Bumetanide (Bumex) 10 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - NiCARDipine (premix) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
-    - Alteplase(tPA)ArteriClot 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Calcium GLUCONATE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - Volume (mL)-sodium chloride 0.9 % bolus 1,500 mL (ml/hr)
-    - Levothyroxine gtt 200 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
-    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
-    - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL
-    - Volume (mL)-sodium chloride 0.45 % bolus 1,000 mL (ml/hr)
-    - "SODIUM CHLORIDE 0.45 %                                                                                                                                                                                                                                         "
-    - "SODIUM CHLORIDE/POTASSIUM CHLORIDE                                                                                                                                                                                                                             "
-    - "POTASSIUM CHLORIDE IN 0.45 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
-    - "SODIUM CHLORIDE IRRIGATING SOLUTION                                                                                                                                                                                                                            "
-    - "SODIUM CHLORIDE 5 %                                                                                                                                                                                                                                            "
-    - "VANCOMYCIN IN 0.9% SODIUM CHLORIDE                                                                                                                                                                                                                             "
+    - "LEVETIRACETAM-NACL                                                                                                                                                                                                                                             "
+    - "MAGNESIUM SULFATE 2G/SODIUM CHLORIDE 0.9% 100ML STOCK BAG"
+    - "NOREPINEPHRINE BITAR-0.9% NACL                                                                                                                                                                                                                                 "
     - "PHENOBARBITAL SODIUM IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                  "
-    - "ATROPINE SULFATE IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                      "
-    - "DEXTROSE 5 % AND 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                         "
-    - 0.9 Sodium Chloride (ml/hr)
-    - SODIUM CHLORIDE (ml/hr)
-    - 3% Sodium Chloride (ml/hr)
-    - 0.3% Sodium Chloride
-    - Other Med 500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Vasopressin 40 Units Sodium Chloride 0.9% 200 ml (units/min)
-    - Argatroban 250 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 200 ml (Unknown)
-    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 500 ml (mcg/min)
-    - Aminocaproic acid STD 25 g Sodium Chloride 0.9% 250 ml (Unknown)
-    - Bivalirudin (Angiomax) 200 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
-    - Furosemide (Lasix) MAX 500 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Alteplase(tPA)VasculrSur 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Vasopressin 20 Units Sodium Chloride 0.9% 100 ml (units/hr)
-    - NiCARDipine (std) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
-    - NiCARDipine (std) 50 mg  500 ml  Sodium Chloride 0.45% (mg/hr)
-    - Vasopressin 20 Units Sodium Chloride 0.9% 250 ml (units/hr)
-    - Fenoldopam 10 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Other Med 500 mg Sodium Chloride 0.9% 250 ml Ketamine HCl (mcg/kg/min)
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 100 ml (mg/kg/hr)
-    - 0.9% Sodium Chloride NSS
-    - 0.9% Sodium Chloride NSS (ml/hr)
-    - Abciximab (Reopro) 3.6 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Alteplase(tPA)VasculrSur 10 mg Sodium Chloride 0.9% 1000 ml (mg/hr)
-    - Protamine 250 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Calcium CHLORIDE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 2600 ml (Unknown)
-    - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Other Med 20 Units Sodium Chloride 0.9% 2000 ml (units/hr)
-    - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
-    - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
-    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 100 mL (ml/hr)
-    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
-    - Volume (mL)-sodium chloride 0.9 % bolus 125 mL (ml/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 300 mL (ml/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 700 mL (ml/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 250 mL
-    - Volume (mL)-sodium chloride 0.9 % bolus 750 mL
-    - Volume (mL)-sodium chloride 0.9 % bolus 3,350 mL (ml/hr)
-    - Volume (mL)-sodium chloride 0.9 % bolus 4,350 mL (ml/hr)
-    - 0.225% sodium chloride (ml/hr)
-    - 3% SODIUM CHLORIDE (ml/hr)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-    - POTassium PHOSphate INJ 20 mm in Sodium Chloride 0.9% 250 ml (ml/hr)
-    - Sodium Chloride 0.9% 250 ml (ml/hr)
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml (ml/hr)
-    - Vecuronium Inj 40 mg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()
-    - 0.45% Sodium Chloride
-    - 0.45% Sodium Chloride (ml/hr)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/min)
-    - Sodium Chloride 0.45% 1,000 ml (ml/hr)
-    - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - Meropenem IV 2 gm in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml ()
+    - "POTASSIUM CHLORIDE IN 0.45 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
+    - "SODIUM CHLORIDE                                                                                                                                                                                                                                                "
+    - "SODIUM CHLORIDE 0.45 %                                                                                                                                                                                                                                         "
+    - "SODIUM CHLORIDE 0.45% 1000 ML LVP"
+    - "SODIUM CHLORIDE 0.45%"
+    - "SODIUM CHLORIDE 0.9 % BOLUS"
+    - "sodium chloride 0.9 % flush 10 mL"
+    - "sodium chloride 0.9 % flush peripheral lok 3 mL"
+    - "SODIUM CHLORIDE 0.9 % IJ SOLN"
+    - "SODIUM CHLORIDE 0.9 % INJ SYRINGE"
+    - "SODIUM CHLORIDE 0.9 % IV 1000 ML BAG"
+    - "SODIUM CHLORIDE 0.9 % IV 250 ML BAG"
+    - "SODIUM CHLORIDE 0.9 % IV : 1000 ML"
+    - "SODIUM CHLORIDE 0.9 % IV : 250 ML"
+    - "SODIUM CHLORIDE 0.9 % IV : 500 ML"
+    - "SODIUM CHLORIDE 0.9 % IV BOLUS"
+    - "SODIUM CHLORIDE 0.9 % IV SOLN BOLUS"
+    - "SODIUM CHLORIDE 0.9 % IV SOLN"
+    - "SODIUM CHLORIDE 0.9 % IV SOLP"
+    - "SODIUM CHLORIDE 0.9 % SYRINGE 10 ML SYRINGE"
+    - "SODIUM CHLORIDE 0.9 % SYRINGE : 10 ML SYRINGE"
+    - "sodium chloride 0.9 %"
+    - "Sodium Chloride 0.9%  SSO"
+    - "sodium chloride 0.9% (NS) bolus 1,000 mL"
+    - "sodium chloride 0.9% (NS) infusion"
+    - "Sodium Chloride 0.9% 1,000 ML BAG"
+    - "SODIUM CHLORIDE 0.9% 1,000 ML BAG"
+    - "Sodium Chloride 0.9% 1,000 mL"
+    - "SODIUM CHLORIDE 0.9% 100 ML PB"
+    - "SODIUM CHLORIDE 0.9% 1000 ML LVP"
+    - "SODIUM CHLORIDE 0.9% 1000 ML PB"
+    - "SODIUM CHLORIDE 0.9% 1000 ML"
+    - "SODIUM CHLORIDE 0.9% 250 ML LVP"
+    - "SODIUM CHLORIDE 0.9% 250 ML PB"
+    - "SODIUM CHLORIDE 0.9% 50 ML PB"
+    - "SODIUM CHLORIDE 0.9% 500 ML BAG"
+    - "Sodium Chloride 0.9% 500 ML BAG"
+    - "SODIUM CHLORIDE 0.9% 500 ML LVP"
+    - "SODIUM CHLORIDE 0.9% 500 ML PB"
+    - "sodium chloride 0.9% flush 10 mL"
+    - "Sodium Chloride 0.9% FLUSH"
+    - "SODIUM CHLORIDE 0.9% P.F."
+    - "Sodium Chloride 0.9% Syringe SSO"
+    - "SODIUM CHLORIDE 0.9%"
+    - "sodium chloride 0.9%"
+    - "Sodium Chloride 0.9%"
+    - "SODIUM CHLORIDE 0.9%SOLP (1000 ML)"
+    - "SODIUM CHLORIDE 5 %                                                                                                                                                                                                                                            "
+    - "SODIUM CHLORIDE BACTERIOSTATIC 0.9 % INJ SOLN"
+    - "SODIUM CHLORIDE FLUSH 0.9 % IV SOLN 10 ML PREFILL SYRINGE"
+    - "SODIUM CHLORIDE FLUSH"
+    - "SODIUM CHLORIDE FOR INHALATION                                                                                                                                                                                                                                 "
+    - "sodium chloride infusion 0.9%"
+    - "SODIUM CHLORIDE IRRIGATING SOLUTION                                                                                                                                                                                                                            "
+    - "SODIUM CHLORIDE"
+    - "sodium chloride"
+    - "SODIUM CHLORIDE/POTASSIUM CHLORIDE                                                                                                                                                                                                                             "
+    - "VANCOMYCIN IN 0.9% SODIUM CHLORIDE                                                                                                                                                                                                                             "
+    - .45 NSS (ml/hr)
+    - .45NSS (ml/hr)
     - .9 NS (ml/hr)
     - .9 NSS (ml/hr)
-    - 09% NS
-    - 0.9NS (ml/hr)
-    - NS
-    - NSS
-    - nss (ml/hr)
-    - .45NSS (ml/hr)
-    - .45 NSS (ml/hr)
-    - 1/2 NSS
-    - 1/2 NS (ml/hr)
-    - 1/2NSS (ml/hr)
-    - 1/2 NSS (ml/hr)
+    - 0.225% sodium chloride (ml/hr)
+    - 0.3% Sodium Chloride
+    - 0.45% NS (ml/hr)
+    - 0.45 NSS (ml/hr)
+    - 0.45 NaCL (ml/hr)
+    - 0.45% NACL
+    - 0.45% NaCl (ml/hr)
+    - 0.45% NACL (ml/hr)
+    - 0.45% NaCl + Sodium Bicarbonate (ml/hr)
+    - 0.45% Sodium Chloride
+    - 0.45% Sodium Chloride (ml/hr)
+    - 0.9 NaCl (ml/hr)
+    - 0.9 NACL (ml/hr)
     - 0.9 NS (ml/hr)
     - 0.9 NSS (ml/hr)
-    - 0.9%NS (ml/hr)
+    - 0.9 Sodium Chloride (ml/hr)
+    - 0.9%  NaCl infusion
+    - 0.9% NaCl
+    - 0.9% nacl
+    - 0.9% NACL
+    - 0.9% NaCl (ml/hr)
+    - 0.9% nacl (ml/hr)
+    - 0.9% NACL (ml/hr)
+    - 0.9% NaCl (venous sheath) (ml/hr)
+    - 0.9% NACL BOLUS (ml/hr)
     - 0.9% NS
+    - 0.9%NSS (ml/hr)
     - 0.9% NS (ml/hr)
     - 0.9% NSS (ml/hr)
     - 0.9% NSS Main (ml/hr)
     - 0.9% NSS Venous Sheath
     - 0.9% NSS Venous Sheath (ml/hr)
+    - 0.9% Saline (ml/hr)
+    - 0.9% Sodium Chloride (ml/hr)
+    - 0.9% sodium chloride (ml/hr)
+    - 0.9% Sodium Chloride NSS
+    - 0.9% Sodium Chloride NSS (ml/hr)
+    - 0.9%NS (ml/hr)
+    - 0.9NS (ml/hr)
+    - 09% NS
+    - 1.8 % NaCl (ml/hr)
+    - 1.8 NACL (ml/hr)
+    - 1.8 NaCL (ml/hr)
+    - 1.8 NaCl (ml/hr)
+    - 1.8 nacl (ml/hr)
+    - 1.8%  NaCl (ml/hr)
+    - 1.8% NaCl (ml/hr)
+    - 1.8% NaCL (ml/hr)
+    - 1/2 NS (ml/hr)
+    - 1/2 NSS
+    - 1/2 NSS (ml/hr)
+    - 1/2NSS (ml/hr)
+    - 100 ML  -  METRONIDAZOLE IN NACL 5-0.79 MG/ML-% IV SOLN
+    - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
+    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
+    - 1000 ML  -  POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
+    - 1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+    - 2% NaCl (ml/hr)
+    - 23.4% NaCl (ml/hr)
+    - 23.4% nacl (ml/hr)
+    - 250 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+    - 3 % NaCl (ml/hr)
+    - 3 nacl (ml/hr)
+    - 3 NACL (ml/hr)
+    - 3% Hypertonic NaCl (ml/hr)
+    - 3% NaCL  (ml/hr)
+    - 3% NaCl (ml/hr)
+    - 3% NACL (ml/hr)
+    - 3% Nacl (ml/hr)
+    - 3% nacl (ml/hr)
+    - 3% NaCL (ml/hr)
+    - 3% Sodium Chloride (ml/hr)
+    - 3% SODIUM CHLORIDE (ml/hr)
+    - 3% Sodium Chloride IVF Infused (ml/hr)
+    - 500 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+    - Abciximab (Reopro) 3.6 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - Alteplase(tPA)ArteriClot 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Alteplase(tPA)VasculrSur 10 mg Sodium Chloride 0.9% 1000 ml (mg/hr)
+    - Alteplase(tPA)VasculrSur 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Aminocaproic acid MAX 25 g Sodium Chloride 0.9% 250 ml (Unknown)
+    - Aminocaproic acid STD 1 g Sodium Chloride 0.9% 50 ml (Unknown)
+    - Aminocaproic acid STD 25 g Sodium Chloride 0.9% 250 ml (Unknown)
+    - Argatroban 250 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+    - Bivalirudin (Angiomax) 125 mg Sodium Chloride 0.9% 25 ml (mg/kg/hr)
+    - Bivalirudin (Angiomax) 200 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
+    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 100 ml (mg/kg/hr)
+    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
+    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
+    - Bumetanide (Bumex) 10 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Calcium CHLORIDE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Calcium CHLORIDE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml ()
+    - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
+    - Calcium Gluconate 2,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
+    - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 2600 ml (Unknown)
+    - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 200 ml (Unknown)
+    - Calcium GLUCONATE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+    - Cisatracurium (Nimbex)MAX 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
+    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 1000 ml (mcg/kg/min)
+    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
+    - D5 0.45 NaCl (ml/hr)
+    - D5%./NaCl 0.45% (ml/hr)
+    - DEXMEDETOMIDINE HCL IN NACL 200 MCG/50ML IV SOLN
+    - DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN
+    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml ()
+    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
+    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/min)
+    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (ml/hr)
+    - Dexmedetomidine(Precedex) 400 mcg Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
+    - DEXT 5%-NACL 0.45% 1000 ML LVP
+    - DEXT 5%-NACL 0.45%-KCL 20MEQ LVP
+    - DEXT 5%-NACL 0.9% 1000 ML LVP
+    - DEXTROSE 5%-NACL 0.9%
+    - DEXTROSE 5%/NACL 0.45%
+    - Diltiazem (Cardizem) 125 mg Sodium Chloride 0.9% 125 ml (mg/hr)
+    - EPINEPHrine(Adrenalin)MAX 30 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 500 ml (mcg/min)
+    - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - Esmolol (Brevibloc) 2500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+    - Fenoldopam 10 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 250 ml  Premix (mcg/hr)
+    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
+    - Furosemide (Lasix) MAX 500 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Furosemide (Lasix) STD 250 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+    - HEPARIN (PORCINE) IN NACL 100-0.45 UNIT/ML-% IJ SOLN
+    - HYDROmorphone (Dilaudid) 50 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
+    - Insulin 250 Units Sodium Chloride 0.9% 250 ml (units/hr)
+    - IVF NaCl 0.45% (ml/hr)
+    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
+    - Labetalol STD 500 mg Sodium Chloride 0.9% 500 ml (mg/min)
+    - Levothyroxine gtt 200 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
+    - LORazepam (Ativan) 100 mg Sodium Chloride 0.9% 100 ml  Premix (mg/hr)
+    - MAGNESIUM SULFATE 2G/SODIUM CHLORIDE 0.9% 100ML STOCK BAG
+    - Meropenem IV 2 gm in Sodium Chloride 0.9% 100 ml (ml/hr)
+    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
+    - Morphine 250 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
+    - Morphine 250 mg Sodium Chloride 0.9% 500 ml  Premix (mg/hr)
+    - NACL
+    - NACL (ml/hr)
+    - NaCl (ml/hr)
+    - NaCL ).45% with MVI (ml/hr)
+    - NaCL 0.2% (ml/hr)
+    - NaCl 0.9%
+    - NACL 0.9% (1566)
+    - NaCl 0.9% (ml/hr)
+    - NaCl 0.9% ADV
+    - NaCl 0.9% Bolus
+    - NaCL 0.9% Calcium gluconate (ml/hr)
+    - NaCl 0.9% MBP
+    - NACL 1.8% (ml/hr)
+    - NACL 20MEQ KCL (ml/hr)
+    - NaCl 3% (ml/hr)
+    - NaCL 3% (ml/hr)
+    - NaCl 3% Hypertonic (ml/hr)
+    - NACL c 10%dextrose (ml/hr)
+    - Naloxone(Narcan)-Obtunded 8 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+    - NiCARDipine (max) 100 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+    - NiCARDipine (premix) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
+    - NiCARDipine (premix) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
+    - NiCARDipine (std) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
+    - NiCARDipine (std) 50 mg  500 ml  Sodium Chloride 0.45% (mg/hr)
+    - NiCARDipine (std) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
+    - Normal Saline (ml/hr)
+    - normal saline (ml/hr)
+    - NS
     - NS (ml/hr)
-    - NSS (ml/hr)
+    - NS maintance (ml/hr)
+    - NSS
     - NSS  (ml/hr)
+    - nss (ml/hr)
+    - NSS (ml/hr)
     - NSS Bolus
     - NSS Bolus (ml/hr)
     - NSS control (ml/hr)
-    - NS maintance (ml/hr)
-    - Normal Saline (ml/hr)
-    - normal saline (ml/hr)
     - NSS RFS (ml/hr)
     - NSS w/ 7fr sheath (ml/hr)
+    - Octreotide 500 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
+    - Other Med 20 Units Sodium Chloride 0.9% 2000 ml (units/hr)
+    - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
+    - Other Med 500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+    - Other Med 500 mg Sodium Chloride 0.9% 250 ml Ketamine HCl (mcg/kg/min)
+    - Pantoprazole (Protonix) 80 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+    - Phenylephrine  MAX 100 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
+    - POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
+    - POTASSIUM CHLORIDE IN NACL 40 MEQ IN 250 ML (PREMIX)
+    - POTassium PHOSphate INJ 20 mm in Sodium Chloride 0.9% 250 ml (ml/hr)
+    - Protamine 250 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+    - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
+    - SODIUM CHLORIDE
+    - sodium chloride
+    - SODIUM CHLORIDE (ml/hr)
+    - SODIUM CHLORIDE 0.45%
+    - Sodium Chloride 0.45% 1,000 ml (ml/hr)
+    - SODIUM CHLORIDE 0.45% 1000 ML LVP
+    - sodium chloride 0.9 %
+    - SODIUM CHLORIDE 0.9 % BOLUS
+    - sodium chloride 0.9 % flush 10 mL
+    - sodium chloride 0.9 % flush peripheral lok 3 mL
+    - SODIUM CHLORIDE 0.9 % IJ SOLN
+    - SODIUM CHLORIDE 0.9 % INJ SYRINGE
+    - SODIUM CHLORIDE 0.9 % IV 1000 ML BAG
+    - SODIUM CHLORIDE 0.9 % IV 250 ML BAG
+    - SODIUM CHLORIDE 0.9 % IV BOLUS
+    - SODIUM CHLORIDE 0.9 % IV SOLN
+    - SODIUM CHLORIDE 0.9 % IV SOLN BOLUS
+    - SODIUM CHLORIDE 0.9 % IV SOLP
+    - SODIUM CHLORIDE 0.9 % SYRINGE 10 ML SYRINGE
+    - SODIUM CHLORIDE 0.9%
+    - sodium chloride 0.9%
+    - Sodium Chloride 0.9%
+    - Sodium Chloride 0.9%  SSO
+    - sodium chloride 0.9% (NS) bolus 1,000 mL
+    - sodium chloride 0.9% (NS) infusion
+    - Sodium Chloride 0.9% 1,000 mL
+    - Sodium Chloride 0.9% 1,000 ml (ml/hr)
+    - Sodium Chloride 0.9% 1,000 ML BAG
+    - SODIUM CHLORIDE 0.9% 1,000 ML BAG
+    - SODIUM CHLORIDE 0.9% 100 ML PB
+    - SODIUM CHLORIDE 0.9% 1000 ML
+    - SODIUM CHLORIDE 0.9% 1000 ML LVP
+    - SODIUM CHLORIDE 0.9% 1000 ML PB
+    - Sodium Chloride 0.9% 250 ml (ml/hr)
+    - SODIUM CHLORIDE 0.9% 250 ML LVP
+    - SODIUM CHLORIDE 0.9% 250 ML PB
+    - SODIUM CHLORIDE 0.9% 50 ML PB
+    - Sodium Chloride 0.9% 500 ml (ml/hr)
+    - SODIUM CHLORIDE 0.9% 500 ML BAG
+    - Sodium Chloride 0.9% 500 ML BAG
+    - SODIUM CHLORIDE 0.9% 500 ML LVP
+    - SODIUM CHLORIDE 0.9% 500 ML PB
+    - Sodium Chloride 0.9% FLUSH
+    - sodium chloride 0.9% flush 10 mL
+    - SODIUM CHLORIDE 0.9% P.F.
+    - Sodium Chloride 0.9% Syringe SSO
+    - SODIUM CHLORIDE 0.9%SOLP (1000 ML)
+    - Sodium Chloride 3% (ml/hr)
+    - SODIUM CHLORIDE 3% (ml/hr)
+    - SODIUM CHLORIDE BACTERIOSTATIC 0.9 % INJ SOLN
+    - SODIUM CHLORIDE FLUSH
+    - SODIUM CHLORIDE FLUSH 0.9 % IV SOLN 10 ML PREFILL SYRINGE
+    - sodium chloride infusion 0.9%
+    - sterile water with 38.5meq NaCl (ml/hr)
+    - Vasopressin 20 Units Sodium Chloride 0.9% 100 ml (units/hr)
+    - Vasopressin 20 Units Sodium Chloride 0.9% 250 ml (units/hr)
+    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/hr)
+    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/kg/hr)
+    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/min)
+    - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (Unknown)
+    - Vasopressin 40 Units Sodium Chloride 0.9% 200 ml (units/min)
+    - Vecuronium (Norcuron) 100 mg Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
+    - Volume (mL)-sodium chloride 0.45 % bolus 1,000 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.45 % bolus 500 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL
+    - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 1,500 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 100 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 125 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL
+    - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 200 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 250 mL
+    - Volume (mL)-sodium chloride 0.9 % bolus 250 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 3,350 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 300 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 4,350 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 500 mL
+    - Volume (mL)-sodium chloride 0.9 % bolus 500 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 700 mL (ml/hr)
+    - Volume (mL)-sodium chloride 0.9 % bolus 750 mL
+    - Volume (mL)-sodium chloride 0.9 % bolus 750 mL (ml/hr)
+    - "Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
+      (ml/hr)"
+    - "Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL
+      LINE) (ml/hr)"
+    - "Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
+      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml (ml/hr)"
+    - "Vecuronium Inj 40 mg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()"
   hirid:
     - NaCl 2.5%
     - NaCl conc Amp 14.5%
@@ -5127,7 +5281,6 @@ sodium chloride / glucose:
   eicu:
     - D5NSS (ml/hr)
     - D5 NS w 20K (ml/hr)
-    - D5W c 20K (ml/hr)
     - DEXTROSE-NACL 5-0.45 % IV SOLN
     - D5/0.45 NaCl (ml/hr)
     - d5/0.45% nacl/10K (ml/hr)
@@ -5155,10 +5308,96 @@ sodium chloride / glucose:
     - "DEXTROSE 5%-1/2 NORMAL SALINE IV : 1000 ML BAG"
     - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
     - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - DEXTROSE-NACL 5-0.45 % IV SOLN
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 75 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
-    - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
+    - D5/NS (ml/hr)
+    - D5/NS  (ml/hr)
+    - D5/0.9NSS (ml/hr)
+    - D5/0.9NS w/40mEq K (ml/hr)
+    - D5/0.9NS (ml/hr)
+    - D5/0.9%NS (ml/hr)
+    - D5/0.9%NS
+    - D5/0.9% NS w/20KCl (ml/hr)
+    - D5/0.9 NS c 40 K+ (ml/hr)
+    - D5/0.9 (ml/hr)
+    - D5/0.5NS (ml/hr)
+    - D5/0.5NS
+    - D5/0.45NSS (ml/hr)
+    - D5/0.45NS/K+40meq (ml/hr)
+    - D5/0.45NS/K (ml/hr)
+    - D5/0.45NS w 20meq K (ml/hr)
+    - D5/0.45NS (ml/hr)
+    - D5/0.45NS
+    - D5/NS/20MEQKCL
+    - D5/0.45/40KCL (ml/hr)
+    - D5/NS/20MEQKCL (ml/hr)
+    - D5/NSS (ml/hr)
+    - D51/2 WITH mvi (ml/hr)
+    - D51/2 Saline (ml/hr)
+    - D51/2 NSS (ml/hr)
+    - D51/2 NS/20KCL (ml/hr)
+    - D51/2 NS (ml/hr)
+    - D51/2 (ml/hr)
+    - D51/2
+    - D50.9%NS (ml/hr)
+    - D50.9%NS
+    - D50.9 (ml/hr)
+    - D50.9
+    - D50.45NS20K (ml/hr)
+    - D50.45NS (ml/hr)
+    - D50.45NS
+    - D50.45%ns 40KCL (ml/hr)
+    - D5/NSS 0.45% (ml/hr)
+    - D5/NS0.9%  (ml/hr)
+    - D5/0.45%NaCl (ml/hr)
+    - D5/0.45%NS + MVI (ml/hr)
+    - D5.9NSS
+    - D5.9NS (ml/hr)
+    - D5.45nss (ml/hr)
+    - D5.45NSw/40meqK (ml/hr)
+    - D5.45NSw/40Kcl (ml/hr)
+    - D5.45NSw/20KCl (ml/hr)
+    - D5.45NSS + MVI (ml/hr)
+    - D5.45NSS (ml/hr)
+    - D5.45NS/20KCL (ml/hr)
+    - D5.45NS w/MVI (ml/hr)
+    - D5.45NS (ml/hr)
+    - D5.45NS
+    - D5.45+20kcl (ml/hr)
+    - D5.45% NS (ml/hr)
+    - D5.45 with thimaine and folic acid (ml/hr)
+    - D5.45 w/ folic acid, &thiamine (ml/hr)
+    - D5.45 WITH 20 MEQ (ml/hr)
+    - D5.45 W/ 20KCL (ml/hr)
+    - D5.45 Saline (ml/hr)
+    - D5.45 NS (ml/hr)
+    - D5.45 NS  (ml/hr)
+    - D5.9NSS (ml/hr)
+    - D5/0.45%NaCl
+    - D5/ 0.45 NS (ml/hr)
+    - D5/ 0.45%NS (ml/hr)
+    - D5/0.45%NS (ml/hr)
+    - D5/0.45%/NaCl+40mEq potassium (ml/hr)
+    - D5/0.45% NS (ml/hr)
+    - D5/0.45 NSS (ml/hr)
+    - D5/0.45 NS (ml/hr)
+    - D5/0.45 (ml/hr)
+    - D5/.9NS w 20meq K (ml/hr)
+    - D5/.9NS (ml/hr)
+    - D5/.45Ns+20KCl (ml/hr)
+    - D5/.45NaCl MVI (ml/hr)
+    - D5/.45NSS/40KCL (ml/hr)
+    - D5/.45NSS c MVI (ml/hr)
+    - D5/.45NSS (ml/hr)
+    - D5/.45NSS
+    - D5/.45NS + 20 K (ml/hr)
+    - D5/.45NS (ml/hr)
+    - D5/.45%NaCl (ml/hr)
+    - D5/ NS (ml/hr)
+    - D5/ 0.9NSS (ml/hr)
+    - D5/ 0.9%NSS (ml/hr)
+    - D5/ 0.45%NS
+    - D51/2NS
+    - D51/2NS (ml/hr)
+    - D51/2NS w/ 20meqK (ml/hr)
   hirid: []
   mimic: []
   mimic3: []
@@ -5169,7 +5408,8 @@ polyethylene glycols:
   amsterdam:
     - Macrogol (Movicolon)
     - Macrogol (Movicolon)X
-  eicu: []
+  eicu:
+    - POLYETHYLENE GLYCOL 3350 PO PACK
   hirid: []
   mimic: []
   mimic3: []
@@ -5181,6 +5421,7 @@ potassium chloride:
   blended: 19049105
   amsterdam:
     - Kaliumchloride (KCL)
+    - Kaliumchloride drank
     - KCL (SlowK / Kalium durettes)
   eicu:
     - DEXT 5%-NACL 0.45%-KCL 20MEQ LVP
@@ -5563,7 +5804,8 @@ potassium phosphate:
     - Kalium Phosphat
     - Kalium Phosphat für Perfusor
   mimic: []
-  mimic3: []
+  mimic3:
+    - Potassium Phosphate
   mimic4: []
   sicdb: []
 magnesium sulfate:
@@ -5572,6 +5814,7 @@ magnesium sulfate:
     - Magnesiumsulfaat (MgSO4)
     - Magnesiumsulfaat
   eicu:
+    - MAGNESIUM SULF 2 G/50 ML NS
     - MAGNESIUM SULFATE 2 GM/50 ML IVPB
     - 100 ML  -  MAGNESIUM SULFATE IN D5W 10-5 MG/ML-% IV SOLN
     - MAGNESIUM SULFATE 2 G IN NS PREMIX
@@ -6247,6 +6490,32 @@ Lactated Ringer's:
   mimic4:
     - LR
   sicdb: []
+water:
+  blended: 19010309
+  amsterdam:
+    - Thee 200ml
+    - Water 150ml
+    - Water 100ml
+    - Water 200ml
+  eicu: []
+  hirid: []
+  mimic: []
+  mimic3:
+    - Solution
+    - Po Intake
+    - PO Intake
+    - Gastric Meds
+    - GT Flush
+    - Sterile Water
+    - Free Water Bolus
+    - Free Water
+  mimic4:
+    - Solution
+    - PO Intake
+    - Gastric Meds
+    - GT Flush
+    - Free Water
+  sicdb: []
 # BLOOD PRODUCTS
 Packed Red Blood Cells:
   blended: 0
@@ -6256,9 +6525,13 @@ Packed Red Blood Cells:
     - RBCs (ml/hr)
     - pRBC
     - pRBC (ml/hr)
+    - pRBC's
+    - pRBC's (ml/hr)
     - PRBC
     - PRBC (ml/hr)
+    - PRBCs
     - PRBCs (ml/hr)
+    - PRBC's
     - PRBC's (ml/hr)
     - packed cells (ml/hr)
     - packed red blood cells (ml/hr)
@@ -6392,7 +6665,18 @@ Parenteral Nutrition:
   mimic: []
   mimic3:
     - TPN
-  mimic4: []
+    - TPN D5.0
+    - TPN D8
+    - TPN D9.0
+    - TPN D10.0
+    - TPN D11.0
+    - TPN D12.0
+    - TPN D12.5
+    - TPN D13.0
+    - TPN w/Lipids
+  mimic4:
+    - TPN w/ Lipids
+    - TPN without Lipids
   sicdb: []
 Enteral Nutrition:
   blended: 0
@@ -6418,6 +6702,8 @@ Enteral Nutrition:
   eicu:
     - EN
     - EN (ml/hr)
+    - Fibersource HN (ml/hr)
+    - Fibersource TF (ml/hr)
   hirid:
     - Isosource Standard
     - Isosource Protein
@@ -6425,5 +6711,23 @@ Enteral Nutrition:
   mimic: []
   mimic3:
     - EN
-  mimic4: []
+    - Tube Feeding
+    - Nutren Renal
+    - Nutren Pulmonary
+    - Nutren Pulmonary (Full)
+    - NovaSource Renal (Full)
+    - Promote w/fiber
+    - Impact w/fiber
+    - Impact
+    - Isosource 1.5 (Full)
+    - Fibersource HN (Full)
+  mimic4:
+    - Nepro (Full)
+    - Nutren Pulmonary (Full)
+    - Glucerna 1.2 (Full)
+    - Glucerna 1.5 (Full)
+    - Vital High Protein (Full)
+    - Replete with Fiber (Full)
+    - Promote with Fiber (Full)
+    - Jevity 1.2 (Full)
   sicdb: []

@@ -850,6 +850,9 @@ class EICUExtractor(EICUPaths):
         eicu_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
             self.mapping_path + "MEDICATIONS.yaml", "eicu"
         )
+        eicu_drug_administration_route_mapping = self.helpers.load_mapping(
+            self.drug_administration_route_mapping_path
+        )
 
         # # NOTE: Extremely infrequently used.
         # # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
@@ -1025,13 +1028,12 @@ class EICUExtractor(EICUPaths):
         medication = (
             pl.scan_csv(self.medication_path)
             .select(
-                [
-                    "patientunitstayid",
-                    "drugstartoffset",
-                    "drugname",
-                    "dosage",
-                    "drugstopoffset",
-                ]
+                "patientunitstayid",
+                "drugstartoffset",
+                "drugname",
+                "dosage",
+                "drugstopoffset",
+                "routeadmin",
             )
             # Rename columns for consistency
             .rename(
@@ -1041,15 +1043,29 @@ class EICUExtractor(EICUPaths):
                     "drugname": self.drug_name_col,
                     "dosage": self.drug_amount_col,
                     "drugstopoffset": self.drug_end_col,
+                    "routeadmin": self.drug_admin_route_col,
                 }
             )
-            # Dropping drug dosages due to bad data quality
-            .drop(self.drug_amount_col)
-            # Replace drug names with mapped names
+            # # Dropping drug dosages due to bad data quality
+            # .drop(self.drug_amount_col)
             .with_columns(
+                # Replace drug names with mapped names
                 pl.col(self.drug_name_col)
                 .replace_strict(eicu_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
+                # Set administration route
+                pl.col(self.drug_admin_route_col)
+                .replace_strict(
+                    eicu_drug_administration_route_mapping, default=None
+                )
+                .alias(self.drug_admin_route_col),
+                # Fix stop offsets (if smaller than start offset)
+                pl.when(
+                    pl.col(self.drug_end_col) < pl.col(self.drug_start_col),
+                )
+                .then(pl.col(self.drug_start_col))
+                .otherwise(pl.col(self.drug_end_col))
+                .alias(self.drug_end_col),
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
