@@ -45,6 +45,7 @@ drug_amount_col: Drug Amount # drug_amount
 drug_amount_unit_col: Drug Amount Unit # drug_amount_unit
 drug_rate_col: Drug Rate # drug_rate
 drug_rate_unit_col: Drug Rate Unit # drug_rate_unit
+drug_rate_common_col: Drug Rate Common Unit (mcg/kg/hr)
 procedure_icd_code_col: Procedure ICD Code # procedure_icd_code
 procedure_icd9_code_col: Procedure ICD-9 Code # procedure_icd9_code
 procedure_icd10_code_col: Procedure ICD-10 Code # procedure_icd10_code
