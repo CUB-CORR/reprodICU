@@ -2,7 +2,8 @@
 # Last modified: 2024-09-05
 
 # Description: This script extracts the so called MAGIC CONCEPTS directly from the source datasets.
-# The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package.
+# The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package and/or
+# available prewritten code snippets where indicated.
 
 import argparse
 import polars as pl
@@ -12,6 +13,7 @@ from helpers.MAGIC_CONCEPTS._MAGIC_CONCEPTS import MAGIC_CONCEPTS
 from helpers.MAGIC_CONCEPTS.RECEIVED_ANY_ANTIBIOTICS import (
     RECEIVED_ANY_ANTIBIOTICS,
 )
+from helpers.MAGIC_CONCEPTS.VENTILATION_DURATION import VENTILATION_DURATION
 
 
 def load_mapping(path: str) -> dict:
@@ -56,7 +58,7 @@ if __name__ == "__main__":
 
     # Select concepts to extract
     if "all" in args.concepts:
-        concepts = ["RECEIVED_ANY_ANTIBIOTICS"]
+        concepts = ["RECEIVED_ANY_ANTIBIOTICS", "VENTILATION_DURATION"]
     else:
         concepts = args.concepts
 
@@ -74,6 +76,12 @@ if __name__ == "__main__":
         ).write_parquet(
             MAGIC_CONCEPTS_PATH + "RECEIVED_ANY_ANTIBIOTICS.parquet"
         )
+
+    if "VENTILATION_DURATION" in concepts:
+        concept_instance = VENTILATION_DURATION(paths, datasets)
+        concept_instance.VENTILATION_DURATION().collect(
+            streaming=True
+        ).write_parquet(MAGIC_CONCEPTS_PATH + "VENTILATION_DURATION.parquet")
 
     else:
         raise ValueError(f"reprodICU - No concept found for {concepts}.")
