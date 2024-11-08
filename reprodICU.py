@@ -29,6 +29,7 @@ from helpers.X3_impute.X3_impute_patient_information import (
     PatientInformationImputer,
 )
 from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
+from helpers.X3_impute.X3_impute_medications import MedicationImputer
 
 
 def load_mapping(path: str) -> dict:
@@ -47,7 +48,7 @@ def create_overview(save_path: str) -> None:
     tables = [
         "diagnoses_imputed",
         # "procedures",
-        "medications",
+        "medications_imputed",
         "timeseries_vitals",
         "timeseries_labs",
         "timeseries_respiratory",
@@ -152,6 +153,7 @@ if __name__ == "__main__":
         tables = args.tables
 
     # Run harmonizing
+    # region info
     if "patient_information" in tables:
         print("reprodICU - Combining patient information...")
         patient_info_harmonizer = PatientInformationHarmonizer(
@@ -190,6 +192,7 @@ if __name__ == "__main__":
             .write_parquet(save_path + "patient_information_imputed.parquet")
         )
 
+    # region diags
     if "diagnoses" in tables:
         print("reprodICU - Combining diagnoses...")
         diagnoses_harmonizer = DiagnosesHarmonizer(
@@ -207,6 +210,7 @@ if __name__ == "__main__":
             .write_parquet(save_path + "diagnoses_imputed.parquet")
         )
 
+    # region procs
     if "procedures" in tables:
         print("reprodICU - Combining procedures...")
         procedures_harmonizer = ProceduresHarmonizer(
@@ -218,17 +222,24 @@ if __name__ == "__main__":
             .write_parquet(save_path + "procedures.parquet")
         )
 
+    # region meds
     if "medications" in tables:
         print("reprodICU - Combining medications...")
         medication_harmonizer = MedicationHarmonizer(
             paths=paths, datasets=datasets, DEMO=args.DEMO
         )
+        medication_imputer = MedicationImputer(
+            paths=paths,
+            patient_info_location=save_path + "patient_information.parquet",
+        )
         (
             medication_harmonizer.harmonize_medications()
+            .pipe(medication_imputer.add_common_rate)
             .collect(streaming=True)
-            .write_parquet(save_path + "medications.parquet")
+            .write_parquet(save_path + "medications_imputed.parquet")
         )
 
+    # region timeseries
     if "timeseries" in tables:
         print("reprodICU - Combining timeseries...")
         timeseries_harmonizer = TimeseriesHarmonizer(
@@ -290,6 +301,7 @@ if __name__ == "__main__":
         #     )
         # )
 
+    # region overview
     else:
         print("reprodICU - No tables selected.")
         print("reprodICU - Make sure to select at least one table to build.")
