@@ -75,6 +75,10 @@ class HiRIDExtractor(HiRIDPaths):
                 .cast(self.unit_types_dtype)
                 .first()
                 .alias(self.unit_type_col),
+                # Get admission time
+                pl.col("admissiontime")
+                .dt.time()
+                .alias(self.admission_time_col),
             )
         )
 

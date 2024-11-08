@@ -30,6 +30,7 @@ class PatientInformationCleaner(GlobalVars):
             # 4 significant digits are chosen to keep the data at about minute resolution
             pl.col(self.pre_icu_length_of_stay_col).round(decimals=4),
             pl.col(self.icu_length_of_stay_col).round(decimals=4),
+            pl.col(self.hospital_length_of_stay_col).round(decimals=4),
             # Round the mortality after X days to the nearest integer
             pl.col(self.mortality_after_col).round(decimals=0).cast(int),
         )

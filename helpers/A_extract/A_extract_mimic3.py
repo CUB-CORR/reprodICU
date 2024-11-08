@@ -215,6 +215,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
+                # Calculate hospital length of stay
+                (
+                    (pl.col("DISCHTIME") - pl.col("ADMITTIME")).truediv(
+                        pl.duration(days=1)
+                    )
+                )
+                .cast(float)
+                .alias(self.hospital_length_of_stay_col),
+                # Calculate admission time
+                pl.col("INTIME").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
                 (
                     (pl.col("DEATHTIME") - pl.col("OUTTIME")).truediv(
@@ -286,12 +296,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.ethnicity_col,
                 self.pre_icu_length_of_stay_col,
                 self.icu_length_of_stay_col,
+                self.hospital_length_of_stay_col,
                 self.mortality_hosp_col,
                 self.mortality_icu_col,
                 self.mortality_after_col,
                 self.admission_type_col,
-                self.specialty_col,
+                self.admission_time_col,
                 self.admission_loc_col,
+                self.specialty_col,
                 self.unit_type_col,
                 self.care_site_col,
                 self.discharge_loc_col,

@@ -1,7 +1,7 @@
 person_id_col: Person ID # person_id
 hospital_stay_id_col: Hospital Stay ID # hospital_stay_id
 icu_stay_id_col: ICU Stay ID # icu_stay_id
-icu_stay_seq_num_col: ICU Stay Sequential Number (per Person ID) # icu_stay_seq_number
+icu_stay_seq_num_col: ICU Stay Sequential Number (per Person ID)
 global_person_id_col: Global Person ID # global_person_id
 global_hospital_stay_id_col: Global Hospital Stay ID # global_hospital_stay_id
 global_icu_stay_id_col: Global ICU Stay ID # global_icu_stay_id
@@ -13,6 +13,7 @@ icu_length_of_stay_col: ICU Length of Stay (days) # icu_length_of_stay
 hospital_length_of_stay_col: Hospital Length of Stay (days) # hospital_length_of_stay
 admission_loc_col: Admission Location # admission_location
 admission_type_col: Admission Type # admission_type
+admission_time_col: Admission Time (24h)
 admission_diagnosis_col: Admission Diagnosis (APACHE) # admission_diagnosis_apache
 discharge_loc_col: Discharge Location # discharge_location
 care_site_col: Care Site # care_site
