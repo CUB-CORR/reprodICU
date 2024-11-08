@@ -8,14 +8,14 @@
 import os
 import polars as pl
 
-from helpers.MAGIC_CONCEPTS._MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION(MAGIC_CONCEPTS):
     def __init__(self, paths, datasets):
         super().__init__(paths, datasets)
 
-    def VENTILATION_DURATION(self):
+    def VENTILATION_DURATION(self) -> pl.DataFrame:
         """
         Returns the magic concept VENTILATION_DURATION
 

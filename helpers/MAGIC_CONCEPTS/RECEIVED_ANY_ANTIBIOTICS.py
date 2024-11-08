@@ -8,14 +8,14 @@
 import polars as pl
 import os
 
-from helpers.MAGIC_CONCEPTS._MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
     def __init__(self, paths, datasets):
         super().__init__(paths, datasets)
 
-    def RECEIVED_ANY_ANTIBIOTICS(self):
+    def RECEIVED_ANY_ANTIBIOTICS(self) -> pl.DataFrame:
         """
         Returns the magic concept RECEIVED_ANY_ANTIBIOTICS
 

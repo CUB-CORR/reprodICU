@@ -21,11 +21,12 @@ def load_mapping(path: str) -> dict:
 
 
 class MAGIC_CONCEPTS:
-    def __init__(self, paths, datasets):
-        self.global_vars = GlobalVars(paths=paths)
+    def __init__(self, paths, datasets, DEMO=False):
+        self.global_vars = GlobalVars(paths=paths, DEMO=DEMO)
         self.global_helpers = GlobalHelpers()
 
         # Initialize the paths
+        self.paths = paths
         self.eicu_paths = EICUPaths(paths=paths)
         self.hirid_paths = HiRIDPaths(paths=paths)
         self.mimic3_paths = MIMIC3Paths(paths=paths)
