@@ -1,11 +1,11 @@
 Other ICU:
   - ICU
   - Other ICU
+  - Chest Pain Center
+  - ICU to SDU
+  # UMCdb
   - CCU/IC zelfde ziekenhuis # CCU/IC of the same hospital
   - CCU/IC ander ziekenhuis # CCU/IC of another hospital
-  # UMCdb
-  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
-  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
   # SICdb
   - Externe Intensivstation # External Intensive Care Unit
   - Intensivstation 2. Medizin # Intensive Care Unit 2. Medizin
@@ -38,11 +38,12 @@ Recovery Room:
   - Recovery ander ziekenhuis # Recovery from another hospital
 Hospital Ward:
   - TRANSFER FROM HOSPITAL
+  - TRANSFER FROM OTHER HEALT
+  - TRSF WITHIN THIS FACILITY
   - Floor
-  - Acute Care/Floor
   # UMCdb
   - Verpleegafdeling zelfde ziekenhuis # Nursing ward of the same hospital
-  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
+  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
   # SICdb
   - 1. Medizin
   - 2. Medizin
@@ -67,25 +68,33 @@ Hospital Ward:
   - Pädiatrie
   - Unfallchirurgie
   - Urologie
+Other Hospital:
+  - TRANSFER FROM HOSP/EXTRAM
+  - Other Hospital
+  # UMCdb
+  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
+Nursing Facility:
+  - TRANSFER FROM SKILLED NUR
+  - TRANSFER FROM SKILLED NURSING FACILITY
+  - Nursing Home
+Psychiatric Facility:
+  - INTERNAL TRANSFER TO OR FROM PSYCH
+  # SICdb
+  - Psychiatrie
+High-Dependency Unit:
+  - Observation
+  - Step-Down Unit (SDU)
+  - Acute Care/Floor
+  # UMCdb
+  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
+  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
 Other:
   - PHYSICIAN REFERRAL
-  - TRANSFER FROM HOSP/EXTRAM
-  - TRANSFER FROM SKILLED NUR
-  - TRANSFER FROM OTHER HEALT
   - CLINIC REFERRAL
   - HMO REFERRAL/SICK
-  - TRSF WITHIN THIS FACILITY
   - CLINIC REFERRAL/PREMATURE
   - PHYS REFERRAL/NORMAL DELI
-  - TRANSFER FROM SKILLED NURSING FACILITY
-  - INTERNAL TRANSFER TO OR FROM PSYCH
-  - Step-Down Unit (SDU)
-  - Other Hospital
-  - Chest Pain Center
-  - ICU to SDU
-  - Observation
   - Anders # Other
-  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
   - Other
 Unknown:
   - INFORMATION NOT AVAILABLE
