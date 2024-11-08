@@ -88,6 +88,7 @@ class EICUExtractor(EICUPaths):
                     "admissionweight",
                     "unittype",
                     "unitadmitsource",
+                    "unitadmittime24",
                     "unitvisitnumber",
                     "unitdischargelocation",
                     "unitdischargestatus",
@@ -139,7 +140,7 @@ class EICUExtractor(EICUPaths):
                 .replace("> 89", 90)
                 .cast(int, strict=False),
                 # Calculate pre ICU length of stay
-                # Reverse sign of hospitaladmitoffset to get pre_icu_length_of_stay
+                # Reverse sign of hospitaladmitoffset to get Pre-ICU length of stay
                 (0 - pl.col("hospitaladmitoffset"))
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
@@ -170,11 +171,12 @@ class EICUExtractor(EICUPaths):
                 )
                 .otherwise(None)
                 .alias(self.mortality_after_col),
-                # # Calculate hospital_length_of_stay as difference between hospitaldischargeoffset
-                # # and hospitaladmitoffset
-                # (pl.col("hospitaldischargeoffset") - pl.col("hospitaladmitoffset")).alias(
-                #     self.hospital_length_of_stay_col
-                # ),
+                # Calculate hospital_length_of_stay as difference between hospitaldischargeoffset
+                # and hospitaladmitoffset
+                (
+                    pl.col("hospitaldischargeoffset")
+                    - pl.col("hospitaladmitoffset")
+                ).alias(self.hospital_length_of_stay_col),
                 # Convert categorical admission location to enum
                 pl.col(self.admission_loc_col)
                 .replace(self.ADMISSION_LOCATIONS_MAP)
@@ -187,8 +189,11 @@ class EICUExtractor(EICUPaths):
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
+                # Convert admssiontime string to datetime
+                pl.col("unitadmittime24")
+                .str.to_time("%H:%M:%S")
+                .alias(self.admission_time_col),
             )
-            .drop(["hospitaladmitoffset", "hospitaldischargeoffset"])
             # Convert time columns to floating point days for consistency
             .pipe(
                 self.helpers._convert_time_to_days_float,
@@ -202,32 +207,37 @@ class EICUExtractor(EICUPaths):
             )
             .pipe(
                 self.helpers._convert_time_to_days_float,
+                self.hospital_length_of_stay_col,
+                base_unit="minutes",
+            )
+            .pipe(
+                self.helpers._convert_time_to_days_float,
                 self.mortality_after_col,
                 base_unit="minutes",
             )
             .select(
-                [
-                    self.icu_stay_id_col,
-                    self.hospital_stay_id_col,
-                    self.person_id_col,
-                    self.icu_stay_seq_num_col,
-                    self.gender_col,
-                    self.age_col,
-                    self.height_col,
-                    self.weight_col,
-                    self.ethnicity_col,
-                    self.admission_type_col,
-                    self.admission_diagnosis_col,
-                    self.pre_icu_length_of_stay_col,
-                    self.icu_length_of_stay_col,
-                    self.mortality_hosp_col,
-                    self.mortality_icu_col,
-                    self.mortality_after_col,
-                    self.admission_loc_col,
-                    self.unit_type_col,
-                    self.care_site_col,
-                    self.discharge_loc_col,
-                ]
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+                self.icu_stay_seq_num_col,
+                self.gender_col,
+                self.age_col,
+                self.height_col,
+                self.weight_col,
+                self.ethnicity_col,
+                self.admission_type_col,
+                self.admission_time_col,
+                self.admission_diagnosis_col,
+                self.pre_icu_length_of_stay_col,
+                self.icu_length_of_stay_col,
+                self.hospital_length_of_stay_col,
+                self.mortality_hosp_col,
+                self.mortality_icu_col,
+                self.mortality_after_col,
+                self.admission_loc_col,
+                self.unit_type_col,
+                self.care_site_col,
+                self.discharge_loc_col,
             )
         )
 

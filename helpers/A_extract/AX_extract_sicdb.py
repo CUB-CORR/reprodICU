@@ -94,16 +94,18 @@ class SICdbExtractor(SICdbPaths):
                 )
                 .truediv(pl.duration(days=1))
                 .alias(self.icu_length_of_stay_col),
-                # # Get pre-ICU length of stay in days
-                # (
-                #     pl.duration(
-                #         days=pl.col("HospitalStayDays")
-                #         - (pl.col("HospitalDischargeDay") - 1)
-                #     )
-                #     - pl.duration(seconds=pl.col("TimeOfStay"))
-                # )
-                # .truediv(pl.duration(days=1))
-                # .alias(self.pre_icu_length_of_stay_col),
+                # Get approximate pre-ICU length of stay in days
+                (
+                    pl.duration(
+                        days=pl.col("HospitalStayDays")
+                        - (pl.col("HospitalDischargeDay"))
+                    )
+                )
+                .truediv(pl.duration(days=1))
+                .round(0)
+                .alias(self.pre_icu_length_of_stay_col),
+                # Get approximate hospital length of stay in days
+                pl.col("HospitalStayDays").alias(self.hospital_length_of_stay_col),
                 # Convert gender to established dtype
                 pl.col("Sex")
                 .replace_strict({735: "Male", 736: "Female"}, default="Unknown")
