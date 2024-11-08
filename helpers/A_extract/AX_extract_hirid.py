@@ -393,7 +393,9 @@ class HiRIDExtractor(HiRIDPaths):
             )
             # Filter for names of interest
             .filter(
-                pl.col("variableid").is_in(self.all_values + self.other_lab_values)
+                pl.col("variableid").is_in(
+                    self.all_values + self.other_lab_values
+                )
             )
             # Remove duplicate rows
             .unique()
@@ -612,9 +614,10 @@ class HiRIDExtractor(HiRIDPaths):
                 )
                 .round(1)
                 .alias(self.drug_rate_col),
-                (pl.col(self.drug_amount_unit_col) + pl.lit("/hr")).alias(
-                    self.drug_rate_unit_col
-                ),
+                pl.col(self.drug_amount_unit_col).str.replace("µ", "mc"),
+                (pl.col(self.drug_amount_unit_col) + pl.lit("/hr"))
+                .str.replace("µ", "mc")
+                .alias(self.drug_rate_unit_col),
             )
             # 2. Check if drug is continued from the previous log entry
             #    and if it is continued in the next log entry
