@@ -40,13 +40,90 @@ class PatientInformationCleaner(GlobalVars):
         Removes obviously wrong values from the patient information.
         """
 
+        return (
+            data.with_columns(
+                # Remove negative / zero values for mortality after ICU discharge
+                # when patient died in ICU
+                pl.when(pl.col(self.mortality_icu_col))
+                .then(None)
+                .otherwise(pl.col(self.mortality_after_col))
+                .alias(self.mortality_after_col),
+            )
+            # Define the order of the columns
+            .select(
+                self.global_person_id_col,
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
+                self.icu_stay_seq_num_col,
+                self.database_col,
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                self.age_col,
+                self.gender_col,
+                self.height_col,
+                self.weight_col,
+                self.ethnicity_col,
+                self.admission_diagnosis_col,
+                self.admission_type_col,
+                self.admission_time_col,
+                self.admission_loc_col,
+                self.specialty_col,
+                self.care_site_col,
+                self.unit_type_col,
+                self.pre_icu_length_of_stay_col,
+                self.icu_length_of_stay_col,
+                self.hospital_length_of_stay_col,
+                self.discharge_loc_col,
+                self.mortality_hosp_col,
+                self.mortality_icu_col,
+                self.mortality_after_col,
+            )
+        )
+
+    def add_good_patient_information(self, data) -> pl.LazyFrame:
+        """
+        Adds information that can easily be derived from the existing data.
+        """
+
         return data.with_columns(
-            # Remove negative / zero values for mortality after ICU discharge
-            # when patient died in ICU
-            pl.when(pl.col(self.mortality_icu_col))
-            .then(None)
-            .otherwise(pl.col(self.mortality_after_col))
-            .alias(self.mortality_after_col),
+            # Add missing values for the ICU mortality if the patient survived
+            pl.when(
+                pl.col(self.mortality_icu_col).is_null(),
+                pl.col(self.mortality_after_col) > 1,
+            )
+            .then(False)
+            .otherwise(pl.col(self.mortality_icu_col))
+            .alias(self.mortality_icu_col),
+            # Add missing values for the Hospital mortality if the patient died in the ICU
+            pl.when(
+                pl.col(self.mortality_hosp_col).is_null(),
+                pl.col(self.mortality_icu_col).cast(bool),
+            )
+            .then(pl.col(self.mortality_icu_col))
+            .otherwise(pl.col(self.mortality_hosp_col))
+            .alias(self.mortality_hosp_col),
+        ).with_columns(
+            # Add missing values for the Hospital and ICU mortality
+            # if the patient died long after the ICU discharge
+            pl.when(
+                pl.col(self.mortality_hosp_col).is_null(),
+                pl.col(self.mortality_after_col)
+                > (
+                    pl.col(self.hospital_length_of_stay_col)
+                    - pl.col(self.icu_length_of_stay_col)
+                ),
+            )
+            .then(False)
+            .otherwise(pl.col(self.mortality_hosp_col))
+            .alias(self.mortality_hosp_col),
+            pl.when(
+                pl.col(self.mortality_icu_col).is_null(),
+                pl.col(self.mortality_after_col) > 1,
+            )
+            .then(False)
+            .otherwise(pl.col(self.mortality_icu_col))
+            .alias(self.mortality_icu_col),
         )
 
     def add_data_availability_information(self, data) -> pl.LazyFrame:
