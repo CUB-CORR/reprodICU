@@ -722,7 +722,8 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .str.replace("hour", "hr")
                 .str.replace("mL", "ml")
                 .str.replace("mEq\.", "mEq")
-                .str.replace("units", "U"),
+                .str.replace("units", "U")
+                .str.replace("µ", "mc"),
             )
         )
 
