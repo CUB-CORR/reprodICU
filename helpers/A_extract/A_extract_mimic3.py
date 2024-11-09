@@ -677,10 +677,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "omop_concept_name": "LABEL",
                 }
             )
-            # Filter for names of interest
-            .filter(
-                pl.col("LABEL").is_in(self.all_values + self.other_lab_values)
+            # Harmonize names of interest
+            .with_columns(
+                pl.col("LABEL").replace_strict(
+                    self.relevant_intakeoutput_values_mapping, default=None
+                )
             )
+            # Filter for names of interest
+            .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
         )
 
         return (
