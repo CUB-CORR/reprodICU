@@ -126,11 +126,16 @@ class TimeseriesHarmonizer(GlobalVars):
 
         # region MIMIC3
         if "MIMIC3" in self.datasets:
-            mimic3_timeseries = self.mimic3.process_timeseries().pipe(
+            mimic3_timeseries = self.mimic3.process_timeseries_vitals().pipe(
                 self._concat_helper, "mimic3-"
             )
             mimic3_timeseries_labs = (
-                self.mimic3._process_timeseries_labevents().pipe(
+                self.mimic3.process_timeseries_labevents().pipe(
+                    self._concat_helper, "mimic3-"
+                )
+            )
+            mimic3_timeseries_inout = (
+                self.mimic3.process_timeseries_inputoutput().pipe(
                     self._concat_helper, "mimic3-"
                 )
             )
@@ -138,26 +143,37 @@ class TimeseriesHarmonizer(GlobalVars):
             mimic3_ts_names = mimic3_timeseries.collect_schema().names()
             mimic3_vitals = vital_prms.filter(vital_prms.is_in(mimic3_ts_names))
             mimic3_resp = resp_prms.filter(resp_prms.is_in(mimic3_ts_names))
-            mimic3_inout = inout_prms.filter(inout_prms.is_in(mimic3_ts_names))
 
             mimic3_ts_lab_names = (
                 mimic3_timeseries_labs.collect_schema().names()
             )
             mimic3_labs = labs_prms.filter(labs_prms.is_in(mimic3_ts_lab_names))
 
+            mimic3_ts_io_names = mimic3_timeseries_labs.collect_schema().names()
+            mimic3_inout = inout_prms.filter(
+                inout_prms.is_in(mimic3_ts_io_names)
+            )
+
             timeseries_vitals.append(mimic3_timeseries.select(*mimic3_vitals))
             timeseries_resp.append(mimic3_timeseries.select(*mimic3_resp))
             timeseries_labs.append(mimic3_timeseries_labs.select(*mimic3_labs))
-            timeseries_inout.append(mimic3_timeseries.select(*mimic3_inout))
+            timeseries_inout.append(
+                mimic3_timeseries_inout.select(*mimic3_inout)
+            )
         # endregion
 
         # region MIMIC4
         if "MIMIC4" in self.datasets:
-            mimic4_timeseries = self.mimic4.process_timeseries().pipe(
+            mimic4_timeseries = self.mimic4.process_timeseries_vitals().pipe(
                 self._concat_helper, "mimic4-"
             )
             mimic4_timeseries_labs = (
-                self.mimic4._process_timeseries_labevents().pipe(
+                self.mimic4.process_timeseries_labevents().pipe(
+                    self._concat_helper, "mimic4-"
+                )
+            )
+            mimic4_timeseries_inout = (
+                self.mimic4.process_timeseries_inputoutput().pipe(
                     self._concat_helper, "mimic4-"
                 )
             )
@@ -165,17 +181,23 @@ class TimeseriesHarmonizer(GlobalVars):
             mimic4_ts_names = mimic4_timeseries.collect_schema().names()
             mimic4_vitals = vital_prms.filter(vital_prms.is_in(mimic4_ts_names))
             mimic4_resp = resp_prms.filter(resp_prms.is_in(mimic4_ts_names))
-            mimic4_inout = inout_prms.filter(inout_prms.is_in(mimic4_ts_names))
 
             mimic4_ts_lab_names = (
                 mimic4_timeseries_labs.collect_schema().names()
             )
             mimic4_labs = labs_prms.filter(labs_prms.is_in(mimic4_ts_lab_names))
 
+            mimic4_ts_io_names = mimic4_timeseries_labs.collect_schema().names()
+            mimic4_inout = inout_prms.filter(
+                inout_prms.is_in(mimic4_ts_io_names)
+            )
+
             timeseries_vitals.append(mimic4_timeseries.select(*mimic4_vitals))
             timeseries_resp.append(mimic4_timeseries.select(*mimic4_resp))
             timeseries_labs.append(mimic4_timeseries_labs.select(*mimic4_labs))
-            timeseries_inout.append(mimic4_timeseries.select(*mimic4_inout))
+            timeseries_inout.append(
+                mimic4_timeseries_inout.select(*mimic4_inout)
+            )
         # endregion
 
         # region SICdb

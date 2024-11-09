@@ -22,51 +22,29 @@ class MIMIC3Processor(MIMIC3Extractor):
         self.helpers = GlobalHelpers()
         self.convert = MIMIC3Converter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.icu_length_of_stay_col]
+            self.icu_stay_id_col, self.icu_length_of_stay_col
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-    # region time series
-    # Processes and combines the time series data of the eICU dataset.
-    def process_timeseries(self):
-        # Load preexisting data if available
-        if os.path.isfile(self.precalc_path + "MIMIC3_B_timeseries.parquet"):
-            return pl.scan_parquet(
-                self.precalc_path + "MIMIC3_B_timeseries.parquet"
-            )
-
-        # Load the time series data.
-        print("MIMIC3 — Loading time series data...")
-
-        ts_vitals = self._process_timeseries_vitals().sort(self.index_cols)
-        # ts_inout = self._process_timeseries_inputoutput()
-
-        ts_vitals.collect(streaming=True).write_parquet(
-            self.precalc_path + "MIMIC3_B_timeseries.parquet"
-        )
-
-        return ts_vitals
-
-    # endregion
-
     # region vitals
     # Processes the vital data of the MIMIC3 dataset.
-    def _process_timeseries_vitals(self):
+    def process_timeseries_vitals(self):
         """
         Processes the vital data of the MIMIC3 dataset.
         """
+        ts_vitals_path = self.precalc_path + "MIMIC3_timeseries_vitals.parquet"
+        ts_vitals_path_unsorted = self.precalc_path + "MIMIC3_ts_vitals.parquet"
 
-        if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_vitals.parquet"):
+        if os.path.isfile(ts_vitals_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "MIMIC3_B_ts_vitals.parquet"
+            return pl.scan_parquet(ts_vitals_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("MIMIC3  - Processing vitals data...")
@@ -102,23 +80,37 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
         # Save the preprocessed data
-        ts_vitals.sink_parquet(self.precalc_path + "MIMIC3_B_ts_vitals.parquet")
+        ts_vitals.sink_parquet(ts_vitals_path_unsorted)
 
-        return ts_vitals
+        # Sort the data
+        (
+            pl.scan_parquet(ts_vitals_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_vitals_path)
+        )
+        os.remove(ts_vitals_path_unsorted)
+
+        return pl.scan_parquet(ts_vitals_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
     # region lab
     # Processes the lab data of the MIMIC3 dataset.
-    def _process_timeseries_labevents(self):
+    def process_timeseries_labevents(self):
         """
         Processes the lab data of the MIMIC3 dataset.
         """
+        ts_labs_path = self.precalc_path + "MIMIC3_timeseries_labs.parquet"
+        ts_labs_path_unsorted = self.precalc_path + "MIMIC3_ts_labs.parquet"
 
-        if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_lab.parquet"):
+        if os.path.isfile(ts_labs_path):
             # load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "MIMIC3_B_ts_lab.parquet"
+            return pl.scan_parquet(ts_labs_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("MIMIC3  - Processing lab data...")
@@ -134,7 +126,8 @@ class MIMIC3Processor(MIMIC3Extractor):
                 structfield="value",
             )
             # Pivot the lab data
-            .collect(streaming=True).pivot(
+            .collect(streaming=True)
+            .pivot(
                 on="LABEL",
                 index=self.index_cols,
                 values="value_struct",
@@ -142,37 +135,41 @@ class MIMIC3Processor(MIMIC3Extractor):
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
+            .lazy()
         )
 
-        # # drop empty rows
-        # ts_lab_cols = ts_lab.collect_schema().names()
-        # droplist = list(set(ts_lab_cols) - set(self.index_cols))
-        # ts_lab = (
-        #     ts_lab.lazy()
-        #     .pipe(self.helpers.dropna, "all", droplist, False)
-        #     .unique()
-        #     .sort(self.index_cols)
-        # )
-
         # Save the preprocessed data
-        # ts_lab.sink_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
-        ts_lab.write_parquet(self.precalc_path + "MIMIC3_B_ts_lab.parquet")
+        ts_lab.sink_parquet(ts_labs_path_unsorted)
 
-        return ts_lab.lazy()
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
+        )
+        os.remove(ts_labs_path_unsorted)
+
+        return pl.scan_parquet(ts_labs_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
     # region input/output
     # Processes the input/output data of the MIMIC3 dataset.
-    def _process_timeseries_inputoutput(self):
+    def process_timeseries_inputoutput(self):
         """
         Processes the input/output data of the MIMIC3 dataset.
         """
+        ts_inout_path = self.precalc_path + "MIMIC3_timeseries_inout.parquet"
+        ts_inout_path_unsorted = self.precalc_path + "MIMIC3_ts_inout.parquet"
 
-        if os.path.isfile(self.precalc_path + "MIMIC3_B_ts_inout.parquet"):
+        if os.path.isfile(ts_inout_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "MIMIC3_B_ts_inout.parquet"
+            return pl.scan_parquet(ts_inout_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("MIMIC3  - Processing inout data...")
@@ -200,9 +197,20 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
         # Save the preprocessed data
-        ts_inout.sink_parquet(self.precalc_path + "MIMIC3_B_ts_inout.parquet")
+        ts_inout.sink_parquet(ts_inout_path_unsorted)
 
-        return ts_inout
+        # Sort the data
+        (
+            pl.scan_parquet(ts_inout_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_inout_path)
+        )
+        os.remove(ts_inout_path_unsorted)
+
+        return pl.scan_parquet(ts_inout_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
