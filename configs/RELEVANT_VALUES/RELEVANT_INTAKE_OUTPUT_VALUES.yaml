@@ -1,32 +1,77 @@
-Blood loss.total intraoperative [Volume] Estimated: True
-Fluid output biliary drain: True
-Fluid output cerebral ventricle drain: True
-Fluid output chest tube: True
-Fluid output gastric tube: True
-Fluid output pericardial drain: True
-Fluid output peritoneal drain: True
-Fluid output subarachnoid drain: True
-Fluid output wound drain: True
-Output.stool [Volume]: True
-Urine output: True
-# NOTE: ALL OTHER VARIABLES NEED A LOT OF WORK
-# output_dialyis: True # needs RRT variable
-# output_liquor: True
-# output_stool: True
-# output_other: True
-# output_total: True
-# input_blood: True # from medications table
-# input_dialysis: True # needs RRT variable
-# input_liquid: True # from medications table
-# input_nutrition: True # from medications table
-# input_transfusion: True # from medications table
-# input_other: True # from medications table
-# input_total: True
-
-
-# HiRID
-# Hourly urine volume
-# Measurement of output from drain <- Liquor
-# Fluid balance <- cumulative
-# Infusion of saline solution <- cumulative
-# Intravenous fluid colloid administration <- cumulative
+##########
+# OUTPUT #
+##########
+Blood loss: # 1014933 # LOINC
+  - Blood loss [Volume] Measured
+Blood loss.total intraoperative: # 1030226 # LOINC
+  - Blood loss.total intraoperative [Volume] Estimated
+Fluid output biliary drain: [] # 1033547 # LOINC
+Fluid output cerebral ventricle drain: [] # 1033549 # LOINC
+Fluid output chest tube: # 1033550 # LOINC
+  # SICdb
+  - ThoraxDrain1
+  - ThoraxDrain2
+  - ThoraxDrain3
+  - ThoraxDrain4
+  - ThoraxDrain5
+Fluid output emesis: [] # 1033551 # LOINC
+Fluid output enteral tube: [] # 1014373 # LOINC
+Fluid output gastric tube: [] # 1033553 # LOINC
+Fluid output gastrointestinal drain: [] # 1014372 # LOINC
+Fluid output gastrointestinal ostomy: # 1014371 # LOINC
+  - Fluid output gastrointestinal ostomy [Volume] Measured
+Fluid output miscellaneous: # 1033555 # LOINC
+  - Fluid output miscellaneous Measured
+  # SICdb
+  - Drain1
+  - Drain2
+  - Drain3
+  - Drain4
+  - Drain5
+  - Drain6
+  - Drain7
+  - Drain8
+# Fluid output miscellaneous route: [] # 1033556 # LOINC
+Fluid output musculoskeletal drain: [] # 1014375 # LOINC
+Fluid output neurological drain: # 1014374 # LOINC
+  - Fluid output neurological drain [Volume] Measured
+  - Measurement of output from drain
+Fluid output pericardial drain: [] # 1033557 # LOINC
+Fluid output peritoneal drain: [] # 1033558 # LOINC
+Fluid output pressure injury: [] # 1014376 # LOINC
+Fluid output subarachnoid drain: [] # 1033559 # LOINC
+Fluid output urinary incontinence: [] # 1033561 # LOINC
+Fluid output urine in and out urethral catheter: # 1033563 # LOINC
+  - Urine output by in and out urethral catheter
+Fluid output urine nephrostomy: # 1014370 # LOINC
+  - Urine output measured by nephrostomy
+Fluid output wound drain: # 1027295 # LOINC
+  - Fluid output wound drain Estimated
+# Fluid output wound drain identifier: [] # 1033564 # LOINC
+Fluid output.nasogastric tube: [] # 1012197 # LOINC
+Fluid output.total intraoperative: [] # 1014568 # LOINC
+Output.colostomy: [] # 1030877 # LOINC
+Output.ileostomy: [] # 1030879 # LOINC
+Output.stool: [] # 1030880 # LOINC
+Urine output: # 1033562 # LOINC
+  - Hourly urine volume
+##########
+# INTAKE #
+##########
+Fluid intake: [] # 1030543 # LOINC
+Fluid intake chest tube: [] # 1033597 # LOINC
+Fluid intake enema: [] # 1033598 # LOINC
+Fluid intake enteral tube: [] # 1033599 # LOINC
+Fluid intake gastrostomy tube: [] # 1033600 # LOINC
+Fluid intake intravascular: [] # 1033602 # LOINC
+Fluid intake nasogastric tube: # 1033603 # LOINC
+  - Fluid intake nasogastric tube Measured
+Fluid intake oral: [] # 1033604 # LOINC
+Fluid intake peritoneal: # 1033605 # LOINC
+  - Fluid intake peritoneal Measured
+Fluid intake synovial: [] # 1033606 # LOINC
+# Fluid intake total: [] # 1033607 # LOINC
+Fluid intake upper GI tube: [] # 1033545 # LOINC
+Fluid intake urinary bladder irrigation: # 1033546 # LOINC
+  - Fluid intake urinary bladder irrigation Measured
+Fluid balance: [] # 1030542 # LOINC

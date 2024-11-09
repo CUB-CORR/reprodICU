@@ -31,6 +31,16 @@ class GlobalHelpers:
         mapping = self.load_mapping(path)
         return {v: k for k, vs in mapping.items() for v in vs}
 
+    def load_many_to_one_mapping_incl_keys(self, path: str) -> dict:
+        mapping1 = {
+            v: k
+            for k, vs in self.load_mapping(path).items()
+            if isinstance(vs, list)
+            for v in vs
+        }
+        mapping2 = {k: k for k in self.load_mapping_keys(path)}
+        return {**mapping1, **mapping2}
+
     def load_many_to_many_to_one_mapping(
         self, path: str, database: str
     ) -> dict:
@@ -207,23 +217,34 @@ class GlobalVars(GlobalHelpers):
         )
 
         # Select relevant variables
-        self.relevant_lab_values = self.load_mapping_true_keys(
-            self.relevant_values_path + "RELEVANT_LABS.yaml"
+        self.relevant_respiratory_values_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
+            )
         )
-        self.relevant_respiratory_values = self.load_mapping_true_keys(
-            self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
+        self.relevant_intakeoutput_values_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
+            )
         )
+
         self.relevant_vital_values = self.load_mapping_true_keys(
             self.relevant_values_path + "RELEVANT_VITALS.yaml"
         )
-        self.relevant_intakeoutput_values = self.load_mapping_true_keys(
-            self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
+        self.relevant_lab_values = self.load_mapping_true_keys(
+            self.relevant_values_path + "RELEVANT_LABS.yaml"
+        )
+        self.relevant_respiratory_values = list(
+            set(self.relevant_respiratory_values_mapping.keys())
+        )
+        self.relevant_intakeoutput_values = list(
+            set(self.relevant_intakeoutput_values_mapping.keys())
         )
 
         self.all_relevant_values = (
             self.relevant_lab_values
-            + self.relevant_respiratory_values
             + self.relevant_vital_values
+            + self.relevant_respiratory_values
             + self.relevant_intakeoutput_values
         )
 
