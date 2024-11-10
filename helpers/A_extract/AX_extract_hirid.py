@@ -366,9 +366,14 @@ class HiRIDExtractor(HiRIDPaths):
                 # then the reprodICU mapping
                 pl.col("variableid")
                 .cast(int)
-                .replace_strict(
-                    self._get_observation_variables(), default=None
-                ),
+                .replace_strict(self._get_observation_variables(), default=None)
+                .replace(
+                    {
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
+                .alias("variableid"),
                 # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
             )
