@@ -209,18 +209,16 @@ class UMCdbExtractor(UMCdbPaths):
                 ),
             )
             .drop(
-                [
-                    "agegroup",
-                    "weightgroup",
-                    "heightgroup",
-                    # "gender",
-                    "origin",
-                    "destination",
-                    "specialty",
-                    "dateofdeath",
-                    "dischargedat",
-                    "admittedat",
-                ]
+                "agegroup",
+                "weightgroup",
+                "heightgroup",
+                # "gender",
+                "origin",
+                "destination",
+                "specialty",
+                "dateofdeath",
+                "dischargedat",
+                "admittedat",
             )
         )
 
@@ -234,14 +232,12 @@ class UMCdbExtractor(UMCdbPaths):
         listitems = (
             pl.scan_parquet(self.listitems_path)
             .select(
-                [
-                    "admissionid",
-                    # "item",
-                    "itemid",
-                    "value",
-                    "valueid",
-                    "measuredat",
-                ]
+                "admissionid",
+                # "item",
+                "itemid",
+                "value",
+                "valueid",
+                "measuredat",
             )
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
@@ -279,7 +275,7 @@ class UMCdbExtractor(UMCdbPaths):
     def _extract_timeseries_numericitems(self) -> pl.LazyFrame:
         return (
             pl.scan_parquet(self.numericitems_path)
-            .select(["admissionid", "itemid", "value", "measuredat"])
+            .select("admissionid", "itemid", "value", "measuredat")
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
@@ -296,7 +292,7 @@ class UMCdbExtractor(UMCdbPaths):
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         intimes = (
             pl.scan_parquet(self.admissions_path)
-            .select(["admissionid", "admittedat", "dischargedat"])
+            .select("admissionid", "admittedat", "dischargedat")
             .rename(
                 {
                     "admissionid": self.icu_stay_id_col,
@@ -493,7 +489,7 @@ class UMCdbExtractor(UMCdbPaths):
 
         intimes = (
             pl.scan_parquet(self.admissions_path)
-            .select(["admissionid", "admittedat", "dischargedat"])
+            .select("admissionid", "admittedat", "dischargedat")
             .rename(
                 {
                     "admissionid": self.icu_stay_id_col,
@@ -640,7 +636,7 @@ class UMCdbExtractor(UMCdbPaths):
         print("UMCdb   - Extracting procedures...")
         intimes = (
             pl.scan_parquet(self.admissions_path)
-            .select(["patientid", "admissionid", "admittedat", "dischargedat"])
+            .select("patientid", "admissionid", "admittedat", "dischargedat")
             .rename(
                 {
                     "patientid": self.person_id_col,
@@ -850,53 +846,6 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        diagnosis_groups = (
-            listitems.filter(pl.col("itemid").is_in(LEVEL0_ITEMIDS))
-            .rename(
-                {
-                    "value": "diagnosis_group",
-                    "valueid": "diagnosis_group_id",
-                }
-            )
-            .with_columns(
-                pl.when(pl.col("itemid").is_in(NICE))
-                .then(pl.col("diagnosis_group").str.split(" - ").list.get(0))
-                .otherwise(pl.col("diagnosis_group"))
-                .alias("diagnosis_group"),
-            )
-            .unique()
-            .sort(self.icu_stay_id_col, "typeid", "updatedat", descending=True)
-            .with_columns(
-                pl.int_range(pl.len())
-                .over(self.icu_stay_id_col)
-                .alias("rownum")
-            )
-        )
-
-        # diagnosis_groups.collect(streaming=True).write_parquet(
-        #     "UMCdb_diagnosis_groups.parquet"
-        # )
-
-        diagnosis_subgroups = (
-            listitems.filter(pl.col("itemid").is_in(LEVEL1_ITEMIDS))
-            .rename(
-                {
-                    "value": "diagnosis_subgroup",
-                    "valueid": "diagnosis_subgroup_id",
-                }
-            )
-            .sort(self.icu_stay_id_col, "updatedat", descending=True)
-            .with_columns(
-                pl.int_range(pl.len())
-                .over(self.icu_stay_id_col)
-                .alias("rownum")
-            )
-        )
-
-        # diagnosis_subgroups.collect(streaming=True).write_parquet(
-        #     "UMCdb_diagnosis_subgroups.parquet"
-        # )
-
         diagnoses = (
             listitems.filter(pl.col("itemid").is_in(LEVEL2_ITEMIDS))
             .rename(
@@ -967,10 +916,6 @@ class UMCdbExtractor(UMCdbPaths):
             .drop("typeid")
         )
 
-        # diagnoses.collect(streaming=True).write_parquet(
-        #     "UMCdb_diagnoses.parquet"
-        # )
-
         return (
             diagnoses.group_by(self.icu_stay_id_col)
             .first()
@@ -1012,7 +957,7 @@ class UMCdbExtractor(UMCdbPaths):
                 )
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select(["sourceCode", "conceptName"])
+            .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
         )
 
@@ -1038,7 +983,7 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select(["sourceCode", "conceptName"]).filter(
+            .select("sourceCode", "conceptName").filter(
                 pl.col("conceptName").is_in(
                     self.all_values + self.other_lab_values
                 )
@@ -1064,7 +1009,7 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select(["sourceName", "conceptName"])
+            .select("sourceName", "conceptName")
         )
 
         return dict(
@@ -1086,7 +1031,7 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select(["sourceCode", "conceptName"])
+            .select("sourceCode", "conceptName")
         )
 
         return dict(

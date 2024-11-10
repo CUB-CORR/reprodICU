@@ -22,26 +22,29 @@ class UMCdbProcessor(UMCdbExtractor):
         self.helpers = GlobalHelpers()
         self.convert = UMCdbConverter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.icu_length_of_stay_col]
+            self.icu_stay_id_col, self.icu_length_of_stay_col
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self):
+        """
+        Processes the time series data of the UMCdb dataset.
+        """
+        ts_path = self.precalc_path + "UMCdb_timeseries.parquet"
+        ts_path_unsorted = self.precalc_path + "UMCdb_ts.parquet"
+
         # Load preexisting data if available
-        if os.path.isfile(
-            self.precalc_path + "UMCdb_B_timeseries.parquet"
-        ):
-            return pl.scan_parquet(
-                self.precalc_path + "UMCdb_B_timeseries.parquet"
+        if os.path.isfile(ts_path):
+            return pl.scan_parquet(ts_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         # Load the time series data.
@@ -51,22 +54,39 @@ class UMCdbProcessor(UMCdbExtractor):
         # ts_listitems = self._process_timeseries_listitems()
 
         # timeseries = pl.concat([ts_numeric, ts_listitems], how="diagonal_relaxed")
-        timeseries = ts_numeric.sort(self.index_cols)
-        timeseries.sink_parquet(
-            self.precalc_path + "UMCdb_B_timeseries.parquet"
+        # Save the preprocessed data
+        ts_numeric.sink_parquet(ts_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_path)
+        )
+        os.remove(ts_path_unsorted)
+
+        return pl.scan_parquet(ts_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
         )
 
-        return timeseries
+    # endregion
 
+    # region numeric
     def _process_timeseries_numeric(self) -> pl.LazyFrame:
         """
         Process the numeric timeseries data of the UMCdb dataset.
         """
+        ts_numeric_path = self.precalc_path + "UMCdb_timeseries_numeric.parquet"
+        ts_numeric_path_unsorted = (
+            self.precalc_path + "UMCdb_ts_numeric.parquet"
+        )
 
-        if os.path.isfile(self.precalc_path + "UMCdb_B_ts_numeric.parquet"):
+        if os.path.isfile(ts_numeric_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "UMCdb_B_ts_numeric.parquet"
+            return pl.scan_parquet(ts_numeric_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("UMCdb   - Processing numeric time series data...")
@@ -85,21 +105,37 @@ class UMCdbProcessor(UMCdbExtractor):
             .lazy()
         )
 
-        ts_numeric.sort(self.index_cols).sink_parquet(
-            self.precalc_path + "UMCdb_B_ts_numeric.parquet"
+        # Save the preprocessed data
+        ts_numeric.sink_parquet(ts_numeric_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_numeric_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_numeric_path)
+        )
+        os.remove(ts_numeric_path_unsorted)
+
+        return pl.scan_parquet(ts_numeric_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
         )
 
-        return ts_numeric
+    # endregion
 
+    # region labs
     def _process_timeseries_labs(self) -> pl.LazyFrame:
         """
         Process the labs timeseries data of the UMCdb dataset.
         """
+        ts_labs_path = self.precalc_path + "UMCdb_timeseries_labs.parquet"
+        ts_labs_path_unsorted = self.precalc_path + "UMCdb_ts_labs.parquet"
 
-        if os.path.isfile(self.precalc_path + "UMCdb_B_ts_labs.parquet"):
-            # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "UMCdb_B_ts_labs.parquet"
+        if os.path.isfile(ts_labs_path):
+            # load the preprocessed data
+            return pl.scan_parquet(ts_labs_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("UMCdb   - Processing lab time series data...")
@@ -113,6 +149,11 @@ class UMCdbProcessor(UMCdbExtractor):
                 labelcol="item",
                 valuecol="value_struct",
                 structfield="value",
+            )
+            .with_columns(
+                pl.col("value_struct")
+                .struct.json_encode()
+                .alias("value_struct")
             )
             # Pivot the labs data
             .collect(streaming=True)
@@ -128,21 +169,37 @@ class UMCdbProcessor(UMCdbExtractor):
         )
 
         # Save the preprocessed data
-        ts_labs.sort(self.index_cols).sink_parquet(
-            self.precalc_path + "UMCdb_B_ts_labs.parquet"
+        # ts_labs.sink_parquet(ts_labs_path_unsorted)
+        ts_labs.collect(streaming=True).write_parquet(ts_labs_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
+        )
+        os.remove(ts_labs_path_unsorted)
+
+        return pl.scan_parquet(ts_labs_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
         )
 
-        return ts_labs
+    # endregion
 
+    # region listitems
     def _process_timeseries_listitems(self) -> pl.LazyFrame:
         """
         Process the listitems timeseries data of the UMCdb dataset.
         """
+        ts_list_path = self.precalc_path + "UMCdb_timeseries_list.parquet"
+        ts_list_path_unsorted = self.precalc_path + "UMCdb_ts_list.parquet"
 
-        if os.path.isfile(self.precalc_path + "UMCdb_B_ts_listitems.parquet"):
+        if os.path.isfile(ts_list_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "UMCdb_B_ts_listitems.parquet"
+            return pl.scan_parquet(ts_list_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         print("UMCdb   - Processing list time series data...")
@@ -178,11 +235,20 @@ class UMCdbProcessor(UMCdbExtractor):
         )
 
         # Save the preprocessed data
-        ts_listitems.sink_parquet(
-            self.precalc_path + "UMCdb_B_ts_listitems.parquet"
-        )
+        ts_listitems.sink_parquet(ts_list_path_unsorted)
 
-        return ts_listitems
+        # Sort the data
+        (
+            pl.scan_parquet(ts_list_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_list_path)
+        )
+        os.remove(ts_list_path_unsorted)
+
+        return pl.scan_parquet(ts_list_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
@@ -401,6 +467,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Band form neutrophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -408,6 +475,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Basophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -415,6 +483,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Eosinophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -422,6 +491,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Lymphocytes/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -429,6 +499,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Monocytes/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -436,6 +507,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Neutrophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -443,6 +515,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Segmented neutrophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -450,6 +523,7 @@ class UMCdbConverter(UnitConverter):
                 total_itemcol="Erythrocytes [#/volume]",
                 goal_itemcol="Reticulocytes/100 erythrocytes",
                 structfield="value",
+                structstring=True,
             )
         )
 
