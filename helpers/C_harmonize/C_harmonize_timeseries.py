@@ -85,6 +85,9 @@ class TimeseriesHarmonizer(GlobalVars):
             eicu_timeseries_labs = self.eicu.process_timeseries_lab().pipe(
                 self._concat_helper, "eicu-"
             )
+            eicu_timeseries_inout = self.eicu.process_timeseries_inout().pipe(
+                self._concat_helper, "eicu-"
+            )
 
             eicu_ts_names = eicu_timeseries.collect_schema().names()
             eicu_vitals = vital_prms.filter(vital_prms.is_in(eicu_ts_names))
@@ -93,13 +96,13 @@ class TimeseriesHarmonizer(GlobalVars):
             eicu_ts_lab_names = eicu_timeseries_labs.collect_schema().names()
             eicu_labs = labs_prms.filter(labs_prms.is_in(eicu_ts_lab_names))
 
-            # TODO: in/out calculation including medication
-            eicu_inout = inout_prms.filter(inout_prms.is_in(eicu_ts_names))
+            eicu_ts_io_names = eicu_timeseries_inout.collect_schema().names()
+            eicu_inout = inout_prms.filter(inout_prms.is_in(eicu_ts_io_names))
 
             timeseries_vitals.append(eicu_timeseries.select(*eicu_vitals))
             timeseries_resp.append(eicu_timeseries.select(*eicu_resp))
             timeseries_labs.append(eicu_timeseries_labs.select(*eicu_labs))
-            timeseries_inout.append(eicu_timeseries.select(*eicu_inout))
+            timeseries_inout.append(eicu_timeseries_inout.select(*eicu_inout))
         # endregion
 
         # region HiRID
@@ -149,7 +152,9 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             mimic3_labs = labs_prms.filter(labs_prms.is_in(mimic3_ts_lab_names))
 
-            mimic3_ts_io_names = mimic3_timeseries_labs.collect_schema().names()
+            mimic3_ts_io_names = (
+                mimic3_timeseries_inout.collect_schema().names()
+            )
             mimic3_inout = inout_prms.filter(
                 inout_prms.is_in(mimic3_ts_io_names)
             )
@@ -187,7 +192,9 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             mimic4_labs = labs_prms.filter(labs_prms.is_in(mimic4_ts_lab_names))
 
-            mimic4_ts_io_names = mimic4_timeseries_labs.collect_schema().names()
+            mimic4_ts_io_names = (
+                mimic4_timeseries_inout.collect_schema().names()
+            )
             mimic4_inout = inout_prms.filter(
                 inout_prms.is_in(mimic4_ts_io_names)
             )
@@ -297,11 +304,15 @@ class TimeseriesHarmonizer(GlobalVars):
         resp = (
             resp.pipe(self.helpers.dropna, "all", resp_cols_not_index)
             .cast(
-                {  # Convert all columns to float, except for oxygen_delivery_device
+                {  # Convert all columns to float, except for Ventilation mode Ventilator
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
-                        col: (float if col != "oxygen_delivery_device" else str)
+                        col: (
+                            float
+                            if col != "Ventilation mode Ventilator"
+                            else str
+                        )
                         for col in resp_cols_not_index
                     },
                 }

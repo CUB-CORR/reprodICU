@@ -51,30 +51,32 @@ class EICUProcessor(EICUExtractor):
         :return: The processed time series data in wide format.
         :rtype: pl.LazyFrame
         """
+        timeseries_path = self.precalc_path + "EICU_timeseries.parquet"
+        timeseries_path_unsorted = (
+            self.precalc_path + "EICU_timeseries_unsorted.parquet"
+        )
 
         # Load preexisting data if available
-        if os.path.isfile(self.precalc_path + "EICU_B_timeseries.parquet"):
-            return pl.scan_parquet(
-                self.precalc_path + "EICU_B_timeseries.parquet"
+        if os.path.isfile(timeseries_path):
+            return pl.scan_parquet(timeseries_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
         # Load the time series data.
         print("eICU    - Loading time series data...")
-        # ts_lab = self._process_timeseries_lab()
-        # ts_resp = self._process_timeseries_resp()
         ts_nurse = self._process_timeseries_nurse()
-        # ts_inout = self._process_timeseries_inout()
         ts_periodics = self._process_periodics()
+        ts_resp = self._process_timeseries_resp()
 
         # Join the time series data on the patient unit stay ID.
         print("eICU    - Joining wide time series data...")
-
-        timeseries = pl.concat([ts_nurse, ts_periodics], how="diagonal_relaxed")
+        timeseries = pl.concat(
+            [ts_nurse, ts_periodics, ts_resp], how="diagonal_relaxed"
+        )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(
-            self.precalc_path + "EICU_B_timeseries_unsorted.parquet"
-        )
+        timeseries.sink_parquet(timeseries_path_unsorted)
 
         # NOTE: if process stops due to insufficient memory, use the following
         # lines instead within a terminal at the precalc_path:
@@ -82,13 +84,17 @@ class EICUProcessor(EICUExtractor):
         #     "icu_stay_id", "time_relative_to_admission"
         # ).sink_parquet("HiRID_B_timeseries.parquet")
         print("eICU    - Sorting wide time series data...")
-        timeseries = pl.scan_parquet(
-            self.precalc_path + "EICU_B_timeseries_unsorted.parquet"
-        ).sort(self.index_cols)
+        (
+            pl.scan_parquet(timeseries_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(timeseries_path)
+        )
+        os.remove(timeseries_path_unsorted)
 
-        timeseries.sink_parquet(self.precalc_path + "EICU_B_timeseries.parquet")
-
-        return timeseries
+        return pl.scan_parquet(timeseries_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
@@ -105,64 +111,67 @@ class EICUProcessor(EICUExtractor):
         :return: The processed lab data in wide format.
         :rtype: pl.LazyFrame
         """
+        ts_labs_path = self.precalc_path + "EICU_timeseries_labs.parquet"
+        ts_labs_path_unsorted = self.precalc_path + "EICU_ts_labs.parquet"
 
-        if not os.path.isfile(
-            self.precalc_path + "EICU_B_timeseries_labs.parquet"
-        ):
-            print("eICU    - Processing lab data...")
-
-            ts_lab = (
-                self.extract_time_series_lab()
-                # Combine base_excess and base_deficit into one column base_excess_deficit
-                .pipe(
-                    self.convert._combine_base_excess_and_deficit,
-                    base_excess_name="base_excess",
-                    base_deficit_name="base_deficit",
-                    labelcol="labname",
-                    valuecol="value_struct",
-                    structfield="value",
-                )
-                # Convert the lab values to the correct units
-                .pipe(
-                    self.convert._convert_lab_values,
-                    labelcol="labname",
-                    valuecol="value_struct",
-                    structfield="value",
-                )
-                # Reverse the base deficit to be negative base excess
-                # Pivot the lab values to wide format
-                .collect(streaming=True)
-                .pivot(
-                    on="labname",
-                    index=self.index_cols,
-                    values="value_struct",
-                    aggregate_function="first",
-                )
-                .lazy()
-            )
-
-            # # Drop empty rows
-            # ts_lab_cols = ts_lab.collect_schema().names()
-            # droplist = list(set(ts_lab_cols) - set(self.index_cols))
-            # ts_lab = (
-            #     ts_lab.pipe(self.helpers.dropna, "all", droplist, False)
-            #     .unique()
-            #     .sort(self.index_cols)
-            #     .lazy()
-            # )
-
-            # Save the preprocessed data
-            ts_lab.sink_parquet(
-                self.precalc_path + "EICU_B_timeseries_labs.parquet"
-            )
-
-        else:
+        if os.path.isfile(ts_labs_path):
             # Load the preprocessed data
-            ts_lab = pl.scan_parquet(
-                self.precalc_path + "EICU_B_timeseries_labs.parquet"
+            return pl.scan_parquet(ts_labs_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
-        return ts_lab
+        print("eICU    - Processing lab data...")
+
+        ts_lab = (
+            self.extract_time_series_lab()
+            # Combine base_excess and base_deficit into one column base_excess_deficit
+            .pipe(
+                self.convert._combine_base_excess_and_deficit,
+                base_excess_name="base_excess",
+                base_deficit_name="base_deficit",
+                labelcol="labname",
+                valuecol="value_struct",
+                structfield="value",
+            )
+            # Convert the lab values to the correct units
+            .pipe(
+                self.convert._convert_lab_values,
+                labelcol="labname",
+                valuecol="value_struct",
+                structfield="value",
+            )
+            .with_columns(
+                pl.col("value_struct")
+                .struct.json_encode()
+                .alias("value_struct")
+            )
+            # Pivot the lab values to wide format
+            .collect(streaming=True)
+            .pivot(
+                on="labname",
+                index=self.index_cols,
+                values="value_struct",
+                aggregate_function="first",
+            )
+            .lazy()
+        )
+
+        # Save the preprocessed data
+        ts_lab.sink_parquet(ts_labs_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
+        )
+        os.remove(ts_labs_path_unsorted)
+
+        return pl.scan_parquet(ts_labs_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
@@ -179,41 +188,54 @@ class EICUProcessor(EICUExtractor):
         :return: The processed respiratory data in wide format.
         :rtype: pl.LazyFrame
         """
+        ts_resp_path = self.precalc_path + "EICU_timeseries_resp.parquet"
+        ts_resp_path_unsorted = self.precalc_path + "EICU_ts_resp.parquet"
+
+        if os.path.isfile(ts_resp_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_resp_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
 
         print("eICU    - Processing resp data...")
 
-        if not os.path.isfile(self.precalc_path + "EICU_B_ts_resp.parquet"):
-            ts_resp = (
-                self.extract_time_series_resp()
-                # Pivot the respiratory values to wide format
-                .collect(streaming=True).pivot(
-                    on="respchartvaluelabel",
-                    index=self.index_cols,
-                    values="respchartvalue",
-                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-                )
+        ts_resp = (
+            self.extract_time_series_resp()
+            # Pivot the respiratory values to wide format
+            .collect(streaming=True).pivot(
+                on="respchartvaluelabel",
+                index=self.index_cols,
+                values="respchartvalue",
+                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
             )
+        )
 
-            # Drop empty rows
-            ts_resp_cols = ts_resp.collect_schema().names()
-            droplist = list(set(ts_resp_cols) - set(self.index_cols))
-            ts_resp = (
-                ts_resp.pipe(self.helpers.dropna, "all", droplist, False)
-                .unique()
-                .sort(self.index_cols)
-                .lazy()
-            )
+        # Drop empty rows
+        ts_resp_cols = ts_resp.collect_schema().names()
+        droplist = list(set(ts_resp_cols) - set(self.index_cols))
+        ts_resp = (
+            ts_resp.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique()
+            .sort(self.index_cols)
+            .lazy()
+        )
 
-            # Save the preprocessed data
-            ts_resp.sink_parquet(self.precalc_path + "EICU_B_ts_resp.parquet")
+        # Save the preprocessed data
+        ts_resp.sink_parquet(ts_resp_path_unsorted)
 
-        else:
-            # Load the preprocessed data
-            ts_resp = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_resp.parquet"
-            )
+        # Sort the data
+        (
+            pl.scan_parquet(ts_resp_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_resp_path)
+        )
+        os.remove(ts_resp_path_unsorted)
 
-        return ts_resp
+        return pl.scan_parquet(ts_resp_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
@@ -229,83 +251,63 @@ class EICUProcessor(EICUExtractor):
         :return: The processed nurse charting data in wide format.
         :rtype: pl.LazyFrame
         """
+        ts_nurse_path = self.precalc_path + "EICU_ts_nurse.parquet"
+        ts_nurse_path_unsorted = (
+            self.precalc_path + "EICU_ts_nurse_unsorted.parquet"
+        )
 
         print("eICU    - Processing nurse charting data...")
 
-        if not os.path.isfile(self.precalc_path + "EICU_B_ts_nurse.parquet"):
-            ts_nurse = (
-                self.extract_time_series_nurse()
-                # # Split oxygen_flow / FiO2 into oxygen_flow and FiO2
-                # .with_columns(
-                #     pl.when(
-                #         pl.col("oxygen_delivery_device").is_in(
-                #             [
-                #                 "ambu_bag",
-                #                 "high_flow_nasal_cannula",
-                #                 "facemask",
-                #                 "nasal cannula",
-                #                 "nebulizer",
-                #                 "non_rebreather_mask",
-                #             ]
-                #         )
-                #         & pl.col("oxygen_flow").is_null()
-                #     )
-                #     .then(pl.col("oxygen_flow / FiO2"))
-                #     .otherwise(pl.col("oxygen_flow"))
-                #     .alias("oxygen_flow"),
-                #     pl.when(
-                #         pl.col("oxygen_delivery_device").is_in(
-                #             [
-                #                 "BiPAP",
-                #                 "CPAP",
-                #                 "t_piece",
-                #                 "tracheostomy",
-                #                 "ventilator",
-                #             ]
-                #         )
-                #         & pl.col("FiO2").is_null()
-                #     )
-                #     .then(pl.col("oxygen_flow / FiO2"))
-                #     .otherwise(pl.col("FiO2"))
-                #     .alias("FiO2"),
-                # )
-                # .drop("oxygen_flow / FiO2")
-                # Pivot the nurse values to wide format
-                .collect(streaming=True).pivot(
-                    on="nursingchartcelltypevalname",
-                    index=self.index_cols,
-                    values="nursingchartvalue",
-                    aggregate_function="first",  # NOTE: first is used here to not run into issues with strings -> check if this is sensible
-                )
-            )
-
-            # Drop empty rows
-            ts_nurse_cols = ts_nurse.collect_schema().names()
-            droplist = list(set(ts_nurse_cols) - set(self.index_cols))
-            ts_nurse = (
-                ts_nurse.pipe(self.helpers.dropna, "all", droplist, False)
-                .unique()
-                .sort(self.index_cols)
-                .lazy()
-            )
-
-            # Save the preprocessed data
-            ts_nurse.sink_parquet(self.precalc_path + "EICU_B_ts_nurse.parquet")
-
-        else:
+        if os.path.isfile(ts_nurse_path):
             # Load the preprocessed data
-            ts_nurse = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_nurse.parquet"
+            return pl.scan_parquet(ts_nurse_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
-        return ts_nurse
+        ts_nurse = (
+            self.extract_time_series_nurse()
+            # Pivot the nurse values to wide format
+            .collect(streaming=True).pivot(
+                on="nursingchartcelltypevalname",
+                index=self.index_cols,
+                values="nursingchartvalue",
+                aggregate_function="first",  # NOTE: first is used here to not run into issues with strings -> check if this is sensible
+            )
+        )
+
+        # Drop empty rows
+        ts_nurse_cols = ts_nurse.collect_schema().names()
+        droplist = list(set(ts_nurse_cols) - set(self.index_cols))
+        ts_nurse = (
+            ts_nurse.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique()
+            .sort(self.index_cols)
+            .lazy()
+        )
+
+        # Save the preprocessed data
+        ts_nurse.sink_parquet(ts_nurse_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_nurse_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_nurse_path)
+        )
+        os.remove(ts_nurse_path_unsorted)
+
+        return pl.scan_parquet(ts_nurse_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
     # region inout
     # Process inout data, i.e. extract and pivot intake/output data.
     # Keep only the relevant inout values.
-    def _process_timeseries_inout(self):
+    def process_timeseries_inout(self):
         """
         Process inout data, i.e. extract and pivot intake/output data.
         Keep only the relevant inout values.
@@ -315,42 +317,55 @@ class EICUProcessor(EICUExtractor):
         :return: The processed intake/output data in wide format.
         :rtype: pl.LazyFrame
         """
+        ts_inout_path = self.precalc_path + "EICU_timeseries_inout.parquet"
+        ts_inout_path_unsorted = self.precalc_path + "EICU_ts_inout.parquet"
+
+        # Process inout data
+        if os.path.isfile(ts_inout_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_inout_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
 
         print("eICU    - Processing intake/output data...")
 
-        # Process inout data
-        if not os.path.isfile(self.precalc_path + "EICU_B_ts_inout.parquet"):
-            ts_inout = (
-                self.extract_time_series_intake_output()
-                # Pivot the intake/output values to wide format
-                .collect(streaming=True).pivot(
-                    on="celllabel",
-                    index=self.index_cols,
-                    values="cellvaluenumeric",
-                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-                )
+        ts_inout = (
+            self.extract_time_series_intake_output()
+            # Pivot the intake/output values to wide format
+            .collect(streaming=True).pivot(
+                on="celllabel",
+                index=self.index_cols,
+                values="cellvaluenumeric",
+                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
             )
+        )
 
-            # Drop empty rows
-            ts_inout_cols = ts_inout.collect_schema().names()
-            droplist = list(set(ts_inout_cols) - set(self.index_cols))
-            ts_inout = (
-                ts_inout.pipe(self.helpers.dropna, "all", droplist, False)
-                .unique()
-                .sort(self.index_cols)
-                .lazy()
-            )
+        # Drop empty rows
+        ts_inout_cols = ts_inout.collect_schema().names()
+        droplist = list(set(ts_inout_cols) - set(self.index_cols))
+        ts_inout = (
+            ts_inout.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique()
+            .sort(self.index_cols)
+            .lazy()
+        )
 
-            # Save the preprocessed data
-            ts_inout.sink_parquet(self.precalc_path + "EICU_B_ts_inout.parquet")
+        # Save the preprocessed data
+        ts_inout.sink_parquet(ts_inout_path_unsorted)
 
-        else:
-            # Load the preprocessed data
-            ts_inout = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_inout.parquet"
-            )
+        # Sort the data
+        (
+            pl.scan_parquet(ts_inout_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_inout_path)
+        )
+        os.remove(ts_inout_path_unsorted)
 
-        return ts_inout
+        return pl.scan_parquet(ts_inout_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 
@@ -366,36 +381,47 @@ class EICUProcessor(EICUExtractor):
         :return: The processed intake/output data in wide format.
         :rtype: pl.LazyFrame
         """
+        ts_period_path = self.precalc_path + "EICU_ts_periodics.parquet"
+        ts_period_path_unsorted = (
+            self.precalc_path + "EICU_ts_periodics_unsorted.parquet"
+        )
 
         print("eICU    - Processing (a)periodic data...")
 
         # Process inout data
-        if not os.path.isfile(
-            self.precalc_path + "EICU_B_ts_periodics.parquet"
-        ):
-            ts_periodics = self.extract_and_combine_periodics()
-
-            # Drop empty rows
-            ts_periodics_cols = ts_periodics.collect_schema().names()
-            droplist = list(set(ts_periodics_cols) - set(self.index_cols))
-            ts_periodics = (
-                ts_periodics.pipe(self.helpers.dropna, "all", droplist, False)
-                .unique()
-                .sort(self.index_cols)
-            )
-
-            # Save the preprocessed data
-            ts_periodics.sink_parquet(
-                self.precalc_path + "EICU_B_ts_periodics.parquet"
-            )
-
-        else:
+        if os.path.isfile(ts_period_path):
             # Load the preprocessed data
-            ts_periodics = pl.scan_parquet(
-                self.precalc_path + "EICU_B_ts_periodics.parquet"
+            return pl.scan_parquet(ts_period_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
             )
 
-        return ts_periodics
+        ts_periodics = self.extract_and_combine_periodics()
+
+        # Drop empty rows
+        ts_periodics_cols = ts_periodics.collect_schema().names()
+        droplist = list(set(ts_periodics_cols) - set(self.index_cols))
+        ts_periodics = (
+            ts_periodics.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique()
+            .sort(self.index_cols)
+        )
+
+        # Save the preprocessed data
+        ts_periodics.sink_parquet(ts_period_path_unsorted)
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_period_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_period_path)
+        )
+        os.remove(ts_period_path_unsorted)
+
+        return pl.scan_parquet(ts_period_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
 
     # endregion
 

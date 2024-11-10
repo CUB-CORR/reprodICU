@@ -235,10 +235,10 @@ class GlobalVars(GlobalHelpers):
             self.relevant_values_path + "RELEVANT_LABS.yaml"
         )
         self.relevant_respiratory_values = list(
-            set(self.relevant_respiratory_values_mapping.keys())
+            set(self.relevant_respiratory_values_mapping.values())
         )
         self.relevant_intakeoutput_values = list(
-            set(self.relevant_intakeoutput_values_mapping.keys())
+            set(self.relevant_intakeoutput_values_mapping.values())
         )
 
         self.all_relevant_values = (
