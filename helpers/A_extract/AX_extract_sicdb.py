@@ -236,6 +236,12 @@ class SICdbExtractor(SICdbPaths):
                 # Convert parameter IDs to names, then map them
                 pl.col("DataID")
                 .replace_strict(timeseries_mapping, default=None)
+                .replace(
+                    {
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
                 .alias("DataID"),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
@@ -320,7 +326,7 @@ class SICdbExtractor(SICdbPaths):
                 .alias("LaboratoryID"),
                 pl.struct(
                     value="LaboratoryValue", source="source", method="method"
-                ).alias("LaboratoryValue"),
+                ).alias("value_struct"),
             )
         )
 
