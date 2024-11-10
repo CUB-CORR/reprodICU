@@ -26,16 +26,23 @@ class HiRIDProcessor(HiRIDExtractor):
     # region time series
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
-        if os.path.isfile(
-            self.precalc_path + "HiRID_B_timeseries.parquet"
-        ) and os.path.isfile(
-            self.precalc_path + "HiRID_B_timeseries_labs.parquet"
-        ):
+        """
+        Processes the time series data of the HiRID dataset.
+        """
+        ts_path = self.precalc_path + "HiRID_timeseries.parquet"
+        ts_labs_path = self.precalc_path + "HiRID_timeseries_labs.parquet"
+
+        if os.path.isfile(ts_path) and os.path.isfile(ts_labs_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                self.precalc_path + "HiRID_B_timeseries.parquet"
-            ), pl.scan_parquet(
-                self.precalc_path + "HiRID_B_timeseries_labs.parquet"
+            return (
+                pl.scan_parquet(ts_path).select(
+                    pl.col(self.index_cols).set_sorted(),
+                    pl.exclude(self.index_cols),
+                ),
+                pl.scan_parquet(ts_labs_path).select(
+                    pl.col(self.index_cols).set_sorted(),
+                    pl.exclude(self.index_cols),
+                ),
             )
 
         print("HiRID   - Processing time series data...")
@@ -49,123 +56,110 @@ class HiRIDProcessor(HiRIDExtractor):
         )
         length_of_stay = self._extract_length_of_stay()
 
-        if not (
-            os.path.isfile(
-                self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
-            )
-            and os.path.isfile(
-                self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
-            )
-        ):
-            # Create an empty DataFrame to store the timeseries data
-            timeseries_processed = pl.LazyFrame()
-            timeseries_labs_processed = pl.LazyFrame()
+        # Create an empty DataFrame to store the timeseries data
+        timeseries_processed = pl.LazyFrame()
+        timeseries_labs_processed = pl.LazyFrame()
 
-            # Since each case has it's data in only one file, iterating over the files specifically allows
-            # for a more efficient processing of the data.
-            os_listdir_files = os.listdir(self.timeseries_path)
-            counter, counter_max = 0, len(os_listdir_files)
-            for file in os.listdir(self.timeseries_path):
-
-                # Update the counter
-                counter += 1
-                print(
-                    f"Processing file {file}... \t{counter} / {counter_max}",
-                    end="\r",
-                )
-
-                # Process timeseries data
-                timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
-                    self._extract_timeseries_helper,
-                    admissiontime,
-                    length_of_stay,
-                    # observation_mapping,
-                )
-
-                # Drop empty rows
-                droplist = list(
-                    set(timeseries.collect_schema().names())
-                    - set(self.index_cols)
-                )
-                timeseries = timeseries.pipe(
-                    self.helpers.dropna, "all", droplist, False
-                ).unique()
-
-                # Separate the lab values from the rest
-                timeseries_labs = (
-                    timeseries.pipe(
-                        self._extract_timeseries_labs_helper
-                    )  # Convert the lab values to the correct units
-                    .pipe(
-                        self.convert._convert_lab_values,
-                        labelcol="variableid",
-                        valuecol="value_struct",
-                    )
-                    # Pivot the timeseries data
-                    .collect(streaming=True)
-                    .pivot(
-                        on="variableid",
-                        index=self.index_cols,
-                        values="value_struct",
-                        aggregate_function="first",
-                    )
-                    # Convert the wide lab values to the correct units
-                    .pipe(self.convert._convert_wide_lab_values)
-                )
-
-                timeseries = (
-                    timeseries.filter(
-                        ~pl.col("variableid").is_in(
-                            self.relevant_lab_values + self.other_lab_values
-                        )
-                    )
-                    # Pivot the timeseries data
-                    .collect(streaming=True).pivot(
-                        on="variableid",
-                        index=self.index_cols,
-                        values="value",
-                        aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-                    )
-                )
-
-                # Append the data to the DataFrame
-                timeseries_processed = pl.concat(
-                    [timeseries_processed, timeseries.lazy()],
-                    how="diagonal_relaxed",
-                )
-                timeseries_labs_processed = pl.concat(
-                    [timeseries_labs_processed, timeseries_labs.lazy()],
-                    how="diagonal_relaxed",
-                )
-
-            # Save the preprocessed data
-            timeseries_processed.sink_parquet(
-                self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
-            )
-            timeseries_labs_processed.sink_parquet(
-                self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
+        # Since each case has it's data in only one file, iterating over the files specifically allows
+        # for a more efficient processing of the data.
+        os_listdir_files = os.listdir(self.timeseries_path)
+        counter, counter_max = 0, len(os_listdir_files)
+        for file in os.listdir(self.timeseries_path):
+            # Update the counter
+            counter += 1
+            print(
+                f"Processing file {file}... \t{counter} / {counter_max}",
+                end="\r",
             )
 
-        # NOTE: if process stops due to insufficient memory, use the following
-        # lines instead within a terminal at the precalc_path:
-        # pl.scan_parquet("HiRID_B_timeseries_unsorted.parquet").sort(
-        #     "icu_stay_id", "time_relative_to_admission"
-        # ).sink_parquet("HiRID_B_timeseries.parquet")
-        timeseries = pl.scan_parquet(
-            self.precalc_path + "HiRID_B_timeseries_unsorted.parquet"
-        ).sort(self.index_cols)
-        timeseries.sink_parquet(
-            self.precalc_path + "HiRID_B_timeseries.parquet"
+            # Process timeseries data
+            timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
+                self._extract_timeseries_helper,
+                admissiontime,
+                length_of_stay,
+                # observation_mapping,
+            )
+
+            # Drop empty rows
+            droplist = list(
+                set(timeseries.collect_schema().names()) - set(self.index_cols)
+            )
+            timeseries = timeseries.pipe(
+                self.helpers.dropna, "all", droplist, False
+            ).unique()
+
+            # Separate the lab values from the rest
+            timeseries_labs = (
+                timeseries.pipe(
+                    self._extract_timeseries_labs_helper
+                )  # Convert the lab values to the correct units
+                .pipe(
+                    self.convert._convert_lab_values,
+                    labelcol="variableid",
+                    valuecol="value_struct",
+                )
+                .with_columns(
+                    pl.col("value_struct")
+                    .struct.json_encode()
+                    .alias("value_struct")
+                )
+                # Pivot the timeseries data
+                .collect(streaming=True)
+                .pivot(
+                    on="variableid",
+                    index=self.index_cols,
+                    values="value_struct",
+                    aggregate_function="first",
+                )
+                # Convert the wide lab values to the correct units
+                .pipe(self.convert._convert_wide_lab_values)
+                .sort(self.index_cols)
+                .lazy()
+            )
+
+            timeseries = (
+                timeseries.filter(
+                    ~pl.col("variableid").is_in(
+                        self.relevant_lab_values + self.other_lab_values
+                    )
+                )
+                # Pivot the timeseries data
+                .collect(streaming=True)
+                .pivot(
+                    on="variableid",
+                    index=self.index_cols,
+                    values="value",
+                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                )
+                .sort(self.index_cols)
+                .lazy()
+            )
+
+            # Append the data to the DataFrame
+            timeseries_processed = pl.concat(
+                [timeseries_processed, timeseries],
+                how="diagonal_relaxed",
+            )
+            timeseries_labs_processed = pl.concat(
+                [timeseries_labs_processed, timeseries_labs],
+                how="diagonal_relaxed",
+            )
+
+        # Save the preprocessed data
+        timeseries_processed.sink_parquet(ts_path)
+        timeseries_labs_processed.sink_parquet(ts_labs_path)
+
+        # Load the preprocessed data
+        return (
+            pl.scan_parquet(ts_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            ),
+            pl.scan_parquet(ts_labs_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            ),
         )
-
-        timeseries_labs = pl.scan_parquet(
-            self.precalc_path + "HiRID_B_timeseries_labs_unsorted.parquet"
-        ).sort(self.index_cols)
-        timeseries_labs.sink_parquet(
-            self.precalc_path + "HiRID_B_timeseries_labs.parquet"
-        )
-
-        return timeseries, timeseries_labs
 
     # endregion
 
@@ -266,6 +260,7 @@ class HiRIDConverter(UnitConverter):
             total_itemcol="Leukocytes [#/volume]",
             goal_itemcol="Lymphocytes/100 leukocytes",
             structfield="value",
+            structstring=True,
         )
 
 
