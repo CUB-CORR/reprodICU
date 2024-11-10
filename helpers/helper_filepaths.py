@@ -102,7 +102,7 @@ class EICUPaths(GlobalVars):
             self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
         self.intakeoutput_mapping_path = (
-            self.eICU_mapping_path + "eicu_intakeOutput.yaml"
+            self.eICU_mapping_path + "eicu_intakeOutput_cellpath.yaml"
         )
         self.nurse_mapping_path = (
             self.eICU_mapping_path + "eicu_nurseCharting.yaml"

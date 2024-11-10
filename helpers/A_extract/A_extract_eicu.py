@@ -650,21 +650,19 @@ class EICUExtractor(EICUPaths):
         # NOTE: ASSUMPTION: These are the intake/output values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
         intakeoutput_mapping = self.load_mapping(self.intakeoutput_mapping_path)
-        keep_inout_names = self.relevant_intakeoutput_values
 
         return (
             pl.scan_csv(self.intakeOutput_path)
             .select(
-                [
-                    "patientunitstayid",
-                    "intakeoutputoffset",
-                    # "intaketotal",
-                    # "outputtotal",
-                    # "dialysistotal",
-                    # "nettotal",
-                    "celllabel",
-                    "cellvaluenumeric",
-                ]
+                "patientunitstayid",
+                "intakeoutputoffset",
+                # "intaketotal",
+                # "outputtotal",
+                # "dialysistotal",
+                # "nettotal",
+                "cellpath",
+                "celllabel",
+                "cellvaluenumeric",
             )
             # Rename columns for consistency
             .rename(
@@ -675,12 +673,18 @@ class EICUExtractor(EICUPaths):
             )
             .with_columns(
                 # Replace intakeoutput names with mapped names
-                pl.col("celllabel")
+                pl.col("cellpath")
                 .replace_strict(intakeoutput_mapping, default=None)
+                .replace_strict(
+                    self.relevant_intakeoutput_values_mapping, default=None
+                )
                 .alias("celllabel"),
             )
+            .drop("cellpath")
             # Filter for intakeoutput names of interest
-            .filter(pl.col("celllabel").is_in(keep_inout_names))
+            .filter(
+                pl.col("celllabel").is_in(self.relevant_intakeoutput_values)
+            )
             # Remove rows with empty intakeoutput values
             .filter(pl.col("cellvaluenumeric").is_not_null())
             # Remove duplicate rows
@@ -856,6 +860,8 @@ class EICUExtractor(EICUPaths):
         :return: A polars LazyFrame with the extracted medication information.
         :rtype: pl.LazyFrame
         """
+
+        print("eICU    - Extracting medications...")
 
         eicu_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
             self.mapping_path + "MEDICATIONS.yaml", "eicu"
@@ -1310,7 +1316,7 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU   - Extracting procedures...")
+        print("eICU    - Extracting procedures...")
 
         IDs = self.extract_patient_information().select(
             [
