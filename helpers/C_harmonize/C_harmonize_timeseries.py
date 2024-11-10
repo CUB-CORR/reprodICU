@@ -281,17 +281,27 @@ class TimeseriesHarmonizer(GlobalVars):
         # endregion
 
         # region labs
+        labstructdtype = pl.Struct(
+            [
+                pl.Field("value", pl.Float64),
+                pl.Field("source", pl.String),
+                pl.Field("method", pl.String),
+            ]
+        )
         pl.concat(timeseries_labs, how="diagonal_relaxed").cast(
             {  # Convert all columns to float
                 self.global_icu_stay_id_col: str,
                 self.timeseries_time_col: float,
             }
         ).sink_parquet(self.precalc_path + "reprodICU_timeseries_labs.parquet")
-        labs = pl.scan_parquet(
-            self.precalc_path + "reprodICU_timeseries_labs.parquet"
-        )
         labs = (
-            labs.select(*self.index_cols, pl.exclude(self.index_cols))
+            pl.scan_parquet(
+                self.precalc_path + "reprodICU_timeseries_labs.parquet"
+            )
+            .select(
+                *self.index_cols,
+                pl.exclude(self.index_cols).str.json_decode(labstructdtype),
+            )
             .unique(self.index_cols)
             .sort(self.index_cols)
         )
@@ -348,10 +358,10 @@ class TimeseriesHarmonizer(GlobalVars):
         if save_to_default:
             print("reprodICU - Saving timeseries...")
 
-            # print("reprodICU - Saving vitals...")
-            # vitals.pipe(self._print_unique_cases, "vitals").pipe(
-            #     self._fix_temperature_values
-            # ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
+            print("reprodICU - Saving vitals...")
+            vitals.pipe(self._print_unique_cases, "vitals").pipe(
+                self._fix_temperature_values
+            ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
 
             print("reprodICU - Saving labs...")
             labs.pipe(self._print_unique_cases, "labs").sink_parquet(

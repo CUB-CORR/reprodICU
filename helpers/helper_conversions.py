@@ -50,12 +50,34 @@ class UnitConversions:
         total_itemcol: str,
         goal_itemcol: str = None,
         structfield: str = None,
+        structstring: bool = False,
     ) -> pl.LazyFrame:
         """
         Convert absolute counts to relative counts.
         """
 
+        labstructdtype = pl.Struct(
+            [
+                pl.Field("value", pl.Float64),
+                pl.Field("source", pl.String),
+                pl.Field("method", pl.String),
+            ]
+        )
+
         if structfield is not None:
+            if structstring:
+                data = data.with_columns(
+                    pl.col(itemcol)
+                    .str.json_decode(labstructdtype)
+                    .alias(itemcol),
+                    pl.col(total_itemcol)
+                    .str.json_decode(labstructdtype)
+                    .alias(total_itemcol),
+                    pl.col(itemcol)
+                    .str.json_decode(labstructdtype)
+                    .alias(goal_itemcol),
+                )
+
             data = (
                 data.with_columns(
                     # Rename the columns for the unnest
@@ -111,6 +133,15 @@ class UnitConversions:
                     ).alias(total_itemcol),
                 )
             )
+
+            if structstring:
+                data = data.with_columns(
+                    pl.col(itemcol).struct.json_encode().alias(itemcol),
+                    pl.col(total_itemcol)
+                    .struct.json_encode()
+                    .alias(total_itemcol),
+                    pl.col(itemcol).struct.json_encode().alias(goal_itemcol),
+                )
 
         else:
             data = data.with_columns(

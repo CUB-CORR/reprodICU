@@ -125,6 +125,11 @@ class MIMIC4Processor(MIMIC4Extractor):
                 valuecol="value_struct",
                 structfield="value",
             )
+            .with_columns(
+                pl.col("value_struct")
+                .struct.json_encode()
+                .alias("value_struct")
+            )
             # Pivot the lab data
             .collect(streaming=True)
             .pivot(
@@ -477,19 +482,6 @@ class MIMIC4Converter(UnitConverter):
         Convert the lab values of the MIMIC4 dataset.
         """
 
-        absolute_leukos = [
-            "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            "Monocytes [#/volume]",
-            "Neutrophils [#/volume]",
-        ]
-        absolute_erys = [
-            "Reticulocytes [#/volume]",
-            "Reticulocytes [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
-
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,
@@ -497,6 +489,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Basophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -504,6 +497,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Eosinophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -511,6 +505,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Lymphocytes/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -518,6 +513,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Monocytes/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -525,6 +521,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Leukocytes [#/volume]",
                 goal_itemcol="Neutrophils/100 leukocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -532,6 +529,7 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Erythrocytes [#/volume]",
                 goal_itemcol="Reticulocytes/100 erythrocytes",
                 structfield="value",
+                structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
@@ -539,14 +537,8 @@ class MIMIC4Converter(UnitConverter):
                 total_itemcol="Erythrocytes [#/volume]",
                 goal_itemcol="Reticulocytes/100 erythrocytes",
                 structfield="value",
+                structstring=True,
             )
-            # .pipe(
-            #     self.convert_absolute_count_to_relative,
-            #     itemcol="Reticulocytes [#/volume]",
-            #     total_itemcol="Erythrocytes [#/volume]",
-            #     goal_itemcol="Reticulocytes/100 erythrocytes",
-            #     structfield="value",
-            # )
         )
 
 
