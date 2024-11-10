@@ -288,19 +288,17 @@ class TimeseriesHarmonizer(GlobalVars):
                 pl.Field("method", pl.String),
             ]
         )
-        pl.concat(timeseries_labs, how="diagonal_relaxed").cast(
-            {  # Convert all columns to float
-                self.global_icu_stay_id_col: str,
-                self.timeseries_time_col: float,
-            }
-        ).sink_parquet(self.precalc_path + "reprodICU_timeseries_labs.parquet")
         labs = (
-            pl.scan_parquet(
-                self.precalc_path + "reprodICU_timeseries_labs.parquet"
-            )
+            pl.concat(timeseries_labs, how="diagonal_relaxed")
             .select(
                 *self.index_cols,
                 pl.exclude(self.index_cols).str.json_decode(labstructdtype),
+            )
+            .cast(
+                {
+                    self.global_icu_stay_id_col: str,
+                    self.timeseries_time_col: float,
+                }
             )
             .unique(self.index_cols)
             .sort(self.index_cols)
@@ -328,7 +326,6 @@ class TimeseriesHarmonizer(GlobalVars):
                 }
             )
             .select([*self.index_cols, *sorted(resp_cols_not_index)])
-            .sort(self.index_cols)
             .unique(self.index_cols)
             .sort(self.index_cols)
         )
@@ -364,9 +361,9 @@ class TimeseriesHarmonizer(GlobalVars):
             ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
 
             print("reprodICU - Saving labs...")
-            labs.pipe(self._print_unique_cases, "labs").sink_parquet(
-                self.save_path + "timeseries_labs.parquet"
-            )
+            labs.pipe(self._print_unique_cases, "labs").collect(
+                streaming=True
+            ).write_parquet(self.save_path + "timeseries_labs.parquet")
 
             print("reprodICU - Saving respiratory...")
             resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
