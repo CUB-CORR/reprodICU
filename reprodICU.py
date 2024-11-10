@@ -98,7 +98,7 @@ if __name__ == "__main__":
         "-t",
         "--tables",
         type=str,
-        nargs="+",
+        nargs="*",
         default=["all"],
         help="Tables to build.",
     )
