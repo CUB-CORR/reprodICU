@@ -112,7 +112,7 @@ NIV Setting Set_RR: Breath rate mechanical --on ventilator
 NIV Setting Spont Exp Vt_5:
 NIV Setting Total RR_5: Breath rate spontaneous and mechanical --on ventilator
 Non-invasive Ventilation Mode: Ventilation mode Ventilator
-O2 Device: O2_device # THIS TO ENUM!!
+O2 Device: Oxygen delivery system
 O2 Percentage: Oxygen/Gas total [Pure volume fraction] Inhaled gas
 Oral Care Complete Every 2 Hours:
 Oxygen Delivery Method:
@@ -167,7 +167,7 @@ Tidal Volume (set): Tidal volume Ventilator --on ventilator
 Tidal Volume Observed (VT): Tidal volume.spontaneous+mechanical --on ventilator
 Total RR: Breath rate spontaneous and mechanical --on ventilator
 Total RSBI:
-Tracheostomy Type:
+Tracheostomy Type: Ventilator type
 Trachestomy Tube Size:
 Trapped Volume:
 Trigger:
@@ -183,7 +183,7 @@ Ventilator Checks:
 Ventilator Heater Temperature:
 Ventilator Population:
 Ventilator Support Mode: Ventilation mode Ventilator
-Ventilator Type:
+Ventilator Type: Ventilator type 
 Volume Guarantee:
 VS RESP RATE: Breath rate mechanical --on ventilator
 Vt Spontaneous (mL): Tidal volume.spontaneous --on ventilator

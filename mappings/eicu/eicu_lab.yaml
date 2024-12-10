@@ -25,7 +25,7 @@ bedside glucose: Glucose [Mass/volume] in Serum or Plasma # glucose_bedside
 bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 BNP: # BNP
 BUN: Urea nitrogen [Mass/volume] in Serum or Plasma # blood_urea_nitrogen
-calcium: Calcium [Moles/volume] in Blood # calcium # NEEDS UNIT CONVERSION !
+calcium: Calcium [Mass/volume] in Blood # calcium # NEEDS UNIT CONVERSION !
 Carbamazepine: # Medication levels in blood
 Carboxyhemoglobin: Carboxyhemoglobin/Hemoglobin.total in Arterial blood # carboxyhemoglobin
 cd 4:
