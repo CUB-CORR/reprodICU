@@ -272,6 +272,15 @@ class MIMIC3Paths(GlobalVars):
             self.mimic_loinc_mapping_path + "numerics-summary.csv"
         )
 
+        # MIMIC-III LOINC mapping paths (additional to MIMIC-IV)
+        self.mimic_loinc_mapping_additional_path = (
+            self.mimic3_mapping_path + "mimic-additional_code_mapping/"
+        )
+        self.meas_chartevents_main_additional_path = (
+            self.mimic_loinc_mapping_additional_path
+            + "meas_chartevents_main.csv"
+        )
+
 
 # endregion
 
