@@ -1,15 +1,9 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
 Airway pressure --at mean expiratory flow on ventilator: []
-Airway pressure --at zero inspiratory flow on ventilator:
-  # UMCdb
-  - Airway pressure --during respiratory pause
-  # MIMIC
-  - Pressure.plateau Respiratory system airway --on ventilator
-  # HiRID
-  - Plateau pressure
+# Airway pressure --at zero inspiratory flow on ventilator: []
 Airway pressure delta --on ventilator:
-  # # UMCdb
+  # UMCdb
   - Airway pressure delta setting Ventilator
 Breath rate mechanical --on ventilator:
   # UMCdb
@@ -46,27 +40,34 @@ Inspiration/Expiration time Ratio:
   # SICdb
   - IERatio
 Inspiratory flow setting Ventilator: []
-Inspiratory gas flow Respiratory system airway --on ventilator:
+Inspiratory gas flow Respiratory system airway --on ventilator: []
 Inspiratory time setting Ventilator:
   - Inspiration setting [Time] Ventilator
 Inspired minute Volume during Mechanical ventilation: []
 Low pressure hold time setting Ventilator: []
 Mean pressure Respiratory system airway --on ventilator:
-  # HiRID
+  # HiRID / MIMIC
   - Mean airway pressure
   # SICdb
   - Mean Airway Pressure
   - pMean
 Minute volume setting Ventilator: []
 Oxygen [Partial pressure] in Exhaled gas: []
-Oxygen/Gas total [Pure volume fraction] Inhaled gas:
-  - Inhaled oxygen concentration
+Oxygen/Gas total [Pure volume fraction] Inhaled gas: []
 Oxygen/Total gas setting [Volume Fraction] Ventilator:
   # HiRID
   - Inspired oxygen concentration
   # SICdb
   - FIO2
-Oxygen gas flow Oxygen delivery system: []
+  # MIMIC
+  - Inhaled oxygen concentration # refers to FiO2 values according to the unmapped values
+Oxygen delivery system:
+  # MIMIC
+  - Oxygen delivery
+Oxygen gas flow Oxygen delivery system:
+  # HiRID
+  - Oxygen administration by mask
+  - Oxygen administration by nasal cannula
 PEEP Respiratory system --on ventilator:
   - Intrinsic PEEP Respiratory system
   - Positive end expiratory pressure setting Ventilator
@@ -84,6 +85,11 @@ Pressure.max Respiratory system airway --on ventilator:
   # SICdb
   - pPeak
   - PeakInspiratoryPressure
+Pressure.plateau Respiratory system airway --on ventilator:
+  # HiRID
+  - Plateau pressure
+  # UMCdb
+  - Airway pressure --during respiratory pause
 Tidal volume setting Ventilator:
   # HiRID
   - Tidal volume setting
@@ -91,3 +97,4 @@ Tidal volume Ventilator --on ventilator: []
 Tidal volume.spontaneous --on ventilator: []
 Tidal volume.spontaneous+mechanical --on ventilator: []
 Ventilation mode Ventilator: []
+Ventilator type: []
