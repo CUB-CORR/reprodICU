@@ -30,46 +30,26 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
         self.other_lab_values = [
-            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
-            "Bilirubin.total [Mass/volume] in Serum or Plasma",
-            "Calcium [Mass/volume] in Blood",
-            "Calcium.ionized [Mass/volume] in Blood",
-            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
-            "Iron [Mass/volume] in Serum or Plasma",
-            "Iron binding capacity [Mass/volume] in Serum or Plasma",
-            "Magnesium [Mass/volume] in Serum or Plasma",
-            "Phosphate [Mass/volume] in Serum or Plasma",
-            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
-            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
-            "Ammonia [Moles/volume] in Plasma",
-            "Bicarbonate [Moles/volume] in Blood",
-            "Carboxyhemoglobin/Hemoglobin.total in Blood",
-            "Methehemoglobin/Hemoglobin.total in Blood",
-            "Oxyhemoglobin/Hemoglobin.total in Blood",
-            "Leukocytes [#/volume] in Blood by Automated count",
-            "Basophils/100 leukocytes in Blood by Automated count",
-            "Eosinophils/100 leukocytes in Blood by Automated count",
-            "Lymphocytes/100 leukocytes in Blood by Automated count",
-            "Monocytes/100 leukocytes in Blood by Automated count",
-            "Neutrophils/100 leukocytes in Blood by Automated count",
-            "Erythrocyte distribution width [Ratio] by Automated count",
-            "Erythrocytes [#/volume] in Blood by Automated count",
-            "Platelets [#/volume] in Blood by Automated count",
-            "MCH [Entitic mass] by Automated count",
-            "MCHC [Mass/volume] by Automated count",
-            "MCV [Entitic volume] by Automated count",
-            "Troponin T.cardiac [Mass/volume] in Serum or Plasma",
-            "Basophils [#/volume] in Blood by Automated count",
-            "Eosinophils [#/volume] in Blood by Automated count",
-            "Lymphocytes [#/volume] in Blood by Automated count",
-            "Monocytes [#/volume] in Blood by Automated count",
-            "Neutrophils [#/volume] in Blood by Automated count",
-            "Reticulocytes [#/volume] in Blood",
-            "Reticulocytes [#/volume] in Blood by Automated count",
-            "Reticulocytes [#/volume] in Blood by Manual count",
+            "Bilirubin.direct [Mass/volume]",
+            "Bilirubin.indirect [Mass/volume]",
+            "Bilirubin.total [Mass/volume]",
+            "Calcium [Mass/volume]",
+            "Calcium.ionized [Mass/volume]",
+            "Creatine kinase.MB [Mass/volume]",
+            "Iron [Mass/volume]",
+            "Iron binding capacity [Mass/volume]",
+            "Magnesium [Mass/volume]",
+            "Phosphate [Mass/volume]",
+            "Triiodothyronine (T3) [Mass/volume]",
+            "Thyroxine (T4) [Mass/volume]",
+            "Thyroxine (T4) free [Mass/volume]",
+            "Cobalamin (Vitamin B12) [Mass/volume]",
+            # "Basophils [#/volume]",
+            "Eosinophils [#/volume]",
+            "Lymphocytes [#/volume]",
+            # "Monocytes [#/volume]",
+            # "Neutrophils [#/volume]",
+            "Reticulocytes [#/volume]",
         ]
 
     # region IDs
@@ -486,11 +466,19 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Filter for names of interest
             .filter(
                 pl.col("LABEL").is_not_null(),
-                pl.col("LABEL").is_in(self.all_values + self.other_lab_values),
+                # pl.col("LABEL").is_in(self.all_values + self.other_lab_values),
+                pl.col("LABEL")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values),
             )
         )
 
-        meas_chartevents_main_data = (
+        meas_chartevents_main_original_data = (
             pl.scan_csv(self.meas_chartevents_main_path)
             .select("itemid (omop_source_code)", "label", "omop_concept_name")
             .with_columns(
@@ -526,22 +514,42 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             # Filter for names of interest
             .filter(
-                pl.col("LABEL").is_in(self.all_values + self.other_lab_values)
+                pl.col("LABEL").is_not_null(),
+                # pl.col("LABEL").is_in(self.all_values + self.other_lab_values)
+                pl.col("LABEL")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values),
             )
         )
-
-        # meas_chartevents_main_data.sink_parquet(
-        #     "meas_chartevents_main_data.parquet"
-        # )
-
-        # # Filter for names of interest
-        # meas_chartevents_main_data.filter(
-        #     pl.col("LABEL").is_in(self.all_values + self.other_lab_values)
-        # ).sink_parquet("meas_chartevents_main_data_filtered.parquet")
+        meas_chartevents_main_additional_data = (
+            pl.scan_csv(self.meas_chartevents_main_additional_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "ITEMID",
+                    "omop_concept_name": "LABEL",
+                }
+            )
+        )
+        meas_chartevents_main_data = pl.concat(
+            [
+                meas_chartevents_main_original_data,
+                meas_chartevents_main_additional_data,
+            ],
+            how="vertical",
+        )
 
         return (
-            pl.scan_csv(self.chartevents_path)
-            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
+            pl.scan_csv(
+                self.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUENUM")
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col})
             .with_columns(
@@ -555,19 +563,30 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.when(pl.col("LABEL").is_null())
                 .then(pl.col("LABEL_d_items"))
                 .otherwise(pl.col("LABEL"))
-                .alias("LABEL")
+                .alias("LABEL"),
+                pl.when(pl.col("LABEL") == "Heart rate rhythm")
+                .then(
+                    pl.col("VALUE")
+                    .replace_strict(self.HEART_RHYTHM_MAP, default=None)
+                    .replace(self.heart_rhythm_enum_map)
+                )
+                .when(pl.col("LABEL") == "Ventilation mode Ventilator")
+                .then(
+                    pl.col("VALUE")
+                    .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
+                    .replace(self.ventilator_mode_enum_map)
+                )
+                .otherwise(pl.col("VALUENUM"))
+                .cast(float)
+                .alias("VALUENUM"),
             )
             .drop("ITEMID", "LABEL_d_items")
-            # .pipe(self._print_unique_cases, "VITAL 3 HERE -4")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null())  # & (pl.col("LABEL") != ""))
-            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3.7")
             # Remove rows with empty values
             .filter(pl.col("VALUENUM").is_not_null())
-            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3.5")
             # Remove duplicate rows
             .unique()
-            # .pipe(self._print_unique_cases, "VITAL 3 HERE -3")
         )
 
     # endregion
@@ -605,7 +624,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                 }
             )
             # Filter for lab names of interest
-            # .filter(pl.col("LABEL").is_in(self.all_values + self.other_lab_values))
+            .filter(
+                pl.col("LABEL")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.relevant_lab_values + self.other_lab_values)
+            )
         )
 
         return (

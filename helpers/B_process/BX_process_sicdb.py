@@ -210,7 +210,7 @@ class SICdbConverter(UnitConverter):
                         "Bilirubin.direct [Mass/volume]": "Bilirubin.direct [Moles/volume]",
                         "Bilirubin.total [Mass/volume]": "Bilirubin.total [Moles/volume]",
                         "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-                        "Iron [Mass/volume]": "Iron [Mass/volume]",
+                        "Iron [Mass/volume]": "Iron [Moles/volume]",
                         # NOTE: rename for consistency
                         "Anion gap 4": "Anion gap",
                         "Fractional oxyhemoglobin": "Oxyhemoglobin/Hemoglobin.total",

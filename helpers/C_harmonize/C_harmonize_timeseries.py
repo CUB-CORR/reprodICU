@@ -281,25 +281,10 @@ class TimeseriesHarmonizer(GlobalVars):
         # endregion
 
         # region labs
-        labstructdtype = pl.Struct(
-            [
-                pl.Field("value", pl.Float64),
-                pl.Field("source", pl.String),
-                pl.Field("method", pl.String),
-            ]
-        )
         labs = (
             pl.concat(timeseries_labs, how="diagonal_relaxed")
-            .select(
-                *self.index_cols,
-                pl.exclude(self.index_cols).str.json_decode(labstructdtype),
-            )
-            .cast(
-                {
-                    self.global_icu_stay_id_col: str,
-                    self.timeseries_time_col: float,
-                }
-            )
+            .cast(str)
+            .cast({self.timeseries_time_col: float})
             .unique(self.index_cols)
             .sort(self.index_cols)
         )
@@ -312,14 +297,20 @@ class TimeseriesHarmonizer(GlobalVars):
         resp = (
             resp.pipe(self.helpers.dropna, "all", resp_cols_not_index)
             .cast(
-                {  # Convert all columns to float, except for Ventilation mode Ventilator
+                {  # Convert all columns to float, except for
+                    # - Ventilation mode Ventilator
+                    # - Ventilator Type
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
                         col: (
-                            float
-                            if col != "Ventilation mode Ventilator"
-                            else str
+                            str
+                            if col
+                            in [
+                                "Ventilation mode Ventilator",
+                                "Ventilator Type",
+                            ]
+                            else float
                         )
                         for col in resp_cols_not_index
                     },
@@ -361,9 +352,9 @@ class TimeseriesHarmonizer(GlobalVars):
             ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
 
             print("reprodICU - Saving labs...")
-            labs.pipe(self._print_unique_cases, "labs").collect(
-                streaming=True
-            ).write_parquet(self.save_path + "timeseries_labs.parquet")
+            labs.pipe(self._print_unique_cases, "labs").sink_parquet(
+                self.save_path + "timeseries_labs.parquet"
+            )
 
             print("reprodICU - Saving respiratory...")
             resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
@@ -377,7 +368,7 @@ class TimeseriesHarmonizer(GlobalVars):
 
             return None
 
-        return vitals, labs, resp  # , inout
+        return vitals, labs, resp, inout
 
     # endregion
 
@@ -388,6 +379,14 @@ class TimeseriesHarmonizer(GlobalVars):
         # based on the github comments by @daviewales here:
         # https://github.com/pola-rs/polars/issues/7078#issuecomment-2258225305
         # modified for LazyFrames
+
+        labstructdtype = pl.Struct(
+            [
+                pl.Field("value", pl.Float64),
+                pl.Field("source", pl.String),
+                pl.Field("method", pl.String),
+            ]
+        )
 
         def _prefix_field(field):
             # return pl.col(field).name.prefix_fields(f"{field}.")
@@ -409,7 +408,11 @@ class TimeseriesHarmonizer(GlobalVars):
             )
 
         return (
-            flatten(data)
+            data.select(
+                *self.index_cols,
+                pl.exclude(self.index_cols).str.json_decode(labstructdtype),
+            )
+            .pipe(flatten)
             .select(
                 self.global_icu_stay_id_col,
                 self.timeseries_time_col,

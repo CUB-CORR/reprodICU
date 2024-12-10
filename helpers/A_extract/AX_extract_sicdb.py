@@ -20,39 +20,21 @@ class SICdbExtractor(SICdbPaths):
         self.helpers = GlobalHelpers()
 
         self.other_lab_values = [
-            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-            "Bilirubin.total [Mass/volume] in Serum or Plasma",
-            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
-            "Iron [Mass/volume] in Serum or Plasma",
-            "Anion gap 4 in Arterial blood",
-            "Band form neutrophils/100 leukocytes in Blood by Manual count",
-            "Basophils/100 leukocytes in Blood by Manual count",
-            "Eosinophils/100 leukocytes in Blood by Manual count",
-            "Lymphocytes/100 leukocytes in Blood by Manual count",
-            "Monocytes/100 leukocytes in Blood by Manual count",
-            "Segmented neutrophils/100 leukocytes in Blood by Manual count",
-            "Calcium [Moles/volume] in Serum or Plasma",
-            "Calcium.ionized [Moles/volume] in Arterial blood",
-            "Chloride [Moles/volume] in Arterial blood",
-            "Chloride [Moles/volume] in Serum or Plasma",
-            "Erythrocyte distribution width [Ratio] by Automated count",
-            "Hematocrit [Volume Fraction] of Arterial blood",
-            "Monocytes/100 leukocytes in Blood by Manual count",
-            "Fractional oxyhemoglobin in Arterial blood",
-            "Potassium [Moles/volume] in Arterial blood",
-            "Potassium [Moles/volume] in Serum or Plasma",
-            "Sodium [Moles/volume] in Arterial blood",
-            "Sodium [Moles/volume] in Serum or Plasma",
-            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
-            "Urea [Mass/volume] in Serum or Plasma",
-            "Band form neutrophils [#/volume] in Blood by Manual count",
-            "Basophils [#/volume] in Blood",
-            "Eosinophils [#/volume] in Blood by Manual count",
-            "Lymphocytes [#/volume] in Blood by Manual count",
-            "Monocytes [#/volume] in Blood by Manual count",
-            "Neutrophils [#/volume] in Blood",
-            "Neutrophils [#/volume] in Blood by Manual count",
-            "Reticulocytes [#/volume] in Blood",
+            "Bilirubin.direct [Mass/volume]",
+            "Bilirubin.total [Mass/volume]",
+            "Cobalamin (Vitamin B12) [Mass/volume]",  # in Serum or Plasma",
+            "Iron [Mass/volume]",
+            "Anion gap 4",
+            "Fractional oxyhemoglobin",
+            "Thyroxine (T4) free [Mass/volume]",  # in Serum or Plasma",
+            "Band form neutrophils [#/volume]",
+            "Basophils [#/volume]",
+            "Eosinophils [#/volume]",
+            "Lymphocytes [#/volume]",
+            "Monocytes [#/volume]",
+            "Neutrophils [#/volume]",
+            "Neutrophils [#/volume]",
+            "Reticulocytes [#/volume]",
         ]
 
     # region patient
@@ -238,6 +220,7 @@ class SICdbExtractor(SICdbPaths):
                 .replace_strict(timeseries_mapping, default=None)
                 .replace(
                     {
+                        **self.relevant_vital_values_mapping,
                         **self.relevant_intakeoutput_values_mapping,
                         **self.relevant_respiratory_values_mapping,
                     }
@@ -248,7 +231,15 @@ class SICdbExtractor(SICdbPaths):
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
             .filter(
-                pl.col("DataID").is_in(self.all_values + self.other_lab_values)
+                # pl.col("DataID").is_in(self.all_values + self.other_lab_values),
+                pl.col("DataID")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values)
             )
             # Remove duplicate rows
             .unique()
@@ -276,17 +267,26 @@ class SICdbExtractor(SICdbPaths):
                 .cast(float)
                 .alias(self.timeseries_time_col),
                 # Convert lab IDs to names, then map them
-                pl.col("LaboratoryID").replace_strict(
-                    self._extract_references_LOINC("Laboratory"), default=None
-                ),
+                pl.col("LaboratoryID")
+                .replace_strict(
+                    self._extract_references_LOINC("Laboratory"),
+                    default=None,
+                )
+                .replace({**self.relevant_lab_values_mapping}),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant lab values
             .filter(
-                pl.col("LaboratoryID").is_in(
-                    self.all_values + self.other_lab_values
-                )
+                # pl.col("LaboratoryID").is_in(self.all_values + self.other_lab_values),
+                pl.col("LaboratoryID")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.relevant_lab_values + self.other_lab_values)
             )
             # Remove duplicate rows
             .unique()

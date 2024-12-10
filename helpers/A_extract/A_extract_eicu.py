@@ -29,20 +29,20 @@ class EICUExtractor(EICUPaths):
         )
 
         self.other_lab_values = [
-            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
-            "Bilirubin.total [Mass/volume] in Serum or Plasma",
-            "Calcium [Mass/volume] in Blood",
-            "Calcium.ionized [Mass/volume] in Blood",
-            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
-            "Iron [Mass/volume] in Serum or Plasma",
-            "Iron binding capacity [Mass/volume] in Serum or Plasma",
-            "Magnesium [Mass/volume] in Serum or Plasma",
-            "Phosphate [Mass/volume] in Serum or Plasma",
-            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
-            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
+            "Bilirubin.direct [Mass/volume]",
+            "Bilirubin.indirect [Mass/volume]",
+            "Bilirubin.total [Mass/volume]",
+            "Calcium [Mass/volume]",
+            "Calcium.ionized [Mass/volume]",
+            "Creatine kinase.MB [Mass/volume]",
+            "Iron [Mass/volume]",
+            "Iron binding capacity [Mass/volume]",
+            "Magnesium [Mass/volume]",
+            "Phosphate [Mass/volume]",
+            "Triiodothyronine (T3) [Mass/volume]",
+            "Thyroxine (T4) [Mass/volume]",
+            "Thyroxine (T4) free [Mass/volume]",
+            "Cobalamin (Vitamin B12) [Mass/volume]",
         ]
 
     # region patient
@@ -371,7 +371,15 @@ class EICUExtractor(EICUPaths):
             )
             # Filter for lab names of interest
             .filter(
-                pl.col("labname").is_in(self.all_values + self.other_lab_values)
+                # pl.col("labname").is_in(self.all_values + self.other_lab_values)
+                pl.col("labname")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.relevant_lab_values + self.other_lab_values)
             )
             # Remove duplicate rows
             .unique()
@@ -461,10 +469,9 @@ class EICUExtractor(EICUPaths):
                 pl.col("respchartvaluelabel")
                 .replace_strict(resp_names_mapping, default=None)
                 .alias("respchartvaluelabel"),
-                # Remove percentage sign from respchartvalue and convert to float
-                pl.col("respchartvalue")
-                .str.replace("%", "")
-                .cast(float, strict=False),
+                # Remove percentage sign from respchartvalue
+                pl.col("respchartvalue").str.replace("%", ""),
+                # .cast(float, strict=False),
             )
             # Filter for resp names of interest
             .filter(pl.col("respchartvaluelabel").is_in(keep_resp_names))

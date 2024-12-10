@@ -618,8 +618,6 @@ class EICUConverter(UnitConverter):
             #     labelcol=labelcol,
             #     valuecol=valuecol,
             # )
-            # NOTE: Experience from clinical practice:
-            # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
                 self.convert_mg_dL_to_mg_L,
                 itemid="C reactive protein [Mass/volume]",

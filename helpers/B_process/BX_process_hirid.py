@@ -47,8 +47,6 @@ class HiRIDProcessor(HiRIDExtractor):
 
         print("HiRID   - Processing time series data...")
 
-        # COPY THE NEEDED DATAFRAMES FROM HiRIDExtractor.extract_timeseries() HERE
-        # observation_mapping = self.load_mapping(self.observation_mapping_path)
         admissiontime = (
             self._extract_admissions()
             .select([self.icu_stay_id_col, "admissiontime"])
@@ -90,7 +88,17 @@ class HiRIDProcessor(HiRIDExtractor):
 
             # Separate the lab values from the rest
             timeseries_labs = (
-                timeseries.pipe(
+                timeseries.filter(
+                    pl.col("variableid")
+                    .str.replace("in HDL", "inHDL")
+                    .str.replace("in LDL", "inLDL")
+                    .str.replace(" (in|of) ", " INOF ")
+                    .str.split_exact(by=" INOF ", n=1)
+                    .struct.rename_fields(["variable", "_"])
+                    .struct.field("variable")
+                    .is_in(self.relevant_lab_values + self.other_lab_values)
+                )
+                .pipe(
                     self._extract_timeseries_labs_helper
                 )  # Convert the lab values to the correct units
                 .pipe(
@@ -111,17 +119,31 @@ class HiRIDProcessor(HiRIDExtractor):
                     values="value_struct",
                     aggregate_function="first",
                 )
-                # Convert the wide lab values to the correct units
-                .pipe(self.convert._convert_wide_lab_values)
-                .sort(self.index_cols)
-                .lazy()
             )
 
+            timeseries_labs_columns = timeseries_labs.collect_schema().names()
+            if ("Lymphocytes [#/volume]" in timeseries_labs_columns) and (
+                "Leukocytes [#/volume]" in timeseries_labs_columns
+            ):
+                timeseries_labs = (
+                    timeseries_labs
+                    # Convert the wide lab values to the correct units
+                    .pipe(self.convert._convert_wide_lab_values)
+                )
+
+            timeseries_labs = timeseries_labs.sort(self.index_cols).lazy()
+
+            # Drop the lab values from the timeseries data
             timeseries = (
                 timeseries.filter(
-                    ~pl.col("variableid").is_in(
-                        self.relevant_lab_values + self.other_lab_values
-                    )
+                    ~pl.col("variableid")
+                    .str.replace("in HDL", "inHDL")
+                    .str.replace("in LDL", "inLDL")
+                    .str.replace(" (in|of) ", " INOF ")
+                    .str.split_exact(by=" INOF ", n=1)
+                    .struct.rename_fields(["variable", "_"])
+                    .struct.field("variable")
+                    .is_in(self.relevant_lab_values + self.other_lab_values)
                 )
                 # Pivot the timeseries data
                 .collect(streaming=True)

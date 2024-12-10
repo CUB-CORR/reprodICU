@@ -21,23 +21,13 @@ class HiRIDExtractor(HiRIDPaths):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
         self.other_lab_values = [
-            "Creatinine [Moles/volume] in Blood",
-            "Creatinine [Moles/volume] in Urine",
-            "Glucose [Moles/volume] in Serum or Plasma",
-            "Urea nitrogen [Moles/volume] in Serum or Plasma",
-            "Alkaline phosphatase [Enzymatic activity/volume] in Blood",
+            "Creatinine [Moles/volume]",
+            "Glucose [Moles/volume]",
+            "Urea nitrogen [Moles/volume]",
             "Creatine kinase panel - Serum or Plasma",
-            "Erythrocyte sedimentation rate",
-            "Ferritin [Mass/volume] in Blood",
-            "INR in Blood by Coagulation assay",
-            "MCHC [Mass/volume] in Cord blood",
-            "Magnesium [Moles/volume] in Blood",
-            "Phosphate [Moles/volume] in Blood",
-            "aPTT in Blood by Coagulation assay",
-            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
-            "Lactate [Mass/volume] in Arterial blood",
-            "Urea [Moles/volume] in Venous blood",
-            "Lymphocytes [#/volume] in Blood",
+            "Creatine kinase.MB [Mass/volume]",
+            "Lactate [Mass/volume]",
+            "Lymphocytes [#/volume]",
         ]
 
     # region patient
@@ -304,45 +294,6 @@ class HiRIDExtractor(HiRIDPaths):
 
     # region timeseries
     # Extract timeseries information from the timeseries file directory
-    def extract_timeseries(self) -> pl.LazyFrame:
-        # observation_mapping = self.load_mapping(self.observation_mapping_path)
-        admissiontime = (
-            self._extract_admissions()
-            .select([self.icu_stay_id_col, "admissiontime"])
-            .cast({"admissiontime": str})
-        )
-        length_of_stay = self._extract_length_of_stay()
-
-        # Create an empty DataFrame to store the timeseries data
-        timeseries = pl.LazyFrame()
-        timeseries_labs = pl.LazyFrame()
-
-        # Since each case has it's data in only one file, iterating over the files specifically allows
-        # for a more efficient processing of the data.
-        for file in os.listdir(self.timeseries_path):
-            data_ = pl.scan_parquet(self.timeseries_path + file).pipe(
-                self._extract_timeseries_helper,
-                admissiontime,
-                length_of_stay,
-                # observation_mapping,
-            )
-
-            # Separate the lab values from the rest
-            data_labs = data_.pipe(self._extract_timeseries_labs_helper)
-            data = data_.filter(
-                ~pl.col("variableid").is_in(
-                    self.relevant_lab_values + self.other_lab_values
-                )
-            )
-
-            # Append the data to the DataFrame
-            timeseries = pl.concat([timeseries, data], how="diagonal_relaxed")
-            timeseries_labs = pl.concat(
-                [timeseries_labs, data_labs], how="diagonal_relaxed"
-            )
-
-        return timeseries, timeseries_labs
-
     def _extract_timeseries_helper(
         self,
         data: pl.LazyFrame,
@@ -369,6 +320,8 @@ class HiRIDExtractor(HiRIDPaths):
                 .replace_strict(self._get_observation_variables(), default=None)
                 .replace(
                     {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
                         **self.relevant_intakeoutput_values_mapping,
                         **self.relevant_respiratory_values_mapping,
                     }
@@ -400,12 +353,6 @@ class HiRIDExtractor(HiRIDPaths):
                     ).truediv(pl.duration(seconds=1))
                 )
             )
-            # Filter for names of interest
-            .filter(
-                pl.col("variableid").is_in(
-                    self.all_values + self.other_lab_values
-                )
-            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -424,13 +371,7 @@ class HiRIDExtractor(HiRIDPaths):
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
         return (
-            data.filter(
-                pl.col("variableid").is_in(
-                    self.relevant_lab_values + self.other_lab_values
-                )
-            )
-            # MAKE STRUCT
-            .with_columns(
+            data.with_columns(
                 pl.col("variableid")
                 .str.split_exact(by=" by ", n=1)
                 .struct.rename_fields(["variable_source", "method"])
@@ -739,14 +680,10 @@ class HiRIDExtractor(HiRIDPaths):
             .filter(pl.col("Source Table") == "Observation")
             .drop("Source Table")
         ).with_columns(
-            # Fix bad mappings (wrong units or spelling unequal to reprodICU harmonization)
+            # Fix bad mappings (wrong units)
             pl.col("Variable Name").replace(
-                {
-                    "Bilirubin.direct [Mass/volume] in Serum or Plasma": "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                    "Glasgow Coma Score verbal response subscore": "Glasgow Coma Score verbal",
-                    "Glasgow Coma Score motor response subscore": "Glasgow Coma Score motor",
-                    "Glasgow Coma Score eye opening subscore": "Glasgow Coma Score eye opening",
-                }
+                "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                "Bilirubin.direct [Moles/volume] in Serum or Plasma",
             )
         )
 
