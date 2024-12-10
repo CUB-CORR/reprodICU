@@ -5,16 +5,18 @@
 # It contains the GlobalVars class that stores globally configured variables and the GlobalHelpers class
 # that contains helper functions that are used across multiple scripts.
 
+from typing import Optional, Sequence, Union
+
 import polars as pl
 import yaml
 
-from typing import Sequence, Optional, Union
 
-
+# region GlobalHelpers
 class GlobalHelpers:
     def __init__(self):
         pass
 
+    # region mapping helpers
     def load_mapping(self, path: str) -> dict:
         with open(path, "r") as f:
             return yaml.safe_load(f)
@@ -50,6 +52,7 @@ class GlobalHelpers:
             return_dict.update({v: key for v in value[database]})
         return return_dict
 
+    # region time conversion
     def _convert_time_to_days_float(
         self, data: pl.LazyFrame, col_name: str, base_unit: str = "minutes"
     ):
@@ -80,6 +83,7 @@ class GlobalHelpers:
             (pl.col(col_name) * multplicator).cast(float).alias(col_name)
         )
 
+    # region dropna
     def dropna(
         self,
         data: pl.LazyFrame,
@@ -119,6 +123,7 @@ class GlobalHelpers:
         return result
 
 
+# region GlobalVars
 class GlobalVars(GlobalHelpers):
     def __init__(self, paths, DEMO=False) -> None:
         config_path = "configs/"
@@ -141,6 +146,21 @@ class GlobalVars(GlobalHelpers):
         ).items():
             setattr(self, key, value)
 
+        # region GLOBAL PATHS
+        # append globally configured paths as class attributes
+        self.config_path = config_path
+        self.relevant_values_path = config_path + "RELEVANT_VALUES/"
+        self.relevant_OMOP_values_path = config_path + "RELEVANT_VALUES_OMOP/"
+        self.mapping_path = mapping_path
+        self.precalc_path = tempfiles_path
+
+        # region CONSTANTS
+        # Define constants
+        self.DAYS_IN_YEAR = 365.25
+        self.INCH_TO_CM = 2.54  # 1 inch = 2.54 cm
+        self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
+
+        # region GLOBAL MAPS
         # append globally configured mappings as class attributes
         self.ETHNICITY_MAP = self.load_many_to_one_mapping(
             mapping_path + "ETHNICITY.yaml"
@@ -161,21 +181,14 @@ class GlobalVars(GlobalHelpers):
             mapping_path + "UNIT_TYPES.yaml"
         )
 
-        # append globally configured paths as class attributes
-        self.config_path = config_path
-        self.relevant_values_path = config_path + "RELEVANT_VALUES/"
-        self.relevant_OMOP_values_path = config_path + "RELEVANT_VALUES_OMOP/"
-        self.mapping_path = mapping_path
-        self.precalc_path = tempfiles_path
+        self.HEART_RHYTHM_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_FILES/heart_rhythm_mapping.yaml"
+        )
+        self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_FILES/ventilator_mode_mapping.yaml"
+        )
 
-        # Define constants
-        self.DAYS_IN_YEAR = 365.25
-        self.INCH_TO_CM = 2.54  # 1 inch = 2.54 cm
-        self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
-
-        def F_TO_C(F: float) -> float:
-            return (F - 32) * 5 / 9
-
+        # region DATA TYPES
         # Define custom data types
         self.gender_dtype = pl.Enum(["Male", "Female", "Other", "Unknown"])
         self.mortality_dtype = pl.Enum(["Alive", "Dead", "Unknown"])
@@ -198,6 +211,31 @@ class GlobalVars(GlobalHelpers):
             self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml")
         )
 
+        self.heart_rhythm_enum_map = {
+            v: i
+            for i, v in enumerate(
+                self.load_mapping_keys(
+                    mapping_path + "ADDITIONAL_FILES/heart_rhythm_mapping.yaml"
+                )
+            )
+        }
+        self.heart_rhythm_enum_map_inverted = {
+            i: v for v, i in self.heart_rhythm_enum_map.items()
+        }
+        self.ventilator_mode_enum_map = {
+            v: i
+            for i, v in enumerate(
+                self.load_mapping_keys(
+                    mapping_path
+                    + "ADDITIONAL_FILES/ventilator_mode_mapping.yaml"
+                )
+            )
+        }
+        self.ventilator_mode_enum_map_inverted = {
+            i: v for v, i in self.ventilator_mode_enum_map.items()
+        }
+
+        # region ICD
         # Define global mappings (ICD diagnoses)
         self.ICD9_TO_ICD10_DIAGS = pl.read_csv(
             mapping_path + "_icd_codes/icd9_diagnoses.csv",
@@ -216,7 +254,18 @@ class GlobalVars(GlobalHelpers):
             infer_schema_length=25000,
         )
 
+        # region RELEVANT
         # Select relevant variables
+        self.relevant_vital_values_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                self.relevant_values_path + "RELEVANT_VITALS.yaml"
+            )
+        )
+        self.relevant_lab_values_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                self.relevant_values_path + "RELEVANT_LABS.yaml"
+            )
+        )
         self.relevant_respiratory_values_mapping = (
             self.load_many_to_one_mapping_incl_keys(
                 self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
@@ -228,11 +277,11 @@ class GlobalVars(GlobalHelpers):
             )
         )
 
-        self.relevant_vital_values = self.load_mapping_true_keys(
-            self.relevant_values_path + "RELEVANT_VITALS.yaml"
+        self.relevant_vital_values = list(
+            set(self.relevant_vital_values_mapping.values())
         )
-        self.relevant_lab_values = self.load_mapping_true_keys(
-            self.relevant_values_path + "RELEVANT_LABS.yaml"
+        self.relevant_lab_values = list(
+            set(self.relevant_lab_values_mapping.values())
         )
         self.relevant_respiratory_values = list(
             set(self.relevant_respiratory_values_mapping.values())
@@ -253,35 +302,6 @@ class GlobalVars(GlobalHelpers):
             "base_deficit",  # for base_excess conversion in eICU
             "Temperature Fahrenheit",  # for temperature conversion in MIMIC
             "Temperature Celsius",  # for temperature conversion in MIMIC
-            "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-            "Bilirubin.indirect [Mass/volume] in Serum or Plasma",
-            "Bilirubin.total [Mass/volume] in Serum or Plasma",
-            "Calcium [Mass/volume] in Blood",
-            "Calcium.ionized [Mass/volume] in Blood",
-            "Cholesterol [Moles/volume] in Serum or Plasma",
-            "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
-            "Cholesterol in LDL [Moles/volume] in Serum or Plasma",
-            "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma",
-            "Cortisol [Moles/volume] in Serum or Plasma",
-            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
-            "Creatinine [Moles/volume] in Blood",
-            "Creatinine [Moles/volume] in Serum or Plasma",
-            "Creatinine [Moles/volume] in Urine",
-            "Glucose [Moles/volume] in Blood",
-            "Glucose [Moles/volume] in Serum or Plasma",
-            "Hemoglobin [Moles/volume] in Blood",
-            "Iron [Mass/volume] in Serum or Plasma",
-            "Iron binding capacity [Mass/volume] in Serum or Plasma",
-            "Lymphocytes [#/volume] in Blood",
-            "Magnesium [Mass/volume] in Serum or Plasma",
-            "MCHC [Moles/volume]",
-            "Phosphate [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) [Mass/volume] in Serum or Plasma",
-            "Thyroxine (T4) free [Mass/volume] in Serum or Plasma",
-            "Triglyceride [Moles/volume] in Blood",
-            "Triiodothyronine (T3) [Mass/volume] in Serum or Plasma",
-            "Urea [Mass/volume] in Serum or Plasma",
-            "Urea nitrogen [Mass/volume] in Serum or Plasma",
         ]
 
         self.all_values = (

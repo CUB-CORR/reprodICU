@@ -1,0 +1,186 @@
+"ECG: idioventricular rhythm": # 4138336
+  # HiRID
+  - Kammerrhythm
+  - Kammerrhythmus
+  # UMCdb
+  - Ventricular escape rhythm
+
+"EKG: asystole ": # 4146418
+  # HiRID
+  - Asystolie
+  # UMCdb
+  - Asystole
+
+"ECG: atrial fibrillation": # 4064452
+  # HiRID
+  - AF
+  - Atrial fibrillation
+  - Vhfli
+  # UMCdb
+  - Atrial fibrillation
+  # MIMIC
+  - AF (Atrial Fibrillation)
+
+"EKG: atrial flutter": # 4065288
+  # HiRID
+  - Vhfla
+  # UMCdb
+  - Atrial flutter
+  # MIMIC
+  - A Flut (Atrial Flutter)
+
+"ECG: partial atrioventricular block - long PR": # 45884784
+  # HiRID
+  - AV bl (I)
+  - AV Block Grad 1
+  # UMCdb
+  - First degree atrioventricular block
+  # MIMIC
+  - 1st AV (First degree AV Block)
+
+"ECG: Mobitz type I incomplete atrioventricular block": # 4143691
+  # HiRID
+  - AV bl (II)
+  - AV Block Grad 2
+  # UMCdb
+  - Second degree atrioventricular block
+  # MIMIC
+  - 2nd AV W-M1 (Second degree AV Block Wenckebach - Mobitz1)
+
+"ECG: partial atrioventricular block - 2:1": [] # 4065290 # UMCdb
+"ECG: partial atrioventricular block - 3:1": [] # 4064458 # UMCdb
+
+"ECG: Mobitz type II atrioventricular block": # 4064458
+  - High degree second degree atrioventricular block
+
+"EKG: complete atrioventricular block": # 4064874
+  # HiRID
+  - AV bl (III)
+  - AV Block Grad 3
+  # UMCdb
+  - Complete atrioventricular block
+  # MIMIC
+  - 3rd AV (Complete Heart Block)
+
+"EKG: left bundle branch block": # 4064614
+  # MIMIC
+  - LBBB (Left Bundle Branch Block)
+
+"ECG: junctional rhythm": # 4140001
+  # HiRID
+  - Nodal
+  - AV-Rhythmus
+  # UMCdb
+  - AV junctional rhythm
+  - Junctional
+  # MIMIC
+  - JR (Junctional Rhythm)
+
+"ECG: paced rhythm": # 4142412
+  # HiRID
+  - PM
+  - Paced
+  # UMCdb
+  - Dual chamber asynchronous
+  - Dual chamber demand
+  - Rhythm from artificial pacing
+  - Ventricular asynchronous
+  - Ventricular demand
+  # MIMIC
+  - A Paced
+  - AV Paced
+  - V Paced
+
+"ECG: premature atrial contractions": # 4141030
+  # UMCdb
+  - Multiple atrial ectopics
+
+"ECG: premature ventricular contractions": # 4145998
+  # UMCdb
+  - Premature ventricular contractions
+  - Multifocal premature ventricular complexes
+  - Multiple premature ventricular complexes
+  - Ventricular bigeminy
+  - Ventricular trigeminy
+
+"EKG: right bundle branch block": # 4064460
+  # MIMIC
+  - RBBB (Right Bundle Branch Block)
+
+"ECG: sinus rhythm": # 4145513
+  # HiRID
+  - SR
+  # UMCdb
+  - NSR
+  - Normal sinus rhythm
+  # MIMIC
+  - SR (Sinus Rhythm)
+
+"ECG: sinus arrhythmia": # 4141820
+  # HiRID
+  - Sinusarrhyth
+  - Sinusarrhythmie
+  # UMCdb
+  - Normal sinus arrhythmia
+  # MIMIC
+  - SA (Sinus Arrhythmia)
+
+"ECG: sinus bradycardia": # 4138456
+  # HiRID
+  - SB
+  - Sinusbradykardie
+  # UMCdb
+  - Sinus bradycardia
+  # MIMIC
+  - SB (Sinus Bradycardia)
+
+"ECG: sinus tachycardia": # 4140598
+  # HiRID
+  - ST
+  - Sinustachykardie
+  # UMCdb
+  - Sinus Tac
+  - Sinus tachycardia
+  # MIMIC
+  - ST (Sinus Tachycardia)
+
+"ECG: partial sinoatrial block": # 4065289
+  # UMCdb
+  - Sinoatrial block
+
+"EKG: supraventricular tachycardia": # 4145510
+  # UMCdb
+  - Atrial paroxysmal tachycardia
+  - Atrial tachycardia
+  - Supraventricular tachycardia
+  # MIMIC
+  - SVT (Supra Ventricular Tachycardia)
+
+"EKG: ventricular arrhythmia": # 4064453
+  # UMCdb
+  - Ventricular arrhythmia
+
+"EKG: ventricular fibrillation": # 4064455
+  # HiRID
+  - Kfli
+  - Kammerflimmern
+  # UMCdb
+  - Ventricular fibrillation
+
+"EKG: ventricular tachycardia": # 4064871
+  # UMCdb
+  - Ventricular tachycardia
+
+Other (not listed): # 45883627 # LOINC
+  # HiRID
+  - siehe PD Spez.Rhyth
+
+
+
+# UMCdb
+# Paroxysmal atrial tachycardia with block
+# Prolonged QT interval
+# ST segment depression
+# ST segment elevation
+# Wide QRS complex
+
