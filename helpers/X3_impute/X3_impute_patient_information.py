@@ -66,7 +66,7 @@ class PatientInformationImputer(GlobalVars):
             self.height_col,
             self.weight_col,
             # not imputed, but used for nearest neighbors
-            self.database_col,
+            self.dataset_col,
             self.gender_col,
             self.ethnicity_col,
             self.care_site_col,
@@ -88,9 +88,9 @@ class PatientInformationImputer(GlobalVars):
         data_for_imputation = (
             data.select(columns_for_neighbors)
             .with_columns(
-                pl.col(self.database_col)
-                .pipe(replace_categorical_with_numerical, self.database_col)
-                .alias(self.database_col),
+                pl.col(self.dataset_col)
+                .pipe(replace_categorical_with_numerical, self.dataset_col)
+                .alias(self.dataset_col),
                 pl.col(self.gender_col)
                 .cast(str)
                 .replace(

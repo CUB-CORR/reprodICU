@@ -87,7 +87,9 @@ class SICdbExtractor(SICdbPaths):
                 .round(0)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Get approximate hospital length of stay in days
-                pl.col("HospitalStayDays").alias(self.hospital_length_of_stay_col),
+                pl.col("HospitalStayDays").alias(
+                    self.hospital_length_of_stay_col
+                ),
                 # Convert gender to established dtype
                 pl.col("Sex")
                 .replace_strict({735: "Male", 736: "Female"}, default="Unknown")

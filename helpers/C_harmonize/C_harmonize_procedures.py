@@ -42,28 +42,28 @@ class ProceduresHarmonizer(GlobalVars):
         if "MIMIC3" in self.datasets:
             procedures_datasets.append(
                 self.mimic3.extract_procedures().pipe(
-                    self._concat_helper2, "mimic3-"
+                    self._concat_helper1, "mimic3-"
                 )
             )
 
         if "MIMIC4" in self.datasets:
             procedures_datasets.append(
                 self.mimic4.extract_procedures().pipe(
-                    self._concat_helper2, "mimic4-"
+                    self._concat_helper1, "mimic4-"
                 )
             )
 
         if "SICdb" in self.datasets:
             procedures_datasets.append(
                 self.sicdb.extract_procedures().pipe(
-                    self._concat_helper3, "sicdb-"
+                    self._concat_helper2, "sicdb-"
                 )
             )
 
         if "UMCdb" in self.datasets:
             procedures_datasets.append(
                 self.umcdb.extract_procedures().pipe(
-                    self._concat_helper3, "umcdb-"
+                    self._concat_helper2, "umcdb-"
                 )
             )
 
@@ -73,19 +73,17 @@ class ProceduresHarmonizer(GlobalVars):
                 how="diagonal_relaxed",
             )
             .select(
-                [
-                    self.global_person_id_col,
-                    self.global_hospital_stay_id_col,
-                    self.global_icu_stay_id_col,
-                    self.procedure_icd_code_col,
-                    self.procedure_icd_version_col,
-                    self.procedure_category_col,
-                    self.procedure_start_col,
-                    self.procedure_end_col,
-                    self.procedure_priority_col,
-                    self.procedure_discharge_col,
-                    self.procedure_description_col,
-                ]
+                self.global_person_id_col,
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
+                self.procedure_icd_code_col,
+                self.procedure_icd_version_col,
+                self.procedure_category_col,
+                self.procedure_start_col,
+                self.procedure_end_col,
+                self.procedure_priority_col,
+                self.procedure_discharge_col,
+                self.procedure_description_col,
             )
             .unique()
         )
@@ -106,16 +104,6 @@ class ProceduresHarmonizer(GlobalVars):
         )
 
     def _concat_helper2(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
-                self.global_person_id_col
-            ),
-            pl.concat_str(
-                [pl.lit(name), pl.col(self.hospital_stay_id_col)]
-            ).alias(self.global_hospital_stay_id_col),
-        )
-
-    def _concat_helper3(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         return data.with_columns(
             pl.concat_str([pl.lit(name), pl.col(self.person_id_col)]).alias(
                 self.global_person_id_col

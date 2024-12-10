@@ -325,6 +325,7 @@ class EICUExtractor(EICUPaths):
                 .str.concat(" ")
                 .str.strip_chars(),
             )
+            .cast({self.admission_type_col: self.admission_types_dtype})
             .select(
                 self.icu_stay_id_col,
                 self.admission_type_col,
@@ -1417,13 +1418,13 @@ class EICUExtractor(EICUPaths):
                         "Vte": "VTE",
                         # SPECIAL CASES
                         "pco2": "pCO2",
-                        "To": "to",
-                        "And": "and",
-                        "Of": "of",
+                        "To ": "to ",
+                        "And ": "and ",
+                        "Of ": "of ",
                         "Ml": "mL",
                         "Min": "min",
                         "Kg": "kg",
-                        "Via": "via",
+                        "Via ": "via ",
                         ""
                         # and slash without space before
                         "/ ": " / ",
