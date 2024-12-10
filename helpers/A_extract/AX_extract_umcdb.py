@@ -21,54 +21,30 @@ class UMCdbExtractor(UMCdbPaths):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
         self.other_lab_values = [
-            "Bilirubin.conjugated [Moles/volume] in Serum or Plasma",
-            "Billirubin.total [Moles/volume] in Serum or Plasma",
-            "Creatinine [Moles/volume] in Serum or Plasma",
-            "Creatinine [Moles/volume] in Urine",
-            "Cholesterol in HDL [Moles/volume] in Serum or Plasma",
-            "Cholesterol in LDL [Moles/volume] in Serum or Plasma",
-            "Cholesterol [Moles/volume] in Serum or Plasma",
-            "Cortisol [Moles/volume] in Serum or Plasma",
-            "Creatine kinase.MB [Mass/volume] in Serum or Plasma",
-            "Folate [Moles/volume] in Serum or Plasma",
-            "Glucose [Moles/volume] in Blood",
-            "Hemoglobin [Moles/volume] in Blood",
+            "Bilirubin.conjugated [Moles/volume]",
+            "Billirubin.total [Moles/volume]",
+            "Creatinine [Moles/volume]",
+            "Cholesterol in HDL [Moles/volume]",
+            "Cholesterol in LDL [Moles/volume]",
+            "Cholesterol [Moles/volume]",
+            "Cortisol [Moles/volume]",
+            "Creatine kinase.MB [Mass/volume]",
+            "Folate [Moles/volume]",
+            "Glucose [Moles/volume]",
+            "Hemoglobin [Moles/volume]",
             "MCHC [Moles/volume]",
-            "Triglyceride [Moles/volume] in Blood",
-            "Urate [Moles/volume] in Serum or Plasma",
-            "Carboxyhemoglobin/Hemoglobin.total in Blood",
-            "Methehemoglobin/Hemoglobin.total in Blood",
-            "Oxyhemoglobin/Hemoglobin.total in Blood",
-            "Base excess in Blood by calculation",
-            "Bicarbonate [Moles/volume] in Blood",
-            "Calcium [Moles/volume] in Serum or Plasma",
-            "Erythrocyte sedimentation rate",
-            "Ferritin [Mass/volume] in Blood",
-            "Hematocrit [Pure volume fraction] of Blood by Automated count",
-            "INR in Blood by Coagulation assay",
-            "Lactate [Moles/volume] in Blood",
+            "Triglyceride [Moles/volume]",
+            "Urate [Moles/volume]",
+            "Hematocrit [Pure volume fraction]",
             "MCH [Entitic substance]",
-            "MCV [Entitic volume] by Automated count",
-            "Neutrophils/100 leukocytes in Blood by Automated count",
-            "Carbon dioxide [Partial pressure] in Blood",
-            "Oxygen [Partial pressure] in Blood",
-            "Oxygen saturation [Pure mass fraction] in Blood",
-            "Transferrin [Mass/volume] in Blood",
-            "Troponin T.cardiac [Mass/volume] in Serum or Plasma",
-            "Troponin T.cardiac [Mass/volume] in Blood",
-            "aPTT in Blood by Coagulation assay",
-            "pH of Blood",
-            "Urea [Moles/volume] in Blood",
-            "Band form neutrophils [#/volume] in Blood",
-            "Basophils [#/volume] in Blood",
-            "Eosinophils [#/volume] in Blood",
-            "Eosinophils [#/volume] in Blood by Automated count",
-            "Eosinophils [#/volume] in Blood by Manual count",
-            "Lymphocytes [#/volume] in Blood",
-            "Monocytes [#/volume] in Blood",
-            "Neutrophils [#/volume] in Blood by Automated count",
-            "Segmented neutrophils [#/volume] in Blood",
-            "Reticulocytes [#/volume] in Blood",
+            "Band form neutrophils [#/volume]",
+            "Basophils [#/volume]",
+            "Eosinophils [#/volume]",
+            "Lymphocytes [#/volume]",
+            "Monocytes [#/volume]",
+            "Neutrophils [#/volume]",
+            "Segmented neutrophils [#/volume]",
+            "Reticulocytes [#/volume]",
         ]
 
     # region patient
@@ -227,8 +203,6 @@ class UMCdbExtractor(UMCdbPaths):
     # region listitems
     # Extract timeseries information from the listitems.csv file
     def extract_timeseries_listitems(self) -> pl.LazyFrame:
-        pl.Config.set_verbose(True)
-
         listitems = (
             pl.scan_parquet(self.listitems_path)
             .select(
@@ -244,6 +218,14 @@ class UMCdbExtractor(UMCdbPaths):
                 # Replace item names with standardized names
                 pl.col("itemid")
                 .replace_strict(self._extract_list_references(), default=None)
+                .replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
                 .alias("item"),
             )
             .pipe(self._extract_timeseries_helper)
@@ -260,9 +242,15 @@ class UMCdbExtractor(UMCdbPaths):
     # region numeric
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
         return self._extract_timeseries_numericitems().filter(
-            ~pl.col("item").is_in(
-                self.relevant_lab_values + self.other_lab_values
-            )
+            # pl.col("item").is_in(self.all_values + self.other_lab_values),
+            ~pl.col("item")
+            .str.replace("in HDL", "inHDL")
+            .str.replace("in LDL", "inLDL")
+            .str.replace(" (in|of) ", " INOF ")
+            .str.split_exact(by=" INOF ", n=1)
+            .struct.rename_fields(["variable", "_"])
+            .struct.field("variable")
+            .is_in(self.relevant_lab_values + self.other_lab_values)
         )
 
     # Separate the lab values from the rest
@@ -281,6 +269,14 @@ class UMCdbExtractor(UMCdbPaths):
                 # Replace item names with standardized names
                 pl.col("itemid")
                 .replace(self._extract_numeric_references(), default=None)
+                .replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
                 .alias("item"),
             )
         ).pipe(self._extract_timeseries_helper)
@@ -327,7 +323,15 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # Filter only relevant timeseries values
             .filter(
-                pl.col("item").is_in(self.all_values + self.other_lab_values)
+                # pl.col("item").is_in(self.all_values + self.other_lab_values),
+                pl.col("item")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values)
             )
             .drop(["measuredat", "intime", "outtime"])
             # Convert values to numbers, if possible, ignore if not
@@ -343,9 +347,15 @@ class UMCdbExtractor(UMCdbPaths):
     ) -> pl.LazyFrame:
         return (
             data.filter(
-                pl.col("item").is_in(
-                    self.relevant_lab_values + self.other_lab_values
-                )
+                # pl.col("item").is_in(self.all_values + self.other_lab_values),
+                pl.col("item")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.relevant_lab_values + self.other_lab_values)
             )
             # MAKE STRUCT
             .with_columns(
@@ -365,6 +375,12 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("fields2")
             )
             .unnest("fields2")
+            .filter(
+                # remove spO2 (-> vitals)
+                pl.col("method").ne_missing("Pulse oximetry"),
+                # remove etCO2 (-> respiratory)
+                pl.col("source").ne_missing("Exhaled gas --at end expiration"),
+            )
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
@@ -962,7 +978,15 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         references = references.filter(
-            pl.col("conceptName").is_in(self.all_values + self.other_lab_values)
+            # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
+            pl.col("conceptName")
+            .str.replace("in HDL", "inHDL")
+            .str.replace("in LDL", "inLDL")
+            .str.replace(" (in|of) ", " INOF ")
+            .str.split_exact(by=" INOF ", n=1)
+            .struct.rename_fields(["variable", "_"])
+            .struct.field("variable")
+            .is_in(self.all_values + self.other_lab_values)
         )
 
         return dict(
@@ -984,9 +1008,15 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName").filter(
-                pl.col("conceptName").is_in(
-                    self.all_values + self.other_lab_values
-                )
+                # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
+                pl.col("conceptName")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values)
             )
         )
 

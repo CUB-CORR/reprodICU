@@ -248,7 +248,8 @@ if __name__ == "__main__":
         labs = (
             pl.scan_parquet(save_path + "timeseries_labs.parquet")
             .pipe(timeseries_harmonizer.remove_metadata)
-            .sink_parquet(save_path + "timeseries_labs_no_meta.parquet")
+            .collect(streaming=True)
+            .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
         )
 
         # Winsorize the lab data

@@ -505,14 +505,6 @@ class MIMIC3Converter(UnitConverter):
                 structfield="value",
                 structstring=True,
             )
-            .pipe(
-                self.convert_absolute_count_to_relative,
-                itemcol="Reticulocytes [#/volume]",
-                total_itemcol="Erythrocytes [#/volume]",
-                goal_itemcol="Reticulocytes/100 erythrocytes",
-                structfield="value",
-                structstring=True,
-            )
         )
 
 

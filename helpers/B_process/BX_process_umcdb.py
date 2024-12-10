@@ -130,6 +130,7 @@ class UMCdbProcessor(UMCdbExtractor):
         """
         ts_labs_path = self.precalc_path + "UMCdb_timeseries_labs.parquet"
         ts_labs_path_unsorted = self.precalc_path + "UMCdb_ts_labs.parquet"
+        ts_labs_path_cache = self.precalc_path + "UMCdb_ts_labs_cache.parquet"
 
         if os.path.isfile(ts_labs_path):
             # load the preprocessed data
@@ -140,9 +141,18 @@ class UMCdbProcessor(UMCdbExtractor):
 
         print("UMCdb   - Processing lab time series data...")
 
+        # "Cache" the data before pivoting
+        (
+            self.extract_timeseries_labs()
+            .collect(streaming=True)
+            .write_parquet(ts_labs_path_cache)
+        )
+
+        print("UMCdb   - Processing cached lab time series data...")
+
         # Process labs data
         ts_labs = (
-            self.extract_timeseries_labs()
+            pl.scan_parquet(ts_labs_path_cache)
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
@@ -164,6 +174,10 @@ class UMCdbProcessor(UMCdbExtractor):
                 aggregate_function="first",
             )
             .lazy()
+        )
+
+        ts_labs = (
+            ts_labs
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
         )
@@ -179,6 +193,7 @@ class UMCdbProcessor(UMCdbExtractor):
             .sink_parquet(ts_labs_path)
         )
         os.remove(ts_labs_path_unsorted)
+        os.remove(ts_labs_path_cache)
 
         return pl.scan_parquet(ts_labs_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -274,7 +289,17 @@ class UMCdbConverter(UnitConverter):
 
         # Convert the lab values to the correct units.
         return (
-            data.pipe(
+            data.with_columns(
+                pl.col(labelcol).replace(
+                    {
+                        # NOTE: rename for consistency with other datasets
+                        "Hematocrit [Pure volume fraction]": "Hematocrit [Volume Fraction]",
+                        "MCH [Entitic substance]": "MCH [Entitic mass]",
+                        "Oxygen saturation [Pure mass fraction]": "Oxygen saturation",
+                    }
+                )
+            )
+            .pipe(
                 self.convert_ratio_to_percentage,
                 itemid="Hematocrit [Volume Fraction]",
                 labelcol=labelcol,
@@ -298,13 +323,6 @@ class UMCdbConverter(UnitConverter):
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
                 itemid="Bilirubin.total [Moles/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_creatinine_mmol_L_to_mg_dL,
-                itemid="Creatinine [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -429,7 +447,6 @@ class UMCdbConverter(UnitConverter):
                         "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Mass/volume]",
                         "Billirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
-                        "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
                         "Cholesterol in HDL [Moles/volume]": "Cholesterol in HDL [Mass/volume]",
                         "Cholesterol in LDL [Moles/volume]": "Cholesterol in LDL [Mass/volume]",
                         "Cholesterol [Moles/volume]": "Cholesterol [Mass/volume]",
@@ -441,10 +458,6 @@ class UMCdbConverter(UnitConverter):
                         "MCHC [Moles/volume]": "MCHC [Mass/volume]",
                         "Triglyceride [Moles/volume]": "Triglyceride [Mass/volume]",
                         "Urate [Moles/volume]": "Urate [Mass/volume]",
-                        # NOTE: rename for consistency with other datasets
-                        "Hematocrit [Pure volume fraction]": "Hematocrit [Volume Fraction]",
-                        "MCH [Entitic substance]": "MCH [Entitic mass]",
-                        "Oxygen saturation [Pure mass fraction]": "Oxygen saturation",
                         # NOTE: fix wrong units
                         # NOTE: FIXED
                         # "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
