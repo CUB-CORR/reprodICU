@@ -16,13 +16,14 @@ import os
 import polars as pl
 
 SECONDS_IN_DAY = 86400
+DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
 
 
 # region helpers
 # The FIELD_LEVEL table contains a list of fields that are used in the
 # observational data tables. Each field is uniquely identified by a field
 # concept ID and a field name.
-def field_level(table_name: str, return_required: bool = False) -> list:
+def _field_level(table_name: str, return_required: bool = False) -> list:
     """
     return a list of fields for the table in the OMOP CDM in order
     """
@@ -37,13 +38,17 @@ def field_level(table_name: str, return_required: bool = False) -> list:
     return fields, required
 
 
-def add_missing_fields(
+# The _add_missing_fields function adds missing fields to the data
+# The function checks if the fields are required for the table
+# If the field is required and missing, the function raises a ValueError
+# If the field is missing and not required, the function adds the field with a NULL value
+def _add_missing_fields(
     data: pl.LazyFrame, table_name: str, check_required: bool = False
 ) -> pl.LazyFrame:
     """
     add missing fields to the data
     """
-    fields, required = field_level(table_name, return_required=True)
+    fields, required = _field_level(table_name, return_required=True)
     columns = data.collect_schema().names()
 
     for field, req in zip(fields, required):
@@ -56,6 +61,27 @@ def add_missing_fields(
             data = data.with_columns(pl.lit(None).cast(pl.Int8).alias(field))
 
     return data.select(fields)
+
+
+# The _ID function creates the person_id column by hashing the Global Person ID
+# to ensure that the person_id is unique
+def _ID(
+    patient_information: pl.LazyFrame, additional_columns: list = []
+) -> pl.LazyFrame:
+    return patient_information.with_columns(
+        ###########
+        # PERSON_ID
+        # Create the person_id column with a hash of the Global Person ID
+        pl.col("Global Person ID")
+        .hash()
+        .alias("person_id"),
+    ).select(
+        "Global ICU Stay ID",
+        "person_id",
+        "Pre-ICU Length of Stay (days)",
+        "Admission Time (24h)",
+        *additional_columns,
+    )
 
 
 # endregion
@@ -75,24 +101,7 @@ def drug_exposure(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - drug_exposure")
 
-    ID = (
-        patient_information.select(
-            "Global ICU Stay ID",
-            "Global Person ID",
-            "Pre-ICU Length of Stay (days)",
-        )
-        .with_columns(
-            ###########
-            # PERSON_ID
-            # Create the person_id column with a hash of the Global Person ID
-            pl.col("Global Person ID")
-            .hash()
-            .alias("person_id")
-        )
-        .select(
-            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
-        )
-    )
+    ID = _ID(patient_information)
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Drug",
         pl.col("concept_class_id") == "Ingredient",
@@ -119,9 +128,7 @@ def drug_exposure(
             # DRUG_EXPOSURE_START_DATETIME
             # Create the drug_exposure_start_datetime column with the datetime of the drug exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col("Drug Start Relative to Admission (seconds)")
                 )
@@ -138,9 +145,7 @@ def drug_exposure(
             # DRUG_EXPOSURE_END_DATETIME
             # Create the drug_exposure_end_datetime column with the datetime of the drug exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col("Drug End Relative to Admission (seconds)")
                 )
@@ -188,7 +193,7 @@ def drug_exposure(
         .drop_nulls("drug_concept_id")
         .unique()
         .with_row_index("drug_exposure_id")
-        .pipe(add_missing_fields, "drug_exposure")
+        .pipe(_add_missing_fields, "drug_exposure")
     )
 
 
@@ -222,7 +227,7 @@ def care_site(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             .hash()
             .alias("location_id"),
         )
-        .pipe(add_missing_fields, "care_site")
+        .pipe(_add_missing_fields, "care_site")
         .unique()
     )
 
@@ -237,23 +242,13 @@ def care_site(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # a disease or medical condition stated as a diagnosis, a sign, or a symptom,
 # which is either observed by a Provider or reported by the patient.
 def condition_occurrence(
-    CONCEPT: pl.LazyFrame, diagnoses: pl.LazyFrame
+    CONCEPT: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    diagnoses: pl.LazyFrame,
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - condition_occurrence")
 
-    ID = patient_information.with_columns(
-        ###########
-        # PERSON_ID
-        # Create the person_id column with a hash of the Global Person ID
-        pl.col("Global Person ID")
-        .hash()
-        .alias("person_id")
-    ).select(
-        "Global ICU Stay ID",
-        "person_id",
-        "Pre-ICU Length of Stay (days)",
-        "Source Database",
-    )
+    ID = _ID(patient_information, ["Source Dataset"])
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Condition",
     ).select("concept_id", "concept_name")
@@ -272,9 +267,7 @@ def condition_occurrence(
             # CONDITION_START_DATETIME
             # Create the condition_start_datetime column with the datetime of the diagnosis
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Diagnosis Start Relative to Admission (seconds)"
@@ -293,9 +286,7 @@ def condition_occurrence(
             # CONDITION_END_DATETIME
             # Create the condition_end_datetime column with the datetime of the diagnosis
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Diagnosis End Relative to Admission (seconds)"
@@ -324,9 +315,9 @@ def condition_occurrence(
             # 32908 = Secondary diagnosis
             # 32909 = Secondary discharge diagnosis
             # SICdb only includes primary admission diagnoses
-            pl.when(pl.col("Source Database") == "SICdb").then(pl.lit(32901))
+            pl.when(pl.col("Source Dataset") == "SICdb").then(pl.lit(32901))
             # MIMIC-III and MIMIC-IV only include discharge diagnoses
-            .when(pl.col("Source Database").str.starts_with("MIMIC"))
+            .when(pl.col("Source Dataset").str.starts_with("MIMIC"))
             .then(
                 pl.when(pl.col("Diagnosis Priority") == 1)
                 .then(pl.lit(32903))
@@ -365,11 +356,30 @@ def condition_occurrence(
         )
         .unique()
         .with_row_index("condition_occurrence_id")
-        .pipe(add_missing_fields, "condition_occurrence")
+        .pipe(_add_missing_fields, "condition_occurrence")
     )
 
 
 # endregion
+
+
+# region DEATH
+# The death domain contains the clinical event for how and when a Person dies.
+# A person can have up to one record if the source system contains evidence
+# about the Death, such as: Condition in an administrative claim, status of
+# enrollment into a health plan, or explicit record in EHR data.
+def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprOMOPIZE - death")
+
+    ID = _ID(patient_information)
+    return patient_information.select(
+        "Global ICU Stay ID",
+        "Global Person ID",
+        "Admission Time (24h)",
+    ).with_columns(
+        #####################
+        # VISIT_OCCURRENCE_ID
+    )
 
 
 # region DEVICE_EXPOSURE
@@ -388,24 +398,7 @@ def device_exposure(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - device_exposure")
 
-    ID = (
-        patient_information.select(
-            "Global ICU Stay ID",
-            "Global Person ID",
-            "Pre-ICU Length of Stay (days)",
-        )
-        .with_columns(
-            ###########
-            # PERSON_ID
-            # Create the person_id column with a hash of the Global Person ID
-            pl.col("Global Person ID")
-            .hash()
-            .alias("person_id"),
-        )
-        .select(
-            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
-        )
-    )
+    ID = _ID(patient_information)
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Device",
         pl.col("concept_class_id") == "Physical Object",
@@ -429,9 +422,7 @@ def device_exposure(
             # DEVICE_EXPOSURE_START_DATETIME
             # Create the device_exposure_start_datetime column with the datetime of the device exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Procedure Start Relative to Admission (seconds)"
@@ -450,9 +441,7 @@ def device_exposure(
             # DEVICE_EXPOSURE_END_DATETIME
             # Create the device_exposure_end_datetime column with the datetime of the device exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Procedure End Relative to Admission (seconds)"
@@ -492,7 +481,7 @@ def device_exposure(
         )
         .drop_nulls("device_concept_id")
         .with_row_index("device_exposure_id")
-        .pipe(add_missing_fields, "device_exposure")
+        .pipe(_add_missing_fields, "device_exposure")
         .unique()
     )
 
@@ -602,7 +591,7 @@ def location(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             .otherwise(pl.lit(4330442))
             .alias("country_concept_id"),
         )
-        .pipe(add_missing_fields, "location")
+        .pipe(_add_missing_fields, "location")
         .unique()
     )
 
@@ -635,24 +624,7 @@ def measurement(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - measurement")
 
-    ID = (
-        patient_information.select(
-            "Global ICU Stay ID",
-            "Global Person ID",
-            "Pre-ICU Length of Stay (days)",
-        )
-        .with_columns(
-            ###########
-            # PERSON_ID
-            # Create the person_id column with a hash of the Global Person ID
-            pl.col("Global Person ID")
-            .hash()
-            .alias("person_id")
-        )
-        .select(
-            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
-        )
-    )
+    ID = _ID(patient_information)
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Measurement",
         pl.col("concept_class_id") == "Clinical Observation",
@@ -787,7 +759,7 @@ def measurement(
         )
         .pipe(_conceptualize)
         .with_row_index("measurement_id")
-        .pipe(add_missing_fields, "measurement")
+        .pipe(_add_missing_fields, "measurement")
     )
 
 
@@ -817,7 +789,7 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             "Ethnicity",
             "Admission Age (years)",
             "Care Site",
-            "Source Database",
+            "Source Dataset",
         )
         .with_columns(
             ###########
@@ -841,17 +813,17 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # YEAR_OF_BIRTH
             # Create the year_of_birth column based on the source database timeframe and the admission age
             (2000 - pl.col("Admission Age (years)")).alias("year_of_birth"),
-            # pl.when(pl.col("Source Database") == "eICU-CRD")
+            # pl.when(pl.col("Source Dataset") == "eICU-CRD")
             # .then(pl.lit(2015) - pl.col("Admission Age (years)"))
-            # .when(pl.col("Source Database") == "HiRID")
+            # .when(pl.col("Source Dataset") == "HiRID")
             # .then(pl.lit(2016) - pl.col("Admission Age (years)"))
-            # .when(pl.col("Source Database") == "MIMIC-III")
+            # .when(pl.col("Source Dataset") == "MIMIC-III")
             # .then(pl.lit(2012) - pl.col("Admission Age (years)"))
-            # .when(pl.col("Source Database") == "MIMIC-IV")
+            # .when(pl.col("Source Dataset") == "MIMIC-IV")
             # .then(pl.lit(2022) - pl.col("Admission Age (years)"))
-            # .when(pl.col("Source Database") == "SICdb")
+            # .when(pl.col("Source Dataset") == "SICdb")
             # .then(pl.lit(2021) - pl.col("Admission Age (years)"))
-            # .when(pl.col("Source Database") == "UMCdb")
+            # .when(pl.col("Source Dataset") == "UMCdb")
             # .then(pl.lit(2016) - pl.col("Admission Age (years)"))
             # .alias("year_of_birth"),
             ###################
@@ -864,7 +836,7 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # NOTE: same as in the CARE_SITE table
             pl.col("Care Site").hash().alias("care_site_id"),
         )
-        .pipe(add_missing_fields, "person")
+        .pipe(_add_missing_fields, "person")
         .unique()
     )
 
@@ -877,28 +849,13 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # out by, a healthcare provider on the patient with a diagnostic or therapeutic
 # purpose.
 def procedure_occurrence(
-    CONCEPT: pl.LazyFrame, procedures: pl.LazyFrame
+    CONCEPT: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    procedures: pl.LazyFrame,
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - procedure_occurrence")
 
-    ID = (
-        patient_information.select(
-            "Global ICU Stay ID",
-            "Global Person ID",
-            "Pre-ICU Length of Stay (days)",
-        )
-        .with_columns(
-            ###########
-            # PERSON_ID
-            # Create the person_id column with a hash of the Global Person ID
-            pl.col("Global Person ID")
-            .hash()
-            .alias("person_id"),
-        )
-        .select(
-            "Global ICU Stay ID", "person_id", "Pre-ICU Length of Stay (days)"
-        )
-    )
+    ID = _ID(patient_information)
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Device",
         pl.col("concept_class_id") == "Physical Object",
@@ -922,9 +879,7 @@ def procedure_occurrence(
             # PROCEDURE_START_DATETIME
             # Create the procedure_start_datetime column with the datetime of the device exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Procedure Start Relative to Admission (seconds)"
@@ -943,9 +898,7 @@ def procedure_occurrence(
             # PROCEDURE_END_DATETIME
             # Create the procedure_end_datetime column with the datetime of the device exposure
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
                         "Procedure End Relative to Admission (seconds)"
@@ -985,7 +938,7 @@ def procedure_occurrence(
         )
         .drop_nulls("procedure_concept_id")
         .with_row_index("procedure_occurrence_id")
-        .pipe(add_missing_fields, "procedure_occurrence")
+        .pipe(_add_missing_fields, "procedure_occurrence")
         .unique()
     )
 
@@ -1027,9 +980,7 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # VISIT_START_DATETIME
             # Create the visit_start_datetime column with the start datetime of the ICU stay
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
                 .then(
                     pl.duration(
@@ -1043,9 +994,7 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # VISIT_END_DATETIME
             # Create the visit_end_datetime column with the end datetime of the ICU stay
             (
-                pl.datetime(
-                    year=2000, month=1, day=1, hour=0, minute=0, second=0
-                )
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
                 .then(
                     pl.duration(
@@ -1109,7 +1058,7 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
         #     ],
         #     how="left",
         # )
-        .pipe(add_missing_fields, "visit_occurrence")
+        .pipe(_add_missing_fields, "visit_occurrence")
         .unique()
     )
 
@@ -1134,7 +1083,7 @@ def other():
             (table.upper() + ".parquet") not in os.listdir(OUTPATH)
         ):
             print(f"reprOMOPIZE - adding missing table: {table}")
-            pl.DataFrame().pipe(add_missing_fields, table).write_parquet(
+            pl.DataFrame().pipe(_add_missing_fields, table).write_parquet(
                 OUTPATH + table + ".parquet"
             )
 
@@ -1162,7 +1111,7 @@ if __name__ == "__main__":
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
     medications = pl.scan_parquet(INPATH + "medications_imputed.parquet")
     patient_information = pl.scan_parquet(
-        INPATH + "patient_information_imputed.parquet"
+        INPATH + "patient_information.parquet"
     )
     procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
@@ -1184,6 +1133,8 @@ if __name__ == "__main__":
             quote_char=None,
         ).sink_parquet(OUTPATH + file[:-4] + ".parquet")
 
+    #########
+    # LOADING
     # Load the OMOP vocabulary files
     CONCEPT = pl.scan_parquet(OUTPATH + "CONCEPT.parquet")
     CONCEPT_RELATIONSHIP = pl.scan_parquet(
@@ -1196,37 +1147,59 @@ if __name__ == "__main__":
     RELATIONSHIP = pl.scan_parquet(OUTPATH + "RELATIONSHIP.parquet")
     VOCABULARY = pl.scan_parquet(OUTPATH + "VOCABULARY.parquet")
 
+    ############
+    # CONVERTING
     # Convert the reprodICU structure to the OMOP CDM structure
     # Tables with transformed IDs
     care_site(patient_information).sink_parquet(OUTPATH + "care_site.parquet")
-    condition_occurrence(CONCEPT, diagnoses).collect().write_parquet(
-        OUTPATH + "condition_occurrence.parquet"
+    (
+        condition_occurrence(CONCEPT, patient_information, diagnoses)
+        .collect()
+        .write_parquet(OUTPATH + "condition_occurrence.parquet")
     )
-    device_exposure(
-        CONCEPT, patient_information, procedures
-    ).collect().write_parquet(OUTPATH + "device_exposure.parquet")
+    # death(patient_information).sink_parquet(OUTPATH + "death.parquet")
+    (
+        device_exposure(CONCEPT, patient_information, procedures)
+        .collect()
+        .write_parquet(OUTPATH + "device_exposure.parquet")
+    )
     location(patient_information).sink_parquet(OUTPATH + "location.parquet")
-    person(patient_information).collect().write_parquet(
-        OUTPATH + "person.parquet"
+    (
+        person(patient_information)
+        .collect()
+        .write_parquet(OUTPATH + "person.parquet")
     )
-    procedure_occurrence(CONCEPT, procedures).collect().write_parquet(
-        OUTPATH + "procedure_occurrence.parquet"
+    (
+        procedure_occurrence(CONCEPT, patient_information, procedures)
+        .collect()
+        .write_parquet(OUTPATH + "procedure_occurrence.parquet")
     )
+    (
     visit_occurrence(patient_information).sink_parquet(
         OUTPATH + "visit_occurrence.parquet"
+        )
     )
 
     # Tables with row indices
-    drug_exposure(CONCEPT, medications, patient_information).collect(
-        streaming=True
-    ).write_parquet(OUTPATH + "drug_exposure.parquet")
+    (
+        drug_exposure(CONCEPT, medications, patient_information)
+        .collect(streaming=True)
+        .write_parquet(OUTPATH + "drug_exposure.parquet")
+    )
+    (
     measurement(
         CONCEPT,
         patient_information,
         timeseries_vitals,
         timeseries_labs,
         timeseries_resp,
-    ).collect(streaming=True).write_parquet(OUTPATH + "measurement.parquet")
+        )
+        .collect(streaming=True)
+        .write_parquet(OUTPATH + "measurement.parquet")
+    )
 
-    # Add missing tables
+    ####################
+    # ADD MISSING TABLES
     other()
+
+    print("reprOMOPIZE - done")
