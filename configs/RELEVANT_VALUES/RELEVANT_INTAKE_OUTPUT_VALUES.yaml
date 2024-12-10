@@ -43,6 +43,8 @@ Fluid output subarachnoid drain: [] # 1033559 # LOINC
 Fluid output urinary incontinence: [] # 1033561 # LOINC
 Fluid output urine in and out urethral catheter: # 1033563 # LOINC
   - Urine output by in and out urethral catheter
+  - Hourly urine volume
+  - Urine output # 1033562 # LOINC # subsumed here to avoid redundancy
 Fluid output urine nephrostomy: # 1014370 # LOINC
   - Urine output measured by nephrostomy
 Fluid output wound drain: # 1027295 # LOINC
@@ -53,8 +55,6 @@ Fluid output.total intraoperative: [] # 1014568 # LOINC
 Output.colostomy: [] # 1030877 # LOINC
 Output.ileostomy: [] # 1030879 # LOINC
 Output.stool: [] # 1030880 # LOINC
-Urine output: # 1033562 # LOINC
-  - Hourly urine volume
 ##########
 # INTAKE #
 ##########
