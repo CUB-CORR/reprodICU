@@ -283,8 +283,12 @@ class TimeseriesHarmonizer(GlobalVars):
         # region labs
         labs = (
             pl.concat(timeseries_labs, how="diagonal_relaxed")
-            .cast(str)
-            .cast({self.timeseries_time_col: float})
+            .cast(
+                {
+                    self.global_icu_stay_id_col: str,
+                    self.timeseries_time_col: float,
+                }
+            )
             .unique(self.index_cols)
             .sort(self.index_cols)
         )
@@ -352,7 +356,9 @@ class TimeseriesHarmonizer(GlobalVars):
             ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
 
             print("reprodICU - Saving labs...")
-            labs.pipe(self._print_unique_cases, "labs").sink_parquet(
+            labs.pipe(self._print_unique_cases, "labs").pipe(
+                self.decode_lab_values
+            ).collect(streaming=True).write_parquet(
                 self.save_path + "timeseries_labs.parquet"
             )
 
@@ -372,13 +378,11 @@ class TimeseriesHarmonizer(GlobalVars):
 
     # endregion
 
-    # region metadata
-    # Remove the metadata columns from the timeseries data
-    # i.e. remove the structs, keeping only the value field per column
-    def remove_metadata(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        # based on the github comments by @daviewales here:
-        # https://github.com/pola-rs/polars/issues/7078#issuecomment-2258225305
-        # modified for LazyFrames
+    # region decode
+    # Decode the lab values
+    def decode_lab_values(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+        def decode_lab_value(lab_value):
+            return pl.col(lab_value).str.json_decode(labstructdtype)
 
         labstructdtype = pl.Struct(
             [
@@ -387,9 +391,23 @@ class TimeseriesHarmonizer(GlobalVars):
                 pl.Field("method", pl.String),
             ]
         )
+        value_cols = [
+            col
+            for col in lf.collect_schema().names()
+            if col not in self.index_cols
+        ]
+
+        return lf.with_columns(*map(decode_lab_value, value_cols))
+
+    # region metadata
+    # Remove the metadata columns from the timeseries data
+    # i.e. remove the structs, keeping only the value field per column
+    def remove_metadata(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        # based on the github comments by @daviewales here:
+        # https://github.com/pola-rs/polars/issues/7078#issuecomment-2258225305
+        # modified for LazyFrames
 
         def _prefix_field(field):
-            # return pl.col(field).name.prefix_fields(f"{field}.")
             return pl.col(field).name.map_fields(
                 lambda x: f"{field}.{x}" if x != "value" else f"{field}"
             )
@@ -408,11 +426,7 @@ class TimeseriesHarmonizer(GlobalVars):
             )
 
         return (
-            data.select(
-                *self.index_cols,
-                pl.exclude(self.index_cols).str.json_decode(labstructdtype),
-            )
-            .pipe(flatten)
+            data.pipe(flatten)
             .select(
                 self.global_icu_stay_id_col,
                 self.timeseries_time_col,
