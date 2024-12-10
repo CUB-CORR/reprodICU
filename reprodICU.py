@@ -42,7 +42,7 @@ def create_overview(save_path: str) -> None:
     # Create DataFrame to store the overview, initialize columns for each dataset
     overview = pl.scan_parquet(
         save_path + "patient_information.parquet"
-    ).select(["Global ICU Stay ID", "Source Database"])
+    ).select(["Global ICU Stay ID", "Source Dataset"])
 
     # Add columns for each table
     tables = [
@@ -223,9 +223,10 @@ if __name__ == "__main__":
         )
         (
             medication_harmonizer.harmonize_medications()
-            .pipe(medication_imputer.add_common_rate)
+            # .pipe(medication_imputer.add_common_rate)
             .collect(streaming=True)
             .write_parquet(save_path + "medications_imputed.parquet")
+            # .sink_parquet(save_path + "medications.parquet")
         )
 
     # region timeseries

@@ -42,42 +42,42 @@ class PatientInformationHarmonizer(GlobalVars):
             patient_information_datasets.append(
                 self.eicu.extract_patient_information()
                 .pipe(self._concat_helper1, "eicu-")
-                .with_columns(pl.lit("eICU-CRD").alias(self.database_col))
+                .with_columns(pl.lit("eICU-CRD").alias(self.dataset_col))
             )
 
         if "HiRID" in self.datasets:
             patient_information_datasets.append(
                 self.hirid.extract_patient_information()
                 .pipe(self._concat_helper2, "hirid-")
-                .with_columns(pl.lit("HiRID").alias(self.database_col))
+                .with_columns(pl.lit("HiRID").alias(self.dataset_col))
             )
 
         if "MIMIC3" in self.datasets:
             patient_information_datasets.append(
                 self.mimic3.extract_patient_information()
                 .pipe(self._concat_helper1, "mimic3-")
-                .with_columns(pl.lit("MIMIC-III").alias(self.database_col))
+                .with_columns(pl.lit("MIMIC-III").alias(self.dataset_col))
             )
 
         if "MIMIC4" in self.datasets:
             patient_information_datasets.append(
                 self.mimic4.extract_patient_information()
                 .pipe(self._concat_helper1, "mimic4-")
-                .with_columns(pl.lit("MIMIC-IV").alias(self.database_col))
+                .with_columns(pl.lit("MIMIC-IV").alias(self.dataset_col))
             )
 
         if "SICdb" in self.datasets:
             patient_information_datasets.append(
                 self.sicdb.extract_patient_information()
                 .pipe(self._concat_helper1, "sicdb-")
-                .with_columns(pl.lit("SICdb").alias(self.database_col))
+                .with_columns(pl.lit("SICdb").alias(self.dataset_col))
             )
 
         if "UMCdb" in self.datasets:
             patient_information_datasets.append(
                 self.umcdb.extract_patient_information()
                 .pipe(self._concat_helper1, "umcdb-")
-                .with_columns(pl.lit("AmsterdamUMCdb").alias(self.database_col))
+                .with_columns(pl.lit("AmsterdamUMCdb").alias(self.dataset_col))
             )
 
         return (
@@ -91,7 +91,7 @@ class PatientInformationHarmonizer(GlobalVars):
                 self.global_hospital_stay_id_col,
                 self.global_icu_stay_id_col,
                 self.icu_stay_seq_num_col,
-                self.database_col,
+                self.dataset_col,
                 self.person_id_col,
                 self.hospital_stay_id_col,
                 self.icu_stay_id_col,

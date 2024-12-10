@@ -48,6 +48,23 @@ class PatientInformationCleaner(GlobalVars):
                 .then(None)
                 .otherwise(pl.col(self.mortality_after_col))
                 .alias(self.mortality_after_col),
+                # # FLAG patients with negative / almost zero values for ICU stay durations
+                # pl.when(
+                #     pl.any_horizontal(
+                #         pl.col(self.pre_icu_length_of_stay_col)
+                #         .fill_null(1)
+                #         .le(0.01),
+                #         pl.col(self.icu_length_of_stay_col)
+                #         .fill_null(1)
+                #         .le(0.01),
+                #         pl.col(self.hospital_length_of_stay_col)
+                #         .fill_null(1)
+                #         .le(0.01),
+                #     )
+                # )
+                # .then(True)
+                # .otherwise(False)
+                # .alias(self.flag_bad_data_col),
             )
             # Define the order of the columns
             .select(
@@ -55,7 +72,8 @@ class PatientInformationCleaner(GlobalVars):
                 self.global_hospital_stay_id_col,
                 self.global_icu_stay_id_col,
                 self.icu_stay_seq_num_col,
-                self.database_col,
+                # self.flag_bad_data_col,
+                self.dataset_col,
                 self.person_id_col,
                 self.hospital_stay_id_col,
                 self.icu_stay_id_col,
