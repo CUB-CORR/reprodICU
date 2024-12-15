@@ -460,7 +460,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
         )
 
-        meas_chartevents_main_data = (
+        meas_chartevents_main_original_data = (
             pl.scan_csv(self.meas_chartevents_main_path)
             .select("itemid (omop_source_code)", "label", "omop_concept_name")
             .with_columns(
@@ -478,24 +478,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "omop_concept_name": "label",
                 }
             )
-            .with_columns(
-                pl.col("label").replace(
-                    {
-                        "Systolic blood pressure": "Invasive systolic arterial pressure",
-                        "Diastolic blood pressure": "Invasive diastolic arterial pressure",
-                        "Mean blood pressure": "Invasive mean arterial pressure",
-                        "Systolic blood pressure by Noninvasive": "Non-invasive systolic arterial pressure",
-                        "Diastolic blood pressure by Noninvasive": "Non-invasive diastolic arterial pressure",
-                        "Mean blood pressure by Noninvasive": "Non-invasive mean arterial pressure",
-                        "Glasgow coma score verbal": "Glasgow Coma Score verbal",
-                        "Glasgow coma score motor": "Glasgow Coma Score motor",
-                        "Glasgow coma score eye opening": "Glasgow Coma Score eye opening",
-                        "Body temperature": "Temperature",
-                        "Intracranial pressure (ICP)": "Intracranial pressure",
-                        "Central venous pressure (CVP)": "Central venous pressure",
-                    }
-                )
-            )
             # Filter for names of interest
             .filter(
                 pl.col("label").is_not_null(),
@@ -508,6 +490,32 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .struct.rename_fields(["variable", "_"])
                 .struct.field("variable")
                 .is_in(self.all_values + self.other_lab_values),
+            )
+        )
+        meas_chartevents_main_additional_data = (
+            pl.scan_csv(self.meas_chartevents_main_additional_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "itemid",
+                    "omop_concept_name": "label",
+                }
+            )
+        )
+        meas_chartevents_main_data = pl.concat(
+            [
+                meas_chartevents_main_original_data,
+                meas_chartevents_main_additional_data,
+            ],
+            how="vertical",
+        ).with_columns(
+            pl.col("LABEL").replace(
+                {
+                    **self.relevant_vital_values_mapping,
+                    **self.relevant_lab_values_mapping,
+                    **self.relevant_intakeoutput_values_mapping,
+                    **self.relevant_respiratory_values_mapping,
+                }
             )
         )
 
