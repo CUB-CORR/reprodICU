@@ -9,6 +9,10 @@ Other ICU:
   # SICdb
   - Externe Intensivstation # External Intensive Care Unit
   - Intensivstation 2. Medizin # Intensive Care Unit 2. Medizin
+  # NWICU
+  - INTENSIVE CARE
+  - NEUROLOGICAL INTENSIVE CARE
+  - PEDIATRIC INTENSIVE CARE
 Emergency:
   - EMERGENCY ROOM
   - EMERGENCY ROOM ADMIT
@@ -19,6 +23,8 @@ Emergency:
   # SICdb
   - Zentralambulanz (ZANE) CDK
   - Zentrale Notaufnahme
+  # NWICU
+  - EMERGENCY MEDICINE
 Direct Admit:
   - WALK-IN/SELF REFERRAL
   - Direct Admit
@@ -68,6 +74,17 @@ Hospital Ward:
   - Pädiatrie
   - Unfallchirurgie
   - Urologie
+  # NWICU
+  - CARDIOLOGY
+  - GASTROENTEROLOGY
+  - MEDICINE
+  - NEUROLOGY
+  - OBSTETRICS
+  - OBSTETRICS AND GYNECOLOGY
+  - ORTHOPAEDIC SURGERY
+  - PEDIATRICS
+  - RADIOLOGY
+  - SURGERY
 Other Hospital:
   - TRANSFER FROM HOSP/EXTRAM
   - Other Hospital
@@ -96,9 +113,11 @@ Other:
   - PHYS REFERRAL/NORMAL DELI
   - Anders # Other
   - Other
+  - RESEARCH # NWICU
 Unknown:
   - INFORMATION NOT AVAILABLE
   - "** INFO NOT AVAILABLE **"
   - Unknown
   - unknown
+  - UNKNOWN # NWICU
   - ""

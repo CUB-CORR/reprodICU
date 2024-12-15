@@ -4,6 +4,8 @@ Cardiac:
   - CCU
   - CCU-CTICU
   - Coronary Care Unit (CCU)
+  # NWICU
+  - CICU
 Neurological:
   - Neuro ICU
   - Neuro Intermediate
@@ -34,6 +36,10 @@ Medical-Surgical:
   # UMCdb
   - IC&MC
   - MC&IC
+  # NWICU
+  - ICU
+  - ICU OVERFLOW
+  - IMCU
 Surgical:
   - CSICU
   - CSRU
@@ -49,6 +55,8 @@ Surgical:
   - INIC # Intermediate Care Station - INIC
   # UMCdb
   - IC
+  # NWICU
+  - NSICU
 Trauma:
   - Trauma SICU (TSICU)
   - TSICU

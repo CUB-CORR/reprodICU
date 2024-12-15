@@ -48,6 +48,8 @@ Native American:
   - AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE
   # eICU
   - Native American
+  # NWICU
+  - AMERICAN INDIAN OR ALASKA NATIVE
 White:
   # MIMIC-III / -IV
   - PORTUGUESE # weird, but it's in the data of the MIMIC-III dataset

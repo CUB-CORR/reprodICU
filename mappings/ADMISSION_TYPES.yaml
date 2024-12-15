@@ -1,6 +1,6 @@
 # Mapping of admission types in MIMIC-III/-IV: https://github.com/MIT-LCP/mimic-code/discussions/1215
 Emergency:
-  # MIMIC-III/-IV
+  # MIMIC-III/-IV / NWICU
   - EMERGENCY
   # MIMIC-IV
   - DIRECT EMER.
@@ -8,7 +8,7 @@ Emergency:
   # UMCdb
   - "1"
 Urgent:
-  # MIMIC-III/-IV
+  # MIMIC-III/-IV / NWICU
   - URGENT
   # MIMIC-IV
   - DIRECT OBSERVATION
@@ -16,18 +16,22 @@ Urgent:
   - OBSERVATION ADMIT
   - AMBULATORY OBSERVATION
 Elective:
-  # MIMIC-III/-IV
+  # MIMIC-III/-IV / NWICU
   - ELECTIVE
   # MIMIC-IV
   - SURGICAL SAME DAY ADMISSION
   # UMCdb
   - "0"
+  # NWICU
+  - ELECTIVE-ROUTINE
 Newborn:
   # MIMIC-III/-IV
   - NEWBORN
 Unknown:
   - ""
-Emergency Surgical: []
+Emergency Surgical:
+  # NWICU
+  - TRAUMA
 Urgent Surgical: []
 Elective Surgical: []
 Emergency Medical: []
