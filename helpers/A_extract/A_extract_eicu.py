@@ -581,19 +581,8 @@ class EICUExtractor(EICUPaths):
             )
             .drop("nursingchartcelltypevallabel")
             .with_columns(
-                # Convert Fahrenheit to Celsius
-                pl.when(
-                    pl.col("nursingchartcelltypevalname") == "Temperature (F)"
-                )
-                .then(
-                    pl.col("nursingchartvalue")
-                    .cast(float, strict=False)
-                    .sub(32)
-                    .mul(9)
-                    .truediv(5)
-                )
                 # Replace "Unable to score due to medication" values with None
-                .when(
+                pl.when(
                     pl.col("nursingchartvalue")
                     == "Unable to score due to medication"
                 )
