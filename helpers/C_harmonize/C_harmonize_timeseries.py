@@ -274,6 +274,13 @@ class TimeseriesHarmonizer(GlobalVars):
                 }
             )
             .select([*self.index_cols, *sorted(vitals_cols_not_index)])
+            # Fix Temperature values for accidental Fahrenheit values
+            .with_columns(
+                pl.when(pl.col("Temperature").gt(60))
+                .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
+                .otherwise(pl.col("Temperature"))
+                .alias("Temperature")
+            )
             .sort(self.index_cols)
             .unique(self.index_cols)
             .sort(self.index_cols)
