@@ -302,8 +302,9 @@ class TimeseriesHarmonizer(GlobalVars):
             resp.pipe(self.helpers.dropna, "all", resp_cols_not_index)
             .cast(
                 {  # Convert all columns to float, except for
+                    # - Oxygen delivery system
                     # - Ventilation mode Ventilator
-                    # - Ventilator Type
+                    # - Ventilator type
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
@@ -311,14 +312,17 @@ class TimeseriesHarmonizer(GlobalVars):
                             str
                             if col
                             in [
+                                "Oxygen delivery system",
                                 "Ventilation mode Ventilator",
-                                "Ventilator Type",
+                                "Ventilator type",
                             ]
                             else float
                         )
                         for col in resp_cols_not_index
                     },
-                }
+                },
+                # silently fail on invalid values (i.e. don't raise an error)
+                strict=False,
             )
             .select([*self.index_cols, *sorted(resp_cols_not_index)])
             .unique(self.index_cols)

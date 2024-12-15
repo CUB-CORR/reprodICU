@@ -60,6 +60,13 @@ class MIMIC3Processor(MIMIC3Extractor):
                 labelcol="LABEL",
                 valuecol="VALUENUM",
             )
+            # Convert fractions to percentages
+            .pipe(
+                self.convert.convert_ratio_to_percentage,
+                itemid="Oxygen/Total gas setting [Volume Fraction] Ventilator",
+                labelcol="LABEL",
+                valuecol="VALUENUM",
+            )
             # Pivot the vitals data
             .collect(streaming=True).pivot(
                 on="LABEL",

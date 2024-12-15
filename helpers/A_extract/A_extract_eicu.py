@@ -467,13 +467,22 @@ class EICUExtractor(EICUPaths):
                 .replace_strict(resp_names_mapping, default=None)
                 .alias("respchartvaluelabel"),
                 # Remove percentage sign from respchartvalue
-                pl.col("respchartvalue").str.replace("%", ""),
+                pl.col("respchartvalue")
+                .str.replace("%", "")
+                .str.replace("Discontinued", "")
+                .str.replace("Initiated", "")
+                .str.replace("Maintained", "")
+                .str.replace("Not applicable", "")
+                .str.replace("Refused after education", "")
                 # .cast(float, strict=False),
             )
             # Filter for resp names of interest
             .filter(pl.col("respchartvaluelabel").is_in(keep_resp_names))
             # Remove rows with empty resp values
-            .filter(pl.col("respchartvalue").is_not_null())
+            .filter(
+                pl.col("respchartvalue").is_not_null(),
+                pl.col("respchartvalue").ne_missing(""),
+            )
             # Remove duplicate rows
             .unique()
             # Convert time to seconds
