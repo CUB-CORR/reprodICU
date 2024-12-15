@@ -45,6 +45,8 @@ Fluid output urine in and out urethral catheter: # 1033563 # LOINC
   - Urine output by in and out urethral catheter
   - Hourly urine volume
   - Urine output # 1033562 # LOINC # subsumed here to avoid redundancy
+  # SICdb
+  - Urine (c)
 Fluid output urine nephrostomy: # 1014370 # LOINC
   - Urine output measured by nephrostomy
 Fluid output wound drain: # 1027295 # LOINC
@@ -54,7 +56,9 @@ Fluid output.nasogastric tube: [] # 1012197 # LOINC
 Fluid output.total intraoperative: [] # 1014568 # LOINC
 Output.colostomy: [] # 1030877 # LOINC
 Output.ileostomy: [] # 1030879 # LOINC
-Output.stool: [] # 1030880 # LOINC
+Output.stool: # 1030880 # LOINC
+  # MIMIC
+  - Output.stool [Volume]
 ##########
 # INTAKE #
 ##########
@@ -66,6 +70,8 @@ Fluid intake gastrostomy tube: [] # 1033600 # LOINC
 Fluid intake intravascular: [] # 1033602 # LOINC
 Fluid intake nasogastric tube: # 1033603 # LOINC
   - Fluid intake nasogastric tube Measured
+  # SICdb
+  - GastricTube
 Fluid intake oral: [] # 1033604 # LOINC
 Fluid intake peritoneal: # 1033605 # LOINC
   - Fluid intake peritoneal Measured
