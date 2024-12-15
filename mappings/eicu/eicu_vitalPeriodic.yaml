@@ -1,7 +1,7 @@
 temperature: Temperature
 heartrate: Heart rate
 sao2: Peripheral oxygen saturation # measured by pulse oximetry
-etco2: etCO2
+etco2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
 respiration: Respiratory rate
 systemicsystolic: Invasive systolic arterial pressure
 systemicdiastolic: Invasive diastolic arterial pressure

@@ -167,7 +167,6 @@ albumin human (USP):
   blended: 1344143
   amsterdam:
     - Albumine 20%
-  hirid: []
   eicu:
     - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
     - 25% ALBUMIN (ml/hr)
@@ -216,6 +215,7 @@ albumin human (USP):
     - albumin human
     - albumin5% (ml/hr)
     - albumine (ml/hr)
+  hirid: []
   mimic: []
   mimic3:
     - 25% Albumin
