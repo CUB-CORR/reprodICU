@@ -12,6 +12,7 @@ from matplotlib.patches import Patch
 import polars as pl
 import yaml
 import seaborn as sns
+from textwrap import wrap
 
 BLENDEDICU_PLOT_VARIABLES = {
     "Heart rate": "vitals",
@@ -26,7 +27,7 @@ BLENDEDICU_PLOT_VARIABLES = {
     "Temperature": "vitals",
     "Respiratory rate": "vitals",
     "": "",  # "expiratory_tidal_volume",
-    "": "",  # "Pressure.plateau Respiratory system airway --on ventilator": "respiratory",
+    "Pressure.plateau Respiratory system airway --on ventilator": "respiratory",
     "Pressure.max Respiratory system airway --on ventilator": "respiratory",
     "Breath rate mechanical --on ventilator": "respiratory",
     "Tidal volume Ventilator --on ventilator": "respiratory",
@@ -87,7 +88,7 @@ def blended_plot():
         "AmsterdamUMCdb": "blue",
     }
     ID_TO_DB = pl.scan_parquet(
-        "../reprodICU_files_/patient_information.parquet"
+        "../reprodICU_files/patient_information.parquet"
     ).select("Global ICU Stay ID", "Source Dataset")
 
     fig, axs_ = plt.subplots(
@@ -107,7 +108,8 @@ def blended_plot():
     for i, (ax, variable) in enumerate(
         zip(axs[1:], BLENDEDICU_PLOT_VARIABLES.keys())
     ):
-        print(f"plotted variable {i:2.0f}: {variable}", end="\r")
+        print(" " * 83, end="\r")  # clear line
+        print(f"plotted variable {i:2.0f}: {variable}")  # , end="\r")
 
         if not variable:
             ax.axis("off")
@@ -115,19 +117,25 @@ def blended_plot():
 
         table = BLENDEDICU_PLOT_VARIABLES[variable]
         data = (
-            pl.scan_parquet(f"../reprodICU_files_/timeseries_{table}.parquet")
+            pl.scan_parquet(f"../reprodICU_files/timeseries_{table}.parquet")
             .join(ID_TO_DB, on="Global ICU Stay ID", how="left")
             .select("Global ICU Stay ID", "Source Dataset", variable)
         )
 
         # handle labs differently
         if table == "labs":
+            sources = (
+                ["Blood", "Plasma"]
+                if not variable
+                in ["Oxygen saturation", "Lactate [Moles/volume]"]
+                else ["Arterial blood"]
+            )
             data = (
                 data.unnest(variable)
                 .rename({"value": variable})
                 .filter(
                     pl.col("source").str.contains_any(
-                        ["blood", "Blood", "plasma", "Plasma"]
+                        sources, ascii_case_insensitive=True
                     )
                 )
                 .drop("source", "method")
@@ -136,13 +144,13 @@ def blended_plot():
         # aggregate medians for vitals
         if table == "vitals":
             if variable.startswith("Glasgow Coma Score"):
-                data = data.group_by("Global ICU Stay ID", "Source Dataset").agg(
-                    pl.col(variable).last().alias(variable)
-                )
+                data = data.group_by(
+                    "Global ICU Stay ID", "Source Dataset"
+                ).agg(pl.col(variable).last().alias(variable))
             else:
-                data = data.group_by("Global ICU Stay ID", "Source Dataset").agg(
-                    pl.col(variable).median().alias(variable)
-                )
+                data = data.group_by(
+                    "Global ICU Stay ID", "Source Dataset"
+                ).agg(pl.col(variable).median().alias(variable))
 
         # drop outliers (1th percentile > values > 99th percentile)
         data = (
@@ -163,8 +171,9 @@ def blended_plot():
             fill=True,
             common_norm=False,
             palette=COLORS,
+            bw_adjust=2,
         )
-        ax.set_title(variable, fontsize=13, wrap=True)
+        ax.set_title("\n".join(wrap(variable, 28)), fontsize=13)
         ax.set_xlabel("")
         ax.get_legend().remove()
 
@@ -299,9 +308,9 @@ if __name__ == "__main__":
 
     # aggregate means for vitals
     if args.table == "vitals":
-        data = data.group_by(
-            cols.global_icu_stay_id_col, cols.dataset_col
-        ).agg(pl.col(args.variable).median().alias(args.variable))
+        data = data.group_by(cols.global_icu_stay_id_col, cols.dataset_col).agg(
+            pl.col(args.variable).median().alias(args.variable)
+        )
 
     # aggregate data
     data = data.collect(streaming=True)

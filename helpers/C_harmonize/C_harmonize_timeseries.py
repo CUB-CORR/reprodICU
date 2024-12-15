@@ -9,9 +9,10 @@ import re
 
 import polars as pl
 from helpers.B_process.B_process_eicu import EICUProcessor
-from helpers.B_process.BX_process_hirid import HiRIDProcessor
 from helpers.B_process.B_process_mimic3 import MIMIC3Processor
 from helpers.B_process.B_process_mimic4 import MIMIC4Processor
+from helpers.B_process.BX_process_hirid import HiRIDProcessor
+from helpers.B_process.B_process_nwicu import NWICUProcessor
 from helpers.B_process.BX_process_sicdb import SICdbProcessor
 from helpers.B_process.BX_process_umcdb import UMCdbProcessor
 from helpers.helper import GlobalHelpers, GlobalVars
@@ -24,6 +25,7 @@ class TimeseriesHarmonizer(GlobalVars):
         self.hirid = HiRIDProcessor(paths)
         self.mimic3 = MIMIC3Processor(paths, DEMO)
         self.mimic4 = MIMIC4Processor(paths, DEMO)
+        self.nwicu = NWICUProcessor(paths)
         self.sicdb = SICdbProcessor(paths)
         self.umcdb = UMCdbProcessor(paths)
         self.paths = paths
@@ -205,6 +207,31 @@ class TimeseriesHarmonizer(GlobalVars):
             timeseries_inout.append(
                 mimic4_timeseries_inout.select(*mimic4_inout)
             )
+        # endregion
+
+        # region NWICU
+        if "NWICU" in self.datasets:
+            nwicu_timeseries = self.nwicu.process_timeseries_vitals().pipe(
+                self._concat_helper, "nwicu-"
+            )
+            nwicu_timeseries_labs = (
+                self.nwicu.process_timeseries_labevents().pipe(
+                    self._concat_helper, "nwicu-"
+                )
+            )
+
+            nwicu_ts_names = nwicu_timeseries.collect_schema().names()
+            nwicu_vitals = vital_prms.filter(vital_prms.is_in(nwicu_ts_names))
+            # nwicu_resp = resp_prms.filter(resp_prms.is_in(nwicu_ts_names))
+            # nwicu_inout = inout_prms.filter(inout_prms.is_in(nwicu_ts_names))
+
+            nwicu_ts_lab_names = nwicu_timeseries_labs.collect_schema().names()
+            nwicu_labs = labs_prms.filter(labs_prms.is_in(nwicu_ts_lab_names))
+
+            timeseries_vitals.append(nwicu_timeseries.select(*nwicu_vitals))
+            # timeseries_resp.append(nwicu_timeseries.select(*nwicu_resp))
+            timeseries_labs.append(nwicu_timeseries_labs.select(*nwicu_labs))
+            # timeseries_inout.append(nwicu_timeseries.select(*nwicu_inout))
         # endregion
 
         # region SICdb

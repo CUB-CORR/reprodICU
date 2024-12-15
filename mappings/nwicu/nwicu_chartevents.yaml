@@ -1,0 +1,11 @@
+300001:
+320045: Heart rate # HR
+320050: Invasive systolic arterial pressure # ABPs
+320051: Invasive diastolic arterial pressure # ABPd
+320179: Non-invasive systolic arterial pressure # NBPs
+320180: Non-invasive diastolic arterial pressure # NBPd
+320210: Respiratory rate # RR
+320277: Peripheral oxygen saturation # SpO2
+323761: Temperature # Temperature F
+326531:
+326707:

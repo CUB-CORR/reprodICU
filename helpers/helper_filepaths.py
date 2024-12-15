@@ -400,6 +400,45 @@ class MIMIC4Paths(GlobalVars):
 
 # endregion
 
+# region NWICU
+class NWICUPaths(GlobalVars):
+    def __init__(self, paths):
+        super().__init__(paths)
+        nwicu_path = paths.nwicu_source_path
+
+        # NWICU raw data paths
+        self.admissions_path = nwicu_path + "nw_hosp/admissions.csv.gz"
+        self.chartevents_path = nwicu_path + "nw_icu/chartevents.csv.gz"
+        self.d_icd_diagnoses_path = nwicu_path + "nw_hosp/d_icd_diagnoses.csv.gz"
+        self.d_items_path = nwicu_path + "nw_icu/d_items.csv.gz"
+        self.d_labitems_path = nwicu_path + "nw_hosp/d_labitems.csv.gz"
+        self.diagnoses_icd_path = nwicu_path + "nw_hosp/diagnoses_icd.csv.gz"
+        self.emar_path = nwicu_path + "nw_hosp/emar.csv.gz"
+        self.icustays_path = nwicu_path + "nw_icu/icustays.csv.gz"
+        self.labevents_path = nwicu_path + "nw_hosp/labevents.csv.gz"
+        self.patients_path = nwicu_path + "nw_hosp/patients.csv.gz"
+        self.prescriptions_path = nwicu_path + "nw_hosp/prescriptions.csv.gz"
+        self.procedureevents_path = nwicu_path + "nw_icu/procedureevents.csv.gz"
+
+        # NWICU custom mapping paths
+        self.nwicu_mapping_path = self.mapping_path + "nwicu/"
+        self.vitals_mapping_path = (
+            self.nwicu_mapping_path + "nwicu_chartevents.yaml"
+        )
+        self.drug_administration_route_mapping_path = (
+            self.nwicu_mapping_path
+            + "nwicu_prescriptions_route.yaml"
+        )
+
+         # MIMIC-IV LOINC mapping paths (also used for NWICU)
+        self.mimic4_mapping_path = self.mapping_path + "mimic4/"
+        self.mimic_loinc_mapping_path = (
+            self.mimic4_mapping_path + "mimic-code_mapping/"
+        )
+        self.d_labitems_to_loinc_path = (
+            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
+        )
+
 
 # region SICdb
 class SICdbPaths(GlobalVars):

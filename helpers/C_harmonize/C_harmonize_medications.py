@@ -10,6 +10,7 @@ from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
 from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
 from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
+from helpers.A_extract.A_extract_nwicu import NWICUExtractor
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
 from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
@@ -23,6 +24,7 @@ class MedicationHarmonizer(GlobalVars):
         self.hirid = HiRIDExtractor(paths)
         self.mimic3 = MIMIC3Extractor(paths, DEMO)
         self.mimic4 = MIMIC4Extractor(paths, DEMO)
+        self.nwicu = NWICUExtractor(paths)
         self.sicdb = SICdbExtractor(paths)
         self.umcdb = UMCdbExtractor(paths)
         self.helpers = GlobalHelpers()
@@ -68,6 +70,13 @@ class MedicationHarmonizer(GlobalVars):
                 self.mimic4.extract_medications()
                 .pipe(self._concat_helper, "mimic4-")
                 .pipe(self._print_unique_cases, "MIMIC4")
+            )
+
+        if "NWICU" in self.datasets:
+            medications_datasets.append(
+                self.nwicu.extract_medications()
+                .pipe(self._concat_helper, "nwicu-")
+                .pipe(self._print_unique_cases, "NWICU")
             )
 
         if "SICdb" in self.datasets:

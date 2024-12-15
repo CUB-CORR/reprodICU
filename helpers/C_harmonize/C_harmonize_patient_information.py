@@ -13,6 +13,7 @@ from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
 from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
 from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
+from helpers.A_extract.A_extract_nwicu import NWICUExtractor
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
 from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
@@ -25,6 +26,7 @@ class PatientInformationHarmonizer(GlobalVars):
         self.hirid = HiRIDExtractor(paths)
         self.mimic3 = MIMIC3Extractor(paths, DEMO)
         self.mimic4 = MIMIC4Extractor(paths, DEMO)
+        self.nwicu = NWICUExtractor(paths)
         self.sicdb = SICdbExtractor(paths)
         self.umcdb = UMCdbExtractor(paths)
         self.datasets = datasets
@@ -64,6 +66,13 @@ class PatientInformationHarmonizer(GlobalVars):
                 self.mimic4.extract_patient_information()
                 .pipe(self._concat_helper1, "mimic4-")
                 .with_columns(pl.lit("MIMIC-IV").alias(self.dataset_col))
+            )
+
+        if "NWICU" in self.datasets:
+            patient_information_datasets.append(
+                self.nwicu.extract_patient_information()
+                .pipe(self._concat_helper1, "nwicu-")
+                .with_columns(pl.lit("NWICU").alias(self.dataset_col))
             )
 
         if "SICdb" in self.datasets:
