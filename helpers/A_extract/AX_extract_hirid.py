@@ -288,7 +288,10 @@ class HiRIDExtractor(HiRIDPaths):
             .cast({self.icu_stay_id_col: str})
         )
 
-        admitDX.sink_parquet(self.precalc_path + "HiRID_admitDX.parquet")
+        # admitDX.sink_parquet(self.precalc_path + "HiRID_admitDX.parquet")
+        admitDX.collect(streaming=True).write_parquet(
+            self.precalc_path + "HiRID_admitDX.parquet"
+        )
 
         return admitDX
 
