@@ -81,6 +81,9 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_numeric_path_unsorted = (
             self.precalc_path + "UMCdb_ts_numeric.parquet"
         )
+        ts_numeric_path_cache = (
+            self.precalc_path + "UMCdb_ts_numeric_cache.parquet"
+        )
 
         if os.path.isfile(ts_numeric_path):
             # Load the preprocessed data
@@ -89,11 +92,21 @@ class UMCdbProcessor(UMCdbExtractor):
                 pl.exclude(self.index_cols),
             )
 
+        print("UMCdb   - Collecting numeric time series data...")
+
+        # "Cache" the data before pivoting
+        if not os.path.isfile(ts_numeric_path_cache):
+            (
+                self.extract_timeseries_numericitems()
+                .collect(streaming=True)
+                .write_parquet(ts_numeric_path_cache)
+            )
+
         print("UMCdb   - Processing numeric time series data...")
 
         # Process numeric data
         ts_numeric = (
-            self.extract_timeseries_numericitems()
+            pl.scan_parquet(ts_numeric_path_cache)
             # Pivot the numeric data
             .collect(streaming=True)
             .pivot(
@@ -115,6 +128,7 @@ class UMCdbProcessor(UMCdbExtractor):
             .sink_parquet(ts_numeric_path)
         )
         os.remove(ts_numeric_path_unsorted)
+        os.remove(ts_numeric_path_cache)
 
         return pl.scan_parquet(ts_numeric_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -139,16 +153,17 @@ class UMCdbProcessor(UMCdbExtractor):
                 pl.exclude(self.index_cols),
             )
 
-        print("UMCdb   - Processing lab time series data...")
+        print("UMCdb   - Collecting lab time series data...")
 
         # "Cache" the data before pivoting
-        (
-            self.extract_timeseries_labs()
-            .collect(streaming=True)
-            .write_parquet(ts_labs_path_cache)
-        )
+        if not os.path.isfile(ts_labs_path_cache):
+            (
+                self.extract_timeseries_labs()
+                .collect()
+                .write_parquet(ts_labs_path_cache)
+            )
 
-        print("UMCdb   - Processing cached lab time series data...")
+        print("UMCdb   - Processing lab time series data...")
 
         # Process labs data
         ts_labs = (
@@ -178,6 +193,8 @@ class UMCdbProcessor(UMCdbExtractor):
 
         ts_labs = (
             ts_labs
+            # Align the units of the lab values
+            .pipe(self.convert._align_units)
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
         )
@@ -313,20 +330,20 @@ class UMCdbConverter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            .pipe(
-                self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.conjugated [Moles/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.total [Moles/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
+            # .pipe(
+            #     self.convert_bilirubin_umol_L_to_mg_dL,
+            #     itemid="Bilirubin.conjugated [Moles/volume]",
+            #     labelcol=labelcol,
+            #     valuecol=valuecol,
+            #     structfield=structfield,
+            # )
+            # .pipe(
+            #     self.convert_bilirubin_umol_L_to_mg_dL,
+            #     itemid="Bilirubin.total [Moles/volume]",
+            #     labelcol=labelcol,
+            #     valuecol=valuecol,
+            #     structfield=structfield,
+            # )
             .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
                 itemid="Creatinine [Moles/volume]",
@@ -453,7 +470,7 @@ class UMCdbConverter(UnitConverter):
                         "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
                         "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
                         "Folate [Moles/volume]": "Folate [Mass/volume]",
-                        "Glucose [Moles/volume]": "Glucose [Mass/volume] in",
+                        "Glucose [Moles/volume]": "Glucose [Mass/volume]",
                         "Hemoglobin [Moles/volume]": "Hemoglobin [Mass/volume]",
                         "MCHC [Moles/volume]": "MCHC [Mass/volume]",
                         "Triglyceride [Moles/volume]": "Triglyceride [Mass/volume]",
@@ -463,6 +480,45 @@ class UMCdbConverter(UnitConverter):
                         # "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
                     }
                 )
+            )
+        )
+
+    def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Align the units of different sources of the lab values of the UMCdb dataset.
+        """
+
+        print("UMCdb   - Aligning lab value units...")
+
+        labstructdtype = pl.Struct(
+            [
+                pl.Field("value", pl.Float64),
+                pl.Field("source", pl.String),
+                pl.Field("method", pl.String),
+            ]
+        )
+
+        return (
+            data
+            # Creatinine in Serum or Plasma is in umol/L,
+            # convert to mmol/L for consistency
+            .with_columns(
+                pl.col("Creatinine [Mass/volume]")
+                .str.json_decode(labstructdtype)
+                .alias("Creatinine [Mass/volume]")
+            )
+            .unnest("Creatinine [Mass/volume]")
+            .with_columns(
+                pl.when(pl.col("source") == "Serum or Plasma")
+                .then(pl.col("value").truediv(1000))
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+            .select(
+                pl.exclude("value", "source", "method"),
+                pl.struct(
+                    value="value", source="source", method="method"
+                ).alias("Creatinine [Mass/volume]"),
             )
         )
 
