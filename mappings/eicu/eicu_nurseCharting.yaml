@@ -1,5 +1,5 @@
 Temperature (C): Temperature
-Temperature (F): Temperature # make sure to convert to Celsius
+# Temperature (F): Temperature # always charted both
 Heart Rate: Heart rate
 Invasive BP Systolic: Invasive systolic arterial pressure
 Invasive BP Diastolic: Invasive diastolic arterial pressure
