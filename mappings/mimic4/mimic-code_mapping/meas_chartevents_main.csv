@@ -46,7 +46,7 @@ itemid (omop_source_code),label,omop_concept_id,omop_concept_name,omop_domain_id
 223985,Respiratory Pattern,3020481,Respiration rhythm,Measurement,LOINC,Clinical Observation,S,9304-7,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 223990,Respiratory Effort,21492835,Respiratory effort,Measurement,LOINC,Clinical Observation,S,80341-1,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 220339,PEEP set,3022875,Positive end expiratory pressure setting Ventilator,Measurement,LOINC,Clinical Observation,S,20077-4,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
-224685,Tidal Volume (observed),21490854,Tidal volume Ventilator --on ventilator,Measurement,LOINC,Clinical Observation,S,76222-9,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
+224685,Tidal Volume (observed),21490854,Tidal volume.spontaneous+mechanical --on ventilator,Measurement,LOINC,Clinical Observation,S,76222-9,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 224687,Minute Volume,21490753,Volume expired per minute Respiratory system,Measurement,LOINC,Clinical Observation,S,75959-7,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 224697,Mean Airway Pressure,42527086,Mean airway pressure,Measurement,LOINC,Clinical Observation,S,60949-5,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 224689,Respiratory Rate (spontaneous),1175625,Breath rate spontaneous,Measurement,LOINC,Clinical Observation,S,76528-9,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
@@ -57,7 +57,7 @@ itemid (omop_source_code),label,omop_concept_id,omop_concept_name,omop_domain_id
 223848,Ventilator Type,3007397,Ventilator type,Measurement,LOINC,Clinical Observation,S,20125-1,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 223874,Vti High,40760766,Tidal volume.inspired maximum setting Ventilator alarm,Measurement,LOINC,Clinical Observation,S,57654-6,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 224409,Pain Level Response,43055141,Pain severity - 0-10 verbal numeric rating [Score] - Reported,Measurement,LOINC,Clinical Observation,S,72514-3,0000-0001-8822-1884,0000-0002-9348-9284,MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
-224690,Respiratory Rate (Total),3024171,Respiratory rate,Measurement,LOINC,Clinical Observation,S,9279-1,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,Duplicate of itemid 220210
+224690,Respiratory Rate (Total),3024171,Breath rate,Measurement,LOINC,Clinical Observation,S,9279-1,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,Duplicate of itemid 220210
 224785,GI #1 Tube Type,3009497,Type of GI tube,Measurement,LOINC,Clinical Observation,S,9033-2,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 223837,ETT Size (ID),21491186,Endotracheal tube Diameter,Measurement,LOINC,Clinical Observation,S,79562-5,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
 227442,Potassium (serum),3023103,Potassium [Moles/volume] in Serum or Plasma,Measurement,LOINC,Clinical Observation,S,2823-3,,"0000-0001-8822-1884,0000-0002-9348-9284",MIMIC-IV v2.0,2.72,https://loinc.org/search/,,,
