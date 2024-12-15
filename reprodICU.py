@@ -31,48 +31,13 @@ from helpers.X3_impute.X3_impute_patient_information import (
 from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 from helpers.X3_impute.X3_impute_medications import MedicationImputer
 
+# import overview functions
+from helpers.helper_overview import Overview
+
 
 def load_mapping(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
-
-
-def create_overview(save_path: str) -> None:
-    """Create an overview of the data extracted and harmonized."""
-    # Create DataFrame to store the overview, initialize columns for each dataset
-    overview = pl.scan_parquet(
-        save_path + "patient_information.parquet"
-    ).select(["Global ICU Stay ID", "Source Dataset"])
-
-    # Add columns for each table
-    tables = [
-        "diagnoses_imputed",
-        # "procedures",
-        "medications_imputed",
-        "timeseries_vitals",
-        "timeseries_labs",
-        "timeseries_respiratory",
-        "timeseries_intakeoutput",
-    ]
-
-    for table in tables:
-        # print(f"Adding {table} to overview...")
-        overview = (
-            overview.join(
-                pl.scan_parquet(save_path + table + ".parquet")
-                .select("Global ICU Stay ID", pl.nth(1))
-                .group_by("Global ICU Stay ID")
-                .len()
-                .rename({"len": table}),
-                on="Global ICU Stay ID",
-                how="left",
-            )
-            .collect()
-            .lazy()
-        )
-
-    # Save the overview to a parquet file
-    overview.sink_parquet(save_path + "overview.parquet")
 
 
 class reprodICUPaths:
@@ -340,8 +305,11 @@ if __name__ == "__main__":
         )
 
     # Create an overview of the data extracted and harmonized
+    overview = Overview(save_path=save_path)
     print("reprodICU - Creating overview...")
-    create_overview(save_path)
+    overview.create_overview()
+    print("reprodICU - Creating database variable overview...")
+    overview.create_database_variable_overview()
 
     print("reprodICU - Done.")
 
