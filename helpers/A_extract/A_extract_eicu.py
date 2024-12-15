@@ -18,14 +18,12 @@ class EICUExtractor(EICUPaths):
         self.path = paths.eicu_source_path
         self.helpers = GlobalHelpers()
         self.icu_stay_id = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.icu_length_of_stay_col]
+            self.icu_stay_id_col, self.icu_length_of_stay_col
         )
 
         self.other_lab_values = [
@@ -355,7 +353,7 @@ class EICUExtractor(EICUPaths):
         return (
             pl.scan_csv(self.lab_path)
             .select(
-                ["patientunitstayid", "labname", "labresultoffset", "labresult"]
+                "patientunitstayid", "labname", "labresultoffset", "labresult"
             )
             # Rename columns for consistency
             .rename(
@@ -451,12 +449,10 @@ class EICUExtractor(EICUPaths):
         return (
             pl.scan_csv(self.respiratoryCharting_path)
             .select(
-                [
-                    "patientunitstayid",
-                    "respchartoffset",
-                    "respchartvaluelabel",
-                    "respchartvalue",
-                ]
+                "patientunitstayid",
+                "respchartoffset",
+                "respchartvaluelabel",
+                "respchartvalue",
             )
             # Rename columns for consistency
             .rename(
@@ -532,13 +528,11 @@ class EICUExtractor(EICUPaths):
         nurseCharting = (
             pl.scan_csv(self.nurseCharting_path)
             .select(
-                [
-                    "patientunitstayid",
-                    "nursingchartoffset",
-                    "nursingchartcelltypevallabel",
-                    "nursingchartcelltypevalname",
-                    "nursingchartvalue",
-                ]
+                "patientunitstayid",
+                "nursingchartoffset",
+                "nursingchartcelltypevallabel",
+                "nursingchartcelltypevalname",
+                "nursingchartvalue",
             )
             .rename(
                 {
@@ -585,7 +579,7 @@ class EICUExtractor(EICUPaths):
                 ],
                 how="vertical_relaxed",
             )
-            .drop(["nursingchartcelltypevallabel"])
+            .drop("nursingchartcelltypevallabel")
             .with_columns(
                 # Convert Fahrenheit to Celsius
                 pl.when(
@@ -771,13 +765,11 @@ class EICUExtractor(EICUPaths):
 
         return (
             pl.scan_csv(self.vitalAperiodic_path).select(
-                [
-                    "patientunitstayid",
-                    "observationoffset",
-                    "noninvasivesystolic",
-                    "noninvasivediastolic",
-                    "noninvasivemean",
-                ]
+                "patientunitstayid",
+                "observationoffset",
+                "noninvasivesystolic",
+                "noninvasivediastolic",
+                "noninvasivemean",
             )
             # Rename columns for consistency
             .rename(
@@ -882,7 +874,7 @@ class EICUExtractor(EICUPaths):
         # # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
         # admissiondrug = (
         #     pl.scan_csv(self.admissiondrug_path)
-        #     .select(["patientunitstayid", "drugoffset", "drugname"])
+        #     .select("patientunitstayid", "drugoffset", "drugname")
         #     .rename(
         #         {
         #             "patientunitstayid": self.icu_stay_id_col,
@@ -950,7 +942,7 @@ class EICUExtractor(EICUPaths):
         infusiondrug_offsets = (
             infusiondrug.select(self.icu_stay_id_col, self.drug_start_col)
             .unique()
-            .sort([self.icu_stay_id_col, self.drug_start_col])
+            .sort(self.icu_stay_id_col, self.drug_start_col)
             .with_columns(
                 pl.col(self.drug_start_col)
                 .shift(1)
@@ -1196,7 +1188,7 @@ class EICUExtractor(EICUPaths):
         diagnosis_offsets = (
             diagnosis.select(self.icu_stay_id_col, self.diagnosis_start_col)
             .unique()
-            .sort([self.icu_stay_id_col, self.diagnosis_start_col])
+            .sort(self.icu_stay_id_col, self.diagnosis_start_col)
             .with_columns(
                 pl.col(self.diagnosis_start_col)
                 .shift(1)
@@ -1327,11 +1319,9 @@ class EICUExtractor(EICUPaths):
         print("eICU    - Extracting procedures...")
 
         IDs = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
 
         return (

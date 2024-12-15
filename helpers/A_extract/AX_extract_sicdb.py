@@ -203,11 +203,11 @@ class SICdbExtractor(SICdbPaths):
         offsets = (
             pl.scan_csv(self.cases_path)
             .rename({"CaseID": self.icu_stay_id_col})
-            .select([self.icu_stay_id_col, "ICUOffset"])
+            .select(self.icu_stay_id_col, "ICUOffset")
         )
         timeseries = (
             pl.scan_csv(self.data_float_h_path)
-            .select(["CaseID", "Offset", "DataID", "Val"])
+            .select("CaseID", "Offset", "DataID", "Val")
             .rename({"CaseID": self.icu_stay_id_col})
         )
 
@@ -349,15 +349,13 @@ class SICdbExtractor(SICdbPaths):
         return (
             pl.scan_csv(self.medication_path)
             .select(
-                [
-                    "CaseID",
-                    "DrugID",
-                    "Offset",
-                    "OffsetDrugEnd",
-                    "IsSingleDose",
-                    "Amount",
-                    "AmountPerMinute",
-                ]
+                "CaseID",
+                "DrugID",
+                "Offset",
+                "OffsetDrugEnd",
+                "IsSingleDose",
+                "Amount",
+                "AmountPerMinute",
             )
             .rename(
                 {
@@ -493,7 +491,7 @@ class SICdbExtractor(SICdbPaths):
         references = (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == ReferenceName)
-            .select(["ReferenceGlobalID", "ReferenceValue"])
+            .select("ReferenceGlobalID", "ReferenceValue")
         )
 
         return dict(
@@ -507,7 +505,7 @@ class SICdbExtractor(SICdbPaths):
         references = (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == ReferenceName)
-            .select(["ReferenceGlobalID", "LOINC_long"])
+            .select("ReferenceGlobalID", "LOINC_long")
         )
 
         return dict(
@@ -521,7 +519,7 @@ class SICdbExtractor(SICdbPaths):
         drug_units = (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == "Drug")
-            .select(["ReferenceValue", "ReferenceUnit"])
+            .select("ReferenceValue", "ReferenceUnit")
             .with_columns(
                 pl.col("ReferenceUnit")
                 .str.replace(r"g\\h", "g/hr")
@@ -543,7 +541,7 @@ class SICdbExtractor(SICdbPaths):
     def _get_offsets(self) -> float:
         return (
             pl.scan_csv(self.cases_path)
-            .select(["CaseID", "ICUOffset", "OffsetAfterFirstAdmission"])
+            .select("CaseID", "ICUOffset", "OffsetAfterFirstAdmission")
             .rename({"CaseID": self.icu_stay_id_col})
             .with_columns(
                 (pl.col("OffsetAfterFirstAdmission") + pl.col("ICUOffset"))

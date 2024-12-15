@@ -49,7 +49,7 @@ class HiRIDProcessor(HiRIDExtractor):
 
         admissiontime = (
             self._extract_admissions()
-            .select([self.icu_stay_id_col, "admissiontime"])
+            .select(self.icu_stay_id_col, "admissiontime")
             .cast({"admissiontime": str})
         )
         length_of_stay = self._extract_length_of_stay()

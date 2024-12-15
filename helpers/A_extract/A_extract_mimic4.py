@@ -16,17 +16,15 @@ from helpers.helper import GlobalHelpers
 class MIMIC4Extractor(MIMIC4Paths):
     def __init__(self, paths, DEMO=False):
         super().__init__(paths, DEMO)
-        self.path = paths.mimic3_source_path
+        self.path = paths.mimic4_source_path
         self.helpers = GlobalHelpers()
         self.icu_stay_id = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.icu_length_of_stay_col]
+            self.icu_stay_id_col, self.icu_length_of_stay_col
         )
 
         self.other_lab_values = [
@@ -74,13 +72,11 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             .select(
-                [
-                    self.icu_stay_id_col,
-                    self.hospital_stay_id_col,
-                    self.person_id_col,
-                    self.icu_length_of_stay_col,
-                    "intime",
-                ]
+                self.icu_stay_id_col,
+                self.hospital_stay_id_col,
+                self.person_id_col,
+                self.icu_length_of_stay_col,
+                "intime",
             )
         )
 
@@ -111,17 +107,15 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             .select(
-                [
-                    self.hospital_stay_id_col,
-                    self.ethnicity_col,
-                    self.admission_loc_col,
-                    self.discharge_loc_col,
-                    self.admission_type_col,
-                    self.mortality_hosp_col,
-                    "admittime",
-                    "dischtime",
-                    "deathtime",
-                ]
+                self.hospital_stay_id_col,
+                self.ethnicity_col,
+                self.admission_loc_col,
+                self.discharge_loc_col,
+                self.admission_type_col,
+                self.mortality_hosp_col,
+                "admittime",
+                "dischtime",
+                "deathtime",
             )
         )
 
@@ -134,7 +128,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "anchor_age": self.age_col,
                 }
             )
-            .select([self.person_id_col, self.gender_col, self.age_col, "dod"])
+            .select(self.person_id_col, self.gender_col, self.age_col, "dod")
         )
 
         return (
@@ -294,7 +288,7 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         return (
             services.select(
-                [self.hospital_stay_id_col, "transfertime", self.specialty_col]
+                self.hospital_stay_id_col, "transfertime", self.specialty_col
             )
             .join(IDs, on=self.hospital_stay_id_col)
             # Get the most recent specialty
@@ -302,7 +296,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # Get the most recent specialty on ICU admission
             .group_by(self.icu_stay_id_col)
             .first()
-            .select([self.icu_stay_id_col, self.specialty_col])
+            .select(self.icu_stay_id_col, self.specialty_col)
         )
 
     # endregion
@@ -391,7 +385,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 values="valuenum",
                 aggregate_function="mean",  # NOTE: -> or mean?
             )
-            .select([self.icu_stay_id_col, self.weight_col, self.height_col])
+            .select(self.icu_stay_id_col, self.weight_col, self.height_col)
             .cast({self.weight_col: float, self.height_col: float})
         )
 

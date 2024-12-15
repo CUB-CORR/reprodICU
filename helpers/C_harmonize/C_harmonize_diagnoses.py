@@ -97,7 +97,7 @@ class DiagnosesHarmonizer(GlobalVars):
                 self.diagnosis_description_col,
             )
             .unique()
-            .sort([self.global_icu_stay_id_col, self.diagnosis_start_col])
+            .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)
         )
 
     # Helper functions
