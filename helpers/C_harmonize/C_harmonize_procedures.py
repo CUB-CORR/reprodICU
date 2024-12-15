@@ -9,6 +9,7 @@ import polars as pl
 from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
 from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
+from helpers.A_extract.A_extract_nwicu import NWICUExtractor
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
 from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
@@ -21,6 +22,7 @@ class ProceduresHarmonizer(GlobalVars):
         # self.hirid = HiRIDExtractor(paths)
         self.mimic3 = MIMIC3Extractor(paths, DEMO)
         self.mimic4 = MIMIC4Extractor(paths, DEMO)
+        self.nwicu = NWICUExtractor(paths)
         self.sicdb = SICdbExtractor(paths)
         self.umcdb = UMCdbExtractor(paths)
         self.datasets = datasets
@@ -50,6 +52,13 @@ class ProceduresHarmonizer(GlobalVars):
             procedures_datasets.append(
                 self.mimic4.extract_procedures().pipe(
                     self._concat_helper1, "mimic4-"
+                )
+            )
+
+        if "NWICU" in self.datasets:
+            procedures_datasets.append(
+                self.nwicu.extract_procedures().pipe(
+                    self._concat_helper1, "nwicu-"
                 )
             )
 
