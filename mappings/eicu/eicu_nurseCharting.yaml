@@ -11,9 +11,9 @@ CVP: Central venous pressure
 ICP: Intracranial pressure
 Respiratory Rate: Respiratory rate
 O2 Saturation: Peripheral oxygen saturation
-O2 Admin Device: oxygen_delivery_device
+O2 Admin Device: Oxygen delivery system
 O2 L/%: oxygen_flow / FiO2 # make sure to convert to FiO2 / oxygen_flow (L/min) where applicable (e.g. nasal cannula)
-End Tidal CO2: etCO2
+End Tidal CO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
 GCS Total: Glasgow Coma Score total
 Eyes: Glasgow Coma Score eye opening
 Motor: Glasgow Coma Score motor

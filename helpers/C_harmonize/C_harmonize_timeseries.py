@@ -9,9 +9,9 @@ import re
 
 import polars as pl
 from helpers.B_process.B_process_eicu import EICUProcessor
+from helpers.B_process.BX_process_hirid import HiRIDProcessor
 from helpers.B_process.B_process_mimic3 import MIMIC3Processor
 from helpers.B_process.B_process_mimic4 import MIMIC4Processor
-from helpers.B_process.BX_process_hirid import HiRIDProcessor
 from helpers.B_process.BX_process_sicdb import SICdbProcessor
 from helpers.B_process.BX_process_umcdb import UMCdbProcessor
 from helpers.helper import GlobalHelpers, GlobalVars
