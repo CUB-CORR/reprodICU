@@ -82,6 +82,7 @@ def blended_plot():
     COLORS = {
         "eICU-CRD": "orange",
         "HiRID": "red",
+        "NWICU": "black",
         "MIMIC-III": "green",
         "MIMIC-IV": "purple",
         "SICdb": "gray",
@@ -252,7 +253,15 @@ if __name__ == "__main__":
 
     # Select datasets to visualize
     if "all" in args.datasets:
-        datasets = ["eICU", "HiRID", "MIMIC3", "MIMIC4", "SICdb", "UMCdb"]
+        datasets = [
+            "eICU",
+            "HiRID",
+            "MIMIC3",
+            "MIMIC4",
+            "NWICU",
+            "SICdb",
+            "UMCdb",
+        ]
         if args.DEMO:
             datasets = ["eICU", "MIMIC3", "MIMIC4"]
     else:
