@@ -44,11 +44,13 @@ class GlobalHelpers:
         return {**mapping1, **mapping2}
 
     def load_many_to_many_to_one_mapping(
-        self, path: str, database: str
+        self, path: str, database: str, DEBUG: bool = False
     ) -> dict:
         mapping = self.load_mapping(path)
         return_dict = {}
         for key, value in mapping.items():
+            if DEBUG:
+                print(key, value)
             return_dict.update({v: key for v in value[database]})
         return return_dict
 
