@@ -473,7 +473,7 @@ class EICUExtractor(EICUPaths):
                 .str.replace("Initiated", "")
                 .str.replace("Maintained", "")
                 .str.replace("Not applicable", "")
-                .str.replace("Refused after education", "")
+                .str.replace("Refused after education", ""),
                 # .cast(float, strict=False),
             )
             # Filter for resp names of interest

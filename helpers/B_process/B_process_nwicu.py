@@ -481,8 +481,7 @@ class NWICUConverter(UnitConverter):
         """
 
         return (
-            data
-            .pipe(
+            data.pipe(
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils [#/volume]",
                 total_itemcol="Leukocytes [#/volume]",
