@@ -161,6 +161,7 @@ class GlobalVars(GlobalHelpers):
         self.DAYS_IN_YEAR = 365.25
         self.INCH_TO_CM = 2.54  # 1 inch = 2.54 cm
         self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
+        self.OZ_TO_KG = 0.0283495  # 1 oz = 0.0283495 kg
 
         # region GLOBAL MAPS
         # append globally configured mappings as class attributes
