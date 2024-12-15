@@ -172,7 +172,7 @@ class HiRIDExtractor(HiRIDPaths):
         variables = {10000400: self.weight_col, 10000450: self.height_col}
         admissiontimes = (
             pl.scan_csv(self.general_table_path)
-            .select(["patientid", "admissiontime"])
+            .select("patientid", "admissiontime")
             .rename({"patientid": self.icu_stay_id_col})
             .cast({self.icu_stay_id_col: str, "admissiontime": str})
         )
@@ -187,7 +187,7 @@ class HiRIDExtractor(HiRIDPaths):
             data = (
                 pl.scan_parquet(self.timeseries_path + file)
                 # Select the relevant columns
-                .select(["patientid", "datetime", "value", "variableid"])
+                .select("patientid", "datetime", "value", "variableid")
                 # Rename the columns for consistency
                 .rename(
                     {"patientid": self.icu_stay_id_col, "datetime": "valuedate"}
@@ -236,7 +236,7 @@ class HiRIDExtractor(HiRIDPaths):
                 values="value",
                 aggregate_function="max",
             )
-            .select([self.icu_stay_id_col, self.weight_col, self.height_col])
+            .select(self.icu_stay_id_col, self.weight_col, self.height_col)
         )
 
         height_weight.write_parquet(
@@ -302,7 +302,7 @@ class HiRIDExtractor(HiRIDPaths):
         # observation_mapping: dict,
     ) -> pl.LazyFrame:
         return (
-            data.select(["patientid", "datetime", "variableid", "value"])
+            data.select("patientid", "datetime", "variableid", "value")
             # Rename columns for consistency
             .rename({"patientid": self.icu_stay_id_col})
             .cast({self.icu_stay_id_col: str, "datetime": str})
@@ -420,7 +420,7 @@ class HiRIDExtractor(HiRIDPaths):
 
         admissiontime = (
             self._extract_admissions()
-            .select([self.icu_stay_id_col, "admissiontime"])
+            .select(self.icu_stay_id_col, "admissiontime")
             .cast({"admissiontime": str})
         )
         length_of_stay = self._extract_length_of_stay()
@@ -435,16 +435,14 @@ class HiRIDExtractor(HiRIDPaths):
             data = (
                 pl.scan_parquet(self.pharma_path + file)
                 .select(
-                    [
-                        "patientid",
-                        "pharmaid",
-                        "givenat",
-                        "givendose",
-                        "doseunit",
-                        "route",
-                        "infusionid",
-                        "subtypeid",
-                    ]
+                    "patientid",
+                    "pharmaid",
+                    "givenat",
+                    "givendose",
+                    "doseunit",
+                    "route",
+                    "infusionid",
+                    "subtypeid",
                 )
                 # Rename columns for consistency
                 .rename(

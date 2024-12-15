@@ -22,14 +22,12 @@ class EICUProcessor(EICUExtractor):
         self.helpers = GlobalHelpers()
         self.convert = EICUConverter()
         self.icu_stay_id = self.extract_patient_information().select(
-            [
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-            ]
+            self.icu_stay_id_col,
+            self.hospital_stay_id_col,
+            self.person_id_col,
         )
         self.icu_length_of_stay = self.extract_patient_information().select(
-            [self.icu_stay_id_col, self.icu_length_of_stay_col]
+            self.icu_stay_id_col, self.icu_length_of_stay_col
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 

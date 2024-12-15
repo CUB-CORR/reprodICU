@@ -403,12 +403,10 @@ class UMCdbExtractor(UMCdbPaths):
             return pl.scan_parquet(self.precalc_path + "UMCdb_A_gcs.parquet")
 
         data = data.sort(self.index_cols).select(
-            [
-                self.icu_stay_id_col,
-                self.timeseries_time_col,
-                "valueid",
-                "itemid",
-            ]
+            self.icu_stay_id_col,
+            self.timeseries_time_col,
+            "valueid",
+            "itemid",
         )
 
         data_eye = (
@@ -475,7 +473,7 @@ class UMCdbExtractor(UMCdbPaths):
         data_gcs = data_gcs.with_columns(
             (
                 data_gcs.select(
-                    ["eyes_score", "motor_score", "verbal_score"]
+                    "eyes_score", "motor_score", "verbal_score"
                 ).sum_horizontal(ignore_nulls=False)
             ).alias("gcs_score"),
         )
