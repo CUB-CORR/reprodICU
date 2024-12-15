@@ -199,7 +199,16 @@ class SICdbExtractor(SICdbPaths):
     # region timeseries
     # Extract timeseries information from the data_float_h.csv file
     def extract_timeseries(self) -> pl.LazyFrame:
-        timeseries_mapping = self.load_mapping(self.timeseries_mapping_path)
+        print("SICdb   - Extracting timeseries...")
+        extracted_references = self._extract_references("RespiratorSetting")
+        extracted_references.update(
+            self._extract_references("VentilatorConfiguration")
+        )
+        extracted_references.update(self._extract_references("SignalFloat"))
+        extracted_references.update(self._extract_references("Scores"))
+        # fix duplicate names (e.g. RespRate both in SignalFloat and RespiratorSetting)
+        extracted_references.update({2282: "RespRateVentilator"})
+
         offsets = (
             pl.scan_csv(self.cases_path)
             .rename({"CaseID": self.icu_stay_id_col})
@@ -219,7 +228,7 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.timeseries_time_col),
                 # Convert parameter IDs to names, then map them
                 pl.col("DataID")
-                .replace_strict(timeseries_mapping, default=None)
+                .replace_strict(extracted_references, default=None)
                 .replace(
                     {
                         **self.relevant_vital_values_mapping,

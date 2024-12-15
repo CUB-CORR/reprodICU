@@ -7,14 +7,14 @@ Airway pressure delta --on ventilator:
   - Airway pressure delta setting Ventilator
 Breath rate mechanical --on ventilator:
   # UMCdb
-  - Breath rate setting Ventilator
+  - Breath rate setting Ventilator # also MIMIC
   - Breath rate minimum setting Ventilator
   - Breath rate setting Intermittent mandatory ventilator
   - Breath rate setting Ventilator synchronized intermittent mandatory
   # HiRID
   - Ventilator rate
   # SICdb
-  - RespRate
+  - RespRateVentilator
 Breath rate spontaneous --on ventilator:
   - Breath rate spontaneous
   # SICdb
@@ -22,6 +22,8 @@ Breath rate spontaneous --on ventilator:
 Breath rate spontaneous and mechanical --on ventilator:
   # HiRID
   - Respiratory rate
+  # SICdb
+  - RespRate
 Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration:
   # HiRID
   - End tidal carbon dioxide concentration
@@ -53,14 +55,17 @@ Mean pressure Respiratory system airway --on ventilator:
   - pMean
 Minute volume setting Ventilator: []
 Oxygen [Partial pressure] in Exhaled gas: []
-Oxygen/Gas total [Pure volume fraction] Inhaled gas: []
+Oxygen/Gas total [Pure volume fraction] Inhaled gas:
+  # SICdb
+  - Oxyflow O2
+  - Optiflow O2
 Oxygen/Total gas setting [Volume Fraction] Ventilator:
   # HiRID
   - Inspired oxygen concentration
   # SICdb
   - FIO2
   # MIMIC
-  - Inhaled oxygen concentration # refers to FiO2 values according to the unmapped values
+  - Inhaled oxygen concentration # refers to FiO2 values according to the original values
 Oxygen delivery system:
   # MIMIC
   - Oxygen delivery
@@ -68,6 +73,10 @@ Oxygen gas flow Oxygen delivery system:
   # HiRID
   - Oxygen administration by mask
   - Oxygen administration by nasal cannula
+  # SICdb
+  - Oxyflow Flow
+  - Optiflow Flow
+  - O2 Flow
 PEEP Respiratory system --on ventilator:
   - Intrinsic PEEP Respiratory system
   - Positive end expiratory pressure setting Ventilator

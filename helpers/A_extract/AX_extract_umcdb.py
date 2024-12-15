@@ -37,6 +37,7 @@ class UMCdbExtractor(UMCdbPaths):
             "Urate [Moles/volume]",
             "Hematocrit [Pure volume fraction]",
             "MCH [Entitic substance]",
+            "Oxygen saturation [Pure mass fraction]",
             "Band form neutrophils [#/volume]",
             "Basophils [#/volume]",
             "Eosinophils [#/volume]",

@@ -5,31 +5,53 @@ Temperature: # 45771331 prev. temperature
   - Body temperature # also in MIMIC
   - Oral temperature
   - Rectal temperature
-Heart rate: [] # 4239408 prev. heart_rate
+Heart rate: # 4239408 prev. heart_rate
+  # SICdb
+  - HeartRateECG
 Heart rate rhythm: [] # 3022318
-Peripheral oxygen saturation: [] # 4196147 prev. spO2
-Respiratory rate: [] # 4313591 prev. respiratory_rate_measured
+Peripheral oxygen saturation: # 4196147 prev. spO2
+  # MIMIC / UMCdb
+  - Oxygen saturation in Arterial blood by Pulse oximetry
+  # SICdb
+  - SPO2
+Respiratory rate: # 4313591 prev. respiratory_rate_measured
+  # SICdb
+  - RespRate
 Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pressure
   # MIMIC
   - Systolic blood pressure
+  # SICdb
+  - BloodPressureArterialSystolic
 Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_pressure
   # MIMIC
   - Diastolic blood pressure
+  # SICdb
+  - BloodPressureArterialDiastolic
 Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
   # MIMIC
   - Mean blood pressure
+  # SICdb
+  - BloodPressureArterialMAP
 Non-invasive systolic arterial pressure: # 4354252 prev. noninvasive_systolic_blood_pressure
   # MIMIC
   - Systolic blood pressure by Noninvasive
+  # SICdb
+  - BloodPressureNISystolic
 Non-invasive diastolic arterial pressure: # 4068414 prev. noninvasive_diastolic_blood_pressure
   # MIMIC
   - Diastolic blood pressure by Noninvasive
+  # SICdb
+  - BloodPressureNIDiastolic
 Non-invasive mean arterial pressure: # 4108289 prev. noninvasive_mean_blood_pressure
   # MIMIC
   - Mean blood pressure by Noninvasive
+  # SICdb
+  - BloodPressureNIMAP
 Central venous pressure: # 4323687 prev. central_venous_pressure
   # MIMIC
   - Central venous pressure (CVP)
+  # SICdb
+  - CentralVenousPressure
 Intracranial pressure: # 4353953 prev. intracranial_pressure
   # MIMIC
   - Intracranial Pressure (ICP)
@@ -49,5 +71,15 @@ Glasgow Coma Score motor: # prev. glasgow_coma_score_motor
   - Glasgow coma score motor
   # HiRID
   - Glasgow Coma Score motor response subscore
-Richmond agitation-sedation scale: [] # 36684829 prev. richmond_agitation_sedation_scale
-Numeric Pain Rating Scale: [] # 37151627 prev. numeric_pain_rating_scale
+Richmond agitation-sedation scale: # 36684829 prev. richmond_agitation_sedation_scale
+  # SICdb
+  - RASS - Richmond Agitation-Sedation Scale
+  # UMCdb
+  - Richmond Agitation-Sedation Scale
+Numeric Pain Rating Scale: # 37151627 prev. numeric_pain_rating_scale
+  # MIMIC
+  - Pain severity - 0-10 verbal numeric rating [Score] - Reported
+  # SICdb
+  - NRS - Numeric Rating Scale
+  # UMCdb
+  - Visual analog pain scale # not exactly the same, but similar enough
