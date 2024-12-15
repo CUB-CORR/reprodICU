@@ -1,0 +1,3 @@
+itemid (omop_source_code),omop_concept_name,comment
+228640,Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration,
+0,Not mapped,mimic4_chartevents_labels_counts.csv NOT EXISTING
