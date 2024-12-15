@@ -254,7 +254,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
 
         # region ALL
         print("MAGIC_CONCEPTS: Received ANY Antibiotics")
-        
+
         RECEIVED_ANY_ANTIBIOTICS = pl.concat(
             [
                 eicu_RECEIVED_ANY_ANTIBIOTICS,
