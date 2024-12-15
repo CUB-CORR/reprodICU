@@ -205,7 +205,7 @@ class EICUProcessor(EICUExtractor):
                 on="respchartvaluelabel",
                 index=self.index_cols,
                 values="respchartvalue",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                aggregate_function="first",  # NOTE: first is used here to allow for strings
             )
         )
 
