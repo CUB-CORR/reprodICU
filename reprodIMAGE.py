@@ -15,53 +15,65 @@ import seaborn as sns
 from textwrap import wrap
 
 BLENDEDICU_PLOT_VARIABLES = {
-    "Heart rate": "vitals",
-    "Invasive systolic arterial pressure": "vitals",
-    "Invasive diastolic arterial pressure": "vitals",
-    "Invasive mean arterial pressure": "vitals",
-    "Non-invasive systolic arterial pressure": "vitals",
-    "Non-invasive diastolic arterial pressure": "vitals",
-    "Non-invasive mean arterial pressure": "vitals",
-    "Peripheral oxygen saturation": "vitals",
-    "Oxygen saturation": "labs",
-    "Temperature": "vitals",
-    "Respiratory rate": "vitals",
+    "Heart rate": ["vitals", "beats per minute (/min)"],
+    "Invasive systolic arterial pressure": ["vitals", "mmHg"],
+    "Invasive diastolic arterial pressure": ["vitals", "mmHg"],
+    "Invasive mean arterial pressure": ["vitals", "mmHg"],
+    "Non-invasive systolic arterial pressure": ["vitals", "mmHg"],
+    "Non-invasive diastolic arterial pressure": ["vitals", "mmHg"],
+    "Non-invasive mean arterial pressure": ["vitals", "mmHg"],
+    "Peripheral oxygen saturation": ["vitals", "percent (%)"],
+    "Oxygen saturation": ["vitals", "percent (%)"],
+    "Temperature": ["vitals", "degrees Celsius (°C)"],
+    "Respiratory rate": ["vitals", "breaths per minute (/min)"],
     "": "",  # "expiratory_tidal_volume",
-    "Pressure.plateau Respiratory system airway --on ventilator": "respiratory",
-    "Pressure.max Respiratory system airway --on ventilator": "respiratory",
-    "Breath rate mechanical --on ventilator": "respiratory",
-    "Tidal volume Ventilator --on ventilator": "respiratory",
-    "Oxygen/Total gas setting [Volume Fraction] Ventilator": "respiratory",
-    "PEEP Respiratory system --on ventilator": "respiratory",
-    "Lactate [Moles/volume]": "labs",
-    "Glucose [Mass/volume]": "labs",
-    "Magnesium [Moles/volume]": "labs",
-    "Sodium [Moles/volume]": "labs",
-    "Creatinine [Mass/volume]": "labs",
-    "Calcium [Moles/volume]": "labs",
-    "Chloride [Moles/volume]": "labs",
-    "Potassium [Moles/volume]": "labs",
-    "aPTT": "labs",
-    "Bilirubin.total [Moles/volume]": "labs",
-    "Alanine aminotransferase [Enzymatic activity/volume]": "labs",
-    "Aspartate aminotransferase [Enzymatic activity/volume]": "labs",
-    "Alkaline phosphatase [Enzymatic activity/volume]": "labs",
-    "Albumin [Mass/volume]": "labs",
-    "Phosphate [Moles/volume]": "labs",
-    "Bicarbonate [Moles/volume]": "labs",
-    "Urea nitrogen [Mass/volume]": "labs",
-    "pH": "labs",
-    "Oxygen [Partial pressure]": "labs",
-    "Carbon dioxide [Partial pressure]": "labs",
-    "Hemoglobin [Mass/volume]": "labs",
-    "Leukocytes [#/volume]": "labs",
-    "Platelets [#/volume]": "labs",
-    "Fluid output urine in and out urethral catheter": "intakeoutput",
+    "Pressure.plateau Respiratory system airway --on ventilator": [
+        "respiratory",
+        "cmH2O",
+    ],
+    "Pressure.max Respiratory system airway --on ventilator": [
+        "respiratory",
+        "cmH2O",
+    ],
+    "Breath rate mechanical --on ventilator": [
+        "respiratory",
+        "breaths per minute (/min)",
+    ],
+    "Tidal volume Ventilator --on ventilator": ["respiratory", "mL"],
+    "Oxygen/Total gas setting [Volume Fraction] Ventilator": [
+        "respiratory",
+        "percent (%)",
+    ],
+    "PEEP Respiratory system --on ventilator": ["respiratory", "cmH2O"],
+    "Lactate [Moles/volume]": ["labs", "mmol/L"],
+    "Glucose [Mass/volume]": ["labs", "mg/dL"],
+    "Magnesium [Moles/volume]": ["labs", "mmol/L"],
+    "Sodium [Moles/volume]": ["labs", "mmol/L"],
+    "Creatinine [Mass/volume]": ["labs", "mg/dL"],
+    "Calcium [Moles/volume]": ["labs", "mmol/L"],
+    "Chloride [Moles/volume]": ["labs", "mmol/L"],
+    "Potassium [Moles/volume]": ["labs", "mmol/L"],
+    "aPTT": ["labs", "seconds"],
+    "Bilirubin.total [Moles/volume]": ["labs", "µmol/L"],
+    "Alanine aminotransferase [Enzymatic activity/volume]": ["labs", "U/L"],
+    "Aspartate aminotransferase [Enzymatic activity/volume]": ["labs", "U/L"],
+    "Alkaline phosphatase [Enzymatic activity/volume]": ["labs", "U/L"],
+    "Albumin [Mass/volume]": ["labs", "g/L"],
+    "Phosphate [Moles/volume]": ["labs", "mmol/L"],
+    "Bicarbonate [Moles/volume]": ["labs", "mmol/L"],
+    "Urea nitrogen [Mass/volume]": ["labs", "mg/dL"],
+    "pH": ["labs", "pH"],
+    "Oxygen [Partial pressure]": ["labs", "mmHg"],
+    "Carbon dioxide [Partial pressure]": ["labs", "mmHg"],
+    "Hemoglobin [Mass/volume]": ["labs", "g/dL"],
+    "Leukocytes [#/volume]": ["labs", "10^3/µL"],
+    "Platelets [#/volume]": ["labs", "10^3/µL"],
+    "Fluid output urine in and out urethral catheter": ["intakeoutput", "mL"],
     # "Ventilation mode Ventilator": "respiratory",
-    "Glasgow Coma Score total": "vitals",
-    "Glasgow Coma Score eye opening": "vitals",
-    "Glasgow Coma Score motor": "vitals",
-    "Glasgow Coma Score verbal": "vitals",
+    "Glasgow Coma Score total": ["vitals", "points"],
+    "Glasgow Coma Score eye opening": ["vitals", "points"],
+    "Glasgow Coma Score motor": ["vitals", "points"],
+    "Glasgow Coma Score verbal": ["vitals", "points"],
 }
 
 
@@ -106,34 +118,35 @@ def blended_plot():
     axs[0].legend(handles=handles, loc="lower left", frameon=False)
     axs[0].axis("off")
 
-    for i, (ax, variable) in enumerate(
+    for i, (ax, VARIABLE) in enumerate(
         zip(axs[1:], BLENDEDICU_PLOT_VARIABLES.keys())
     ):
         print(" " * 83, end="\r")  # clear line
-        print(f"plotted variable {i:2.0f}: {variable}")  # , end="\r")
+        print(f"plotted variable {i:2.0f}: {VARIABLE}")  # , end="\r")
 
-        if not variable:
+        if not VARIABLE:
             ax.axis("off")
             continue
 
-        table = BLENDEDICU_PLOT_VARIABLES[variable]
+        TABLE = BLENDEDICU_PLOT_VARIABLES[VARIABLE][0]
+        UNIT = BLENDEDICU_PLOT_VARIABLES[VARIABLE][1]
         data = (
-            pl.scan_parquet(f"../reprodICU_files/timeseries_{table}.parquet")
+            pl.scan_parquet(f"../reprodICU_files/timeseries_{TABLE}.parquet")
             .join(ID_TO_DB, on="Global ICU Stay ID", how="left")
-            .select("Global ICU Stay ID", "Source Dataset", variable)
+            .select("Global ICU Stay ID", "Source Dataset", VARIABLE)
         )
 
         # handle labs differently
-        if table == "labs":
+        if TABLE == "labs":
             sources = (
                 ["Blood", "Plasma"]
-                if not variable
+                if not VARIABLE
                 in ["Oxygen saturation", "Lactate [Moles/volume]"]
                 else ["Arterial blood"]
             )
             data = (
-                data.unnest(variable)
-                .rename({"value": variable})
+                data.unnest(VARIABLE)
+                .rename({"value": VARIABLE})
                 .filter(
                     pl.col("source").str.contains_any(
                         sources, ascii_case_insensitive=True
@@ -143,30 +156,30 @@ def blended_plot():
             )
 
         # aggregate medians for vitals
-        if table == "vitals":
-            if variable.startswith("Glasgow Coma Score"):
+        if TABLE == "vitals":
+            if VARIABLE.startswith("Glasgow Coma Score"):
                 data = data.group_by(
                     "Global ICU Stay ID", "Source Dataset"
-                ).agg(pl.col(variable).last().alias(variable))
+                ).agg(pl.col(VARIABLE).last().alias(VARIABLE))
             else:
                 data = data.group_by(
                     "Global ICU Stay ID", "Source Dataset"
-                ).agg(pl.col(variable).median().alias(variable))
+                ).agg(pl.col(VARIABLE).median().alias(VARIABLE))
 
         # drop outliers (1th percentile > values > 99th percentile)
         data = (
             data.drop("Global ICU Stay ID")
             .filter(
-                pl.col(variable).is_not_null()
-                & pl.col(variable).gt(pl.col(variable).quantile(0.01))
-                & pl.col(variable).lt(pl.col(variable).quantile(0.99))
+                pl.col(VARIABLE).is_not_null()
+                & pl.col(VARIABLE).gt(pl.col(VARIABLE).quantile(0.01))
+                & pl.col(VARIABLE).lt(pl.col(VARIABLE).quantile(0.99))
             )
             .collect(streaming=True)
         )
 
         ax = sns.kdeplot(
             data=data,
-            x=variable,
+            x=VARIABLE,
             hue="Source Dataset",
             ax=ax,
             fill=True,
@@ -174,8 +187,8 @@ def blended_plot():
             palette=COLORS,
             bw_adjust=2,
         )
-        ax.set_title("\n".join(wrap(variable, 28)), fontsize=13)
-        ax.set_xlabel("")
+        ax.set_title("\n".join(wrap(VARIABLE, 28)), fontsize=13)
+        ax.set_xlabel(f"{UNIT}", fontsize=10)
         ax.get_legend().remove()
 
     [ax.axis("off") for ax in axs[len(BLENDEDICU_PLOT_VARIABLES.keys()) + 1 :]]
