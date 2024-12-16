@@ -6,13 +6,11 @@
 
 # Description: This script imputes the data to remove missing values.
 # It is available as a module for piping in the main script.
-# It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
-import argparse
-
-import numpy as np
 import polars as pl
 from helpers.helper import GlobalVars
+
+DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
 
 
 class TimeseriesImputer(GlobalVars):
@@ -23,311 +21,127 @@ class TimeseriesImputer(GlobalVars):
             if not DEMO
             else paths.reprodICU_demo_files_path
         )
-        self.temp_path = self.save_path + "_tempfiles/impute/"
+        self.index_cols = [
+            "Global ICU Stay ID",
+            "Time Relative to Admission (seconds)",
+        ]
 
-    def get_preadmission_data(self, data: pl.DataFrame) -> pl.DataFrame:
-        """
-        Returns the baseline data for each ICU stay, i.e. the data from before admission.
-        """
-
-        return data.filter(pl.col(self.timeseries_time_col) < 0)
-
-    def get_timegrid(
-        self, data: pl.LazyFrame, resolution_in_seconds: int = 300
+    # taken from @deanm0000 on polars github, edited slightly for readability
+    # source: https://github.com/pola-rs/polars/issues/9616#issuecomment-1718358252
+    def _interp(
+        self, df: pl.LazyFrame, ts_col: str, id_cols=None
     ) -> pl.LazyFrame:
         """
-        Creates a time grid for each ICU stay.
-        Default resolution is 5 minutes.
-        Data is imputed to fill missing values.
+        Interpolates missing values in a time series.
+        Accepts any number of value columns, ID columns, and a time column (ts_col).
         """
 
-        # Create a time grid for each ICU stay
-        return (
-            data.group_by(self.global_icu_stay_id_col)
-            .agg(
-                pl.int_range(
-                    start=0,
-                    end=pl.max(self.timeseries_time_col),
-                    step=resolution_in_seconds,
-                ).alias(self.timeseries_time_col)
-            )
-            .explode(self.timeseries_time_col)
-        )
+        if not isinstance(ts_col, str):
+            raise ValueError("ts_col should be string")
 
-    # def fill_timegrid(
-    #     self, data: pl.LazyFrame, resolution_in_seconds: int = 300
-    # ) -> pl.LazyFrame:
-    #     """
-    #     Fills the timegrid with the available data.
-    #     """
+        if isinstance(id_cols, str):
+            id_cols = [id_cols]
 
-    #     # TODO: change that to a group_by_dynamic
+        if id_cols is None:
+            id_cols = ["__dummyid"]
+            df = df.with_columns(__dummyid=0)
 
-    #     timegrid = self.get_timegrid(data, resolution_in_seconds)
+        lf = df.select(id_cols + [ts_col]).lazy()
+        cols = df.collect_schema().names()
+        value_cols = [x for x in cols if x not in id_cols and x != ts_col]
 
-    #     return (
-    #         data.join(
-    #             timegrid,
-    #             on=self.global_icu_stay_id_col,
-    #             how="left",
-    #         )
-    #         .filter(
-    #             pl.col(self.timeseries_time_col).is_between(
-    #                 pl.col("timegrid_time"),
-    #                 pl.col("timegrid_time_next"),
-    #             )
-    #         )
-    #         .drop(self.timeseries_time_col, "timegrid_time_next")
-    #         .rename({"timegrid_time": self.timeseries_time_col})
-    #         .group_by(self.global_icu_stay_id_col, self.timeseries_time_col)
-    #         .first()
-    #     )
-
-    def adaptive_forward_fill(
-        self,
-        data: pl.DataFrame,
-        timegrid: pl.DataFrame,
-        global_icu_stay_id: str,
-        keep_preadmission_data: bool = False,
-    ) -> pl.DataFrame:
-        """
-        Adaptive forward fill for time series data.
-
-        Adapted from Hyland, S.L., Faltys, M., Hüser, M. et al.
-        Early prediction of circulatory failure in the intensive care unit using machine learning.
-        Nat Med 26, 364–373 (2020).
-
-        Source Code:
-        https://github.com/ratschlab/circEWS/blob/master/circews/functions/forward_filling.py
-        """
-
-        # filter out the preadmission data
-        preadmission_data = self.get_preadmission_data(data)
-        data = data.filter(pl.col(self.timeseries_time_col) >= 0)
-
-        # Convert the data to numpy arrays
-        numpy_pre_data = preadmission_data.drop(
-            self.global_icu_stay_id_col, self.timeseries_time_col
-        ).to_numpy()
-        numpy_data = data.drop(
-            self.global_icu_stay_id_col, self.timeseries_time_col
-        ).to_numpy()
-
-        # Convert the time columns to numpy arrays
-        numpy_pre_data_time = preadmission_data.select(
-            self.timeseries_time_col
-        ).to_numpy()
-        numpy_data_time = data.select(self.timeseries_time_col).to_numpy()
-
-        # Convert the timegrid to numpy arrays
-        timegrid = timegrid.drop(self.global_icu_stay_id_col).to_numpy()
-        timegrid_time = timegrid[:, 0]
-
-        # Initialize variables
-        # len = length of the timegrid
-        # width = number of features (columns) in the data
-        numpy_data_imputed = np.empty((timegrid.shape[0], numpy_data.shape[1]))
-
-        # Fill in each point of the timegrid.
-        # Iterate over each timeseries separately, as the forward fill is adaptive.
-        for i in range(numpy_data.shape[1]):
-            # Initialize the backward window as going forward in time.
-            # Determine the first start point for the extrapolation.
-            # start_point = np.median(numpy_pre_data[:, i])
-            start_point = (
-                numpy_pre_data[-1, i] if len(numpy_pre_data) > 0 else None
-            )
-            start_point_time = (
-                numpy_pre_data_time[-1]
-                if len(numpy_pre_data_time) > 0
-                else None
-            )
-            # Reassign for compatibility with the loop
-            aim_point = start_point
-            aim_point_time = start_point_time
-
-            # Initialize the slope and aim point variables.
-            slope = None
-            slope_active = False
-            timegrid_time_index = 0
-            timegrid_time_current = 0
-
-            # Filling using slope estimation and backward windows,
-            # use the first observation after the timegrid point to estimate the slope.
-            for j in range(numpy_data.shape[0]):
-                # Continue if there is no start point or no data point.
-                # Skip the time points that are before the current timegrid point.
-                if (
-                    (start_point == np.nan)
-                    # or (start_point is None)
-                    or (start_point_time is None)
-                    or (numpy_data[j, i] == np.nan)
-                    # or (numpy_data[j, i] is None)
-                    or (numpy_data_time[j] < timegrid_time_current)
-                ):
-                    # print(
-                    #     i,
-                    #     "continue ",
-                    #     (start_point == np.nan)
-                    #     or (start_point_time is None)
-                    #     or (numpy_data[j, i] == np.nan)
-                    #     or (numpy_data_time[j] < timegrid_time_current),
-                    #     "slope ",
-                    #     slope,
-                    #     "start_point ",
-                    #     start_point,
-                    #     "aim_point ",
-                    #     aim_point,
-                    #     "start_point_time ",
-                    #     start_point_time,
-                    #     "aim_point_time ",
-                    #     aim_point_time,
-                    # )
-                    continue
-
-                # Recompute the slope and aim point if the timegrid point is reached.
-                if numpy_data_time[j] >= timegrid_time_current:
-                    slope_active = False
-
-                # Slope and aim point has to be recomputed.
-                if not slope_active:
-                    # Update the start point and time.
-                    start_point = aim_point
-                    start_point_time = aim_point_time
-
-                    # Skip empty time points.
-                    if (numpy_data[j, i] == np.nan) or (
-                        numpy_data[j, i] is None
-                    ):
-                        continue
-
-                    # Determine the aim point.
-                    aim_point = numpy_data[j, i]
-                    aim_point_time = numpy_data_time[j]
-
-                    # Determine the slope of the extrapolation.
-                    slope = (aim_point - start_point) / (
-                        aim_point_time - start_point_time
-                    )
-
-                    print(
-                        global_icu_stay_id,
-                        i,
-                        "slope ",
-                        slope,
-                        "start_point ",
-                        start_point,
-                        "aim_point ",
-                        aim_point,
-                        "start_point_time ",
-                        start_point_time,
-                        "aim_point_time ",
-                        aim_point_time,
-                    )
-                    slope_active = True
-
-                # Fill the timegrid points with the predicted values until the next observation.
-                while (timegrid_time_current <= numpy_data_time[j]) & (
-                    timegrid_time_index < (len(timegrid_time) - 1)
-                ):
-                    # Calculate the predicted value.
-                    numpy_data_imputed[timegrid_time_index, i] = (
-                        start_point
-                        + slope * (timegrid_time_current - start_point_time)
-                    )
-
-                    # Update the timeseries index.
-                    timegrid_time_index += 1
-                    timegrid_time_current = timegrid_time[timegrid_time_index]
-
-        numpy_data_imputed = np.hstack(
-            (timegrid_time[:, np.newaxis], numpy_data_imputed.round(2))
-        )
-        if keep_preadmission_data:
-            numpy_pre_data = np.hstack((numpy_pre_data_time, numpy_pre_data))
-            numpy_data_imputed = np.vstack((numpy_pre_data, numpy_data_imputed))
-        numpy_data_imputed = np.hstack(
-            (
-                np.repeat(
-                    global_icu_stay_id, numpy_data_imputed.shape[0]
-                ).reshape(-1, 1),
-                numpy_data_imputed,
-            )
-        )
-
-        return pl.DataFrame(
-            numpy_data_imputed,
-            schema=data.columns,
-        ).with_columns(
-            pl.col(self.global_icu_stay_id_col).cast(str),
-            pl.exclude(self.global_icu_stay_id_col).cast(float),
-        )
-
-    def impute_timeseries(
-        self,
-        data: pl.LazyFrame,
-        resolution_in_seconds: int = 300,
-        keep_preadmission_data: bool = False,
-    ) -> pl.LazyFrame:
-        """
-        Imputes the data to remove missing values from the time series during ICU.
-        """
-
-        # baseline = self.get_preadmission_data(data)
-        # timegrid = self.fill_timegrid(data, resolution_in_seconds).group_by(
-        #     self.global_icu_stay_id_col
-        # )
-        timegrid = self.get_timegrid(data, resolution_in_seconds)
-        grouped_data = data.collect(streaming=True).group_by(
-            self.global_icu_stay_id_col
-        )
-
-        # Impute the data
-        counter = 0
-        num_cases = (
-            data.select(pl.col(self.global_icu_stay_id_col).approx_n_unique())
-            .collect(streaming=True)
-            .to_numpy()[0][0]
-        )
-
-        # iterate over the ICU stays
-        for global_icu_stay_id, data in grouped_data:
-            if counter == 50:
-                break
-            global_icu_stay_id = global_icu_stay_id[0]
-            c, n, p = counter, num_cases, counter / num_cases
-            print(
-                f"Imputing ICU stay {global_icu_stay_id}...\t({c:6.0f}/{n:6.0f}, {p:5.2%})",
-                end="\r",
-            )
-
-            # Select the timegrid for the current ICU stay
-            _timegrid = timegrid.filter(
-                pl.col(self.global_icu_stay_id_col) == global_icu_stay_id
-            ).collect(streaming=True)
-            # Impute the data for the current ICU stay
-            data = (
-                data.sort(self.timeseries_time_col)
-                .pipe(
-                    self.adaptive_forward_fill,
-                    _timegrid,
-                    global_icu_stay_id,
-                    keep_preadmission_data,
+        # Iterate over all value columns, interpolating missing values
+        for value_col in value_cols:
+            lf = lf.join(
+                # Join the original data to itself, using an asof join
+                df.join_asof(
+                    # Select all available data for the current value column
+                    df.filter(pl.col(value_col).is_not_null()).select(
+                        *id_cols,
+                        ts_col,
+                        # Calculate the point-wise slope of the value column
+                        # (i.e. the change in value per time unit)
+                        __value_slope=(
+                            pl.col(value_col)
+                            - pl.col(value_col).shift().over(id_cols)
+                        )
+                        / (
+                            pl.col(ts_col)
+                            - pl.col(ts_col).shift().over(id_cols)
+                        ),
+                        # Store previous values interpolation
+                        __value_slope_since=pl.col(ts_col).shift(),
+                        __value_base=pl.col(value_col).shift()
+                    ),
+                    on=ts_col,
+                    by=id_cols,
+                    strategy="forward",
                 )
-                .write_parquet(self.temp_path + f"{global_icu_stay_id}.parquet")
+                .select(
+                    id_cols
+                    + [ts_col]
+                    + [
+                        pl.coalesce(
+                            # Keep the original value if it is not null
+                            pl.col(value_col),
+                            # Otherwise, interpolate the value by adding the base value
+                            # to the slope multiplied by the time since the last known value
+                            pl.coalesce(
+                                pl.col("__value_base"),
+                                pl.col("__value_base").shift(-1),
+                            )
+                            # Add the slope to the base value
+                            + pl.coalesce(
+                                pl.col("__value_slope"),
+                                pl.col("__value_slope").shift(-1),
+                            )
+                            # Multiply the slope by the time since the last known value
+                            * (
+                                pl.col(ts_col)
+                                - pl.coalesce(
+                                    pl.col("__value_slope_since"),
+                                    pl.col("__value_slope_since").shift(-1),
+                                )
+                            ),
+                        ).alias(value_col)
+                    ]
+                )
+                .lazy(),
+                on=[ts_col] + id_cols,
             )
-            counter += 1
 
-        # Concatenate the imputed data
-        timeseries_imputed = pl.scan_parquet(self.temp_path + "*.parquet")
-        timeseries_imputed.sort(
-            self.global_icu_stay_id_col, self.timeseries_time_col
-        ).sink_parquet(self.save_path + "timeseries_vitals_imputed.parquet")
+        # Drop the dummy ID column if it was added
+        if id_cols[0] == "__dummyid":
+            lf = lf.select(pl.exclude("__dummyid"))
 
-        return timeseries_imputed
+        return lf
 
+    def impute_timeseries(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Impute missing values in the data using interpolation and forward filling.
+        """
 
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )
+        return data.pipe(
+            self._interp,
+            "Time Relative to Admission (seconds)",  # Time column
+            ["Global ICU Stay ID"],  # ID columns
+        )
+
+    def impute_timeseries_vitals(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Impute missing values in the vitals data using interpolation and forward filling.
+        """
+
+        columns = data.collect_schema().names()
+
+        return (
+            data.pipe(self.impute_timeseries)
+            # Cast the values to the original data type
+            .with_columns(
+                pl.col(col).cast(int)
+                for col in columns
+                if col not in [*self.index_cols, "Temperature"]
+            )
+            # Round temperature to 1 decimal place
+            .with_columns(pl.col("Temperature").round(1).alias("Temperature"))
+        )
