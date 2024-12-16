@@ -443,6 +443,9 @@ class NWICUPaths(GlobalVars):
         )
 
 
+# endregion
+
+
 # region SICdb
 class SICdbPaths(GlobalVars):
     def __init__(self, paths):
@@ -470,6 +473,9 @@ class SICdbPaths(GlobalVars):
         self.device_mapping_path = (
             self.sicdb_mapping_path + "sicdb_Devices.yaml"
         )
+
+
+# endregion
 
 
 # region UMCdb
