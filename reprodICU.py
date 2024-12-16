@@ -14,10 +14,10 @@ import yaml
 from helpers.C_harmonize.C_harmonize_patient_information import (
     PatientInformationHarmonizer,
 )
-from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
+from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
-from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
+from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
 # import extra functions for cleaning, winsorizing, etc.
 from helpers.X1_clean.X1_clean_patient_information import (
@@ -25,11 +25,11 @@ from helpers.X1_clean.X1_clean_patient_information import (
 )
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
 from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
+from helpers.X3_impute.X3_impute_medications import MedicationImputer
 from helpers.X3_impute.X3_impute_patient_information import (
     PatientInformationImputer,
 )
 from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
-from helpers.X3_impute.X3_impute_medications import MedicationImputer
 
 # import overview functions
 from helpers.helper_overview import Overview
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         default=["all"],
-        help="Datasets to extract.",
+        help="Which datasets to extract.",
     )
     parser.add_argument(
         "-t",
@@ -65,11 +65,18 @@ if __name__ == "__main__":
         type=str,
         nargs="*",
         default=["all"],
-        help="Tables to build.",
+        help="Which tables to build.",
     )
     parser.add_argument(
-        "-f",
-        "--force",
+        "-s",
+        "--timeseries",
+        type=str,
+        nargs="*",
+        default=["all"],
+        help="Which timeseries to extract specifically.",
+    )
+    parser.add_argument(
+        "--FORCE",
         action="store_true",
         help="Force recomputation of precalculated data. This will delete existing files.",
     )
@@ -86,6 +93,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Create a demo dataset with a subset of the data.",
     )
+    parser.add_argument(
+        "--IMPUTE",
+        action="store_true",
+        help="Impute missing values in the data.",
+    )
     args = parser.parse_args()
 
     # Initialize paths
@@ -99,7 +111,7 @@ if __name__ == "__main__":
 
     # Select datasets to extract
     if "all" in args.datasets:
-        datasets = [
+        DATASETS = [
             "eICU",
             "HiRID",
             "MIMIC3",
@@ -109,13 +121,13 @@ if __name__ == "__main__":
             "UMCdb",
         ]
         if args.DEMO:
-            datasets = ["eICU", "MIMIC3", "MIMIC4"]
+            DATASETS = ["eICU", "MIMIC3", "MIMIC4"]
     else:
-        datasets = args.datasets
+        DATASETS = args.datasets
 
     # Select tables to build
     if "all" in args.tables:
-        tables = [
+        TABLES = [
             "patient_information",
             "diagnoses",
             "procedures",
@@ -123,14 +135,20 @@ if __name__ == "__main__":
             "timeseries",
         ]
     else:
-        tables = args.tables
+        TABLES = args.tables
+
+    # Select timeseries to extract
+    if "all" in args.timeseries:
+        TIMESERIES = ["vitals", "labs", "respiratory", "inout"]
+    else:
+        TIMESERIES = args.timeseries
 
     # Run harmonizing
     # region info
-    if "patient_information" in tables:
+    if "patient_information" in TABLES:
         print("reprodICU - Combining patient information...")
         patient_info_harmonizer = PatientInformationHarmonizer(
-            paths=paths, datasets=datasets, DEMO=args.DEMO
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         patient_info_cleaner = PatientInformationCleaner(paths=paths)
         patient_info_imputer = PatientInformationImputer(paths=paths)
@@ -155,10 +173,10 @@ if __name__ == "__main__":
         )
 
     # region diags
-    if "diagnoses" in tables:
+    if "diagnoses" in TABLES:
         print("reprodICU - Combining diagnoses...")
         diagnoses_harmonizer = DiagnosesHarmonizer(
-            paths=paths, datasets=datasets, DEMO=args.DEMO
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         diagnoses_imputer = DiagnosesImputer(
             paths=paths,
@@ -173,10 +191,10 @@ if __name__ == "__main__":
         )
 
     # region procs
-    if "procedures" in tables:
+    if "procedures" in TABLES:
         print("reprodICU - Combining procedures...")
         procedures_harmonizer = ProceduresHarmonizer(
-            paths=paths, datasets=datasets, DEMO=args.DEMO
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         (
             procedures_harmonizer.harmonize_procedures()
@@ -185,10 +203,10 @@ if __name__ == "__main__":
         )
 
     # region meds
-    if "medications" in tables:
+    if "medications" in TABLES:
         print("reprodICU - Combining medications...")
         medication_harmonizer = MedicationHarmonizer(
-            paths=paths, datasets=datasets, DEMO=args.DEMO
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         medication_imputer = MedicationImputer(
             paths=paths,
@@ -196,17 +214,15 @@ if __name__ == "__main__":
         )
         (
             medication_harmonizer.harmonize_medications()
-            # .pipe(medication_imputer.add_common_rate)
             .collect(streaming=True)
-            .write_parquet(save_path + "medications_imputed.parquet")
-            # .sink_parquet(save_path + "medications.parquet")
+            .write_parquet(save_path + "medications.parquet")
         )
 
     # region timeseries
-    if "timeseries" in tables:
+    if "timeseries" in TABLES:
         print("reprodICU - Combining timeseries...")
         timeseries_harmonizer = TimeseriesHarmonizer(
-            paths=paths, datasets=datasets, DEMO=args.DEMO
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=args.DEMO)
         print("reprodICU - Splitting timeseries...")
@@ -215,58 +231,64 @@ if __name__ == "__main__":
         # labs -> timeseries_labs.parquet
         # resp -> timeseries_respiratory.parquet
         # inout -> timeseries_intakeoutput.parquet
-        timeseries_harmonizer.harmonize_split_timeseries(save_to_default=True)
-
-        # Remove the lab data metadata
-        print("reprodICU - Removing lab data metadata...")
-        labs = (
-            pl.scan_parquet(save_path + "timeseries_labs.parquet")
-            .pipe(timeseries_harmonizer.remove_metadata)
-            .collect(streaming=True)
-            .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
+        timeseries_harmonizer.harmonize_split_timeseries(
+            timeseries=TIMESERIES, save_to_default=True
         )
 
-        # Winsorize the lab data
-        print("reprodICU - Winsorizing lab data...")
-        columns_to_exclude = [
-            column_names["global_icu_stay_id_col"],
-            column_names["timeseries_time_col"],
-            "Base excess",
-        ]
-        labs = pl.scan_parquet(save_path + "timeseries_labs_no_meta.parquet")
-        labs_cols = labs.collect_schema().names()
-        columns_to_winsorize = list(set(labs_cols) - set(columns_to_exclude))
-        (
-            labs.pipe(
-                X2_Winsorizer.winsorize_clip_lower_0_quantiles,
-                columns=columns_to_winsorize,
-                alpha=0.99,
+        if "labs" in TIMESERIES:
+            # Remove the lab data metadata
+            print("reprodICU - Removing lab data metadata...")
+            labs = (
+                pl.scan_parquet(save_path + "timeseries_labs.parquet")
+                .pipe(timeseries_harmonizer.remove_metadata)
+                .collect(streaming=True)
+                .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
             )
-            .pipe(
-                X2_Winsorizer.winsorize_quantiles,
-                columns=["Base excess"],
-                alpha=0.99,
-            )
-            .collect(streaming=True)
-            .write_parquet(
-                save_path + "timeseries_labs_no_meta_winsorized.parquet"
-            )
-        )
 
-        # # Impute the timeseries data
-        # print("reprodICU - Imputing timeseries data...")
-        # # Impute the vitals data
-        # vitals = pl.scan_parquet(save_path + "timeseries_vitals.parquet")
-        # (
-        #     vitals.pipe(
-        #         timeseries_imputer.impute_timeseries,
-        #         resolution_in_seconds=300,
-        #         keep_preadmission_data=True,
-        #     )
-        # )
+            # Winsorize the lab data
+            print("reprodICU - Winsorizing lab data...")
+            columns_to_exclude = [
+                column_names["global_icu_stay_id_col"],
+                column_names["timeseries_time_col"],
+                "Base excess",
+            ]
+            labs = pl.scan_parquet(
+                save_path + "timeseries_labs_no_meta.parquet"
+            )
+            labs_cols = labs.collect_schema().names()
+            columns_to_winsorize = list(
+                set(labs_cols) - set(columns_to_exclude)
+            )
+            (
+                labs.pipe(
+                    X2_Winsorizer.winsorize_clip_lower_0_quantiles,
+                    columns=columns_to_winsorize,
+                    alpha=0.99,
+                )
+                .pipe(
+                    X2_Winsorizer.winsorize_quantiles,
+                    columns=["Base excess"],
+                    alpha=0.99,
+                )
+                .collect(streaming=True)
+                .write_parquet(
+                    save_path + "timeseries_labs_no_meta_winsorized.parquet"
+                )
+            )
+
+        if args.IMPUTE and "vitals" in TIMESERIES:
+            # Impute the timeseries data
+            print("reprodICU - Imputing timeseries data...")
+            # Impute the vitals data
+            (
+                pl.scan_parquet(save_path + "timeseries_vitals.parquet")
+                .pipe(timeseries_imputer.impute_timeseries_vitals)
+                .collect(streaming=True)
+                .write_parquet(save_path + "timeseries_vitals_imputed.parquet")
+            )
 
     # region info 2
-    if "patient_information" in tables:
+    if "patient_information" in TABLES:
         # Add availability information to the patient information
         print("reprodICU - Adding data availability to patient information...")
         (
@@ -291,20 +313,23 @@ if __name__ == "__main__":
             save_path + "patient_information.parquet",
         )
 
-        # # Impute the patient information
-        # (
-        #     pl.scan_parquet(save_path + "patient_information.parquet")
-        #     .pipe(patient_info_imputer.impute_patient_IDs)
-        #     .pipe(
-        #         patient_info_imputer.impute_patient_anthropometrics,
-        #         n_neighbors=5,
-        #     )
-        #     .collect(streaming=True)
-        #     .write_parquet(save_path + "patient_information_imputed.parquet")
-        # )
+        if args.IMPUTE:
+            # Impute the patient information
+            (
+                pl.scan_parquet(save_path + "patient_information.parquet")
+                .pipe(patient_info_imputer.impute_patient_IDs)
+                .pipe(
+                    patient_info_imputer.impute_patient_anthropometrics,
+                    n_neighbors=5,
+                )
+                .collect(streaming=True)
+                .write_parquet(
+                    save_path + "patient_information_imputed.parquet"
+                )
+            )
 
     # region overview
-    elif len(tables) == 0:
+    elif len(TABLES) == 0:
         print("reprodICU - No tables selected.")
         print("reprodICU - Make sure to select at least one table to build.")
         print("reprodICU - Must be one of:")
