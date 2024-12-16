@@ -30,6 +30,7 @@ from helpers.X3_impute.X3_impute_patient_information import (
     PatientInformationImputer,
 )
 from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
+from helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
 
 # import overview functions
 from helpers.helper_overview import Overview
@@ -97,6 +98,13 @@ if __name__ == "__main__":
         "--IMPUTE",
         action="store_true",
         help="Impute missing values in the data.",
+    )
+    parser.add_argument(
+        "--RESAMPLE",
+        type=int,
+        nargs="?",
+        const=300,
+        help="Resample the timeseries data to a specified resolution in seconds.",
     )
     args = parser.parse_args()
 
@@ -225,6 +233,7 @@ if __name__ == "__main__":
             paths=paths, datasets=DATASETS, DEMO=args.DEMO
         )
         timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=args.DEMO)
+        timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=args.DEMO)
         print("reprodICU - Splitting timeseries...")
         # Default paths are used for saving the timeseries data
         # vitals -> timeseries_vitals.parquet
@@ -285,6 +294,21 @@ if __name__ == "__main__":
                 .pipe(timeseries_imputer.impute_timeseries_vitals)
                 .collect(streaming=True)
                 .write_parquet(save_path + "timeseries_vitals_imputed.parquet")
+            )
+
+        if args.RESAMPLE and "vitals" in TIMESERIES:
+            # Resample the timeseries data
+            print("reprodICU - Resampling timeseries data...")
+            (
+                pl.scan_parquet(save_path + "timeseries_vitals.parquet")
+                .pipe(
+                    timeseries_resampler.resample_timeseries_vitals,
+                    resolution_in_seconds=args.RESAMPLE,
+                )
+                .collect(streaming=True)
+                .write_parquet(
+                    save_path + "timeseries_vitals_resampled.parquet"
+                )
             )
 
     # region info 2
