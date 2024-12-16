@@ -43,13 +43,17 @@ class TimeseriesHarmonizer(GlobalVars):
 
     # region harmonize/split
     # Split the timeseries data into vitals, labs, resp and inout
-    def harmonize_split_timeseries(self, save_to_default=True) -> None:
+    def harmonize_split_timeseries(
+        self, timeseries=[], save_to_default=True
+    ) -> None:
         """
         Splits the timeseries data into vitals, labs, resp and inout
         """
 
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the timeseries from.")
+        if timeseries == []:
+            raise ValueError("No timeseries selected.")
 
         vital_prms = pl.Series([*self.index_cols, *self.relevant_vital_values])
         resp_prms = pl.Series(
@@ -388,27 +392,31 @@ class TimeseriesHarmonizer(GlobalVars):
         if save_to_default:
             print("reprodICU - Saving timeseries...")
 
-            print("reprodICU - Saving vitals...")
-            vitals.pipe(self._print_unique_cases, "vitals").pipe(
-                self._fix_temperature_values
-            ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
+            if "vitals" in timeseries:
+                print("reprodICU - Saving vitals...")
+                vitals.pipe(self._print_unique_cases, "vitals").pipe(
+                    self._fix_temperature_values
+                ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
 
-            print("reprodICU - Saving labs...")
-            labs.pipe(self._print_unique_cases, "labs").pipe(
-                self.decode_lab_values
-            ).collect(streaming=True).write_parquet(
-                self.save_path + "timeseries_labs.parquet"
-            )
+            if "labs" in timeseries:
+                print("reprodICU - Saving labs...")
+                labs.pipe(self._print_unique_cases, "labs").pipe(
+                    self.decode_lab_values
+                ).collect(streaming=True).write_parquet(
+                    self.save_path + "timeseries_labs.parquet"
+                )
 
-            print("reprodICU - Saving respiratory...")
-            resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
-                self.save_path + "timeseries_respiratory.parquet"
-            )
+            if "respiratory" in timeseries:
+                print("reprodICU - Saving respiratory...")
+                resp.pipe(self._print_unique_cases, "respiratory").sink_parquet(
+                    self.save_path + "timeseries_respiratory.parquet"
+                )
 
-            print("reprodICU - Saving intakeoutput...")
-            inout.pipe(self._print_unique_cases, "inout").sink_parquet(
-                self.save_path + "timeseries_intakeoutput.parquet"
-            )
+            if "inout" in timeseries:
+                print("reprodICU - Saving intakeoutput...")
+                inout.pipe(self._print_unique_cases, "inout").sink_parquet(
+                    self.save_path + "timeseries_intakeoutput.parquet"
+                )
 
             return None
 
