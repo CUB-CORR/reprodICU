@@ -14,7 +14,7 @@ Neurological:
   # MIMIC-IV 3.0
   - Neurology
 Neonatal:
-  # MIMIC-III
+  # MIMIC-III & NWICU
   - NICU
 Medical:
   - Intensive Care Volwassenen
@@ -40,6 +40,9 @@ Medical-Surgical:
   - ICU
   - ICU OVERFLOW
   - IMCU
+Pediatric:
+  # NWICU
+  - PICU
 Surgical:
   - CSICU
   - CSRU
@@ -64,6 +67,14 @@ Trauma:
   - Surgery/Trauma
 Other:
   - Other
+  # NWICU
+  - BOARDERS
+  - CTU
+  - INPATIENT
+  - MTU
+  - NEUROSCIENCE INPATIENT
+  - ORTHOPEDICS
+  - RADIOLOGY
 Unknown:
   - Unknown
   - unknown

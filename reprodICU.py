@@ -320,7 +320,7 @@ if __name__ == "__main__":
             .pipe(
                 patient_info_cleaner.add_data_availability_information,
                 diagnoses=save_path + "diagnoses_imputed.parquet",
-                medications=save_path + "medications_imputed.parquet",
+                medications=save_path + "medications.parquet",
                 procedures=save_path + "procedures.parquet",
                 timeseries_labs=save_path + "timeseries_labs.parquet",
                 timeseries_vitals=save_path + "timeseries_vitals.parquet",
