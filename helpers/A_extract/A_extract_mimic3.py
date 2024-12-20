@@ -233,8 +233,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .cast(self.discharge_locations_dtype),
                 # Convert categorical admission type to enum
                 pl.col(self.admission_type_col)
-                .replace(self.ADMISSION_TYPES_MAP)
+                .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
                 .cast(self.admission_types_dtype),
+                # Convert categorical admission urgency to enum
+                pl.col(self.admission_type_col)
+                .replace_strict(self.ADMISSION_URGENCY_MAP, default=None)
+                .cast(self.admission_urgency_dtype)
+                .alias(self.admission_urgency_col),
                 # Convert categorical specialty to enum
                 pl.col(self.specialty_col)
                 .replace(self.SPECIALTIES_MAP)
@@ -275,6 +280,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.mortality_icu_col,
                 self.mortality_after_col,
                 self.admission_type_col,
+                self.admission_urgency_col,
                 self.admission_time_col,
                 self.admission_loc_col,
                 self.specialty_col,

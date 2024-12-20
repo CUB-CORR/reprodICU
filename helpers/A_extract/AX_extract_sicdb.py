@@ -96,43 +96,27 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.gender_dtype)
                 .alias(self.gender_col),
                 # Convert admission type to established dtype
-                # 12 different cases to map to the categories
-                pl.when(pl.col("AdmissionUrgency") == 3136)  # "Unknown"
-                .then(
-                    pl.when(pl.col("SurgicalAdmissionType") == 3124)
-                    .then(pl.lit("Unknown"))
-                    .when(pl.col("SurgicalAdmissionType") == 3125)
-                    .then(pl.lit("Urgent Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3126)
-                    .then(pl.lit("Elective Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3127)
-                    .then(pl.lit("Medical"))
-                )
-                .when(pl.col("AdmissionUrgency") == 3137)  # "Urgent"
-                .then(
-                    pl.when(pl.col("SurgicalAdmissionType") == 3124)
-                    .then(pl.lit("Urgent"))
-                    .when(pl.col("SurgicalAdmissionType") == 3125)
-                    .then(pl.lit("Urgent Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3126)
-                    .then(pl.lit("Urgent Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3127)
-                    .then(pl.lit("Urgent Medical"))
-                )
-                .when(pl.col("AdmissionUrgency") == 3138)  # "Elective"
-                .then(
-                    pl.when(pl.col("SurgicalAdmissionType") == 3124)
-                    .then(pl.lit("Elective"))
-                    .when(pl.col("SurgicalAdmissionType") == 3125)
-                    .then(pl.lit("Urgent Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3126)
-                    .then(pl.lit("Elective Surgical"))
-                    .when(pl.col("SurgicalAdmissionType") == 3127)
-                    .then(pl.lit("Elective Medical"))
-                )
+                pl.when(pl.col("SurgicalAdmissionType") == 3124) # Unknown
+                .then(pl.lit("Unknown"))
+                .when(pl.col("SurgicalAdmissionType") == 3125) # Urgent surgery
+                .then(pl.lit("Surgical"))
+                .when(pl.col("SurgicalAdmissionType") == 3126) # Elective surgery
+                .then(pl.lit("Surgical"))
+                .when(pl.col("SurgicalAdmissionType") == 3127) # No surgery
+                .then(pl.lit("Medical"))
                 .otherwise(None)
                 .cast(self.admission_types_dtype)
                 .alias(self.admission_type_col),
+                # Convert admission urgency to established dtype
+                pl.when(pl.col("AdmissionUrgency") == 3136) # Unknown
+                .then(pl.lit("Unknown"))
+                .when(pl.col("AdmissionUrgency") == 3137) # Urgent
+                .then(pl.lit("Urgent"))
+                .when(pl.col("AdmissionUrgency") == 3138) # Elective
+                .then(pl.lit("Elective"))
+                .otherwise(None)
+                .cast(self.admission_urgency_dtype)
+                .alias(self.admission_urgency_col),
                 # Convert admission origin to established dtype
                 pl.col("ReferringUnit")
                 .replace_strict(self._extract_references("ReferringUnit"))

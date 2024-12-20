@@ -1,0 +1,12 @@
+# Mapping of admission types in MIMIC-III/-IV: https://github.com/MIT-LCP/mimic-code/discussions/1215
+Surgical:
+  # MIMIC-IV
+  - SURGICAL SAME DAY ADMISSION
+  # NWICU
+  - TRAUMA
+Medical: []
+Newborn:
+  # MIMIC-III/-IV
+  - NEWBORN
+Unknown:
+  - ""

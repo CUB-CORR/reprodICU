@@ -175,9 +175,9 @@ class UMCdbExtractor(UMCdbPaths):
                 # Convert categorical admission type to enum
                 pl.col("urgency")
                 .cast(str)
-                .replace_strict(self.ADMISSION_TYPES_MAP, default="Unknown")
-                .cast(self.admission_types_dtype)
-                .alias(self.admission_type_col),
+                .replace_strict(self.ADMISSION_URGENCY_MAP, default=None)
+                .cast(self.admission_urgency_dtype)
+                .alias(self.admission_urgency_col),
                 # Set hospital stay ID to none
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Set care site to the hospital name
