@@ -1124,13 +1124,11 @@ class EICUExtractor(EICUPaths):
         diagnosis = (
             pl.scan_csv(self.path + "diagnosis.csv.gz")
             .select(  # Select columns of interest
-                [
-                    "patientunitstayid",
-                    "diagnosisoffset",
-                    "icd9code",
-                    "activeupondischarge",
-                    "diagnosispriority",
-                ]
+                "patientunitstayid",
+                "diagnosisoffset",
+                "icd9code",
+                "activeupondischarge",
+                "diagnosispriority",
             )
             # Rename columns for consistency
             .rename(
@@ -1141,23 +1139,21 @@ class EICUExtractor(EICUPaths):
             )
             .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
             .with_columns(  # Convert columns to appropriate data types
-                [
-                    # Split diagnosis codes by comma and rename column
-                    pl.col("icd9code")
-                    .str.split(by=", ")
-                    .alias(self.diagnosis_icd_code_col),
-                    # Convert diagnosisoffset to float and rename column
-                    pl.col("diagnosisoffset")
-                    .cast(float, strict=False)
-                    .alias(self.diagnosis_start_col),
-                    # Convert categorical diagnosispriority to float and rename column
-                    pl.col("diagnosispriority")
-                    .replace({"Primary": 1, "Major": 2, "Other": 3})
-                    .cast(float, strict=False)
-                    .alias(self.diagnosis_priority_col),
-                ]
+                # Split diagnosis codes by comma and rename column
+                pl.col("icd9code")
+                .str.split(by=", ")
+                .alias(self.diagnosis_icd_code_col),
+                # Convert diagnosisoffset to float and rename column
+                pl.col("diagnosisoffset")
+                .cast(float, strict=False)
+                .alias(self.diagnosis_start_col),
+                # Convert categorical diagnosispriority to float and rename column
+                pl.col("diagnosispriority")
+                .replace({"Primary": 1, "Major": 2, "Other": 3})
+                .cast(float, strict=False)
+                .alias(self.diagnosis_priority_col),
             )
-            .drop(["icd9code", "diagnosisoffset", "diagnosispriority"])
+            .drop("icd9code", "diagnosisoffset", "diagnosispriority")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.diagnosis_start_col,

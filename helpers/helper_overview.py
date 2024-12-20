@@ -19,7 +19,7 @@ class Overview:
         tables = [
             "diagnoses_imputed",
             # "procedures",
-            "medications_imputed",
+            "medications",
             "timeseries_vitals",
             "timeseries_labs",
             "timeseries_respiratory",
