@@ -7,6 +7,8 @@ Emergency:
   - EW EMER.
   # UMCdb
   - "1"
+  # NWICU
+  - TRAUMA
 Urgent:
   # MIMIC-III/-IV / NWICU
   - URGENT
@@ -24,17 +26,5 @@ Elective:
   - "0"
   # NWICU
   - ELECTIVE-ROUTINE
-Newborn:
-  # MIMIC-III/-IV
-  - NEWBORN
 Unknown:
   - ""
-Emergency Surgical:
-  # NWICU
-  - TRAUMA
-Urgent Surgical: []
-Elective Surgical: []
-Emergency Medical: []
-Urgent Medical: []
-Elective Medical: []
-Medical: []
