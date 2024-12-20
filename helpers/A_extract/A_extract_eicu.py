@@ -75,27 +75,25 @@ class EICUExtractor(EICUPaths):
         return (
             pl.scan_csv(self.patient_path)
             .select(  # Select columns of interest
-                [
-                    "uniquepid",
-                    "patienthealthsystemstayid",
-                    "patientunitstayid",
-                    "gender",
-                    "age",
-                    "ethnicity",
-                    "admissionheight",
-                    "admissionweight",
-                    "unittype",
-                    "unitadmitsource",
-                    "unitadmittime24",
-                    "unitvisitnumber",
-                    "unitdischargelocation",
-                    "unitdischargestatus",
-                    "unitdischargeoffset",
-                    "hospitalid",
-                    "hospitaladmitoffset",
-                    "hospitaldischargeoffset",
-                    "hospitaldischargestatus",
-                ]
+                "uniquepid",
+                "patienthealthsystemstayid",
+                "patientunitstayid",
+                "gender",
+                "age",
+                "ethnicity",
+                "admissionheight",
+                "admissionweight",
+                "unittype",
+                "unitadmitsource",
+                "unitadmittime24",
+                "unitvisitnumber",
+                "unitdischargelocation",
+                "unitdischargestatus",
+                "unitdischargeoffset",
+                "hospitalid",
+                "hospitaladmitoffset",
+                "hospitaldischargeoffset",
+                "hospitaldischargestatus",
             )
             # Rename columns for consistency
             .rename(
@@ -223,6 +221,7 @@ class EICUExtractor(EICUPaths):
                 self.height_col,
                 self.weight_col,
                 self.ethnicity_col,
+                self.admission_urgency_col,
                 self.admission_type_col,
                 self.admission_time_col,
                 self.admission_diagnosis_col,
@@ -256,27 +255,6 @@ class EICUExtractor(EICUPaths):
             .select("patientunitstayid", "admitdxpath", "admitdxname")
             .rename({"patientunitstayid": self.icu_stay_id_col})
             .with_columns(
-                # Admission Type
-                pl.when(
-                    pl.col("admitdxpath") == "admission diagnosis|Elective|Yes"
-                )
-                .then(pl.lit("Elective"))
-                .when(
-                    pl.col("admitdxpath") == "admission diagnosis|Elective|No"
-                )
-                .then(pl.lit("Emergency"))
-                .when(
-                    pl.col("admitdxpath")
-                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|Yes"
-                )
-                .then(pl.lit("Surgical"))
-                .when(
-                    pl.col("admitdxpath")
-                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
-                )
-                .then(pl.lit("Medical"))
-                .otherwise(None)
-                .alias(self.admission_type_col),
                 # Admission Diagnosis
                 pl.when(
                     pl.col("admitdxpath").str.starts_with(
@@ -315,18 +293,53 @@ class EICUExtractor(EICUPaths):
                 .otherwise(None)
                 .alias(self.admission_diagnosis_col),
             )
+            .with_columns(
+                # Admission Type
+                pl.when(
+                    pl.col("admitdxpath")
+                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|Yes"
+                )
+                .then(pl.lit("Surgical"))
+                .when(
+                    pl.col("admitdxpath")
+                    == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
+                )
+                .then(pl.lit("Medical"))
+                .when(pl.col(self.admission_diagnosis_col).str.starts_with("Operative"))
+                .then(pl.lit("Surgical"))
+                .when(pl.col(self.admission_diagnosis_col).str.starts_with("Non-operative"))
+                .then(pl.lit("Medical"))
+                .otherwise(None)
+                .alias(self.admission_type_col),
+                # Admission Urgency
+                pl.when(
+                    pl.col("admitdxpath") == "admission diagnosis|Elective|Yes"
+                )
+                .then(pl.lit("Elective"))
+                .when(
+                    pl.col("admitdxpath") == "admission diagnosis|Elective|No"
+                )
+                .then(pl.lit("Emergency"))
+                .otherwise(None)
+                .alias(self.admission_urgency_col),
+            )
             .sort(self.icu_stay_id_col, "admitdxpath")
             .group_by(self.icu_stay_id_col)
             .agg(
                 pl.col(self.admission_diagnosis_col).first(),
-                pl.col(self.admission_type_col)
-                .str.concat(" ")
-                .str.strip_chars(),
+                pl.col(self.admission_type_col).first(),
+                pl.col(self.admission_urgency_col).first(),
             )
-            .cast({self.admission_type_col: self.admission_types_dtype})
+            .cast(
+                {
+                    self.admission_type_col: self.admission_types_dtype,
+                    self.admission_urgency_col: self.admission_urgency_dtype,
+                }
+            )
             .select(
                 self.icu_stay_id_col,
                 self.admission_type_col,
+                self.admission_urgency_col,
                 self.admission_diagnosis_col,
             )
         )

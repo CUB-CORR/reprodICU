@@ -174,6 +174,9 @@ class GlobalVars(GlobalHelpers):
         self.ADMISSION_TYPES_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADMISSION_TYPES.yaml"
         )
+        self.ADMISSION_URGENCY_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADMISSION_URGENCY.yaml"
+        )
         self.DISCHARGE_LOCATIONS_MAP = self.load_many_to_one_mapping(
             mapping_path + "DISCHARGE_LOCATIONS.yaml"
         )
@@ -203,6 +206,9 @@ class GlobalVars(GlobalHelpers):
         )
         self.admission_types_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "ADMISSION_TYPES.yaml")
+        )
+        self.admission_urgency_dtype = pl.Enum(
+            self.load_mapping_keys(mapping_path + "ADMISSION_URGENCY.yaml")
         )
         self.discharge_locations_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "DISCHARGE_LOCATIONS.yaml")
