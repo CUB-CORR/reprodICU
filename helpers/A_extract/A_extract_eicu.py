@@ -326,9 +326,9 @@ class EICUExtractor(EICUPaths):
             .sort(self.icu_stay_id_col, "admitdxpath")
             .group_by(self.icu_stay_id_col)
             .agg(
-                pl.col(self.admission_diagnosis_col).first(),
-                pl.col(self.admission_type_col).first(),
-                pl.col(self.admission_urgency_col).first(),
+                pl.col(self.admission_diagnosis_col).drop_nulls().first(),
+                pl.col(self.admission_type_col).drop_nulls().first(),
+                pl.col(self.admission_urgency_col).drop_nulls().first(),
             )
             .cast(
                 {

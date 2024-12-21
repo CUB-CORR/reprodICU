@@ -96,23 +96,25 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.gender_dtype)
                 .alias(self.gender_col),
                 # Convert admission type to established dtype
-                pl.when(pl.col("SurgicalAdmissionType") == 3124) # Unknown
+                pl.when(pl.col("SurgicalAdmissionType") == 3124)  # Unknown
                 .then(pl.lit("Unknown"))
-                .when(pl.col("SurgicalAdmissionType") == 3125) # Urgent surgery
+                .when(pl.col("SurgicalAdmissionType") == 3125)  # Urgent surgery
                 .then(pl.lit("Surgical"))
-                .when(pl.col("SurgicalAdmissionType") == 3126) # Elective surgery
+                .when(
+                    pl.col("SurgicalAdmissionType") == 3126
+                )  # Elective surgery
                 .then(pl.lit("Surgical"))
-                .when(pl.col("SurgicalAdmissionType") == 3127) # No surgery
+                .when(pl.col("SurgicalAdmissionType") == 3127)  # No surgery
                 .then(pl.lit("Medical"))
                 .otherwise(None)
                 .cast(self.admission_types_dtype)
                 .alias(self.admission_type_col),
                 # Convert admission urgency to established dtype
-                pl.when(pl.col("AdmissionUrgency") == 3136) # Unknown
+                pl.when(pl.col("AdmissionUrgency") == 3136)  # Unknown
                 .then(pl.lit("Unknown"))
-                .when(pl.col("AdmissionUrgency") == 3137) # Urgent
+                .when(pl.col("AdmissionUrgency") == 3137)  # Urgent
                 .then(pl.lit("Urgent"))
-                .when(pl.col("AdmissionUrgency") == 3138) # Elective
+                .when(pl.col("AdmissionUrgency") == 3138)  # Elective
                 .then(pl.lit("Elective"))
                 .otherwise(None)
                 .cast(self.admission_urgency_dtype)
