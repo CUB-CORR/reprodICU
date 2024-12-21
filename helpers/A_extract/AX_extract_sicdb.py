@@ -443,7 +443,7 @@ class SICdbExtractor(SICdbPaths):
             )
             .with_columns(
                 # Remove dot from ICD code
-                pl.col(self.diagnosis_icd_code_col).str.replace(".", ""),
+                pl.col(self.diagnosis_icd_code_col).str.replace("\.", ""),
                 # Diagnoses are admission diagnoses
                 pl.lit(0).alias(self.diagnosis_start_col),
                 pl.lit(1).alias(self.diagnosis_priority_col),

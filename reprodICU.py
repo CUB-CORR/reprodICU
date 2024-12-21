@@ -318,6 +318,10 @@ if __name__ == "__main__":
         (
             pl.scan_parquet(save_path + "patient_information.parquet")
             .pipe(
+                patient_info_cleaner.add_primary_diagnoses,
+                diagnoses=save_path + "diagnoses_imputed.parquet",
+            )
+            .pipe(
                 patient_info_cleaner.add_data_availability_information,
                 diagnoses=save_path + "diagnoses_imputed.parquet",
                 medications=save_path + "medications.parquet",
@@ -327,7 +331,8 @@ if __name__ == "__main__":
                 timeseries_resp=save_path + "timeseries_respiratory.parquet",
                 timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
             )
-            .sink_parquet(
+            .pipe(patient_info_cleaner.sort_columns)
+            .collect().write_parquet(
                 save_path + "patient_information_with_data_availability.parquet"
             )
         )

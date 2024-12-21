@@ -768,6 +768,9 @@ class NWICUExtractor(NWICUPaths):
                     "long_title": self.diagnosis_description_col,
                 }
             )
+            .with_columns(
+                pl.col(self.diagnosis_priority_col) + 1 # Priority is 1-indexed
+            )
             # drop rows with empty ICD codes
             .filter(pl.col(self.diagnosis_icd_code_col).is_not_null())
             # drop duplicates
