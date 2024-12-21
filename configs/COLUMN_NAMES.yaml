@@ -12,7 +12,7 @@ mortality_after_col: Mortality after ICU discharge (days) # mortality_x_days_aft
 pre_icu_length_of_stay_col: Pre-ICU Length of Stay (days) # pre_icu_length_of_stay
 icu_length_of_stay_col: ICU Length of Stay (days) # icu_length_of_stay
 hospital_length_of_stay_col: Hospital Length of Stay (days) # hospital_length_of_stay
-admission_loc_col: Admission Location # admission_location
+admission_loc_col: Admission Origin # admission_location
 admission_type_col: Admission Type # admission_type
 admission_urgency_col: Admission Urgency
 admission_time_col: Admission Time (24h)
