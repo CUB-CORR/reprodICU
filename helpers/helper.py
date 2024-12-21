@@ -262,6 +262,31 @@ class GlobalVars(GlobalHelpers):
             mapping_path + "_icd_codes/icd10_procedures.csv",
             infer_schema_length=25000,
         )
+        self.ICD_TO_ICDSUBCHAPTER_DF = (
+            pl.read_csv(
+                mapping_path + "_icd_codes/icd_subchapters.csv",
+                separator=";",
+            )
+            .with_columns(
+                pl.col("Subchapter").str.split("|").alias("ICD Codes"),
+                pl.concat_str(
+                    pl.col("Chapter"),
+                    # pl.lit(" ("),
+                    # pl.col("Chapter Title"),
+                    # pl.lit(") - "),
+                    pl.lit(" - "),
+                    pl.col("Subchapter Title"),
+                ).alias("Title"),
+            )
+            .explode("ICD Codes")
+            .select("ICD Codes", "Title")
+        )
+        self.ICD_TO_ICDSUBCHAPTER_DICT = dict(
+            zip(
+                self.ICD_TO_ICDSUBCHAPTER_DF["ICD Codes"],
+                self.ICD_TO_ICDSUBCHAPTER_DF["Title"],
+            )
+        )
 
         # region RELEVANT
         # Select relevant variables
@@ -315,4 +340,17 @@ class GlobalVars(GlobalHelpers):
 
         self.all_values = (
             self.relevant_lab_values_pre_conversion + self.all_relevant_values
+        )
+
+    def ICD_TO_ICDSUBCHAPTER(self, data: pl.LazyFrame):
+        return data.with_columns(
+            pl.coalesce(
+                pl.when(pl.col("ICD").str.starts_with(icd_code))
+                .then(pl.lit(icd_code))
+                .otherwise(None)
+                .alias(icd_code)
+                for icd_code in self.ICD_TO_ICDSUBCHAPTER_DF["ICD Codes"]
+            )
+            .replace_strict(self.ICD_TO_ICDSUBCHAPTER_DICT, default=None)
+            .alias(self.admission_diagnosis_icd_col)
         )

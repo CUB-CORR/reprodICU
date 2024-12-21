@@ -1,0 +1,212 @@
+Chapter;Chapter Title;Subchapter;Subchapter Title
+I;Certain infectious and parasitic diseases;A0;Intestinal infectious diseases
+I;Certain infectious and parasitic diseases;A1;Tuberculosis
+I;Certain infectious and parasitic diseases;A2;Certain zoonotic bacterial diseases
+I;Certain infectious and parasitic diseases;A3|A4;Other bacterial diseases
+I;Certain infectious and parasitic diseases;A5|A60|A61|A62|A63|A64;Infections with a predominantly sexual mode of transmission
+I;Certain infectious and parasitic diseases;A65|A66|A67|A68|A69;Other spirochaetal diseases
+I;Certain infectious and parasitic diseases;A70|A71|A72|A73|A74;Other diseases caused by chlamydiae
+I;Certain infectious and parasitic diseases;A75|A76|A77|A78|A79;Rickettsioses
+I;Certain infectious and parasitic diseases;A8;Viral infections of the central nervous system
+I;Certain infectious and parasitic diseases;A9;Arthropod-borne viral fevers and viral haemorrhagic fevers
+I;Certain infectious and parasitic diseases;B0;Viral infections characterized by skin and mucous membrane lesions
+I;Certain infectious and parasitic diseases;B1;Viral hepatitis
+I;Certain infectious and parasitic diseases;B20|B21|B22|B23|B24;Human immunodeficiency virus [HIV] disease
+I;Certain infectious and parasitic diseases;B25|B26|B27|B28|B29|B30|B31|B32|B33|B34;Other viral diseases
+I;Certain infectious and parasitic diseases;B35|B36|B37|B38|B39|B4;Mycoses
+I;Certain infectious and parasitic diseases;B5|B61|B62|B63|B64;Protozoal diseases
+I;Certain infectious and parasitic diseases;B65|B66|B67|B68|B69|B7|B80|B81|B82|B83;Helminthiases
+I;Certain infectious and parasitic diseases;B85|B86|B87|B88|B89;Pediculosis, acariasis and other infestations
+I;Certain infectious and parasitic diseases;B90|B91|B92|B93|B94;Sequelae of infectious and parasitic diseases
+I;Certain infectious and parasitic diseases;B95|B96|B97|B98;Bacterial, viral and other infectious agents
+I;Certain infectious and parasitic diseases;B99;Other infectious diseases
+II;Neoplasms;C;Malignant neoplasms
+II;Neoplasms;D0;In situ neoplasms
+II;Neoplasms;D1|D2|D30|D31|D32|D33|D34|D35|D36;Benign neoplasms
+II;Neoplasms;D37|D38|D39|D4;Neoplasms of uncertain or unknown behaviour
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D50|D51|D52|D53;Nutritional anaemias
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D55|D56|D57|D58|D59;Haemolytic anaemias
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D60|D61|D62|D63|D64;Aplastic and other anaemias
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D65|D66|D67|D68|D69;Coagulation defects, purpura and other haemorrhagic conditions
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D7;Other diseases of blood and blood-forming organs
+III;Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism;D8;Certain disorders involving the immune mechanism
+IV;Endocrine, nutritional and metabolic diseases;E0;Disorders of thyroid gland
+IV;Endocrine, nutritional and metabolic diseases;E10|E11|E12|E13|E14;Diabetes mellitus
+IV;Endocrine, nutritional and metabolic diseases;E15|E16;Other disorders of glucose regulation and pancreatic internal secretion
+IV;Endocrine, nutritional and metabolic diseases;E2|E3;Disorders of other endocrine glands
+IV;Endocrine, nutritional and metabolic diseases;E4;Malnutrition
+IV;Endocrine, nutritional and metabolic diseases;E5|E60|E61|E62|E63|E64;Other nutritional deficiencies
+IV;Endocrine, nutritional and metabolic diseases;E65|E66|E67|E68|E69;Obesity and other hyperalimentation
+IV;Endocrine, nutritional and metabolic diseases;E7|E8|E9;Metabolic disorders
+V;Mental and behavioural disorders;F0;Organic, including symptomatic, mental disorders
+V;Mental and behavioural disorders;F1;Mental and behavioural disorders due to psychoactive substance use
+V;Mental and behavioural disorders;F2;Schizophrenia, schizotypal and delusional disorders
+V;Mental and behavioural disorders;F3;Mood [affective] disorders
+V;Mental and behavioural disorders;F4;Neurotic, stress-related and somatoform disorders
+V;Mental and behavioural disorders;F5;Behavioural syndromes associated with physiological disturbances and physical factors
+V;Mental and behavioural disorders;F6;Disorders of adult personality and behaviour
+V;Mental and behavioural disorders;F7;Mental retardation
+V;Mental and behavioural disorders;F8;Disorders of psychological development
+V;Mental and behavioural disorders;F90|F91|F92|F93|F94|F95|F96|F97|F98;Behavioural and emotional disorders with onset usually occurring in childhood and adolescence
+V;Mental and behavioural disorders;F99;Unspecified mental disorder
+VI;Diseases of the nervous system;G0;Inflammatory diseases of the central nervous system
+VI;Diseases of the nervous system;G1;Systemic atrophies primarily affecting the central nervous system
+VI;Diseases of the nervous system;G2;Extrapyramidal and movement disorders
+VI;Diseases of the nervous system;G30|G31|G32;Other degenerative diseases of the nervous system
+VI;Diseases of the nervous system;G35|G36|G37|G38|G39;Demyelinating diseases of the central nervous system
+VI;Diseases of the nervous system;G4;Episodic and paroxysmal disorders
+VI;Diseases of the nervous system;G5;Nerve, nerve root and plexus disorders
+VI;Diseases of the nervous system;G6;Polyneuropathies and other disorders of the peripheral nervous system
+VI;Diseases of the nervous system;G7;Diseases of myoneural junction and muscle
+VI;Diseases of the nervous system;G8;Cerebral palsy and other paralytic syndromes
+VI;Diseases of the nervous system;G9;Other disorders of the nervous system
+VII;Diseases of the eye and adnexa;H0;Disorders of eyelid, lacrimal system and orbit
+VII;Diseases of the eye and adnexa;H10|H11|H12|H13;Disorders of conjunctiva
+VII;Diseases of the eye and adnexa;H15|H16|H17|H18|H19|H20|H21|H22;Disorders of sclera, cornea, iris and ciliary body
+VII;Diseases of the eye and adnexa;H25|H26|H27|H28;Disorders of lens
+VII;Diseases of the eye and adnexa;H3;Disorders of choroid and retina
+VII;Diseases of the eye and adnexa;H40|H41|H42;Glaucoma
+VII;Diseases of the eye and adnexa;H43|H44|H45;Disorders of vitreous body and globe
+VII;Diseases of the eye and adnexa;H46|H47|H48;Disorders of optic nerve and visual pathways
+VII;Diseases of the eye and adnexa;H49|H50|H51|H52;Disorders of ocular muscles, binocular movement, accommodation and refraction
+VII;Diseases of the eye and adnexa;H53|H54;Visual disturbances and blindness
+VII;Diseases of the eye and adnexa;H55|H56|H57|H58;Other disorders of eye and adnexa
+VIII;Diseases of the ear and mastoid process;H60|H61|H62;Diseases of external ear
+VIII;Diseases of the ear and mastoid process;H65|H66|H67|H68|H69|H7;Diseases of middle ear and mastoid
+VIII;Diseases of the ear and mastoid process;H8;Diseases of inner ear
+VIII;Diseases of the ear and mastoid process;H9;Other disorders of ear
+IX;Diseases of the circulatory system;I00|I01|I02;Acute rheumatic fever
+IX;Diseases of the circulatory system;I05|I06|I07|I08|I09;Chronic rheumatic heart diseases
+IX;Diseases of the circulatory system;I1;Hypertensive diseases
+IX;Diseases of the circulatory system;I20|I21|I22|I23|I24|I25;Ischaemic heart diseases
+IX;Diseases of the circulatory system;I26|I27|I28;Pulmonary heart disease and diseases of pulmonary circulation
+IX;Diseases of the circulatory system;I3|I4|I5;Other forms of heart disease
+IX;Diseases of the circulatory system;I6;Cerebrovascular diseases
+IX;Diseases of the circulatory system;I7;Diseases of arteries, arterioles and capillaries
+IX;Diseases of the circulatory system;I8;Diseases of veins, lymphatic vessels and lymph nodes, not elsewhere classified
+IX;Diseases of the circulatory system;I9;Other and unspecified disorders of the circulatory system
+X;Diseases of the respiratory system;J00|J01|J02|J03|J04|J05|J06;Acute upper respiratory infections
+X;Diseases of the respiratory system;J09|J1;Influenza and pneumonia
+X;Diseases of the respiratory system;J2;Other acute lower respiratory infections
+X;Diseases of the respiratory system;J3;Other diseases of upper respiratory tract
+X;Diseases of the respiratory system;J4;Chronic lower respiratory diseases
+X;Diseases of the respiratory system;J6|J7;Lung diseases due to external agents
+X;Diseases of the respiratory system;J80|J81|J82|J83|J84;Other respiratory diseases principally affecting the interstitium
+X;Diseases of the respiratory system;J85|J86;Suppurative and necrotic conditions of lower respiratory tract
+X;Diseases of the respiratory system;J90|J91|J92|J93|J94;Other diseases of pleura
+X;Diseases of the respiratory system;J95|J96|J97|J98|J99;Other diseases of the respiratory system
+XI;Diseases of the digestive system;K0|K1;Diseases of oral cavity, salivary glands and jaws
+XI;Diseases of the digestive system;K2|K30|K31;Diseases of oesophagus, stomach and duodenum
+XI;Diseases of the digestive system;K35|K36|K37|K38;Diseases of appendix
+XI;Diseases of the digestive system;K4;Hernia
+XI;Diseases of the digestive system;K50|K51|K52;Noninfective enteritis and colitis
+XI;Diseases of the digestive system;K55|K56|K57|K58|K59|K60|K61|K62|K63|K64;Other diseases of intestines
+XI;Diseases of the digestive system;K65|K66|K67;Diseases of peritoneum
+XI;Diseases of the digestive system;K7;Diseases of liver
+XI;Diseases of the digestive system;K8;Disorders of gallbladder, biliary tract and pancreas
+XI;Diseases of the digestive system;K9;Other diseases of the digestive system
+XII;Diseases of the skin and subcutaneous tissue;L0;Infections of the skin and subcutaneous tissue
+XII;Diseases of the skin and subcutaneous tissue;L1;Bullous disorders
+XII;Diseases of the skin and subcutaneous tissue;L2|L3;Dermatitis and eczema
+XII;Diseases of the skin and subcutaneous tissue;L4;Papulosquamous disorders
+XII;Diseases of the skin and subcutaneous tissue;L50|L51|L52|L53|L54;Urticaria and erythema
+XII;Diseases of the skin and subcutaneous tissue;L55|L56|L57|L58|L59;Radiation-related disorders of the skin and subcutaneous tissue
+XII;Diseases of the skin and subcutaneous tissue;L6|L7;Disorders of skin appendages
+XII;Diseases of the skin and subcutaneous tissue;L8|L9;Other disorders of the skin and subcutaneous tissue
+XIII;Diseases of the musculoskeletal system and connective tissue;M0|M1|M2;Arthropathies
+XIII;Diseases of the musculoskeletal system and connective tissue;M3;Systemic connective tissue disorders
+XIII;Diseases of the musculoskeletal system and connective tissue;M4|M5;Dorsopathies
+XIII;Diseases of the musculoskeletal system and connective tissue;M6|M7;Soft tissue disorders
+XIII;Diseases of the musculoskeletal system and connective tissue;M8|M91|M92|M93|M94;Osteopathies and chondropathies
+XIII;Diseases of the musculoskeletal system and connective tissue;M95|M96|M97|M98|M99;Other disorders of the musculoskeletal system and connective tissue
+XIV;Diseases of the genitourinary system;N0;Glomerular diseases
+XIV;Diseases of the genitourinary system;N10|N11|N12|N13|N14|N15|N16;Renal tubulo-interstitial diseases
+XIV;Diseases of the genitourinary system;N17|N18|N19;Renal failure
+XIV;Diseases of the genitourinary system;N20|N21|N22|N23;Urolithiasis
+XIV;Diseases of the genitourinary system;N25|N26|N27|N28|N29;Other disorders of kidney and ureter
+XIV;Diseases of the genitourinary system;N3;Other diseases of urinary system
+XIV;Diseases of the genitourinary system;N4|N5;Diseases of male genital organs
+XIV;Diseases of the genitourinary system;N6;Disorders of breast
+XIV;Diseases of the genitourinary system;N7;Inflammatory diseases of female pelvic organs
+XIV;Diseases of the genitourinary system;N8|N90|N91|N92|N93|N94|N95|N96|N97|N98;Noninflammatory disorders of female genital tract
+XIV;Diseases of the genitourinary system;N99;Other disorders of the genitourinary system
+XV;Pregnancy, childbirth and the puerperium;O0;Pregnancy with abortive outcome
+XV;Pregnancy, childbirth and the puerperium;O1;Oedema, proteinuria and hypertensive disorders in pregnancy, childbirth and the puerperium
+XV;Pregnancy, childbirth and the puerperium;O2;Other maternal disorders predominantly related to pregnancy
+XV;Pregnancy, childbirth and the puerperium;O3|O4;Maternal care related to the fetus and amniotic cavity and possible delivery problems
+XV;Pregnancy, childbirth and the puerperium;O6|O7;Complications of labour and delivery
+XV;Pregnancy, childbirth and the puerperium;O80|O81|O82|O83|O84;Delivery
+XV;Pregnancy, childbirth and the puerperium;O85|O86|O87|O88|O89|O90|O91|O92;Complications predominantly related to the puerperium
+XV;Pregnancy, childbirth and the puerperium;O94|O95|O96|O97|O98|O99;Other obstetric conditions, not elsewhere classified
+XVI;Certain conditions originating in the perinatal period;P00|P01|P02|P03|P04;Fetus and newborn affected by maternal factors and by complications of pregnancy, labour and delivery
+XVI;Certain conditions originating in the perinatal period;P05|P06|P07|P08;Disorders related to length of gestation and fetal growth
+XVI;Certain conditions originating in the perinatal period;P1;Birth trauma
+XVI;Certain conditions originating in the perinatal period;P2;Respiratory and cardiovascular disorders specific to the perinatal period
+XVI;Certain conditions originating in the perinatal period;P3;Infections specific to the perinatal period
+XVI;Certain conditions originating in the perinatal period;P5|P6;Haemorrhagic and haematological disorders of fetus and newborn
+XVI;Certain conditions originating in the perinatal period;P70|P71|P72|P73|P74;Transitory endocrine and metabolic disorders specific to fetus and newborn
+XVI;Certain conditions originating in the perinatal period;P75|P76|P77|P78;Digestive system disorders of fetus and newborn
+XVI;Certain conditions originating in the perinatal period;P8;Conditions involving the integument and temperature regulation of fetus and newborn
+XVI;Certain conditions originating in the perinatal period;P9;Other disorders originating in the perinatal period
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q0;Congenital malformations of the nervous system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q1;Congenital malformations of eye, ear, face and neck
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q2;Congenital malformations of the circulatory system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q30|Q31|Q32|Q33|Q34;Congenital malformations of the respiratory system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q35|Q36|Q37;Cleft lip and cleft palate
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q38|Q39|Q4;Other congenital malformations of the digestive system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q5;Congenital malformations of genital organs
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q60|Q61|Q62|Q63|Q64;Congenital malformations of the urinary system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q65|Q66|Q67|Q68|Q69|Q7;Congenital malformations and deformations of the musculoskeletal system
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q8;Other congenital malformations
+XVII;Congenital malformations, deformations and chromosomal abnormalities;Q9;Chromosomal abnormalities, not elsewhere classified
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R0;Symptoms and signs involving the circulatory and respiratory systems
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R1;Symptoms and signs involving the digestive system and abdomen
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R20|R21|R22|R23;Symptoms and signs involving the skin and subcutaneous tissue
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R25|R26|R27|R29;Symptoms and signs involving the nervous and musculoskeletal systems
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R3;Symptoms and signs involving the urinary system
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R40|R41|R42|R43|R44|R45|R46;Symptoms and signs involving cognition, perception, emotional state and behaviour
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R47|R48|R49;Symptoms and signs involving speech and voice
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R5|R6;General symptoms and signs
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R7;Abnormal findings on examination of blood, without diagnosis
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R80|R81|R82;Abnormal findings on examination of urine, without diagnosis
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R83|R84|R85|R86|R87|R88|R89;Abnormal findings on examination of other body fluids, substances and tissues, without diagnosis
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R90|R91|R92|R93|R94;Abnormal findings on diagnostic imaging and in function studies, without diagnosis
+XVIII;Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified;R95|R96|R97|R98|R99;Ill-defined and unknown causes of mortality
+XIX;Injury, poisoning and certain other consequences of external causes;S0;Injuries to the head
+XIX;Injury, poisoning and certain other consequences of external causes;S1;Injuries to the neck
+XIX;Injury, poisoning and certain other consequences of external causes;S2;Injuries to the thorax
+XIX;Injury, poisoning and certain other consequences of external causes;S3;Injuries to the abdomen, lower back, lumbar spine and pelvis
+XIX;Injury, poisoning and certain other consequences of external causes;S4;Injuries to the shoulder and upper arm
+XIX;Injury, poisoning and certain other consequences of external causes;S5;Injuries to the elbow and forearm
+XIX;Injury, poisoning and certain other consequences of external causes;S6;Injuries to the wrist and hand
+XIX;Injury, poisoning and certain other consequences of external causes;S7;Injuries to the hip and thigh
+XIX;Injury, poisoning and certain other consequences of external causes;S8;Injuries to the knee and lower leg
+XIX;Injury, poisoning and certain other consequences of external causes;S9;Injuries to the ankle and foot
+XIX;Injury, poisoning and certain other consequences of external causes;T00|T01|T02|T03|T04|T05|T06|T07;Injuries involving multiple body regions
+XIX;Injury, poisoning and certain other consequences of external causes;T08|T09|T10|T11|T12|T13|T14;Injuries to unspecified part of trunk, limb or body region
+XIX;Injury, poisoning and certain other consequences of external causes;T15|T16|T17|T18|T19;Effects of foreign body entering through natural orifice
+XIX;Injury, poisoning and certain other consequences of external causes;T2|T30|T31|T32;Burns and corrosions
+XIX;Injury, poisoning and certain other consequences of external causes;T33|T34|T35;Frostbite
+XIX;Injury, poisoning and certain other consequences of external causes;T36|T37|T38|T39|T4|T50;Poisoning by drugs, medicaments and biological substances
+XIX;Injury, poisoning and certain other consequences of external causes;T51|T52|T53|T54|T55|T56|T57|T58|T59|T60|T61|T62|T63|T64|T65;Toxic effects of substances chiefly nonmedicinal as to source
+XIX;Injury, poisoning and certain other consequences of external causes;T66|T67|T68|T69|T70|T71|T72|T73|T74|T75|T76|T77|T78;Other and unspecified effects of external causes
+XIX;Injury, poisoning and certain other consequences of external causes;T79;Certain early complications of trauma
+XIX;Injury, poisoning and certain other consequences of external causes;T8;Complications of surgical and medical care, not elsewhere classified
+XIX;Injury, poisoning and certain other consequences of external causes;T9;Sequelae of injuries, of poisoning and of other consequences of external causes
+XXII;Codes for special purposes;U0|U1|U2|U3|U4;Provisional assignment of new diseases of uncertain etiology or emergency use
+XXII;Codes for special purposes;U8;Resistance to antimicrobial and antineoplastic drugs
+XX;External causes of morbidity and mortality;V|W|X0|X1|X2|X3|X4|X5;Accidents
+XX;External causes of morbidity and mortality;X6|X7|X80|X81|X82|X83|X84;Intentional self-harm
+XX;External causes of morbidity and mortality;X85|X86|X87|X88|X89|X9|Y0;Assault
+XX;External causes of morbidity and mortality;Y1|Y2|Y30|Y31|Y32|Y33|Y34;Event of undetermined intent
+XX;External causes of morbidity and mortality;Y35|Y36;Legal intervention and operations of war
+XX;External causes of morbidity and mortality;Y4|Y5|Y6|Y7|Y80|Y81|Y82|Y83|Y84;Complications of medical and surgical care
+XX;External causes of morbidity and mortality;Y85|Y86|Y87|Y88|Y89;Sequelae of external causes of morbidity and mortality
+XX;External causes of morbidity and mortality;Y9;Supplementary factors related to causes of morbidity and mortality classified elsewhere
+XXI;Factors influencing health status and contact with health services;Z0|Z1;Persons encountering health services for examination and investigation
+XXI;Factors influencing health status and contact with health services;Z2;Persons with potential health hazards related to communicable diseases
+XXI;Factors influencing health status and contact with health services;Z3;Persons encountering health services in circumstances related to reproduction
+XXI;Factors influencing health status and contact with health services;Z4|Z51|Z52|Z53|Z54;Persons encountering health services for specific procedures and health care
+XXI;Factors influencing health status and contact with health services;Z55|Z56|Z57|Z58|Z59|Z6;Persons with potential health hazards related to socioeconomic and psychosocial circumstances
+XXI;Factors influencing health status and contact with health services;Z7;Persons encountering health services in other circumstances
+XXI;Factors influencing health status and contact with health services;Z8|Z9;Persons with potential health hazards related to family and personal history and certain conditions

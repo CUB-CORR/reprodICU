@@ -35,6 +35,71 @@ class PatientInformationCleaner(GlobalVars):
             pl.col(self.mortality_after_col).round(decimals=0).cast(int),
         )
 
+    def add_primary_diagnoses(
+        self, data: pl.LazyFrame, diagnoses: str
+    ) -> pl.LazyFrame:
+        """
+        Adds primary diagnoses from the datasets where they need to be extracted
+        """
+
+        primary_diagnoses = pl.scan_parquet(diagnoses).filter(
+            pl.col(self.diagnosis_priority_col) == 1
+        )
+        primary_diagnoses_icu = (
+            primary_diagnoses.filter(
+                pl.col(self.global_icu_stay_id_col).is_not_null()
+            )
+            .unique()
+            .group_by(self.global_icu_stay_id_col)
+            .agg(
+                pl.col(self.diagnosis_icd10_code_col)
+                .sort_by(self.diagnosis_start_col)
+                .first()
+            )
+        )
+        primary_diagnoses_hosp = (
+            primary_diagnoses.filter(
+                pl.col(self.global_icu_stay_id_col).is_null()
+            )
+            .unique()
+            .group_by(self.global_hospital_stay_id_col)
+            .agg(
+                pl.col(self.diagnosis_icd10_code_col)
+                .sort_by(self.diagnosis_start_col)
+                .first()
+            )
+        )
+
+        return data.join(
+            (
+                data.select(
+                    self.global_icu_stay_id_col,
+                    self.global_hospital_stay_id_col,
+                )
+                .join(
+                    primary_diagnoses_icu,
+                    on=self.global_icu_stay_id_col,
+                    how="left",
+                )
+                .join(
+                    primary_diagnoses_hosp,
+                    on=self.global_hospital_stay_id_col,
+                    how="left",
+                )
+                .with_columns(
+                    pl.coalesce(
+                        pl.col(self.diagnosis_icd10_code_col),
+                        pl.col(self.diagnosis_icd10_code_col + "_right"),
+                    )
+                )
+            )
+            .select(self.global_icu_stay_id_col, self.diagnosis_icd10_code_col)
+            .rename({self.diagnosis_icd10_code_col: "ICD"})
+            .pipe(self.ICD_TO_ICDSUBCHAPTER),
+            on=self.global_icu_stay_id_col,
+            how="left",
+        )
+
     def remove_bad_patient_information(self, data) -> pl.LazyFrame:
         """
         Removes obviously wrong values from the patient information.
@@ -191,6 +256,53 @@ class PatientInformationCleaner(GlobalVars):
             )
 
         return data
+
+    def sort_columns(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Sort columns
+        """
+        return data.select(
+            [
+                self.global_person_id_col,
+                self.global_hospital_stay_id_col,
+                self.global_icu_stay_id_col,
+                self.icu_stay_seq_num_col,
+                self.dataset_col,
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                self.age_col,
+                self.gender_col,
+                self.height_col,
+                self.weight_col,
+                self.ethnicity_col,
+                self.admission_diagnosis_col,
+                self.admission_diagnosis_icd_col,
+                self.admission_type_col,
+                self.admission_urgency_col,
+                self.admission_time_col,
+                self.admission_loc_col,
+                self.specialty_col,
+                self.care_site_col,
+                self.unit_type_col,
+                self.pre_icu_length_of_stay_col,
+                self.icu_length_of_stay_col,
+                self.hospital_length_of_stay_col,
+                self.discharge_loc_col,
+                self.mortality_hosp_col,
+                self.mortality_icu_col,
+                self.mortality_after_col,
+            ]
+            + [
+                "Table: Diagnoses",
+                "Table: Medications",
+                "Table: Procedures",
+                "Table: Timeseries (Laboratory results)",
+                "Table: Timeseries (Vitals)",
+                "Table: Timeseries (Respiratory data)",
+                "Table: Timeseries (In/Out data)",
+            ]
+        )
 
 
 if __name__ == "__main__":
