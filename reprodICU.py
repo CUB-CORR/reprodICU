@@ -106,6 +106,11 @@ if __name__ == "__main__":
         const=300,
         help="Resample the timeseries data to a specified resolution in seconds.",
     )
+    parser.add_argument(
+        "--NO-OVERVIEW",
+        action="store_true",
+        help="Do not create an overview of the data extracted and harmonized.",
+    )
     args = parser.parse_args()
 
     # Initialize paths
@@ -366,12 +371,13 @@ if __name__ == "__main__":
             "reprodICU - patient_information, diagnoses, procedures, medications, timeseries."
         )
 
-    # Create an overview of the data extracted and harmonized
-    overview = Overview(save_path=save_path)
-    print("reprodICU - Creating overview...")
-    overview.create_overview()
-    print("reprodICU - Creating database variable overview...")
-    overview.create_database_variable_overview()
+    if not args.NO_OVERVIEW:
+        # Create an overview of the data extracted and harmonized
+        overview = Overview(save_path=save_path)
+        print("reprodICU - Creating overview...")
+        overview.create_overview()
+        print("reprodICU - Creating database variable overview...")
+        overview.create_database_variable_overview()
 
     print("reprodICU - Done.")
 
