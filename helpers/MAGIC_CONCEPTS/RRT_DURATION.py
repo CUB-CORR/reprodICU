@@ -328,9 +328,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
         print("mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE")
 
         mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE = (
-            pl.scan_csv(self.mimic4_paths.chartevents_path).select(
-                "stay_id", "charttime", "itemid", "value"
-            )
+            pl.scan_csv(self.mimic4_paths.chartevents_path)
+            .select("stay_id", "charttime", "itemid", "value")
             # Filter for renal replacement therapy IDs
             .filter(
                 pl.col("itemid").is_in(
@@ -344,19 +343,17 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             # .cast({"itemid": str})
             # replace renal replacement therapy concepts
             .with_columns(
-                pl.when(
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_present),
-                    pl.col("value").is_not_null(),
+                (
+                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_present)
+                    & pl.col("value").is_not_null()
                 )
-                .then(True)
-                .otherwise(False)
+                .fill_null(False)
                 .alias("dialysis_present"),
-                pl.when(
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_active),
-                    pl.col("value").is_not_null(),
+                (
+                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_active)
+                    & pl.col("value").is_not_null()
                 )
-                .then(True)
-                .otherwise(False)
+                .fill_null(False)
                 .alias("dialysis_active"),
                 pl.when(
                     pl.col("itemid").is_in(mimic4_chartevents_dialysis_mode)
@@ -375,9 +372,14 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("dialysis_type"),
             )
+            .select(
+                "stay_id",
+                "charttime",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
         )
-
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE collect")
 
         # mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE.sink_parquet("mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE.parquet")
         # mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE.collect(
@@ -453,53 +455,46 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        print(
-            "mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS collect"
-        )
+        print("mimic4_RENAL_REPLACEMENT_THERAPY_RANGES")
 
-        # mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS.collect(
-        #     streaming=True
-        # ).write_parquet(
-        #     "mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS.parquet"
-        # )
-
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS concat")
-
-        _mimic4_RENAL_REPLACEMENT_THERAPY_DURATION = pl.concat(
+        mimic4_RENAL_REPLACEMENT_THERAPY_RANGES = pl.concat(
             [
-                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_INPUTEVENTS.drop(
-                    "endtime"
-                ),
-                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS.drop(
-                    "endtime"
-                ),
+                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_INPUTEVENTS,
+                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS,
             ],
-            how="align",
-        ) # .rename({"starttime": "charttime"})
-
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS concat 2")
-
-        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION = pl.concat(
-            [
-                mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE,
-                _mimic4_RENAL_REPLACEMENT_THERAPY_DURATION,
-            ],
-            how="align",
-        )
-
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION concat done")
+            how="vertical",
+        ).unique()
 
         def print_schema(data: pl.LazyFrame) -> pl.LazyFrame:
             print(data.collect_schema())
             return data
 
         mimic4_RENAL_REPLACEMENT_THERAPY_DURATION = (
-            mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.join(
-                _mimic4_RENAL_REPLACEMENT_THERAPY_DURATION,
+            pl.concat(
+                [
+                    mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE.filter(
+                        pl.col("dialysis_present") == 1
+                    ),
+                    mimic4_RENAL_REPLACEMENT_THERAPY_RANGES.drop(
+                        "endtime"
+                    ).rename({"starttime": "charttime"}),
+                ]
+            )
+            .unique()
+            .join(
+                mimic4_RENAL_REPLACEMENT_THERAPY_RANGES,
                 on="stay_id",
                 suffix="_",
                 how="left",
-                coalesce=True,
+            )
+            .with_columns(
+                pl.coalesce(
+                    pl.col("dialysis_present"), pl.col("dialysis_present_")
+                ),
+                pl.coalesce(
+                    pl.col("dialysis_active"), pl.col("dialysis_active_")
+                ),
+                pl.coalesce(pl.col("dialysis_type"), pl.col("dialysis_type_")),
             )
             .join(mimic4_ADMISSIONTIMES, on="stay_id", how="left")
             .pipe(print_schema)
@@ -534,9 +529,9 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
         print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION collect")
 
-        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.collect(
-            streaming=True
-        ).write_parquet("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.parquet")
+        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.sink_parquet(
+            "mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        )
 
         # endregion
 
