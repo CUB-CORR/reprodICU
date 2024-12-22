@@ -102,7 +102,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "ETHNICITY": self.ethnicity_col,
                     "ADMISSION_LOCATION": self.admission_loc_col,
                     "DISCHARGE_LOCATION": self.discharge_loc_col,
-                    "ADMISSION_TYPE": self.admission_type_col,
+                    "ADMISSION_TYPE": self.admission_urgency_col,
                     "HOSPITAL_EXPIRE_FLAG": self.mortality_hosp_col,
                 }
             )
@@ -111,7 +111,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.ethnicity_col,
                 self.admission_loc_col,
                 self.discharge_loc_col,
-                self.admission_type_col,
+                self.admission_urgency_col,
                 self.mortality_hosp_col,
                 "ADMITTIME",
                 "DISCHTIME",
@@ -231,15 +231,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.discharge_loc_col)
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
-                # Convert categorical admission type to enum
-                pl.col(self.admission_type_col)
+                # Determine Admission Type based on treating specialty
+                pl.col(self.specialty_col)
                 .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
-                .cast(self.admission_types_dtype),
+                .cast(self.admission_types_dtype)
+                .alias(self.admission_type_col),
                 # Convert categorical admission urgency to enum
-                pl.col(self.admission_type_col)
+                pl.col(self.admission_urgency_col)
                 .replace_strict(self.ADMISSION_URGENCY_MAP, default=None)
-                .cast(self.admission_urgency_dtype)
-                .alias(self.admission_urgency_col),
+                .cast(self.admission_urgency_dtype),
                 # Convert categorical specialty to enum
                 pl.col(self.specialty_col)
                 .replace(self.SPECIALTIES_MAP)
