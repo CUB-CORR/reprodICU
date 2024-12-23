@@ -16,14 +16,19 @@ Breath rate mechanical --on ventilator:
   # SICdb
   - RespRateVentilator
 Breath rate spontaneous --on ventilator:
+  # MIMIC
   - Breath rate spontaneous
   # SICdb
   - RespRateSpontanous
 Breath rate spontaneous and mechanical --on ventilator:
-  # HiRID
-  - Respiratory rate
-  # SICdb
-  - RespRate
+  # MIMIC
+  - Breath rate
+  # Both of these refer to non-ventilated data as well as ventilated data
+  # and are better suited for the vitals table
+  # # HiRID / UMCdb
+  # - Respiratory rate
+  # # SICdb
+  # - RespRate
 Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration:
   # HiRID
   - End tidal carbon dioxide concentration
@@ -91,9 +96,13 @@ Pressure support setting Ventilator:
   - PressureSupport
 Pressure.max Respiratory system airway --on ventilator:
   - Maximum [Pressure] Respiratory system airway opening --during inspiration on ventilator
+  # MIMIC
+  - Pressure max Respiratory system airway --during inspiration
   # SICdb
   - pPeak
   - PeakInspiratoryPressure
+  # HiRID
+  - Peak inspiratory pressure
 Pressure.plateau Respiratory system airway --on ventilator:
   # HiRID
   - Plateau pressure

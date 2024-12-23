@@ -47,7 +47,7 @@ class MIMIC4Processor(MIMIC4Extractor):
                 pl.exclude(self.index_cols),
             )
 
-        print("MIMIC4  - Processing vitals data...")
+        print("MIMIC4  - Processing vitals & respiratory data...")
 
         # Process vitals data
         ts_vitals = (

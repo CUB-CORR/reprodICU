@@ -47,7 +47,7 @@ class MIMIC3Processor(MIMIC3Extractor):
                 pl.exclude(self.index_cols),
             )
 
-        print("MIMIC3  - Processing vitals data...")
+        print("MIMIC3  - Processing vitals & respiratory data...")
 
         # Process vitals data
         ts_vitals = (
@@ -72,9 +72,11 @@ class MIMIC3Processor(MIMIC3Extractor):
                 on="LABEL",
                 index=self.index_cols,
                 values="VALUENUM",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                aggregate_function="first",
             )
         )
+
+        print("MIMIC3  - Dropping empty rows...")
 
         # Drop empty rows
         ts_vitals_cols = ts_vitals.collect_schema().names()

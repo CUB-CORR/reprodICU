@@ -54,7 +54,7 @@ Central venous pressure: # 4323687 prev. central_venous_pressure
   - CentralVenousPressure
 Intracranial pressure: # 4353953 prev. intracranial_pressure
   # MIMIC
-  - Intracranial Pressure (ICP)
+  - Intracranial pressure (ICP)
 Glasgow Coma Score total: [] # 44802289 prev. glasgow_coma_score
 Glasgow Coma Score eye opening: # prev. glasgow_coma_score_eye
   # MIMIC
