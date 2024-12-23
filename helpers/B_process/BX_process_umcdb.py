@@ -236,16 +236,10 @@ class UMCdbProcessor(UMCdbExtractor):
 
         print("UMCdb   - Processing list time series data...")
 
-        # Process vitals data
+        # Process list data
         ts_listitems = (
             self.extract_timeseries_listitems()
-            # Convert the lab values to the correct units
-            .pipe(
-                self.convert._convert_lab_values,
-                labelcol="item",
-                valuecol="value",
-            )
-            # Pivot the vitals data
+            # Pivot the list data
             .collect(streaming=True).pivot(
                 on="item",
                 index=self.index_cols,
@@ -475,6 +469,7 @@ class UMCdbConverter(UnitConverter):
                         "MCHC [Moles/volume]": "MCHC [Mass/volume]",
                         "Triglyceride [Moles/volume]": "Triglyceride [Mass/volume]",
                         "Urate [Moles/volume]": "Urate [Mass/volume]",
+                        "Urea nitrogen [Moles/volume]": "Urea nitrogen [Mass/volume]",
                         # NOTE: fix wrong units
                         # NOTE: FIXED
                         # "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
