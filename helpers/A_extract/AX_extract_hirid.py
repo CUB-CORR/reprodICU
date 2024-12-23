@@ -23,7 +23,7 @@ class HiRIDExtractor(HiRIDPaths):
         self.other_lab_values = [
             "Creatinine [Moles/volume]",
             "Glucose [Moles/volume]",
-            "Urea nitrogen [Moles/volume]",
+            "Urea [Moles/volume]",
             "Creatine kinase panel - Serum or Plasma",
             "Creatine kinase.MB [Mass/volume]",
             "Lactate [Mass/volume]",

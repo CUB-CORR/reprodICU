@@ -35,6 +35,7 @@ class UMCdbExtractor(UMCdbPaths):
             "MCHC [Moles/volume]",
             "Triglyceride [Moles/volume]",
             "Urate [Moles/volume]",
+            "Urea [Moles/volume]",
             "Hematocrit [Pure volume fraction]",
             "MCH [Entitic substance]",
             "Oxygen saturation [Pure mass fraction]",
@@ -421,8 +422,8 @@ class UMCdbExtractor(UMCdbPaths):
     # Implementation using item IDs as in BlendedICU
     # https://github.com/USM-CHU-FGuyon/BlendedICU/blob/master/amsterdam_preprocessing/AmsterdamPreparator.py#L131
     def _compute_gcs(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        if os.path.isfile(self.precalc_path + "UMCdb_A_gcs.parquet"):
-            return pl.scan_parquet(self.precalc_path + "UMCdb_A_gcs.parquet")
+        if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
+            return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
         data = data.sort(self.index_cols).select(
             self.icu_stay_id_col,
@@ -500,7 +501,7 @@ class UMCdbExtractor(UMCdbPaths):
             ).alias("gcs_score"),
         )
 
-        data_gcs.write_parquet(self.precalc_path + "UMCdb_A_gcs.parquet")
+        data_gcs.write_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
         return data_gcs.lazy()
 
