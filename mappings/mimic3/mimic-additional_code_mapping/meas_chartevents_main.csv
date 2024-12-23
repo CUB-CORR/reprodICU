@@ -14,7 +14,7 @@ itemid (omop_source_code),omop_concept_name,comment
 184,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 723,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 454,Glasgow coma score eye opening,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-198,Glasgow Coma Score total,check if mapped in original MIMIC mapping
+198,Glasgow Coma Score total,
 677,Temperature,
 3420,Oxygen/Total gas setting [Volume Fraction] Ventilator,
 190,Oxygen/Total gas setting [Volume Fraction] Ventilator,
@@ -29,4 +29,5 @@ itemid (omop_source_code),omop_concept_name,comment
 683,Tidal volume Ventilator --on ventilator,
 684,Tidal volume.spontaneous --on ventilator,
 543,Pressure.plateau Respiratory system airway --on ventilator,
+619,Breath rate mechanical --on ventilator,
 0,Not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 500

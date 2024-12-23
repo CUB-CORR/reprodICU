@@ -28,6 +28,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         self.other_lab_values = [
+            "Anion gap 4",
             "Bilirubin.direct [Mass/volume]",
             "Bilirubin.indirect [Mass/volume]",
             "Bilirubin.total [Mass/volume]",
@@ -440,32 +441,6 @@ class MIMIC4Extractor(MIMIC4Paths):
     # region vitals
     # Extract measurements from the chartevents.csv file
     def extract_chartevents(self) -> pl.LazyFrame:
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
-        vital_names_mapping = self.helpers.load_mapping(
-            self.vitals_mapping_path
-        )
-        d_items = (
-            pl.scan_csv(self.d_items_path)
-            .select("itemid", "label")
-            .with_columns(
-                pl.col("label").replace(vital_names_mapping, default=None)
-            )
-            # Filter for names of interest
-            .filter(
-                pl.col("label").is_not_null(),
-                # pl.col("label").is_in(self.all_values + self.other_lab_values),
-                pl.col("label")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values),
-            )
-        )
-
         meas_chartevents_main_original_data = (
             pl.scan_csv(self.meas_chartevents_main_path)
             .select("itemid (omop_source_code)", "label", "omop_concept_name")
@@ -484,19 +459,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "omop_concept_name": "label",
                 }
             )
-            # Filter for names of interest
-            .filter(
-                pl.col("label").is_not_null(),
-                # pl.col("label").is_in(self.all_values + self.other_lab_values),
-                pl.col("label")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values),
-            )
         )
         meas_chartevents_main_additional_data = (
             pl.scan_csv(self.meas_chartevents_main_additional_path)
@@ -508,20 +470,33 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
         )
-        meas_chartevents_main_data = pl.concat(
-            [
-                meas_chartevents_main_original_data,
-                meas_chartevents_main_additional_data,
-            ],
-            how="vertical",
-        ).with_columns(
-            pl.col("LABEL").replace(
-                {
-                    **self.relevant_vital_values_mapping,
-                    **self.relevant_lab_values_mapping,
-                    **self.relevant_intakeoutput_values_mapping,
-                    **self.relevant_respiratory_values_mapping,
-                }
+        meas_chartevents_main_data = (
+            pl.concat(
+                [
+                    meas_chartevents_main_original_data,
+                    meas_chartevents_main_additional_data,
+                ],
+                how="vertical",
+            ).with_columns(
+                pl.col("label").replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
+            )
+            # Filter for names of interest
+            .filter(
+                pl.col("label").is_not_null(),
+                # lab values are stored in the labevents.csv file and just
+                # duplicated to chartevents.csv
+                pl.col("label").is_in(
+                    self.relevant_vital_values
+                    + self.relevant_respiratory_values
+                    + self.relevant_intakeoutput_values
+                ),
             )
         )
 
@@ -539,12 +514,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .pipe(self.extract_timeseries_helper)
             .join(meas_chartevents_main_data, on="itemid", how="left")
-            .join(d_items, on="itemid", how="left", suffix="_d_items")
             .with_columns(
-                pl.when(pl.col("label").is_null())
-                .then(pl.col("label_d_items"))
-                .otherwise(pl.col("label"))
-                .alias("label"),
                 pl.when(pl.col("label") == "Heart rate rhythm")
                 .then(
                     pl.col("value")
@@ -561,7 +531,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .cast(float)
                 .alias("valuenum"),
             )
-            .drop("itemid", "label_d_items")
+            .drop("itemid")
             # Remove rows with empty names
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))
             # Remove rows with empty values
@@ -893,7 +863,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             self.icu_stay_id_col, "intime"
         )
 
-        # d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL"
+        # d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "label"
         d_icd_procedures = pl.scan_csv(
             self.d_icd_procedures_path, schema_overrides={"icd_code": str}
         )

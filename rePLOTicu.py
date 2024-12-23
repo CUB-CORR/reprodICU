@@ -23,7 +23,7 @@ BLENDEDICU_PLOT_VARIABLES = {
     "Non-invasive diastolic arterial pressure": ["vitals", "mmHg"],
     "Non-invasive mean arterial pressure": ["vitals", "mmHg"],
     "Peripheral oxygen saturation": ["vitals", "percent (%)"],
-    "Oxygen saturation": ["vitals", "percent (%)"],
+    "Oxygen saturation": ["labs", "percent (%)"],
     "Temperature": ["vitals", "degrees Celsius (°C)"],
     "Respiratory rate": ["vitals", "breaths per minute (/min)"],
     "": "",  # "expiratory_tidal_volume",
