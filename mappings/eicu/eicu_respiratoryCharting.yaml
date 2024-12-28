@@ -124,9 +124,9 @@ Patient Position:
 Peak Flow: peak_flow
 Peak Insp. Pressure: Pressure.max Respiratory system airway --on ventilator
 Peak Pressure: Pressure.max Respiratory system airway --on ventilator # peak_pressure
-PEEP/CPAP:
+PEEP/CPAP: PEEP Respiratory system --on ventilator
 PEEP: PEEP Respiratory system --on ventilator
-Plateau Pressure: Airway pressure --at zero inspiratory flow on ventilator
+Plateau Pressure: Pressure.plateau Respiratory system airway --on ventilator
 Position at lip:
 Postion at Lip:
 Pressure Control:
