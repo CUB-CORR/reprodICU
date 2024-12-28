@@ -56,7 +56,12 @@ if __name__ == "__main__":
 
     # Select concepts to extract
     if "all" in args.concepts:
-        concepts = ["RECEIVED_ANY_ANTIBIOTICS", "VENTILATION_DURATION"]
+        concepts = [
+            "RECEIVED_ANY_ANTIBIOTICS",
+            "VENTILATION_DURATION",
+            # "RENAL_REPLACEMENT_THERAPY_DURATION",
+            "SEVERITY_SCORES",
+        ]
     else:
         concepts = args.concepts
 
