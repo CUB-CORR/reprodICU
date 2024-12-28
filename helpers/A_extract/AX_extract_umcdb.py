@@ -230,35 +230,39 @@ class UMCdbExtractor(UMCdbPaths):
             pl.scan_parquet(self.listitems_path)
             .select(
                 "admissionid",
-                # "item",
                 "itemid",
                 "value",
                 "valueid",
                 "measuredat",
+                "registeredby",
             )
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 # Replace item names with standardized names
                 pl.col("itemid")
                 .replace_strict(self._extract_list_references(), default=None)
-                .replace(
-                    {
-                        **self.relevant_vital_values_mapping,
-                        **self.relevant_lab_values_mapping,
-                        **self.relevant_intakeoutput_values_mapping,
-                        **self.relevant_respiratory_values_mapping,
-                    }
-                )
                 .alias("item"),
             )
             .pipe(self._extract_timeseries_helper)
+            # Fix the values for RASS and NRS
+            .with_columns(
+                pl.when(pl.col("item") == "Numeric Pain Rating Scale")
+                .then(pl.col("valueid"))
+                .when(pl.col("item") == "Richmond agitation-sedation scale")
+                .then(5 - pl.col("valueid"))
+                .otherwise(pl.col("value"))
+                .alias("value"),
+            )
         )
 
-        gcs = self._compute_gcs(listitems)
-
-        return listitems.drop(["valueid", "itemid"]).join(
-            gcs, on=self.index_cols
+        gcs = self._compute_gcs(listitems).unpivot(
+            index=self.index_cols, variable_name="item", value_name="value"
         )
+        listitems = listitems.filter(
+            pl.col("item").str.starts_with("Glasgow").not_()
+        ).drop("valueid", "itemid", "registeredby")
+
+        return pl.concat([listitems, gcs], how="diagonal_relaxed")
 
     # endregion
 
@@ -292,17 +296,12 @@ class UMCdbExtractor(UMCdbPaths):
                 # Replace item names with standardized names
                 pl.col("itemid")
                 .replace(self._extract_numeric_references(), default=None)
-                .replace(
-                    {
-                        **self.relevant_vital_values_mapping,
-                        **self.relevant_lab_values_mapping,
-                        **self.relevant_intakeoutput_values_mapping,
-                        **self.relevant_respiratory_values_mapping,
-                    }
-                )
                 .alias("item"),
             )
-        ).pipe(self._extract_timeseries_helper)
+            .pipe(self._extract_timeseries_helper)
+            # Convert values to numbers, if possible, ignore if not
+            .cast({"value": float}, strict=False)
+        )
 
     # endregion
 
@@ -357,8 +356,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .is_in(self.all_values + self.other_lab_values)
             )
             .drop(["measuredat", "intime", "outtime"])
-            # Convert values to numbers, if possible, ignore if not
-            .cast({"value": float}, strict=False)
         )
 
     # endregion
@@ -419,17 +416,48 @@ class UMCdbExtractor(UMCdbPaths):
 
     # region gcs
     # compute Glasgow Coma Scale (GCS) from listitems data
-    # Implementation using item IDs as in BlendedICU
-    # https://github.com/USM-CHU-FGuyon/BlendedICU/blob/master/amsterdam_preprocessing/AmsterdamPreparator.py#L131
+    # Implementation based on the SQL query from the AmsterdamUMCdb project
+    # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/gcs.sql
     def _compute_gcs(self, data: pl.LazyFrame) -> pl.LazyFrame:
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
-        data = data.sort(self.index_cols).select(
-            self.icu_stay_id_col,
-            self.timeseries_time_col,
-            "valueid",
-            "itemid",
+        INTIMES = (
+            pl.scan_parquet(self.admissions_path)
+            .select("admissionid", "admittedat")
+            .rename({"admissionid": self.icu_stay_id_col})
+        )
+        REGISTEREDBY = {
+            "ICV_Medisch Staflid": 1,
+            "ICV_Medisch": 2,
+            "ANES_Anesthesiologie": 3,
+            "ICV_Physician assistant": 4,
+            "ICH_Neurochirurgie": 5,
+            "ICV_IC-Verpleegkundig": 6,
+            "ICV_MC-Verpleegkundig": 7,
+        }
+
+        data = (
+            data.sort(self.index_cols)
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "valueid",
+                "itemid",
+                "registeredby",
+            )
+            .join(INTIMES, on=self.icu_stay_id_col)
+            .with_columns(
+                pl.duration(
+                    milliseconds=(
+                        pl.col(self.timeseries_time_col) - pl.col("admittedat")
+                    )
+                )
+                .dt.total_seconds()
+                .cast(float)
+                .alias(self.timeseries_time_col)
+            )
+            .drop("admittedat")
         )
 
         data_eye = (
@@ -445,9 +473,10 @@ class UMCdbExtractor(UMCdbPaths):
                 .then(pl.col("valueid") - 4)
                 .when(pl.col("itemid") == 19638)
                 .then(pl.col("valueid") - 8)
-                .alias("eyes_score"),
+                .otherwise(None)
+                .alias("Glasgow Coma Score eye opening"),
             )
-            .drop(["itemid", "valueid"])
+            .drop("itemid", "valueid")
         )
 
         data_motor = (
@@ -457,16 +486,16 @@ class UMCdbExtractor(UMCdbPaths):
                 )
             )
             .with_columns(
-                "valueid",
                 pl.when(pl.col("itemid") == 6734)
-                .then(5 - pl.col("valueid"))
+                .then(7 - pl.col("valueid"))
                 .when(pl.col("itemid").is_in([14476, 16634, 19636]))
                 .then(pl.col("valueid") - 6)
                 .when(pl.col("itemid") == 19639)
                 .then(pl.col("valueid") - 12)
-                .alias("motor_score"),
+                .otherwise(None)
+                .alias("Glasgow Coma Score motor"),
             )
-            .drop(["itemid", "valueid"])
+            .drop("itemid", "valueid")
         )
 
         data_verbal = (
@@ -476,34 +505,61 @@ class UMCdbExtractor(UMCdbPaths):
                 )
             )
             .with_columns(
-                "valueid",
                 pl.when(pl.col("itemid") == 6735)
                 .then(6 - pl.col("valueid"))
-                .when(pl.col("itemid").is_in([14482, 16640, 19637]))
+                .when(pl.col("itemid").is_in([14482, 16640]))
                 .then(pl.col("valueid") - 5)
+                .when(pl.col("itemid") == 19637)
+                .then(pl.col("valueid") - 9)
                 .when(pl.col("itemid") == 19640)
                 .then(pl.col("valueid") - 15)
-                .alias("verbal_score"),
+                .otherwise(None)
+                .alias("Glasgow Coma Score verbal"),
             )
-            .drop(["itemid", "valueid"])
+            # handle the special case where the value is <1, which corresponds
+            # to intubated patients (assign score 1)
+            .with_columns(
+                pl.when(pl.col("Glasgow Coma Score verbal") < 1)
+                .then(1)
+                .otherwise(pl.col("Glasgow Coma Score verbal"))
+                .alias("Glasgow Coma Score verbal")
+            )
+            .drop("itemid", "valueid")
         )
 
         data_gcs = (
-            data_eye.join(data_motor, on=self.index_cols)
-            .join(data_verbal, on=self.index_cols)
+            data_eye.join(data_motor, on=[*self.index_cols + ["registeredby"]])
+            .join(data_verbal, on=[*self.index_cols + ["registeredby"]])
             .collect(streaming=True)
         )
-        data_gcs = data_gcs.with_columns(
-            (
-                data_gcs.select(
-                    "eyes_score", "motor_score", "verbal_score"
-                ).sum_horizontal(ignore_nulls=False)
-            ).alias("gcs_score"),
+
+        return (
+            data_gcs.with_columns(
+                (
+                    data_gcs.select(
+                        "Glasgow Coma Score eye opening",
+                        "Glasgow Coma Score motor",
+                        "Glasgow Coma Score verbal",
+                    ).sum_horizontal(ignore_nulls=False)
+                ).alias("Glasgow Coma Score total"),
+                # Replace registeredby with a prioritized order
+                pl.col("registeredby")
+                .replace_strict(REGISTEREDBY, default=8)
+                .alias("registeredby"),
+            )
+            .group_by(self.index_cols)
+            .agg(
+                pl.col(
+                    "Glasgow Coma Score eye opening",
+                    "Glasgow Coma Score motor",
+                    "Glasgow Coma Score verbal",
+                    "Glasgow Coma Score total",
+                )
+                .sort_by("registeredby")
+                .first()
+            )
+            .lazy()
         )
-
-        data_gcs.write_parquet(self.precalc_path + "UMCdb_gcs.parquet")
-
-        return data_gcs.lazy()
 
     # endregion
 

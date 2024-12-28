@@ -247,7 +247,7 @@ class UMCdbProcessor(UMCdbExtractor):
                 on="item",
                 index=self.index_cols,
                 values="value",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                aggregate_function="first",
             )
         )
 
