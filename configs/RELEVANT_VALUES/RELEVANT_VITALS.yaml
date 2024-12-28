@@ -8,6 +8,8 @@ Temperature: # 45771331 prev. temperature
 Heart rate: # 4239408 prev. heart_rate
   # SICdb
   - HeartRateECG
+  # UMCdb
+  - Heart rate.beat-to-beat by EKG
 Heart rate rhythm: [] # 3022318
 Peripheral oxygen saturation: # 4196147 prev. spO2
   # MIMIC / UMCdb
@@ -22,23 +24,29 @@ Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pre
   - Systolic blood pressure
   # SICdb
   - BloodPressureArterialSystolic
+  # UMCdb
+  - Invasive Systolic blood pressure
 Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_pressure
   # MIMIC
   - Diastolic blood pressure
   # SICdb
   - BloodPressureArterialDiastolic
+  # UMCdb
+  - Invasive Diastolic blood pressure
 Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
   # MIMIC
   - Mean blood pressure
   # SICdb
   - BloodPressureArterialMAP
+  # UMCdb
+  - Invasive Mean blood pressure
 Non-invasive systolic arterial pressure: # 4354252 prev. noninvasive_systolic_blood_pressure
   # MIMIC
   - Systolic blood pressure by Noninvasive
   # SICdb
   - BloodPressureNISystolic
 Non-invasive diastolic arterial pressure: # 4068414 prev. noninvasive_diastolic_blood_pressure
-  # MIMIC
+  # MIMIC / UMCdb
   - Diastolic blood pressure by Noninvasive
   # SICdb
   - BloodPressureNIDiastolic

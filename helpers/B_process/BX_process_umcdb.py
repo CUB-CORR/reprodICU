@@ -51,11 +51,14 @@ class UMCdbProcessor(UMCdbExtractor):
         print("UMCdb   - Loading time series data...")
 
         ts_numeric = self._process_timeseries_numeric()
-        # ts_listitems = self._process_timeseries_listitems()
+        ts_listitems = self._process_timeseries_listitems()
 
-        # timeseries = pl.concat([ts_numeric, ts_listitems], how="diagonal_relaxed")
+        timeseries = ts_numeric.join(
+            ts_listitems, on=self.index_cols, how="full", validate="1:1"
+        )
         # Save the preprocessed data
-        ts_numeric.sink_parquet(ts_path_unsorted)
+        timeseries.collect(streaming=True).write_parquet(ts_path_unsorted)
+        # ts_numeric.sink_parquet(ts_path_unsorted)
 
         # Sort the data
         (
@@ -455,8 +458,7 @@ class UMCdbConverter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Mass/volume]",
-                        "Billirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
+                        "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Moles/volume]",
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
                         "Cholesterol in HDL [Moles/volume]": "Cholesterol in HDL [Mass/volume]",
                         "Cholesterol in LDL [Moles/volume]": "Cholesterol in LDL [Mass/volume]",

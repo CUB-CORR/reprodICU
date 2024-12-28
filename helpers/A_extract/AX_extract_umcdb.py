@@ -22,7 +22,7 @@ class UMCdbExtractor(UMCdbPaths):
 
         self.other_lab_values = [
             "Bilirubin.conjugated [Moles/volume]",
-            "Billirubin.total [Moles/volume]",
+            "Bilirubin.total [Moles/volume]",
             "Creatinine [Moles/volume]",
             "Cholesterol in HDL [Moles/volume]",
             "Cholesterol in LDL [Moles/volume]",
@@ -332,7 +332,7 @@ class UMCdbExtractor(UMCdbPaths):
                         pl.col("intime")
                         - pl.duration(
                             days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).truediv(pl.duration(milliseconds=1))
+                        ).dt.total_milliseconds()
                     )
                 )
             )
@@ -575,7 +575,7 @@ class UMCdbExtractor(UMCdbPaths):
                         pl.col("intime")
                         - pl.duration(
                             days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).truediv(pl.duration(milliseconds=1))
+                        ).dt.total_milliseconds()
                     )
                 )
             )
@@ -712,7 +712,7 @@ class UMCdbExtractor(UMCdbPaths):
                         pl.col("intime")
                         - pl.duration(
                             days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).truediv(pl.duration(milliseconds=1))
+                        ).dt.total_milliseconds()
                     )
                 )
             )
@@ -980,34 +980,30 @@ class UMCdbExtractor(UMCdbPaths):
                 ],
                 how="diagonal_relaxed",
             )
-            .with_columns(
-                pl.col("conceptName").replace(
-                    {
-                        "Invasive Systolic blood pressure": "Invasive systolic arterial pressure",
-                        "Invasive Diastolic blood pressure": "Invasive diastolic arterial pressure",
-                        "Invasive Mean blood pressure": "Invasive mean arterial pressure",
-                        "Systolic blood pressure by Noninvasive": "Non-invasive systolic arterial pressure",
-                        "Diastolic blood pressure by Noninvasive": "Non-invasive diastolic arterial pressure",
-                        "Mean blood pressure by Noninvasive": "Non-invasive mean arterial pressure",
-                        "Heart rate.beat-to-beat by EKG": "Heart rate",
-                    }
-                )
-            )
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
-        )
-
-        references = references.filter(
-            # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
-            pl.col("conceptName")
-            .str.replace("in HDL", "inHDL")
-            .str.replace("in LDL", "inLDL")
-            .str.replace(" (in|of) ", " INOF ")
-            .str.split_exact(by=" INOF ", n=1)
-            .struct.rename_fields(["variable", "_"])
-            .struct.field("variable")
-            .is_in(self.all_values + self.other_lab_values)
+            .with_columns(
+                pl.col("conceptName").replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
+            )
+            .filter(
+                # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
+                pl.col("conceptName")
+                .str.replace("in HDL", "inHDL")
+                .str.replace("in LDL", "inLDL")
+                .str.replace(" (in|of) ", " INOF ")
+                .str.split_exact(by=" INOF ", n=1)
+                .struct.rename_fields(["variable", "_"])
+                .struct.field("variable")
+                .is_in(self.all_values + self.other_lab_values)
+            )
         )
 
         return dict(
@@ -1028,7 +1024,19 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select("sourceCode", "conceptName").filter(
+            .select("sourceCode", "conceptName")
+            .cast({"sourceCode": int}, strict=False)
+            .with_columns(
+                pl.col("conceptName").replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
+            )
+            .filter(
                 # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
                 pl.col("conceptName")
                 .str.replace("in HDL", "inHDL")
