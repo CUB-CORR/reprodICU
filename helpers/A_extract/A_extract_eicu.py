@@ -305,9 +305,17 @@ class EICUExtractor(EICUPaths):
                     == "admission diagnosis|Was the patient admitted from the O.R. or went to the O.R. within 4 hours of admission?|No"
                 )
                 .then(pl.lit("Medical"))
-                .when(pl.col(self.admission_diagnosis_col).str.starts_with("Operative"))
+                .when(
+                    pl.col(self.admission_diagnosis_col).str.starts_with(
+                        "Operative"
+                    )
+                )
                 .then(pl.lit("Surgical"))
-                .when(pl.col(self.admission_diagnosis_col).str.starts_with("Non-operative"))
+                .when(
+                    pl.col(self.admission_diagnosis_col).str.starts_with(
+                        "Non-operative"
+                    )
+                )
                 .then(pl.lit("Medical"))
                 .otherwise(None)
                 .alias(self.admission_type_col),
@@ -577,17 +585,25 @@ class EICUExtractor(EICUPaths):
             .unique()
         )
 
-        nurseCharting_RASS = nurseCharting.filter(
-            pl.col("nursingchartvalue") == "Sedation Score",
-            pl.col(self.timeseries_time_col).is_in(
+        nurseCharting_RASS = (
+            nurseCharting.filter(
+                pl.col("nursingchartcelltypevalname") == "Sedation Score",
+            )
+            .join(
                 nurseCharting.filter(
-                    pl.col("nursingchartcelltypevalname") == "Sedation Score",
+                    pl.col("nursingchartcelltypevalname") == "Sedation Scale",
                     pl.col("nursingchartvalue") == "RASS",
-                )
-                .select(self.timeseries_time_col)
-                .collect(streaming=True)
-                .to_series()
-            ),
+                ).select(self.icu_stay_id_col, self.timeseries_time_col),
+                on=[self.icu_stay_id_col, self.timeseries_time_col],
+                how="right",
+            )
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "nursingchartcelltypevallabel",
+                "nursingchartcelltypevalname",
+                "nursingchartvalue",
+            )
         )
 
         return (
