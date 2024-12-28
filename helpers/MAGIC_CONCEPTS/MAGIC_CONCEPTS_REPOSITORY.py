@@ -6,7 +6,8 @@ import yaml
 from helpers.MAGIC_CONCEPTS import (
     RECEIVED_ANY_ANTIBIOTICS as ANY_ABX,
     VENTILATION_DURATION as MV_DURATION,
-    RRT_DURATION as RRT_DURATION,
+    # RRT_DURATION as RRT_DURATION,
+    SEVERITY_SCORES as SEVERITY_SCORES,
 )
 
 
@@ -23,14 +24,18 @@ class MAGIC_CONCEPTS_REPOSITORY:
         self.MV_DURATION = MV_DURATION.VENTILATION_DURATION(
             paths=paths, datasets=datasets
         )
-        self.RRT_DURATION = RRT_DURATION.RENAL_REPLACEMENT_THERAPY_DURATION(
+        # self.RRT_DURATION = RRT_DURATION.RENAL_REPLACEMENT_THERAPY_DURATION(
+        #     paths=paths, datasets=datasets
+        # )
+        self.SEVERITY_SCORES = SEVERITY_SCORES.SEVERITY_SCORES(
             paths=paths, datasets=datasets
         )
 
         self.magic_concepts_dict = {
             "RECEIVED_ANY_ANTIBIOTICS": self.ANY_ABX.RECEIVED_ANY_ANTIBIOTICS,
             "VENTILATION_DURATION": self.MV_DURATION.VENTILATION_DURATION,
-            "RENAL_REPLACEMENT_THERAPY_DURATION": self.RRT_DURATION.RENAL_REPLACEMENT_THERAPY_DURATION,
+            # "RENAL_REPLACEMENT_THERAPY_DURATION": self.RRT_DURATION.RENAL_REPLACEMENT_THERAPY_DURATION,
+            "SEVERITY_SCORES": self.SEVERITY_SCORES.SEVERITY_SCORES,
         }
 
     def get_magic_concept(self, concept: str):
