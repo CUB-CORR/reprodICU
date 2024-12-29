@@ -638,6 +638,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "omop_concept_name": "label",
                 }
             )
+            .cast({"itemid": str})
             # Harmonize names of interest
             .with_columns(
                 pl.col("label").replace_strict(
@@ -647,12 +648,41 @@ class MIMIC4Extractor(MIMIC4Paths):
             # Filter for names of interest
             .filter(pl.col("label").is_in(self.relevant_intakeoutput_values))
         )
+        input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
-        return (
-            pl.scan_csv(self.outputevents_path, infer_schema_length=100000)
-            .select("hadm_id", "itemid", "charttime", "value")
+        inputevents = (
+            pl.scan_csv(
+                self.inputevents_path, schema_overrides={"amount": float}
+            )
+            .select(
+                "hadm_id",
+                "storetime",
+                "ordercategoryname",
+                "amount",
+                "amountuom",
+            )
+            # rename columns for consistency
+            .rename(
+                {
+                    "hadm_id": self.hospital_stay_id_col,
+                    "storetime": "charttime",
+                    "amount": "valuenum",
+                    "ordercategoryname": "itemid",
+                }
+            )
+            .filter(pl.col("amountuom") == "mL")
+            .drop("amountuom")
+        )
+        outputevents = (
+            pl.scan_csv(
+                self.outputevents_path, infer_schema_length=100000
+            ).select("hadm_id", "itemid", "charttime", "value")
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col, "value": "valuenum"})
+        )
+
+        return (
+            pl.concat([inputevents, outputevents], how="diagonal_relaxed")
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -661,6 +691,16 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .pipe(self.extract_timeseries_helper)
             .join(outputevents_to_loinc_data, on="itemid", how="left")
+            .with_columns(
+                pl.when(pl.col("label").is_null())
+                .then(
+                    pl.col("itemid").replace_strict(
+                        input_mappings, default=None
+                    )
+                )
+                .otherwise(pl.col("label"))
+                .alias("label")
+            )
             .drop("itemid")
             # Remove rows with empty names
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))

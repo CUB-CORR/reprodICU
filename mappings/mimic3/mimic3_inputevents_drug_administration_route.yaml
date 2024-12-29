@@ -15,10 +15,15 @@
 14-Oral/Gastric Intake: oral
 16-Pre Admission: other
 # INPUTEVENTS_MV
-GU: other
+By Mouth: oral
+Drip: intravenous
 Gastric/Feeding Tube: nasogastric
-IV Drip: intravenous
+GU: other
 Intravenous Infusion: intravenous
 Intravenous Push: intravenous
+Intravenous: intravenous
+IV Drip: intravenous
+IV Piggyback: intravenous
 Nasogastric: nasogastric
+Oral or Nasogastric: oral
 Oral: oral

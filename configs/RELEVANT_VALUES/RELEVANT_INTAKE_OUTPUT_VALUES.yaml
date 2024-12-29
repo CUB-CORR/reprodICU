@@ -80,4 +80,7 @@ Fluid intake synovial: [] # 1033606 # LOINC
 Fluid intake upper GI tube: [] # 1033545 # LOINC
 Fluid intake urinary bladder irrigation: # 1033546 # LOINC
   - Fluid intake urinary bladder irrigation Measured
+###########
+# BALANCE #
+###########
 Fluid balance: [] # 1030542 # LOINC
