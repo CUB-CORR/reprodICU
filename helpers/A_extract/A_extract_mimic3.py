@@ -666,6 +666,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "omop_concept_name": "LABEL",
                 }
             )
+            .cast({"ITEMID": str})
             # Harmonize names of interest
             .with_columns(
                 pl.col("LABEL").replace_strict(
@@ -675,12 +676,62 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Filter for names of interest
             .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
         )
+        input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
-        return (
-            pl.scan_csv(self.outputevents_path, infer_schema_length=100000)
-            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE")
+        inputevents_cv = (
+            pl.scan_csv(
+                self.inputevents_cv_path, schema_overrides={"AMOUNT": float}
+            )
+            .select(
+                "HADM_ID", "CHARTTIME", "AMOUNT", "AMOUNTUOM", "ORIGINALROUTE"
+            )
+            # Rename columns for consistency
+            .rename(
+                {
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "AMOUNT": "VALUENUM",
+                    "ORIGINALROUTE": "ITEMID",
+                }
+            )
+            .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
+            .drop("AMOUNTUOM")
+        )
+        inputevents_mv = (
+            pl.scan_csv(
+                self.inputevents_mv_path, schema_overrides={"AMOUNT": float}
+            )
+            .select(
+                "HADM_ID",
+                "STORETIME",
+                "ORDERCATEGORYNAME",
+                "AMOUNT",
+                "AMOUNTUOM",
+            )
+            # Rename columns for consistency
+            .rename(
+                {
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "STORETIME": "CHARTTIME",
+                    "AMOUNT": "VALUENUM",
+                    "ORDERCATEGORYNAME": "ITEMID",
+                }
+            )
+            .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
+            .drop("AMOUNTUOM")
+        )
+        outputevents = (
+            pl.scan_csv(
+                self.outputevents_path, infer_schema_length=100000
+            ).select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE")
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col, "VALUE": "VALUENUM"})
+        )
+
+        return (
+            pl.concat(
+                [inputevents_cv, inputevents_mv, outputevents],
+                how="diagonal_relaxed",
+            )
             # BUG: .drop_nulls() drops all rows with any(!) null values
             # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
@@ -689,6 +740,16 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .pipe(self.extract_timeseries_helper)
             .join(outputevents_to_loinc_data, on="ITEMID", how="left")
+            .with_columns(
+                pl.when(pl.col("LABEL").is_null())
+                .then(
+                    pl.col("ITEMID").replace_strict(
+                        input_mappings, default=None
+                    )
+                )
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL")
+            )
             .drop("ITEMID")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))

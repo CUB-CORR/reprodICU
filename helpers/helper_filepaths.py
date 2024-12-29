@@ -227,6 +227,9 @@ class MIMIC3Paths(GlobalVars):
         self.outputs_mapping_path = (
             self.mimic3_mapping_path + "mimic3_outputevents.yaml"
         )
+        self.inputs_mapping_path = (
+            self.mimic3_mapping_path + "mimic3_inputevents.yaml"
+        )
         # self.medication_mapping_path = self.mimic3_mapping_path + "mimic3_medication.yaml"
         self.drug_administration_route_mapping_path = (
             self.mimic3_mapping_path
@@ -345,6 +348,9 @@ class MIMIC4Paths(GlobalVars):
         )
         self.outputs_mapping_path = (
             self.mimic4_mapping_path + "mimic4_outputevents.yaml"
+        )
+        self.inputs_mapping_path = (
+            self.mimic4_mapping_path + "mimic4_inputevents.yaml"
         )
         self.drug_administration_route_mapping_path = (
             self.mimic4_mapping_path
