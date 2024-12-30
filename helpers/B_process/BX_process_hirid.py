@@ -61,30 +61,31 @@ class HiRIDProcessor(HiRIDExtractor):
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
         os_listdir_files = os.listdir(self.timeseries_path)
-        counter, counter_max = 0, len(os_listdir_files)
+        counter, counter_max, cases = 0, len(os_listdir_files), 0
         for file in os.listdir(self.timeseries_path):
             # Update the counter
             counter += 1
             print(
-                f"Processing file {file}... \t{counter} / {counter_max}",
+                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)",
                 end="\r",
             )
 
             # Process timeseries data
-            timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
-                self._extract_timeseries_helper,
-                admissiontime,
-                length_of_stay,
-                # observation_mapping,
+            timeseries = (
+                pl.scan_parquet(self.timeseries_path + file)
+                .pipe(
+                    self._extract_timeseries_helper,
+                    admissiontime,
+                    length_of_stay,
+                )
+                .drop_nulls(subset=["value"])
             )
-
-            # Drop empty rows
-            droplist = list(
-                set(timeseries.collect_schema().names()) - set(self.index_cols)
+            cases += (
+                timeseries.select(self.icu_stay_id_col)
+                .unique()
+                .collect()
+                .shape[0]
             )
-            timeseries = timeseries.pipe(
-                self.helpers.dropna, "all", droplist, False
-            ).unique()
 
             # Separate the lab values from the rest
             timeseries_labs = (
@@ -136,7 +137,7 @@ class HiRIDProcessor(HiRIDExtractor):
             # Drop the lab values from the timeseries data
             timeseries = (
                 timeseries.filter(
-                    ~pl.col("variableid")
+                    pl.col("variableid")
                     .str.replace("in HDL", "inHDL")
                     .str.replace("in LDL", "inLDL")
                     .str.replace(" (in|of) ", " INOF ")
@@ -144,6 +145,7 @@ class HiRIDProcessor(HiRIDExtractor):
                     .struct.rename_fields(["variable", "_"])
                     .struct.field("variable")
                     .is_in(self.relevant_lab_values + self.other_lab_values)
+                    .not_()
                 )
                 # Pivot the timeseries data
                 .collect(streaming=True)
