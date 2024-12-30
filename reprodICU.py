@@ -174,7 +174,6 @@ if __name__ == "__main__":
         (
             patient_info_harmonizer.harmonize_patient_information()
             .pipe(patient_info_cleaner.clean_patient_information)
-            .pipe(patient_info_cleaner.remove_bad_patient_information)
             .pipe(patient_info_cleaner.add_good_patient_information)
             .pipe(
                 X2_Winsorizer.winsorize_clip_lower_0_quantiles,
@@ -336,8 +335,10 @@ if __name__ == "__main__":
                 timeseries_resp=save_path + "timeseries_respiratory.parquet",
                 timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
             )
+            .pipe(patient_info_cleaner.remove_bad_patient_information)
             .pipe(patient_info_cleaner.sort_columns)
-            .collect().write_parquet(
+            .collect()
+            .write_parquet(
                 save_path + "patient_information_with_data_availability.parquet"
             )
         )

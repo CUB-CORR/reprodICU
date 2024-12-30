@@ -5,17 +5,22 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
-import argparse
 import polars as pl
-import numpy as np
-
 from helpers.helper import GlobalVars
 
 
 class PatientInformationCleaner(GlobalVars):
     def __init__(self, paths) -> None:
         super().__init__(paths)
-        pass
+        self.data_availability_cols = [
+            "Table: Diagnoses",
+            "Table: Medications",
+            "Table: Procedures",
+            "Table: Timeseries (Laboratory results)",
+            "Table: Timeseries (Vitals)",
+            "Table: Timeseries (Respiratory data)",
+            "Table: Timeseries (In/Out data)",
+        ]
 
     def clean_patient_information(self, data) -> pl.LazyFrame:
         """
@@ -100,69 +105,30 @@ class PatientInformationCleaner(GlobalVars):
             how="left",
         )
 
-    def remove_bad_patient_information(self, data) -> pl.LazyFrame:
+    def remove_bad_patient_information(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
         """
         Removes obviously wrong values from the patient information.
         """
 
-        return (
-            data.with_columns(
-                # Remove negative / zero values for mortality after ICU discharge
-                # when patient died in ICU
-                pl.when(pl.col(self.mortality_icu_col))
-                .then(None)
-                .otherwise(pl.col(self.mortality_after_col))
-                .alias(self.mortality_after_col),
-                # # FLAG patients with negative / almost zero values for ICU stay durations
-                # pl.when(
-                #     pl.any_horizontal(
-                #         pl.col(self.pre_icu_length_of_stay_col)
-                #         .fill_null(1)
-                #         .le(0.01),
-                #         pl.col(self.icu_length_of_stay_col)
-                #         .fill_null(1)
-                #         .le(0.01),
-                #         pl.col(self.hospital_length_of_stay_col)
-                #         .fill_null(1)
-                #         .le(0.01),
-                #     )
-                # )
-                # .then(True)
-                # .otherwise(False)
-                # .alias(self.flag_bad_data_col),
+        return data.with_columns(
+            # Remove negative / zero values for mortality after ICU discharge
+            # when patient died in ICU
+            pl.when(pl.col(self.mortality_icu_col))
+            .then(None)
+            .otherwise(pl.col(self.mortality_after_col))
+            .alias(self.mortality_after_col),
+            # FLAG patients with negative / almost zero values for ICU stay durations
+            pl.when(
+                # less than approx. 15 minutes
+                pl.col(self.icu_length_of_stay_col).le(0.01)
+                # or no data available
+                | pl.any_horizontal(self.data_availability_cols)
             )
-            # Define the order of the columns
-            .select(
-                self.global_person_id_col,
-                self.global_hospital_stay_id_col,
-                self.global_icu_stay_id_col,
-                self.icu_stay_seq_num_col,
-                # self.flag_bad_data_col,
-                self.dataset_col,
-                self.person_id_col,
-                self.hospital_stay_id_col,
-                self.icu_stay_id_col,
-                self.age_col,
-                self.gender_col,
-                self.height_col,
-                self.weight_col,
-                self.ethnicity_col,
-                self.admission_diagnosis_col,
-                self.admission_type_col,
-                self.admission_urgency_col,
-                self.admission_time_col,
-                self.admission_loc_col,
-                self.specialty_col,
-                self.care_site_col,
-                self.unit_type_col,
-                self.pre_icu_length_of_stay_col,
-                self.icu_length_of_stay_col,
-                self.hospital_length_of_stay_col,
-                self.discharge_loc_col,
-                self.mortality_hosp_col,
-                self.mortality_icu_col,
-                self.mortality_after_col,
-            )
+            .then(True)
+            .otherwise(False)
+            .alias(self.flag_bad_data_col),
         )
 
     def add_good_patient_information(self, data) -> pl.LazyFrame:
@@ -236,15 +202,7 @@ class PatientInformationCleaner(GlobalVars):
                 timeseries_resp,
                 timeseries_inout,
             ],
-            [
-                "Table: Diagnoses",
-                "Table: Medications",
-                "Table: Procedures",
-                "Table: Timeseries (Laboratory results)",
-                "Table: Timeseries (Vitals)",
-                "Table: Timeseries (Respiratory data)",
-                "Table: Timeseries (In/Out data)",
-            ],
+            self.data_availability_cols,
         ):
             data = data.join(
                 pl.scan_parquet(table)
@@ -267,6 +225,7 @@ class PatientInformationCleaner(GlobalVars):
                 self.global_hospital_stay_id_col,
                 self.global_icu_stay_id_col,
                 self.icu_stay_seq_num_col,
+                self.flag_bad_data_col,
                 self.dataset_col,
                 self.person_id_col,
                 self.hospital_stay_id_col,
@@ -293,15 +252,7 @@ class PatientInformationCleaner(GlobalVars):
                 self.mortality_icu_col,
                 self.mortality_after_col,
             ]
-            + [
-                "Table: Diagnoses",
-                "Table: Medications",
-                "Table: Procedures",
-                "Table: Timeseries (Laboratory results)",
-                "Table: Timeseries (Vitals)",
-                "Table: Timeseries (Respiratory data)",
-                "Table: Timeseries (In/Out data)",
-            ]
+            + self.data_availability_cols
         )
 
 
