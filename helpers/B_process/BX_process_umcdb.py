@@ -54,7 +54,7 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_listitems = self._process_timeseries_listitems()
 
         timeseries = ts_numeric.join(
-            ts_listitems, on=self.index_cols, how="full", validate="1:1"
+            ts_listitems, on=self.index_cols, how="full", coalesce=True
         )
         # Save the preprocessed data
         timeseries.collect(streaming=True).write_parquet(ts_path_unsorted)
