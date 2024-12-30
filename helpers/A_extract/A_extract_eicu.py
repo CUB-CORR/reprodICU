@@ -94,6 +94,7 @@ class EICUExtractor(EICUPaths):
                 "hospitaladmitoffset",
                 "hospitaldischargeoffset",
                 "hospitaldischargestatus",
+                "hospitaldischargeyear",
             )
             # Rename columns for consistency
             .rename(
@@ -200,6 +201,23 @@ class EICUExtractor(EICUPaths):
                 .then(None)
                 .otherwise(pl.col(self.weight_col))
                 .alias(self.weight_col),
+            )
+            # Calculate ICU stay sequence number
+            # based on https://github.com/MIT-LCP/eicu-code/issues/145#issuecomment-680487192
+            .sort(
+                [
+                    self.person_id_col,
+                    "hospitaldischargeyear",
+                    self.icu_stay_seq_num_col,
+                    self.mortality_icu_col,
+                ],
+                descending=False,
+                nulls_last=False,
+            )
+            .with_columns(
+                (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
+                    self.icu_stay_seq_num_col
+                )
             )
             # Convert time columns to floating point days for consistency
             .pipe(
