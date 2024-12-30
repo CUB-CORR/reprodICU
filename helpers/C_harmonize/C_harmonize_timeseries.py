@@ -293,9 +293,7 @@ class TimeseriesHarmonizer(GlobalVars):
         vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols))
         vitals = (
             vitals.pipe(
-                self.helpers.dropna,
-                "all",
-                vitals_cols_not_index,
+                self.helpers.dropna, "all", vitals_cols_not_index, False
             )
             .cast(
                 {  # Convert all columns to float
@@ -305,15 +303,26 @@ class TimeseriesHarmonizer(GlobalVars):
                 }
             )
             .select([*self.index_cols, *sorted(vitals_cols_not_index)])
-            # Fix Temperature values for accidental Fahrenheit values
             .with_columns(
+                # Fix Temperature values for accidental Fahrenheit values
                 pl.when(pl.col("Temperature").gt(60))
                 .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
                 .otherwise(pl.col("Temperature"))
-                .alias("Temperature")
+                .alias("Temperature"),
+                # Sum the GCS subscores
+                pl.when(pl.col("Glasgow Coma Score total").is_null())
+                .then(
+                    pl.sum_horizontal(
+                        "Glasgow Coma Score eye opening",
+                        "Glasgow Coma Score motor",
+                        "Glasgow Coma Score verbal",
+                        ignore_nulls=False,
+                    )
+                )
+                .otherwise(pl.col("Glasgow Coma Score total"))
+                .alias("Glasgow Coma Score total"),
             )
-            .sort(self.index_cols)
-            .unique(self.index_cols)
+            # assume uniqueness (since we're just concatenating the data)
             .sort(self.index_cols)
         )
         # endregion
@@ -337,7 +346,7 @@ class TimeseriesHarmonizer(GlobalVars):
         resp_cols = resp.collect_schema().names()
         resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
         resp = (
-            resp.pipe(self.helpers.dropna, "all", resp_cols_not_index)
+            resp.pipe(self.helpers.dropna, "all", resp_cols_not_index, False)
             .cast(
                 {  # Convert all columns to float, except for
                     # - Oxygen delivery system
@@ -373,7 +382,7 @@ class TimeseriesHarmonizer(GlobalVars):
         inout_cols = inout.collect_schema().names()
         inout_cols_not_index = list(set(inout_cols) - set(self.index_cols))
         inout = (
-            inout.pipe(self.helpers.dropna, "all", inout_cols_not_index)
+            inout.pipe(self.helpers.dropna, "all", inout_cols_not_index, False)
             .cast(
                 {  # Convert all columns to float
                     self.global_icu_stay_id_col: str,
