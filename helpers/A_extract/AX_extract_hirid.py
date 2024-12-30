@@ -341,21 +341,21 @@ class HiRIDExtractor(HiRIDPaths):
                 ).alias(self.timeseries_time_col)
             )
             .drop(["admissiontime", "datetime"])
-            # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            .filter(
-                (
-                    pl.col(self.timeseries_time_col)
-                    < pl.duration(
-                        days=pl.col(self.icu_length_of_stay_col)
-                    ).truediv(pl.duration(seconds=1))
-                )
-                & (
-                    pl.col(self.timeseries_time_col)
-                    > pl.duration(
-                        days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).truediv(pl.duration(seconds=1))
-                )
-            )
+            # # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # .filter(
+            #     (
+            #         pl.col(self.timeseries_time_col)
+            #         < pl.duration(
+            #             days=pl.col(self.icu_length_of_stay_col)
+            #         ).truediv(pl.duration(seconds=1))
+            #     )
+            #     & (
+            #         pl.col(self.timeseries_time_col)
+            #         > pl.duration(
+            #             days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            #         ).truediv(pl.duration(seconds=1))
+            #     )
+            # )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -503,21 +503,21 @@ class HiRIDExtractor(HiRIDPaths):
                 .unique()
                 # Remove rows with empty lab names
                 .filter(pl.col(self.drug_amount_col).is_not_null())
-                # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                .filter(
-                    (
-                        pl.col(self.drug_end_col)
-                        < pl.duration(
-                            days=pl.col(self.icu_length_of_stay_col)
-                        ).truediv(pl.duration(seconds=1))
-                    )
-                    & (
-                        pl.col(self.drug_end_col)
-                        > pl.duration(
-                            days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).truediv(pl.duration(seconds=1))
-                    )
-                )
+                # # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                # .filter(
+                #     (
+                #         pl.col(self.drug_end_col)
+                #         < pl.duration(
+                #             days=pl.col(self.icu_length_of_stay_col)
+                #         ).truediv(pl.duration(seconds=1))
+                #     )
+                #     & (
+                #         pl.col(self.drug_end_col)
+                #         > pl.duration(
+                #             days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                #         ).truediv(pl.duration(seconds=1))
+                #     )
+                # )
                 .drop(self.icu_length_of_stay_col)
             )
 
