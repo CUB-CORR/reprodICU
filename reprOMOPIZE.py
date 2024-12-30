@@ -712,6 +712,13 @@ def measurement(
                 )
                 .unnest(col)
                 .drop_nulls("value_as_number")
+                .select(
+                    "person_id",
+                    "measurement_date",
+                    "measurement_datetime",
+                    "variable_name",
+                    "value_as_number",
+                )
             )
 
         print("reprOMOPIZE - measurement - de-structing done")
@@ -1109,7 +1116,7 @@ if __name__ == "__main__":
     INPATH = args.input
     OUTPATH = args.output
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
-    medications = pl.scan_parquet(INPATH + "medications_imputed.parquet")
+    medications = pl.scan_parquet(INPATH + "medications.parquet")
     patient_information = pl.scan_parquet(
         INPATH + "patient_information.parquet"
     )
@@ -1175,8 +1182,8 @@ if __name__ == "__main__":
         .write_parquet(OUTPATH + "procedure_occurrence.parquet")
     )
     (
-    visit_occurrence(patient_information).sink_parquet(
-        OUTPATH + "visit_occurrence.parquet"
+        visit_occurrence(patient_information).sink_parquet(
+            OUTPATH + "visit_occurrence.parquet"
         )
     )
 
@@ -1187,12 +1194,12 @@ if __name__ == "__main__":
         .write_parquet(OUTPATH + "drug_exposure.parquet")
     )
     (
-    measurement(
-        CONCEPT,
-        patient_information,
-        timeseries_vitals,
-        timeseries_labs,
-        timeseries_resp,
+        measurement(
+            CONCEPT,
+            patient_information,
+            timeseries_vitals,
+            timeseries_labs,
+            timeseries_resp,
         )
         .collect(streaming=True)
         .write_parquet(OUTPATH + "measurement.parquet")

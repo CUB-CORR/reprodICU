@@ -31,15 +31,13 @@ class Overview:
             overview = (
                 overview.join(
                     pl.scan_parquet(self.save_path + table + ".parquet")
-                    .select("Global ICU Stay ID", pl.nth(1))
+                    .select("Global ICU Stay ID")
                     .group_by("Global ICU Stay ID")
                     .len()
                     .rename({"len": table}),
                     on="Global ICU Stay ID",
                     how="left",
                 )
-                .collect()
-                .lazy()
             )
 
         # Save the overview to a parquet file
