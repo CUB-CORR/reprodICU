@@ -152,9 +152,6 @@ class HiRIDPaths(GlobalVars):
 
         # HiRID custom mapping paths
         self.hirid_mapping_path = self.mapping_path + "hirid/"
-        self.observation_mapping_path = (
-            self.hirid_mapping_path + "hirid_OBSERVATION.yaml"
-        )
         self.apache_mapping_path = (
             self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml"
         )
@@ -222,15 +219,6 @@ class MIMIC3Paths(GlobalVars):
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
-        self.vitals_mapping_path = (
-            self.mimic3_mapping_path + "mimic3_chartevents.yaml"
-        )
-        self.labs_mapping_path = (
-            self.mimic3_mapping_path + "mimic3_labevents.yaml"
-        )
-        self.outputs_mapping_path = (
-            self.mimic3_mapping_path + "mimic3_outputevents.yaml"
-        )
         self.inputs_mapping_path = (
             self.mimic3_mapping_path + "mimic3_inputevents.yaml"
         )
@@ -344,15 +332,6 @@ class MIMIC4Paths(GlobalVars):
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"
-        self.vitals_mapping_path = (
-            self.mimic4_mapping_path + "mimic4_chartevents.yaml"
-        )
-        self.labs_mapping_path = (
-            self.mimic4_mapping_path + "mimic4_labevents.yaml"
-        )
-        self.outputs_mapping_path = (
-            self.mimic4_mapping_path + "mimic4_outputevents.yaml"
-        )
         self.inputs_mapping_path = (
             self.mimic4_mapping_path + "mimic4_inputevents.yaml"
         )
@@ -474,12 +453,6 @@ class SICdbPaths(GlobalVars):
 
         # SICdb custom mapping paths
         self.sicdb_mapping_path = self.mapping_path + "sicdb/"
-        self.laboratory_mapping_path = (
-            self.sicdb_mapping_path + "sicdb_Laboratory.yaml"
-        )
-        self.timeseries_mapping_path = (
-            self.sicdb_mapping_path + "sicdb_Timeseries.yaml"
-        )
         self.device_mapping_path = (
             self.sicdb_mapping_path + "sicdb_Devices.yaml"
         )
@@ -530,12 +503,6 @@ class UMCdbPaths(GlobalVars):
 
         # UMCdb custom mapping paths
         self.umcdb_mapping_path = self.mapping_path + "umcdb/"
-        self.numeric_mapping_path = (
-            self.umcdb_mapping_path + "umcdb_numericitems.yaml"
-        )
-        self.listitems_mapping_path = (
-            self.umcdb_mapping_path + "umcdb_listitems.yaml"
-        )
         self.apache_mapping_path = self.umcdb_mapping_path + "umcdb_APACHE.yaml"
         self.drug_administration_route_mapping_path = (
             self.umcdb_mapping_path
