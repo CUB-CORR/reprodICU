@@ -101,6 +101,10 @@ class EICUPaths(GlobalVars):
         self.resp_mapping_path = (
             self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
+        self.resp_oxygen_delivery_device_mapping_path = (
+            self.eICU_mapping_path
+            + "eicu_respiratoryCharting_oxygenDeliveryDevices.yaml"
+        )
         self.intakeoutput_mapping_path = (
             self.eICU_mapping_path + "eicu_intakeOutput_cellpath.yaml"
         )

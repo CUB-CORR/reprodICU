@@ -1,0 +1,21 @@
+Aerosol mask: facemask
+Ambubag: ambu_bag
+Bi-PAP: BiPAP
+Blow-by: facemask
+CPAP: CPAP
+ETT: endotracheal_tube
+Face mask: facemask
+Face tent: other
+Heated high flow nasal cannula: high_flow_nasal_cannula
+High flow mask: facemask
+High flow nasal cannula: high_flow_nasal_cannula
+Nasal cannula: nasal_cannula
+Non-rebreather mask: non_rebreather_mask
+None (Room air): room_air
+Other (Comment): other
+Oxyhood: facemask
+Simple mask: facemask
+T-Piece: t_piece
+Trach mask/collar: tracheostomy
+Ventilator: ventilator
+Venturi mask: facemask
