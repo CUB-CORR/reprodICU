@@ -226,7 +226,7 @@ if __name__ == "__main__":
         )
         (
             medication_harmonizer.harmonize_medications()
-            .collect(streaming=True)
+            .collect()
             .write_parquet(save_path + "medications.parquet")
         )
 
