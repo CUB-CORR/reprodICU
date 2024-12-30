@@ -64,7 +64,7 @@ class EICUProcessor(EICUExtractor):
         # Load the time series data.
         print("eICU    - Loading time series data...")
         ts_nurse = self._process_timeseries_nurse()
-        ts_periodics = self._process_periodics()
+        ts_periodics = self._process_periodics() 
         ts_resp = self._process_timeseries_resp()
 
         # Join the time series data on the patient unit stay ID.
@@ -80,10 +80,12 @@ class EICUProcessor(EICUExtractor):
         # lines instead within a terminal at the precalc_path:
         # pl.scan_parquet("EICU_B_timeseries_unsorted.parquet").sort(
         #     "icu_stay_id", "time_relative_to_admission"
-        # ).sink_parquet("HiRID_B_timeseries.parquet")
+        # ).sink_parquet("EICU_B_timeseries_unsorted.parquet")
         print("eICU    - Sorting wide time series data...")
         (
             pl.scan_parquet(timeseries_path_unsorted)
+            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
+            .first()
             .sort(self.index_cols)
             .sink_parquet(timeseries_path)
         )
@@ -214,6 +216,13 @@ class EICUProcessor(EICUExtractor):
         droplist = list(set(ts_resp_cols) - set(self.index_cols))
         ts_resp = (
             ts_resp.pipe(self.helpers.dropna, "all", droplist, False)
+            .cast(
+                {
+                    col: float
+                    for col in droplist
+                    if isinstance(ts_resp[col].drop_nulls().first(), Number)
+                }
+            )
             .unique()
             .sort(self.index_cols)
             .lazy()
@@ -280,7 +289,6 @@ class EICUProcessor(EICUExtractor):
         ts_nurse = (
             ts_nurse.pipe(self.helpers.dropna, "all", droplist, False)
             .unique()
-            .sort(self.index_cols)
             .lazy()
         )
 
@@ -384,9 +392,7 @@ class EICUProcessor(EICUExtractor):
             self.precalc_path + "EICU_ts_periodics_unsorted.parquet"
         )
 
-        print("eICU    - Processing (a)periodic data...")
-
-        # Process inout data
+        # Process (a)periodic data
         if os.path.isfile(ts_period_path):
             # Load the preprocessed data
             return pl.scan_parquet(ts_period_path).select(
@@ -394,15 +400,15 @@ class EICUProcessor(EICUExtractor):
                 pl.exclude(self.index_cols),
             )
 
+        print("eICU    - Processing (a)periodic data...")
+
         ts_periodics = self.extract_and_combine_periodics()
 
         # Drop empty rows
         ts_periodics_cols = ts_periodics.collect_schema().names()
         droplist = list(set(ts_periodics_cols) - set(self.index_cols))
-        ts_periodics = (
-            ts_periodics.pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
+        ts_periodics = ts_periodics.pipe(
+            self.helpers.dropna, "all", droplist, False
         )
 
         # Save the preprocessed data
@@ -411,6 +417,9 @@ class EICUProcessor(EICUExtractor):
         # Sort the data
         (
             pl.scan_parquet(ts_period_path_unsorted)
+            .cast(float)
+            .cast({"ICU Stay ID": int})
+            .unique(self.index_cols)
             .sort(self.index_cols)
             .sink_parquet(ts_period_path)
         )

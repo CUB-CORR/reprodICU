@@ -190,6 +190,17 @@ class EICUExtractor(EICUPaths):
                 .str.to_time("%H:%M:%S")
                 .alias(self.admission_time_col),
             )
+            # Handle zero values for height and weight
+            .with_columns(
+                pl.when(pl.col(self.height_col) == 0)
+                .then(None)
+                .otherwise(pl.col(self.height_col))
+                .alias(self.height_col),
+                pl.when(pl.col(self.weight_col) == 0)
+                .then(None)
+                .otherwise(pl.col(self.weight_col))
+                .alias(self.weight_col),
+            )
             # Convert time columns to floating point days for consistency
             .pipe(
                 self.helpers._convert_time_to_days_float,
@@ -466,6 +477,9 @@ class EICUExtractor(EICUPaths):
         # TODO: Confer with medical experts to confirm these are the correct values
         keep_resp_names = self.relevant_respiratory_values
         resp_names_mapping = self.helpers.load_mapping(self.resp_mapping_path)
+        resp_oxygen_delivery_device_mapping = self.helpers.load_mapping(
+            self.resp_oxygen_delivery_device_mapping_path
+        )
 
         return (
             pl.scan_csv(self.respiratoryCharting_path)
@@ -496,6 +510,19 @@ class EICUExtractor(EICUPaths):
                 .str.replace("Not applicable", "")
                 .str.replace("Refused after education", ""),
                 # .cast(float, strict=False),
+            )
+            .with_columns(
+                # Map O2 delivery device values
+                pl.when(
+                    pl.col("respchartvaluelabel") == "Oxygen delivery system"
+                )
+                .then(
+                    pl.col("respchartvalue").replace_strict(
+                        resp_oxygen_delivery_device_mapping, default=None
+                    )
+                )
+                .otherwise(pl.col("respchartvalue"))
+                .alias("respchartvalue"),
             )
             # Filter for resp names of interest
             .filter(pl.col("respchartvaluelabel").is_in(keep_resp_names))
@@ -532,23 +559,22 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
-        # NOTE: ASSUMPTION: These are the nurse values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
+        # NOTE: keep only the nurse charting values not covered by the other TS
         keep_nurse_names = [
-            "Non-Invasive BP",
-            "Invasive BP",
-            "Heart Rate",
-            # "Pain Score/Goal",
-            "Respiratory Rate",
-            "O2 Saturation",
-            "Temperature",
+            # "Non-Invasive BP",
+            # "Invasive BP",
+            # "Heart Rate",
+            # # "Pain Score/Goal",
+            # "Respiratory Rate",
+            # "O2 Saturation",
+            # "Temperature",
             "Glasgow coma score",
-            "Invasive BP",
+            # "Invasive BP",
             "Bedside Glucose",
             "O2 L/%",
             "O2 Admin Device",
             "Sedation Scale/Score/Goal",
-            # "Delirium Scale/Score",
+            # # "Delirium Scale/Score",
         ]
         nurse_names_mapping = self.load_mapping(self.nurse_mapping_path)
         nurse_oxygen_delivery_device_mapping = self.load_mapping(
@@ -569,7 +595,8 @@ class EICUExtractor(EICUPaths):
                     "patientunitstayid": self.icu_stay_id_col,
                     "nursingchartoffset": self.timeseries_time_col,
                 }
-            )  # Filter for nurse names of interest
+            )
+            # Filter for nurse names of interest
             .filter(
                 pl.col("nursingchartcelltypevallabel").is_in(keep_nurse_names)
             )
@@ -632,9 +659,16 @@ class EICUExtractor(EICUPaths):
                 .alias("nursingchartvalue"),
             )
             .with_columns(
+                # Replace nurse names with mapped names
+                pl.col("nursingchartcelltypevalname")
+                .replace_strict(nurse_names_mapping, default=None)
+                .alias("nursingchartcelltypevalname"),
+            )
+            .with_columns(
                 # Map O2 delivery device values
                 pl.when(
-                    pl.col("nursingchartcelltypevalname") == "O2 Admin Device"
+                    pl.col("nursingchartcelltypevalname")
+                    == "Oxygen delivery system"
                 )
                 .then(
                     pl.col("nursingchartvalue").replace_strict(
@@ -643,10 +677,6 @@ class EICUExtractor(EICUPaths):
                 )
                 .otherwise(pl.col("nursingchartvalue"))
                 .alias("nursingchartvalue"),
-                # Replace nurse names with mapped names
-                pl.col("nursingchartcelltypevalname")
-                .replace_strict(nurse_names_mapping, default=None)
-                .alias("nursingchartcelltypevalname"),
             )
             # Remove rows with empty nurse values
             .drop_nulls(["nursingchartcelltypevalname", "nursingchartvalue"])
@@ -762,7 +792,7 @@ class EICUExtractor(EICUPaths):
                 }
             )
             # Remove duplicate rows
-            .unique()
+            .unique([self.icu_stay_id_col, self.timeseries_time_col])
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -806,7 +836,7 @@ class EICUExtractor(EICUPaths):
                 }
             )
             # Remove duplicate rows
-            .unique()
+            .unique([self.icu_stay_id_col, self.timeseries_time_col])
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -845,21 +875,19 @@ class EICUExtractor(EICUPaths):
         """
 
         periodic_mapping = self.helpers.load_mapping(self.periodic_mapping_path)
+        periodic_mapping_keys = list(periodic_mapping.values())
 
         periodic = self.extract_time_series_periodic()
         aperiodic = self.extract_time_series_aperiodic()
 
-        periodics = pl.concat(
-            [periodic, aperiodic], how="diagonal_relaxed"
-        ).rename(periodic_mapping)
-        periodics_cols = periodics.collect_schema().names()
-
-        return periodics.select(
-            [self.icu_stay_id_col, self.timeseries_time_col]
-            + list(
-                set(periodics_cols).intersection(
-                    set(self.relevant_vital_values + ["Temperature Fahrenheit"])
-                )
+        return (
+            pl.concat([periodic, aperiodic], how="diagonal_relaxed")
+            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
+            .first()
+            .rename(periodic_mapping)
+            .select(
+                [self.icu_stay_id_col, self.timeseries_time_col]
+                + periodic_mapping_keys
             )
         )
 
