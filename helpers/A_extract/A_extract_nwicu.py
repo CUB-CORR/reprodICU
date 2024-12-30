@@ -507,6 +507,10 @@ class NWICUExtractor(NWICUPaths):
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))
             # Remove rows with empty lab results
             .filter(pl.col("valuenum").is_not_null())
+            # Remove rows with bad lab results
+            # either less than values, or string values
+            # -> TODO: handle these cases
+            .filter(pl.col("valuenum").ne_missing(9999999.0))
             # Remove duplicate rows
             .unique()
             # Cast valuenum to float
