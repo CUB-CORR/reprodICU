@@ -170,7 +170,7 @@ class SICdbExtractor(SICdbPaths):
                 .truediv(pl.duration(days=1))
                 .alias(self.mortality_after_col),
                 # Set care site
-                pl.lit("Landeskrankenhaus Salzburg").alias(self.care_site_col),
+                pl.lit("Landeskrankenhaus Salzburg (SALK) - Universitätsklinikum der PMU").alias(self.care_site_col),
                 # Create empty HospitalStayID column
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Convert admission diagnosis to APACHE group
