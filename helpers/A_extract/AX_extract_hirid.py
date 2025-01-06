@@ -56,7 +56,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
             .with_columns(
                 # Set care site
-                pl.lit("Universitätsspital Bern").alias(self.care_site_col),
+                pl.lit("Inselspital - Universitätsspital Bern").alias(self.care_site_col),
                 # Set unit type
                 # NOTE: the Bern University Hospital only has one unit type
                 # -> all ICU patients are cared for within a interdisciplinary 60-bed unit in the Department of Intensive Care Medicine

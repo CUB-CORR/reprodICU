@@ -23,8 +23,6 @@ Medical:
   - MICU
   # MIMIC-IV 3.0
   - Medicine/Cardiology Intermediate
-  # UMCdb
-  - MC
 Medical-Surgical:
   - Med-Surg ICU
   - Medical/Surgical Intensive Care Unit (MICU/SICU)
@@ -34,8 +32,10 @@ Medical-Surgical:
   - Intensive Care Unit (ICU)
   - Med/Surg
   # UMCdb
+  - MC
   - IC&MC
   - MC&IC
+  - IC
   # NWICU
   - ICU
   - ICU OVERFLOW
@@ -56,8 +56,6 @@ Surgical:
   - CWIN # Chirurgie West-Intensivstation - CWIN
   - INBD # Intensivstation INBD
   - INIC # Intermediate Care Station - INIC
-  # UMCdb
-  - IC
   # NWICU
   - NSICU
 Trauma:
