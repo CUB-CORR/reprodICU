@@ -174,7 +174,7 @@ def blended_plot():
                 & pl.col(VARIABLE).gt(pl.col(VARIABLE).quantile(0.01))
                 & pl.col(VARIABLE).lt(pl.col(VARIABLE).quantile(0.99))
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         ax = sns.kdeplot(

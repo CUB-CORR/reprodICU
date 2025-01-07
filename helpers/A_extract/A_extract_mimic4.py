@@ -864,9 +864,9 @@ class MIMIC4Extractor(MIMIC4Paths):
             # include only ICU patients
             .filter(
                 pl.col(self.hospital_stay_id_col).is_in(
-                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(
-                        streaming=True
-                    )
+                    self.extract_patient_IDs()
+                    .select(self.hospital_stay_id_col)
+                    .collect()
                 )
             )
             .with_columns(
@@ -990,6 +990,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 "icd_code",
                 "icd_version",
                 "seq_num",
+            )
+            # include only ICU patients
+            .filter(
+                pl.col(self.hospital_stay_id_col).is_in(
+                    self.extract_patient_IDs()
+                    .select(self.hospital_stay_id_col)
+                    .collect()
+                )
             )
             .with_columns(
                 # NOTE: all ICD procedures in MIMIC are on discharge for billing purposes
