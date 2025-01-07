@@ -140,7 +140,7 @@ class MIMIC3Processor(MIMIC3Extractor):
                 .alias("value_struct")
             )
             # Pivot the lab data
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="LABEL",
                 index=self.index_cols,

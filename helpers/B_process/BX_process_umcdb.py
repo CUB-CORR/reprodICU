@@ -162,7 +162,7 @@ class UMCdbProcessor(UMCdbExtractor):
         if not os.path.isfile(ts_labs_path_cache):
             (
                 self.extract_timeseries_labs()
-                .collect()
+                .collect(streaming=True)
                 .write_parquet(ts_labs_path_cache)
             )
 
@@ -184,7 +184,7 @@ class UMCdbProcessor(UMCdbExtractor):
                 .alias("value_struct")
             )
             # Pivot the labs data
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="item",
                 index=self.index_cols,

@@ -131,7 +131,7 @@ class NWICUProcessor(NWICUExtractor):
                 .alias("value_struct")
             )
             # Pivot the lab data
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="label",
                 index=self.index_cols,
