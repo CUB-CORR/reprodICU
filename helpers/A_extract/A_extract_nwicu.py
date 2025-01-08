@@ -468,15 +468,11 @@ class NWICUExtractor(NWICUPaths):
         d_labitems = pl.scan_csv(self.d_labitems_path).select("itemid", "label")
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select("label", "omop_concept_name")
-            .rename(
-                {
-                    "omop_concept_name": "label_OMOP",
-                }
-            )
+            .select("itemid", "mapped_concept_name")
+            .rename({"mapped_concept_name": "label"})
             # Filter for lab names of interest
             .filter(
-                pl.col("label_OMOP")
+                pl.col("label")
                 .str.replace("in HDL", "inHDL")
                 .str.replace("in LDL", "inLDL")
                 .str.replace(" (in|of) ", " INOF ")
@@ -499,10 +495,8 @@ class NWICUExtractor(NWICUPaths):
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
-            .join(d_labitems, on="itemid", how="left")
-            .join(d_labitems_to_loinc_data, on="label", how="left")
-            .drop("itemid", "label")
-            .rename({"label_OMOP": "label"})
+            .join(d_labitems_to_loinc_data, on="itemid", how="left")
+            .drop("itemid")
             # Remove rows with empty lab names
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))
             # Remove rows with empty lab results

@@ -34,7 +34,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             "Bilirubin.total [Mass/volume]",
             "Calcium [Mass/volume]",
             "Calcium.ionized [Mass/volume]",
-            "Creatine kinase.MB [Mass/volume]",
             "Iron [Mass/volume]",
             "Iron binding capacity [Mass/volume]",
             "Magnesium [Mass/volume]",
@@ -577,13 +576,8 @@ class MIMIC3Extractor(MIMIC3Paths):
         # TODO: Confer with medical experts to confirm these are the correct values
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
-            .rename(
-                {
-                    "itemid (omop_source_code)": "ITEMID",
-                    "omop_concept_name": "LABEL",
-                }
-            )
+            .select("ITEMID", "COALESCED_CONCEPT_NAME")
+            .rename({"COALESCED_CONCEPT_NAME": "LABEL"})
             # Filter for lab names of interest
             .filter(
                 pl.col("LABEL")

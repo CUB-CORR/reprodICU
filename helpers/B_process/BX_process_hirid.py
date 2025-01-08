@@ -215,6 +215,13 @@ class HiRIDConverter(UnitConverter):
                 structfield=structfield,
             )
             .pipe(
+                self.convert_cortisol_nmol_L_to_ug_dL,
+                itemid="Cortisol [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
                 self.convert_g_L_to_mg_dL,
                 itemid="Fibrinogen [Mass/volume]",
                 labelcol=labelcol,
@@ -262,6 +269,7 @@ class HiRIDConverter(UnitConverter):
                 pl.col(labelcol).replace(
                     {
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
+                        "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
                         "Glucose [Moles/volume]": "Glucose [Mass/volume]",
                         "Urea nitrogen [Moles/volume]": "Urea nitrogen [Mass/volume]",
                         # NOTE: fix wrong unit

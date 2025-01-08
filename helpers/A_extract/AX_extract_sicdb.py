@@ -235,7 +235,6 @@ class SICdbExtractor(SICdbPaths):
             # NOTE: seems not to be necessary, as the data is already filtered
             # Filter only relevant timeseries values
             .filter(
-                # pl.col("DataID").is_in(self.all_values + self.other_lab_values),
                 pl.col("DataID")
                 .str.replace("in HDL", "inHDL")
                 .str.replace("in LDL", "inLDL")
@@ -258,7 +257,6 @@ class SICdbExtractor(SICdbPaths):
     # region laboratory
     # Extract laboratory information from the laboratory.csv file
     def extract_laboratory_timeseries(self) -> pl.LazyFrame:
-        # laboratory_mapping = self.load_mapping(self.laboratory_mapping_path)
         offsets = self._get_offsets()
 
         return (

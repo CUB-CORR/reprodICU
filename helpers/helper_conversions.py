@@ -546,6 +546,14 @@ class UnitConversions:
         Convert values from mg/dL to mg/L.
         """
         return data.pipe(self.GENERIC_CONVERTER, factor=10, **kwargs)
+    
+    def convert_mg_L_to_mg_dL(
+        self, data: pl.LazyFrame, **kwargs
+    ) -> pl.LazyFrame:
+        """
+        Convert values from mg/dL to mg/L.
+        """
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 10, **kwargs)
 
     def convert_ng_L_to_ug_L(
         self, data: pl.LazyFrame, **kwargs

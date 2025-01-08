@@ -403,13 +403,6 @@ class MIMIC3Converter(UnitConverter):
                 structfield=structfield,
             )
             .pipe(
-                self.convert_mg_dL_to_mg_L,
-                itemid="Prealbumin [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
                 self.convert_g_dL_to_g_L,
                 itemid="Protein [Mass/volume]",
                 labelcol=labelcol,

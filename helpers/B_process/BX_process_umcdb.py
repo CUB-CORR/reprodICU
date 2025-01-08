@@ -357,13 +357,6 @@ class UMCdbConverter(UnitConverter):
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="Cholesterol in LDL [Moles/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_cholesterol_mmol_L_to_mg_dL,
                 itemid="Cholesterol [Moles/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
@@ -379,6 +372,13 @@ class UMCdbConverter(UnitConverter):
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
                 itemid="Creatine kinase.MB [Mass/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_FEU_to_DDU,
+                itemid="Fibrin D-dimer FEU [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -407,6 +407,13 @@ class UMCdbConverter(UnitConverter):
             .pipe(
                 self.convert_hemoglobin_mmol_L_to_g_dL,
                 itemid="Hemoglobin [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_mg_L_to_mg_dL,
+                itemid="Microalbumin [Mass/volume]",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -461,10 +468,10 @@ class UMCdbConverter(UnitConverter):
                         "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Moles/volume]",
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
                         "Cholesterol in HDL [Moles/volume]": "Cholesterol in HDL [Mass/volume]",
-                        "Cholesterol in LDL [Moles/volume]": "Cholesterol in LDL [Mass/volume]",
                         "Cholesterol [Moles/volume]": "Cholesterol [Mass/volume]",
                         "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
                         "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
+                        "Fibrin D-dimer FEU [Mass/volume]": "Fibrin D-dimer DDU [Mass/volume]",
                         "Folate [Moles/volume]": "Folate [Mass/volume]",
                         "Glucose [Moles/volume]": "Glucose [Mass/volume]",
                         "Hemoglobin [Moles/volume]": "Hemoglobin [Mass/volume]",
