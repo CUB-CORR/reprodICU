@@ -5,14 +5,15 @@
 
 import argparse
 import os
+from textwrap import wrap
 
 import altair as alt
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
+import numpy as np
 import polars as pl
-import yaml
 import seaborn as sns
-from textwrap import wrap
+import yaml
+from matplotlib.patches import Patch
 
 BLENDEDICU_PLOT_VARIABLES = {
     "Heart rate": ["vitals", "beats per minute (/min)"],
@@ -68,12 +69,35 @@ BLENDEDICU_PLOT_VARIABLES = {
     "Hemoglobin [Mass/volume]": ["labs", "g/dL"],
     "Leukocytes [#/volume]": ["labs", "10^3/µL"],
     "Platelets [#/volume]": ["labs", "10^3/µL"],
-    "Fluid output urine in and out urethral catheter": ["intakeoutput", "mL"],
+    # "Urine output": ["intakeoutput", "mL"],
     # "Ventilation mode Ventilator": "respiratory",
     "Glasgow Coma Score total": ["vitals", "points"],
     "Glasgow Coma Score eye opening": ["vitals", "points"],
     "Glasgow Coma Score motor": ["vitals", "points"],
     "Glasgow Coma Score verbal": ["vitals", "points"],
+}
+COLORS = {
+    "AmsterdamUMCdb": "blue",
+    "eICU-CRD": "orange",
+    "HiRID": "red",
+    "MIMIC-III": "green",
+    "MIMIC-IV": "purple",
+    "NWICU": "black",
+    "SICdb": "gray",
+}
+# Tol's muted qualitative color palett
+# (https://cran.r-project.org/web/packages/khroma/vignettes/tol.html#muted)
+COLORS_TOL = {
+    "eICU-CRD": "#CC6677",
+    "AmsterdamUMCdb": "#44AA99",
+    "HiRID": "#332288",
+    "MIMIC-III": "#117733",
+    "MIMIC-IV": "#88CCEE",
+    "NWICU": "#DDCC77",
+    "SICdb": "#882255",
+    # "#999933"
+    # "#AA4499"
+    # "#DDDDDD"
 }
 
 
@@ -89,20 +113,68 @@ class reprodICUPaths:
             setattr(self, key, str(value))
 
 
-def blended_plot():
+def _collect_data(
+    table: str, variable: str, sources: str, path: str, cols
+) -> pl.DataFrame:
+    ####################################
+    # COLLECT DATA
+    ####################################
+
+    # Load source datasets
+    ID_TO_DB = pl.scan_parquet(path + "patient_information.parquet").select(
+        cols.global_icu_stay_id_col, cols.dataset_col
+    )
+
+    # Load data
+    data = (
+        pl.scan_parquet(
+            f"../reprodICU_files/timeseries_{table}.parquet",
+            parallel="prefiltered",
+        )
+        .join(ID_TO_DB, on=cols.global_icu_stay_id_col, how="left")
+        .select(cols.global_icu_stay_id_col, cols.dataset_col, variable)
+        .filter(pl.col(variable).is_not_null())
+    )
+
+    # Filter source if specified
+    if table == "labs":
+        data = (
+            data.unnest(variable)
+            .rename({"value": variable})
+            .filter(
+                pl.col("source").str.contains_any(
+                    sources, ascii_case_insensitive=True
+                )
+            )
+            .drop("source", "method")
+        )
+
+    # aggregate means for vitals
+    if table == "vitals" or table == "respiratory":
+        if variable.startswith("Glasgow Coma Score"):
+            data = data.group_by(
+                cols.global_icu_stay_id_col, cols.dataset_col
+            ).agg(pl.col(variable).last().alias(variable))
+        else:
+            data = data.group_by(
+                cols.global_icu_stay_id_col, cols.dataset_col
+            ).agg(pl.col(variable).median().alias(variable))
+
+    # drop outliers (1th percentile > values > 99th percentile)
+    # and aggregate data
+    return (
+        data.drop(cols.global_icu_stay_id_col)
+        .filter(
+            pl.col(variable).is_not_null()
+            & pl.col(variable).gt(pl.col(variable).quantile(0.01))
+            & pl.col(variable).lt(pl.col(variable).quantile(0.99))
+        )
+        .collect()
+    )
+
+
+def _BLENDED_PLOT(PATH: str, COLS) -> None:
     NCOLS = 5
-    COLORS = {
-        "eICU-CRD": "orange",
-        "HiRID": "red",
-        "NWICU": "black",
-        "MIMIC-III": "green",
-        "MIMIC-IV": "purple",
-        "SICdb": "gray",
-        "AmsterdamUMCdb": "blue",
-    }
-    ID_TO_DB = pl.scan_parquet(
-        "../reprodICU_files/patient_information.parquet"
-    ).select("Global ICU Stay ID", "Source Dataset")
 
     fig, axs_ = plt.subplots(
         ncols=NCOLS,
@@ -130,62 +202,31 @@ def blended_plot():
 
         TABLE = BLENDEDICU_PLOT_VARIABLES[VARIABLE][0]
         UNIT = BLENDEDICU_PLOT_VARIABLES[VARIABLE][1]
-        data = (
-            pl.scan_parquet(f"../reprodICU_files/timeseries_{TABLE}.parquet")
-            .join(ID_TO_DB, on="Global ICU Stay ID", how="left")
-            .select("Global ICU Stay ID", "Source Dataset", VARIABLE)
-        )
 
-        # handle labs differently
-        if TABLE == "labs":
-            sources = (
+        # Load data
+        data = _collect_data(
+            table=TABLE,
+            variable=VARIABLE,
+            sources=(
                 ["Blood", "Plasma"]
                 if not VARIABLE
                 in ["Oxygen saturation", "Lactate [Moles/volume]"]
-                else ["Arterial blood"]
-            )
-            data = (
-                data.unnest(VARIABLE)
-                .rename({"value": VARIABLE})
-                .filter(
-                    pl.col("source").str.contains_any(
-                        sources, ascii_case_insensitive=True
-                    )
-                )
-                .drop("source", "method")
-            )
-
-        # aggregate medians for vitals
-        if TABLE == "vitals":
-            if VARIABLE.startswith("Glasgow Coma Score"):
-                data = data.group_by(
-                    "Global ICU Stay ID", "Source Dataset"
-                ).agg(pl.col(VARIABLE).last().alias(VARIABLE))
-            else:
-                data = data.group_by(
-                    "Global ICU Stay ID", "Source Dataset"
-                ).agg(pl.col(VARIABLE).median().alias(VARIABLE))
-
-        # drop outliers (1th percentile > values > 99th percentile)
-        data = (
-            data.drop("Global ICU Stay ID")
-            .filter(
-                pl.col(VARIABLE).is_not_null()
-                & pl.col(VARIABLE).gt(pl.col(VARIABLE).quantile(0.01))
-                & pl.col(VARIABLE).lt(pl.col(VARIABLE).quantile(0.99))
-            )
-            .collect()
+                else ["Arterial blood", "Blood"]
+            ),
+            path=PATH,
+            cols=COLS,
         )
 
+        # Plot
         ax = sns.kdeplot(
             data=data,
             x=VARIABLE,
-            hue="Source Dataset",
+            hue=COLS.dataset_col,
             ax=ax,
             fill=True,
             common_norm=False,
             palette=COLORS,
-            bw_adjust=2,
+            # bw_adjust=2,
         )
         ax.set_title("\n".join(wrap(VARIABLE, 28)), fontsize=13)
         ax.set_xlabel(f"{UNIT}", fontsize=10)
@@ -195,7 +236,97 @@ def blended_plot():
     plt.tight_layout()
     plt.savefig("plots/blendedICU_plot.png", dpi=300)
 
-    pass
+
+def _plot_ridgeline(
+    variable: str,
+    table: str,
+    path: str,
+    cols,
+    unit: str = None,
+    sources: list = None,
+    ALL_VARS: bool = False,
+) -> None:
+    ####################################
+    # COLLECT DATA
+    ####################################
+    data = _collect_data(
+        table=table,
+        variable=variable,
+        sources=sources,
+        path=path,
+        cols=cols,
+    )
+
+    ####################################
+    # PLOT
+    ####################################
+
+    step = 20
+    overlap = 1
+    title = (
+        variable.replace(" Respiratory system airway", "")
+        .replace(" --on ventilator", "")
+        .replace("Pressure.plateau", "Pressure plateau")
+        .replace("Pressure.max", "Pressure max")
+        .replace("Bilirubin.total", "Bilirubin total")
+        .replace("/", "_")
+        .replace("[", "(")
+        .replace("]", ")")
+    )
+    SORT = [
+        "AmsterdamUMCdb",
+        "eICU-CRD",
+        "HiRID",
+        "NWICU",
+        "MIMIC-III",
+        "MIMIC-IV",
+        "SICdb"
+    ]
+
+    data = data.rename({variable: title})
+
+    # Create a KDE ridgeline plot for each dataset
+    chart = (
+        alt.Chart(data, height=step)
+        .transform_density(
+            density=title,
+            groupby=[cols.dataset_col],
+            extent=[data[title].min(), data[title].max()],
+        )
+        .mark_area(
+            interpolate="monotone",
+            fillOpacity=0.8,
+            stroke="lightgray",
+            strokeWidth=0.5,
+        )
+        .encode(
+            alt.X("value:Q", title=title),
+            alt.Y("density:Q")
+            .sort(SORT)
+            .axis(None)
+            .scale(range=[step, -step * overlap]),
+            alt.Color(f"{cols.dataset_col}:N", legend=None)
+            .scale(
+                domain=SORT, range=[COLORS[dataset] for dataset in SORT]
+            ),
+        )
+        .facet(
+            row=alt.Row(f"{cols.dataset_col}:N")
+            .title(None)
+            .header(labelAngle=0, labelAlign="left")
+        )
+        .properties(title=title, bounds="flush")
+        .configure_facet(spacing=0)
+        .configure_view(stroke=None)
+        .configure_title(anchor="end")
+    )
+
+    # Save the plot
+    plot_path = "plots/" if not ALL_VARS else "plots/all_vars/"
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    plot_path += f"{title}.png"
+    chart.save(plot_path, ppi=300)
 
 
 # region main
@@ -242,11 +373,17 @@ if __name__ == "__main__":
         action="store_true",
         help="Reproduce the plot from the BlendedICU paper.",
     )
+    parser.add_argument(
+        "--ALLVARS",
+        action="store_true",
+        help="Plot all variables from the BlendedICU paper as ridgeline plots.",
+    )
+    parser.add_argument(
+        "--TOL-COLORS",
+        action="store_true",
+        help="Use Tol's muted qualitative color palette.",
+    )
     args = parser.parse_args()
-
-    if args.BLENDEDICU:
-        blended_plot()
-        exit()  # stop execution of the rest of the script
 
     # Initialize paths
     paths = reprodICUPaths()
@@ -260,9 +397,18 @@ if __name__ == "__main__":
     class Columns:
         pass
 
-    cols = Columns()
+    COLS = Columns()
     for key, value in load_mapping("configs/COLUMN_NAMES.yaml").items():
-        setattr(cols, key, value)
+        setattr(COLS, key, value)
+
+    # Select color palette
+    if args.TOL_COLORS:
+        COLORS = COLORS_TOL
+
+    # Reproduce the BlendedICU plot if specified
+    if args.BLENDEDICU:
+        _BLENDED_PLOT(PATH, COLS)
+        exit()  # stop execution of the rest of the script
 
     # Select datasets to visualize
     if "all" in args.datasets:
@@ -281,105 +427,35 @@ if __name__ == "__main__":
         datasets = args.datasets
 
     # Select tables to visualize
-    # tables = ["admissions", "diagnoses", "lab", "medications", "patients", "procedures", "vitals"]
     tables = ["lab", "vitals", "respiratory", "intakeoutput"]
     args.table = args.table[0]
     assert args.table in tables, f"Table not found. Available tables: {tables}"
 
-    ####################################
-    # COLLECT DATA
-    ####################################
-    paths_ = {
-        "lab": PATH + "timeseries_labs.parquet",
-        "vitals": PATH + "timeseries_vitals.parquet",
-        "respiratory": PATH + "timeseries_respiratory.parquet",
-        "intakeoutput": PATH + "timeseries_intakeoutput.parquet",
-    }
-
-    # Load source datasets
-    IDs = pl.scan_parquet(PATH + "patient_information.parquet").select(
-        cols.global_icu_stay_id_col, cols.dataset_col
-    )
-
-    # Load data
-    data = (
-        pl.scan_parquet(paths_[args.table])
-        .join(IDs, on=cols.global_icu_stay_id_col, how="left")
-        .select(
-            cols.global_icu_stay_id_col,
-            cols.dataset_col,
-            cols.timeseries_time_col,
-            args.variable,
-        )
-        .filter(pl.col(args.variable).is_not_null())
-    )
-
-    # Filter source if specified
-    if args.sources is not None:
-        data = (
-            data.unnest(args.variable)
-            .rename({"value": args.variable})
-            .filter(pl.col("source").is_in(args.sources))
-            .select(
-                cols.global_icu_stay_id_col,
-                cols.dataset_col,
-                cols.timeseries_time_col,
-                args.variable,
+    # Visualize
+    if args.ALLVARS:
+        for VARIABLE in BLENDEDICU_PLOT_VARIABLES.keys():
+            if not VARIABLE:
+                continue
+            print(f"plotting variable: {VARIABLE}")
+            _plot_ridgeline(
+                variable=VARIABLE,
+                unit=BLENDEDICU_PLOT_VARIABLES[VARIABLE][1],
+                table=BLENDEDICU_PLOT_VARIABLES[VARIABLE][0],
+                path=PATH,
+                cols=COLS,
+                sources=(
+                    ["Blood", "Plasma"]
+                    if not VARIABLE
+                    in ["Oxygen saturation", "Lactate [Moles/volume]"]
+                    else ["Arterial blood", "Blood"]
+                ),
+                ALL_VARS=True,
             )
+    else:
+        _plot_ridgeline(
+            variable=args.variable,
+            table=args.table,
+            path=PATH,
+            cols=COLS,
+            sources=args.sources,
         )
-
-    # aggregate means for vitals
-    if args.table == "vitals":
-        data = data.group_by(cols.global_icu_stay_id_col, cols.dataset_col).agg(
-            pl.col(args.variable).median().alias(args.variable)
-        )
-
-    # aggregate data
-    data = data.collect(streaming=True)
-
-    ####################################
-    # PLOT
-    ####################################
-
-    step = 20
-    overlap = 1
-
-    # Create a KDE ridgeline plot for each dataset
-    chart = (
-        alt.Chart(data, height=step)
-        .transform_density(
-            density=args.variable,
-            groupby=[cols.dataset_col],
-            # extent=[data[args.variable].min(), data[args.variable].max()],
-            extent=[40, 140],
-        )
-        .mark_area(
-            interpolate="monotone",
-            fillOpacity=0.8,
-            stroke="lightgray",
-            strokeWidth=0.5,
-        )
-        .encode(
-            alt.X("value:Q", title=args.variable),
-            alt.Y("density:Q")  # stack="zero")
-            .axis(None)
-            .scale(range=[step, -step * overlap]),
-            alt.Color(f"{cols.dataset_col}:N", legend=None),
-        )
-        .facet(
-            row=alt.Row(f"{cols.dataset_col}:N")
-            .title(None)
-            .header(labelAngle=0, labelAlign="left")
-        )
-        .properties(
-            title=f"Distribution of {args.variable} by Database", bounds="flush"
-        )
-        .configure_facet(spacing=0)
-        .configure_view(stroke=None)
-        .configure_title(anchor="end")
-    )
-
-    # Save the plot
-    os.makedirs("plots", exist_ok=True)
-    plot_path = f"plots/{args.variable}_distribution_by_database.png"
-    chart.save(plot_path, ppi=300)
