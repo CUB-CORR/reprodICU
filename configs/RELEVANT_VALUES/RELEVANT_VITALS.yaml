@@ -41,7 +41,7 @@ Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
   # UMCdb
   - Invasive Mean blood pressure
 Non-invasive systolic arterial pressure: # 4354252 prev. noninvasive_systolic_blood_pressure
-  # MIMIC
+  # MIMIC / UMCdb
   - Systolic blood pressure by Noninvasive
   # SICdb
   - BloodPressureNISystolic
@@ -51,17 +51,17 @@ Non-invasive diastolic arterial pressure: # 4068414 prev. noninvasive_diastolic_
   # SICdb
   - BloodPressureNIDiastolic
 Non-invasive mean arterial pressure: # 4108289 prev. noninvasive_mean_blood_pressure
-  # MIMIC
+  # MIMIC / UMCdb
   - Mean blood pressure by Noninvasive
   # SICdb
   - BloodPressureNIMAP
 Central venous pressure: # 4323687 prev. central_venous_pressure
-  # MIMIC
+  # MIMIC / UMCdb
   - Central venous pressure (CVP)
   # SICdb
   - CentralVenousPressure
 Intracranial pressure: # 4353953 prev. intracranial_pressure
-  # MIMIC
+  # MIMIC / UMCdb
   - Intracranial pressure (ICP)
 Glasgow Coma Score total: [] # 44802289 prev. glasgow_coma_score
 Glasgow Coma Score eye opening: # prev. glasgow_coma_score_eye
