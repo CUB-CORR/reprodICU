@@ -2,8 +2,10 @@
 # OUTPUT #
 ##########
 Blood loss: # 1014933 # LOINC
+  # UMCDb
   - Blood loss [Volume] Measured
 Blood loss.total intraoperative: # 1030226 # LOINC
+  # MIMIC4
   - Blood loss.total intraoperative [Volume] Estimated
 Fluid output biliary drain: [] # 1033547 # LOINC
 Fluid output cerebral ventricle drain: [] # 1033549 # LOINC
@@ -15,13 +17,14 @@ Fluid output chest tube: # 1033550 # LOINC
   - ThoraxDrain4
   - ThoraxDrain5
 Fluid output emesis: [] # 1033551 # LOINC
-Fluid output enteral tube: [] # 1014373 # LOINC
 Fluid output gastric tube: [] # 1033553 # LOINC
-Fluid output gastrointestinal drain: [] # 1014372 # LOINC
+Fluid output gastrointestinal drain: # 1014372 # LOINC
+  # UMCdb
+  - Fluid output gastrointestinal drain [Volume] Measured
 Fluid output gastrointestinal ostomy: # 1014371 # LOINC
+  # UMCdb
   - Fluid output gastrointestinal ostomy [Volume] Measured
 Fluid output miscellaneous: # 1033555 # LOINC
-  - Fluid output miscellaneous Measured
   # SICdb
   - Drain1
   - Drain2
@@ -31,34 +34,40 @@ Fluid output miscellaneous: # 1033555 # LOINC
   - Drain6
   - Drain7
   - Drain8
+  # UMCdb
+  - Fluid output miscellaneous Measured
 # Fluid output miscellaneous route: [] # 1033556 # LOINC
-Fluid output musculoskeletal drain: [] # 1014375 # LOINC
 Fluid output neurological drain: # 1014374 # LOINC
-  - Fluid output neurological drain [Volume] Measured
+  # HiRID
   - Measurement of output from drain
+  # UMCdb
+  - Fluid output neurological drain [Volume] Measured
 Fluid output pericardial drain: [] # 1033557 # LOINC
 Fluid output peritoneal drain: [] # 1033558 # LOINC
-Fluid output pressure injury: [] # 1014376 # LOINC
 Fluid output subarachnoid drain: [] # 1033559 # LOINC
-Fluid output urinary incontinence: [] # 1033561 # LOINC
 Fluid output urine in and out urethral catheter: # 1033563 # LOINC
+  # UMCdb
   - Urine output by in and out urethral catheter
-  - Hourly urine volume
-  - Urine output # 1033562 # LOINC # subsumed here to avoid redundancy
-  # SICdb
-  - Urine (c)
 Fluid output urine nephrostomy: # 1014370 # LOINC
+  # UMCdb
   - Urine output measured by nephrostomy
 Fluid output wound drain: # 1027295 # LOINC
+  # UMCdb
+  - Fluid output from wound drain
   - Fluid output wound drain Estimated
 # Fluid output wound drain identifier: [] # 1033564 # LOINC
-Fluid output.nasogastric tube: [] # 1012197 # LOINC
-Fluid output.total intraoperative: [] # 1014568 # LOINC
 Output.colostomy: [] # 1030877 # LOINC
 Output.ileostomy: [] # 1030879 # LOINC
 Output.stool: # 1030880 # LOINC
   # MIMIC
   - Output.stool [Volume]
+Urine output:
+  # HiRID
+  - Hourly urine volume
+  # SICdb
+  - Urine (c)
+  # UMCdb
+  - Urine output # 1033562 # LOINC # subsumed here to avoid redundancy
 ##########
 # INTAKE #
 ##########
@@ -66,19 +75,22 @@ Fluid intake: [] # 1030543 # LOINC
 Fluid intake chest tube: [] # 1033597 # LOINC
 Fluid intake enema: [] # 1033598 # LOINC
 Fluid intake enteral tube: [] # 1033599 # LOINC
-Fluid intake gastrostomy tube: [] # 1033600 # LOINC
-Fluid intake intravascular: [] # 1033602 # LOINC
+Fluid intake intravascular: # 1033602 # LOINC
+  # HiRID
+  # - Infusion of saline solution
+  # - Intravenous fluid colloid administration
 Fluid intake nasogastric tube: # 1033603 # LOINC
+  # UMCdb
   - Fluid intake nasogastric tube Measured
   # SICdb
   - GastricTube
 Fluid intake oral: [] # 1033604 # LOINC
 Fluid intake peritoneal: # 1033605 # LOINC
+  # UMCdb
   - Fluid intake peritoneal Measured
-Fluid intake synovial: [] # 1033606 # LOINC
 # Fluid intake total: [] # 1033607 # LOINC
-Fluid intake upper GI tube: [] # 1033545 # LOINC
 Fluid intake urinary bladder irrigation: # 1033546 # LOINC
+  # UMCdb
   - Fluid intake urinary bladder irrigation Measured
 ###########
 # BALANCE #
