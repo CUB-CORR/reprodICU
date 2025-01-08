@@ -1,0 +1,754 @@
+ITEMID,COALESCED_CONCEPT_NAME,LABEL,FLUID,CATEGORY,LOINC_CODE,LOINC_CONCEPT_NAME,LOINC_CODE_MATCH,MAPPED_CONCEPT_CODE,MAPPED_CONCEPT_NAME
+51346,Blasts/100 leukocytes in Cerebral spinal fluid,Blasts,Cerebrospinal Fluid (CSF),Hematology,26447-3,Blasts/100 leukocytes in Cerebral spinal fluid,false,,
+51347,Eosinophils/100 leukocytes in Cerebral spinal fluid,Eosinophils,Cerebrospinal Fluid (CSF),Hematology,26451-5,Eosinophils/100 leukocytes in Cerebral spinal fluid,false,,
+51348,Hematocrit [Volume Fraction] of Cerebral spinal fluid,"Hematocrit, CSF",Cerebrospinal Fluid (CSF),Hematology,30398-2,Hematocrit [Volume Fraction] of Cerebral spinal fluid,false,,
+51349,Segmented neutrophils/100 leukocytes in Cerebral spinal fluid,Hypersegmented Neutrophils,Cerebrospinal Fluid (CSF),Hematology,26506-6,Segmented neutrophils/100 leukocytes in Cerebral spinal fluid,false,,
+51350,,Immunophenotyping,Cerebrospinal Fluid (CSF),Hematology,,,true,,
+51351,Lymphocytes/100 leukocytes in Cerebral spinal fluid,Lymphs,Cerebrospinal Fluid (CSF),Hematology,26479-6,Lymphocytes/100 leukocytes in Cerebral spinal fluid,false,,
+51352,Macrophages/100 leukocytes in Cerebral spinal fluid,Macrophage,Cerebrospinal Fluid (CSF),Hematology,30426-1,Macrophages/100 leukocytes in Cerebral spinal fluid,false,,
+51353,Mesothelial cells/100 leukocytes in Cerebral spinal fluid,Mesothelial cells,Cerebrospinal Fluid (CSF),Hematology,30429-5,Mesothelial cells/100 leukocytes in Cerebral spinal fluid,false,,
+51354,Metamyelocytes/100 leukocytes in Cerebral spinal fluid,Metamyelocytes,Cerebrospinal Fluid (CSF),Hematology,30366-9,Metamyelocytes/100 leukocytes in Cerebral spinal fluid,false,,
+51355,Monocytes/100 leukocytes in Cerebral spinal fluid,Monocytes,Cerebrospinal Fluid (CSF),Hematology,26486-1,Monocytes/100 leukocytes in Cerebral spinal fluid,false,,
+51356,Myelocytes/100 leukocytes in Cerebral spinal fluid,Myelocytes,Cerebrospinal Fluid (CSF),Hematology,30447-7,Myelocytes/100 leukocytes in Cerebral spinal fluid,false,,
+51357,Nucleated erythrocytes/100 cells in Cerebral spinal fluid,NRBC,Cerebrospinal Fluid (CSF),Hematology,48778-5,Nucleated erythrocytes/100 cells in Cerebral spinal fluid,false,,
+51358,,Other,Cerebrospinal Fluid (CSF),Hematology,,,true,,
+51359,Plasma cells/100 leukocytes in Cerebral spinal fluid,Plasma,Cerebrospinal Fluid (CSF),Hematology,47413-0,Plasma cells/100 leukocytes in Cerebral spinal fluid,false,,
+51360,Polymorphonuclear cells/100 leukocytes in Cerebral spinal fluid,Polys,Cerebrospinal Fluid (CSF),Hematology,26517-3,Polymorphonuclear cells/100 leukocytes in Cerebral spinal fluid,false,,
+51361,,Promyelocytes,Cerebrospinal Fluid (CSF),Hematology,,,true,,
+51362,Erythrocytes [#/volume] in Cerebral spinal fluid,"RBC, CSF",Cerebrospinal Fluid (CSF),Hematology,26454-9,Erythrocytes [#/volume] in Cerebral spinal fluid,false,,
+51363,Leukocytes [#/volume] in Cerebral spinal fluid,"WBC, CSF",Cerebrospinal Fluid (CSF),Hematology,26465-5,Leukocytes [#/volume] in Cerebral spinal fluid,false,,
+51364,,Young,Cerebrospinal Fluid (CSF),Hematology,,,true,,
+51365,Variant lymphocytes/100 leukocytes in Synovial fluid,Atypical Lymphocytes,Joint Fluid,Hematology,33371-6,,true,33371-6,Variant lymphocytes/100 leukocytes in Synovial fluid
+51366,Band form neutrophils/100 leukocytes in Synovial fluid,Bands,Joint Fluid,Hematology,33361-7,,true,33361-7,Band form neutrophils/100 leukocytes in Synovial fluid
+51367,Basophils/100 leukocytes in Synovial fluid,Basophils,Joint Fluid,Hematology,17833-5,,true,17833-5,Basophils/100 leukocytes in Synovial fluid
+51368,Eosinophils/100 leukocytes in Synovial fluid,Eosinophils,Joint Fluid,Hematology,17834-3,,true,17834-3,Eosinophils/100 leukocytes in Synovial fluid
+51369,Hematocrit [Volume Fraction] of Synovial fluid,"Hematocrit, Joint Fluid",Joint Fluid,Hematology,,,false,70168-0,Hematocrit [Volume Fraction] of Synovial fluid
+51370,Crystals [type] in Synovial fluid by Light microscopy,"Joint Crystals, Birefringence",Joint Fluid,Hematology,,,false,5781-0,Crystals [type] in Synovial fluid by Light microscopy
+51371,Character of Synovial fluid,"Joint Crystals, Comment",Joint Fluid,Hematology,,,false,14271-1,Character of Synovial fluid
+51372,Crystals [Presence] in Synovial fluid by Light microscopy,"Joint Crystals, Location",Joint Fluid,Hematology,,,false,38458-6,Crystals [Presence] in Synovial fluid by Light microscopy
+51373,Crystals [Presence] in Synovial fluid by Light microscopy,"Joint Crystals, Number",Joint Fluid,Hematology,,,false,38458-6,Crystals [Presence] in Synovial fluid by Light microscopy
+51374,Crystals [type] in Synovial fluid by Light microscopy,"Joint Crystals, Shape",Joint Fluid,Hematology,,,false,5781-0,Crystals [type] in Synovial fluid by Light microscopy
+51375,Lymphocytes/100 leukocytes in Synovial fluid,Lymphocytes,Joint Fluid,Hematology,26483-8,,true,26483-8,Lymphocytes/100 leukocytes in Synovial fluid
+51376,Macrophages/100 leukocytes in Synovial fluid,Macrophage,Joint Fluid,Hematology,33376-5,,true,33376-5,Macrophages/100 leukocytes in Synovial fluid
+51377,Mesothelial cells/100 leukocytes in Synovial fluid,Mesothelial Cells,Joint Fluid,Hematology,33365-8,,true,33365-8,Mesothelial cells/100 leukocytes in Synovial fluid
+51378,Metamyelocytes/100 leukocytes in Body fluid,Metamyelocytes,Joint Fluid,Hematology,,,false,17801-2,Metamyelocytes/100 leukocytes in Body fluid
+51379,Monocytes/100 leukocytes in Synovial fluid,Monocytes,Joint Fluid,Hematology,17835-0,,true,17835-0,Monocytes/100 leukocytes in Synovial fluid
+51380,Nucleated erythrocytes/100 leukocytes [Ratio] in Synovial fluid,NRBC,Joint Fluid,Hematology,48040-0,Nucleated erythrocytes/100 leukocytes [Ratio] in Synovial fluid by Manual count,false,68545-3,Nucleated erythrocytes/100 leukocytes [Ratio] in Synovial fluid
+51381,Leukocytes other/100 leukocytes in Synovial fluid,Other,Joint Fluid,Hematology,,,false,30410-5,Leukocytes other/100 leukocytes in Synovial fluid
+51382,Polymorphonuclear cells/100 leukocytes in Synovial fluid,Polys,Joint Fluid,Hematology,26522-3,,true,26522-3,Polymorphonuclear cells/100 leukocytes in Synovial fluid
+51383,Erythrocytes [#/volume] in Synovial fluid,"RBC, Joint Fluid",Joint Fluid,Hematology,26458-0,,true,26458-0,Erythrocytes [#/volume] in Synovial fluid
+51384,Leukocytes [#/volume] in Synovial fluid,"WBC, Joint Fluid",Joint Fluid,Hematology,26469-7,Leukocytes [#/volume] in Synovial fluid,false,,
+51385,Variant lymphocytes/100 leukocytes in Body fluid,Atypical Lymphocytes,Other Body Fluid,Hematology,30417-0,,true,30417-0,Variant lymphocytes/100 leukocytes in Body fluid
+51386,Band form neutrophils/100 leukocytes in Body fluid,Bands,Other Body Fluid,Hematology,26510-8,,true,26510-8,Band form neutrophils/100 leukocytes in Body fluid
+51387,Basophils/100 leukocytes in Body fluid,Basophils,Other Body Fluid,Hematology,28543-7,,true,28543-7,Basophils/100 leukocytes in Body fluid
+51388,CD10 cells/100 cells in Body fluid,CD10,Other Body Fluid,Hematology,51217-8,,true,51217-8,CD10 cells/100 cells in Body fluid
+51389,CD103 cells/100 cells in Body fluid,CD103,Other Body Fluid,Hematology,,,false,42864-9,CD103 cells/100 cells in Body fluid
+51390,CD117 cells/100 cells in Body fluid,CD117,Other Body Fluid,Hematology,42867-2,,true,42867-2,CD117 cells/100 cells in Body fluid
+51391,CD11c cells/100 cells in Body fluid,CD11c,Other Body Fluid,Hematology,51232-7,,true,51232-7,CD11c cells/100 cells in Body fluid
+51392,CD13 cells/100 cells in Body fluid,CD13,Other Body Fluid,Hematology,51238-4,,true,51238-4,CD13 cells/100 cells in Body fluid
+51393,CD138 cells/100 cells in Body fluid,CD138,Other Body Fluid,Hematology,42871-4,,true,42871-4,CD138 cells/100 cells in Body fluid
+51394,CD14 cells/100 cells in Body fluid,CD14,Other Body Fluid,Hematology,51248-3,,true,51248-3,CD14 cells/100 cells in Body fluid
+51395,CD15 cells/100 cells in Body fluid,CD15,Other Body Fluid,Hematology,51252-5,,true,51252-5,CD15 cells/100 cells in Body fluid
+51396,CD16 cells/100 cells in Body fluid,CD16,Other Body Fluid,Hematology,,,false,17828-5,CD16 cells/100 cells in Body fluid
+51397,CD16+CD56+ cells/100 cells in Body fluid,CD16/56,Other Body Fluid,Hematology,18268-3,,true,18268-3,CD16+CD56+ cells/100 cells in Body fluid
+51398,CD19 cells/100 cells in Body fluid,CD19,Other Body Fluid,Hematology,17829-3,,true,17829-3,CD19 cells/100 cells in Body fluid
+51399,CD2 cells/100 cells in Body fluid,CD2,Other Body Fluid,Hematology,17827-7,,true,17827-7,CD2 cells/100 cells in Body fluid
+51400,CD20 cells/100 cells in Body fluid,CD20,Other Body Fluid,Hematology,57418-6,,true,57418-6,CD20 cells/100 cells in Body fluid
+51401,CD22 cells/100 cells in Body fluid,CD22,Other Body Fluid,Hematology,42875-5,,true,42875-5,CD22 cells/100 cells in Body fluid
+51402,CD23 cells/100 cells in Body fluid,CD23,Other Body Fluid,Hematology,51269-9,,true,51269-9,CD23 cells/100 cells in Body fluid
+51403,CD25 cells/100 cells in Body fluid,CD25,Other Body Fluid,Hematology,,,false,51271-5,CD25 cells/100 cells in Body fluid
+51404,CD3 cells/100 cells in Body fluid,CD3,Other Body Fluid,Hematology,17826-9,,true,17826-9,CD3 cells/100 cells in Body fluid
+51405,CD33 cells/100 cells in Body fluid,CD33,Other Body Fluid,Hematology,51294-7,,true,51294-7,CD33 cells/100 cells in Body fluid
+51406,CD34 cells [#/volume] in Body fluid,CD34,Other Body Fluid,Hematology,,,false,58939-0,CD34 cells [#/volume] in Body fluid
+51407,CD38 cells/100 cells in Body fluid,CD38,Other Body Fluid,Hematology,51299-6,,true,51299-6,CD38 cells/100 cells in Body fluid
+51408,CD3+CD4+ (T4 helper) cells/100 cells in Body fluid,CD4,Other Body Fluid,Hematology,17822-8,,true,17822-8,CD3+CD4+ (T4 helper) cells/100 cells in Body fluid
+51409,CD3+CD4+ (T4 helper) cells/CD3+CD8+ (T8 suppressor cells) cells [# Ratio] in Body fluid,CD4/CD8 Ratio,Other Body Fluid,Hematology,18266-7,,true,18266-7,CD3+CD4+ (T4 helper) cells/CD3+CD8+ (T8 suppressor cells) cells [# Ratio] in Body fluid
+51410,CD41 cells/100 cells in Body fluid,CD41,Other Body Fluid,Hematology,51320-0,,true,51320-0,CD41 cells/100 cells in Body fluid
+51411,CD45 (Lymphs) cells/100 cells in Body fluid,CD45,Other Body Fluid,Hematology,17823-6,,true,17823-6,CD45 (Lymphs) cells/100 cells in Body fluid
+51412,CD5 cells/100 cells in Body fluid,CD5,Other Body Fluid,Hematology,57423-6,,true,57423-6,CD5 cells/100 cells in Body fluid
+51413,CD56 cells/100 cells in Body fluid,CD56,Other Body Fluid,Hematology,57424-4,,true,57424-4,CD56 cells/100 cells in Body fluid
+51414,CD57 cells/100 cells in Body fluid,CD57,Other Body Fluid,Hematology,,,false,51351-5,CD57 cells/100 cells in Body fluid
+51415,CD64 cells/100 cells in Body fluid,CD64,Other Body Fluid,Hematology,51366-3,,true,51366-3,CD64 cells/100 cells in Body fluid
+51416,CD7 cells/100 cells in Body fluid,CD7,Other Body Fluid,Hematology,57425-1,,true,57425-1,CD7 cells/100 cells in Body fluid
+51417,CD71 cells/100 cells in Body fluid,CD71,Other Body Fluid,Hematology,57426-9,,true,57426-9,CD71 cells/100 cells in Body fluid
+51418,CD3+CD8+ (T8 suppressor) cells/100 cells in Body fluid,CD8,Other Body Fluid,Hematology,17824-4,,true,17824-4,CD3+CD8+ (T8 suppressor) cells/100 cells in Body fluid
+51419,Eosinophils/100 leukocytes in Body fluid,Eosinophils,Other Body Fluid,Hematology,26452-3,,true,26452-3,Eosinophils/100 leukocytes in Body fluid
+51420,FMC7 cells/100 cells in Body fluid,FMC-7,Other Body Fluid,Hematology,57428-5,,true,57428-5,FMC7 cells/100 cells in Body fluid
+51421,Glycolate [Moles/volume] in Body fluid,Glyco A,Other Body Fluid,Hematology,57430-1,CD235a cells/100 cells in Body fluid,false,55864-3,Glycolate [Moles/volume] in Body fluid
+51422,Hematocrit [Volume Fraction] of Body fluid,"Hematocrit, Other Fluid",Other Body Fluid,Hematology,11153-4,,true,11153-4,Hematocrit [Volume Fraction] of Body fluid
+51423,HLA-DR+ cells/100 cells in Body fluid,HLA-DR,Other Body Fluid,Hematology,51381-2,,true,51381-2,HLA-DR+ cells/100 cells in Body fluid
+51424,Immunophenotyping study,Immunophenotyping,Other Body Fluid,Hematology,,,false,55230-7,Immunophenotyping study
+51425,Kappa lymphocytes/100 lymphocytes in Body fluid,Kappa,Other Body Fluid,Hematology,,,false,46238-2,Kappa lymphocytes/100 lymphocytes in Body fluid
+51426,Lambda lymphocytes/100 lymphocytes in Specimen,Lambda,Other Body Fluid,Hematology,,,false,20618-5,Lambda lymphocytes/100 lymphocytes in Specimen
+51427,Lymphocytes/100 leukocytes in Body fluid,Lymphocytes,Other Body Fluid,Hematology,11031-2,,true,11031-2,Lymphocytes/100 leukocytes in Body fluid
+51428,Macrophages/100 leukocytes in Body fluid,Macrophage,Other Body Fluid,Hematology,12230-9,Macrophages/100 leukocytes in Body fluid by Manual count,false,30427-9,Macrophages/100 leukocytes in Body fluid
+51429,Mesothelial cells/100 leukocytes in Body fluid,Mesothelial cells,Other Body Fluid,Hematology,28544-5,,true,28544-5,Mesothelial cells/100 leukocytes in Body fluid
+51430,Metamyelocytes/100 leukocytes in Body fluid,Metamyelocytes,Other Body Fluid,Hematology,17801-2,,true,17801-2,Metamyelocytes/100 leukocytes in Body fluid
+51431,Monocytes/100 leukocytes in Body fluid,Monos,Other Body Fluid,Hematology,10330-9,Monocytes/100 leukocytes in Body fluid by Manual count,false,26487-9,Monocytes/100 leukocytes in Body fluid
+51432,Myelocytes/100 leukocytes in Body fluid,Myelocytes,Other Body Fluid,Hematology,17800-4,,true,17800-4,Myelocytes/100 leukocytes in Body fluid
+51433,Nucleated erythrocytes/100 leukocytes [Ratio] in Body fluid,NRBC,Other Body Fluid,Hematology,,,false,49229-8,Nucleated erythrocytes/100 leukocytes [Ratio] in Body fluid
+51434,Other cells/100 leukocytes in Body fluid,Other Cell,Other Body Fluid,Hematology,,,false,76350-8,Other cells/100 leukocytes in Body fluid
+51435,Plasma cells/100 leukocytes in Body fluid,Plasma,Other Body Fluid,Hematology,17803-8,,true,17803-8,Plasma cells/100 leukocytes in Body fluid
+51436,Polymorphonuclear cells/100 leukocytes in Body fluid,Polys,Other Body Fluid,Hematology,26518-1,,true,26518-1,Polymorphonuclear cells/100 leukocytes in Body fluid
+51437,Promyelocytes/100 leukocytes in Body fluid,Promyelocytes,Other Body Fluid,Hematology,17799-8,,true,17799-8,Promyelocytes/100 leukocytes in Body fluid
+51438,Erythrocytes [#/volume] in Body fluid,"RBC, Other Fluid",Other Body Fluid,Hematology,26455-6,,true,26455-6,Erythrocytes [#/volume] in Body fluid
+51439,Leukocytes [#/volume] in Body fluid,"WBC, Other Fluid",Other Body Fluid,Hematology,26466-3,Leukocytes [#/volume] in Body fluid,false,,
+51440,Variant lymphocytes/100 leukocytes in Pleural fluid,Atypical Lymphocytes,Pleural,Hematology,33370-8,,true,33370-8,Variant lymphocytes/100 leukocytes in Pleural fluid
+51441,Band form neutrophils/100 leukocytes in Pleural fluid by Manual count,Bands,Pleural,Hematology,,,false,99604-1,Band form neutrophils/100 leukocytes in Pleural fluid by Manual count
+51442,Basophils/100 leukocytes in Pleural fluid,Basophils,Pleural,Hematology,35070-2,,true,35070-2,Basophils/100 leukocytes in Pleural fluid
+51443,Blasts/100 leukocytes in Pleural fluid,Blasts,Pleural,Hematology,,,false,33373-2,Blasts/100 leukocytes in Pleural fluid
+51444,Eosinophils/100 leukocytes in Pleural fluid,Eosinophils,Pleural,Hematology,30379-2,,true,30379-2,Eosinophils/100 leukocytes in Pleural fluid
+51445,Hematocrit [Volume Fraction] of Pleural fluid,"Hematocrit, Pleural",Pleural,Hematology,,,false,70169-8,Hematocrit [Volume Fraction] of Pleural fluid
+51446,Lymphocytes/100 leukocytes in Pleural fluid,Lymphocytes,Pleural,Hematology,26481-2,,true,26481-2,Lymphocytes/100 leukocytes in Pleural fluid
+51447,Macrophages/100 leukocytes in Pleural fluid by Manual count,Macrophages,Pleural,Hematology,40520-9,,true,40520-9,Macrophages/100 leukocytes in Pleural fluid by Manual count
+51448,Mesothelial cells/100 leukocytes in Pleural fluid,Mesothelial Cells,Pleural,Hematology,30431-1,,true,30431-1,Mesothelial cells/100 leukocytes in Pleural fluid
+51449,Metamyelocytes/100 leukocytes in Body fluid,Metamyelocytes,Pleural,Hematology,,,false,17801-2,Metamyelocytes/100 leukocytes in Body fluid
+51450,Monocytes/100 leukocytes in Pleural fluid,Monos,Pleural,Hematology,33362-5,,true,33362-5,Monocytes/100 leukocytes in Pleural fluid
+51451,Myelocytes/100 leukocytes in Body fluid,Myelocytes,Pleural,Hematology,,,false,17800-4,Myelocytes/100 leukocytes in Body fluid
+51452,Nucleated erythrocytes/100 cells in Pleural fluid,NRBC,Pleural,Hematology,,,false,70170-6,Nucleated erythrocytes/100 cells in Pleural fluid
+51453,Leukocytes other/100 leukocytes in Pleural fluid,Other,Pleural,Hematology,,,false,30408-9,Leukocytes other/100 leukocytes in Pleural fluid
+51454,Plasma cells/100 leukocytes in Pleural fluid by Manual count,Plasma Cells,Pleural,Hematology,40522-5,,true,40522-5,Plasma cells/100 leukocytes in Pleural fluid by Manual count
+51455,Polymorphonuclear cells/100 leukocytes in Pleural fluid,Polys,Pleural,Hematology,26519-9,,true,26519-9,Polymorphonuclear cells/100 leukocytes in Pleural fluid
+51456,Promyelocytes/100 leukocytes in Body fluid,Promyelocytes,Pleural,Hematology,,,false,17799-8,Promyelocytes/100 leukocytes in Body fluid
+51457,Erythrocytes [#/volume] in Pleural fluid,"RBC, Pleural",Pleural,Hematology,26456-4,,true,26456-4,Erythrocytes [#/volume] in Pleural fluid
+51458,Leukocytes [#/volume] in Pleural fluid,"WBC, Pleural",Pleural,Hematology,26467-1,Leukocytes [#/volume] in Pleural fluid,false,,
+51459,Immature cells/100 leukocytes in Blood,Young Cells,Pleural,Hematology,,,false,55433-7,Immature cells/100 leukocytes in Blood
+51460,Hemoglobin.gastrointestinal [Presence] in Stool,"Blood, Occult",Stool,Hematology,2335-8,,true,2335-8,Hemoglobin.gastrointestinal [Presence] in Stool
+51461,Ammonium urate crystals [#/area] in Urine sediment by Microscopy high power field,Ammonium Biurate,Urine,Hematology,12454-5,Urate crystals amorphous [Presence] in Urine sediment by Light microscopy,false,25144-7,Ammonium urate crystals [#/area] in Urine sediment by Microscopy high power field
+51462,Crystals.amorphous [Presence] in Urine sediment by Light microscopy,Amorphous Crystals,Urine,Hematology,8246-1,Amorphous sediment [Presence] in Urine sediment by Light microscopy,false,60340-7,Crystals.amorphous [Presence] in Urine sediment by Light microscopy
+51463,Bacteria [#/area] in Urine sediment by Microscopy high power field,Bacteria,Urine,Hematology,5769-5,,true,5769-5,Bacteria [#/area] in Urine sediment by Microscopy high power field
+51464,Bilirubin.total [Presence] in Urine by Test strip,Bilirubin,Urine,Hematology,5770-3,,true,5770-3,Bilirubin.total [Presence] in Urine by Test strip
+51465,Bilirubin crystals [Presence] in Urine sediment by Light microscopy,Bilirubin Crystals,Urine,Hematology,5771-1,,true,5771-1,Bilirubin crystals [Presence] in Urine sediment by Light microscopy
+51466,Blood [Presence] in Urine by Visual,Blood,Urine,Hematology,5794-3,Hemoglobin [Presence] in Urine by Test strip,false,53963-5,Blood [Presence] in Urine by Visual
+51467,Broad casts [#/area] in Urine sediment by Microscopy low power field,Broad Casts,Urine,Hematology,18487-9,,true,18487-9,Broad casts [#/area] in Urine sediment by Microscopy low power field
+51468,Calcium carbonate crystals [Presence] in Urine sediment by Light microscopy,Calcium Carbonate Crystals,Urine,Hematology,5773-7,,true,5773-7,Calcium carbonate crystals [Presence] in Urine sediment by Light microscopy
+51469,Calcium oxalate crystals [Presence] in Urine sediment by Light microscopy,Calcium Oxalate Crystals,Urine,Hematology,5774-5,,true,5774-5,Calcium oxalate crystals [Presence] in Urine sediment by Light microscopy
+51470,Calcium phosphate crystals [Presence] in Urine sediment by Light microscopy,Calcium Phosphate Crystals,Urine,Hematology,5775-2,,true,5775-2,Calcium phosphate crystals [Presence] in Urine sediment by Light microscopy
+51471,Mixed cellular casts [#/area] in Urine sediment by Microscopy low power field,Cellular Cast,Urine,Hematology,,,false,38995-7,Mixed cellular casts [#/area] in Urine sediment by Microscopy low power field
+51472,Cholesterol crystals [Presence] in Urine sediment by Light microscopy,Cholesterol Crystals,Urine,Hematology,5777-8,,true,5777-8,Cholesterol crystals [Presence] in Urine sediment by Light microscopy
+50800,,SPECIMEN TYPE,BLOOD,BLOOD GAS,,,true,,
+50801,Alveolar-arterial oxygen Partial pressure difference,Alveolar-arterial Gradient,Blood,Blood Gas,19991-9,,true,19991-9,Alveolar-arterial oxygen Partial pressure difference
+50802,Base excess in Blood by calculation,Base Excess,Blood,Blood Gas,11555-0,,true,11555-0,Base excess in Blood by calculation
+50803,Bicarbonate [Moles/volume] in Blood,"Calculated Bicarbonate, Whole Blood",Blood,Blood Gas,1959-6,,true,1959-6,Bicarbonate [Moles/volume] in Blood
+50804,"Carbon dioxide, total [Moles/volume] in Blood by calculation",Calculated Total CO2,Blood,Blood Gas,34728-6,,true,34728-6,"Carbon dioxide, total [Moles/volume] in Blood by calculation"
+50805,Carboxyhemoglobin/Hemoglobin.total in Blood,Carboxyhemoglobin,Blood,Blood Gas,20563-3,,true,20563-3,Carboxyhemoglobin/Hemoglobin.total in Blood
+50806,Chloride [Moles/volume] in Blood,"Chloride, Whole Blood",Blood,Blood Gas,2069-3,,true,2069-3,Chloride [Moles/volume] in Blood
+50807,,Comments,Blood,Blood Gas,,,true,,
+50808,Calcium.ionized [Moles/volume] in Blood,Free Calcium,Blood,Blood Gas,1994-3,,true,1994-3,Calcium.ionized [Moles/volume] in Blood
+50809,Glucose [Mass/volume] in Blood,Glucose,Blood,Blood Gas,2339-0,,true,2339-0,Glucose [Mass/volume] in Blood
+50810,Hematocrit [Volume Fraction] of Blood by Estimated,"Hematocrit, Calculated",Blood,Blood Gas,20570-8,Hematocrit [Volume Fraction] of Blood,false,48703-3,Hematocrit [Volume Fraction] of Blood by Estimated
+50811,Hemoglobin [Mass/volume] in Blood,Hemoglobin,Blood,Blood Gas,718-7,,true,718-7,Hemoglobin [Mass/volume] in Blood
+50812,,Intubated,Blood,Blood Gas,,,true,,
+50813,Lactate [Moles/volume] in Blood,Lactate,Blood,Blood Gas,32693-4,,true,32693-4,Lactate [Moles/volume] in Blood
+50814,Methemoglobin/Hemoglobin.total in Blood,Methemoglobin,Blood,Blood Gas,2614-6,,true,2614-6,Methemoglobin/Hemoglobin.total in Blood
+50815,Inhaled oxygen flow rate,O2 Flow,Blood,Blood Gas,3151-8,,true,3151-8,Inhaled oxygen flow rate
+50816,Inhaled oxygen concentration,Oxygen,Blood,Blood Gas,19994-3,Oxygen/Total gas setting [Volume Fraction] Ventilator,false,3150-0,Inhaled oxygen concentration
+50817,Oxygen saturation in Blood,Oxygen Saturation,Blood,Blood Gas,20564-1,,true,20564-1,Oxygen saturation in Blood
+50818,Carbon dioxide [Partial pressure] in Blood,pCO2,Blood,Blood Gas,11557-6,,true,11557-6,Carbon dioxide [Partial pressure] in Blood
+50819,Positive end expiratory pressure setting Ventilator,PEEP,Blood,Blood Gas,20077-4,,true,20077-4,Positive end expiratory pressure setting Ventilator
+50820,pH of Blood,pH,Blood,Blood Gas,11558-4,,true,11558-4,pH of Blood
+50821,Oxygen [Partial pressure] in Blood,pO2,Blood,Blood Gas,11556-8,,true,11556-8,Oxygen [Partial pressure] in Blood
+50822,Potassium [Moles/volume] in Blood,"Potassium, Whole Blood",Blood,Blood Gas,6298-4,,true,6298-4,Potassium [Moles/volume] in Blood
+50823,Inhaled oxygen concentration,Required O2,Blood,Blood Gas,,,false,3150-0,Inhaled oxygen concentration
+50824,Sodium [Moles/volume] in Blood,"Sodium, Whole Blood",Blood,Blood Gas,2947-0,,true,2947-0,Sodium [Moles/volume] in Blood
+50825,Body temperature,Temperature,Blood,Blood Gas,,,false,8310-5,Body temperature
+50826,Tidal volume setting Ventilator,Tidal Volume,Blood,Blood Gas,20112-9,,true,20112-9,Tidal volume setting Ventilator
+50827,Ventilation rate by Carbon dioxide measurement,Ventilation Rate,Blood,Blood Gas,,,false,76526-3,Ventilation rate by Carbon dioxide measurement
+50828,Ventilation mode Ventilator,Ventilator,Blood,Blood Gas,,,false,20124-4,Ventilation mode Ventilator
+50829,[Type] of Body fluid,Fluid Type,Other Body Fluid,Blood Gas,14725-6,[Type] of Body fluid,false,,
+50830,Carbon dioxide [Partial pressure] in Body fluid,"pCO2, Body Fluid",Other Body Fluid,Blood Gas,2023-0,,true,2023-0,Carbon dioxide [Partial pressure] in Body fluid
+50831,pH of Body fluid,pH,Other Body Fluid,Blood Gas,2748-2,,true,2748-2,pH of Body fluid
+50832,Oxygen [Partial pressure] in Body fluid,"pO2, Body Fluid",Other Body Fluid,Blood Gas,2706-0,,true,2706-0,Oxygen [Partial pressure] in Body fluid
+50833,Potassium [Moles/volume] in Body fluid,Potassium,Other Body Fluid,Blood Gas,2821-7,,true,2821-7,Potassium [Moles/volume] in Body fluid
+50834,Sodium [Moles/volume] in Body fluid,"Sodium, Body Fluid",Other Body Fluid,Blood Gas,2950-4,,true,2950-4,Sodium [Moles/volume] in Body fluid
+50835,Albumin [Mass/volume] in Peritoneal fluid,"Albumin, Ascites",Ascites,Chemistry,1749-1,,true,1749-1,Albumin [Mass/volume] in Peritoneal fluid
+50836,Amylase [Enzymatic activity/volume] in Peritoneal fluid,"Amylase, Ascites",Ascites,Chemistry,1797-0,,true,1797-0,Amylase [Enzymatic activity/volume] in Peritoneal fluid
+50837,Bicarbonate [Moles/volume] in Peritoneal fluid,"Bicarbonate, Ascites",Ascites,Chemistry,54360-3,,true,54360-3,Bicarbonate [Moles/volume] in Peritoneal fluid
+50838,Bilirubin.total [Mass/volume] in Peritoneal fluid,"Bilirubin, Total, Ascites",Ascites,Chemistry,14422-0,,true,14422-0,Bilirubin.total [Mass/volume] in Peritoneal fluid
+50839,Chloride [Moles/volume] in Peritoneal fluid,"Chloride, Ascites",Ascites,Chemistry,33366-6,,true,33366-6,Chloride [Moles/volume] in Peritoneal fluid
+50840,Cholesterol [Mass/volume] in Peritoneal fluid,"Cholesterol, Ascites",Ascites,Chemistry,14441-0,,true,14441-0,Cholesterol [Mass/volume] in Peritoneal fluid
+50841,Creatinine [Mass/volume] in Peritoneal fluid,"Creatinine, Ascites",Ascites,Chemistry,12191-3,,true,12191-3,Creatinine [Mass/volume] in Peritoneal fluid
+50842,Glucose [Mass/volume] in Peritoneal fluid,"Glucose, Ascites",Ascites,Chemistry,2347-3,,true,2347-3,Glucose [Mass/volume] in Peritoneal fluid
+50843,Lactate dehydrogenase [Enzymatic activity/volume] in Peritoneal fluid,"Lactate Dehydrogenase, Ascites",Ascites,Chemistry,2531-2,,true,2531-2,Lactate dehydrogenase [Enzymatic activity/volume] in Peritoneal fluid
+50844,Lipase [Enzymatic activity/volume] in Peritoneal fluid,"Lipase, Ascites",Ascites,Chemistry,32722-1,,true,32722-1,Lipase [Enzymatic activity/volume] in Peritoneal fluid
+50845,,"Miscellaneous, Ascites",Ascites,Chemistry,,,true,,
+50846,Osmolality of Peritoneal fluid,"Osmolality, Ascites",Ascites,Chemistry,2691-4,,true,2691-4,Osmolality of Peritoneal fluid
+50847,Potassium [Moles/volume] in Peritoneal fluid,"Potassium, Ascites",Ascites,Chemistry,49789-1,,true,49789-1,Potassium [Moles/volume] in Peritoneal fluid
+50848,Sodium [Moles/volume] in Peritoneal fluid,"Sodium, Ascites",Ascites,Chemistry,49790-9,,true,49790-9,Sodium [Moles/volume] in Peritoneal fluid
+50849,Protein [Mass/volume] in Peritoneal fluid,"Total Protein, Ascites",Ascites,Chemistry,2883-7,,true,2883-7,Protein [Mass/volume] in Peritoneal fluid
+50850,Triglyceride [Mass/volume] in Peritoneal fluid,"Triglycerides, Ascites",Ascites,Chemistry,14447-7,,true,14447-7,Triglyceride [Mass/volume] in Peritoneal fluid
+50851,Urea nitrogen [Mass/volume] in Peritoneal fluid,"Urea Nitrogen, Ascites",Ascites,Chemistry,12265-5,,true,12265-5,Urea nitrogen [Mass/volume] in Peritoneal fluid
+50852,Hemoglobin A1c/Hemoglobin.total in Blood,% Hemoglobin A1c,Blood,Chemistry,4548-4,,true,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood
+50853,25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma,25-OH Vitamin D,Blood,Chemistry,,,false,1989-3,25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma
+50854,Hemoglobin A1c [Mass/volume] in Blood,Absolute A1c,Blood,Chemistry,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood,false,41995-2,Hemoglobin A1c [Mass/volume] in Blood
+50855,Hemoglobin [Mass/volume] in Blood,Absolute Hemoglobin,Blood,Chemistry,718-7,,true,718-7,Hemoglobin [Mass/volume] in Blood
+50856,Acetaminophen [Mass/volume] in Serum or Plasma,Acetaminophen,Blood,Chemistry,3297-9,Acetaminophen [Presence] in Serum or Plasma,false,3298-7,Acetaminophen [Mass/volume] in Serum or Plasma
+50857,Acetone [Presence] in Serum or Plasma,Acetone,Blood,Chemistry,5567-3,,true,5567-3,Acetone [Presence] in Serum or Plasma
+50858,Acid phosphatase [Enzymatic activity/volume] in Serum or Plasma,Acid Phosphatase,Blood,Chemistry,1715-2,,true,1715-2,Acid phosphatase [Enzymatic activity/volume] in Serum or Plasma
+50859,Non prostatic acid phosphatase [Enzymatic activity/volume] in Serum or Plasma,"Acid Phosphatase, Non-Prostatic",Blood,Chemistry,,,false,12173-1,Non prostatic acid phosphatase [Enzymatic activity/volume] in Serum or Plasma
+50860,Alpha-1-Fetoprotein [Mass/volume] in Serum or Plasma,"AFP, Maternal Screen",Blood,Chemistry,,,false,1834-1,Alpha-1-Fetoprotein [Mass/volume] in Serum or Plasma
+50861,Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma,Alanine Aminotransferase (ALT),Blood,Chemistry,1742-6,,true,1742-6,Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+50862,Albumin [Mass/volume] in Serum or Plasma,Albumin,Blood,Chemistry,1751-7,,true,1751-7,Albumin [Mass/volume] in Serum or Plasma
+50863,Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma,Alkaline Phosphatase,Blood,Chemistry,6768-6,,true,6768-6,Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma
+50864,Alpha-1-Fetoprotein [Mass/volume] in Serum or Plasma,Alpha-Fetoprotein,Blood,Chemistry,1834-1,,true,1834-1,Alpha-1-Fetoprotein [Mass/volume] in Serum or Plasma
+50865,Amikacin [Mass/volume] in Serum or Plasma,Amikacin,Blood,Chemistry,,,false,35669-1,Amikacin [Mass/volume] in Serum or Plasma
+50866,Ammonia [Moles/volume] in Plasma,Ammonia,Blood,Chemistry,16362-6,,true,16362-6,Ammonia [Moles/volume] in Plasma
+50867,Amylase [Enzymatic activity/volume] in Serum or Plasma,Amylase,Blood,Chemistry,1798-8,,true,1798-8,Amylase [Enzymatic activity/volume] in Serum or Plasma
+50868,Anion gap 4 in Serum or Plasma,Anion Gap,Blood,Chemistry,1863-0,,true,1863-0,Anion gap 4 in Serum or Plasma
+50869,Gliadin peptide+tissue transglutaminase IgA+IgG Ab [Presence] in Serum by Immunoassay,Anti-DGP (IgA/IgG),Blood,Chemistry,,,false,63420-4,Gliadin peptide+tissue transglutaminase IgA+IgG Ab [Presence] in Serum by Immunoassay
+50870,Gliadin peptide IgA Ab [Units/volume] in Serum,"Anti-Gliadin Antibody, IgA",Blood,Chemistry,7893-1,Gliadin Ab [Units/volume] in Serum,false,58709-7,Gliadin peptide IgA Ab [Units/volume] in Serum
+50871,Mitochondria Ab [Presence] in Serum by Immunofluorescence,Anti-Mitochondrial Antibody,Blood,Chemistry,14236-4,Mitochondria Ab [Presence] in Serum,false,17284-1,Mitochondria Ab [Presence] in Serum by Immunofluorescence
+50872,Neutrophil cytoplasmic Ab [Presence] in Serum,Anti-Neutrophil Cytoplasmic Antibody,Blood,Chemistry,35279-9,Neutrophil cytoplasmic Ab [Presence] in Serum by Immunofluorescence,false,17351-8,Neutrophil cytoplasmic Ab [Presence] in Serum
+50873,Nuclear Ab [Presence] in Serum,Anti-Nuclear Antibody,Blood,Chemistry,5047-6,Nuclear Ab [Units/volume] in Serum by Immunoassay,false,8061-4,Nuclear Ab [Presence] in Serum
+50874,Nuclear Ab [Titer] in Serum by Immunofluorescence,"Anti-Nuclear Antibody, Titer",Blood,Chemistry,8061-4,Nuclear Ab [Presence] in Serum,false,5048-4,Nuclear Ab [Titer] in Serum by Immunofluorescence
+50875,Parietal cell Ab [Presence] in Serum,Anti-Parietal Cell Antibody,Blood,Chemistry,26969-6,Parietal cell Ab [Presence] in Serum by Immunofluorescence,false,14241-4,Parietal cell Ab [Presence] in Serum
+50876,Smooth muscle Ab [Presence] in Serum,Anti-Smooth Muscle Antibody,Blood,Chemistry,14252-1,,true,14252-1,Smooth muscle Ab [Presence] in Serum
+50877,Thyroglobulin Ab [Units/volume] in Serum or Plasma,Anti-Thyroglobulin Antibodies,Blood,Chemistry,5380-1,Thyroglobulin Ab [Units/volume] in Serum by Radioimmunoassay (RIA),false,8098-6,Thyroglobulin Ab [Units/volume] in Serum or Plasma
+50878,Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma,Asparate Aminotransferase (AST),Blood,Chemistry,1920-8,,true,1920-8,Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+50879,"Barbiturates [Presence] in Serum, Plasma or Blood",Barbiturate Screen,Blood,Chemistry,3376-1,,true,3376-1,"Barbiturates [Presence] in Serum, Plasma or Blood"
+50880,Benzodiazepines [Presence] in Blood,Benzodiazepine Screen,Blood,Chemistry,42662-7,,true,42662-7,Benzodiazepines [Presence] in Blood
+50881,Beta-2-Microglobulin [Mass/volume] in Serum or Plasma,Beta-2 Microglobulin,Blood,Chemistry,32731-2,Beta 2 globulin [Mass/volume] in Serum or Plasma by Electrophoresis,false,1952-1,Beta-2-Microglobulin [Mass/volume] in Serum or Plasma
+50882,Bicarbonate [Moles/volume] in Serum or Plasma,Bicarbonate,Blood,Chemistry,1963-8,,true,1963-8,Bicarbonate [Moles/volume] in Serum or Plasma
+50883,Bilirubin.direct [Mass/volume] in Serum or Plasma,"Bilirubin, Direct",Blood,Chemistry,1968-7,,true,1968-7,Bilirubin.direct [Mass/volume] in Serum or Plasma
+50884,Bilirubin.indirect [Mass/volume] in Serum or Plasma,"Bilirubin, Indirect",Blood,Chemistry,1971-1,,true,1971-1,Bilirubin.indirect [Mass/volume] in Serum or Plasma
+50885,Bilirubin.total [Mass/volume] in Serum or Plasma,"Bilirubin, Total",Blood,Chemistry,1975-2,,true,1975-2,Bilirubin.total [Mass/volume] in Serum or Plasma
+50886,,Blood Culture Hold,Blood,Chemistry,,,true,,
+50887,,Blue Top Hold,Blood,Chemistry,,,true,,
+50888,,Blue Top Hold Frozen,Blood,Chemistry,,,true,,
+50889,C reactive protein [Mass/volume] in Serum or Plasma,C-Reactive Protein,Blood,Chemistry,1988-5,,true,1988-5,C reactive protein [Mass/volume] in Serum or Plasma
+50890,Complement C3 [Mass/volume] in Serum or Plasma,C3,Blood,Chemistry,4485-9,,true,4485-9,Complement C3 [Mass/volume] in Serum or Plasma
+50891,Complement C4 [Mass/volume] in Serum or Plasma,C4,Blood,Chemistry,4498-2,,true,4498-2,Complement C4 [Mass/volume] in Serum or Plasma
+50892,Cancer Ag 125 [Units/volume] in Serum or Plasma,CA-125,Blood,Chemistry,10334-1,,true,10334-1,Cancer Ag 125 [Units/volume] in Serum or Plasma
+50893,Calcium [Mass/volume] in Serum or Plasma,"Calcium, Total",Blood,Chemistry,2000-8,Calcium [Moles/volume] in Serum or Plasma,false,17861-6,Calcium [Mass/volume] in Serum or Plasma
+50894,Testosterone Free [Moles/volume] in Serum or Plasma by calculation,Calculated Free Testosterone,Blood,Chemistry,2991-8,Testosterone Free [Mass/volume] in Serum or Plasma,false,96559-0,Testosterone Free [Moles/volume] in Serum or Plasma by calculation
+50895,Thyroxine (T4)/Thyroxine binding globulin [Mass Ratio] in Serum or Plasma,Calculated TBG,Blood,Chemistry,3027-0,,true,3027-0,Thyroxine (T4)/Thyroxine binding globulin [Mass Ratio] in Serum or Plasma
+50896,Thyroxine (T4) free index in Serum or Plasma by calculation,Calculated Thyroxine (T4) Index,Blood,Chemistry,32215-6,,true,32215-6,Thyroxine (T4) free index in Serum or Plasma by calculation
+50897,,Call,Blood,Chemistry,,,true,,
+50898,Cancer Ag 27-29 [Units/volume] in Serum or Plasma,Cancer Antigen 27.29,Blood,Chemistry,17842-6,,true,17842-6,Cancer Ag 27-29 [Units/volume] in Serum or Plasma
+50899,carBAMazepine [Mass/volume] in Serum or Plasma,Carbamazepine,Blood,Chemistry,3432-2,,true,3432-2,carBAMazepine [Mass/volume] in Serum or Plasma
+50900,Carcinoembryonic Ag [Mass/volume] in Serum or Plasma,Carcinoembyronic Antigen (CEA),Blood,Chemistry,2039-6,,true,2039-6,Carcinoembryonic Ag [Mass/volume] in Serum or Plasma
+50901,Centromere Ab [Presence] in Serum,Centromere,Blood,Chemistry,16570-4,Centromere Ab [Presence] in Serum by Immunofluorescence,false,16137-2,Centromere Ab [Presence] in Serum
+50902,Chloride [Moles/volume] in Serum or Plasma,Chloride,Blood,Chemistry,2075-0,,true,2075-0,Chloride [Moles/volume] in Serum or Plasma
+50903,Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma,Cholesterol Ratio (Total/HDL),Blood,Chemistry,9322-9,Cholesterol.total/Cholesterol in HDL [Percentile],false,9830-1,Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma
+50904,Cholesterol in HDL [Mass/volume] in Serum or Plasma,"Cholesterol, HDL",Blood,Chemistry,2085-9,,true,2085-9,Cholesterol in HDL [Mass/volume] in Serum or Plasma
+50905,Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation,"Cholesterol, LDL, Calculated",Blood,Chemistry,2090-9,Deprecated Cholesterol.in LDL [Mass/volume] in Serum or Plasma,false,13457-7,Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation
+50906,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay,"Cholesterol, LDL, Measured",Blood,Chemistry,18262-6,,true,18262-6,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay
+50907,Cholesterol [Mass/volume] in Serum or Plasma,"Cholesterol, Total",Blood,Chemistry,2093-3,,true,2093-3,Cholesterol [Mass/volume] in Serum or Plasma
+50908,Creatine kinase.MB/Creatine kinase.total [Ratio] in Serum or Plasma,CK-MB Index,Blood,Chemistry,20569-0,Creatine kinase.MB/Creatine kinase.total in Serum or Plasma,false,49136-5,Creatine kinase.MB/Creatine kinase.total [Ratio] in Serum or Plasma
+50909,Cortisol [Mass/volume] in Serum or Plasma,Cortisol,Blood,Chemistry,2143-6,,true,2143-6,Cortisol [Mass/volume] in Serum or Plasma
+50910,Creatine kinase [Enzymatic activity/volume] in Serum or Plasma,Creatine Kinase (CK),Blood,Chemistry,2157-6,,true,2157-6,Creatine kinase [Enzymatic activity/volume] in Serum or Plasma
+50911,Creatine kinase.MB [Mass/volume] in Serum or Plasma,"Creatine Kinase, MB Isoenzyme",Blood,Chemistry,6773-6,Deprecated Creatine kinase.MB,false,13969-1,Creatine kinase.MB [Mass/volume] in Serum or Plasma
+50912,Creatinine [Mass/volume] in Serum or Plasma,Creatinine,Blood,Chemistry,2160-0,,true,2160-0,Creatinine [Mass/volume] in Serum or Plasma
+50913,Cryoglobulin [Presence] in Serum,Cryoglobulin,Blood,Chemistry,5117-7,,true,5117-7,Cryoglobulin [Presence] in Serum
+50914,cycloSPORINE [Mass/volume] in Blood,Cyclosporin,Blood,Chemistry,3521-2,cycloSPORINE [Mass/volume] in Serum,false,3520-4,cycloSPORINE [Mass/volume] in Blood
+50915,Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma,D-Dimer,Blood,Chemistry,,,false,48065-7,Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma
+50916,Dehydroepiandrosterone sulfate (DHEA-S) [Mass/volume] in Serum or Plasma,DHEA-Sulfate,Blood,Chemistry,2191-5,,true,2191-5,Dehydroepiandrosterone sulfate (DHEA-S) [Mass/volume] in Serum or Plasma
+50917,Digoxin [Mass/volume] in Serum or Plasma,Digoxin,Blood,Chemistry,10535-3,,true,10535-3,Digoxin [Mass/volume] in Serum or Plasma
+50918,DNA double strand Ab [Presence] in Serum,Double Stranded DNA,Blood,Chemistry,5130-0,DNA double strand Ab [Units/volume] in Serum,false,31348-6,DNA double strand Ab [Presence] in Serum
+50919,,EDTA Hold,Blood,Chemistry,,,true,,
+50920,"Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)",Estimated GFR (MDRD equation),Blood,Chemistry,33914-3,Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD),false,77147-7,"Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)"
+50921,Estradiol (E2) [Mass/volume] in Serum or Plasma,Estradiol,Blood,Chemistry,2243-4,,true,2243-4,Estradiol (E2) [Mass/volume] in Serum or Plasma
+50922,Ethanol [Mass/volume] in Blood,Ethanol,Blood,Chemistry,5642-4,Ethanol [Presence] in Serum or Plasma,false,5640-8,Ethanol [Mass/volume] in Blood
+50923,,Fax,Blood,Chemistry,,,true,,
+50924,Ferritin [Mass/volume] in Serum or Plasma,Ferritin,Blood,Chemistry,2276-4,,true,2276-4,Ferritin [Mass/volume] in Serum or Plasma
+50925,Folate [Mass/volume] in Serum or Plasma,Folate,Blood,Chemistry,2284-8,,true,2284-8,Folate [Mass/volume] in Serum or Plasma
+50926,Follitropin [Units/volume] in Serum or Plasma,Follicle Stimulating Hormone,Blood,Chemistry,15067-2,,true,15067-2,Follitropin [Units/volume] in Serum or Plasma
+50927,Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma,Gamma Glutamyltransferase,Blood,Chemistry,2324-2,,true,2324-2,Gamma glutamyl transferase [Enzymatic activity/volume] in Serum or Plasma
+50928,Gastrin [Mass/volume] in Serum or Plasma,Gastrin,Blood,Chemistry,2333-3,,true,2333-3,Gastrin [Mass/volume] in Serum or Plasma
+50929,Gentamicin [Mass/volume] in Serum or Plasma,Gentamicin,Blood,Chemistry,35668-3,,true,35668-3,Gentamicin [Mass/volume] in Serum or Plasma
+50930,Globulin [Mass/volume] in Serum,Globulin,Blood,Chemistry,2336-6,,true,2336-6,Globulin [Mass/volume] in Serum
+50931,Glucose [Mass/volume] in Serum or Plasma,Glucose,Blood,Chemistry,2345-7,,true,2345-7,Glucose [Mass/volume] in Serum or Plasma
+50932,,Gray Top Hold (plasma),Blood,Chemistry,,,true,,
+50933,,Green Top Hold (plasma),Blood,Chemistry,,,true,,
+50934,,H,Blood,Chemistry,,,true,,
+50935,Haptoglobin [Mass/volume] in Serum or Plasma,Haptoglobin,Blood,Chemistry,4542-7,,true,4542-7,Haptoglobin [Mass/volume] in Serum or Plasma
+50936,Choriogonadotropin [Units/volume] in Serum or Plasma,"HCG, Maternal Screen",Blood,Chemistry,,,false,19080-1,Choriogonadotropin [Units/volume] in Serum or Plasma
+50937,Hepatitis A virus Ab [Presence] in Serum by Immunoassay,Hepatitis A Virus Antibody,Blood,Chemistry,5183-9,Hepatitis A virus Ab [Units/volume] in Serum or Plasma by Immunoassay,false,13951-9,Hepatitis A virus Ab [Presence] in Serum by Immunoassay
+50938,Hepatitis A virus IgM Ab [Presence] in Serum,Hepatitis A Virus IgM Antibody,Blood,Chemistry,22314-9,,true,22314-9,Hepatitis A virus IgM Ab [Presence] in Serum
+50939,Hepatitis B virus core IgM Ab [Presence] in Serum,"Hepatitis B Core Antibody, IgM",Blood,Chemistry,31204-1,,true,31204-1,Hepatitis B virus core IgM Ab [Presence] in Serum
+50940,Hepatitis B virus surface Ab [Presence] in Serum,Hepatitis B Surface Antibody,Blood,Chemistry,5193-8,Hepatitis B virus surface Ab [Units/volume] in Serum or Plasma by Immunoassay,false,22322-2,Hepatitis B virus surface Ab [Presence] in Serum
+50941,Hepatitis B virus surface Ag [Presence] in Serum or Plasma by Immunoassay,Hepatitis B Surface Antigen,Blood,Chemistry,5196-1,,true,5196-1,Hepatitis B virus surface Ag [Presence] in Serum or Plasma by Immunoassay
+50942,Hepatitis B virus core Ab [Presence] in Serum or Plasma by Immunoassay,Hepatitis B Virus Core Antibody,Blood,Chemistry,5187-0,Hepatitis B virus core Ab [Units/volume] in Serum by Immunoassay,false,13952-7,Hepatitis B virus core Ab [Presence] in Serum or Plasma by Immunoassay
+50943,Hepatitis C virus Ab [Presence] in Serum or Plasma by Immunoassay,Hepatitis C Virus Antibody,Blood,Chemistry,16128-1,Hepatitis C virus Ab [Presence] in Serum,false,13955-0,Hepatitis C virus Ab [Presence] in Serum or Plasma by Immunoassay
+50944,HIV 1 Ab [Units/volume] in Serum or Plasma by Immunoassay,HIV Antibody,Blood,Chemistry,5220-9,,true,5220-9,HIV 1 Ab [Units/volume] in Serum or Plasma by Immunoassay
+50945,Homocysteine [Moles/volume] in Serum or Plasma,Homocysteine,Blood,Chemistry,13965-9,,true,13965-9,Homocysteine [Moles/volume] in Serum or Plasma
+50946,Choriogonadotropin [Units/volume] in Serum or Plasma,Human Chorionic Gonadotropin,Blood,Chemistry,2119-6,Choriogonadotropin [Moles/volume] in Serum or Plasma,false,19080-1,Choriogonadotropin [Units/volume] in Serum or Plasma
+50947,,I,Blood,Chemistry,,,true,,
+50948,Immunofixation for Serum or Plasma,Immunofixation,Blood,Chemistry,49275-1,Immunofixation for Serum or Plasma Narrative,false,25700-6,Immunofixation for Serum or Plasma
+50949,IgA [Mass/volume] in Serum or Plasma,Immunoglobulin A,Blood,Chemistry,2458-8,,true,2458-8,IgA [Mass/volume] in Serum or Plasma
+50950,IgG [Mass/volume] in Serum or Plasma,Immunoglobulin G,Blood,Chemistry,2465-3,,true,2465-3,IgG [Mass/volume] in Serum or Plasma
+50951,IgM [Mass/volume] in Serum or Plasma,Immunoglobulin M,Blood,Chemistry,2472-9,,true,2472-9,IgM [Mass/volume] in Serum or Plasma
+50952,Iron [Mass/volume] in Serum or Plasma,Iron,Blood,Chemistry,2498-4,,true,2498-4,Iron [Mass/volume] in Serum or Plasma
+50953,Iron binding capacity [Mass/volume] in Serum or Plasma,"Iron Binding Capacity, Total",Blood,Chemistry,2500-7,,true,2500-7,Iron binding capacity [Mass/volume] in Serum or Plasma
+50954,Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma,Lactate Dehydrogenase (LD),Blood,Chemistry,2532-0,,true,2532-0,Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma
+50955,,Light Green Top Hold,Blood,Chemistry,,,true,,
+50956,Lipase [Enzymatic activity/volume] in Serum or Plasma,Lipase,Blood,Chemistry,3040-3,,true,3040-3,Lipase [Enzymatic activity/volume] in Serum or Plasma
+50957,Lithium [Moles/volume] in Serum or Plasma,Lithium,Blood,Chemistry,3719-2,Lithium [Mass/volume] in Serum or Plasma,false,14334-7,Lithium [Moles/volume] in Serum or Plasma
+50958,Lutropin [Units/volume] in Serum or Plasma,Luteinizing Hormone,Blood,Chemistry,1599-0,Lutropin [Mass/volume] in Serum or Plasma --baseline,false,10501-5,Lutropin [Units/volume] in Serum or Plasma
+50959,Macroprolactin [Presence] in Serum or Plasma,Macro Prolactin,Blood,Chemistry,,,false,72680-2,Macroprolactin [Presence] in Serum or Plasma
+50960,Magnesium [Mass/volume] in Serum or Plasma,Magnesium,Blood,Chemistry,2601-3,Magnesium [Moles/volume] in Serum or Plasma,false,19123-9,Magnesium [Mass/volume] in Serum or Plasma
+50961,Methotrexate [Moles/volume] in Serum or Plasma,Methotrexate,Blood,Chemistry,,,false,14836-1,Methotrexate [Moles/volume] in Serum or Plasma
+50962,N-acetylprocainamide [Mass/volume] in Serum or Plasma,N-Acetylprocainamide (NAPA),Blood,Chemistry,3834-9,,true,3834-9,N-acetylprocainamide [Mass/volume] in Serum or Plasma
+50963,Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma,NTproBNP,Blood,Chemistry,33762-6,,true,33762-6,Natriuretic peptide.B prohormone N-Terminal [Mass/volume] in Serum or Plasma
+50964,Osmolality of Serum or Plasma,"Osmolality, Measured",Blood,Chemistry,2692-2,,true,2692-2,Osmolality of Serum or Plasma
+50965,Parathyrin.intact [Mass/volume] in Serum or Plasma,Parathyroid Hormone,Blood,Chemistry,2731-8,,true,2731-8,Parathyrin.intact [Mass/volume] in Serum or Plasma
+50966,PHENobarbital [Mass/volume] in Serum or Plasma,Phenobarbital,Blood,Chemistry,3947-9,PHENobarbital [Presence] in Serum or Plasma,false,3948-7,PHENobarbital [Mass/volume] in Serum or Plasma
+50967,Phenytoin [Mass/volume] in Serum or Plasma,Phenytoin,Blood,Chemistry,3967-7,Phenytoin [Presence] in Serum or Plasma,false,3968-5,Phenytoin [Mass/volume] in Serum or Plasma
+50968,Phenytoin Free [Mass/volume] in Serum or Plasma,"Phenytoin, Free",Blood,Chemistry,3969-3,,true,3969-3,Phenytoin Free [Mass/volume] in Serum or Plasma
+50969,Phenytoin Free/Phenytoin.total in Serum or Plasma,"Phenytoin, Percent Free",Blood,Chemistry,10548-6,,true,10548-6,Phenytoin Free/Phenytoin.total in Serum or Plasma
+50970,Phosphate [Mass/volume] in Serum or Plasma,Phosphate,Blood,Chemistry,2777-1,,true,2777-1,Phosphate [Mass/volume] in Serum or Plasma
+50971,Potassium [Moles/volume] in Serum or Plasma,Potassium,Blood,Chemistry,2823-3,,true,2823-3,Potassium [Moles/volume] in Serum or Plasma
+50972,Procainamide [Mass/volume] in Serum or Plasma,Procainamide,Blood,Chemistry,3982-6,,true,3982-6,Procainamide [Mass/volume] in Serum or Plasma
+50973,Prolactin [Mass/volume] in Serum or Plasma,Prolactin,Blood,Chemistry,2842-3,,true,2842-3,Prolactin [Mass/volume] in Serum or Plasma
+50974,Prostate specific Ag [Mass/volume] in Serum or Plasma,Prostate Specific Antigen,Blood,Chemistry,2857-1,,true,2857-1,Prostate specific Ag [Mass/volume] in Serum or Plasma
+50975,Protein Fractions [Interpretation] in Serum or Plasma by Electrophoresis,Protein Electrophoresis,Blood,Chemistry,24351-9,Protein electrophoresis panel - Serum or Plasma,false,12851-2,Protein Fractions [Interpretation] in Serum or Plasma by Electrophoresis
+50976,Protein [Mass/volume] in Serum or Plasma,"Protein, Total",Blood,Chemistry,2885-2,,true,2885-2,Protein [Mass/volume] in Serum or Plasma
+50977,quiNIDine [Mass/volume] in Serum or Plasma,Quinidine,Blood,Chemistry,6694-4,,true,6694-4,quiNIDine [Mass/volume] in Serum or Plasma
+50978,Sirolimus [Mass/volume] in Blood,Rapamycin,Blood,Chemistry,29247-4,,true,29247-4,Sirolimus [Mass/volume] in Blood
+50979,,Red Top Hold,Blood,Chemistry,,,true,,
+50980,Rheumatoid factor [Units/volume] in Serum or Plasma,Rheumatoid Factor,Blood,Chemistry,6928-6,Rheumatoid factor [Units/volume] in Serum by Immunoassay,false,11572-5,Rheumatoid factor [Units/volume] in Serum or Plasma
+50981,Salicylates [Mass/volume] in Serum or Plasma,Salicylate,Blood,Chemistry,4023-8,Salicylates [Presence] in Serum or Plasma,false,4024-6,Salicylates [Mass/volume] in Serum or Plasma
+50982,Sex hormone binding globulin [Moles/volume] in Serum or Plasma,Sex Hormone Binding Globulin,Blood,Chemistry,2942-1,Sex hormone binding globulin [Mass/volume] in Serum or Plasma,false,13967-5,Sex hormone binding globulin [Moles/volume] in Serum or Plasma
+50983,Sodium [Moles/volume] in Serum or Plasma,Sodium,Blood,Chemistry,2951-2,,true,2951-2,Sodium [Moles/volume] in Serum or Plasma
+50984,,Stat,Blood,Chemistry,,,true,,
+50985,,Study Tubes,Blood,Chemistry,,,true,,
+50986,Tacrolimus [Mass/volume] in Blood,tacroFK,Blood,Chemistry,,,false,11253-2,Tacrolimus [Mass/volume] in Blood
+50988,Testosterone [Mass/volume] in Serum or Plasma,Testosterone,Blood,Chemistry,2986-8,,true,2986-8,Testosterone [Mass/volume] in Serum or Plasma
+50989,Testosterone Free [Mass/volume] in Serum or Plasma,"Testosterone, Free",Blood,Chemistry,2991-8,,true,2991-8,Testosterone Free [Mass/volume] in Serum or Plasma
+50990,Theophylline [Mass/volume] in Serum or Plasma,Theophylline,Blood,Chemistry,4049-3,,true,4049-3,Theophylline [Mass/volume] in Serum or Plasma
+50991,Thyroglobulin [Mass/volume] in Serum or Plasma,Thyroglobulin,Blood,Chemistry,3013-0,,true,3013-0,Thyroglobulin [Mass/volume] in Serum or Plasma
+50992,Thyroperoxidase Ab [Units/volume] in Serum or Plasma,Thyroid Peroxidase Antibodies,Blood,Chemistry,8099-4,,true,8099-4,Thyroperoxidase Ab [Units/volume] in Serum or Plasma
+50993,Thyrotropin [Units/volume] in Serum or Plasma,Thyroid Stimulating Hormone,Blood,Chemistry,3016-3,,true,3016-3,Thyrotropin [Units/volume] in Serum or Plasma
+50994,Thyroxine (T4) [Mass/volume] in Serum or Plasma,Thyroxine (T4),Blood,Chemistry,3026-2,,true,3026-2,Thyroxine (T4) [Mass/volume] in Serum or Plasma
+50995,Thyroxine (T4) free [Mass/volume] in Serum or Plasma,"Thyroxine (T4), Free",Blood,Chemistry,3024-7,,true,3024-7,Thyroxine (T4) free [Mass/volume] in Serum or Plasma
+50996,Tissue transglutaminase IgA Ab [Units/volume] in Serum,"Tissue Transglutaminase Ab, IgA",Blood,Chemistry,31017-7,,true,31017-7,Tissue transglutaminase IgA Ab [Units/volume] in Serum
+50997,Tobramycin [Mass/volume] in Serum or Plasma,Tobramycin,Blood,Chemistry,35670-9,,true,35670-9,Tobramycin [Mass/volume] in Serum or Plasma
+50998,Transferrin [Mass/volume] in Serum or Plasma,Transferrin,Blood,Chemistry,2500-7,Iron binding capacity [Mass/volume] in Serum or Plasma,false,3034-6,Transferrin [Mass/volume] in Serum or Plasma
+50999,Tricyclic antidepressants [Presence] in Blood by Screen method,Tricyclic Antidepressant Screen,Blood,Chemistry,4073-3,Tricyclic antidepressants [Presence] in Serum or Plasma,false,80146-4,Tricyclic antidepressants [Presence] in Blood by Screen method
+51000,Triglyceride [Mass/volume] in Serum or Plasma,Triglycerides,Blood,Chemistry,1644-4,Triglyceride [Mass/volume] in Serum or Plasma --12 hours fasting,false,2571-8,Triglyceride [Mass/volume] in Serum or Plasma
+51001,Triiodothyronine (T3) [Mass/volume] in Serum or Plasma,Triiodothyronine (T3),Blood,Chemistry,3053-6,,true,3053-6,Triiodothyronine (T3) [Mass/volume] in Serum or Plasma
+51002,Troponin I.cardiac [Mass/volume] in Serum or Plasma,Troponin I,Blood,Chemistry,10839-9,,true,10839-9,Troponin I.cardiac [Mass/volume] in Serum or Plasma
+51003,Troponin T.cardiac [Mass/volume] in Serum or Plasma,Troponin T,Blood,Chemistry,6598-7,,true,6598-7,Troponin T.cardiac [Mass/volume] in Serum or Plasma
+51004,Estriol (E3).unconjugated [Mass/volume] in Serum or Plasma,"UE3, Maternal Screen",Blood,Chemistry,,,false,2250-9,Estriol (E3).unconjugated [Mass/volume] in Serum or Plasma
+51005,Triiodothyronine resin uptake (T3RU) in Serum or Plasma,Uptake Ratio,Blood,Chemistry,3050-2,,true,3050-2,Triiodothyronine resin uptake (T3RU) in Serum or Plasma
+51006,Urea nitrogen [Mass/volume] in Serum or Plasma,Urea Nitrogen,Blood,Chemistry,3094-0,,true,3094-0,Urea nitrogen [Mass/volume] in Serum or Plasma
+51007,Urate [Mass/volume] in Serum or Plasma,Uric Acid,Blood,Chemistry,3084-1,,true,3084-1,Urate [Mass/volume] in Serum or Plasma
+51008,Valproate [Mass/volume] in Serum or Plasma,Valproic Acid,Blood,Chemistry,4086-5,,true,4086-5,Valproate [Mass/volume] in Serum or Plasma
+51009,Vancomycin [Mass/volume] in Serum or Plasma,Vancomycin,Blood,Chemistry,20578-1,,true,20578-1,Vancomycin [Mass/volume] in Serum or Plasma
+51010,Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma,Vitamin B12,Blood,Chemistry,2170-9,Deprecated Cobalamin [Mass/volume] in Serum,false,2132-9,Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma
+51011,Albumin [Mass/volume] in Cerebral spinal fluid,<Albumin>,Cerebrospinal Fluid (CSF),Chemistry,1746-7,Albumin [Mass/volume] in Cerebral spinal fluid,false,,
+51012,Bilirubin.total [Mass/volume] in Cerebral spinal fluid,"Bilirubin, Total, CSF",Cerebrospinal Fluid (CSF),Chemistry,1973-7,Bilirubin.total [Mass/volume] in Cerebral spinal fluid,false,,
+51013,,"Chloride, CSF",Cerebrospinal Fluid (CSF),Chemistry,,,true,,
+51014,Glucose [Mass/volume] in Cerebral spinal fluid,"Glucose, CSF",Cerebrospinal Fluid (CSF),Chemistry,2342-4,Glucose [Mass/volume] in Cerebral spinal fluid,false,,
+51015,Lactate dehydrogenase [Enzymatic activity/volume] in Cerebral spinal fluid,"Lactate Dehydrogenase, CSF",Cerebrospinal Fluid (CSF),Chemistry,2528-8,Lactate dehydrogenase [Enzymatic activity/volume] in Cerebral spinal fluid,false,,
+51016,,"Miscellaneous, CSF",Cerebrospinal Fluid (CSF),Chemistry,,,true,,
+51017,Protein electrophoresis panel - Cerebral spinal fluid,"PEP, CSF",Cerebrospinal Fluid (CSF),Chemistry,24352-7,Protein electrophoresis panel - Cerebral spinal fluid,false,,
+51018,Protein [Mass/volume] in Cerebral spinal fluid,"Total Protein, CSF",Cerebrospinal Fluid (CSF),Chemistry,2880-3,Protein [Mass/volume] in Cerebral spinal fluid,false,,
+51019,Albumin [Mass/volume] in Synovial fluid,"Albumin, Joint Fluid",Joint Fluid,Chemistry,,,false,1752-5,Albumin [Mass/volume] in Synovial fluid
+51020,Amylase [Enzymatic activity/volume] in Synovial fluid,"Amylase, Joint Fluid",Joint Fluid,Chemistry,14388-3,,true,14388-3,Amylase [Enzymatic activity/volume] in Synovial fluid
+51021,Creatinine [Mass/volume] in Synovial fluid,"Creatinine, Joint Fluid",Joint Fluid,Chemistry,14401-4,,true,14401-4,Creatinine [Mass/volume] in Synovial fluid
+51022,Glucose [Mass/volume] in Synovial fluid,"Glucose, Joint Fluid",Joint Fluid,Chemistry,2348-1,,true,2348-1,Glucose [Mass/volume] in Synovial fluid
+51023,Lactate dehydrogenase [Enzymatic activity/volume] in Synovial fluid,"LD, Joint Fluid",Joint Fluid,Chemistry,2533-8,Lactate dehydrogenase [Enzymatic activity/volume] in Synovial fluid,false,,Lactate dehydrogenase [Enzymatic activity/volume] in Synovial fluid
+51024,Protein [Mass/volume] in Synovial fluid,"Total Protein, Joint Fluid",Joint Fluid,Chemistry,2886-0,,true,2886-0,Protein [Mass/volume] in Synovial fluid
+51025,Albumin [Mass/volume] in Body fluid,"Albumin, Body Fluid",Other Body Fluid,Chemistry,1747-5,,true,1747-5,Albumin [Mass/volume] in Body fluid
+51026,Amylase [Enzymatic activity/volume] in Body fluid,"Amylase, Body Fluid",Other Body Fluid,Chemistry,1795-4,,true,1795-4,Amylase [Enzymatic activity/volume] in Body fluid
+51027,Bicarbonate [Moles/volume] in Body fluid,"Bicarbonate, Other Fluid",Other Body Fluid,Chemistry,11211-0,"Carbon dioxide, total [Moles/volume] in Body fluid",false,16459-0,Bicarbonate [Moles/volume] in Body fluid
+51028,Bilirubin.total [Mass/volume] in Body fluid,"Bilirubin, Total, Body Fluid",Other Body Fluid,Chemistry,1974-5,,true,1974-5,Bilirubin.total [Mass/volume] in Body fluid
+51029,Calcium [Mass/volume] in Body fluid,"Calcium, Body Fluid",Other Body Fluid,Chemistry,15155-5,,true,15155-5,Calcium [Mass/volume] in Body fluid
+51030,Chloride [Moles/volume] in Body fluid,"Chloride, Body Fluid",Other Body Fluid,Chemistry,2072-7,,true,2072-7,Chloride [Moles/volume] in Body fluid
+51031,Cholesterol [Mass/volume] in Body fluid,"Cholesterol, Body Fluid",Other Body Fluid,Chemistry,12183-0,,true,12183-0,Cholesterol [Mass/volume] in Body fluid
+51032,Creatinine [Mass/volume] in Body fluid,"Creatinine, Body Fluid",Other Body Fluid,Chemistry,12190-5,,true,12190-5,Creatinine [Mass/volume] in Body fluid
+51033,Fibronectin.fetal [Presence] in Vaginal fluid,FetalFN,Other Body Fluid,Chemistry,,,false,20404-0,Fibronectin.fetal [Presence] in Vaginal fluid
+51034,Glucose [Mass/volume] in Body fluid,"Glucose, Body Fluid",Other Body Fluid,Chemistry,2344-0,,true,2344-0,Glucose [Mass/volume] in Body fluid
+51035,Lactate dehydrogenase [Enzymatic activity/volume] in Body fluid,"LD, Body Fluid",Other Body Fluid,Chemistry,2529-6,,true,2529-6,Lactate dehydrogenase [Enzymatic activity/volume] in Body fluid
+51036,Lipase [Enzymatic activity/volume] in Body fluid,"Lipase, Body Fluid",Other Body Fluid,Chemistry,15212-4,,true,15212-4,Lipase [Enzymatic activity/volume] in Body fluid
+51037,Magnesium [Mass/volume] in Body fluid,"Magnesium, Body Fluid",Other Body Fluid,Chemistry,29365-4,,true,29365-4,Magnesium [Mass/volume] in Body fluid
+51038,,"Miscellaneous, Body Fluid",Other Body Fluid,Chemistry,,,true,,
+51039,Osmolality of Body fluid,"Osmolality, Body Fluid",Other Body Fluid,Chemistry,15200-9,,true,15200-9,Osmolality of Body fluid
+51040,Phosphate [Mass/volume] in Body fluid,"Phosphate, Body Fluid",Other Body Fluid,Chemistry,12242-4,,true,12242-4,Phosphate [Mass/volume] in Body fluid
+51041,Potassium [Moles/volume] in Body fluid,"Potassium, Body Fluid",Other Body Fluid,Chemistry,2821-7,,true,2821-7,Potassium [Moles/volume] in Body fluid
+51042,Sodium [Moles/volume] in Body fluid,"Sodium, Body Fluid",Other Body Fluid,Chemistry,2950-4,,true,2950-4,Sodium [Moles/volume] in Body fluid
+51043,Protein [Mass/volume] in Body fluid,"Total Protein, Body Fluid",Other Body Fluid,Chemistry,2881-1,,true,2881-1,Protein [Mass/volume] in Body fluid
+51044,Triglyceride [Mass/volume] in Body fluid,Triglycer,Other Body Fluid,Chemistry,12228-3,,true,12228-3,Triglyceride [Mass/volume] in Body fluid
+51045,Urea nitrogen [Mass/volume] in Body fluid,"Urea Nitrogen, Body Fluid",Other Body Fluid,Chemistry,3093-2,,true,3093-2,Urea nitrogen [Mass/volume] in Body fluid
+51046,Albumin [Mass/volume] in Pleural fluid,"Albumin, Pleural",Pleural,Chemistry,1748-3,,true,1748-3,Albumin [Mass/volume] in Pleural fluid
+51047,Amylase [Enzymatic activity/volume] in Pleural fluid,"Amylase, Pleural",Pleural,Chemistry,1796-2,,true,1796-2,Amylase [Enzymatic activity/volume] in Pleural fluid
+51048,Bicarbonate [Moles/volume] in Pleural fluid,"Bicarbonate, Pleural",Pleural,Chemistry,54361-1,,true,54361-1,Bicarbonate [Moles/volume] in Pleural fluid
+51049,Bilirubin.total [Mass/volume] in Pleural fluid,"Bilirubin, Total, Pleural",Pleural,Chemistry,14421-2,,true,14421-2,Bilirubin.total [Mass/volume] in Pleural fluid
+51050,Chloride [Moles/volume] in Pleural fluid,"Chloride, Pleural",Pleural,Chemistry,53627-6,,true,53627-6,Chloride [Moles/volume] in Pleural fluid
+51051,Cholesterol [Mass/volume] in Pleural fluid,"Cholesterol, Pleural",Pleural,Chemistry,9618-0,,true,9618-0,Cholesterol [Mass/volume] in Pleural fluid
+51052,Creatinine [Mass/volume] in Pleural fluid,"Creatinine, Pleural",Pleural,Chemistry,14399-0,,true,14399-0,Creatinine [Mass/volume] in Pleural fluid
+51053,Glucose [Mass/volume] in Pleural fluid,"Glucose, Pleural",Pleural,Chemistry,2346-5,,true,2346-5,Glucose [Mass/volume] in Pleural fluid
+51054,Lactate dehydrogenase [Enzymatic activity/volume] in Pleural fluid,"Lactate Dehydrogenase, Pleural",Pleural,Chemistry,2530-4,,true,2530-4,Lactate dehydrogenase [Enzymatic activity/volume] in Pleural fluid
+51055,Lipase [Enzymatic activity/volume] in Pleural fluid,"Lipase, Pleural",Pleural,Chemistry,,,false,47418-9,Lipase [Enzymatic activity/volume] in Pleural fluid
+51056,,"Miscellaneous, Pleural",Pleural,Chemistry,,,true,,
+51057,Potassium [Moles/volume] in Specimen,"Potassium, Pleural",Pleural,Chemistry,,,false,32336-0,Potassium [Moles/volume] in Specimen
+51058,Sodium [Moles/volume] in Specimen,"Sodium, Pleural",Pleural,Chemistry,,,false,32340-2,Sodium [Moles/volume] in Specimen
+51059,Protein [Mass/volume] in Pleural fluid,"Total Protein, Pleural",Pleural,Chemistry,2882-9,,true,2882-9,Protein [Mass/volume] in Pleural fluid
+51060,Triglyceride [Mass/volume] in Pleural fluid,"Triglycerides, Pleural",Pleural,Chemistry,9619-8,,true,9619-8,Triglyceride [Mass/volume] in Pleural fluid
+51061,Bicarbonate [Moles/volume] in Specimen,"Bicarbonate, Stool",Stool,Chemistry,14040-0,"Carbon dioxide, total [Moles/volume] in Stool",false,22735-5,Bicarbonate [Moles/volume] in Specimen
+51062,Chloride [Moles/volume] in Stool,"Chloride, Stool",Stool,Chemistry,15158-9,,true,15158-9,Chloride [Moles/volume] in Stool
+51063,Osmolality of Stool,"Osmolality, Stool",Stool,Chemistry,2693-0,,true,2693-0,Osmolality of Stool
+51064,Potassium [Moles/volume] in Stool,"Potassium, Stool",Stool,Chemistry,15202-5,,true,15202-5,Potassium [Moles/volume] in Stool
+51065,Sodium [Moles/volume] in Stool,"Sodium, Stool",Stool,Chemistry,15207-4,,true,15207-4,Sodium [Moles/volume] in Stool
+51066,Calcium [Mass/time] in 24 hour Urine,24 hr Calcium,Urine,Chemistry,6874-2,,true,6874-2,Calcium [Mass/time] in 24 hour Urine
+51067,Creatinine [Mass/time] in 24 hour Urine,24 hr Creatinine,Urine,Chemistry,2162-6,,true,2162-6,Creatinine [Mass/time] in 24 hour Urine
+51068,Protein [Mass/time] in 24 hour Urine,24 hr Protein,Urine,Chemistry,2889-4,,true,2889-4,Protein [Mass/time] in 24 hour Urine
+51069,Microalbumin [Mass/volume] in Urine,"Albumin, Urine",Urine,Chemistry,1754-1,Albumin [Mass/volume] in Urine,false,14957-5,Microalbumin [Mass/volume] in Urine
+51070,Microalbumin/Creatinine [Mass Ratio] in 24 hour Urine,"Albumin/Creatinine, Urine",Urine,Chemistry,14958-3,,true,14958-3,Microalbumin/Creatinine [Mass Ratio] in 24 hour Urine
+51071,Amphetamine [Presence] in Urine by Screen method,"Amphetamine Screen, Urine",Urine,Chemistry,3349-8,Amphetamines [Presence] in Urine,false,19343-3,Amphetamine [Presence] in Urine by Screen method
+51072,Amylase [Enzymatic activity/volume] in Urine,"Amylase, Urine",Urine,Chemistry,1799-6,,true,1799-6,Amylase [Enzymatic activity/volume] in Urine
+51073,Amylase/Creatinine [Ratio] in Urine,"Amylase/Creatinine Ratio, Urine",Urine,Chemistry,34235-2,Amylase/Creatinine [Ratio] in Urine,false,,Amylase/Creatinine [Ratio] in Urine
+51074,Barbiturates [Presence] in Urine by Screen method,"Barbiturate Screen, Urine",Urine,Chemistry,3377-9,Barbiturates [Presence] in Urine,false,19270-8,Barbiturates [Presence] in Urine by Screen method
+51075,Benzodiazepines [Presence] in Urine by Screen method,"Benzodiazepine Screen, Urine",Urine,Chemistry,3390-2,Benzodiazepines [Presence] in Urine,false,14316-4,Benzodiazepines [Presence] in Urine by Screen method
+51076,Bicarbonate [Moles/volume] in Urine,"Bicarbonate, Urine",Urine,Chemistry,1964-6,,true,1964-6,Bicarbonate [Moles/volume] in Urine
+51077,Calcium [Mass/volume] in Urine,"Calcium, Urine",Urine,Chemistry,2004-0,Calcium [Moles/volume] in Urine,false,17862-4,Calcium [Mass/volume] in Urine
+51078,Chloride [Moles/volume] in Urine,"Chloride, Urine",Urine,Chemistry,2078-4,,true,2078-4,Chloride [Moles/volume] in Urine
+51079,Cocaine [Presence] in Urine,"Cocaine, Urine",Urine,Chemistry,3397-7,,true,3397-7,Cocaine [Presence] in Urine
+51080,Creatinine renal clearance in 24 hour Urine and Serum or Plasma,Creatinine Clearance,Urine,Chemistry,33558-8,Creatinine renal clearance in Urine and Serum or Plasma collected for unspecified duration,false,2164-2,Creatinine renal clearance in 24 hour Urine and Serum or Plasma
+51081,Creatinine [Mass/volume] in Serum or Plasma,"Creatinine, Serum",Urine,Chemistry,,,false,2160-0,Creatinine [Mass/volume] in Serum or Plasma
+51082,Creatinine [Mass/volume] in Urine,"Creatinine, Urine",Urine,Chemistry,2161-8,,true,2161-8,Creatinine [Mass/volume] in Urine
+51083,Ethanol [Presence] in Urine,"Ethanol, Urine",Urine,Chemistry,5644-0,,true,5644-0,Ethanol [Presence] in Urine
+51084,Glucose [Mass/volume] in Urine,"Glucose, Urine",Urine,Chemistry,2350-7,,true,2350-7,Glucose [Mass/volume] in Urine
+51085,Choriogonadotropin (pregnancy test) [Presence] in Urine,"HCG, Urine, Qualitative",Urine,Chemistry,2106-3,,true,2106-3,Choriogonadotropin (pregnancy test) [Presence] in Urine
+51086,Immunofixation for Urine,"Immunofixation, Urine",Urine,Chemistry,49276-9,Immunofixation for Urine Narrative,false,13440-3,Immunofixation for Urine
+51087,Collection duration of Urine,Length of Urine Collection,Urine,Chemistry,13362-9,,true,13362-9,Collection duration of Urine
+51088,Magnesium [Mass/volume] in Urine,"Magnesium, Urine",Urine,Chemistry,2598-1,Magnesium [Moles/volume] in Urine,false,19124-7,Magnesium [Mass/volume] in Urine
+51089,Tetrahydrocannabinol [Presence] in Urine,Marijuana,Urine,Chemistry,3427-2,Cannabinoids [Presence] in Urine,false,3426-4,Tetrahydrocannabinol [Presence] in Urine
+51090,Methadone [Presence] in Urine,"Methadone, Urine",Urine,Chemistry,3773-9,,true,3773-9,Methadone [Presence] in Urine
+51091,Myoglobin [Presence] in Urine,"Myoglobin, Urine",Urine,Chemistry,2640-1,,true,2640-1,Myoglobin [Presence] in Urine
+51092,Opiates [Presence] in Urine by Screen method,"Opiate Screen, Urine",Urine,Chemistry,3879-4,Opiates [Presence] in Urine,false,19295-5,Opiates [Presence] in Urine by Screen method
+51093,Osmolality of Urine,"Osmolality, Urine",Urine,Chemistry,2695-5,,true,2695-5,Osmolality of Urine
+51094,pH of Urine,pH,Urine,Chemistry,2756-5,,true,2756-5,pH of Urine
+51095,Phosphate [Mass/volume] in Urine,"Phosphate, Urine",Urine,Chemistry,2778-9,,true,2778-9,Phosphate [Mass/volume] in Urine
+51096,Porphobilinogen [Presence] in Urine,Porphobilinogen Screen,Urine,Chemistry,2809-2,,true,2809-2,Porphobilinogen [Presence] in Urine
+51097,Potassium [Moles/volume] in Urine,"Potassium, Urine",Urine,Chemistry,2828-2,,true,2828-2,Potassium [Moles/volume] in Urine
+51098,Protein Fractions [Interpretation] in Urine by Electrophoresis,"Prot. Electrophoresis, Urine",Urine,Chemistry,13438-7,,true,13438-7,Protein Fractions [Interpretation] in Urine by Electrophoresis
+51099,Protein/Creatinine [Mass Ratio] in Urine,Protein/Creatinine Ratio,Urine,Chemistry,2890-2,,true,2890-2,Protein/Creatinine [Mass Ratio] in Urine
+51100,Sodium [Moles/volume] in Urine,"Sodium, Urine",Urine,Chemistry,2955-3,,true,2955-3,Sodium [Moles/volume] in Urine
+51101,Collection duration of Urine,Total Collection Time,Urine,Chemistry,13362-9,,true,13362-9,Collection duration of Urine
+51102,Protein [Mass/volume] in Urine,"Total Protein, Urine",Urine,Chemistry,2887-8,Protein [Presence] in Urine,false,2888-6,Protein [Mass/volume] in Urine
+51103,,Uhold,Urine,Chemistry,,,true,,
+51104,Urea nitrogen [Mass/volume] in Urine,"Urea Nitrogen, Urine",Urine,Chemistry,3095-7,,true,3095-7,Urea nitrogen [Mass/volume] in Urine
+51105,Urate [Mass/volume] in Urine,"Uric Acid, Urine",Urine,Chemistry,3086-6,,true,3086-6,Urate [Mass/volume] in Urine
+51106,Creatinine [Mass/volume] in Urine,Urine Creatinine,Urine,Chemistry,,,false,2161-8,Creatinine [Mass/volume] in Urine
+51107,,"Urine tube, held",Urine,Chemistry,,,true,,
+51108,Volume of Urine,Urine Volume,Urine,Chemistry,28009-9,,true,28009-9,Volume of Urine
+51109,Volume of Urine,"Urine Volume, Total",Urine,Chemistry,28009-9,,true,28009-9,Volume of Urine
+51110,Variant lymphocytes/100 leukocytes in Peritoneal fluid,Atypical Lymphocytes,Ascites,Hematology,33369-0,,true,33369-0,Variant lymphocytes/100 leukocytes in Peritoneal fluid
+51111,Band form neutrophils/100 leukocytes in Peritoneal fluid by Manual count,Bands,Ascites,Hematology,,,false,99603-3,Band form neutrophils/100 leukocytes in Peritoneal fluid by Manual count
+51112,Basophils/100 leukocytes in Peritoneal fluid,Basophils,Ascites,Hematology,35069-4,,true,35069-4,Basophils/100 leukocytes in Peritoneal fluid
+51113,Blasts/100 leukocytes in Peritoneal fluid,Blasts,Ascites,Hematology,,,false,33372-4,Blasts/100 leukocytes in Peritoneal fluid
+51114,Eosinophils/100 leukocytes in Peritoneal fluid,Eosinophils,Ascites,Hematology,30380-0,,true,30380-0,Eosinophils/100 leukocytes in Peritoneal fluid
+51115,Hematocrit [Volume Fraction] of Body fluid,"Hematocrit, Ascites",Ascites,Hematology,,,false,11153-4,Hematocrit [Volume Fraction] of Body fluid
+51116,Lymphocytes/100 leukocytes in Peritoneal fluid,Lymphocytes,Ascites,Hematology,26482-0,,true,26482-0,Lymphocytes/100 leukocytes in Peritoneal fluid
+51117,Macrophages/100 leukocytes in Peritoneal fluid by Manual count,Macrophage,Ascites,Hematology,40517-5,,true,40517-5,Macrophages/100 leukocytes in Peritoneal fluid by Manual count
+51118,Mesothelial cells/100 leukocytes in Peritoneal fluid,Mesothelial Cell,Ascites,Hematology,30432-9,,true,30432-9,Mesothelial cells/100 leukocytes in Peritoneal fluid
+51119,Metamyelocytes/100 leukocytes in Body fluid,Metamyelocytes,Ascites,Hematology,,,false,17801-2,Metamyelocytes/100 leukocytes in Body fluid
+51120,Monocytes/100 leukocytes in Peritoneal fluid,Monocytes,Ascites,Hematology,26488-7,,true,26488-7,Monocytes/100 leukocytes in Peritoneal fluid
+51121,Myelocytes/100 leukocytes in Body fluid,Myelocytes,Ascites,Hematology,,,false,17800-4,Myelocytes/100 leukocytes in Body fluid
+51122,Nucleated erythrocytes/100 cells in Peritoneal fluid,Nucleated RBC,Ascites,Hematology,,,false,70171-4,Nucleated erythrocytes/100 cells in Peritoneal fluid
+51123,Leukocytes other/100 leukocytes in Peritoneal fluid,Other,Ascites,Hematology,,,false,30409-7,Leukocytes other/100 leukocytes in Peritoneal fluid
+51124,Plasma cells/100 leukocytes in Peritoneal fluid by Manual count,Plasma,Ascites,Hematology,40518-3,,true,40518-3,Plasma cells/100 leukocytes in Peritoneal fluid by Manual count
+51125,Polymorphonuclear cells/100 leukocytes in Peritoneal fluid,Polys,Ascites,Hematology,26520-7,,true,26520-7,Polymorphonuclear cells/100 leukocytes in Peritoneal fluid
+51126,Promyelocytes/100 leukocytes in Body fluid,Promyelocytes,Ascites,Hematology,,,false,17799-8,Promyelocytes/100 leukocytes in Body fluid
+51127,Erythrocytes [#/volume] in Peritoneal fluid,"RBC, Ascites",Ascites,Hematology,26457-2,,true,26457-2,Erythrocytes [#/volume] in Peritoneal fluid
+51128,Leukocytes [#/volume] in Peritoneal fluid,"WBC, Ascites",Ascites,Hematology,26468-9,Leukocytes [#/volume] in Peritoneal fluid,false,,
+51129,,Young,Ascites,Hematology,,,true,,
+51130,CD3 cells [#/volume] in Blood,Absolute CD3 Count,Blood,Hematology,8124-0,CD3 cells/100 cells in Blood,false,8122-4,CD3 cells [#/volume] in Blood
+51131,CD3+CD4+ (T4 helper) cells [#/volume] in Blood,Absolute CD4 Count,Blood,Hematology,8128-1,Deprecated CD4 cells/100 cells in Blood,false,24467-3,CD3+CD4+ (T4 helper) cells [#/volume] in Blood
+51132,CD3+CD8+ (T8 suppressor cells) cells [#/volume] in Blood,Absolute CD8 Count,Blood,Hematology,8138-0,Deprecated CD8 cells/100 cells in Blood,false,14135-8,CD3+CD8+ (T8 suppressor cells) cells [#/volume] in Blood
+51133,Lymphocytes [#/volume] in Blood by Automated count,Absolute Lymphocyte Count,Blood,Hematology,26474-7,Lymphocytes [#/volume] in Blood,false,731-0,Lymphocytes [#/volume] in Blood by Automated count
+51134,Acanthocytes [Presence] in Blood by Light microscopy,Acanthocytes,Blood,Hematology,7789-1,,true,7789-1,Acanthocytes [Presence] in Blood by Light microscopy
+51135,Adenosine diphosphate [Mass/volume] in Serum,ADP,Blood,Hematology,,,false,1724-4,Adenosine diphosphate [Mass/volume] in Serum
+51136,Plasmin inhibitor actual/normal in Platelet poor plasma by Chromogenic method,Alpha Antiplasmin,Blood,Hematology,,,false,27810-1,Plasmin inhibitor actual/normal in Platelet poor plasma by Chromogenic method
+51137,Anisocytosis [Presence] in Blood,Anisocytosis,Blood,Hematology,702-1,Anisocytosis [Presence] in Blood by Light microscopy,false,38892-6,Anisocytosis [Presence] in Blood
+51138,Cardiolipin IgG Ab [Units/volume] in Serum by Immunoassay,Anticardiolipin Antibody IgG,Blood,Hematology,8065-5,Cardiolipin IgG Ab [Units/volume] in Serum or Plasma,false,3181-5,Cardiolipin IgG Ab [Units/volume] in Serum by Immunoassay
+51139,Cardiolipin IgM Ab [Units/volume] in Serum by Immunoassay,Anticardiolipin Antibody IgM,Blood,Hematology,3182-3,,true,3182-3,Cardiolipin IgM Ab [Units/volume] in Serum by Immunoassay
+51140,Antithrombin actual/normal in Platelet poor plasma by Chromogenic method,Antithrombin,Blood,Hematology,27811-9,,true,27811-9,Antithrombin actual/normal in Platelet poor plasma by Chromogenic method
+51141,Hemoglobin F [Presence] in Blood by Alkali denaturation,APT Test,Blood,Hematology,,,false,4632-6,Hemoglobin F [Presence] in Blood by Alkali denaturation
+51142,Arachidonate (C20:4w6) [Moles/volume] in Serum or Plasma,Arachadonic Acid,Blood,Hematology,,,false,35168-4,Arachidonate (C20:4w6) [Moles/volume] in Serum or Plasma
+51143,Variant lymphocytes/100 leukocytes in Blood,Atypical Lymphocytes,Blood,Hematology,733-6,Variant lymphocytes [Presence] in Blood by Light microscopy,false,13046-8,Variant lymphocytes/100 leukocytes in Blood
+51144,Band form neutrophils/100 leukocytes in Blood,Bands,Blood,Hematology,763-3,Band form neutrophils [#/volume] in Blood by Manual count,false,26508-2,Band form neutrophils/100 leukocytes in Blood
+51145,Basophilic stippling [Presence] in Blood by Light microscopy,Basophilic Stippling,Blood,Hematology,703-9,,true,703-9,Basophilic stippling [Presence] in Blood by Light microscopy
+51146,Basophils/100 leukocytes in Blood by Automated count,Basophils,Blood,Hematology,704-7,Basophils [#/volume] in Blood by Automated count,false,706-2,Basophils/100 leukocytes in Blood by Automated count
+51147,Bite cells [Presence] in Blood by Light microscopy,Bite Cells,Blood,Hematology,10371-3,,true,10371-3,Bite cells [Presence] in Blood by Light microscopy
+51148,Blasts/100 leukocytes in Blood,Blasts,Blood,Hematology,708-8,Blasts [#/volume] in Blood by Manual count,false,26446-5,Blasts/100 leukocytes in Blood
+51149,Bleeding time,Bleeding Time,Blood,Hematology,11067-6,,true,11067-6,Bleeding time
+51150,Parasite [Presence] in Blood by Light microscopy,Blood Parasite Smear,Blood,Hematology,24429-3,Parasite identified in Blood,false,91900-1,Parasite [Presence] in Blood by Light microscopy
+51151,Burr cells [Presence] in Blood by Light microscopy,Burr Cells,Blood,Hematology,7790-9,Burr cells [Presence] in Blood by Light microscopy,false,,
+51152,CD10 cells/100 cells in Blood,CD10,Blood,Hematology,8107-5,,true,8107-5,CD10 cells/100 cells in Blood
+51153,CD103 cells/100 cells in Blood,CD103,Blood,Hematology,,,false,17100-9,CD103 cells/100 cells in Blood
+51154,CD117 cells/100 cells in Blood,CD117,Blood,Hematology,17107-4,,true,17107-4,CD117 cells/100 cells in Blood
+51155,CD11c cells/100 cells in Blood,CD11c,Blood,Hematology,8109-1,,true,8109-1,CD11c cells/100 cells in Blood
+51156,CD13 cells/100 cells in Blood,CD13,Blood,Hematology,8110-9,,true,8110-9,CD13 cells/100 cells in Blood
+51157,CD138 cells/100 cells in Blood,CD138,Blood,Hematology,42869-8,,true,42869-8,CD138 cells/100 cells in Blood
+51158,CD14 cells/100 cells in Blood,CD14,Blood,Hematology,8111-7,,true,8111-7,CD14 cells/100 cells in Blood
+51159,CD15 cells/100 cells in Blood,CD15,Blood,Hematology,17117-3,,true,17117-3,CD15 cells/100 cells in Blood
+51160,CD16+CD56+ cells/100 cells in Blood,CD16/56,Blood,Hematology,18267-5,CD16+CD56+ cells/100 cells in Blood,false,,
+51161,CD16 cells/100 cells in Blood,CD16,Blood,Hematology,8115-8,,true,8115-8,CD16 cells/100 cells in Blood
+51162,CD16+CD56+ cells [#/volume] in Blood,CD16/56 Absolute Count,Blood,Hematology,,,false,20402-4,CD16+CD56+ cells [#/volume] in Blood
+51163,CD16+CD56+ cells/100 cells in Blood,CD16/56%,Blood,Hematology,,,false,18267-5,CD16+CD56+ cells/100 cells in Blood
+51164,CD19 cells/100 cells in Blood,CD19,Blood,Hematology,8117-4,,true,8117-4,CD19 cells/100 cells in Blood
+51165,CD19 cells/100 cells in Blood,CD19 %,Blood,Hematology,,,false,8117-4,CD19 cells/100 cells in Blood
+51166,CD19 cells [#/volume] in Blood,CD19 Absolute Count,Blood,Hematology,,,false,8116-6,CD19 cells [#/volume] in Blood
+51167,CD2 cells/100 cells in Blood,CD2,Blood,Hematology,8118-2,,true,8118-2,CD2 cells/100 cells in Blood
+51168,CD20 cells/100 cells in Blood,CD20,Blood,Hematology,8119-0,,true,8119-0,CD20 cells/100 cells in Blood
+51169,CD20 cells/100 cells in Blood,CD20 %,Blood,Hematology,,,false,8119-0,CD20 cells/100 cells in Blood
+51170,CD20 cells [#/volume] in Blood,CD20 Absolute Count,Blood,Hematology,,,false,9558-8,CD20 cells [#/volume] in Blood
+51171,CD22 cells/100 cells in Blood,CD22,Blood,Hematology,14017-8,,true,14017-8,CD22 cells/100 cells in Blood
+51172,CD23 cells/100 cells in Blood,CD23,Blood,Hematology,14018-6,,true,14018-6,CD23 cells/100 cells in Blood
+51173,CD25 cells/100 cells in Blood,CD25,Blood,Hematology,,,false,8121-6,CD25 cells/100 cells in Blood
+51174,CD3 cells/100 cells in Blood,CD3 %,Blood,Hematology,,,false,8124-0,CD3 cells/100 cells in Blood
+51175,CD3 cells [#/volume] in Blood,CD3 Absolute Count,Blood,Hematology,,,false,8122-4,CD3 cells [#/volume] in Blood
+51176,CD3 cells/100 cells in Blood,"CD3 Cells, Percent",Blood,Hematology,8122-4,CD3 cells [#/volume] in Blood,false,8124-0,CD3 cells/100 cells in Blood
+51177,CD33 cells/100 cells in Blood,CD33,Blood,Hematology,8102-6,,true,8102-6,CD33 cells/100 cells in Blood
+51178,CD34 cells/100 cells in Blood,CD34,Blood,Hematology,8125-7,,true,8125-7,CD34 cells/100 cells in Blood
+51179,CD38 cells/100 cells in Blood,CD38,Blood,Hematology,8126-5,,true,8126-5,CD38 cells/100 cells in Blood
+51180,CD3+CD4+ (T4 helper) cells/100 cells in Blood,"CD4 Cells, Percent",Blood,Hematology,8127-3,Deprecated CD4 cells [#/volume] in Blood,false,8123-2,CD3+CD4+ (T4 helper) cells/100 cells in Blood
+51181,CD3+CD4+ (T4 helper) cells/CD3+CD8+ (T8 suppressor cells) cells [# Ratio] in Blood,CD4/CD8 Ratio,Blood,Hematology,8129-9,Deprecated CD4 cells/CD8 Cells [# Ratio] in Blood,false,54218-3,CD3+CD4+ (T4 helper) cells/CD3+CD8+ (T8 suppressor cells) cells [# Ratio] in Blood
+51182,CD41 cells/100 cells in Blood,CD41,Blood,Hematology,17148-8,,true,17148-8,CD41 cells/100 cells in Blood
+51183,CD45 (Lymphs) cells/100 cells in Blood,CD45,Blood,Hematology,8130-7,,true,8130-7,CD45 (Lymphs) cells/100 cells in Blood
+51184,CD5 cells/100 cells in Blood,CD5,Blood,Hematology,8132-3,,true,8132-3,CD5 cells/100 cells in Blood
+51185,CD5 cells/100 cells in Blood,CD5 %,Blood,Hematology,,,false,8132-3,CD5 cells/100 cells in Blood
+51186,CD5 cells [#/volume] in Blood,CD5 Absolute Count,Blood,Hematology,,,false,9559-6,CD5 cells [#/volume] in Blood
+51187,CD55 cells/100 cells in Blood,CD55,Blood,Hematology,17175-1,,true,17175-1,CD55 cells/100 cells in Blood
+51188,CD56 cells/100 cells in Blood,CD56,Blood,Hematology,8133-1,,true,8133-1,CD56 cells/100 cells in Blood
+51189,CD57 cells/100 cells in Blood,CD57,Blood,Hematology,,,false,8134-9,CD57 cells/100 cells in Blood
+51190,CD59 cells/100 cells in Blood,CD59,Blood,Hematology,17177-7,,true,17177-7,CD59 cells/100 cells in Blood
+51191,CD64 cells/100 cells in Blood,CD64,Blood,Hematology,17183-5,,true,17183-5,CD64 cells/100 cells in Blood
+51192,CD7 cells/100 cells in Blood,CD7,Blood,Hematology,8135-6,,true,8135-6,CD7 cells/100 cells in Blood
+51193,CD71 cells/100 cells in Blood,CD71,Blood,Hematology,8136-4,,true,8136-4,CD71 cells/100 cells in Blood
+51194,CD3+CD8+ (T8 suppressor cells) cells/100 cells in Blood,"CD8 Cells, Percent",Blood,Hematology,8137-2,Deprecated CD8 cells [#/volume] in Blood,false,8101-8,CD3+CD8+ (T8 suppressor cells) cells/100 cells in Blood
+51195,Platelet aggregation collagen induced [Units/volume] in Blood,Collagen,Blood,Hematology,,,false,78685-5,Platelet aggregation collagen induced [Units/volume] in Blood
+51196,Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma,D-Dimer,Blood,Hematology,48065-7,,true,48065-7,Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma
+51197,Elliptocytes [Presence] in Blood by Light microscopy,Elliptocytes,Blood,Hematology,6681-1,Microscopic observation [Identifier] in Tissue by Wright stain,false,11274-8,Elliptocytes [Presence] in Blood by Light microscopy
+51198,Microscopic observation [Identifier] in Specimen by Wright stain,Envelope Cells,Blood,Hematology,681-7,,true,681-7,Microscopic observation [Identifier] in Specimen by Wright stain
+51199,Eosinophils [#/volume] in Blood by Automated count,Eosinophil Count,Blood,Hematology,26449-9,Eosinophils [#/volume] in Blood,false,711-2,Eosinophils [#/volume] in Blood by Automated count
+51200,Eosinophils/100 leukocytes in Blood by Automated count,Eosinophils,Blood,Hematology,711-2,Eosinophils [#/volume] in Blood by Automated count,false,713-8,Eosinophils/100 leukocytes in Blood by Automated count
+51201,EPINEPHrine [Mass/volume] in Plasma,Epinepherine,Blood,Hematology,,,false,2230-1,EPINEPHrine [Mass/volume] in Plasma
+51202,Prothrombin activity actual/normal in Platelet poor plasma by Coagulation assay,Factor II,Blood,Hematology,3289-6,,true,3289-6,Prothrombin activity actual/normal in Platelet poor plasma by Coagulation assay
+51203,Coagulation factor IX activity actual/normal in Platelet poor plasma by Coagulation assay,Factor IX,Blood,Hematology,3188-0,Coagulation factor IX activity [Units/volume] in Platelet poor plasma by Chromogenic method,false,3187-2,Coagulation factor IX activity actual/normal in Platelet poor plasma by Coagulation assay
+51204,Coagulation factor V activity actual/normal in Platelet poor plasma by Coagulation assay,Factor V,Blood,Hematology,3193-0,,true,3193-0,Coagulation factor V activity actual/normal in Platelet poor plasma by Coagulation assay
+51205,Coagulation factor VII activity actual/normal in Platelet poor plasma by Coagulation assay,Factor VII,Blood,Hematology,3198-9,,true,3198-9,Coagulation factor VII activity actual/normal in Platelet poor plasma by Coagulation assay
+51206,Coagulation factor VIII activity actual/normal in Platelet poor plasma by Coagulation assay,Factor VIII,Blood,Hematology,3209-4,,true,3209-4,Coagulation factor VIII activity actual/normal in Platelet poor plasma by Coagulation assay
+51207,Coagulation factor VIII inhibitor [Units/volume] in Platelet poor plasma by Coagulation assay,Factor VIII Inhibitor,Blood,Hematology,3204-5,,true,3204-5,Coagulation factor VIII inhibitor [Units/volume] in Platelet poor plasma by Coagulation assay
+51208,Coagulation factor X activity actual/normal in Platelet poor plasma by Coagulation assay,Factor X,Blood,Hematology,3218-5,,true,3218-5,Coagulation factor X activity actual/normal in Platelet poor plasma by Coagulation assay
+51209,Coagulation factor XI activity actual/normal in Platelet poor plasma by Coagulation assay,Factor XI,Blood,Hematology,3226-8,,true,3226-8,Coagulation factor XI activity actual/normal in Platelet poor plasma by Coagulation assay
+51210,Coagulation factor XII activity actual/normal in Platelet poor plasma by Coagulation assay,Factor XII,Blood,Hematology,3232-6,,true,3232-6,Coagulation factor XII activity actual/normal in Platelet poor plasma by Coagulation assay
+51211,Coagulation factor XIII activity actual/normal in Platelet poor plasma by Chromogenic method,Factor XIII,Blood,Hematology,3240-9,Coagulation factor XIII coagulum dissolution [Units/volume] in Platelet poor plasma by Coagulation assay,false,27815-0,Coagulation factor XIII activity actual/normal in Platelet poor plasma by Chromogenic method
+51212,Hemoglobin F/Hemoglobin.total in Blood,Fetal Hemoglobin,Blood,Hematology,4576-5,,true,4576-5,Hemoglobin F/Hemoglobin.total in Blood
+51213,Fibrin+Fibrinogen fragments [Mass/volume] in Platelet poor plasma,Fibrin Degradation Products,Blood,Hematology,30226-5,,true,30226-5,Fibrin+Fibrinogen fragments [Mass/volume] in Platelet poor plasma
+51214,Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay,"Fibrinogen, Functional",Blood,Hematology,3255-7,,true,3255-7,Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay
+51215,FMC7 cells/100 cells in Blood,FMC-7,Blood,Hematology,17220-5,,true,17220-5,FMC7 cells/100 cells in Blood
+51216,Fragments [Presence] in Blood by Light microscopy,Fragmented Cells,Blood,Hematology,10373-9,,true,10373-9,Fragments [Presence] in Blood by Light microscopy
+51217,Glycolate [Moles/volume] in Serum or Plasma,Glyco A,Blood,Hematology,17221-3,CD235a cells/100 cells in Blood,false,42502-5,Glycolate [Moles/volume] in Serum or Plasma
+51218,Granulocytes [#/volume] in Blood,Granulocyte Count,Blood,Hematology,30394-1,,true,30394-1,Granulocytes [#/volume] in Blood
+51219,Blood smear finding [Identifier] in Blood by Light microscopy,H/O Smear,Blood,Hematology,38924-7,TBX5 gene mutations found [Identifier] in Blood or Tissue by Molecular genetics method Nominal,false,5909-7,Blood smear finding [Identifier] in Blood by Light microscopy
+51220,Heinz bodies [Presence] in Blood by Light microscopy,Heinz Body Prep,Blood,Hematology,48068-1,Heinz bodies [Presence] in Blood,false,716-1,Heinz bodies [Presence] in Blood by Light microscopy
+51221,Hematocrit [Volume Fraction] of Blood by Automated count,Hematocrit,Blood,Hematology,4544-3,,true,4544-3,Hematocrit [Volume Fraction] of Blood by Automated count
+51222,Hemoglobin [Mass/volume] in Blood,Hemoglobin,Blood,Hematology,718-7,,true,718-7,Hemoglobin [Mass/volume] in Blood
+51223,Hemoglobin A2/Hemoglobin.total in Blood,Hemoglobin A2,Blood,Hematology,4552-6,Hemoglobin A2/Hemoglobin.total in Blood by Electrophoresis,false,4551-8,Hemoglobin A2/Hemoglobin.total in Blood
+51224,Hemoglobin C/Hemoglobin.total in Blood,Hemoglobin C,Blood,Hematology,4561-7,Hemoglobin C/Hemoglobin.total in Blood by Electrophoresis acid (pH 6.3),false,4563-3,Hemoglobin C/Hemoglobin.total in Blood
+51225,Hemoglobin F/Hemoglobin.total in Blood,Hemoglobin F,Blood,Hematology,9749-3,Hemoglobin F [Units/volume] in Blood by Electrophoresis,false,4576-5,Hemoglobin F/Hemoglobin.total in Blood
+51226,Hemoglobin A/Hemoglobin.total in Blood,Hemogloblin A,Blood,Hematology,10346-5,Hemoglobin A [Units/volume] in Blood by Electrophoresis,false,4546-8,Hemoglobin A/Hemoglobin.total in Blood
+51227,Hemoglobin S/Hemoglobin.total in Blood,Hemogloblin S,Blood,Hematology,4622-7,Hemoglobin S [Presence] in Blood by Electrophoresis acid (pH 6.3),false,4625-0,Hemoglobin S/Hemoglobin.total in Blood
+51228,Heparin unfractionated [Units/volume] in Platelet poor plasma,Heparin,Blood,Hematology,13055-9,Heparin [Units/volume] in Platelet poor plasma,false,66483-9,Heparin unfractionated [Units/volume] in Platelet poor plasma
+51229,LMW Heparin [Units/volume] in Platelet poor plasma,"Heparin, LMW",Blood,Hematology,32684-3,,true,32684-3,LMW Heparin [Units/volume] in Platelet poor plasma
+51230,HLA-DR [Presence],HLA-DR,Blood,Hematology,32621-5,,true,32621-5,HLA-DR [Presence]
+51231,Howell-Jolly bodies [Presence] in Blood by Light microscopy,Howell-Jolly Bodies,Blood,Hematology,7793-3,,true,7793-3,Howell-Jolly bodies [Presence] in Blood by Light microscopy
+51232,Neutrophils.hypersegmented/100 leukocytes in Blood,Hypersegmented Neutrophils,Blood,Hematology,766-6,Neutrophils.hypersegmented [#/volume] in Blood by Manual count,false,30450-1,Neutrophils.hypersegmented/100 leukocytes in Blood
+51233,Hypochromia [Presence] in Blood by Light microscopy,Hypochromia,Blood,Hematology,728-6,,true,728-6,Hypochromia [Presence] in Blood by Light microscopy
+51234,Immunophenotyping study,Immunophenotyping,Blood,Hematology,,,false,55230-7,Immunophenotyping study
+51235,Factor inhibitor XXX [Presence] in Platelet poor plasma by Coagulation assay,Inhibitor Screen,Blood,Hematology,,,false,40744-5,Factor inhibitor XXX [Presence] in Platelet poor plasma by Coagulation assay
+51236,Blood smear finding [Identifier] in Blood by Light microscopy,Inpatient Hematology/Oncology Smear,Blood,Hematology,,,false,5909-7,Blood smear finding [Identifier] in Blood by Light microscopy
+51237,INR in Platelet poor plasma by Coagulation assay,INR(PT),Blood,Hematology,5895-7,Deprecated INR in Platelet poor plasma by Coagulation assay,false,6301-6,INR in Platelet poor plasma by Coagulation assay
+51238,Kappa lymphocytes/100 lymphocytes in Blood,Kappa,Blood,Hematology,,,false,17096-9,Kappa lymphocytes/100 lymphocytes in Blood
+51239,Lambda lymphocytes/100 lymphocytes in Blood,Lambda,Blood,Hematology,,,false,17224-7,Lambda lymphocytes/100 lymphocytes in Blood
+51240,Platelets Large [Presence] in Blood by Light microscopy,Large Platelets,Blood,Hematology,34167-7,Platelets Large [Presence] in Blood by Automated count,false,32146-3,Platelets Large [Presence] in Blood by Light microscopy
+51241,Leukocyte phosphatase [Enzymatic activity/volume] in Leukocytes,Leukocyte Alkaline Phosphatase,Blood,Hematology,4659-9,,true,4659-9,Leukocyte phosphatase [Enzymatic activity/volume] in Leukocytes
+51242,Large unstained cells/100 leukocytes in Blood,LUC,Blood,Hematology,,,false,26463-0,Large unstained cells/100 leukocytes in Blood
+51243,Lupus anticoagulant [Interpretation] in Platelet poor plasma,Lupus Anticoagulant,Blood,Hematology,,,false,3281-3,Lupus anticoagulant [Interpretation] in Platelet poor plasma
+51244,Lymphocytes/100 leukocytes in Blood by Automated count,Lymphocytes,Blood,Hematology,731-0,Lymphocytes [#/volume] in Blood by Automated count,false,736-9,Lymphocytes/100 leukocytes in Blood by Automated count
+51245,Lymphocytes/100 leukocytes in Blood by Automated count,"Lymphocytes, Percent",Blood,Hematology,26478-8,Lymphocytes/100 leukocytes in Blood,false,736-9,Lymphocytes/100 leukocytes in Blood by Automated count
+51246,Macrocytes [Presence] in Blood,Macrocytes,Blood,Hematology,738-5,Macrocytes [Presence] in Blood by Light microscopy,false,30424-6,Macrocytes [Presence] in Blood
+51247,Oval macrocytes [Presence] in Blood by Light microscopy,MacroOvalocytes,Blood,Hematology,10376-2,,true,10376-2,Oval macrocytes [Presence] in Blood by Light microscopy
+51248,MCH [Entitic mass] by Automated count,MCH,Blood,Hematology,785-6,,true,785-6,MCH [Entitic mass] by Automated count
+51249,MCHC [Mass/volume] by Automated count,MCHC,Blood,Hematology,786-4,,true,786-4,MCHC [Mass/volume] by Automated count
+51250,MCV [Entitic volume] by Automated count,MCV,Blood,Hematology,787-2,,true,787-2,MCV [Entitic volume] by Automated count
+51251,Metamyelocytes/100 leukocytes in Blood,Metamyelocytes,Blood,Hematology,28541-1,,true,28541-1,Metamyelocytes/100 leukocytes in Blood
+51252,Microcytes [Presence] in Blood,Microcytes,Blood,Hematology,741-9,Microcytes [Presence] in Blood by Light microscopy,false,30434-5,Microcytes [Presence] in Blood
+51253,Monocytes [#/volume] in Blood by Automated count,Monocyte Count,Blood,Hematology,26484-6,Monocytes [#/volume] in Blood,false,742-7,Monocytes [#/volume] in Blood by Automated count
+51254,Monocytes/100 leukocytes in Blood by Automated count,Monocytes,Blood,Hematology,742-7,Monocytes [#/volume] in Blood by Automated count,false,5905-5,Monocytes/100 leukocytes in Blood by Automated count
+51255,Myelocytes/100 leukocytes in Blood,Myelocytes,Blood,Hematology,26498-6,,true,26498-6,Myelocytes/100 leukocytes in Blood
+51256,Neutrophils/100 leukocytes in Blood by Automated count,Neutrophils,Blood,Hematology,761-7,Neutrophils [#/volume] in Urine by Automated count,false,770-8,Neutrophils/100 leukocytes in Blood by Automated count
+51257,Nucleated erythrocytes/100 leukocytes [Ratio] in Blood by Automated count,Nucleated Red Cells,Blood,Hematology,772-4,Nucleated erythrocytes [#/volume] in Blood by Manual count,false,58413-6,Nucleated erythrocytes/100 leukocytes [Ratio] in Blood by Automated count
+51258,Osmotic fragility [Interpretation] of Red Blood Cells,Osmotic Fragility,Blood,Hematology,34964-7,,true,34964-7,Osmotic fragility [Interpretation] of Red Blood Cells
+51259,Leukocytes other/100 leukocytes in Blood,Other Cells,Blood,Hematology,729-4,Leukocytes other [#/volume] in Blood by Manual count,false,26471-3,Leukocytes other/100 leukocytes in Blood
+51260,Ovalocytes [Presence] in Blood by Light microscopy,Ovalocytes,Blood,Hematology,774-0,,true,774-0,Ovalocytes [Presence] in Blood by Light microscopy
+51261,Pappenheimer bodies [Presence] in Blood by Light microscopy,Pappenheimer Bodies,Blood,Hematology,7795-8,,true,7795-8,Pappenheimer bodies [Presence] in Blood by Light microscopy
+51262,Pencil cells [Presence] in Blood by Light microscopy,Pencil Cells,Blood,Hematology,10377-0,,true,10377-0,Pencil cells [Presence] in Blood by Light microscopy
+51263,Plasma cells/100 leukocytes in Blood,Plasma Cells,Blood,Hematology,13047-6,,true,13047-6,Plasma cells/100 leukocytes in Blood
+51264,Platelet clump [Presence] in Blood by Light microscopy,Platelet Clumps,Blood,Hematology,40741-1,Platelet clump [Presence] in Blood by Automated count,false,7796-6,Platelet clump [Presence] in Blood by Light microscopy
+51265,Platelets [#/volume] in Blood by Automated count,Platelet Count,Blood,Hematology,777-3,,true,777-3,Platelets [#/volume] in Blood by Automated count
+51266,Platelet adequacy [Presence] in Blood by Light microscopy,Platelet Smear,Blood,Hematology,778-1,Platelets [#/volume] in Blood by Manual count,false,9317-9,Platelet adequacy [Presence] in Blood by Light microscopy
+51267,Poikilocytosis [Presence] in Blood by Light microscopy,Poikilocytosis,Blood,Hematology,779-9,,true,779-9,Poikilocytosis [Presence] in Blood by Light microscopy
+51268,Polychromasia [Presence] in Blood by Light microscopy,Polychromasia,Blood,Hematology,10378-8,,true,10378-8,Polychromasia [Presence] in Blood by Light microscopy
+51269,Promyelocytes/100 leukocytes in Blood by Manual count,Promyelocytes,Blood,Hematology,781-5,Promyelocytes [#/volume] in Blood by Manual count,false,783-1,Promyelocytes/100 leukocytes in Blood by Manual count
+51270,Protein C Ag actual/normal in Platelet poor plasma by Immunoassay,"Protein C, Antigen",Blood,Hematology,27820-0,,true,27820-0,Protein C Ag actual/normal in Platelet poor plasma by Immunoassay
+51271,Protein C actual/normal in Platelet poor plasma by Coagulation assay,"Protein C, Functional",Blood,Hematology,27818-4,Protein C actual/normal in Platelet poor plasma by Chromogenic method,false,27819-2,Protein C actual/normal in Platelet poor plasma by Coagulation assay
+51272,Protein S Ag actual/normal in Platelet poor plasma by Immunoassay,"Protein S, Antigen",Blood,Hematology,27823-4,,true,27823-4,Protein S Ag actual/normal in Platelet poor plasma by Immunoassay
+51273,Protein S actual/normal in Platelet poor plasma by Coagulation assay,"Protein S, Functional",Blood,Hematology,31102-7,Protein S actual/normal in Platelet poor plasma by Chromogenic method,false,27822-6,Protein S actual/normal in Platelet poor plasma by Coagulation assay
+51274,Prothrombin time (PT),PT,Blood,Hematology,5902-2,,true,5902-2,Prothrombin time (PT)
+51275,aPTT in Platelet poor plasma by Coagulation assay,PTT,Blood,Hematology,3173-2,aPTT in Blood by Coagulation assay,false,14979-9,aPTT in Platelet poor plasma by Coagulation assay
+51276,Glucose-6-Phosphate dehydrogenase [Enzymatic activity/mass] in Red Blood Cells,Quantitative G6PD,Blood,Hematology,32546-4,,true,32546-4,Glucose-6-Phosphate dehydrogenase [Enzymatic activity/mass] in Red Blood Cells
+51277,Erythrocyte distribution width [Ratio] by Automated count,RDW,Blood,Hematology,788-0,,true,788-0,Erythrocyte distribution width [Ratio] by Automated count
+51278,Schistocytes [Presence] in Blood by Light microscopy,Red Blood Cell Fragments,Blood,Hematology,,,false,800-3,Schistocytes [Presence] in Blood by Light microscopy
+51279,Erythrocytes [#/volume] in Blood by Automated count,Red Blood Cells,Blood,Hematology,789-8,,true,789-8,Erythrocytes [#/volume] in Blood by Automated count
+51280,Reptilase time,Reptilase Time,Blood,Hematology,6683-7,,true,6683-7,Reptilase time
+51281,Reptilase time in Control Platelet poor plasma by Coagulation assay,Reptilase Time Control,Blood,Hematology,,,false,5942-8,Reptilase time in Control Platelet poor plasma by Coagulation assay
+51282,Reticulocytes [#/volume] in Blood,"Reticulocyte Count, Absolute",Blood,Hematology,14196-0,,true,14196-0,Reticulocytes [#/volume] in Blood
+51283,Reticulocytes [#/volume] in Blood by Automated count,"Reticulocyte Count, Automated",Blood,Hematology,17849-1,Reticulocytes/100 erythrocytes in Blood by Automated count,false,60474-4,Reticulocytes [#/volume] in Blood by Automated count
+51284,Reticulocytes [#/volume] in Blood by Manual count,"Reticulocyte Count, Manual",Blood,Hematology,31112-6,Reticulocytes/100 erythrocytes in Blood by Manual,false,40665-2,Reticulocytes [#/volume] in Blood by Manual count
+51285,Reticulocyte cellular hemoglobin distribution width [Entitic mass] in Blood by calculation,"Reticulocyte, Cellular Hemoglobin",Blood,Hematology,,,false,76686-5,Reticulocyte cellular hemoglobin distribution width [Entitic mass] in Blood by calculation
+51286,Ristocetin [Susceptibility],Ristocetin,Blood,Hematology,,,false,18975-3,Ristocetin [Susceptibility]
+51287,Schistocytes [Presence] in Blood by Light microscopy,Schistocytes,Blood,Hematology,800-3,,true,800-3,Schistocytes [Presence] in Blood by Light microscopy
+51288,Erythrocyte sedimentation rate by Westergren method,Sedimentation Rate,Blood,Hematology,4537-7,,true,4537-7,Erythrocyte sedimentation rate by Westergren method
+51289,Viscosity of Serum,Serum Viscosity,Blood,Hematology,3128-6,,true,3128-6,Viscosity of Serum
+51290,Sickle cells [Presence] in Blood by Light microscopy,Sickle Cell Preparation,Blood,Hematology,6864-3,Hemoglobin S [Presence] in Blood by Solubility test,false,801-1,Sickle cells [Presence] in Blood by Light microscopy
+51291,Sickle cells [Presence] in Blood by Light microscopy,Sickle Cells,Blood,Hematology,801-1,,true,801-1,Sickle cells [Presence] in Blood by Light microscopy
+51292,Spherocytes [Presence] in Blood by Light microscopy,Spherocytes,Blood,Hematology,802-9,,true,802-9,Spherocytes [Presence] in Blood by Light microscopy
+51293,Sucrose hemolysis [Presence] of Blood,Sugar Water Test,Blood,Hematology,12260-6,Sucrose hemolysis [Presence] of Red Blood Cells,false,13534-3,Sucrose hemolysis [Presence] of Blood
+51294,Target cells [Presence] in Blood by Light microscopy,Target Cells,Blood,Hematology,10381-2,,true,10381-2,Target cells [Presence] in Blood by Light microscopy
+51295,Terminal deoxyribonucleotidyl transferase [Enzymatic activity/volume] in Plasma,TdT,Blood,Hematology,,,false,2983-5,Terminal deoxyribonucleotidyl transferase [Enzymatic activity/volume] in Plasma
+51296,Dacrocytes [Presence] in Blood by Light microscopy,Teardrop Cells,Blood,Hematology,7791-7,,true,7791-7,Dacrocytes [Presence] in Blood by Light microscopy
+51297,Thrombin time,Thrombin,Blood,Hematology,3243-3,,true,3243-3,Thrombin time
+51298,von Willebrand factor (vWf) ristocetin cofactor actual/normal in Platelet poor plasma by Platelet aggregation,Von Willebrand Factor Activity,Blood,Hematology,6014-5,,true,6014-5,von Willebrand factor (vWf) ristocetin cofactor actual/normal in Platelet poor plasma by Platelet aggregation
+51299,von Willebrand factor (vWf) Ag actual/normal in Platelet poor plasma by Immunoassay,Von Willebrand Factor Antigen,Blood,Hematology,6012-9,von Willebrand factor (vWf) Ag [Units/volume] in Platelet poor plasma by Immunoassay,false,27816-8,von Willebrand factor (vWf) Ag actual/normal in Platelet poor plasma by Immunoassay
+51300,Leukocytes [#/volume] in Blood by Automated count,WBC Count,Blood,Hematology,26464-8,Leukocytes [#/volume] in Blood,false,6690-2,Leukocytes [#/volume] in Blood by Automated count
+51301,Leukocytes [#/volume] in Blood by Automated count,White Blood Cells,Blood,Hematology,804-5,Leukocytes [#/volume] in Blood by Manual count,false,6690-2,Leukocytes [#/volume] in Blood by Automated count
+51302,Immature cells/100 leukocytes in Blood,Young Cells,Blood,Hematology,51633-6,Platelets reticulated/100 platelets in Blood,false,55433-7,Immature cells/100 leukocytes in Blood
+51303,CD10 cells/100 cells in Bone marrow,CD10,Bone Marrow,Hematology,51216-0,,true,51216-0,CD10 cells/100 cells in Bone marrow
+51304,CD103 cells/100 cells in Bone marrow,CD103,Bone Marrow,Hematology,51221-0,,true,51221-0,CD103 cells/100 cells in Bone marrow
+51305,CD117 cells/100 cells in Bone marrow,CD117,Bone Marrow,Hematology,42866-4,,true,42866-4,CD117 cells/100 cells in Bone marrow
+51306,CD11c cells/100 cells in Bone marrow,CD11c,Bone Marrow,Hematology,33202-3,,true,33202-3,CD11c cells/100 cells in Bone marrow
+51307,CD13 cells/100 cells in Bone marrow,CD13,Bone Marrow,Hematology,51237-6,,true,51237-6,CD13 cells/100 cells in Bone marrow
+51308,CD138 cells/100 cells in Bone marrow,CD138,Bone Marrow,Hematology,,,false,42870-6,CD138 cells/100 cells in Bone marrow
+51309,CD14 cells/100 cells in Bone marrow,CD14,Bone Marrow,Hematology,32507-6,,true,32507-6,CD14 cells/100 cells in Bone marrow
+51310,CD15 cells/100 cells in Bone marrow,CD15,Bone Marrow,Hematology,51251-7,,true,51251-7,CD15 cells/100 cells in Bone marrow
+51311,CD16 blasts/100 blasts in Bone marrow,CD16,Bone Marrow,Hematology,,,false,51086-7,CD16 blasts/100 blasts in Bone marrow
+51312,CD16+CD56+ cells/100 cells in Bone marrow,CD16/56,Bone Marrow,Hematology,51255-8,,true,51255-8,CD16+CD56+ cells/100 cells in Bone marrow
+51313,CD19 cells/100 cells in Bone marrow,CD19,Bone Marrow,Hematology,32525-8,,true,32525-8,CD19 cells/100 cells in Bone marrow
+51314,CD2 cells/100 cells in Bone marrow,CD2,Bone Marrow,Hematology,32527-4,,true,32527-4,CD2 cells/100 cells in Bone marrow
+51315,CD20 blasts/100 blasts in Bone marrow,CD20,Bone Marrow,Hematology,,,false,51115-4,CD20 blasts/100 blasts in Bone marrow
+51316,CD22 blasts/100 blasts in Bone marrow,CD22,Bone Marrow,Hematology,,,false,51124-6,CD22 blasts/100 blasts in Bone marrow
+51317,CD23 cells/100 cells in Bone marrow,CD23,Bone Marrow,Hematology,51268-1,,true,51268-1,CD23 cells/100 cells in Bone marrow
+51318,CD25 cells/100 cells in Bone marrow,CD25,Bone Marrow,Hematology,,,false,32493-9,CD25 cells/100 cells in Bone marrow
+51319,CD3 cells/100 cells in Bone marrow,CD3,Bone Marrow,Hematology,32529-0,,true,32529-0,CD3 cells/100 cells in Bone marrow
+51320,CD33 cells/100 cells in Bone marrow,CD33,Bone Marrow,Hematology,51293-9,,true,51293-9,CD33 cells/100 cells in Bone marrow
+51321,CD34 cells/100 cells in Bone marrow,CD34,Bone Marrow,Hematology,57400-4,,true,57400-4,CD34 cells/100 cells in Bone marrow
+51322,CD38 cells/100 cells in Bone marrow,CD38,Bone Marrow,Hematology,,,false,51298-8,CD38 cells/100 cells in Bone marrow
+51323,CD3+CD4+ (T4 helper) cells/100 cells in Bone marrow,CD4,Bone Marrow,Hematology,51301-0,Deprecated CD4 cells/100 cells in Bone marrow,false,32533-2,CD3+CD4+ (T4 helper) cells/100 cells in Bone marrow
+51324,CD41 cells/100 cells in Bone marrow,CD41,Bone Marrow,Hematology,51319-2,,true,51319-2,CD41 cells/100 cells in Bone marrow
+51325,CD45 (Lymphs) cells/100 cells in Bone marrow,CD45,Bone Marrow,Hematology,51340-8,,true,51340-8,CD45 (Lymphs) cells/100 cells in Bone marrow
+51326,CD5 cells/100 cells in Bone marrow,CD5,Bone Marrow,Hematology,35640-2,,true,35640-2,CD5 cells/100 cells in Bone marrow
+51327,CD55 cells/100 cells in Bone marrow,CD55,Bone Marrow,Hematology,51344-0,,true,51344-0,CD55 cells/100 cells in Bone marrow
+51328,CD3+CD56+ cells/100 cells in Bone marrow,CD56,Bone Marrow,Hematology,,,false,51280-6,CD3+CD56+ cells/100 cells in Bone marrow
+51329,CD57 cells/100 cells in Bone marrow,CD57,Bone Marrow,Hematology,,,false,32497-0,CD57 cells/100 cells in Bone marrow
+51330,CD59 cells/100 cells in Bone marrow,CD59,Bone Marrow,Hematology,51358-0,,true,51358-0,CD59 cells/100 cells in Bone marrow
+51331,CD64 cells/100 cells in Bone marrow,CD64,Bone Marrow,Hematology,51365-5,,true,51365-5,CD64 cells/100 cells in Bone marrow
+51332,CD7 cells/100 cells in Bone marrow,CD7,Bone Marrow,Hematology,35641-0,,true,35641-0,CD7 cells/100 cells in Bone marrow
+51333,CD71 cells/100 cells in Specimen,CD71,Bone Marrow,Hematology,,,false,21169-8,CD71 cells/100 cells in Specimen
+51334,CD3+CD8+ (T8 suppressor) cells/100 cells in Bone marrow,CD8,Bone Marrow,Hematology,51372-1,CD8+HLA-DR+ cells/100 cells in Bone marrow,false,32535-7,CD3+CD8+ (T8 suppressor) cells/100 cells in Bone marrow
+51335,CD20+FMC7+ cells/100 cells in Bone marrow,FMC-7,Bone Marrow,Hematology,,,false,44061-0,CD20+FMC7+ cells/100 cells in Bone marrow
+51336,Glycolate [Moles/volume] in Body fluid,Glyco A,Bone Marrow,Hematology,33208-0,CD235a cells/100 cells in Bone marrow,false,55864-3,Glycolate [Moles/volume] in Body fluid
+51337,HLA-DR+ cells/100 cells in Bone marrow,HLA-DR,Bone Marrow,Hematology,51380-4,,true,51380-4,HLA-DR+ cells/100 cells in Bone marrow
+51338,Immunophenotyping study,Immunophenotyping,Bone Marrow,Hematology,,,false,55230-7,Immunophenotyping study
+51339,Iron.microscopic observation [Identifier] in Bone marrow by Potassium ferrocyanide stain,Iron Stain,Bone Marrow,Hematology,13513-7,,true,13513-7,Iron.microscopic observation [Identifier] in Bone marrow by Potassium ferrocyanide stain
+51340,Kappa lymphocytes/100 lymphocytes in Bone marrow,Kappa,Bone Marrow,Hematology,,,false,46237-4,Kappa lymphocytes/100 lymphocytes in Bone marrow
+51341,Lambda lymphocytes/100 lymphocytes in Specimen,Lambda,Bone Marrow,Hematology,,,false,20618-5,Lambda lymphocytes/100 lymphocytes in Specimen
+51342,Microscopic observation [Identifier] in Bone marrow by Wright Giemsa stain,Wright Giemsa,Bone Marrow,Hematology,10355-6,,true,10355-6,Microscopic observation [Identifier] in Bone marrow by Wright Giemsa stain
+51343,Variant lymphocytes/100 leukocytes in Cerebral spinal fluid,Atypical Lymphocytes,Cerebrospinal Fluid (CSF),Hematology,30416-2,Variant lymphocytes/100 leukocytes in Cerebral spinal fluid,false,,
+51344,Band form neutrophils/100 leukocytes in Cerebral spinal fluid,Bands,Cerebrospinal Fluid (CSF),Hematology,26509-0,Band form neutrophils/100 leukocytes in Cerebral spinal fluid,false,,
+51345,Basophils/100 leukocytes in Cerebral spinal fluid,Basophils,Cerebrospinal Fluid (CSF),Hematology,30374-3,Basophils/100 leukocytes in Cerebral spinal fluid,false,,
+51473,Cystine crystals [Presence] in Urine sediment by Light microscopy,Cysteine Crystals,Urine,Hematology,5782-8,Crystals [type] in Urine sediment by Light microscopy,false,5784-4,Cystine crystals [Presence] in Urine sediment by Light microscopy
+51474,Eosinophils [Presence] in Urine sediment by Light microscopy,Eosinophils,Urine,Hematology,25156-1,,true,25156-1,Eosinophils [Presence] in Urine sediment by Light microscopy
+51475,Epithelial casts [#/area] in Urine sediment by Microscopy low power field,Epithelial Casts,Urine,Hematology,,,false,5786-9,Epithelial casts [#/area] in Urine sediment by Microscopy low power field
+51476,Epithelial cells [#/area] in Urine sediment by Microscopy high power field,Epithelial Cells,Urine,Hematology,5787-7,,true,5787-7,Epithelial cells [#/area] in Urine sediment by Microscopy high power field
+51477,Fat [Presence] in Urine,Free Fat,Urine,Hematology,53359-6,Fat [#/area] in Urine by Computer assisted method,false,2272-3,Fat [Presence] in Urine
+51478,Glucose [Mass/volume] in Urine by Test strip,Glucose,Urine,Hematology,5792-7,,true,5792-7,Glucose [Mass/volume] in Urine by Test strip
+51479,Granular casts [#/area] in Urine sediment by Microscopy low power field,Granular Casts,Urine,Hematology,5793-5,,true,5793-5,Granular casts [#/area] in Urine sediment by Microscopy low power field
+51480,Hematocrit [Volume Fraction] of Urine,Hematocrit,Urine,Hematology,17809-5,,true,17809-5,Hematocrit [Volume Fraction] of Urine
+51481,Hemosiderin [Presence] in Urine,Hemosiderin,Urine,Hematology,4644-1,,true,4644-1,Hemosiderin [Presence] in Urine
+51482,Hyaline casts [#/area] in Urine sediment by Microscopy low power field,Hyaline Casts,Urine,Hematology,5796-8,,true,5796-8,Hyaline casts [#/area] in Urine sediment by Microscopy low power field
+51483,Yeast.hyphae [Presence] in Urine sediment by Light microscopy,Hyphenated Yeast,Urine,Hematology,41865-7,,true,41865-7,Yeast.hyphae [Presence] in Urine sediment by Light microscopy
+51484,Ketones [Mass/volume] in Urine by Test strip,Ketone,Urine,Hematology,5797-6,,true,5797-6,Ketones [Mass/volume] in Urine by Test strip
+51485,Leucine crystals [Presence] in Urine sediment by Light microscopy,Leucine Crystals,Urine,Hematology,5798-4,,true,5798-4,Leucine crystals [Presence] in Urine sediment by Light microscopy
+51486,Leukocytes [Presence] in Urine sediment by Light microscopy,Leukocytes,Urine,Hematology,5799-2,Leukocyte esterase [Presence] in Urine by Test strip,false,20455-2,Leukocytes [Presence] in Urine sediment by Light microscopy
+51487,Nitrite [Presence] in Urine by Test strip,Nitrite,Urine,Hematology,5802-4,,true,5802-4,Nitrite [Presence] in Urine by Test strip
+51488,Epithelial cells.non-squamous [#/area] in Urine sediment by Microscopy high power field,Non-squamous Epithelial Cells,Urine,Hematology,41284-1,,true,41284-1,Epithelial cells.non-squamous [#/area] in Urine sediment by Microscopy high power field
+51489,Epithelial cells.non-squamous [#/area] in Urine sediment by Microscopy high power field,NonSquamous Epithelial Cell,Urine,Hematology,41284-1,,true,41284-1,Epithelial cells.non-squamous [#/area] in Urine sediment by Microscopy high power field
+51490,Oval fat bodies (globules) [#/area] in Urine sediment by Microscopy high power field,Oval Fat Body,Urine,Hematology,,,false,5788-5,Oval fat bodies (globules) [#/area] in Urine sediment by Microscopy high power field
+51491,pH of Urine by Test strip,pH,Urine,Hematology,5803-2,,true,5803-2,pH of Urine by Test strip
+51492,Protein [Mass/volume] in Urine by Test strip,Protein,Urine,Hematology,5804-0,,true,5804-0,Protein [Mass/volume] in Urine by Test strip
+51493,Erythrocytes [#/area] in Urine sediment by Microscopy high power field,RBC,Urine,Hematology,5808-1,Erythrocytes [#/volume] in Urine sediment by Microscopy high power field,false,13945-1,Erythrocytes [#/area] in Urine sediment by Microscopy high power field
+51494,RBC casts [#/area] in Urine sediment by Microscopy low power field,RBC Casts,Urine,Hematology,5807-3,,true,5807-3,RBC casts [#/area] in Urine sediment by Microscopy low power field
+51495,Erythrocyte clumps [#/area] in Urine sediment by Microscopy high power field,RBC Clumps,Urine,Hematology,,,false,58449-0,Erythrocyte clumps [#/area] in Urine sediment by Microscopy high power field
+51496,Reducing substances [Presence] in Urine,"Reducing Substances, Urine",Urine,Hematology,,,false,5809-9,Reducing substances [Presence] in Urine
+51497,Epithelial cells.renal [#/area] in Urine sediment by Microscopy high power field,Renal Epithelial Cells,Urine,Hematology,26052-1,,true,26052-1,Epithelial cells.renal [#/area] in Urine sediment by Microscopy high power field
+51498,Specific gravity of Urine by Test strip,Specific Gravity,Urine,Hematology,5811-5,,true,5811-5,Specific gravity of Urine by Test strip
+51499,Spermatozoa [Presence] in Urine sediment by Light microscopy,Sperm,Urine,Hematology,8248-7,,true,8248-7,Spermatozoa [Presence] in Urine sediment by Light microscopy
+51500,Sulfonamide crystals [Presence] in Urine sediment by Light microscopy,Sulfonamides,Urine,Hematology,5812-3,,true,5812-3,Sulfonamide crystals [Presence] in Urine sediment by Light microscopy
+51501,Transitional cells [#/area] in Urine sediment by Microscopy high power field,Transitional Epithelial Cells,Urine,Hematology,30089-7,,true,30089-7,Transitional cells [#/area] in Urine sediment by Microscopy high power field
+51502,Trichomonas sp [#/area] in Urine sediment by Microscopy high power field,Trichomonas,Urine,Hematology,32724-7,Trichomonas sp [Presence] in Urine by Light microscopy,false,33905-1,Trichomonas sp [#/area] in Urine sediment by Microscopy high power field
+51503,Triple phosphate crystals [Presence] in Urine sediment by Light microscopy,Triple Phosphate Crystals,Urine,Hematology,5814-9,,true,5814-9,Triple phosphate crystals [Presence] in Urine sediment by Light microscopy
+51504,Tyrosine crystals [Presence] in Urine sediment by Light microscopy,Tyrosine Crystals,Urine,Hematology,5815-6,,true,5815-6,Tyrosine crystals [Presence] in Urine sediment by Light microscopy
+51505,Urate crystals [Presence] in Urine sediment by Light microscopy,Uric Acid Crystals,Urine,Hematology,5817-2,,true,5817-2,Urate crystals [Presence] in Urine sediment by Light microscopy
+51506,Appearance of Urine,Urine Appearance,Urine,Hematology,5767-9,,true,5767-9,Appearance of Urine
+51507,Casts [#/area] in Urine sediment by Microscopy low power field,"Urine Casts, Other",Urine,Hematology,9842-6,,true,9842-6,Casts [#/area] in Urine sediment by Microscopy low power field
+51508,Color of Urine,Urine Color,Urine,Hematology,5778-6,,true,5778-6,Color of Urine
+51509,Urine sediment comments by Light microscopy Narrative,Urine Comments,Urine,Hematology,,,false,11279-7,Urine sediment comments by Light microscopy Narrative
+51510,Unidentified crystals [Presence] in Urine sediment by Light microscopy,"Urine Crystals, Other",Urine,Hematology,5783-6,,true,5783-6,Unidentified crystals [Presence] in Urine sediment by Light microscopy
+51511,Oval fat bodies (globules) [Presence] in Urine sediment by Light microscopy,Urine Fat Bodies,Urine,Hematology,2272-3,Fat [Presence] in Urine,false,25158-7,Oval fat bodies (globules) [Presence] in Urine sediment by Light microscopy
+51512,Mucus [Presence] in Urine sediment by Light microscopy,Urine Mucous,Urine,Hematology,8247-9,,true,8247-9,Mucus [Presence] in Urine sediment by Light microscopy
+51513,Urinalysis specimen collection method,Urine Specimen Type,Urine,Hematology,19159-3,,true,19159-3,Urinalysis specimen collection method
+51514,Urobilinogen [Mass/volume] in Urine by Test strip,Urobilinogen,Urine,Hematology,5818-0,Urobilinogen [Presence] in Urine by Test strip,false,20405-7,Urobilinogen [Mass/volume] in Urine by Test strip
+51515,Waxy casts [#/area] in Urine sediment by Microscopy low power field,Waxy Casts,Urine,Hematology,5819-8,,true,5819-8,Waxy casts [#/area] in Urine sediment by Microscopy low power field
+51516,Leukocytes [#/area] in Urine sediment by Microscopy high power field,WBC,Urine,Hematology,5821-4,,true,5821-4,Leukocytes [#/area] in Urine sediment by Microscopy high power field
+51517,WBC casts [#/area] in Urine sediment by Microscopy low power field,WBC Casts,Urine,Hematology,5820-6,,true,5820-6,WBC casts [#/area] in Urine sediment by Microscopy low power field
+51518,Leukocyte clumps [Presence] in Urine sediment by Light microscopy,WBC Clumps,Urine,Hematology,,,false,67848-2,Leukocyte clumps [Presence] in Urine sediment by Light microscopy
+51519,Yeast [#/area] in Urine sediment by Microscopy high power field,Yeast,Urine,Hematology,5822-2,,true,5822-2,Yeast [#/area] in Urine sediment by Microscopy high power field
+51520,Thyroperoxidase Ab [Presence] in Serum or Plasma,ANTI-MC,BLOOD,CHEMISTRY,32042-4,Thyroperoxidase Ab [Presence] in Serum or Plasma,false,,
+51521,,"ACID PHOSPHATASE, PROSTATIC",BLOOD,CHEMISTRY,,,true,,
+51522,Prostaglandin D2 [Mass/volume] in Body fluid,PG,OTHER BODY FLUID,CHEMISTRY,48785-0,Prostaglandin D2 [Mass/volume] in Body fluid,false,,
+51523,,GR HOLD,URINE,CHEMISTRY,,,true,,
+51524,Fatty casts [#/area] in Urine sediment by Microscopy low power field,FATTY,URINE,HEMATOLOGY,5789-3,Fatty casts [#/area] in Urine sediment by Microscopy low power field,false,,
+51525,,Billed,BLOOD,CHEMISTRY,,,true,,
+51526,,FRUCAMN+,BLOOD,CHEMISTRY,,,true,,
+51527,,MS-DIA,BLOOD,CHEMISTRY,,,true,,
+51528,,STDY HOLD,BLOOD,CHEMISTRY,,,true,,
+51529,,Estimated Actual Glucose,BLOOD,CHEMISTRY,,,true,,
+51530,,AF-AFP,OTHER BODY FLUID,CHEMISTRY,,,true,,
+51531,,STDYURINE,URINE,CHEMISTRY,,,true,,
+51532,,PLASMGN,BLOOD,HEMATOLOGY,,,true,,
+51533,,WBCP,BLOOD,HEMATOLOGY,,,true,,
+51534,,MYELOS,JOINT FLUID,HEMATOLOGY,,,true,,
+51535,,CD55,OTHER BODY FLUID,HEMATOLOGY,,,true,,
+51536,,CD59,OTHER BODY FLUID,HEMATOLOGY,,,true,,
+51537,,TDT,OTHER BODY FLUID,HEMATOLOGY,,,true,,
+51540,,PROBLEM SPECIMEN,BLOOD,CHEMISTRY,,,true,,
+51541,,PROBLEM SPECIMEN,BLOOD,HEMATOLOGY,,,true,,
+51542,,PROBLEM SPECIMEN,URINE,HEMATOLOGY,,,true,,
+51543,,VOIDED SPECIMEN,BLOOD,CHEMISTRY,,,true,,
+51544,,VOIDED SPECIMEN,OTHER BODY FLUID,BLOOD GAS,,,true,,
+51545,,VOIDED SPECIMEN,BLOOD,BLOOD GAS,,,true,,
+51546,,VOIDED SPECIMEN,CSF,CHEMISTRY,,,true,,
+51547,,VOIDED SPECIMEN,OTHER BODY FLUID,CHEMISTRY,,,true,,
+51548,,VOIDED SPECIMEN,URINE,HEMATOLOGY,,,true,,
+51549,,VOIDED SPECIMEN,ASCITES,CHEMISTRY,,,true,,
+51550,,VOIDED SPECIMEN,BLOOD,HEMATOLOGY,,,true,,
+51551,,VOIDED SPECIMEN,OTHER BODY FLUID,HEMATOLOGY,,,true,,
+51552,,VOIDED SPECIMEN,STOOL,CHEMISTRY,,,true,,
+51553,,VOIDED SPECIMEN,URINE,CHEMISTRY,,,true,,
+51554,,VOIDED SPECIMEN,JOINT FLUID,HEMATOLOGY,,,true,,
+51555,,SURFACTANT ALBUMIN RATIO,OTHER BODY FLUID,CHEMISTRY,,,true,,

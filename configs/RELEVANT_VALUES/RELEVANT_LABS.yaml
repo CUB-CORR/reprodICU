@@ -49,6 +49,7 @@ Leukocytes [#/volume]: [] # leukocytes
 Lipase [Enzymatic activity/volume]: [] # lipase
 Lymphocytes/100 leukocytes: [] # lymphocytes
 Magnesium [Moles/volume]: [] # magnesium
+Microalbumin [Mass/volume]: []
 MCH [Entitic mass]: [] # MCH
 MCHC [Mass/volume]: [] # MCHC
 MCV [Entitic volume]: [] # MCV

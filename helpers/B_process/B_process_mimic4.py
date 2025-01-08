@@ -396,13 +396,6 @@ class MIMIC4Converter(UnitConverter):
                 structfield=structfield,
             )
             .pipe(
-                self.convert_mg_dL_to_mg_L,
-                itemid="Prealbumin [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
                 self.convert_g_dL_to_g_L,
                 itemid="Protein [Mass/volume]",
                 labelcol=labelcol,
@@ -484,6 +477,13 @@ class MIMIC4Converter(UnitConverter):
 
         return (
             data.pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Band form neutrophils [#/volume]",
+                total_itemcol="Leukocytes [#/volume]",
+                goal_itemcol="Band form neutrophils/100 leukocytes",
+                structfield="value",
+                structstring=True,
+            ).pipe(
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils [#/volume]",
                 total_itemcol="Leukocytes [#/volume]",

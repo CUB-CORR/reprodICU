@@ -21,7 +21,7 @@ anion gap: Anion gap in Blood # anion_gap
 AST (SGOT): Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma # AST
 Base Deficit: base_deficit # NOTE: Later combined with base_excess into base_excess_deficit
 Base Excess: base_excess # NOTE: Later combined with base_deficit into base_excess_deficit
-bedside glucose: Glucose [Mass/volume] in Serum or Plasma # glucose_bedside
+bedside glucose: Glucose [Mass/volume] in Blood # glucose_bedside
 bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 BNP: # BNP
 BUN: Urea nitrogen [Mass/volume] in Serum or Plasma # blood_urea_nitrogen
@@ -54,8 +54,8 @@ free T4: Thyroxine (T4) free [Mass/volume] in Serum or Plasma # T4_free
 Gentamicin - peak: # Medication levels in blood
 Gentamicin - random: # Medication levels in blood
 Gentamicin - trough: # Medication levels in blood
-glucose - CSF:
-glucose: Glucose [Mass/volume] in Serum or Plasma # glucose
+glucose - CSF: Glucose [Mass/volume] in Cerebral spinal fluid
+glucose: Glucose [Mass/volume] in Blood # glucose
 haptoglobin: Haptoglobin [Mass/volume] in Serum or Plasma # haptoglobin
 HCO3: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 Hct: Hematocrit [Volume Fraction] of Blood # hematocrit
@@ -100,7 +100,7 @@ Pressure Control: # Respiratory parameter
 Pressure Support: # Respiratory parameter
 Procainamide: # Medication levels in blood
 prolactin:
-protein - CSF:
+protein - CSF: # Protein [Mass/volume] in Cerebral spinal fluid # is in mg/dL not g/dL -> needs conversion
 protein C:
 protein S:
 PT - INR: INR in Platelet poor plasma by Coagulation assay # INR

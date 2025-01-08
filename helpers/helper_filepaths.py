@@ -231,49 +231,48 @@ class MIMIC3Paths(GlobalVars):
             self.mimic3_mapping_path + "mimic3_inputevents_drug_class.yaml"
         )
 
-        # MIMIC-IV LOINC mapping paths (also used for MIMIC-III)
-        self.mimic4_mapping_path = self.mapping_path + "mimic4/"
-        self.mimic_loinc_mapping_path = (
-            self.mimic4_mapping_path + "mimic-code_mapping/"
+        # MIMIC-III LOINC mapping paths
+        self.mimic3_loinc_mapping_path = (
+            self.mimic3_mapping_path + "mimic-code_mapping/"
         )
         self.d_labitems_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
-        )
-        self.inputevents_to_rxnorm_path = (
-            self.mimic_loinc_mapping_path + "inputevents_to_rxnorm.csv"
-        )
-        self.lab_itemid_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "lab_itemid_to_loinc.csv"
-        )
-        self.meas_chartevents_main_path = (
-            self.mimic_loinc_mapping_path + "meas_chartevents_main.csv"
-        )
-        self.waveforms_summary_path = (
-            self.mimic_loinc_mapping_path + "waveforms-summary.csv"
-        )
-        self.proc_itemid_path = (
-            self.mimic_loinc_mapping_path + "proc_itemid.csv"
-        )
-        self.outputevents_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "outputevents_to_loinc.csv"
-        )
-        self.proc_datetimeevents_path = (
-            self.mimic_loinc_mapping_path + "proc_datetimeevents.csv"
-        )
-        self.meas_chartevents_value_path = (
-            self.mimic_loinc_mapping_path + "meas_chartevents_value.csv"
-        )
-        self.numerics_summary_path = (
-            self.mimic_loinc_mapping_path + "numerics-summary.csv"
-        )
-
-        # MIMIC-III LOINC mapping paths (additional to MIMIC-IV)
-        self.mimic_loinc_mapping_additional_path = (
-            self.mimic3_mapping_path + "mimic-additional_code_mapping/"
+            self.mimic3_loinc_mapping_path + "d_labitems_to_loinc_mimic3.csv"
         )
         self.meas_chartevents_main_additional_path = (
-            self.mimic_loinc_mapping_additional_path
-            + "meas_chartevents_main.csv"
+            self.mimic3_loinc_mapping_path + "meas_chartevents_main.csv"
+        )
+
+        # MIMIC-IV LOINC mapping paths (additionally used for MIMIC-III)
+        self.mimic4_mapping_path = self.mapping_path + "mimic4/"
+        self.mimic4_loinc_mapping_path = (
+            self.mimic4_mapping_path + "mimic-code_mapping/"
+        )
+        self.inputevents_to_rxnorm_path = (
+            self.mimic4_loinc_mapping_path + "inputevents_to_rxnorm.csv"
+        )
+        self.lab_itemid_to_loinc_path = (
+            self.mimic4_loinc_mapping_path + "lab_itemid_to_loinc.csv"
+        )
+        self.meas_chartevents_main_path = (
+            self.mimic4_loinc_mapping_path + "meas_chartevents_main.csv"
+        )
+        self.waveforms_summary_path = (
+            self.mimic4_loinc_mapping_path + "waveforms-summary.csv"
+        )
+        self.proc_itemid_path = (
+            self.mimic4_loinc_mapping_path + "proc_itemid.csv"
+        )
+        self.outputevents_to_loinc_path = (
+            self.mimic4_loinc_mapping_path + "outputevents_to_loinc.csv"
+        )
+        self.proc_datetimeevents_path = (
+            self.mimic4_loinc_mapping_path + "proc_datetimeevents.csv"
+        )
+        self.meas_chartevents_value_path = (
+            self.mimic4_loinc_mapping_path + "meas_chartevents_value.csv"
+        )
+        self.numerics_summary_path = (
+            self.mimic4_loinc_mapping_path + "numerics-summary.csv"
         )
 
 
@@ -344,38 +343,38 @@ class MIMIC4Paths(GlobalVars):
         )
 
         # MIMIC-IV LOINC mapping paths
-        self.mimic_loinc_mapping_path = (
+        self.mimic4_loinc_mapping_path = (
             self.mimic4_mapping_path + "mimic-code_mapping/"
         )
         self.d_labitems_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
+            self.mimic4_loinc_mapping_path + "d_labitems_to_loinc.csv"
         )
         self.inputevents_to_rxnorm_path = (
-            self.mimic_loinc_mapping_path + "inputevents_to_rxnorm.csv"
+            self.mimic4_loinc_mapping_path + "inputevents_to_rxnorm.csv"
         )
         self.lab_itemid_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "lab_itemid_to_loinc.csv"
+            self.mimic4_loinc_mapping_path + "lab_itemid_to_loinc.csv"
         )
         self.meas_chartevents_main_path = (
-            self.mimic_loinc_mapping_path + "meas_chartevents_main.csv"
+            self.mimic4_loinc_mapping_path + "meas_chartevents_main.csv"
         )
         self.waveforms_summary_path = (
-            self.mimic_loinc_mapping_path + "waveforms-summary.csv"
+            self.mimic4_loinc_mapping_path + "waveforms-summary.csv"
         )
         self.proc_itemid_path = (
-            self.mimic_loinc_mapping_path + "proc_itemid.csv"
+            self.mimic4_loinc_mapping_path + "proc_itemid.csv"
         )
         self.outputevents_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "outputevents_to_loinc.csv"
+            self.mimic4_loinc_mapping_path + "outputevents_to_loinc.csv"
         )
         self.proc_datetimeevents_path = (
-            self.mimic_loinc_mapping_path + "proc_datetimeevents.csv"
+            self.mimic4_loinc_mapping_path + "proc_datetimeevents.csv"
         )
         self.meas_chartevents_value_path = (
-            self.mimic_loinc_mapping_path + "meas_chartevents_value.csv"
+            self.mimic4_loinc_mapping_path + "meas_chartevents_value.csv"
         )
         self.numerics_summary_path = (
-            self.mimic_loinc_mapping_path + "numerics-summary.csv"
+            self.mimic4_loinc_mapping_path + "numerics-summary.csv"
         )
 
         # MIMIC-IV additional LOINC mapping paths
@@ -421,14 +420,8 @@ class NWICUPaths(GlobalVars):
         self.drug_administration_route_mapping_path = (
             self.nwicu_mapping_path + "nwicu_prescriptions_route.yaml"
         )
-
-        # MIMIC-IV LOINC mapping paths (also used for NWICU)
-        self.mimic4_mapping_path = self.mapping_path + "mimic4/"
-        self.mimic_loinc_mapping_path = (
-            self.mimic4_mapping_path + "mimic-code_mapping/"
-        )
         self.d_labitems_to_loinc_path = (
-            self.mimic_loinc_mapping_path + "d_labitems_to_loinc.csv"
+            self.nwicu_mapping_path + "d_labitems_to_loinc_nwicu.csv"
         )
 
 
@@ -450,6 +443,17 @@ class SICdbPaths(GlobalVars):
         self.laboratory_path = sicdb_path + "laboratory.csv.gz"
         self.medication_path = sicdb_path + "medication.csv.gz"
         self.unitlog_path = sicdb_path + "unitlog.csv.gz"
+
+        # SICdb unpacked data paths
+        self.data_float_m_path = sicdb_path + "data_float_m.csv.gz"
+        # PARQUETIZE FOR MORE EFFICIENT DATA PROCESSING
+        path = self.data_float_m_path
+        if not os.path.isfile(
+            path.replace(".csv", ".parquet").replace(".gz", "")
+        ):
+            _parquetize(path, "SICdb")
+
+        self.data_float_m_path = sicdb_path + "data_float_m.parquet"
 
         # SICdb custom mapping paths
         self.sicdb_mapping_path = self.mapping_path + "sicdb/"
@@ -489,7 +493,7 @@ class UMCdbPaths(GlobalVars):
             if not os.path.isfile(
                 path.replace(".csv", ".parquet").replace(".gz", "")
             ):
-                self._parquetize(path)
+                _parquetize(path, "UMCdb")
 
             self.admissions_path = umcdb_path + "admissions.parquet"
             self.drugitems_path = umcdb_path + "drugitems.parquet"
@@ -581,11 +585,12 @@ class UMCdbPaths(GlobalVars):
             self.umcdb_loinc_mapping_path + "specimen_source.usagi.csv"
         )
 
-    def _parquetize(self, path):
-        print(f"UMCdb   - parquetizing {path}")
-        return pl.scan_csv(path, schema_overrides={"value": str}).sink_parquet(
-            path.replace(".csv", ".parquet").replace(".gz", "")
-        )
+
+def _parquetize(path, db: str):
+    print(f"{db}   - parquetizing {path}")
+    return pl.scan_csv(path, schema_overrides={"value": str}).sink_parquet(
+        path.replace(".csv", ".parquet").replace(".gz", "")
+    )
 
 
 # endregion
