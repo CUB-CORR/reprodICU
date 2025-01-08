@@ -671,8 +671,8 @@ flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis: Fluid output emesis
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis Count:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis Output: Fluid output emesis
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Estimated Blood Loss: Blood loss
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley Cath: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley cath: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley Cath: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley cath: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|GI Tube 1 Drainage Amount: Fluid output gastric tube
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric (NG): Fluid output gastric tube
 "flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Nasogastric Nostril, L": Fluid output gastric tube
@@ -684,7 +684,7 @@ flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Generic:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|HemodialysisOut:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Hemofiltration:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Ileostomy: Output.ileostomy
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Indwelling Catheter Output: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Indwelling Catheter Output: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|JP Drain Total:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|JP drain: Fluid output wound drain
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|L Pleural CT: Fluid output chest tube
@@ -701,20 +701,20 @@ flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Other:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Other Output:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|OthrOutputTotal:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Closed/Suction Drain Right Abdomen Bulb 7 Fr.:
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-External Urinary Catheter: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-External Urinary Catheter: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG Tube Nasogastric Left nostril:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG/Feeding Tube Nasogastric 16 Fr. Right nare:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG/Feeding Tube Nasogastric Right nare:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Straight Catheter: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter 14 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex 14 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex;Straight-tip 14 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 16 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 18 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex;Temperature probe 16 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Straight-tip 14 Fr.: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Temperature probe 16 Fr.: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex;Straight-tip 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 16 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 18 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex;Temperature probe 16 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Straight-tip 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Temperature probe 16 Fr.: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-[REMOVED] Straight Catheter: Fluid output urine in and out urethral catheter
 "flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Left Mid": Fluid output chest tube
 "flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Pleural Left Lower;Anterior": Fluid output chest tube
@@ -747,24 +747,24 @@ flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Thoracentesis Output:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Total Out:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Total out:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Tube Feeding Residual Discarded (mL):
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|URINE CATHETER: Fluid output urine in and out urethral catheter
-"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Condom External": Fluid output urine in and out urethral catheter
-"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Sup": Fluid output urine in and out urethral catheter
-"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Ure": Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|URINE CATHETER: Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Condom External": Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Sup": Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Ure": Urine output
 "flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Straight/Intermittent Ure": Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Count: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Count: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Occurrence:
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output (mL)-Urethral Catheter: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-FOLEY: Fluid output urine in and out urethral catheter
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-Foley: Fluid output urine in and out urethral catheter
-"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine, void:": Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output (mL)-Urethral Catheter: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-FOLEY: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-Foley: Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine, void:": 
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Voided Amount:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Wound Vac Total: Fluid output wound drain
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|chest tube: Fluid output chest tube
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|drainage total:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|emesis: Fluid output emesis
-flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|foley: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|foley: Urine output
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|generic:
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|jp: Fluid output wound drain
 flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|other:
