@@ -9,6 +9,7 @@ import os
 import polars as pl
 
 from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from helpers.A_extract.A_extract_eicu import EICUExtractor
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
@@ -24,15 +25,16 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
         Returns a DataFrame with the following columns:
         - ICU stay ID
-        - renal replacement therapy type "Renal Replacement Therapy Type" (one of
+        - renal replacement therapy type "Renal Replacement Therapy Type", one of
             - "CVVH" (Continuous venovenous hemofiltration),
+            - "CAVHD" (Continuous arteriovenous hemodialysis),
             - "CVVHD" (Continuous venovenous hemodialysis),
             - "CVVHDF" (Continuous venovenous hemodiafiltration)
             - "IHD" (Intermittent hemodialysis)
-            - "peritoneal" (Peritoneal dialysis)
+            - "Peritoneal dialysis"
             - "SCUF" (Slow continuous ultra filtration)
+            - "SLED" (Sustained low-efficiency dialysis)
             - "other"
-          )
         - renal replacement therapy start "Renal Replacement Therapy Start Relative to Admission (seconds)"
         - renal replacement therapy end "Renal Replacement Therapy End Relative to Admission (seconds)"
         - renal replacement therapy duration "Renal Replacement Therapy Duration (hours)"
@@ -42,116 +44,78 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
         """
 
         # region eICU
-        # # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
-        # eicu_RENAL_REPLACEMENT_THERAPY_DURATION = (
-        #     pl.scan_csv(self.eicu_paths.respiratoryCare_path)
-        #     # ventstartoffset and ventendoffset seem not include full renal replacement therapy duration
-        #     .select(
-        #         "patientunitstayid",
-        #         "priorventstartoffset",
-        #         "priorventendoffset",
-        #     )
-        #     .with_columns(
-        #         # reltimes in eICU are in minutes
-        #         (pl.col("priorventstartoffset") * 60).alias(
-        #             "Renal Replacement Therapy Start Relative to Admission (seconds)"
-        #         ),
-        #         (pl.col("priorventendoffset") * 60).alias(
-        #             "Renal Replacement Therapy End Relative to Admission (seconds)"
-        #         ),
-        #     )
-        #     .drop("priorventstartoffset", "priorventendoffset")
-        #     .with_columns(
-        #         # add duration
-        #         pl.duration(
-        #             seconds=(
-        #                 pl.col(
-        #                     "Renal Replacement Therapy End Relative to Admission (seconds)"
-        #                 )
-        #                 - pl.col(
-        #                     "Renal Replacement Therapy Start Relative to Admission (seconds)"
-        #                 )
-        #             )
-        #         )
-        #         .truediv(pl.duration(hours=1))
-        #         .alias("Renal Replacement Therapy Duration (hours)")
-        #     )
-        # ).pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
+        eicu_RENAL_REPLACEMENT_THERAPY_DURATION = (
+            EICUExtractor(self.paths, self.datasets)
+            .extract_treatments(verbose=False)
+            .rename(
+                {
+                    self.column_names[
+                        "procedure_start_col"
+                    ]: "Renal Replacement Therapy Start Relative to Admission (seconds)",
+                    self.column_names[
+                        "procedure_end_col"
+                    ]: "Renal Replacement Therapy End Relative to Admission (seconds)",
+                    self.column_names["procedure_description_col"]: "RRT Type",
+                }
+            )
+            .filter(
+                pl.col("RRT Type").str.contains("Renal - Dialysis"),
+                pl.col("RRT Type")
+                .str.contains_any(["Arteriovenous Shunt", "Venous Catheter"])
+                .not_(),
+            )
+            .with_columns(
+                pl.when(pl.col("RRT Type").str.contains("C A V H D"))
+                .then(pl.lit("CAVHD"))
+                .when(pl.col("RRT Type").str.contains("C V V H"))
+                .then(pl.lit("CVVH"))
+                .when(pl.col("RRT Type").str.contains("C V V H D"))
+                .then(pl.lit("CVVHD"))
+                .when(pl.col("RRT Type").str.contains("Hemodialysis"))
+                .then(pl.lit("CVVHDF"))
+                .when(pl.col("RRT Type").str.contains("Peritoneal Dialysis"))
+                .then(pl.lit("Peritoneal dialysis"))
+                .when(pl.col("RRT Type").str.contains("Ultrafiltration"))
+                .then(pl.lit("SCUF"))
+                .when(pl.col("RRT Type").str.contains("SLED"))
+                .then(pl.lit("SLED"))
+                .otherwise(None)
+                .alias("Renal Replacement Therapy Type"),
+                (
+                    pl.col(
+                        "Renal Replacement Therapy End Relative to Admission (seconds)"
+                    )
+                    - pl.col(
+                        "Renal Replacement Therapy Start Relative to Admission (seconds)"
+                    )
+                )
+                .truediv(pl.duration(hours=1).dt.total_seconds())
+                .alias("Renal Replacement Therapy Duration (hours)"),
+            )
+            .pipe(
+                self._add_global_id_stay_id,
+                "eicu-",
+                self.column_names["icu_stay_id_col"],
+            )
+            .select(
+                "Global ICU Stay ID",
+                "Renal Replacement Therapy Type",
+                "Renal Replacement Therapy Start Relative to Admission (seconds)",
+                "Renal Replacement Therapy End Relative to Admission (seconds)",
+                "Renal Replacement Therapy Duration (hours)",
+            )
+        )
 
-        # region HiRID
-        # # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - HiRID")
+        eicu_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
+            "eicu_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        )
 
-        # # get admission times for HiRID
-        # hirid_ADMISSIONTIMES = (
-        #     pl.scan_csv(self.hirid_paths.general_table_path)
-        #     .select("patientid", "admissiontime")
-        #     .with_columns(
-        #         pl.col("patientid").cast(str),
-        #         pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-        #     )
-        # )
-
-        # # Scan all files in the timeseries folder
-        # hirid_RENAL_REPLACEMENT_THERAPY_DURATION = pl.LazyFrame()
-
-        # for file in os.listdir(self.hirid_paths.timeseries_path):
-        #     hirid_timeseries = (
-        #         pl.scan_parquet(self.hirid_paths.timeseries_path + file)
-        #         .select("datetime", "patientid", "value", "variableid")
-        #         .cast({"datetime": str, "patientid": str})
-        #         # Filter for renal replacement therapy IDs
-        #         .filter(
-        #             pl.col("variableid")
-        #             == self.ricu_mappings.ricu_concept_dict["mech_vent"][
-        #                 "sources"
-        #             ]["hirid"][0]["ids"]
-        #         )
-        #         .drop("variableid")
-        #         # replace renal replacement therapy concepts
-        #         .with_columns(
-        #             pl.col("value")
-        #             .cast(int)
-        #             .cast(str)
-        #             .replace(
-        #                 {
-        #                     "1": "invasive renal replacement therapy",
-        #                     "2": "tracheostomy",
-        #                     "3": "non-invasive renal replacement therapy",
-        #                     "4": "non-invasive renal replacement therapy",
-        #                     "5": "non-invasive renal replacement therapy",
-        #                     "6": "other",  # TODO: check if this is correct
-        #                 }
-        #             )
-        #             .alias("dialysis_type"),
-        #             pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-        #         )
-        #         # Make datetime relative to admission in seconds
-        #         .join(hirid_ADMISSIONTIMES, on="patientid", how="left")
-        #         .with_columns(
-        #             (pl.col("datetime") - pl.col("admissiontime"))
-        #             .dt.total_seconds()
-        #             .alias(
-        #                 "Renal Replacement Therapy Start Relative to Admission (seconds)"
-        #             )
-        #         )
-        #         .drop("admissiontime", "datetime", "value")
-        #         # Rename columns
-        #     )
-
-        #     hirid_RENAL_REPLACEMENT_THERAPY_DURATION = pl.concat(
-        #         [hirid_RENAL_REPLACEMENT_THERAPY_DURATION, hirid_timeseries],
-        #         how="diagonal_relaxed",
-        #     )
-
-        # hirid_RENAL_REPLACEMENT_THERAPY_DURATION = (
-        #     hirid_RENAL_REPLACEMENT_THERAPY_DURATION.pipe(
-        #         self._add_global_id_stay_id, "hirid-", "patientid"
-        #     )
-        # )
-        # # endregion
+        # endregion
 
         # region MIMIC-III
-        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC3")
+        # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/crrt_durations.sql
+        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC3")
 
         # get admission times for MIMIC-III
         mimic3_ADMISSIONTIMES = (
@@ -162,61 +126,227 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        print("mimic3_RENAL_REPLACEMENT_THERAPY_DURATION")
+        mimic3_chartevents_metavision_special = [
+            # MetaVision ITEMIDs
+            # Below require special handling
+            224146,  # System Integrity
+            225956,  # Reason for CRRT Filter Change
+        ]
+        mimic3_chartevents_metavision = [
+            # Below are settings which indicate CRRT is started/continuing
+            224149,  # Access Pressure
+            224144,  # Blood Flow (ml/min)
+            228004,  # Citrate (ACD-A)
+            225183,  # Current Goal
+            225977,  # Dialysate Fluid
+            224154,  # Dialysate Rate
+            224151,  # Effluent Pressure
+            224150,  # Filter Pressure
+            225958,  # Heparin Concentration (units/mL)
+            224145,  # Heparin Dose (per hour)
+            224191,  # Hourly Patient Fluid Removal
+            228005,  # PBP (Prefilter) Replacement Rate
+            228006,  # Post Filter Replacement Rate
+            225976,  # Replacement Fluid
+            224153,  # Replacement Rate
+            224152,  # Return Pressure
+            226457,  # Ultrafiltrate Output
+        ]
+        mimic3_chartevents_carevue_special = [
+            # CareVue ITEMIDs
+            # Below require special handling
+            665,  # System integrity
+            147,  # Dialysate Infusing
+            612,  # Replace.Fluid Infuse
+        ]
+        mimic3_chartevents_carevue = [
+            # Below are settings which indicate CRRT is started/continuing
+            29,  # Access mmHg
+            173,  # Effluent Press mmHg
+            192,  # Filter Pressure mmHg
+            624,  # Return Pressure mmHg
+            79,  # Blood Flow ml/min
+            142,  # Current Goal
+            146,  # Dialysate Flow ml/hr
+            611,  # Replace Rate ml/hr
+            5683,  # Hourly PFR
+        ]
+        mimic3_chartevents = (
+            mimic3_chartevents_metavision_special
+            + mimic3_chartevents_metavision
+            + mimic3_chartevents_carevue_special
+            + mimic3_chartevents_carevue
+        )
+
+        mimic3_CRRT_SETTINGS = (
+            pl.scan_csv(self.mimic3_paths.chartevents_path, schema_overrides={"VALUE": str})
+            .filter(
+                pl.col("ITEMID").is_in(mimic3_chartevents),
+                pl.col("VALUE").is_not_null(),
+            )
+            .with_columns(
+                pl.coalesce(pl.col("VALUENUM"), pl.lit(1)).alias("VALUENUM")
+            )
+            .with_columns(
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.when(
+                    pl.col("ITEMID").is_in(
+                        mimic3_chartevents_metavision
+                        + mimic3_chartevents_carevue
+                    )
+                )
+                .then(1)
+                .when(
+                    pl.col("ITEMID") == 665,
+                    pl.col("VALUE").is_in(
+                        [
+                            "Active",
+                            "Clot Increasing",
+                            "Clots Present",
+                            "No Clot Present",
+                        ]
+                    ),
+                )
+                .then(1)
+                .when(pl.col("ITEMID") == 147, pl.col("VALUE") == "Yes")
+                .then(1)
+                .otherwise(0)
+                .alias("RRT"),
+                pl.when(
+                    pl.col("ITEMID") == 224146,
+                    pl.col("VALUE").is_in(["New Filter", "Reinitiated"]),
+                )
+                .then(1)
+                .when(pl.col("ITEMID") == 665, pl.col("VALUE") == "Initiated")
+                .then(1)
+                .otherwise(0)
+                .alias("RRT_start"),
+                pl.when(
+                    pl.col("ITEMID") == 224146,
+                    pl.col("VALUE").is_in(["Discontinued", "Recirculating"]),
+                )
+                .then(1)
+                .when(
+                    pl.col("ITEMID") == 665,
+                    (pl.col("VALUE") == "Clotted")
+                    | (pl.col("VALUE") == "DC'D"),
+                )
+                .then(1)
+                .when(pl.col("ITEMID") == 225956)
+                .then(1)
+                .otherwise(0)
+                .alias("RRT_end"),
+            )
+            .group_by("ICUSTAY_ID", "CHARTTIME")
+            .max()
+        )
+
+        mimic3_VD_LAG = (
+            mimic3_CRRT_SETTINGS.with_columns(
+                pl.when((pl.col("RRT") == 1) | (pl.col("RRT_end") == 1))
+                .then(1)
+                .otherwise(0)
+                .alias("CASE"),
+            )
+            .sort("ICUSTAY_ID", "CHARTTIME")
+            .with_columns(
+                pl.col("CHARTTIME")
+                .shift(1)
+                .over("ICUSTAY_ID", "CASE")
+                .alias("CHARTTIME_PREV_ROW"),
+                pl.col("RRT_end")
+                .shift(1)
+                .over("ICUSTAY_ID", "CASE")
+                .alias("RRT_ENDED_PREV_ROW"),
+            )
+            .drop("CASE")
+        )
+
+        mimic3_VD1 = mimic3_VD_LAG.with_columns(
+            # now we determine if the current event is a new instantiation
+            pl.when(pl.col("RRT_start") == 1)
+            .then(1)
+            # if there is an end flag, we mark any subsequent event as new
+            # note the end is *not* a new event, the *subsequent* row is so here we output 0
+            .when(pl.col("RRT_end") == 1)
+            .then(0)
+            .when(pl.col("RRT_ENDED_PREV_ROW") == 1)
+            .then(1)
+            # if there is less than 2 hours between CRRT settings, we do not treat this as a new CRRT event
+            .when(
+                (pl.col("CHARTTIME") - pl.col("CHARTTIME_PREV_ROW")).le(
+                    pl.duration(hours=2)
+                )
+            )
+            .then(0)
+            .otherwise(1)
+            .alias("NewCRRT")
+        )
+
+        mimic3_VD2 = mimic3_VD1.with_columns(
+            # create a cumulative sum of the instances of new CRRT
+            # this results in a monotonically increasing integer assigned to each CRRT
+            pl.when(
+                (pl.col("RRT_start") == 1)
+                | (pl.col("RRT") == 1)
+                | (pl.col("RRT_end") == 1)
+            )
+            .then(
+                pl.col("NewCRRT").sort_by("CHARTTIME").sum().over("ICUSTAY_ID")
+            )
+            .otherwise(None)
+            .alias("NUM")
+        )# .drop_nulls("NUM")
+
+        mimic3_FIN = (
+            mimic3_VD2.group_by("ICUSTAY_ID", "NUM")
+            .agg(
+                pl.col("CHARTTIME").min().alias("STARTTIME"),
+                pl.col("CHARTTIME").max().alias("ENDTIME"),
+            )
+            .with_columns(
+                (pl.col("ENDTIME") - pl.col("STARTTIME"))
+                .truediv(pl.duration(hours=1))
+                .alias("DURATION_HOURS")
+            )
+            # .filter(pl.col("DURATION_HOURS") > 0)
+        )
 
         mimic3_RENAL_REPLACEMENT_THERAPY_DURATION = (
-            pl.scan_csv(self.mimic3_paths.procedureevents_mv_path)
-            .select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID")
-            .join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
-            # Filter for renal replacement therapy IDs
-            .filter(
-                pl.col("ITEMID").is_in(
-                    self.ricu_mappings.ricu_concept_dict["mech_vent"][
-                        "sources"
-                    ]["miiv"][0]["ids"]
-                )
-            )
-            # .cast({"ITEMID": str})
-            # replace renal replacement therapy concepts
-            .with_columns(
-                pl.col("ITEMID")
-                .replace(
-                    {
-                        225792: "invasive renal replacement therapy",
-                        225794: "non-invasive renal replacement therapy",
-                    }
-                )
-                .cast(str)
-                .alias("dialysis_type")
-            )
-            # Make datetime relative to admission in seconds
-            .with_columns(
-                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
+            mimic3_FIN.join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias(
                     "Renal Replacement Therapy Start Relative to Admission (seconds)"
                 ),
                 (pl.col("ENDTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias(
                     "Renal Replacement Therapy End Relative to Admission (seconds)"
                 ),
-                (pl.col("ENDTIME") - pl.col("STARTTIME"))
-                .truediv(pl.duration(hours=1))
-                .alias("Renal Replacement Therapy Duration (hours)"),
+                pl.col("DURATION_HOURS").alias(
+                    "Renal Replacement Therapy Duration (hours)"
+                ),
             )
-            .drop("INTIME", "STARTTIME", "ENDTIME", "ITEMID")
+            # .select(
+            #     "ICUSTAY_ID",
+            #     "Renal Replacement Therapy Start Relative to Admission (seconds)",
+            #     "Renal Replacement Therapy End Relative to Admission (seconds)",
+            #     "Renal Replacement Therapy Duration (hours)",
+            # )
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
         )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
+            "mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        )
+
         # endregion
 
         # region MIMIC-IV
         # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/treatment/rrt.sql
-        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
+        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
 
         # get admission times for MIMIC-IV
         mimic4_ADMISSIONTIMES = (
@@ -362,7 +492,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                         mimic4_chartevents_dialysis_mode_peritoneal
                     )
                 )
-                .then(pl.lit("peritoneal"))
+                .then(pl.lit("Peritoneal Dialysis"))
                 .when(
                     pl.col("itemid").is_in(mimic4_chartevents_dialysis_mode_ihd)
                 )
@@ -406,8 +536,6 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_INPUTEVENTS")
-
         mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS = (
             pl.scan_csv(self.mimic4_paths.procedureevents_path)
             .select("stay_id", "starttime", "endtime", "itemid", "value")
@@ -445,8 +573,6 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                 "dialysis_type",
             )
         )
-
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_RANGES")
 
         mimic4_RENAL_REPLACEMENT_THERAPY_RANGES = pl.concat(
             [
@@ -513,16 +639,23 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                 (pl.col("endtime") - pl.col("starttime"))
                 .truediv(pl.duration(hours=1))
                 .alias("Renal Replacement Therapy Duration (hours)"),
+                pl.coalesce(
+                    pl.col("dialysis_present"), pl.col("dialysis_present_")
+                ).alias("Renal Replacement Therapy Present"),
+                pl.coalesce(
+                    pl.col("dialysis_active"), pl.col("dialysis_active_")
+                ).alias("Renal Replacement Therapy Active"),
+                pl.coalesce(
+                    pl.col("dialysis_type"), pl.col("dialysis_type_")
+                ).alias("Renal Replacement Therapy Type"),
             )
             .drop("intime", "starttime", "endtime")
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
         )
 
-        print("mimic4_RENAL_REPLACEMENT_THERAPY_DURATION collect")
-
-        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.sink_parquet(
-            "mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
-        )
+        # mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.sink_parquet(
+        #     "mimic4_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        # )
 
         # endregion
 
@@ -596,7 +729,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
         RENAL_REPLACEMENT_THERAPY_DURATION = (
             pl.concat(
                 [
-                    # eicu_RENAL_REPLACEMENT_THERAPY_DURATION,
+                    eicu_RENAL_REPLACEMENT_THERAPY_DURATION,
                     # hirid_RENAL_REPLACEMENT_THERAPY_DURATION,
                     mimic3_RENAL_REPLACEMENT_THERAPY_DURATION,
                     mimic4_RENAL_REPLACEMENT_THERAPY_DURATION,
