@@ -107,257 +107,15 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        eicu_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
-            "eicu_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
-        )
+        # eicu_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
+        #     "eicu_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        # )
 
         # endregion
 
-        # region MIMIC-III
-        # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/crrt_durations.sql
-        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC3")
-
-        # get admission times for MIMIC-III
-        mimic3_ADMISSIONTIMES = (
-            pl.scan_csv(self.mimic3_paths.icustays_path)
-            .select("ICUSTAY_ID", "INTIME")
-            .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
-        )
-
-        mimic3_chartevents_metavision_special = [
-            # MetaVision ITEMIDs
-            # Below require special handling
-            224146,  # System Integrity
-            225956,  # Reason for CRRT Filter Change
-        ]
-        mimic3_chartevents_metavision = [
-            # Below are settings which indicate CRRT is started/continuing
-            224149,  # Access Pressure
-            224144,  # Blood Flow (ml/min)
-            228004,  # Citrate (ACD-A)
-            225183,  # Current Goal
-            225977,  # Dialysate Fluid
-            224154,  # Dialysate Rate
-            224151,  # Effluent Pressure
-            224150,  # Filter Pressure
-            225958,  # Heparin Concentration (units/mL)
-            224145,  # Heparin Dose (per hour)
-            224191,  # Hourly Patient Fluid Removal
-            228005,  # PBP (Prefilter) Replacement Rate
-            228006,  # Post Filter Replacement Rate
-            225976,  # Replacement Fluid
-            224153,  # Replacement Rate
-            224152,  # Return Pressure
-            226457,  # Ultrafiltrate Output
-        ]
-        mimic3_chartevents_carevue_special = [
-            # CareVue ITEMIDs
-            # Below require special handling
-            665,  # System integrity
-            147,  # Dialysate Infusing
-            612,  # Replace.Fluid Infuse
-        ]
-        mimic3_chartevents_carevue = [
-            # Below are settings which indicate CRRT is started/continuing
-            29,  # Access mmHg
-            173,  # Effluent Press mmHg
-            192,  # Filter Pressure mmHg
-            624,  # Return Pressure mmHg
-            79,  # Blood Flow ml/min
-            142,  # Current Goal
-            146,  # Dialysate Flow ml/hr
-            611,  # Replace Rate ml/hr
-            5683,  # Hourly PFR
-        ]
-        mimic3_chartevents = (
-            mimic3_chartevents_metavision_special
-            + mimic3_chartevents_metavision
-            + mimic3_chartevents_carevue_special
-            + mimic3_chartevents_carevue
-        )
-
-        mimic3_CRRT_SETTINGS = (
-            pl.scan_csv(self.mimic3_paths.chartevents_path, schema_overrides={"VALUE": str})
-            .filter(
-                pl.col("ITEMID").is_in(mimic3_chartevents),
-                pl.col("VALUE").is_not_null(),
-            )
-            .with_columns(
-                pl.coalesce(pl.col("VALUENUM"), pl.lit(1)).alias("VALUENUM")
-            )
-            .with_columns(
-                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.when(
-                    pl.col("ITEMID").is_in(
-                        mimic3_chartevents_metavision
-                        + mimic3_chartevents_carevue
-                    )
-                )
-                .then(1)
-                .when(
-                    pl.col("ITEMID") == 665,
-                    pl.col("VALUE").is_in(
-                        [
-                            "Active",
-                            "Clot Increasing",
-                            "Clots Present",
-                            "No Clot Present",
-                        ]
-                    ),
-                )
-                .then(1)
-                .when(pl.col("ITEMID") == 147, pl.col("VALUE") == "Yes")
-                .then(1)
-                .otherwise(0)
-                .alias("RRT"),
-                pl.when(
-                    pl.col("ITEMID") == 224146,
-                    pl.col("VALUE").is_in(["New Filter", "Reinitiated"]),
-                )
-                .then(1)
-                .when(pl.col("ITEMID") == 665, pl.col("VALUE") == "Initiated")
-                .then(1)
-                .otherwise(0)
-                .alias("RRT_start"),
-                pl.when(
-                    pl.col("ITEMID") == 224146,
-                    pl.col("VALUE").is_in(["Discontinued", "Recirculating"]),
-                )
-                .then(1)
-                .when(
-                    pl.col("ITEMID") == 665,
-                    (pl.col("VALUE") == "Clotted")
-                    | (pl.col("VALUE") == "DC'D"),
-                )
-                .then(1)
-                .when(pl.col("ITEMID") == 225956)
-                .then(1)
-                .otherwise(0)
-                .alias("RRT_end"),
-            )
-            .group_by("ICUSTAY_ID", "CHARTTIME")
-            .max()
-        )
-
-        mimic3_VD_LAG = (
-            mimic3_CRRT_SETTINGS.with_columns(
-                pl.when((pl.col("RRT") == 1) | (pl.col("RRT_end") == 1))
-                .then(1)
-                .otherwise(0)
-                .alias("CASE"),
-            )
-            .sort("ICUSTAY_ID", "CHARTTIME")
-            .with_columns(
-                pl.col("CHARTTIME")
-                .shift(1)
-                .over("ICUSTAY_ID", "CASE")
-                .alias("CHARTTIME_PREV_ROW"),
-                pl.col("RRT_end")
-                .shift(1)
-                .over("ICUSTAY_ID", "CASE")
-                .alias("RRT_ENDED_PREV_ROW"),
-            )
-            .drop("CASE")
-        )
-
-        mimic3_VD1 = mimic3_VD_LAG.with_columns(
-            # now we determine if the current event is a new instantiation
-            pl.when(pl.col("RRT_start") == 1)
-            .then(1)
-            # if there is an end flag, we mark any subsequent event as new
-            # note the end is *not* a new event, the *subsequent* row is so here we output 0
-            .when(pl.col("RRT_end") == 1)
-            .then(0)
-            .when(pl.col("RRT_ENDED_PREV_ROW") == 1)
-            .then(1)
-            # if there is less than 2 hours between CRRT settings, we do not treat this as a new CRRT event
-            .when(
-                (pl.col("CHARTTIME") - pl.col("CHARTTIME_PREV_ROW")).le(
-                    pl.duration(hours=2)
-                )
-            )
-            .then(0)
-            .otherwise(1)
-            .alias("NewCRRT")
-        )
-
-        mimic3_VD2 = mimic3_VD1.with_columns(
-            # create a cumulative sum of the instances of new CRRT
-            # this results in a monotonically increasing integer assigned to each CRRT
-            pl.when(
-                (pl.col("RRT_start") == 1)
-                | (pl.col("RRT") == 1)
-                | (pl.col("RRT_end") == 1)
-            )
-            .then(
-                pl.col("NewCRRT").sort_by("CHARTTIME").sum().over("ICUSTAY_ID")
-            )
-            .otherwise(None)
-            .alias("NUM")
-        )# .drop_nulls("NUM")
-
-        mimic3_FIN = (
-            mimic3_VD2.group_by("ICUSTAY_ID", "NUM")
-            .agg(
-                pl.col("CHARTTIME").min().alias("STARTTIME"),
-                pl.col("CHARTTIME").max().alias("ENDTIME"),
-            )
-            .with_columns(
-                (pl.col("ENDTIME") - pl.col("STARTTIME"))
-                .truediv(pl.duration(hours=1))
-                .alias("DURATION_HOURS")
-            )
-            # .filter(pl.col("DURATION_HOURS") > 0)
-        )
-
-        mimic3_RENAL_REPLACEMENT_THERAPY_DURATION = (
-            mimic3_FIN.join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
-            .with_columns(
-                (pl.col("STARTTIME") - pl.col("INTIME"))
-                .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy Start Relative to Admission (seconds)"
-                ),
-                (pl.col("ENDTIME") - pl.col("INTIME"))
-                .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy End Relative to Admission (seconds)"
-                ),
-                pl.col("DURATION_HOURS").alias(
-                    "Renal Replacement Therapy Duration (hours)"
-                ),
-            )
-            # .select(
-            #     "ICUSTAY_ID",
-            #     "Renal Replacement Therapy Start Relative to Admission (seconds)",
-            #     "Renal Replacement Therapy End Relative to Admission (seconds)",
-            #     "Renal Replacement Therapy Duration (hours)",
-            # )
-            .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
-        )
-
-        mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
-            "mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
-        )
-
-        # endregion
-
-        # region MIMIC-IV
-        # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/treatment/rrt.sql
-        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
-
-        # get admission times for MIMIC-IV
-        mimic4_ADMISSIONTIMES = (
-            pl.scan_csv(self.mimic4_paths.icustays_path)
-            .select("stay_id", "intime")
-            .with_columns(
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
-        )
-
-        mimic4_chartevents_dialysis_present = [
+        # region MIMIC
+        # metavision itemids for both MIMIC-III and MIMIC-IV
+        mimic_chartevents_dialysis_present = [
             # checkboxes
             226118,  # Dialysis Catheter placed in outside facility
             227357,  # Dialysis Catheter Dressing Occlusive
@@ -410,7 +168,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             227640,  # Medication Added Units #2 (Peritoneal Dialysis)
             227753,  # Dialysis Catheter Placement Confirmed by X-ray
         ]
-        mimic4_chartevents_dialysis_active = [
+        mimic_chartevents_dialysis_active = [
             226499,  # Hemodialysis Output
             224154,  # Dialysate Rate
             225183,  # Current Goal
@@ -426,8 +184,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             224153,  # Replacement Rate
             226457,  # Ultrafiltrate Output
         ]
-        mimic4_chartevents_dialysis_mode = [227290]
-        mimic4_chartevents_dialysis_mode_peritoneal = [
+        mimic_chartevents_dialysis_mode = [227290]
+        mimic_chartevents_dialysis_mode_peritoneal = [
             225810,  # Dwell Time (Peritoneal Dialysis)
             225806,  # Volume In (PD)
             225807,  # Volume Out (PD)
@@ -443,8 +201,12 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             227638,  # Medication Added #2 (Peritoneal Dialysis)
             227640,  # Medication Added Units #2 (Peritoneal Dialysis)
         ]
-        mimic4_chartevents_dialysis_mode_ihd = [226499]
-        mimic4_procedureevents = [
+        mimic_chartevents_dialysis_mode_ihd = [226499]
+        mimic_inputevents = [
+            227536,  # KCl (CRRT) Medications	inputevents_mv	Solution
+            227525,  # Calcium Gluconate (CRRT)	Medications	inputevents_mv	Solutio
+        ]
+        mimic_procedureevents = [
             225441,  # Hemodialysis
             225802,  # Dialysis - CRRT
             225803,  # Dialysis - CVVHD
@@ -455,46 +217,610 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             225436,  # CRRT Filter Change
         ]
 
-        mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE = (
-            pl.scan_csv(self.mimic4_paths.chartevents_path)
+        # region MIMIC-III
+        # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/pivot/pivoted_rrt.sql
+        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC3")
+
+        # get admission times for MIMIC-III
+        mimic3_ADMISSIONTIMES = (
+            pl.scan_csv(self.mimic3_paths.icustays_path)
+            .select("ICUSTAY_ID", "INTIME")
+            .with_columns(
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
+
+        mimic3_chartevents_dialysis_present = [
+            146,  # Dialysate Flow ml/hr
+            147,  # Dialysate Infusing
+            148,  # Dialysis Access Site
+            149,  # Dialysis Access Type
+            150,  # Dialysis Machine
+            151,  # Dialysis Site Appear
+            152,  # Dialysis Type
+            # below require special handling
+            582,  # Procedures
+            # below indicate existence of a dialysis line
+            229,  # INV Line#1 [Type]
+            235,  # INV Line#2 [Type]
+            241,  # INV Line#3 [Type]
+            247,  # INV Line#4 [Type]
+            253,  # INV Line#5 [Type]
+            259,  # INV Line#6 [Type]
+            265,  # INV Line#7 [Type]
+            271,  # INV Line#8 [Type]
+        ]
+        mimic3_chartevents_dialysis_active = [
+            146,  # Dialysate Flow ml/hr
+            # below require special handling
+            582,  # Procedures
+            147,  # Dialysate Infusing
+            225965,  # Peritoneal Dialysis Catheter Status # NOTE: this is not handled in MIMIC-IV
+        ]
+        mimic3_chartevents_dialysis_mode1 = [152]  # Dialysis Type
+        mimic3_chartevents_dialysis_mode2 = [582]  # Procedures
+        mimic3_chartevents_dialysis_mode = (
+            mimic3_chartevents_dialysis_mode1
+            + mimic3_chartevents_dialysis_mode2
+        )
+        mimic3_inputevents_cv_dialysis_active = [
+            44954,  # CVVHDF
+        ]
+        mimic3_inputevents_cv_dialysis_mode_peritoneal = [
+            40788,  # PD dialysate in
+            41063,  # PD Dialysate Intake
+            41307,  # Peritoneal Dialysate
+            43829,  # PERITONEAL DIALYSATE
+            44698,  # peritoneal dialysate
+            46720,  # PD Dialysate
+        ]
+        mimic3_inputevents_cv_dialysis_mode_cvvh = [
+            45352,  # CA GLUC for CVVH
+            45353,  # KCL for CVVH
+        ]
+        mimic3_inputevents_cv_dialysis_mode_cvvhd = [
+            45268,  # CALCIUM FOR CVVHD
+            46769,  # cvvdh rescue line
+            46773,  # CVVHD NS line flush
+        ]
+        mimic3_inputevents_cv_dialysis_mode_cvvhdf = [
+            46012,  # CA GLUC CVVHDF
+            46013,  # KCL CVVHDF
+            46172,  # CVVHDF CA GLUC
+            46173,  # CVVHDF KCL
+        ]
+        mimic3_inputevents_cv_other = [
+            40907,  # dialysate
+            41147,  # Dialysate instilled
+            41460,  # capd dialysate
+            41620,  # dialysate in
+            41711,  # CAPD dialysate dwell
+            41791,  # 2.5% dialysate in
+            41792,  # 1.5% dialysate
+            42562,  # pos. dialysate intak
+            44037,  # Dialysate Instilled
+            44188,  # rep.+dialysate
+            44526,  # dialysate 1.5% dex
+            44527,  # dialysate 2.5%
+            44584,  # Dialysate IN
+            44591,  # dialysate 4.25%
+            44927,  # CRRT HEPARIN
+            45157,  # ca+ gtt for cvvh
+            46250,  # EBL  CVVH
+            46262,  # dialysate 2.5% in
+            46292,  # CRRT Irrigation
+            46293,  # CRRT Citrate
+            46311,  # crrt irrigation
+            46389,  # CRRT FLUSH
+            46574,  # CRRT rescue line NS
+            46681,  # CRRT Rescue Flush
+        ]
+        mimic3_outputevents_dialysis_active = [41897]  # CVVH OUTPUT FROM OR
+        mimic3_outputevents_dialysis_type = [
+            40789,  # PD dialysate out
+            40910,  # PERITONEAL DIALYSIS
+            41069,  # PD Dialysate Output
+            44843,  # peritoneal dialysis
+            46394,  # Peritoneal dialysis
+        ]
+        mimic3_outputevents_other = [
+            40386,  # hemodialysis
+            40425,  # dialysis output
+            40426,  # dialysis out
+            40507,  # Dialysis out
+            40613,  # DIALYSIS OUT
+            40624,  # dialysis
+            40690,  # DIALYSIS
+            40745,  # Dialysis
+            40881,  # Hemodialysis
+            41016,  # hemodialysis out
+            41034,  # dialysis in
+            41112,  # Dialysys out
+            41250,  # HEMODIALYSIS OUT
+            41374,  # Dialysis Out
+            41417,  # Hemodialysis Out
+            41500,  # hemodialysis output
+            41527,  # HEMODIALYSIS
+            41623,  # dialysate out
+            41635,  # Hemodialysis removal
+            41713,  # dialyslate out
+            41750,  # dialysis  out
+            41829,  # HEMODIALYSIS OUTPUT
+            41842,  # Dialysis Output.
+            42289,  # dialysis off
+            42388,  # DIALYSIS OUTPUT
+            42464,  # hemodialysis ultrafe
+            42524,  # HemoDialysis
+            42536,  # Dialysis output
+            42868,  # hemodialysis off
+            42928,  # HEMODIALYSIS.
+            42972,  # HEMODIALYSIS OFF
+            43016,  # DIALYSIS TOTAL OUT
+            43052,  # DIALYSIS REMOVED
+            43098,  # hemodialysis crystal
+            43115,  # dialysis net
+            43687,  # crystalloid/dialysis
+            43941,  # dialysis/intake
+            44027,  # dialysis fluid off
+            44085,  # DIALYSIS OFF
+            44193,  # Dialysis.
+            44199,  # HEMODIALYSIS O/P
+            44216,  # Hemodialysis out
+            44286,  # Dialysis indwelling
+            44567,  # Hemodialysis.
+            44845,  # Dialysis fluids
+            44857,  # dialysis- fluid off
+            44901,  # Dialysis Removed
+            44943,  # fluid removed dialys
+            45479,  # Dialysis In
+            45828,  # Hemo dialysis out
+            46230,  # Dialysis 1.5% IN
+            46232,  # dialysis flush
+            46464,  # Hemodialysis OUT
+            46712,  # CALCIUM-DIALYSIS
+            46713,  # KCL-10 MEQ-DIALYSIS
+            46715,  # Citrate - dialysis
+            46741,  # dialysis removed
+        ]
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_CHARTEVENTS = (
+            pl.scan_csv(
+                self.mimic3_paths.chartevents_path,
+                schema_overrides={"VALUE": str},
+            )
+            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE", "ERROR")
+            # Filter for renal replacement therapy IDs
+            .filter(
+                pl.col("ITEMID").is_in(
+                    mimic_chartevents_dialysis_present
+                    + mimic_chartevents_dialysis_active
+                    + mimic_chartevents_dialysis_mode
+                    + mimic_chartevents_dialysis_mode_peritoneal
+                    + mimic_chartevents_dialysis_mode_ihd
+                    + mimic3_chartevents_dialysis_present
+                    + mimic3_chartevents_dialysis_active
+                    + mimic3_chartevents_dialysis_mode
+                ),
+                pl.col("VALUE").is_not_null(),
+                pl.col("ICUSTAY_ID").is_not_null(),
+                pl.col("ERROR") == 0,  # exclude rows marked as error
+            )
+            .drop("ERROR")
+            # replace renal replacement therapy concepts
+            .with_columns(
+                (
+                    pl.col("ITEMID").is_in(
+                        mimic_chartevents_dialysis_present
+                        + mimic3_chartevents_dialysis_present
+                    )
+                    & pl.col("VALUE").is_not_null()
+                )
+                # .fill_null(False)
+                .alias("dialysis_present"),
+                (
+                    pl.col("ITEMID").is_in(
+                        mimic_chartevents_dialysis_active
+                        + mimic3_chartevents_dialysis_active
+                    )
+                    & pl.col("VALUE").is_not_null()
+                )
+                # .fill_null(False)
+                .alias("dialysis_active"),
+                pl.when(
+                    pl.col("ITEMID").is_in(
+                        mimic_chartevents_dialysis_mode
+                        + mimic3_chartevents_dialysis_mode1
+                    )
+                )
+                .then(pl.col("VALUE"))
+                .when(
+                    pl.col("ITEMID").is_in(
+                        mimic_chartevents_dialysis_mode_peritoneal
+                    )
+                )
+                .then(pl.lit("Peritoneal dialysis"))
+                .when(
+                    pl.col("ITEMID").is_in(mimic_chartevents_dialysis_mode_ihd)
+                )
+                .then(pl.lit("IHD"))
+                .when(pl.col("ITEMID").is_in(mimic3_chartevents_dialysis_mode2))
+                .then(
+                    pl.when(pl.col("VALUE").is_in(["CAVH Start", "CAVH D/C"]))
+                    .then(pl.lit("CAVH"))
+                    .when(pl.col("VALUE").is_in(["CVVHD Start", "CVVHD D/C"]))
+                    .then(pl.lit("CVVHD"))
+                    .otherwise(None)
+                )
+                .otherwise(None)
+                .alias("dialysis_type"),
+            )
+            # do special handling for MIMIC-III
+            .with_columns(
+                pl.when(
+                    pl.col("ITEMID").is_in(mimic3_chartevents_dialysis_present)
+                )
+                .then(
+                    pl.when(
+                        pl.col("ITEMID") == 582,
+                        pl.col("VALUE").is_in(
+                            [
+                                "CAVH Start",
+                                "CVVHD Start",
+                                "Hemodialysis st",
+                                "CAVH D/C",
+                                "CVVHD D/C",
+                                "Hemodialysis end",
+                                "Peritoneal Dial",
+                            ]
+                        ),
+                    )
+                    .then(True)
+                    .when(
+                        pl.col("ITEMID").is_in(
+                            [229, 235, 241, 247, 253, 259, 265, 271]
+                        ),
+                        pl.col("VALUE") == "Dialysis Line",
+                    )
+                    .then(True)
+                    .otherwise(False)
+                )
+                .otherwise(pl.col("dialysis_present"))
+                .alias("dialysis_present"),
+                pl.when(
+                    pl.col("ITEMID").is_in(mimic3_chartevents_dialysis_active)
+                )
+                .then(
+                    pl.when(
+                        pl.col("ITEMID") == 582,
+                        pl.col("VALUE").is_in(
+                            [
+                                "CAVH Start",
+                                "CVVHD Start",
+                                "Hemodialysis st",
+                                "Peritoneal Dial",
+                            ]
+                        ),
+                    )
+                    .then(True)
+                    .when(
+                        pl.col("ITEMID") == 582,
+                        pl.col("VALUE").is_in(
+                            ["CAVH D/C", "CVVHD D/C", "Hemodialysis end"]
+                        ),
+                    )
+                    .then(False)
+                    .when(pl.col("ITEMID") == 147, pl.col("VALUE") == "Yes")
+                    .then(True)
+                    .when(
+                        pl.col("ITEMID") == 225965, pl.col("VALUE") == "In use"
+                    )
+                    .then(True)
+                    .otherwise(False)
+                )
+                .otherwise(pl.col("dialysis_active"))
+                .alias("dialysis_active"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "CHARTTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS_CV = (
+            pl.scan_csv(
+                self.mimic3_paths.inputevents_cv_path,
+                schema_overrides={"AMOUNT": float},
+            )
+            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "AMOUNT")
+            .filter(
+                pl.col("ITEMID").is_in(
+                    mimic3_inputevents_cv_dialysis_active
+                    + mimic3_inputevents_cv_dialysis_mode_peritoneal
+                    + mimic3_inputevents_cv_dialysis_mode_cvvh
+                    + mimic3_inputevents_cv_dialysis_mode_cvvhd
+                    + mimic3_inputevents_cv_dialysis_mode_cvvhdf
+                    + mimic3_inputevents_cv_other
+                ),
+                pl.col("AMOUNT") > 0,
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.col("ITEMID")
+                .is_in(mimic3_inputevents_cv_dialysis_active)
+                .not_()
+                .alias("dialysis_active"),
+                pl.when(
+                    pl.col("ITEMID").is_in(
+                        mimic3_inputevents_cv_dialysis_mode_peritoneal
+                    )
+                )
+                .then(pl.lit("Peritoneal dialysis"))
+                .when(
+                    pl.col("ITEMID").is_in(
+                        mimic3_inputevents_cv_dialysis_mode_cvvh
+                    )
+                )
+                .then(pl.lit("CVVH"))
+                .when(
+                    pl.col("ITEMID").is_in(
+                        mimic3_inputevents_cv_dialysis_mode_cvvhd
+                    )
+                )
+                .then(pl.lit("CVVHD"))
+                .when(
+                    pl.col("ITEMID").is_in(
+                        mimic3_inputevents_cv_dialysis_mode_cvvhdf
+                    )
+                )
+                .then(pl.lit("CVVHDF"))
+                .otherwise(None)
+                .alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "CHARTTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS_MV = (
+            pl.scan_csv(
+                self.mimic3_paths.inputevents_mv_path,
+                schema_overrides={"AMOUNT": float},
+            )
+            .select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID", "AMOUNT")
+            .filter(
+                pl.col("ITEMID").is_in(mimic_inputevents),
+                pl.col("AMOUNT") > 0,
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.lit(True).alias("dialysis_active"),
+                pl.lit("CRRT").alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "STARTTIME",
+                "ENDTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_OUTPUTEVENTS = (
+            pl.scan_csv(
+                self.mimic3_paths.outputevents_path,
+                schema_overrides={"VALUE": float},
+            )
+            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE")
+            .filter(
+                pl.col("ITEMID").is_in(
+                    mimic3_outputevents_dialysis_active
+                    + mimic3_outputevents_dialysis_type
+                    + mimic3_outputevents_other
+                ),
+                pl.col("VALUE") > 0,
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.col("ITEMID")
+                .is_in(mimic3_inputevents_cv_dialysis_active)
+                .not_()
+                .alias("dialysis_active"),
+                pl.lit("CRRT").alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "CHARTTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS_MV = (
+            pl.scan_csv(
+                self.mimic3_paths.procedureevents_mv_path,
+                schema_overrides={"VALUE": str},
+            )
+            .select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID", "VALUE")
+            .filter(
+                pl.col("ITEMID").is_in(mimic_procedureevents),
+                pl.col("VALUE").is_not_null(),
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.when(pl.col("ITEMID").is_in([224270, 225436]))
+                .then(False)
+                .otherwise(True)
+                .alias("dialysis_active"),
+                pl.when(pl.col("ITEMID") == 225441)
+                .then(pl.lit("IHD"))
+                .when(pl.col("ITEMID") == 225802)
+                .then(pl.lit("CRRT"))
+                .when(pl.col("ITEMID") == 225803)
+                .then(pl.lit("CVVHD"))
+                .when(pl.col("ITEMID") == 225805)
+                .then(pl.lit("Peritoneal dialysis"))
+                .when(pl.col("ITEMID") == 225809)
+                .then(pl.lit("CVVHDF"))
+                .when(pl.col("ITEMID") == 225955)
+                .then(pl.lit("SCUF"))
+                .otherwise(None)
+                .alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "STARTTIME",
+                "ENDTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_MV_RANGES = pl.concat(
+            [
+                mimic3_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS_MV,
+                mimic3_RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS_MV,
+            ],
+            how="vertical",
+        ).unique()
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_DURATION = (
+            pl.concat(
+                [
+                    mimic3_RENAL_REPLACEMENT_THERAPY_CHARTEVENTS.filter(
+                        pl.col("dialysis_present") == 1
+                    ),
+                    mimic3_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS_CV.filter(
+                        pl.col("dialysis_present") == 1
+                    ),
+                    mimic3_RENAL_REPLACEMENT_THERAPY_OUTPUTEVENTS.filter(
+                        pl.col("dialysis_present") == 1
+                    ),
+                    mimic3_RENAL_REPLACEMENT_THERAPY_MV_RANGES.drop(
+                        "ENDTIME"
+                    ).rename({"STARTTIME": "CHARTTIME"}),
+                    mimic3_RENAL_REPLACEMENT_THERAPY_MV_RANGES.drop(
+                        "STARTTIME"
+                    ).rename({"ENDTIME": "CHARTTIME"}),
+                ],
+                how="vertical",
+            )
+            .unique()
+            .join(
+                mimic3_RENAL_REPLACEMENT_THERAPY_MV_RANGES,
+                on="ICUSTAY_ID",
+                suffix="_mv",
+                how="left",
+            )
+            .join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
+            # Make datetime relative to admission in seconds
+            .with_columns(
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .filter(
+                pl.col("CHARTTIME") > pl.col("STARTTIME"),
+                pl.col("CHARTTIME") < pl.col("ENDTIME"),
+            )
+            .with_columns(
+                (pl.col("STARTTIME") - pl.col("INTIME"))
+                .truediv(pl.duration(seconds=1))
+                .alias(
+                    "Renal Replacement Therapy Start Relative to Admission (seconds)"
+                ),
+                (pl.col("ENDTIME") - pl.col("INTIME"))
+                .truediv(pl.duration(seconds=1))
+                .alias(
+                    "Renal Replacement Therapy End Relative to Admission (seconds)"
+                ),
+                (pl.col("ENDTIME") - pl.col("STARTTIME"))
+                .truediv(pl.duration(hours=1))
+                .alias("Renal Replacement Therapy Duration (hours)"),
+                pl.coalesce(
+                    pl.col("dialysis_present_mv"), pl.col("dialysis_present")
+                ).alias("Renal Replacement Therapy Present"),
+                pl.coalesce(
+                    pl.col("dialysis_active_mv"), pl.col("dialysis_active")
+                ).alias("Renal Replacement Therapy Active"),
+                pl.coalesce(
+                    pl.col("dialysis_type_mv"), pl.col("dialysis_type")
+                ).alias("Renal Replacement Therapy Type"),
+            )
+            .drop("INTIME", "STARTTIME", "ENDTIME")
+            .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
+        )
+
+        mimic3_RENAL_REPLACEMENT_THERAPY_DURATION
+
+        # mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
+        #     "mimic3_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        # )
+
+        # endregion
+
+        # region MIMIC-IV
+        # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/treatment/rrt.sql
+        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
+
+        # get admission times for MIMIC-IV
+        mimic4_ADMISSIONTIMES = (
+            pl.scan_csv(self.mimic4_paths.icustays_path)
+            .select("stay_id", "intime")
+            .with_columns(
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+        )
+
+        mimic4_RENAL_REPLACEMENT_THERAPY_CHARTEVENTS = (
+            pl.scan_csv(
+                self.mimic4_paths.chartevents_path,
+                schema_overrides={"value": str},
+            )
             .select("stay_id", "charttime", "itemid", "value")
             # Filter for renal replacement therapy IDs
             .filter(
                 pl.col("itemid").is_in(
-                    mimic4_chartevents_dialysis_present
-                    + mimic4_chartevents_dialysis_active
-                    + mimic4_chartevents_dialysis_mode
-                    + mimic4_chartevents_dialysis_mode_peritoneal
-                    + mimic4_chartevents_dialysis_mode_ihd
+                    mimic_chartevents_dialysis_present
+                    + mimic_chartevents_dialysis_active
+                    + mimic_chartevents_dialysis_mode
+                    + mimic_chartevents_dialysis_mode_peritoneal
+                    + mimic_chartevents_dialysis_mode_ihd
                 )
             )
-            # .cast({"itemid": str})
             # replace renal replacement therapy concepts
             .with_columns(
                 (
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_present)
+                    pl.col("itemid").is_in(mimic_chartevents_dialysis_present)
                     & pl.col("value").is_not_null()
                 )
-                .fill_null(False)
+                # .fill_null(False)
                 .alias("dialysis_present"),
                 (
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_active)
+                    pl.col("itemid").is_in(mimic_chartevents_dialysis_active)
                     & pl.col("value").is_not_null()
                 )
-                .fill_null(False)
+                # .fill_null(False)
                 .alias("dialysis_active"),
-                pl.when(
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_mode)
-                )
+                pl.when(pl.col("itemid").is_in(mimic_chartevents_dialysis_mode))
                 .then(pl.col("value"))
                 .when(
                     pl.col("itemid").is_in(
-                        mimic4_chartevents_dialysis_mode_peritoneal
+                        mimic_chartevents_dialysis_mode_peritoneal
                     )
                 )
-                .then(pl.lit("Peritoneal Dialysis"))
+                .then(pl.lit("Peritoneal dialysis"))
                 .when(
-                    pl.col("itemid").is_in(mimic4_chartevents_dialysis_mode_ihd)
+                    pl.col("itemid").is_in(mimic_chartevents_dialysis_mode_ihd)
                 )
                 .then(pl.lit("IHD"))
                 .otherwise(None)
@@ -509,16 +835,11 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_INPUTEVENTS = (
+        mimic4_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS = (
             pl.scan_csv(self.mimic4_paths.inputevents_path)
             .select("stay_id", "starttime", "endtime", "itemid", "amount")
             .filter(
-                pl.col("itemid").is_in(
-                    [
-                        227536,  # KCl (CRRT) Medications	inputevents_mv	Solution
-                        227525,  # Calcium Gluconate (CRRT)	Medications	inputevents_mv	Solutio
-                    ]
-                ),
+                pl.col("itemid").is_in(mimic_inputevents),
                 pl.col("amount") > 0,
             )
             .with_columns(
@@ -536,11 +857,11 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS = (
+        mimic4_RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS = (
             pl.scan_csv(self.mimic4_paths.procedureevents_path)
             .select("stay_id", "starttime", "endtime", "itemid", "value")
             .filter(
-                pl.col("itemid").is_in(mimic4_procedureevents),
+                pl.col("itemid").is_in(mimic_procedureevents),
                 pl.col("value").is_not_null(),
             )
             .with_columns(
@@ -556,12 +877,12 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                 .when(pl.col("itemid") == 225803)
                 .then(pl.lit("CVVHD"))
                 .when(pl.col("itemid") == 225805)
-                .then(pl.lit("Peritoneal Dialysis"))
+                .then(pl.lit("Peritoneal dialysis"))
                 .when(pl.col("itemid") == 225809)
                 .then(pl.lit("CVVHDF"))
                 .when(pl.col("itemid") == 225955)
                 .then(pl.lit("SCUF"))
-                .otherwise(pl.lit("other"))
+                .otherwise(None)
                 .alias("dialysis_type"),
             )
             .select(
@@ -576,45 +897,32 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
         mimic4_RENAL_REPLACEMENT_THERAPY_RANGES = pl.concat(
             [
-                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_INPUTEVENTS,
-                mimic4_RENAL_REPLACEMENT_THERAPY_DURATION_PROCEDUREEVENTS,
+                mimic4_RENAL_REPLACEMENT_THERAPY_INPUTEVENTS,
+                mimic4_RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS,
             ],
             how="vertical",
         ).unique()
 
-        def print_schema(data: pl.LazyFrame) -> pl.LazyFrame:
-            print(data.collect_schema())
-            return data
-
         mimic4_RENAL_REPLACEMENT_THERAPY_DURATION = (
             pl.concat(
                 [
-                    mimic4_RENAL_REPLACEMENT_THERAPY_PRESENCE.filter(
+                    mimic4_RENAL_REPLACEMENT_THERAPY_CHARTEVENTS.filter(
                         pl.col("dialysis_present") == 1
                     ),
                     mimic4_RENAL_REPLACEMENT_THERAPY_RANGES.drop(
                         "endtime"
                     ).rename({"starttime": "charttime"}),
-                ]
+                ],
+                how="vertical",
             )
             .unique()
             .join(
                 mimic4_RENAL_REPLACEMENT_THERAPY_RANGES,
                 on="stay_id",
-                suffix="_",
+                suffix="_mv",
                 how="left",
             )
-            .with_columns(
-                pl.coalesce(
-                    pl.col("dialysis_present"), pl.col("dialysis_present_")
-                ),
-                pl.coalesce(
-                    pl.col("dialysis_active"), pl.col("dialysis_active_")
-                ),
-                pl.coalesce(pl.col("dialysis_type"), pl.col("dialysis_type_")),
-            )
             .join(mimic4_ADMISSIONTIMES, on="stay_id", how="left")
-            .pipe(print_schema)
             # Make datetime relative to admission in seconds
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -640,13 +948,13 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                 .truediv(pl.duration(hours=1))
                 .alias("Renal Replacement Therapy Duration (hours)"),
                 pl.coalesce(
-                    pl.col("dialysis_present"), pl.col("dialysis_present_")
+                    pl.col("dialysis_present_mv"), pl.col("dialysis_present")
                 ).alias("Renal Replacement Therapy Present"),
                 pl.coalesce(
-                    pl.col("dialysis_active"), pl.col("dialysis_active_")
+                    pl.col("dialysis_active_mv"), pl.col("dialysis_active")
                 ).alias("Renal Replacement Therapy Active"),
                 pl.coalesce(
-                    pl.col("dialysis_type"), pl.col("dialysis_type_")
+                    pl.col("dialysis_type_mv"), pl.col("dialysis_type")
                 ).alias("Renal Replacement Therapy Type"),
             )
             .drop("intime", "starttime", "endtime")
