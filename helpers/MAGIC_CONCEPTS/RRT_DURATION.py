@@ -967,6 +967,78 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
         # endregion
 
+        # region SICdb
+        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - SICdb")
+        sicdb_ADMISSION_TIMES = pl.scan_csv(self.sicdb_paths.cases_path).select(
+            "CaseID", "ICUOffset"
+        )
+
+        sicdb_RENAL_REPLACEMENT_THERAPY_DURATION = (
+            pl.scan_parquet(self.sicdb_paths.data_float_m_path)
+            .join(sicdb_ADMISSION_TIMES, on="CaseID", how="left")
+            # Filter for RRT IDs
+            .filter(
+                pl.col("DataID").is_in(
+                    [
+                        723,  # CRRT Bloodflow # -> use only one since all variables are logged at the same time
+                        # 730,  # CRRT DialysateFlow
+                        # 731,  # CRRT SubstitutePrae
+                        # 732,  # CRRT SubstitutePost
+                        # 2022,  # CRRT Withdrawal
+                        # 3071,  # CRRT CalciumSubstitution
+                    ]
+                )
+            )
+            .with_columns(
+                (pl.col("Offset") - pl.col("ICUOffset")).alias("RRT Start")
+            )
+            # drop rows that are one minute apart from the previous row and the next row
+            .sort("CaseID", "RRT Start")
+            .filter(
+                (
+                    (
+                        pl.col("RRT Start").shift(-1).over("CaseID")
+                        - pl.col("RRT Start")
+                    )
+                    < (60 * 60 * 2)
+                ).not_()
+                | (
+                    (
+                        pl.col("RRT Start")
+                        - pl.col("RRT Start").shift(1).over("CaseID")
+                    )
+                    < (60 * 60 * 2)
+                ).not_()
+                | pl.col("RRT Start").shift(-1).over("CaseID").is_null()
+                | pl.col("RRT Start").shift(1).over("CaseID").is_null()
+            )
+            .with_columns(
+                pl.when(pl.col("CaseID") == pl.col("CaseID").shift(-1))
+                .then(pl.col("RRT Start").shift(-1))
+                .otherwise(None)
+                .alias("RRT End")
+            )
+            .with_columns(
+                ((pl.col("RRT End") - pl.col("RRT Start")) / (60 * 60)).alias(
+                    "Renal Replacement Therapy Duration (hours)"
+                )
+            )
+            .rename(
+                {
+                    "RRT Start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
+                    "RRT End": "Renal Replacement Therapy End Relative to Admission (seconds)",
+                }
+            )
+            .drop_nulls("Renal Replacement Therapy Duration (hours)")
+            .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
+        )
+
+        # sicdb_RENAL_REPLACEMENT_THERAPY_DURATION.collect().write_parquet(
+        #     "sicdb_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
+        # )
+
+        # endregion
+
         # region UMCdb
         # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - UMCdb")
 
@@ -1034,7 +1106,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                     # hirid_RENAL_REPLACEMENT_THERAPY_DURATION,
                     mimic3_RENAL_REPLACEMENT_THERAPY_DURATION,
                     mimic4_RENAL_REPLACEMENT_THERAPY_DURATION,
-                    # sicdb_RENAL_REPLACEMENT_THERAPY_DURATION,
+                    sicdb_RENAL_REPLACEMENT_THERAPY_DURATION,
                     umcdb_RENAL_REPLACEMENT_THERAPY_DURATION,
                 ],
                 how="diagonal_relaxed",
