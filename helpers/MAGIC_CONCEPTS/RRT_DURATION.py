@@ -970,65 +970,58 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
         # region UMCdb
         # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - UMCdb")
 
-        # umcdb_ADMISSION_TIMES = pl.scan_parquet(
-        #     self.umcdb_paths.admissions_path
-        # ).select("admissionid", "admittedat")
+        umcdb_ADMISSION_TIMES = pl.scan_parquet(
+            self.umcdb_paths.admissions_path
+        ).select("admissionid", "admittedat")
 
-        # print("umcdb_RENAL_REPLACEMENT_THERAPY_DURATION")
+        umcdb_RENAL_REPLACEMENT_THERAPY_DURATION = (
+            pl.scan_parquet(self.umcdb_paths.processitems_path)
+            .join(umcdb_ADMISSION_TIMES, on="admissionid", how="left")
+            # Filter for renal replacement therapy IDs
+            .filter(
+                pl.col("itemid").is_in(
+                    [
+                        12465,  # CVVH
+                        16363,  # Hemodialyse
+                    ]
+                )
+            )
+            .drop("itemid")
+            # replace renal replacement therapy concepts
+            .with_columns(pl.col("item").replace({"Hemodialyse": "CVVHD"}))
+            # Make datetime relative to admission in seconds
+            .with_columns(
+                pl.duration(
+                    milliseconds=(pl.col("start") - pl.col("admittedat"))
+                )
+                .dt.total_seconds()
+                .alias("start"),
+                pl.duration(
+                    milliseconds=(pl.col("stop") - pl.col("admittedat"))
+                )
+                .dt.total_seconds()
+                .alias("stop"),
+                pl.duration(milliseconds=pl.col("stop") - pl.col("start"))
+                .truediv(pl.duration(hours=1))
+                .alias("duration"),
+            )
+            .drop("admittedat")
+            # Rename columns
+            .rename(
+                {
+                    "item": "Renal Replacement Therapy Type",
+                    "start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
+                    "stop": "Renal Replacement Therapy End Relative to Admission (seconds)",
+                    "duration": "Renal Replacement Therapy Duration (hours)",
+                }
+            )
+            .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
+        )
 
-        # umcdb_RENAL_REPLACEMENT_THERAPY_DURATION = (
-        #     pl.scan_parquet(self.umcdb_paths.processitems_path)
-        #     .join(umcdb_ADMISSION_TIMES, on="admissionid", how="left")
-        #     # Filter for renal replacement therapy IDs
-        #     .filter(
-        #         pl.col("itemid").is_in(
-        #             self.ricu_mappings.ricu_concept_dict["mech_vent"][
-        #                 "sources"
-        #             ]["aumc"][0]["ids"]
-        #         )
-        #     )
-        #     .drop("itemid")
-        #     # replace renal replacement therapy concepts
-        #     .with_columns(
-        #         pl.col("item")
-        #         .replace(
-        #             {
-        #                 "Beademen": "invasive renal replacement therapy",
-        #                 "Beademen non-invasief": "non-invasive renal replacement therapy",
-        #                 "Tracheostoma": "tracheostomy",
-        #             }
-        #         )
-        #         .cast(str)
-        #         .alias("item")
-        #     )
-        #     # Make datetime relative to admission in seconds
-        #     .with_columns(
-        #         pl.duration(
-        #             milliseconds=(pl.col("start") - pl.col("admittedat"))
-        #         )
-        #         .dt.total_seconds()
-        #         .alias("start"),
-        #         pl.duration(
-        #             milliseconds=(pl.col("stop") - pl.col("admittedat"))
-        #         )
-        #         .dt.total_seconds()
-        #         .alias("stop"),
-        #         pl.duration(milliseconds=pl.col("stop") - pl.col("start"))
-        #         .truediv(pl.duration(hours=1))
-        #         .alias("duration"),
-        #     )
-        #     .drop("admittedat")
-        #     # Rename columns
-        #     .rename(
-        #         {
-        #             "item": "dialysis_type",
-        #             "start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
-        #             "stop": "Renal Replacement Therapy End Relative to Admission (seconds)",
-        #             "duration": "Renal Replacement Therapy Duration (hours)",
-        #         }
-        #     )
-        #     .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
+        # umcdb_RENAL_REPLACEMENT_THERAPY_DURATION.sink_parquet(
+        #     "umcdb_RENAL_REPLACEMENT_THERAPY_DURATION.parquet"
         # )
+
         # endregion
 
         # region ALL
@@ -1042,19 +1035,19 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
                     mimic3_RENAL_REPLACEMENT_THERAPY_DURATION,
                     mimic4_RENAL_REPLACEMENT_THERAPY_DURATION,
                     # sicdb_RENAL_REPLACEMENT_THERAPY_DURATION,
-                    # umcdb_RENAL_REPLACEMENT_THERAPY_DURATION,
+                    umcdb_RENAL_REPLACEMENT_THERAPY_DURATION,
                 ],
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("Renal Replacement Therapy Duration (hours)") > 0)
-            .unique()
             .select(
                 "Global ICU Stay ID",
-                "dialysis_type",
+                "Renal Replacement Therapy Type",
                 "Renal Replacement Therapy Start Relative to Admission (seconds)",
                 "Renal Replacement Therapy End Relative to Admission (seconds)",
                 "Renal Replacement Therapy Duration (hours)",
             )
+            .unique()
             .with_columns(
                 pl.col("Renal Replacement Therapy Duration (hours)").round(2)
             )
