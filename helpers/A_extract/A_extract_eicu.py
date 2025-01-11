@@ -1399,7 +1399,7 @@ class EICUExtractor(EICUPaths):
 
     # region procedures
     # Extract procedure information from the treatment.csv file
-    def extract_treatments(self) -> pl.LazyFrame:
+    def extract_treatments(self, verbose=True) -> pl.LazyFrame:
         """
         Extracts procedure information from the treatment.csv file.
 
@@ -1416,15 +1416,10 @@ class EICUExtractor(EICUPaths):
         :rtype: pl.LazyFrame
         """
 
-        print("eICU    - Extracting procedures...")
+        if verbose:
+            print("eICU    - Extracting procedures...")
 
-        IDs = self.extract_patient_information().select(
-            self.icu_stay_id_col,
-            self.hospital_stay_id_col,
-            self.person_id_col,
-        )
-
-        return (
+        treatment = (
             pl.scan_csv(self.treatment_path)
             # Select columns of interest
             .select(
@@ -1442,99 +1437,212 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.procedure_discharge_col,
                 }
             )
-            .with_columns(
-                # TODO: make less hacky
-                pl.col(self.procedure_description_col)
-                .str.replace_all("\|", " - ")
-                .str.to_titlecase()
-                .str.replace_many(
-                    {
-                        "Ace ": "ACE ",
-                        "Afb": "AFB",
-                        "Aicd": "AICD",
-                        "Arb": "ARB",
-                        "Avm": "AVM",
-                        "Azt": "AZT",
-                        "Bal ": "BAL ",
-                        "Bivad": "BIVAD",
-                        "Cabg": "CABG",
-                        "Ccm": "CCM",
-                        "Coa ": "CoA ",
-                        "Cpap": "CPAP",
-                        "Csf": "CSF",
-                        "Ct": "CT",
-                        "Ddavp": "DDAVP",
-                        "Dvt": "DVT",
-                        "Eeg": "EEG",
-                        "Emg": "EMG",
-                        "Ent": "ENT",
-                        "Ercp": "ERCP",
-                        "Fio": "FIO",
-                        "Gi": "GI",
-                        "Hiv": "HIV",
-                        "Hmg": "HMG",
-                        "Ich": "ICH",
-                        "Iiia": "IIIA",
-                        "Iii": "III",
-                        "Ii": "II",
-                        "Iib": "IIB",
-                        "Inh ": "INH ",
-                        "Iv": "IV",
-                        "Ivc": "IVC",
-                        "Ivig": "IVIG",
-                        "Lr": "LR",
-                        "Lvad": "LVAD",
-                        "Mri": "MRI",
-                        "Mtb": "MTB",
-                        "Ns": "NS",
-                        "Nsaid": "NSAID",
-                        "Okt": "OKT",
-                        "Or ": "OR ",
-                        "Pbs": "PBS",
-                        "Pca": "PCA",
-                        "Peep": "PEEP",
-                        "Peg": "PEG",
-                        "Prbc": "PRBC",
-                        "Ppn": "PPN",
-                        "Rvad": "RVAD",
-                        "Sled": "SLED",
-                        "Ssri": "SSRI",
-                        "Tc": "TC",
-                        "Tips": "TIPS",
-                        "Tpn": "TPN",
-                        "Tsh": "TSH",
-                        "Vii": "VII",
-                        "Vk": "VK",
-                        "Vte": "VTE",
-                        # SPECIAL CASES
-                        "pco2": "pCO2",
-                        "To ": "to ",
-                        "And ": "and ",
-                        "Of ": "of ",
-                        "Ml": "mL",
-                        "Min": "min",
-                        "Kg": "kg",
-                        "Via ": "via ",
-                        ""
-                        # and slash without space before
-                        "/ ": " / ",
-                    }
-                )
-                .str.replace("  / ", " / ")
-            )
-            .join(IDs, on=self.icu_stay_id_col, how="outer")
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.procedure_start_col,
                 base_unit="minutes",
             )
-            .cast({self.procedure_discharge_col: bool})
-            .select(
-                self.person_id_col,
-                self.hospital_stay_id_col,
-                self.icu_stay_id_col,
-                self.procedure_start_col,
-                self.procedure_description_col,
-                self.procedure_discharge_col,
+        )
+
+        # Get continued procedures where possible, by checking whether the procedure reappears
+        # on next log entry (as determined by a different offset)
+        # 1. Get list of log entry offsets for each patient
+        treatment_offsets = (
+            treatment.select(self.icu_stay_id_col, self.procedure_start_col)
+            .unique()
+            .sort(self.icu_stay_id_col, self.procedure_start_col)
+            .with_columns(
+                pl.col(self.procedure_start_col)
+                .shift(1)
+                .over(self.icu_stay_id_col)
+                .alias("prev_proc_start"),
+                pl.col(self.procedure_start_col)
+                .shift(-1)
+                .over(self.icu_stay_id_col)
+                .alias("next_proc_start"),
             )
         )
+
+        treatment = (
+            treatment.join(
+                treatment_offsets,
+                on=[self.icu_stay_id_col, self.procedure_start_col],
+                how="left",
+            )
+            # Sort by patient ID, procedure description and procedure start time
+            .sort(
+                self.icu_stay_id_col,
+                self.procedure_description_col,
+                self.procedure_start_col,
+            )
+            # 2. Check if procedure is continued from the previous log entry
+            #    and if it is continued in the next log entry
+            .with_columns(
+                # Check if procedure is continued from the previous log entry
+                pl.when(
+                    # Check if the previous procedure is the same as the current procedure
+                    pl.col(self.procedure_description_col)
+                    == pl.col(self.procedure_description_col).shift(1),
+                    # Check if the previous procedure start time is the previous log entry time
+                    pl.col("prev_proc_start")
+                    == pl.col(self.procedure_start_col).shift(1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("started"))
+                .alias("proc_status_prev"),
+                # Check if procedure is continued in the next log entry
+                pl.when(
+                    # Check if the next procedure is the same as the current procedure
+                    pl.col(self.procedure_description_col)
+                    == pl.col(self.procedure_description_col).shift(-1),
+                    # Check if the next procedure start time is the next log entry time
+                    pl.col("next_proc_start")
+                    == pl.col(self.procedure_start_col).shift(-1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("discontinued"))
+                .alias("proc_status_next"),
+            )
+            # Filter for rows where the procedure status changes
+            .filter(pl.col("proc_status_prev") != pl.col("proc_status_next"))
+            # 3. Get the end time of the procedure if it is discontinued
+            .with_columns(
+                pl.when(pl.col("proc_status_next") == "discontinued")
+                .then(pl.col("next_proc_start"))
+                .otherwise(None)
+                .alias(self.procedure_end_col)
+            )
+            # Sort by patient ID, procedure description and procedure start time
+            .sort(
+                self.icu_stay_id_col,
+                self.procedure_description_col,
+                self.procedure_start_col,
+            )
+            # 4. Combine rows where the procedure is started, continued, then discontinued in the next row
+            .with_columns(
+                pl.when(
+                    pl.col("proc_status_prev").shift(1) == "started",
+                    pl.col("proc_status_next").shift(1) == "continued",
+                    pl.col("proc_status_prev") == "continued",
+                    pl.col("proc_status_next") == "discontinued",
+                    # Check if the previous procedure is the same as the current procedure
+                    pl.col(self.procedure_description_col)
+                    == pl.col(self.procedure_description_col).shift(1),
+                )
+                .then(pl.col(self.procedure_start_col).shift(1))
+                .otherwise(pl.col(self.procedure_start_col))
+                .alias(self.procedure_start_col)
+            )
+            # 5. Continue procedure until discharge if procedure is active upon discharge
+            .join(self.icu_length_of_stay, on=self.icu_stay_id_col, how="left")
+            .with_columns(
+                pl.when(pl.col(self.procedure_discharge_col))
+                .then(
+                    pl.col(self.procedure_start_col)
+                    + pl.duration(
+                        days=pl.col(self.icu_length_of_stay_col)
+                    ).dt.total_seconds()
+                )
+                .otherwise(pl.col("next_proc_start"))
+                .alias(self.procedure_end_col)
+            )
+            .filter(pl.col(self.procedure_end_col).is_not_null())
+            # 6. Remove the helper columns
+            .drop(
+                "prev_proc_start",
+                "next_proc_start",
+                "proc_status_prev",
+                "proc_status_next",
+                self.icu_length_of_stay_col,
+            )
+            # 7. Use the rows with the longest duration for each started procedure
+            .group_by(
+                self.icu_stay_id_col,
+                self.procedure_description_col,
+                self.procedure_start_col,
+            )
+            .agg(pl.all().sort_by(self.procedure_end_col).last())
+            .unique()
+        )
+
+        return treatment.with_columns(
+            # TODO: make less hacky
+            pl.col(self.procedure_description_col)
+            .str.replace_all("\|", " - ")
+            .str.to_titlecase()
+            .str.replace_many(
+                {
+                    "Ace ": "ACE ",
+                    "Afb": "AFB",
+                    "Aicd": "AICD",
+                    "Arb": "ARB",
+                    "Avm": "AVM",
+                    "Azt": "AZT",
+                    "Bal ": "BAL ",
+                    "Bivad": "BIVAD",
+                    "Cabg": "CABG",
+                    "Ccm": "CCM",
+                    "Coa ": "CoA ",
+                    "Cpap": "CPAP",
+                    "Csf": "CSF",
+                    "Ct": "CT",
+                    "Ddavp": "DDAVP",
+                    "Dvt": "DVT",
+                    "Eeg": "EEG",
+                    "Emg": "EMG",
+                    "Ent": "ENT",
+                    "Ercp": "ERCP",
+                    "Fio": "FIO",
+                    "Gi": "GI",
+                    "Hiv": "HIV",
+                    "Hmg": "HMG",
+                    "Ich": "ICH",
+                    "Iiia": "IIIA",
+                    "Iii": "III",
+                    "Ii": "II",
+                    "Iib": "IIB",
+                    "Inh ": "INH ",
+                    "Iv": "IV",
+                    "Ivc": "IVC",
+                    "Ivig": "IVIG",
+                    "Lr": "LR",
+                    "Lvad": "LVAD",
+                    "Mri": "MRI",
+                    "Mtb": "MTB",
+                    "Ns": "NS",
+                    "Nsaid": "NSAID",
+                    "Okt": "OKT",
+                    "Or ": "OR ",
+                    "Pbs": "PBS",
+                    "Pca": "PCA",
+                    "Peep": "PEEP",
+                    "Peg": "PEG",
+                    "Prbc": "PRBC",
+                    "Ppn": "PPN",
+                    "Rvad": "RVAD",
+                    "Sled": "SLED",
+                    "Ssri": "SSRI",
+                    "Tc": "TC",
+                    "Tips": "TIPS",
+                    "Tpn": "TPN",
+                    "Tsh": "TSH",
+                    "Vii": "VII",
+                    "Vk": "VK",
+                    "Vte": "VTE",
+                    # SPECIAL CASES
+                    "pco2": "pCO2",
+                    "To ": "to ",
+                    "And ": "and ",
+                    "Of ": "of ",
+                    "Ml": "mL",
+                    "Min": "min",
+                    "Kg": "kg",
+                    "Via ": "via ",
+                    ""
+                    # and slash without space before
+                    "/ ": " / ",
+                }
+            )
+            .str.replace("  / ", " / ")
+        ).cast({self.procedure_discharge_col: bool})

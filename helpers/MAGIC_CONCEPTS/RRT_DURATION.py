@@ -34,7 +34,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
             - "Peritoneal dialysis"
             - "SCUF" (Slow continuous ultra filtration)
             - "SLED" (Sustained low-efficiency dialysis)
-            - "other"
+            - None (if the type could not be determined)
         - renal replacement therapy start "Renal Replacement Therapy Start Relative to Admission (seconds)"
         - renal replacement therapy end "Renal Replacement Therapy End Relative to Admission (seconds)"
         - renal replacement therapy duration "Renal Replacement Therapy Duration (hours)"
@@ -44,7 +44,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
         """
 
         # region eICU
-        print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
+        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
         eicu_RENAL_REPLACEMENT_THERAPY_DURATION = (
             EICUExtractor(self.paths, self.datasets)
             .extract_treatments(verbose=False)
