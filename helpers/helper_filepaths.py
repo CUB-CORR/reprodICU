@@ -145,6 +145,9 @@ class EICUPaths(GlobalVars):
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
         self.lab_mapping_path = self.eICU_mapping_path + "eicu_lab.yaml"
+        self.resp_airwaytype_mapping_path = (
+            self.eICU_mapping_path + "eicu_respiratoryCare_airwaytype.yaml"
+        )
         self.resp_mapping_path = (
             self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
