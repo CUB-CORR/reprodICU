@@ -41,10 +41,19 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             # ventstartoffset and ventendoffset seem not include full ventilation duration
             .select(
                 "patientunitstayid",
+                "airwaytype",
                 "priorventstartoffset",
                 "priorventendoffset",
             )
             .with_columns(
+                pl.col("airwaytype")
+                .replace_strict(
+                    self.global_helpers.load_mapping(
+                        self.eicu_paths.resp_airwaytype_mapping_path
+                    ),
+                    default=None,
+                )
+                .alias("Ventilation Type"),
                 # reltimes in eICU are in minutes
                 (pl.col("priorventstartoffset") * 60).alias(
                     "Ventilation Start Relative to Admission (seconds)"
@@ -138,7 +147,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 .drop("variableid")
                 # replace ventilation concepts
                 .with_columns(
-                    pl.when(pl.col("value").ne(1))
+                    pl.when(pl.col("value").gt(1))
                     .then(pl.lit("active"))
                     .otherwise(pl.lit("inactive"))
                     .alias("Ventilator Mode"),
@@ -167,23 +176,29 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 )
                 # drop rows where both columns are staying the same
                 .filter(
-                    pl.col("Ventilation Type").ne_missing(
-                        pl.col("Ventilation Type").shift(-1)
+                    pl.col("Ventilator Mode").ne_missing(
+                        pl.col("Ventilator Mode")
+                        .shift(1)
+                        .over("patientid", "Ventilation Type")
                     )
                     | pl.col("Ventilator Mode").ne_missing(
-                        pl.col("Ventilator Mode").shift(-1)
-                    ),
+                        pl.col("Ventilator Mode")
+                        .shift(-1)
+                        .over("patientid", "Ventilation Type")
+                    )
+                    | pl.col("Ventilation Type")
+                    .shift(1)
+                    .over("patientid")
+                    .is_null()
+                    | pl.col("Ventilation Type")
+                    .shift(-1)
+                    .over("patientid")
+                    .is_null()
                 )
                 .with_columns(
-                    pl.when(
-                        pl.col("patientid") == pl.col("patientid").shift(-1)
-                    )
-                    .then(
-                        pl.col(
-                            "Ventilation Start Relative to Admission (seconds)"
-                        ).shift(-1)
-                    )
-                    .otherwise(None)
+                    pl.col("Ventilation Start Relative to Admission (seconds)")
+                    .shift(-1)
+                    .over("patientid")
                     .alias("Ventilation End Relative to Admission (seconds)")
                 )
                 .with_columns(
@@ -199,6 +214,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                         / (60 * 60)
                     ).alias("Ventilation Duration (hours)")
                 )
+                .drop_nulls("Ventilation End Relative to Admission (seconds)")
                 .filter(pl.col("Ventilator Mode") == "active")
             )
 
@@ -378,6 +394,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     self.ricu_mappings.ricu_concept_dict["mech_vent"][
                         "sources"
                     ]["aumc"][0]["ids"]
+                    + [9671]  # CPAP
                 )
             )
             .drop("itemid")
@@ -388,6 +405,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     {
                         "Beademen": "invasive ventilation",
                         "Beademen non-invasief": "non-invasive ventilation",
+                        "CPAP": "non-invasive ventilation",
                         "Tracheostoma": "tracheostomy",
                     }
                 )
