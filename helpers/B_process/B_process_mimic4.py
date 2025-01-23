@@ -258,34 +258,6 @@ class MIMIC4Converter(UnitConverter):
         # Convert the lab values to the correct units.
         return (
             data.pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.direct [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.indirect [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.total [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            # prefer mg/dL over mmol/L
-            # .pipe(
-            #     self.convert_blood_urea_nitrogen_mg_dL_to_mmol_L,
-            #     itemid="Urea nitrogen [Mass/volume]",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            # )
-            .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
                 itemid="Calcium [Mass/volume]",
                 labelcol=labelcol,
@@ -306,14 +278,6 @@ class MIMIC4Converter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            # NOTE: Experience from clinical practice:
-            # Creatinine is more commonly referred to in mg/dL, so this conversion is not necessary
-            # .pipe(
-            #     self.convert_creatinine_mg_dL_to_umol_L,
-            #     itemid="creatinine",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            # )
             # NOTE: Experience from clinical practice:
             # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
@@ -337,20 +301,6 @@ class MIMIC4Converter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            # NOTE: Experience from clinical practice:
-            # Glucose is more commonly referred to in mg/dL, so this conversion is not necessary
-            # .pipe(
-            #     self.convert_glucose_mg_dL_to_mmol_L,
-            #     itemid="glucose",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            # )
-            # .pipe(
-            #     self.convert_glucose_mg_dL_to_mmol_L,
-            #     itemid="glucose_bedside",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            # )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
                 itemid="Iron [Mass/volume]",
@@ -448,10 +398,6 @@ class MIMIC4Converter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.direct [Mass/volume]": "Bilirubin.direct [Moles/volume]",
-                        "Bilirubin.indirect [Mass/volume]": "Bilirubin.indirect [Moles/volume]",
-                        "Bilirubin.total [Mass/volume]": "Bilirubin.total [Moles/volume]",
-                        # "Urea nitrogen [Mass/volume]": "Urea nitrogen [Moles/volume]",
                         "Calcium [Mass/volume]": "Calcium [Moles/volume]",
                         "Calcium.ionized [Mass/volume]": "Calcium.ionized [Moles/volume]",
                         "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
@@ -483,7 +429,8 @@ class MIMIC4Converter(UnitConverter):
                 goal_itemcol="Band form neutrophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
-            ).pipe(
+            )
+            .pipe(
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils [#/volume]",
                 total_itemcol="Leukocytes [#/volume]",
