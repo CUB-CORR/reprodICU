@@ -1126,7 +1126,7 @@ if __name__ == "__main__":
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
 
     # Parquetize the OMOP vocabulary files
-    for file in os.listdir(OUTPATH + "OMOP_vocabulary/"):
+    for file in os.listdir(OUTPATH + "../OMOP_vocabulary/"):
         # Check if the file is already parquetized
         if os.path.isfile(OUTPATH + file[:-4] + ".parquet"):
             continue
@@ -1134,7 +1134,7 @@ if __name__ == "__main__":
         print(f"reprOMOPIZE - parquetizing vocab {file}")
 
         pl.scan_csv(
-            OUTPATH + "OMOP_vocabulary/" + file,
+            OUTPATH + "../OMOP_vocabulary/" + file,
             separator="\t",
             infer_schema_length=10000,
             quote_char=None,
