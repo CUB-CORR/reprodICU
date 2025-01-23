@@ -169,20 +169,6 @@ class SICdbConverter(UnitConverter):
         # Convert the lab values to the correct units.
         return (
             data.pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.direct [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
-                self.convert_bilirubin_mg_dL_to_umol_L,
-                itemid="Bilirubin.total [Mass/volume]",
-                labelcol=labelcol,
-                valuecol=valuecol,
-                structfield=structfield,
-            )
-            .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
                 itemid="Cobalamin (Vitamin B12) [Mass/volume]",
                 labelcol=labelcol,
@@ -207,14 +193,13 @@ class SICdbConverter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.direct [Mass/volume]": "Bilirubin.direct [Moles/volume]",
-                        "Bilirubin.total [Mass/volume]": "Bilirubin.total [Moles/volume]",
                         "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
                         "Iron [Mass/volume]": "Iron [Moles/volume]",
                         # NOTE: rename for consistency
                         "Anion gap 4": "Anion gap",
                         "Fractional oxyhemoglobin": "Oxyhemoglobin/Hemoglobin.total",
                         # NOTE: fixing wrong unit
+                        "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
                         "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
                     }
                 )

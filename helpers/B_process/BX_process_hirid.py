@@ -208,6 +208,20 @@ class HiRIDConverter(UnitConverter):
         # Convert the lab values to the correct units.
         return (
             data.pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.direct [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.total [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
                 self.convert_creatinine_umol_L_to_mg_dL,
                 itemid="Creatinine [Moles/volume]",
                 labelcol=labelcol,
@@ -268,6 +282,8 @@ class HiRIDConverter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
+                        "Bilirubin.direct [Moles/volume]": "Bilirubin.direct [Mass/volume]",
+                        "Bilirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
                         "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
                         "Glucose [Moles/volume]": "Glucose [Mass/volume]",

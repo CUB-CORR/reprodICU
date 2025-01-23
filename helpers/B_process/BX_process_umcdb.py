@@ -327,20 +327,20 @@ class UMCdbConverter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            # .pipe(
-            #     self.convert_bilirubin_umol_L_to_mg_dL,
-            #     itemid="Bilirubin.conjugated [Moles/volume]",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            #     structfield=structfield,
-            # )
-            # .pipe(
-            #     self.convert_bilirubin_umol_L_to_mg_dL,
-            #     itemid="Bilirubin.total [Moles/volume]",
-            #     labelcol=labelcol,
-            #     valuecol=valuecol,
-            #     structfield=structfield,
-            # )
+            .pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.conjugated [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_bilirubin_umol_L_to_mg_dL,
+                itemid="Bilirubin.total [Moles/volume]",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
             .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
                 itemid="Creatinine [Moles/volume]",
@@ -465,7 +465,8 @@ class UMCdbConverter(UnitConverter):
             .with_columns(
                 pl.col(labelcol).replace(
                     {
-                        "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Moles/volume]",
+                        "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Mass/volume]",
+                        "Bilirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
                         "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
                         "Cholesterol in HDL [Moles/volume]": "Cholesterol in HDL [Mass/volume]",
                         "Cholesterol [Moles/volume]": "Cholesterol [Mass/volume]",
