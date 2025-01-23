@@ -29,9 +29,10 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
             - APACHE II (MIMIC-III, MIMIC-IV, UMCdb)
             - APACHE III (MIMIC-III, MIMIC-IV, UMCdb)
             - APACHE IV (eICU, UMCdb)
+            - APS III (eICU, MIMIC-III, MIMIC-IV)
             - SOFA (MIMIC-III, MIMIC-IV)
             - SAPS II (UMCdb)
-            - SAPS III (eICU, MIMIC-III, MIMIC-IV, SICdb)
+            - SAPS III (SICdb)
 
         :return: DataFrame
         :rtype: pl.DataFrame
@@ -53,7 +54,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
             )
             .drop("apacheversion")
             .rename(
-                {"acutephysiologyscore": "SAPS III", "apachescore": "APACHE IV"}
+                {"acutephysiologyscore": "APS III", "apachescore": "APACHE IV"}
             )
             .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
         )
@@ -69,7 +70,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
         mimic_SCORES = {
             226743: "APACHE II",
             226991: "APACHE III",
-            226996: "SAPS III",
+            226996: "APS III",
             227428: "SOFA",
         }
         mimic_SCORE_IDS = list(mimic_SCORES.keys())
@@ -240,6 +241,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                         "APACHE II",
                         "APACHE III",
                         "APACHE IV",
+                        "APS III",
                         "SOFA",
                         "SAPS II",
                         "SAPS III",
