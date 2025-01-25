@@ -19,8 +19,8 @@ amylase: Amylase [Enzymatic activity/volume] in Serum or Plasma # amylase
 ANF/ANA:
 anion gap: Anion gap in Blood # anion_gap
 AST (SGOT): Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma # AST
-Base Deficit: base_deficit # NOTE: Later combined with base_excess into base_excess_deficit
-Base Excess: base_excess # NOTE: Later combined with base_deficit into base_excess_deficit
+Base Deficit: Base deficit in Blood # NOTE: Later combined with base_excess into base_excess_deficit
+Base Excess: Base excess in Blood # NOTE: Later combined with base_deficit into base_excess_deficit
 bedside glucose: Glucose [Mass/volume] in Blood # glucose_bedside
 bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
 BNP: # BNP
@@ -46,7 +46,7 @@ ESR: Erythrocyte sedimentation rate by Westergren method # erythrocyte_sedimenta
 ethanol:
 Fe/TIBC Ratio:
 Fe: Iron [Mass/volume] in Serum or Plasma # iron
-Ferritin: Ferritin [Mass/volume] in Serum or Plasma # ferritin
+Ferritin: Ferritin [Mass/volume] in Blood # ferritin
 fibrinogen: Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay # fibrinogen
 FiO2: # Respiratory parameter
 folate: Folate [Mass/volume] in Serum or Plasma # folate
@@ -84,7 +84,7 @@ myoglobin: Myoglobin [Mass/volume] in Serum or Plasma # myoglobin
 NAPA:
 O2 Content: # Respiratory parameter
 O2 Sat (%): Oxygen saturation in Arterial blood # saO2
-Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total in Arterial blood # oxyhemoglobin
+Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total [Pure mass fraction] in Arterial blood # oxyhemoglobin
 paCO2: Carbon dioxide [Partial pressure] in Arterial blood # paCO2
 paO2: Oxygen [Partial pressure] in Arterial blood # paO2
 Peak Airway/Pressure: # Respiratory parameter
@@ -106,7 +106,7 @@ protein S:
 PT - INR: INR in Platelet poor plasma by Coagulation assay # INR
 PT: Prothrombin time (PT) # prothrombin_time
 PTT ratio:
-PTT: aPTT in Platelet poor plasma by Coagulation assay # partial_thromboplastin_time
+PTT: aPTT in Blood by Coagulation assay # partial_thromboplastin_time
 RBC: Erythrocytes [#/volume] in Blood # erythrocytes
 RDW: Erythrocyte distribution width [Ratio] # red_cell_distribution_width
 Respiratory Rate:
