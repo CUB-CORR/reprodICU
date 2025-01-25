@@ -5,11 +5,9 @@
 # processing and harmonization.
 
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os
 
+import polars as pl
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -111,20 +109,16 @@ class SICdbProcessor(SICdbExtractor):
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
-                labelcol="LaboratoryID",
-                valuecol="value_struct",
+                labelcol="LaboratoryName",
+                valuecol="labstruct",
             )
-            .with_columns(
-                pl.col("value_struct")
-                .struct.json_encode()
-                .alias("value_struct")
-            )
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
             .collect(streaming=True)
             .pivot(
-                on="LaboratoryID",
+                on="LaboratoryName",
                 index=self.index_cols,
-                values="value_struct",
+                values="labstruct",
                 aggregate_function="first",  # NOTE: mean is used here -> check if this is sensible
             )
             .lazy()
@@ -170,40 +164,37 @@ class SICdbConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
+                itemid="Cobalamin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume]",
+                itemid="Iron",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Mass/volume]",
-                itemid_BUN="Urea nitrogen [Mass/volume]",
+                itemid_urea="Urea",
+                itemid_BUN="Urea nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            .with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-                        "Iron [Mass/volume]": "Iron [Moles/volume]",
-                        # NOTE: rename for consistency
-                        "Anion gap 4": "Anion gap",
-                        "Fractional oxyhemoglobin": "Oxyhemoglobin/Hemoglobin.total",
-                        # NOTE: fixing wrong unit
-                        "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
-                    }
-                )
-            )
+            # .with_columns(
+            #     pl.col(labelcol).replace(
+            #         {
+            #             "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
+            #             "Iron [Mass/volume]": "Iron [Moles/volume]",
+            #             # NOTE: rename for consistency
+            #             "Anion gap 4": "Anion gap",
+            #             "Fractional oxyhemoglobin": "Oxyhemoglobin/Hemoglobin.total",
+            #         }
+            #     )
+            # )
         )
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
@@ -214,50 +205,44 @@ class SICdbConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Band form neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
-                goal_itemcol="Band form neutrophils/100 leukocytes",
-            )
-            .pipe(
-                self.convert_absolute_count_to_relative,
-                itemcol="Basophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Basophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Basophils/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Eosinophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Eosinophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Eosinophils/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Lymphocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Lymphocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Lymphocytes/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Monocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Monocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Monocytes/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Neutrophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Neutrophils/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
-                goal_itemcol="Neutrophils/100 leukocytes",
+                itemcol="Band form neutrophils",
+                total_itemcol="Leukocytes",
+                goal_itemcol="Neutrophils.band form/100 leukocytes",
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Reticulocytes [#/volume]",
-                total_itemcol="Erythrocytes [#/volume]",
+                itemcol="Reticulocytes",
+                total_itemcol="Erythrocytes",
                 goal_itemcol="Reticulocytes/100 erythrocytes",
             )
         )
