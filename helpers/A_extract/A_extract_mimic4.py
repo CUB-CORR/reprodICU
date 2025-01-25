@@ -4,13 +4,12 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os.path
 
-from helpers.helper_filepaths import MIMIC4Paths
+import polars as pl
 from helpers.helper import GlobalHelpers
+from helpers.helper_filepaths import MIMIC4Paths
+from helpers.helper_OMOP import Vocabulary
 
 
 class MIMIC4Extractor(MIMIC4Paths):
@@ -18,6 +17,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         super().__init__(paths, DEMO)
         self.path = paths.mimic4_source_path
         self.helpers = GlobalHelpers()
+        self.omop = Vocabulary(paths)
         self.icu_stay_id = self.extract_patient_information().select(
             self.icu_stay_id_col,
             self.hospital_stay_id_col,
@@ -556,16 +556,63 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "omop_concept_name": "label",
                 }
             )
+        )
+        labnames = (
+            d_labitems_to_loinc_data.select("label")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
+        d_labitems_to_loinc_data = (
+            d_labitems_to_loinc_data
+            # Add columns for LOINC components and systems
+            .with_columns(
+                pl.col("label")
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
+                )
+                .alias("LOINC_component"),
+                pl.col("label")
+                .replace_strict(
+                    self.omop.get_lab_system_from_name(labnames), default=None
+                )
+                .alias("LOINC_system"),
+                pl.col("label")
+                .replace_strict(
+                    self.omop.get_lab_method_from_name(labnames), default=None
+                )
+                .alias("LOINC_method"),
+                pl.col("label").replace_strict(
+                    self.omop.get_lab_time_aspect_from_name(labnames),
+                    default=None,
+                )
+                # remove "Point in time (spot)" values
+                .replace({"Point in time (spot)": None}).alias("LOINC_time"),
+                pl.col("label")
+                .replace_strict(
+                    self.omop.get_concept_codes_from_names(labnames),
+                    default=None,
+                )
+                .alias("LOINC_code"),
+            )
             # Filter for lab names of interest
             .filter(
-                pl.col("label")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.relevant_lab_values + self.other_lab_values)
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
             )
         )
 
@@ -592,33 +639,21 @@ class MIMIC4Extractor(MIMIC4Paths):
             # Cast valuenum to float
             .cast({"valuenum": float})
             # MAKE STRUCT
+            .with_columns(pl.col("LOINC_component").alias("label"))
             .with_columns(
-                pl.col("label")
-                .str.split_exact(by=" by ", n=1)
-                .struct.rename_fields(["variable_source", "method"])
-                .alias("fields1")
+                pl.struct(
+                    value=pl.col("valuenum"),
+                    system=pl.col("LOINC_system"),
+                    method=pl.col("LOINC_method"),
+                    time=pl.col("LOINC_time"),
+                    LOINC=pl.col("LOINC_code"),
+                ).alias("labstruct")
             )
-            .unnest("fields1")
-            .with_columns(
-                pl.col("variable_source")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "source"])
-                .alias("fields2")
-            )
-            .unnest("fields2")
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
-                pl.col("variable")
-                .str.replace("inHDL", "in HDL")
-                .str.replace("inLDL", "in LDL")
-                .alias("label"),
-                pl.struct(
-                    value="valuenum", source="source", method="method"
-                ).alias("value_struct"),
+                "label",
+                "labstruct",
             )
         )
 
