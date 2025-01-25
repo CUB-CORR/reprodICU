@@ -59,8 +59,10 @@ class UnitConversions:
         labstructdtype = pl.Struct(
             [
                 pl.Field("value", pl.Float64),
-                pl.Field("source", pl.String),
+                pl.Field("system", pl.String),
                 pl.Field("method", pl.String),
+                pl.Field("time", pl.String),
+                pl.Field("LOINC", pl.String),
             ]
         )
 
@@ -84,15 +86,19 @@ class UnitConversions:
                     pl.col(itemcol).struct.rename_fields(
                         [
                             "itemcol_value",
-                            "itemcol_source",
+                            "itemcol_system",
                             "itemcol_method",
+                            "itemcol_time",
+                            "itemcol_LOINC",
                         ]
                     ),
                     pl.col(total_itemcol).struct.rename_fields(
                         [
                             "total_itemcol_value",
-                            "total_itemcol_source",
+                            "total_itemcol_system",
                             "total_itemcol_method",
+                            "total_itemcol_time",
+                            "total_itemcol_LOINC",
                         ]
                     ),
                 )
@@ -115,21 +121,29 @@ class UnitConversions:
                 .select(
                     pl.exclude(
                         "itemcol_value",
-                        "itemcol_source",
+                        "itemcol_system",
                         "itemcol_method",
+                        "itemcol_time",
+                        "itemcol_LOINC",
                         "total_itemcol_value",
-                        "total_itemcol_source",
+                        "total_itemcol_system",
                         "total_itemcol_method",
+                        "total_itemcol_time",
+                        "total_itemcol_LOINC",
                     ),
                     pl.struct(
                         value="itemcol_value",
-                        source="itemcol_source",
+                        system="itemcol_system",
                         method="itemcol_method",
+                        time="itemcol_time",
+                        LOINC="itemcol_LOINC",
                     ).alias(itemcol),
                     pl.struct(
                         value="total_itemcol_value",
-                        source="total_itemcol_source",
+                        source="total_itemcol_system",
                         method="total_itemcol_method",
+                        time="total_itemcol_time",
+                        LOINC="total_itemcol_LOINC",
                     ).alias(total_itemcol),
                 )
             )
@@ -216,9 +230,13 @@ class UnitConversions:
                     .alias("value")
                 )
                 .select(
-                    pl.exclude("value", "source", "method"),
+                    pl.exclude("value", "system", "method", "time", "LOINC"),
                     pl.struct(
-                        value="value", source="source", method="method"
+                        value="value",
+                        system="system",
+                        method="method",
+                        time="time",
+                        LOINC="LOINC",
                     ).alias(valuecol),
                 )
             )
@@ -297,9 +315,13 @@ class UnitConversions:
                     .alias(labelcol),
                 )
                 .select(
-                    pl.exclude("value", "source", "method"),
+                    pl.exclude("value", "system", "method", "time", "LOINC"),
                     pl.struct(
-                        value="value", source="source", method="method"
+                        value="value",
+                        system="system",
+                        method="method",
+                        time="time",
+                        LOINC="LOINC",
                     ).alias(valuecol),
                 )
             )
@@ -404,9 +426,13 @@ class UnitConversions:
                     .alias(labelcol),
                 )
                 .select(
-                    pl.exclude("value", "source", "method"),
+                    pl.exclude("value", "system", "method", "time", "LOINC"),
                     pl.struct(
-                        value="value", source="source", method="method"
+                        value="value",
+                        system="system",
+                        method="method",
+                        time="time",
+                        LOINC="LOINC",
                     ).alias(valuecol),
                 )
             )
@@ -546,7 +572,7 @@ class UnitConversions:
         Convert values from mg/dL to mg/L.
         """
         return data.pipe(self.GENERIC_CONVERTER, factor=10, **kwargs)
-    
+
     def convert_mg_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
@@ -628,9 +654,13 @@ class UnitConversions:
                     .alias("value"),
                 )
                 .select(
-                    pl.exclude("value", "source", "method"),
+                    pl.exclude("value", "system", "method", "time", "LOINC"),
                     pl.struct(
-                        value="value", source="source", method="method"
+                        value="value",
+                        system="system",
+                        method="method",
+                        time="time",
+                        LOINC="LOINC",
                     ).alias(valuecol),
                 )
             )
