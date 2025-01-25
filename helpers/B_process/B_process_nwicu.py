@@ -5,11 +5,9 @@
 # processing and harmonization.
 
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os
 
+import polars as pl
 from helpers.A_extract.A_extract_nwicu import NWICUExtractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -122,20 +120,16 @@ class NWICUProcessor(NWICUExtractor):
             .pipe(
                 self.convert._convert_lab_values,
                 labelcol="label",
-                valuecol="value_struct",
+                valuecol="labstruct",
                 structfield="value",
             )
-            .with_columns(
-                pl.col("value_struct")
-                .struct.json_encode()
-                .alias("value_struct")
-            )
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .collect()
             .pivot(
                 on="label",
                 index=self.index_cols,
-                values="value_struct",
+                values="labstruct",
                 aggregate_function="first",
             )
             # Convert the wide lab values to the correct units
@@ -259,70 +253,70 @@ class NWICUConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium [Mass/volume]",
+                itemid="Calcium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized [Mass/volume]",
+                itemid="Calcium.ionized",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="Creatine kinase.MB [Mass/volume]",
+                itemid="Creatine kinase.MB",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="C reactive protein [Mass/volume]",
+                itemid="C reactive protein",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_FEU_to_DDU,
-                itemid="Fibrin D-dimer FEU [Mass/volume]",
+                itemid="Fibrin D-dimer FEU",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_mg_L,
-                itemid="Fibrin D-dimer DDU [Mass/volume]",
+                itemid="Fibrin D-dimer DDU",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume]",
+                itemid="Iron",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron binding capacity [Mass/volume]",
+                itemid="Iron binding capacity",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="Magnesium [Mass/volume]",
+                itemid="Magnesium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="Myoglobin [Mass/volume]",
+                itemid="Myoglobin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -330,7 +324,7 @@ class NWICUConverter(UnitConverter):
             # MCHC is in %, however this is equal to g/dL due to the definition of MCHC
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="Phosphate [Mass/volume]",
+                itemid="Phosphate",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -338,14 +332,14 @@ class NWICUConverter(UnitConverter):
             # Potassium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Albumin [Mass/volume]",
+                itemid="Albumin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Protein [Mass/volume]",
+                itemid="Protein",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -353,64 +347,45 @@ class NWICUConverter(UnitConverter):
             # Sodium is mEq/L, however as a univalent ion, this is equal to mmol/L
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="Triiodothyronine (T3) [Mass/volume]",
+                itemid="Triiodothyronine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) [Mass/volume]",
+                itemid="Thyroxine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) free [Mass/volume]",
+                itemid="Thyroxine free",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin I.cardiac [Mass/volume]",
+                itemid="Troponin I.cardiac",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin T.cardiac [Mass/volume]",
+                itemid="Troponin T.cardiac",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
+                itemid="Cobalamin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
-            )
-            .with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        "Calcium [Mass/volume]": "Calcium [Moles/volume]",
-                        "Calcium.ionized [Mass/volume]": "Calcium.ionized [Moles/volume]",
-                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
-                        "Iron [Mass/volume]": "Iron [Moles/volume]",
-                        "Iron binding capacity [Mass/volume]": "Iron binding capacity [Moles/volume]",
-                        "Magnesium [Mass/volume]": "Magnesium [Moles/volume]",
-                        "Phosphate [Mass/volume]": "Phosphate [Moles/volume]",
-                        "Triiodothyronine (T3) [Mass/volume]": "Triiodothyronine (T3) [Moles/volume]",
-                        "Thyroxine (T4) [Mass/volume]": "Thyroxine (T4) [Moles/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
-                        "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-                        # NOTE: do sth with this
-                        # Protein [Mass/time] in 24 hour Urine
-                    }
-                )
             )
         )
 
@@ -422,40 +397,40 @@ class NWICUConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Basophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Basophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Basophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Eosinophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Eosinophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Eosinophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Lymphocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Lymphocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Lymphocytes/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Monocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Monocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Monocytes/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Neutrophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Neutrophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
