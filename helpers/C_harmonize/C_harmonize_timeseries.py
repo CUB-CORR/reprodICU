@@ -63,19 +63,7 @@ class TimeseriesHarmonizer(GlobalVars):
             [*self.index_cols, *self.relevant_intakeoutput_values]
         )
 
-        _relevant_lab_values = list(
-            set(
-                [
-                    (
-                        re.split(
-                            " (in|of|by) ", x.replace("in (HDL|LDL)", "in$1")
-                        )[0]
-                    ).replace("in(HDL|LDL)", "in $1")
-                    for x in self.relevant_lab_values
-                ]
-            )
-        )
-        labs_prms = pl.Series([*self.index_cols, *_relevant_lab_values])
+        labs_prms = pl.Series([*self.index_cols, *self.relevant_lab_LOINC_components])
 
         # Harmonize the timeseries
         timeseries_vitals = []
@@ -442,8 +430,10 @@ class TimeseriesHarmonizer(GlobalVars):
         labstructdtype = pl.Struct(
             [
                 pl.Field("value", pl.Float64),
-                pl.Field("source", pl.String),
+                pl.Field("system", pl.String),
                 pl.Field("method", pl.String),
+                pl.Field("time", pl.String),
+                pl.Field("LOINC", pl.String),
             ]
         )
         value_cols = [
