@@ -71,14 +71,8 @@ class HiRIDProcessor(HiRIDExtractor):
             )
 
             # Process timeseries data
-            timeseries = (
-                pl.scan_parquet(self.timeseries_path + file)
-                .pipe(
-                    self._extract_timeseries_helper,
-                    admissiontime,
-                    length_of_stay,
-                )
-                .drop_nulls(subset=["value"])
+            timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
+                self._extract_timeseries_helper, admissiontime, length_of_stay
             )
             cases += (
                 timeseries.select(self.icu_stay_id_col)
@@ -88,43 +82,44 @@ class HiRIDProcessor(HiRIDExtractor):
             )
 
             # Separate the lab values from the rest
-            timeseries_labs = (
-                timeseries.filter(
-                    pl.col("variableid")
-                    .str.replace("in HDL", "inHDL")
-                    .str.replace("in LDL", "inLDL")
-                    .str.replace(" (in|of) ", " INOF ")
-                    .str.split_exact(by=" INOF ", n=1)
-                    .struct.rename_fields(["variable", "_"])
-                    .struct.field("variable")
-                    .is_in(self.relevant_lab_values + self.other_lab_values)
+            LOINC_data = timeseries.select("variable").unique()
+            labnames = LOINC_data.collect().to_series().to_list()
+            LOINC_data = LOINC_data.with_columns(
+                pl.col("variable")
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
                 )
-                .pipe(
-                    self._extract_timeseries_labs_helper
-                )  # Convert the lab values to the correct units
+                .alias("LOINC_component")
+            )
+            timeseries_labs = (
+                timeseries.join(LOINC_data, on="variable")
+                .filter(
+                    pl.col("LOINC_component").is_in(
+                        self.relevant_lab_LOINC_components
+                    )
+                )
+                .pipe(self._extract_timeseries_labs_helper)
+                # Convert the lab values to the correct units
                 .pipe(
                     self.convert._convert_lab_values,
-                    labelcol="variableid",
-                    valuecol="value_struct",
+                    labelcol="variable",
+                    valuecol="labstruct",
                 )
-                .with_columns(
-                    pl.col("value_struct")
-                    .struct.json_encode()
-                    .alias("value_struct")
-                )
+                .with_columns(pl.col("labstruct").struct.json_encode())
                 # Pivot the timeseries data
-                .collect(streaming=True)
+                .collect()
                 .pivot(
-                    on="variableid",
+                    on="variable",
                     index=self.index_cols,
-                    values="value_struct",
+                    values="labstruct",
                     aggregate_function="first",
                 )
             )
 
             timeseries_labs_columns = timeseries_labs.collect_schema().names()
-            if ("Lymphocytes [#/volume]" in timeseries_labs_columns) and (
-                "Leukocytes [#/volume]" in timeseries_labs_columns
+            if ("Lymphocytes" in timeseries_labs_columns) and (
+                "Leukocytes" in timeseries_labs_columns
             ):
                 timeseries_labs = (
                     timeseries_labs
@@ -136,19 +131,10 @@ class HiRIDProcessor(HiRIDExtractor):
 
             # Drop the lab values from the timeseries data
             timeseries = (
-                timeseries.filter(
-                    pl.col("variableid")
-                    .str.replace("in HDL", "inHDL")
-                    .str.replace("in LDL", "inLDL")
-                    .str.replace(" (in|of) ", " INOF ")
-                    .str.split_exact(by=" INOF ", n=1)
-                    .struct.rename_fields(["variable", "_"])
-                    .struct.field("variable")
-                    .is_in(self.relevant_lab_values + self.other_lab_values)
-                    .not_()
-                )
+                timeseries.join(LOINC_data, on="variable")
+                .filter(pl.col("LOINC_component").is_null())
                 # Pivot the timeseries data
-                .collect(streaming=True)
+                .collect()
                 .pivot(
                     on="variableid",
                     index=self.index_cols,
@@ -209,49 +195,49 @@ class HiRIDConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.direct [Moles/volume]",
+                itemid="Bilirubin.direct",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.total [Moles/volume]",
+                itemid="Bilirubin.total",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_creatinine_umol_L_to_mg_dL,
-                itemid="Creatinine [Moles/volume]",
+                itemid="Creatinine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_cortisol_nmol_L_to_ug_dL,
-                itemid="Cortisol [Moles/volume]",
+                itemid="Cortisol",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_L_to_mg_dL,
-                itemid="Fibrinogen [Mass/volume]",
+                itemid="Fibrinogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="Glucose [Moles/volume]",
+                itemid="Glucose",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_L_to_g_dL,
-                itemid="Hemoglobin [Mass/volume]",
+                itemid="Hemoglobin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -259,41 +245,25 @@ class HiRIDConverter(UnitConverter):
             .pipe(
                 # same conversion due to definition of MCHC
                 self.convert_g_L_to_g_dL,
-                itemid="MCHC [Mass/volume]",
+                itemid="Erythrocyte mean corpuscular hemoglobin concentration",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Moles/volume]",
-                itemid_BUN="Urea nitrogen [Moles/volume]",
+                itemid_urea="Urea",
+                itemid_BUN="Urea nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_blood_urea_nitrogen_mmol_L_to_mg_dL,
-                itemid="Urea nitrogen [Moles/volume]",
+                itemid="Urea nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
-            )
-            .with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        "Bilirubin.direct [Moles/volume]": "Bilirubin.direct [Mass/volume]",
-                        "Bilirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
-                        "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
-                        "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
-                        "Glucose [Moles/volume]": "Glucose [Mass/volume]",
-                        "Urea nitrogen [Moles/volume]": "Urea nitrogen [Mass/volume]",
-                        # NOTE: fix wrong unit
-                        "Creatine kinase panel - Serum or Plasma": "Creatine kinase [Enzymatic activity/volume]",
-                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
-                        "Lactate [Mass/volume]": "Lactate [Moles/volume]",
-                    }
-                )
             )
         )
 
@@ -304,8 +274,8 @@ class HiRIDConverter(UnitConverter):
 
         return data.pipe(
             self.convert_absolute_count_to_relative,
-            itemcol="Lymphocytes [#/volume]",
-            total_itemcol="Leukocytes [#/volume]",
+            itemcol="Lymphocytes",
+            total_itemcol="Leukocytes",
             goal_itemcol="Lymphocytes/100 leukocytes",
             structfield="value",
             structstring=True,

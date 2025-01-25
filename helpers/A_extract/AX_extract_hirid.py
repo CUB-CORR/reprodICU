@@ -4,13 +4,12 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os.path
 
-from helpers.helper_filepaths import HiRIDPaths
+import polars as pl
 from helpers.helper import GlobalHelpers
+from helpers.helper_filepaths import HiRIDPaths
+from helpers.helper_OMOP import Vocabulary
 
 
 class HiRIDExtractor(HiRIDPaths):
@@ -18,6 +17,7 @@ class HiRIDExtractor(HiRIDPaths):
         super().__init__(paths)
         self.path = paths.hirid_source_path
         self.helpers = GlobalHelpers()
+        self.omop = Vocabulary(paths)
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
         self.other_lab_values = [
@@ -56,7 +56,9 @@ class HiRIDExtractor(HiRIDPaths):
             )
             .with_columns(
                 # Set care site
-                pl.lit("Inselspital - Universitätsspital Bern").alias(self.care_site_col),
+                pl.lit("Inselspital - Universitätsspital Bern").alias(
+                    self.care_site_col
+                ),
                 # Set unit type
                 # NOTE: the Bern University Hospital only has one unit type
                 # -> all ICU patients are cared for within a interdisciplinary 60-bed unit in the Department of Intensive Care Medicine
@@ -311,25 +313,12 @@ class HiRIDExtractor(HiRIDPaths):
             .cast({self.icu_stay_id_col: str, "datetime": str})
             .join(admissiontime, on=self.icu_stay_id_col)
             .join(length_of_stay, on=self.icu_stay_id_col)
+            .join(self._get_observation_variables(), on="variableid")
             .with_columns(
                 pl.col("admissiontime").str.to_datetime(
                     "%Y-%m-%d %H:%M:%S%.9f"
                 ),
                 pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                # Replace the variableid with the corresponding variable name
-                # then the reprodICU mapping
-                pl.col("variableid")
-                .cast(int)
-                .replace_strict(self._get_observation_variables(), default=None)
-                .replace(
-                    {
-                        **self.relevant_vital_values_mapping,
-                        **self.relevant_lab_values_mapping,
-                        **self.relevant_intakeoutput_values_mapping,
-                        **self.relevant_respiratory_values_mapping,
-                    }
-                )
-                .alias("variableid"),
                 # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
             )
@@ -340,30 +329,14 @@ class HiRIDExtractor(HiRIDPaths):
                     .round(0)
                 ).alias(self.timeseries_time_col)
             )
-            .drop(["admissiontime", "datetime"])
-            # # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            # .filter(
-            #     (
-            #         pl.col(self.timeseries_time_col)
-            #         < pl.duration(
-            #             days=pl.col(self.icu_length_of_stay_col)
-            #         ).truediv(pl.duration(seconds=1))
-            #     )
-            #     & (
-            #         pl.col(self.timeseries_time_col)
-            #         > pl.duration(
-            #             days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            #         ).truediv(pl.duration(seconds=1))
-            #     )
-            # )
+            .drop("admissiontime", "datetime")
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
             # Remove rows with empty lab results
             .filter(
-                pl.col("variableid").is_not_null()
-                & (pl.col("variableid") != "")
+                pl.col("variable").is_not_null() & (pl.col("variable") != "")
             )
         )
 
@@ -373,34 +346,77 @@ class HiRIDExtractor(HiRIDPaths):
     def _extract_timeseries_labs_helper(
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
-        return (
-            data.with_columns(
-                pl.col("variableid")
-                .str.split_exact(by=" by ", n=1)
-                .struct.rename_fields(["variable_source", "method"])
-                .alias("fields1")
-            )
-            .unnest("fields1")
+        LOINC_data = data.select("variable").unique()
+        labnames = LOINC_data.collect().to_series().to_list()
+        LOINC_data = (
+            data.select("variable").unique()
+            # Add columns for LOINC components and systems
             .with_columns(
-                pl.col("variable_source")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "source"])
-                .alias("fields2")
+                pl.col("variable")
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
+                )
+                .alias("LOINC_component"),
+                pl.col("variable")
+                .replace_strict(
+                    self.omop.get_lab_system_from_name(labnames), default=None
+                )
+                .alias("LOINC_system"),
+                pl.col("variable")
+                .replace_strict(
+                    self.omop.get_lab_method_from_name(labnames), default=None
+                )
+                .alias("LOINC_method"),
+                pl.col("variable").replace_strict(
+                    self.omop.get_lab_time_aspect_from_name(labnames),
+                    default=None,
+                )
+                # remove "Point in time (spot)" values
+                .replace({"Point in time (spot)": None}).alias("LOINC_time"),
+                pl.col("variable")
+                .replace_strict(
+                    self.omop.get_concept_codes_from_names(labnames),
+                    default=None,
+                )
+                .alias("LOINC_code"),
             )
-            .unnest("fields2")
+        )
+
+        return (
+            data.join(LOINC_data, on="variable")
+            # Filter for lab names of interest
+            .filter(
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
+            )
+            # MAKE STRUCT
+            .with_columns(pl.col("LOINC_component").alias("variable"))
+            .with_columns(
+                pl.struct(
+                    value=pl.col("value"),
+                    system=pl.col("LOINC_system"),
+                    method=pl.col("LOINC_method"),
+                    time=pl.col("LOINC_time"),
+                    LOINC=pl.col("LOINC_code"),
+                ).alias("labstruct")
+            )
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
-                pl.col("variable")
-                .str.replace("inHDL", "in HDL")
-                .str.replace("inLDL", "in LDL")
-                .alias("variableid"),
-                pl.struct(
-                    value="value", source="source", method="method"
-                ).alias("value_struct"),
+                "variable",
+                "labstruct",
             )
         )
 
@@ -676,23 +692,29 @@ class HiRIDExtractor(HiRIDPaths):
         )
 
     def _get_observation_variables(self) -> pl.DataFrame:
-        observation_variables = (
+        return (
             self._get_variable_reference()
             .filter(pl.col("Source Table") == "Observation")
-            .drop("Source Table")
-        ).with_columns(
-            # Fix bad mappings (wrong units)
-            pl.col("Variable Name").replace(
-                "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-                "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+            .select("ID", "Variable Name")
+            .with_columns(
+                pl.col("Variable Name")
+                # Fix bad mappings (wrong units)
+                .replace(
+                    "Bilirubin.direct [Mass/volume] in Serum or Plasma",
+                    "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                )
+                # Replace the variable names with the reprodICU mapping
+                .replace(
+                    {
+                        **self.relevant_vital_values_mapping,
+                        **self.relevant_lab_values_mapping,
+                        **self.relevant_intakeoutput_values_mapping,
+                        **self.relevant_respiratory_values_mapping,
+                    }
+                )
             )
-        )
-
-        return dict(
-            zip(
-                observation_variables["ID"].to_numpy(),
-                observation_variables["Variable Name"].to_numpy(),
-            )
+            .rename({"ID": "variableid", "Variable Name": "variable"})
+            .lazy()
         )
 
     def _get_pharma_variables(self) -> pl.DataFrame:
