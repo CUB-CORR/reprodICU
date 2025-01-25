@@ -4,13 +4,11 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
-import numpy as np
-import pandas as pd
-import polars as pl
-import os.path
 
-from helpers.helper_filepaths import SICdbPaths
+import polars as pl
 from helpers.helper import GlobalHelpers
+from helpers.helper_filepaths import SICdbPaths
+from helpers.helper_OMOP import Vocabulary
 
 
 class SICdbExtractor(SICdbPaths):
@@ -18,11 +16,13 @@ class SICdbExtractor(SICdbPaths):
         super().__init__(paths)
         self.path = paths.sicdb_source_path
         self.helpers = GlobalHelpers()
+        self.omop = Vocabulary(paths)
 
         self.other_lab_values = [
             "Bilirubin.direct [Mass/volume]",
             "Bilirubin.total [Mass/volume]",
             "Cobalamin (Vitamin B12) [Mass/volume]",  # in Serum or Plasma",
+            "Creatinine [Mass/time]",  # in 24 hour Urine"
             "Iron [Mass/volume]",
             "Anion gap 4",
             "Fractional oxyhemoglobin",
@@ -170,7 +170,9 @@ class SICdbExtractor(SICdbPaths):
                 .truediv(pl.duration(days=1))
                 .alias(self.mortality_after_col),
                 # Set care site
-                pl.lit("Landeskrankenhaus Salzburg (SALK) - Universitätsklinikum der PMU").alias(self.care_site_col),
+                pl.lit(
+                    "Landeskrankenhaus Salzburg (SALK) - Universitätsklinikum der PMU"
+                ).alias(self.care_site_col),
                 # Create empty HospitalStayID column
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Convert admission diagnosis to APACHE group
@@ -259,76 +261,95 @@ class SICdbExtractor(SICdbPaths):
     def extract_laboratory_timeseries(self) -> pl.LazyFrame:
         offsets = self._get_offsets()
 
+        LOINC_data = self._extract_references_LOINC()
+        labnames = (
+            LOINC_data.select("LaboratoryName").unique().to_series().to_list()
+        )
+        LOINC_data = (
+            LOINC_data
+            # Add columns for LOINC components and systems
+            .with_columns(
+                pl.col("LaboratoryName")
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
+                )
+                .alias("LOINC_component"),
+                pl.col("LaboratoryName")
+                .replace_strict(
+                    self.omop.get_lab_system_from_name(labnames), default=None
+                )
+                .alias("LOINC_system"),
+                pl.col("LaboratoryName")
+                .replace_strict(
+                    self.omop.get_lab_method_from_name(labnames), default=None
+                )
+                .alias("LOINC_method"),
+                pl.col("LaboratoryName").replace_strict(
+                    self.omop.get_lab_time_aspect_from_name(labnames),
+                    default=None,
+                )
+                # remove "Point in time (spot)" values
+                .replace({"Point in time (spot)": None}).alias("LOINC_time"),
+                pl.col("LaboratoryName")
+                .replace_strict(
+                    self.omop.get_concept_codes_from_names(labnames),
+                    default=None,
+                )
+                .alias("LOINC_code"),
+            )
+            .with_columns(
+                pl.col("LOINC_component")
+                .replace_strict(
+                    self.relevant_lab_LOINC_systems,
+                    return_dtype=pl.List(str),
+                    default=None,
+                )
+                .alias("relevant_LOINC_systems")
+            )
+            .lazy()
+        )
+
         return (
             pl.scan_csv(self.laboratory_path)
             .rename({"CaseID": self.icu_stay_id_col})
             .join(offsets, on=self.icu_stay_id_col)
+            .join(LOINC_data, on="LaboratoryID")
+            # Fix lab time offset
             .with_columns(
-                # Fix lab time offset
                 (pl.col("Offset") - pl.col("CaseOffset"))
                 .cast(float)
-                .alias(self.timeseries_time_col),
-                # Convert lab IDs to names, then map them
-                pl.col("LaboratoryID")
-                .replace_strict(
-                    self._extract_references_LOINC("Laboratory"),
-                    default=None,
-                )
-                .replace({**self.relevant_lab_values_mapping}),
+                .alias(self.timeseries_time_col)
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             # NOTE: seems not to be necessary, as the data is already filtered
-            # Filter only relevant lab values
-            .filter(
-                # pl.col("LaboratoryID").is_in(self.all_values + self.other_lab_values),
-                pl.col("LaboratoryID")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.relevant_lab_values + self.other_lab_values)
-            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
-            .filter(pl.col("LaboratoryID").is_not_null())
+            .filter(pl.col("LaboratoryName").is_not_null())
             # Remove rows with empty lab results
             .filter(
                 pl.col("LaboratoryValue").is_not_null()
-                & (pl.col("LaboratoryID") != "")
+                & (pl.col("LaboratoryName") != "")
             )
             # Drop columns
             .drop(["CaseOffset", "LaboratoryType"])
             # MAKE STRUCT
+            .with_columns(pl.col("LOINC_component").alias("LaboratoryName"))
             .with_columns(
-                pl.col("LaboratoryID")
-                .str.split_exact(by=" by ", n=1)
-                .struct.rename_fields(["variable_source", "method"])
-                .alias("fields1")
+                pl.struct(
+                    value=pl.col("LaboratoryValue"),
+                    system=pl.col("LOINC_system"),
+                    method=pl.col("LOINC_method"),
+                    time=pl.col("LOINC_time"),
+                    LOINC=pl.col("LOINC_code"),
+                ).alias("labstruct")
             )
-            .unnest("fields1")
-            .with_columns(
-                pl.col("variable_source")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "source"])
-                .alias("fields2")
-            )
-            .unnest("fields2")
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
-                pl.col("variable")
-                .str.replace("inHDL", "in HDL")
-                .str.replace("inLDL", "in LDL")
-                .alias("LaboratoryID"),
-                pl.struct(
-                    value="LaboratoryValue", source="source", method="method"
-                ).alias("value_struct"),
+                "LaboratoryName",
+                "labstruct",
             )
         )
 
@@ -501,17 +522,25 @@ class SICdbExtractor(SICdbPaths):
             )
         )
 
-    def _extract_references_LOINC(self, ReferenceName: str) -> dict:
-        references = (
+    def _extract_references_LOINC(self) -> pl.DataFrame:
+        return (
             pl.read_csv(self.d_references_path)
-            .filter(pl.col("ReferenceName") == ReferenceName)
+            .filter(pl.col("ReferenceName") == "Laboratory")
             .select("ReferenceGlobalID", "LOINC_long")
-        )
-
-        return dict(
-            zip(
-                references["ReferenceGlobalID"].to_numpy(),
-                references["LOINC_long"].to_numpy(),
+            .with_columns(
+                pl.col("LOINC_long").replace(
+                    {  # NOTE: fixing wrong unit
+                        "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                    }
+                )
+            )
+            .unique()
+            .rename(
+                {
+                    "ReferenceGlobalID": "LaboratoryID",
+                    "LOINC_long": "LaboratoryName",
+                }
             )
         )
 
