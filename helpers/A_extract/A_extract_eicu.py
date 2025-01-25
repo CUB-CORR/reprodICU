@@ -4,12 +4,10 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
-import numpy as np
-import pandas as pd
 import polars as pl
-
-from helpers.helper_filepaths import EICUPaths
 from helpers.helper import GlobalHelpers
+from helpers.helper_filepaths import EICUPaths
+from helpers.helper_OMOP import Vocabulary
 
 
 class EICUExtractor(EICUPaths):
@@ -17,6 +15,7 @@ class EICUExtractor(EICUPaths):
         super().__init__(paths, DEMO)
         self.path = paths.eicu_source_path
         self.helpers = GlobalHelpers()
+        self.omop = Vocabulary(paths)
         self.icu_stay_id = self.extract_patient_information().select(
             self.icu_stay_id_col,
             self.hospital_stay_id_col,
@@ -400,9 +399,8 @@ class EICUExtractor(EICUPaths):
 
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
-        return (
-            pl.scan_csv(self.lab_path)
-            .select(
+        labs = (
+            pl.scan_csv(self.lab_path).select(
                 "patientunitstayid", "labname", "labresultoffset", "labresult"
             )
             # Rename columns for consistency
@@ -412,23 +410,68 @@ class EICUExtractor(EICUPaths):
                     "labresultoffset": self.timeseries_time_col,
                 }
             )
+            # Replace lab names with mapped names
             .with_columns(
-                # Replace lab names with mapped names
                 pl.col("labname")
                 .replace_strict(lab_names_mapping, default=None)
                 .alias("labname")
             )
+        )
+
+        LOINC_data = labs.select("labname").unique()
+        labnames = LOINC_data.collect().to_series().to_list()
+        LOINC_data = (
+            LOINC_data
+            # Add columns for LOINC components and systems
+            .with_columns(
+                pl.col("labname")
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
+                )
+                .alias("LOINC_component"),
+                pl.col("labname")
+                .replace_strict(
+                    self.omop.get_lab_system_from_name(labnames), default=None
+                )
+                .alias("LOINC_system"),
+                pl.col("labname")
+                .replace_strict(
+                    self.omop.get_lab_method_from_name(labnames), default=None
+                )
+                .alias("LOINC_method"),
+                pl.col("labname").replace_strict(
+                    self.omop.get_lab_time_aspect_from_name(labnames),
+                    default=None,
+                )
+                # remove "Point in time (spot)" values
+                .replace({"Point in time (spot)": None}).alias("LOINC_time"),
+                pl.col("labname")
+                .replace_strict(
+                    self.omop.get_concept_codes_from_names(labnames),
+                    default=None,
+                )
+                .alias("LOINC_code"),
+            )
+        )
+
+        return (
+            labs.join(LOINC_data, on="labname", how="left")
             # Filter for lab names of interest
             .filter(
-                # pl.col("labname").is_in(self.all_values + self.other_lab_values)
-                pl.col("labname")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.relevant_lab_values + self.other_lab_values)
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
             )
             # Remove duplicate rows
             .unique()
@@ -443,33 +486,21 @@ class EICUExtractor(EICUPaths):
                 base_unit="minutes",
             )
             # MAKE STRUCT
+            .with_columns(pl.col("LOINC_component").alias("labname"))
             .with_columns(
-                pl.col("labname")
-                .str.split_exact(by=" by ", n=1)
-                .struct.rename_fields(["variable_source", "method"])
-                .alias("fields1")
+                pl.struct(
+                    value=pl.col("labresult"),
+                    system=pl.col("LOINC_system"),
+                    method=pl.col("LOINC_method"),
+                    time=pl.col("LOINC_time"),
+                    LOINC=pl.col("LOINC_code"),
+                ).alias("labstruct")
             )
-            .unnest("fields1")
-            .with_columns(
-                pl.col("variable_source")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "source"])
-                .alias("fields2")
-            )
-            .unnest("fields2")
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
-                pl.col("variable")
-                .str.replace("inHDL", "in HDL")
-                .str.replace("inLDL", "in LDL")
-                .alias("labname"),
-                pl.struct(
-                    value="labresult", source="source", method="method"
-                ).alias("value_struct"),
+                "labname",
+                "labstruct",
             )
         )
 

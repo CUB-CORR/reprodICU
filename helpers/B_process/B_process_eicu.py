@@ -4,12 +4,10 @@
 # Description: This script processes the eICU data and stores it in a structured format for further
 # processing and harmonization.
 
-from numbers import Number
-import numpy as np
-import pandas as pd
-import polars as pl
 import os
+from numbers import Number
 
+import polars as pl
 from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -128,30 +126,26 @@ class EICUProcessor(EICUExtractor):
             # Combine base_excess and base_deficit into one column base_excess_deficit
             .pipe(
                 self.convert._combine_base_excess_and_deficit,
-                base_excess_name="base_excess",
-                base_deficit_name="base_deficit",
+                base_excess_name="Base excess",
+                base_deficit_name="Base deficit",
                 labelcol="labname",
-                valuecol="value_struct",
+                valuecol="labstruct",
                 structfield="value",
             )
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
                 labelcol="labname",
-                valuecol="value_struct",
+                valuecol="labstruct",
                 structfield="value",
             )
-            .with_columns(
-                pl.col("value_struct")
-                .struct.json_encode()
-                .alias("value_struct")
-            )
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab values to wide format
             .collect(streaming=True)
             .pivot(
                 on="labname",
                 index=self.index_cols,
-                values="value_struct",
+                values="labstruct",
                 aggregate_function="first",
             )
             .lazy()
@@ -527,12 +521,14 @@ class EICUConverter(UnitConverter):
         base_excess_name: str,
         base_deficit_name: str,
         labelcol: str = "labname",
-        valuecol: str = "labresult",
+        valuecol: str = "labstruct",
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
         Combine base_excess and base_deficit into one column base_excess_deficit.
         """
+
+        base_excess_LOINC = "11555-0"  # Base excess in Blood by calculation
 
         return (
             data.unnest(valuecol).with_columns(
@@ -553,11 +549,25 @@ class EICUConverter(UnitConverter):
                 .then(pl.lit("Base excess"))
                 .otherwise(pl.col(labelcol))
                 .alias(labelcol),
+                pl.when(
+                    pl.col(labelcol).is_in(
+                        [base_excess_name, base_deficit_name]
+                    ),
+                )
+                .then(pl.lit(base_excess_LOINC))
+                .otherwise(pl.col("LOINC"))
+                .alias("LOINC"),
             )
             # Combine the columns back into a struct again
             .select(
-                pl.exclude("value", "source", "method"),
-                pl.struct("value", "source", "method").alias(valuecol),
+                pl.exclude("value", "system", "method", "time", "LOINC"),
+                pl.struct(
+                    value="value",
+                    system="system",
+                    method="method",
+                    time="time",
+                    LOINC="LOINC",
+                ).alias(valuecol),
             )
         )
 
@@ -566,7 +576,7 @@ class EICUConverter(UnitConverter):
         self,
         data: pl.LazyFrame,
         labelcol: str = "labname",
-        valuecol: str = "labresult",
+        valuecol: str = "labstruct",
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
@@ -577,146 +587,129 @@ class EICUConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium [Mass/volume]",
+                itemid="Calcium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized [Mass/volume]",
+                itemid="Calcium.ionized",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="Creatine kinase.MB [Mass/volume]",
+                itemid="Creatine kinase.MB",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="C reactive protein [Mass/volume]",
+                itemid="C reactive protein",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron [Mass/volume]",
+                itemid="Iron",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_magnesium_mg_dL_to_mmol_L,
-                itemid="Magnesium [Mass/volume]",
+                itemid="Magnesium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ug_L,
-                itemid="Myoglobin [Mass/volume]",
+                itemid="Myoglobin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_phosphate_mg_dL_to_mmol_L,
-                itemid="Phosphate [Mass/volume]",
+                itemid="Phosphate",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Albumin [Mass/volume]",
+                itemid="Albumin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_mg_dL_to_mg_L,
-                itemid="Prealbumin [Mass/volume]",
+                itemid="Prealbumin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_dL_to_g_L,
-                itemid="Protein [Mass/volume]",
+                itemid="Protein",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_T3_ng_dL_to_nmol_L,
-                itemid="Triiodothyronine (T3) [Mass/volume]",
+                itemid="Triiodothyronine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) [Mass/volume]",
+                itemid="Thyroxine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
-                itemid="Thyroxine (T4) free [Mass/volume]",
+                itemid="Thyroxine free",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin I.cardiac [Mass/volume]",
+                itemid="Troponin I.cardiac",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ng_mL_to_ng_L,
-                itemid="Troponin T.cardiac [Mass/volume]",
+                itemid="Troponin T.cardiac",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
-                itemid="Iron binding capacity [Mass/volume]",
+                itemid="Iron binding capacity",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
-                itemid="Cobalamin (Vitamin B12) [Mass/volume]",
+                itemid="Cobalamin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
-            )
-            .with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        "Calcium [Mass/volume]": "Calcium [Moles/volume]",
-                        "Calcium.ionized [Mass/volume]": "Calcium.ionized [Moles/volume]",
-                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
-                        "Iron [Mass/volume]": "Iron [Moles/volume]",
-                        "Iron binding capacity [Mass/volume]": "Iron binding capacity [Moles/volume]",
-                        "Magnesium [Mass/volume]": "Magnesium [Moles/volume]",
-                        "Phosphate [Mass/volume]": "Phosphate [Moles/volume]",
-                        "Triiodothyronine (T3) [Mass/volume]": "Triiodothyronine (T3) [Moles/volume]",
-                        "Thyroxine (T4) [Mass/volume]": "Thyroxine (T4) [Moles/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
-                        "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-                    }
-                )
             )
         )
 
