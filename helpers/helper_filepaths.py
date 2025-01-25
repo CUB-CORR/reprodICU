@@ -3,10 +3,57 @@
 
 # Enables the easy import of the data paths.
 
-import polars as pl
 import os
 
+import polars as pl
 from helpers.helper import GlobalVars
+
+
+# region OMOP
+class OMOPPaths(GlobalVars):
+    def __init__(self, paths):
+        super().__init__(paths)
+        omop_path = paths.OMOP_vocab_path
+
+        # OMOP raw data paths
+        self.CONCEPT_ANCESTOR_path = omop_path + "CONCEPT_ANCESTOR.csv"
+        self.CONCEPT_CLASS_path = omop_path + "CONCEPT_CLASS.csv"
+        self.CONCEPT_RELATIONSHIP_path = omop_path + "CONCEPT_RELATIONSHIP.csv"
+        self.CONCEPT_SYNONYM_path = omop_path + "CONCEPT_SYNONYM.csv"
+        self.CONCEPT_path = omop_path + "CONCEPT.csv"
+        self.DOMAIN_path = omop_path + "DOMAIN.csv"
+        self.DRUG_STRENGTH_path = omop_path + "DRUG_STRENGTH.csv"
+        self.RELATIONSHIP_path = omop_path + "RELATIONSHIP.csv"
+        self.VOCABULARY_path = omop_path + "VOCABULARY.csv"
+
+        # PARQUETIZE FOR MORE EFFICIENT DATA PROCESSING
+        for path in [
+            self.CONCEPT_ANCESTOR_path,
+            self.CONCEPT_CLASS_path,
+            self.CONCEPT_RELATIONSHIP_path,
+            self.CONCEPT_SYNONYM_path,
+            self.CONCEPT_path,
+            self.DOMAIN_path,
+            self.DRUG_STRENGTH_path,
+            self.RELATIONSHIP_path,
+            self.VOCABULARY_path,
+        ]:
+            if not os.path.isfile(
+                path.replace(".csv", ".parquet").replace(".gz", "")
+            ):
+                _parquetize_OMOP(path)
+
+            self.CONCEPT_ANCESTOR_path = omop_path + "CONCEPT_ANCESTOR.parquet"
+            self.CONCEPT_CLASS_path = omop_path + "CONCEPT_CLASS.parquet"
+            self.CONCEPT_RELATIONSHIP_path = (
+                omop_path + "CONCEPT_RELATIONSHIP.parquet"
+            )
+            self.CONCEPT_SYNONYM_path = omop_path + "CONCEPT_SYNONYM.parquet"
+            self.CONCEPT_path = omop_path + "CONCEPT.parquet"
+            self.DOMAIN_path = omop_path + "DOMAIN.parquet"
+            self.DRUG_STRENGTH_path = omop_path + "DRUG_STRENGTH.parquet"
+            self.RELATIONSHIP_path = omop_path + "RELATIONSHIP.parquet"
+            self.VOCABULARY_path = omop_path + "VOCABULARY.parquet"
 
 
 # region eICU
@@ -588,9 +635,20 @@ class UMCdbPaths(GlobalVars):
 
 def _parquetize(path, db: str):
     print(f"{db}   - parquetizing {path}")
-    return pl.scan_csv(path, schema_overrides={"value": str}).sink_parquet(
-        path.replace(".csv", ".parquet").replace(".gz", "")
-    )
+    pl.scan_csv(
+        path,
+        schema_overrides={"value": str},
+    ).sink_parquet(path.replace(".csv", ".parquet").replace(".gz", ""))
+
+
+def _parquetize_OMOP(path):
+    print(f"OMOP   - parquetizing {path}")
+    pl.scan_csv(
+        path,
+        separator="\t",
+        infer_schema_length=10000,
+        quote_char=None,
+    ).sink_parquet(path.replace(".csv", ".parquet").replace(".gz", ""))
 
 
 # endregion
