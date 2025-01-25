@@ -5,11 +5,9 @@
 # processing and harmonization.
 
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os
 
+import polars as pl
 from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -175,20 +173,16 @@ class UMCdbProcessor(UMCdbExtractor):
             .pipe(
                 self.convert._convert_lab_values,
                 labelcol="item",
-                valuecol="value_struct",
+                valuecol="labstruct",
                 structfield="value",
             )
-            .with_columns(
-                pl.col("value_struct")
-                .struct.json_encode()
-                .alias("value_struct")
-            )
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the labs data
             .collect()
             .pivot(
                 on="item",
                 index=self.index_cols,
-                values="value_struct",
+                values="labstruct",
                 aggregate_function="first",
             )
             .lazy()
@@ -303,19 +297,20 @@ class UMCdbConverter(UnitConverter):
 
         # Convert the lab values to the correct units.
         return (
-            data.with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        # NOTE: rename for consistency with other datasets
-                        "Hematocrit [Pure volume fraction]": "Hematocrit [Volume Fraction]",
-                        "MCH [Entitic substance]": "MCH [Entitic mass]",
-                        "Oxygen saturation [Pure mass fraction]": "Oxygen saturation",
-                    }
-                )
-            )
+            data
+            # .with_columns(
+            #     pl.col(labelcol).replace(
+            #         {
+            #             # NOTE: rename for consistency with other datasets
+            #             "Hematocrit [Pure volume fraction]": "Hematocrit [Volume Fraction]",
+            #             "MCH [Entitic substance]": "MCH [Entitic mass]",
+            #             "Oxygen saturation [Pure mass fraction]": "Oxygen saturation",
+            #         }
+            #     )
+            # )
             .pipe(
                 self.convert_ratio_to_percentage,
-                itemid="Hematocrit [Volume Fraction]",
+                itemid="Hematocrit",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -329,91 +324,91 @@ class UMCdbConverter(UnitConverter):
             )
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.conjugated [Moles/volume]",
+                itemid="Bilirubin.conjugated",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.total [Moles/volume]",
+                itemid="Bilirubin.total",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_creatinine_mmol_L_to_mg_dL,
-                itemid="Creatinine [Moles/volume]",
+                itemid="Creatinine",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="Cholesterol in HDL [Moles/volume]",
+                itemid="Cholesterol in HDL",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_cholesterol_mmol_L_to_mg_dL,
-                itemid="Cholesterol [Moles/volume]",
+                itemid="Cholesterol",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_cortisol_nmol_L_to_ug_dL,
-                itemid="Cortisol [Moles/volume]",
+                itemid="Cortisol",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_CKMB_ng_mL_to_U_L,
-                itemid="Creatine kinase.MB [Mass/volume]",
+                itemid="Creatine kinase.MB",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_FEU_to_DDU,
-                itemid="Fibrin D-dimer FEU [Mass/volume]",
+                itemid="Fibrin D-dimer FEU",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_g_L_to_mg_dL,
-                itemid="Fibrinogen [Mass/volume]",
+                itemid="Fibrinogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_folate_nmol_L_to_ng_mL,
-                itemid="Folate [Moles/volume]",
+                itemid="Folate",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_glucose_mmol_L_to_mg_dL,
-                itemid="Glucose [Moles/volume]",
+                itemid="Glucose",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_hemoglobin_mmol_L_to_g_dL,
-                itemid="Hemoglobin [Moles/volume]",
+                itemid="Hemoglobin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_mg_L_to_mg_dL,
-                itemid="Microalbumin [Mass/volume]",
+                itemid="Microalbumin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -421,70 +416,46 @@ class UMCdbConverter(UnitConverter):
             .pipe(
                 # same conversion due to definition of MCHC
                 self.convert_hemoglobin_mmol_L_to_g_dL,
-                itemid="MCHC [Moles/volume]",
+                itemid="Erythrocyte mean corpuscular hemoglobin concentration",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_triglycerides_mmol_L_to_mg_dL,
-                itemid="Triglyceride [Moles/volume]",
+                itemid="Triglyceride",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_ug_L_to_ng_L,
-                itemid="Troponin T.cardiac [Mass/volume]",
+                itemid="Troponin T.cardiac",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_urate_umol_L_to_mg_dL,
-                itemid="Urate [Moles/volume]",
+                itemid="Urate",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_urea_nitrogen_from_urea,
-                itemid_urea="Urea [Moles/volume]",
-                itemid_BUN="Urea nitrogen [Moles/volume]",
+                itemid_urea="Urea",
+                itemid_BUN="Urea nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_blood_urea_nitrogen_mmol_L_to_mg_dL,
-                itemid="Urea nitrogen [Moles/volume]",
+                itemid="Urea nitrogen",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
-            )
-            .with_columns(
-                pl.col(labelcol).replace(
-                    {
-                        "Bilirubin.conjugated [Moles/volume]": "Bilirubin.direct [Mass/volume]",
-                        "Bilirubin.total [Moles/volume]": "Bilirubin.total [Mass/volume]",
-                        "Creatinine [Moles/volume]": "Creatinine [Mass/volume]",
-                        "Cholesterol in HDL [Moles/volume]": "Cholesterol in HDL [Mass/volume]",
-                        "Cholesterol [Moles/volume]": "Cholesterol [Mass/volume]",
-                        "Cortisol [Moles/volume]": "Cortisol [Mass/volume]",
-                        "Creatine kinase.MB [Mass/volume]": "Creatine kinase.MB [Enzymatic activity/volume]",
-                        "Fibrin D-dimer FEU [Mass/volume]": "Fibrin D-dimer DDU [Mass/volume]",
-                        "Folate [Moles/volume]": "Folate [Mass/volume]",
-                        "Glucose [Moles/volume]": "Glucose [Mass/volume]",
-                        "Hemoglobin [Moles/volume]": "Hemoglobin [Mass/volume]",
-                        "MCHC [Moles/volume]": "MCHC [Mass/volume]",
-                        "Triglyceride [Moles/volume]": "Triglyceride [Mass/volume]",
-                        "Urate [Moles/volume]": "Urate [Mass/volume]",
-                        "Urea nitrogen [Moles/volume]": "Urea nitrogen [Mass/volume]",
-                        # NOTE: fix wrong units
-                        # NOTE: FIXED
-                        # "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-                    }
-                )
             )
         )
 
@@ -498,8 +469,10 @@ class UMCdbConverter(UnitConverter):
         labstructdtype = pl.Struct(
             [
                 pl.Field("value", pl.Float64),
-                pl.Field("source", pl.String),
+                pl.Field("system", pl.String),
                 pl.Field("method", pl.String),
+                pl.Field("time", pl.String),
+                pl.Field("LOINC", pl.String),
             ]
         )
 
@@ -507,23 +480,23 @@ class UMCdbConverter(UnitConverter):
             data
             # Creatinine in Serum or Plasma is in umol/L,
             # convert to mmol/L for consistency
+            .with_columns(pl.col("Creatinine").str.json_decode(labstructdtype))
+            .unnest("Creatinine")
             .with_columns(
-                pl.col("Creatinine [Mass/volume]")
-                .str.json_decode(labstructdtype)
-                .alias("Creatinine [Mass/volume]")
-            )
-            .unnest("Creatinine [Mass/volume]")
-            .with_columns(
-                pl.when(pl.col("source") == "Serum or Plasma")
+                pl.when(pl.col("system") == "Serum or Plasma")
                 .then(pl.col("value").truediv(1000))
                 .otherwise(pl.col("value"))
                 .alias("value")
             )
             .select(
-                pl.exclude("value", "source", "method"),
+                pl.exclude("value", "system", "method", "time", "LOINC"),
                 pl.struct(
-                    value="value", source="source", method="method"
-                ).alias("Creatinine [Mass/volume]"),
+                    value="value",
+                    system="system",
+                    method="method",
+                    time="time",
+                    LOINC="LOINC",
+                ).alias("Creatinine"),
             )
         )
 
@@ -537,64 +510,64 @@ class UMCdbConverter(UnitConverter):
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Band form neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
-                goal_itemcol="Band form neutrophils/100 leukocytes",
-                structfield="value",
-                structstring=True,
-            )
-            .pipe(
-                self.convert_absolute_count_to_relative,
-                itemcol="Basophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Basophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Basophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Eosinophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Eosinophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Eosinophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Lymphocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Lymphocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Lymphocytes/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Monocytes [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Monocytes",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Monocytes/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
+                itemcol="Neutrophils",
+                total_itemcol="Leukocytes",
                 goal_itemcol="Neutrophils/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Segmented neutrophils [#/volume]",
-                total_itemcol="Leukocytes [#/volume]",
-                goal_itemcol="Segmented neutrophils/100 leukocytes",
+                itemcol="Band form neutrophils",
+                total_itemcol="Leukocytes",
+                goal_itemcol="Neutrophils.band form/100 leukocytes",
                 structfield="value",
                 structstring=True,
             )
             .pipe(
                 self.convert_absolute_count_to_relative,
-                itemcol="Reticulocytes [#/volume]",
-                total_itemcol="Erythrocytes [#/volume]",
+                itemcol="Segmented neutrophils",
+                total_itemcol="Leukocytes",
+                goal_itemcol="Neutrophils.segmented/100 leukocytes",
+                structfield="value",
+                structstring=True,
+            )
+            .pipe(
+                self.convert_absolute_count_to_relative,
+                itemcol="Reticulocytes",
+                total_itemcol="Erythrocytes",
                 goal_itemcol="Reticulocytes/100 erythrocytes",
                 structfield="value",
                 structstring=True,

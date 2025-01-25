@@ -4,13 +4,14 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
-import numpy as np
-import pandas as pd
-import polars as pl
+
 import os.path
 
-from helpers.helper_filepaths import UMCdbPaths
+import numpy as np
+import polars as pl
 from helpers.helper import GlobalHelpers
+from helpers.helper_filepaths import UMCdbPaths
+from helpers.helper_OMOP import Vocabulary
 
 
 class UMCdbExtractor(UMCdbPaths):
@@ -18,6 +19,7 @@ class UMCdbExtractor(UMCdbPaths):
         super().__init__(paths)
         self.path = paths.umcdb_source_path
         self.helpers = GlobalHelpers()
+        self.omop = Vocabulary(paths)
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
         self.other_lab_values = [
@@ -237,12 +239,7 @@ class UMCdbExtractor(UMCdbPaths):
                 "registeredby",
             )
             .rename({"admissionid": self.icu_stay_id_col})
-            .with_columns(
-                # Replace item names with standardized names
-                pl.col("itemid")
-                .replace_strict(self._extract_list_references(), default=None)
-                .alias("item"),
-            )
+            .join(self._extract_list_references(), on="itemid", how="left")
             .pipe(self._extract_timeseries_helper)
             # Fix the values for RASS and NRS
             .with_columns(
@@ -269,15 +266,11 @@ class UMCdbExtractor(UMCdbPaths):
     # region numeric
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
         return self._extract_timeseries_numericitems().filter(
-            # pl.col("item").is_in(self.all_values + self.other_lab_values),
-            ~pl.col("item")
-            .str.replace("in HDL", "inHDL")
-            .str.replace("in LDL", "inLDL")
-            .str.replace(" (in|of) ", " INOF ")
-            .str.split_exact(by=" INOF ", n=1)
-            .struct.rename_fields(["variable", "_"])
-            .struct.field("variable")
-            .is_in(self.relevant_lab_values + self.other_lab_values)
+            pl.col("item").is_in(
+                self.relevant_vital_values
+                + self.relevant_respiratory_values
+                + self.relevant_intakeoutput_values
+            )
         )
 
     # Separate the lab values from the rest
@@ -292,12 +285,7 @@ class UMCdbExtractor(UMCdbPaths):
             pl.scan_parquet(self.numericitems_path)
             .select("admissionid", "itemid", "value", "measuredat")
             .rename({"admissionid": self.icu_stay_id_col})
-            .with_columns(
-                # Replace item names with standardized names
-                pl.col("itemid")
-                .replace(self._extract_numeric_references(), default=None)
-                .alias("item"),
-            )
+            .join(self._extract_numeric_references(), on="itemid", how="left")
             .pipe(self._extract_timeseries_helper)
             # Convert values to numbers, if possible, ignore if not
             .cast({"value": float}, strict=False)
@@ -343,19 +331,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(float)
                 .alias(self.timeseries_time_col),
             )
-            # Filter only relevant timeseries values
-            .filter(
-                # pl.col("item").is_in(self.all_values + self.other_lab_values),
-                pl.col("item")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values)
-            )
-            .drop(["measuredat", "intime", "outtime"])
+            .drop("measuredat", "intime", "outtime")
         )
 
     # endregion
@@ -365,52 +341,87 @@ class UMCdbExtractor(UMCdbPaths):
     def _extract_timeseries_labs_helper(
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
-        return (
-            data.filter(
-                # pl.col("item").is_in(self.all_values + self.other_lab_values),
+        LOINC_data = (
+            pl.read_csv(self.numericitems_lab_mapping_path)
+            .select("conceptName")
+            .rename({"conceptName": "item"})
+            .unique()
+        )
+        labnames = LOINC_data.to_series().to_list()
+
+        LOINC_data = (
+            LOINC_data
+            # Add columns for LOINC components and systems
+            .with_columns(
                 pl.col("item")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.relevant_lab_values + self.other_lab_values)
+                .replace_strict(
+                    self.omop.get_lab_component_from_name(labnames),
+                    default=None,
+                )
+                .alias("LOINC_component"),
+                pl.col("item")
+                .replace_strict(
+                    self.omop.get_lab_system_from_name(labnames), default=None
+                )
+                .alias("LOINC_system"),
+                pl.col("item")
+                .replace_strict(
+                    self.omop.get_lab_method_from_name(labnames), default=None
+                )
+                .alias("LOINC_method"),
+                pl.col("item").replace_strict(
+                    self.omop.get_lab_time_aspect_from_name(labnames),
+                    default=None,
+                )
+                # remove "Point in time (spot)" values
+                .replace({"Point in time (spot)": None}).alias("LOINC_time"),
+                pl.col("item")
+                .replace_strict(
+                    self.omop.get_concept_codes_from_names(labnames),
+                    default=None,
+                )
+                .alias("LOINC_code"),
+            )
+            .with_columns(
+                pl.col("LOINC_component")
+                .replace_strict(
+                    self.relevant_lab_LOINC_systems,
+                    return_dtype=pl.List(str),
+                    default=None,
+                )
+                .alias("relevant_LOINC_systems")
+            )
+            .lazy()
+        )
+
+        return (
+            data.join(LOINC_data, on="item", how="left")
+            # Filter for lab names of interest
+            .filter(
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(pl.col("relevant_LOINC_systems"))
             )
             # MAKE STRUCT
+            .with_columns(pl.col("LOINC_component").alias("item"))
             .with_columns(
-                pl.col("item")
-                .str.split_exact(by=" by ", n=1)
-                .struct.rename_fields(["variable_source", "method"])
-                .alias("fields1")
-            )
-            .unnest("fields1")
-            .with_columns(
-                pl.col("variable_source")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "source"])
-                .alias("fields2")
-            )
-            .unnest("fields2")
-            .filter(
-                # remove spO2 (-> vitals)
-                pl.col("method").ne_missing("Pulse oximetry"),
-                # remove etCO2 (-> respiratory)
-                pl.col("source").ne_missing("Exhaled gas --at end expiration"),
+                pl.struct(
+                    value=pl.col("value"),
+                    system=pl.col("LOINC_system"),
+                    method=pl.col("LOINC_method"),
+                    time=pl.col("LOINC_time"),
+                    LOINC=pl.col("LOINC_code"),
+                ).alias("labstruct")
             )
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
-                pl.col("variable")
-                .str.replace("inHDL", "in HDL")
-                .str.replace("inLDL", "in LDL")
-                .alias("item"),
-                pl.struct(
-                    value="value", source="source", method="method"
-                ).alias("value_struct"),
+                "item",
+                "labstruct",
             )
         )
 
@@ -1025,8 +1036,8 @@ class UMCdbExtractor(UMCdbPaths):
 
     # region references
     # Extract the information from the numericitems_XXX.usagi.csv files
-    def _extract_numeric_references(self) -> dict:
-        references = (
+    def _extract_numeric_references(self) -> pl.LazyFrame:
+        return (
             pl.concat(
                 [
                     pl.read_csv(self.numericitems_lab_mapping_path),
@@ -1049,29 +1060,15 @@ class UMCdbExtractor(UMCdbPaths):
                     }
                 )
             )
-            .filter(
-                # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
-                pl.col("conceptName")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values)
-            )
-        )
-
-        return dict(
-            zip(
-                references["sourceCode"].to_numpy(),
-                references["conceptName"].to_numpy(),
-            )
+            .drop_nulls("sourceCode")
+            .unique()
+            .rename({"sourceCode": "itemid", "conceptName": "item"})
+            .lazy()
         )
 
     # Extract the information from the listitems_XXX.usagi.csv file
-    def _extract_list_references(self) -> dict:
-        references = (
+    def _extract_list_references(self) -> pl.LazyFrame:
+        return (
             pl.concat(
                 [
                     pl.read_csv(self.listitems_item_mapping_path),
@@ -1092,24 +1089,10 @@ class UMCdbExtractor(UMCdbPaths):
                     }
                 )
             )
-            .filter(
-                # pl.col("conceptName").is_in(self.all_values + self.other_lab_values),
-                pl.col("conceptName")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values)
-            )
-        )
-
-        return dict(
-            zip(
-                references["sourceCode"].to_numpy(),
-                references["conceptName"].to_numpy(),
-            )
+            .drop_nulls("sourceCode")
+            .unique()
+            .rename({"sourceCode": "itemid", "conceptName": "item"})
+            .lazy()
         )
 
     # Extract the information from the drugitems_XXX.usagi.csv files
@@ -1125,6 +1108,8 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceName", "conceptName")
+            .drop_nulls("sourceName")
+            .unique()
         )
 
         return dict(
@@ -1147,6 +1132,8 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
+            .drop_nulls("sourceCode")
+            .unique()
         )
 
         return dict(
