@@ -5,7 +5,7 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be winsorized. ! NOT IMPLEMENTED YET !
 
-import argparse
+
 import polars as pl
 
 
@@ -13,7 +13,9 @@ class X2_Winsorizer:
     def __init__(self):
         pass
 
-    def winsorize_quantiles(data, columns: list, alpha=0.99) -> pl.LazyFrame:
+    def winsorize_quantiles(
+        data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
+    ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
         Clip the data to the 1-alpha quantile (lower) and alpha quantile (upper bound).
@@ -38,7 +40,7 @@ class X2_Winsorizer:
         )
 
     def winsorize_clip_lower_0_quantiles(
-        data, columns: list, alpha=0.99
+        data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -60,7 +62,9 @@ class X2_Winsorizer:
             ]
         )
 
-    def winsorize_clip_lower_0(data, columns: list) -> pl.LazyFrame:
+    def winsorize_clip_lower_0(
+        data: pl.LazyFrame, columns: list, **kwargs
+    ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
         Clip the data to 0 (lower), the upper bound is not changed.
@@ -79,7 +83,7 @@ class X2_Winsorizer:
         )
 
     def winsorize_clip_multiple(
-        data, columns: list, lower: list, upper: list
+        data: pl.LazyFrame, columns: list, lower: list, upper: list, **kwargs
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -100,53 +104,121 @@ class X2_Winsorizer:
             ]
         )
 
+    def winsorize_structs(
+        data: pl.LazyFrame,
+        winsorization_columns: list,
+        winsorization_methods: list,
+        **kwargs,
+    ) -> pl.LazyFrame:
+        """
+        Split the struct columns and winsorize the individual columns before reassembling the struct.
+        """
+
+        # Assert methods are valid
+        assert all(
+            method in ["quantiles", "clip_lower_0", "clip_lower_0_quantiles"]
+            for method in winsorization_methods
+        )
+
+        # Define a helper function to get unique values from a column
+        def get_unique_values(data: pl.LazyFrame, column: str) -> list:
+            return data.select(column).unique().collect().to_series().to_list()
+
+        # Get the data types of the columns
+        column_names = data.collect_schema().names()
+        column_dtypes = data.collect_schema().dtypes()
+        column_dtypes_dict = dict(zip(column_names, column_dtypes))
+
+        # Iterate over the each column to be winsorized
+        for winsorization_column, winsorization_method in zip(
+            winsorization_columns, winsorization_methods
+        ):
+            print("column", winsorization_column)
+            # Do normal winsorization for non-struct columns
+            if column_dtypes_dict[winsorization_column] != pl.Struct:
+                data = getattr(
+                    X2_Winsorizer, f"winsorize_{winsorization_method}"
+                )(data, [winsorization_column], **kwargs)
+
+            # 1. Unnest the struct column
+            # 2. Create a new column for each combination of system and method
+            # 3. Apply the winsorization method to each new column respectively
+            # 4. Reassemble the struct column
+            else:
+                data = data.unnest(winsorization_column)
+                systems = data.pipe(get_unique_values, column="system")
+                methods = data.pipe(get_unique_values, column="method")
+                data = data.with_columns(
+                    pl.when(
+                        pl.col("system") == system,
+                        pl.col("method") == method,
+                    )
+                    .then(pl.col("value"))
+                    .otherwise(None)
+                    .alias(f"{system}_{method}")
+                    for system in systems
+                    for method in methods
+                )
+                data = getattr(
+                    X2_Winsorizer, f"winsorize_{winsorization_method}"
+                )(
+                    data,
+                    [
+                        f"{system}_{method}"
+                        for system in systems
+                        for method in methods
+                    ],
+                    **kwargs,
+                )
+                data = (
+                    data.with_columns(
+                        # Set system and method to None as default
+                        pl.lit(None).alias("system"),
+                        pl.lit(None).alias("method"),
+                    )
+                    .with_columns(
+                        pl.coalesce(
+                            pl.col(f"{system}_{method}")
+                            for system in systems
+                            for method in methods
+                        ).alias("value"),
+                        pl.coalesce(
+                            pl.when(pl.col(f"{system}_{method}").is_not_null())
+                            .then(pl.lit(system))
+                            .otherwise(pl.col("system"))
+                            for system in systems
+                            for method in methods
+                        ).alias("system"),
+                        pl.coalesce(
+                            pl.when(pl.col(f"{system}_{method}").is_not_null())
+                            .then(pl.lit(method))
+                            .otherwise(pl.col("method"))
+                            for system in systems
+                            for method in methods
+                        ).alias("method"),
+                    )
+                    .select(
+                        *[
+                            column
+                            for column in column_names
+                            if column != winsorization_column
+                        ],
+                        pl.struct(
+                            [
+                                pl.col("value"),
+                                pl.col("system"),
+                                pl.col("method"),
+                                pl.col("time"),
+                                pl.col("LOINC"),
+                            ]
+                        ).alias(winsorization_column),
+                    )
+                )
+
+        return data
+
 
 if __name__ == "__main__":
     raise NotImplementedError(
         "This script is not yet implemented as a command line tool."
     )
-
-
-# # Author: Finn Fassbender
-# # Last modified: 2024-09-05
-
-# # Restricts the values of a DataFrame to a specified range.
-# # The values below the lower bound are set to the lower bound,
-# # the values above the upper bound are set to the upper bound.
-# # The values within the range are not changed.
-
-# import polars as pl
-# import yaml
-
-# from helpers.helper import GlobalVars
-
-
-# class Winsorize(GlobalVars):
-#     def __init__(self, limits_list_path="configs/CLINICALLY_PLAUSIBLE_VALUES.yaml"):
-#         with open(limits_list_path, "r") as f:
-#             self.limits = yaml.safe_load(f)
-
-#     def winsorize(
-#         self, data: pl.LazyFrame, column: str, lower: float, upper: float
-#     ) -> pl.LazyFrame:
-#         # Apply the winsorization to the respective column.
-#         return data.with_columns(
-#             pl.when(self.df[column] < lower)
-#             .then(lower)
-#             .when(self.df[column] > upper)
-#             .then(upper)
-#             .otherwise(self.df[column])
-#             .alias(column),
-#         )
-
-#     def winsorize_all(self, data: pl.LazyFrame, limits: dict = None) -> pl.LazyFrame:
-#         # Apply the winsorization to all columns.
-#         if limits is None:
-#             limits = self.limits
-
-#         for column in data.columns:
-#             if column in limits:
-#                 lower = limits[column]["lower"]
-#                 upper = limits[column]["upper"]
-#                 data = self.winsorize(data, column, lower, upper)
-#         return data
