@@ -154,7 +154,6 @@ class NWICUExtractor(NWICUPaths):
                 pl.col(self.icu_stay_id_col).cast(int),
                 pl.col(self.hospital_stay_id_col).cast(int),
                 pl.col(self.icu_length_of_stay_col).cast(float),
-                pl.lit("Northwestern Medicine").alias(self.care_site_col),
             )
             .with_columns(
                 # Convert categorical gender to enum
@@ -268,7 +267,6 @@ class NWICUExtractor(NWICUPaths):
                 self.admission_loc_col,
                 # self.specialty_col,
                 self.unit_type_col,
-                self.care_site_col,
                 self.discharge_loc_col,
             )
         )
@@ -777,9 +775,9 @@ class NWICUExtractor(NWICUPaths):
             # include only ICU patients
             .filter(
                 pl.col(self.hospital_stay_id_col).is_in(
-                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(
-                        streaming=True
-                    )
+                    self.icu_stay_id.select(self.hospital_stay_id_col)
+                    .collect()
+                    .to_series()
                 )
             )
             .with_columns(
@@ -800,7 +798,7 @@ class NWICUExtractor(NWICUPaths):
                 }
             )
             .with_columns(
-                pl.col(self.diagnosis_priority_col) + 1 # Priority is 1-indexed
+                pl.col(self.diagnosis_priority_col) + 1  # Priority is 1-indexed
             )
             # drop rows with empty ICD codes
             .filter(pl.col(self.diagnosis_icd_code_col).is_not_null())

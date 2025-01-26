@@ -560,7 +560,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             data.select(self.icu_stay_id_col)
             .unique()
             .count()
-            .collect(streaming=True)
+            .collect()
             .to_numpy()[0][0]
         )
         print(
@@ -971,9 +971,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             # include only ICU patients
             .filter(
                 pl.col(self.hospital_stay_id_col).is_in(
-                    self.icu_stay_id.select(self.hospital_stay_id_col).collect(
-                        streaming=True
-                    )
+                    self.icu_stay_id.select(self.hospital_stay_id_col)
+                    .collect()
+                    .to_series()
                 )
             )
             .with_columns(
