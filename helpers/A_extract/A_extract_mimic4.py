@@ -902,6 +902,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.extract_patient_IDs()
                     .select(self.hospital_stay_id_col)
                     .collect()
+                    .to_series()
                 )
             )
             .with_columns(
@@ -1032,6 +1033,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.extract_patient_IDs()
                     .select(self.hospital_stay_id_col)
                     .collect()
+                    .to_series()
                 )
             )
             .with_columns(
