@@ -249,28 +249,41 @@ if __name__ == "__main__":
         )
 
         if "labs" in TIMESERIES:
+            # Winsorize the lab data
+            print("reprodICU - Winsorizing lab data...")
+            labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
+            columns_to_exclude = [
+                column_names["global_icu_stay_id_col"],
+                column_names["timeseries_time_col"],
+                "Base excess",
+            ]
+            labs_cols = labs.collect_schema().names()
+            columns_to_winsorize = list(
+                set(labs_cols) - set(columns_to_exclude)
+            )
+            (
+                labs.pipe(
+                    X2_Winsorizer.winsorize_structs,
+                    winsorization_columns=columns_to_winsorize,
+                    winsorization_methods=[
+                        "quantiles" for _ in columns_to_winsorize
+                    ],
+                )
+                .collect(streaming=True)
+                .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
+            )
+
             # Remove the lab data metadata
             print("reprodICU - Removing lab data metadata...")
-            labs = (
+            (
                 pl.scan_parquet(save_path + "timeseries_labs.parquet")
                 .pipe(timeseries_harmonizer.remove_metadata)
                 .collect(streaming=True)
                 .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
             )
 
-            # Winsorize the lab data
-            print("reprodICU - Winsorizing lab data...")
-            columns_to_exclude = [
-                column_names["global_icu_stay_id_col"],
-                column_names["timeseries_time_col"],
-                "Base excess",
-            ]
             labs = pl.scan_parquet(
                 save_path + "timeseries_labs_no_meta.parquet"
-            )
-            labs_cols = labs.collect_schema().names()
-            columns_to_winsorize = list(
-                set(labs_cols) - set(columns_to_exclude)
             )
             (
                 labs.pipe(
