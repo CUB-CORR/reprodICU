@@ -269,38 +269,38 @@ if __name__ == "__main__":
                         "quantiles" for _ in columns_to_winsorize
                     ],
                 )
-                .collect(streaming=True)
+                .collect()
                 .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
             )
 
             # Remove the lab data metadata
-            print("reprodICU - Removing lab data metadata...")
-            (
-                pl.scan_parquet(save_path + "timeseries_labs.parquet")
-                .pipe(timeseries_harmonizer.remove_metadata)
-                .collect(streaming=True)
-                .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
-            )
+            # print("reprodICU - Removing lab data metadata...")
+            # (
+            #     pl.scan_parquet(save_path + "timeseries_labs.parquet")
+            #     .pipe(timeseries_harmonizer.remove_metadata)
+            #     .collect(streaming=True)
+            #     .write_parquet(save_path + "timeseries_labs_no_meta.parquet")
+            # )
 
-            labs = pl.scan_parquet(
-                save_path + "timeseries_labs_no_meta.parquet"
-            )
-            (
-                labs.pipe(
-                    X2_Winsorizer.winsorize_clip_lower_0_quantiles,
-                    columns=columns_to_winsorize,
-                    alpha=0.99,
-                )
-                .pipe(
-                    X2_Winsorizer.winsorize_quantiles,
-                    columns=["Base excess"],
-                    alpha=0.99,
-                )
-                .collect(streaming=True)
-                .write_parquet(
-                    save_path + "timeseries_labs_no_meta_winsorized.parquet"
-                )
-            )
+            # labs = pl.scan_parquet(
+            #     save_path + "timeseries_labs_no_meta.parquet"
+            # )
+            # (
+            #     labs.pipe(
+            #         X2_Winsorizer.winsorize_clip_lower_0_quantiles,
+            #         columns=columns_to_winsorize,
+            #         alpha=0.99,
+            #     )
+            #     .pipe(
+            #         X2_Winsorizer.winsorize_quantiles,
+            #         columns=["Base excess"],
+            #         alpha=0.99,
+            #     )
+            #     .collect(streaming=True)
+            #     .write_parquet(
+            #         save_path + "timeseries_labs_no_meta_winsorized.parquet"
+            #     )
+            # )
 
         if args.IMPUTE and "vitals" in TIMESERIES:
             # Impute the timeseries data
