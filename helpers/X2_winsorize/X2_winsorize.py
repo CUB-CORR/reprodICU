@@ -5,8 +5,12 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be winsorized. ! NOT IMPLEMENTED YET !
 
+import sys
+import warnings
 
 import polars as pl
+
+warnings.filterwarnings("ignore")
 
 
 class X2_Winsorizer:
@@ -129,11 +133,19 @@ class X2_Winsorizer:
         column_dtypes = data.collect_schema().dtypes()
         column_dtypes_dict = dict(zip(column_names, column_dtypes))
 
+        counter, count = 1, len(winsorization_columns)
         # Iterate over the each column to be winsorized
         for winsorization_column, winsorization_method in zip(
             winsorization_columns, winsorization_methods
         ):
-            print("column", winsorization_column)
+            # Print progress
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            print(
+                f"reprodICU - Winsorizing column '{winsorization_column}' ({counter:2.0f}/{count:2.0f})",
+                end="\r",
+            )
+            counter += 1
+
             # Do normal winsorization for non-struct columns
             if column_dtypes_dict[winsorization_column] != pl.Struct:
                 data = getattr(
@@ -146,74 +158,44 @@ class X2_Winsorizer:
             # 4. Reassemble the struct column
             else:
                 data = data.unnest(winsorization_column)
-                systems = data.pipe(get_unique_values, column="system")
-                methods = data.pipe(get_unique_values, column="method")
+                LOINC_codes = data.pipe(get_unique_values, column="LOINC")
                 data = data.with_columns(
-                    pl.when(
-                        pl.col("system") == system,
-                        pl.col("method") == method,
-                    )
+                    pl.when(pl.col("LOINC") == code)
                     .then(pl.col("value"))
                     .otherwise(None)
-                    .alias(f"{system}_{method}")
-                    for system in systems
-                    for method in methods
+                    .alias(f"{code}")
+                    for code in LOINC_codes
                 )
                 data = getattr(
                     X2_Winsorizer, f"winsorize_{winsorization_method}"
                 )(
                     data,
-                    [
-                        f"{system}_{method}"
-                        for system in systems
-                        for method in methods
-                    ],
+                    [f"{code}" for code in LOINC_codes],
                     **kwargs,
                 )
-                data = (
-                    data.with_columns(
-                        # Set system and method to None as default
-                        pl.lit(None).alias("system"),
-                        pl.lit(None).alias("method"),
-                    )
-                    .with_columns(
-                        pl.coalesce(
-                            pl.col(f"{system}_{method}")
-                            for system in systems
-                            for method in methods
-                        ).alias("value"),
-                        pl.coalesce(
-                            pl.when(pl.col(f"{system}_{method}").is_not_null())
-                            .then(pl.lit(system))
-                            .otherwise(pl.col("system"))
-                            for system in systems
-                            for method in methods
-                        ).alias("system"),
-                        pl.coalesce(
-                            pl.when(pl.col(f"{system}_{method}").is_not_null())
-                            .then(pl.lit(method))
-                            .otherwise(pl.col("method"))
-                            for system in systems
-                            for method in methods
-                        ).alias("method"),
-                    )
-                    .select(
-                        *[
-                            column
-                            for column in column_names
-                            if column != winsorization_column
-                        ],
-                        pl.struct(
-                            [
-                                pl.col("value"),
-                                pl.col("system"),
-                                pl.col("method"),
-                                pl.col("time"),
-                                pl.col("LOINC"),
-                            ]
-                        ).alias(winsorization_column),
-                    )
+                data = data.with_columns(
+                    pl.coalesce(
+                        pl.col(f"{code}") for code in LOINC_codes
+                    ).alias("value"),
+                ).select(
+                    *[
+                        column
+                        for column in column_names
+                        if column != winsorization_column
+                    ],
+                    pl.struct(
+                        [
+                            pl.col("value"),
+                            pl.col("system"),
+                            pl.col("method"),
+                            pl.col("time"),
+                            pl.col("LOINC"),
+                        ]
+                    ).alias(winsorization_column),
                 )
+
+        sys.stdout.write("\033[K")  # Clear to the end of line
+        print("repodICU - Winsorization complete.")
 
         return data
 
