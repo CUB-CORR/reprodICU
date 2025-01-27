@@ -1,20 +1,19 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
-Airway pressure --at mean expiratory flow on ventilator: []
+# Airway pressure --at mean expiratory flow on ventilator: []
 # Airway pressure --at zero inspiratory flow on ventilator: []
 Airway pressure delta --on ventilator:
   # UMCdb
   - Airway pressure delta setting Ventilator
-Breath rate mechanical --on ventilator:
-  # UMCdb
-  - Breath rate setting Ventilator # also MIMIC
-  - Breath rate minimum setting Ventilator
-  - Breath rate setting Intermittent mandatory ventilator
-  - Breath rate setting Ventilator synchronized intermittent mandatory
+Breath rate setting Ventilator:
   # HiRID
   - Ventilator rate
   # SICdb
   - RespRateVentilator
+  # UMCdb
+  - Breath rate minimum setting Ventilator
+  - Breath rate setting Intermittent mandatory ventilator
+  - Breath rate setting Ventilator synchronized intermittent mandatory
 Breath rate spontaneous --on ventilator:
   # MIMIC
   - Breath rate spontaneous
@@ -37,24 +36,31 @@ Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration:
 Dynamic lung compliance:
   # SICdb
   - DynCompliance
+  # UMCdb
+  - Dynamic compliance
 Expiratory gas flow Respiratory system airway --on ventilator: []
 Expiratory hold time setting Ventilator:
+  # UMCdb
   - Expiration setting [Time] Ventilator
+Expired minute Volume during Mechanical ventilation:
+  # UMCdb
+  - Expiratory minute volume
 High pressure hold time setting Ventilator: []
 Horowitz index in Arterial blood: []
 Inspiration/Expiration time Ratio:
-  - Inspiration/Expiration setting Ventilator
   # SICdb
   - IERatio
+  # UMCdb
+  - Inspiration/Expiration setting Ventilator
 Inspiratory flow setting Ventilator: []
 Inspiratory gas flow Respiratory system airway --on ventilator: []
 Inspiratory time setting Ventilator:
   - Inspiration setting [Time] Ventilator
 Inspired minute Volume during Mechanical ventilation: []
 Low pressure hold time setting Ventilator: []
-Mean pressure Respiratory system airway --on ventilator:
-  # HiRID / MIMIC
-  - Mean airway pressure
+Mean airway pressure:
+  # HiRID
+  - Mean inspiratory airway pressure
   # SICdb
   - Mean Airway Pressure
   - pMean
@@ -64,16 +70,20 @@ Oxygen/Gas total [Pure volume fraction] Inhaled gas:
   # SICdb
   - Oxyflow O2
   - Optiflow O2
+  # UMCdb
+  - Inhaled oxygen concentration
 Oxygen/Total gas setting [Volume Fraction] Ventilator:
   # HiRID
   - Inspired oxygen concentration
-  # SICdb
-  - FIO2
   # MIMIC
   - Inhaled oxygen concentration # refers to FiO2 values according to the original values
+  # SICdb
+  - FIO2
 Oxygen delivery system:
   # MIMIC
   - Oxygen delivery
+  # UMCdb
+  - Oxygen therapy support
 Oxygen gas flow Oxygen delivery system:
   # HiRID
   - Oxygen administration by mask
@@ -82,12 +92,15 @@ Oxygen gas flow Oxygen delivery system:
   - Oxyflow Flow
   - Optiflow Flow
   - O2 Flow
-PEEP Respiratory system --on ventilator:
-  - Intrinsic PEEP Respiratory system
-  - Positive end expiratory pressure setting Ventilator
-  - Total PEEP Respiratory system
+PEEP Respiratory system:
   # HiRID
   - Positive end expiratory pressure
+  # UMCdb
+  - Intrinsic PEEP Respiratory system
+  - PEEP Respiratory system --on ventilator
+  - Total PEEP Respiratory system
+Positive end expiratory pressure setting Ventilator:
+  # HiRID
   - Positive end expiratory pressure setting
   # SICdb
   - PEEP
@@ -108,6 +121,18 @@ Pressure.plateau Respiratory system airway --on ventilator:
   - Plateau pressure
   # UMCdb
   - Airway pressure --during respiratory pause
+Tidal volume.expired:
+  # SICdb
+  - TV (exp)
+  # UMCdb
+  - Expiratory tidal volume
+  - Tidal volume expired Respiratory system airway --on ventilator
+  - Tidal volume expired spontaneous+mechanical Respiratory system airway --on ventilator
+Tidal volume.inspired:
+  # SICdb
+  - TV (insp)
+  # UMCdb
+  - Tidal volume inspired spontaneous+mechanical Measured --on ventilator
 Tidal volume setting Ventilator:
   # HiRID
   - Tidal volume setting

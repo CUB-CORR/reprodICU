@@ -5,11 +5,10 @@
 # processing and harmonization.
 
 
-import numpy as np
-import pandas as pd
-import polars as pl
 import os
+import sys
 
+import polars as pl
 from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -65,6 +64,7 @@ class HiRIDProcessor(HiRIDExtractor):
         for file in os.listdir(self.timeseries_path):
             # Update the counter
             counter += 1
+            sys.stdout.write("\033[K")  # Clear to the end of line
             print(
                 f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)",
                 end="\r",
@@ -136,7 +136,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 # Pivot the timeseries data
                 .collect()
                 .pivot(
-                    on="variableid",
+                    on="variable",
                     index=self.index_cols,
                     values="value",
                     aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible

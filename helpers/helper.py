@@ -29,6 +29,10 @@ class GlobalHelpers:
         mapping = self.load_mapping(path)
         return list(k for k, v in mapping.items() if v)
 
+    def load_mapping_subkeys(self, path: str, key: str) -> dict:
+        mapping = self.load_mapping(path)
+        return {k: v[key] for k, v in mapping.items()}
+
     def load_many_to_one_mapping(self, path: str) -> dict:
         mapping = self.load_mapping(path)
         return {v: k for k, vs in mapping.items() for v in vs}
@@ -310,6 +314,12 @@ class GlobalVars(GlobalHelpers):
                 self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
             )
         )
+        self.relevant_lab_LOINC_components = self.load_mapping_keys(
+            self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml"
+        )
+        self.relevant_lab_LOINC_systems = self.load_mapping_subkeys(
+            self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml", "systems"
+        )
 
         self.relevant_vital_values = list(
             set(self.relevant_vital_values_mapping.values())
@@ -332,8 +342,6 @@ class GlobalVars(GlobalHelpers):
         )
 
         self.relevant_lab_values_pre_conversion = [
-            "base_excess",  # for base_excess conversion in eICU
-            "base_deficit",  # for base_excess conversion in eICU
             "Temperature Fahrenheit",  # for temperature conversion in MIMIC
             "Temperature Celsius",  # for temperature conversion in MIMIC
         ]

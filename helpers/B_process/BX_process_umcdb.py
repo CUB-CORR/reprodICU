@@ -51,12 +51,12 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_numeric = self._process_timeseries_numeric()
         ts_listitems = self._process_timeseries_listitems()
 
-        timeseries = ts_numeric.join(
-            ts_listitems, on=self.index_cols, how="full", coalesce=True
-        )
         # Save the preprocessed data
-        timeseries.collect(streaming=True).write_parquet(ts_path_unsorted)
-        # ts_numeric.sink_parquet(ts_path_unsorted)
+        (
+            ts_numeric.join(
+            ts_listitems, on=self.index_cols, how="full", coalesce=True
+            ).sink_parquet(ts_path_unsorted)
+        )
 
         # Sort the data
         (
@@ -97,10 +97,8 @@ class UMCdbProcessor(UMCdbExtractor):
 
         # "Cache" the data before pivoting
         if not os.path.isfile(ts_numeric_path_cache):
-            (
-                self.extract_timeseries_numericitems()
-                .collect(streaming=True)
-                .write_parquet(ts_numeric_path_cache)
+            self.extract_timeseries_numericitems().sink_parquet(
+                ts_numeric_path_cache
             )
 
         print("UMCdb   - Processing numeric time series data...")
@@ -223,6 +221,7 @@ class UMCdbProcessor(UMCdbExtractor):
         """
         ts_list_path = self.precalc_path + "UMCdb_timeseries_list.parquet"
         ts_list_path_unsorted = self.precalc_path + "UMCdb_ts_list.parquet"
+        ts_list_path_cache = self.precalc_path + "UMCdb_ts_list_cache.parquet"
 
         if os.path.isfile(ts_list_path):
             # Load the preprocessed data
@@ -231,13 +230,19 @@ class UMCdbProcessor(UMCdbExtractor):
                 pl.exclude(self.index_cols),
             )
 
+        print("UMCdb   - Collecting list time series data...")
+
+        # "Cache" the data before pivoting
+        if not os.path.isfile(ts_list_path_cache):
+            self.extract_timeseries_listitems().sink_parquet(ts_list_path_cache)
+
         print("UMCdb   - Processing list time series data...")
 
         # Process list data
         ts_listitems = (
-            self.extract_timeseries_listitems()
+            pl.scan_parquet(ts_list_path_cache)
             # Pivot the list data
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="item",
                 index=self.index_cols,
                 values="value",
@@ -267,6 +272,7 @@ class UMCdbProcessor(UMCdbExtractor):
             .sink_parquet(ts_list_path)
         )
         os.remove(ts_list_path_unsorted)
+        os.remove(ts_list_path_cache)
 
         return pl.scan_parquet(ts_list_path).select(
             pl.col(self.index_cols).set_sorted(),

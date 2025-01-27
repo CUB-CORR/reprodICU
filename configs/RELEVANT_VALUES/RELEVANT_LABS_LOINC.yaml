@@ -33,8 +33,8 @@ Aspartate aminotransferase:
 Base excess:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 Basophils/100 leukocytes:
   property: "Number Fraction"
   systems:
@@ -42,18 +42,18 @@ Basophils/100 leukocytes:
 Bicarbonate:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
     - Serum or Plasma
-Bilirubin.direct:
+Bilirubin:
   property: "Mass Concentration"
   systems:
     - Serum or Plasma
-# Bilirubin.indirect
-Bilirubin.total:
+Bilirubin.glucuronidated+Bilirubin.albumin bound: # Bilirubin.direct
   property: "Mass Concentration"
   systems:
     - Serum or Plasma
+# Bilirubin.non-glucuronidated # equals Bilirubin.indirect
 C reactive protein:
   property: "Mass Concentration"
   systems:
@@ -66,19 +66,19 @@ Calcium:
 Calcium.ionized:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 Carbon dioxide:
   property: "Partial pressure"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 # Carboxyhemoglobin/Hemoglobin.total
 Chloride:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
     - Serum or Plasma
 Cholesterol:
   property: "Mass Concentration"
@@ -151,8 +151,8 @@ Gamma glutamyl transferase:
 Glucose:
   property: "Mass Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
     - Serum or Plasma
 Haptoglobin:
   property: "Mass Concentration"
@@ -161,13 +161,13 @@ Haptoglobin:
 Hematocrit:
   property: "Volume Fraction"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 Hemoglobin:
   property: "Mass Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 INR:
   property: "Relative time"
   systems:
@@ -185,9 +185,9 @@ Ketones:
 Lactate:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
-    - Venous blood
+    - Blood arterial
+    - Blood venous
 Lactate dehydrogenase:
   property: "Catalytic Concentration"
   systems:
@@ -244,22 +244,22 @@ Osmolality:
 Oxygen:
   property: "Partial pressure"
   systems:
-    - Arterial blood
     - Blood
-    - Venous blood
+    - Blood arterial
+    - Blood venous
 Oxygen saturation:
   property: "Mass fraction"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
 # Oxyhemoglobin/Hemoglobin.total
 pH:
   property: "Log molar concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
+    - Blood venous
     - Urine
-    - Venous blood
 Phosphate:
   property: "Substance Concentration"
   systems:
@@ -272,8 +272,8 @@ Platelets:
 Potassium:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
     - Serum or Plasma
 # Prealbumin
 Protein:
@@ -289,8 +289,8 @@ Reticulocytes/100 erythrocytes:
 Sodium:
   property: "Substance Concentration"
   systems:
-    - Arterial blood
     - Blood
+    - Blood arterial
     - Serum or Plasma
     - Urine
 Specific gravity:

@@ -195,7 +195,7 @@ class X2_Winsorizer:
                 )
 
         sys.stdout.write("\033[K")  # Clear to the end of line
-        print("repodICU - Winsorization complete.")
+        print("reprodICU - Winsorization complete.")
 
         return data
 
