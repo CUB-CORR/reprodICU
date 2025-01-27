@@ -6,12 +6,10 @@
 # available prewritten code snippets where indicated.
 
 import argparse
-import polars as pl
-import yaml
 
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS_REPOSITORY import (
-    MAGIC_CONCEPTS_REPOSITORY,
-)
+import yaml
+from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS_REPOSITORY import \
+    MAGIC_CONCEPTS_REPOSITORY
 
 
 def load_mapping(path: str) -> dict:
@@ -59,7 +57,7 @@ if __name__ == "__main__":
         concepts = [
             "RECEIVED_ANY_ANTIBIOTICS",
             "VENTILATION_DURATION",
-            # "RENAL_REPLACEMENT_THERAPY_DURATION",
+            "RENAL_REPLACEMENT_THERAPY_DURATION",
             "SEVERITY_SCORES",
         ]
     else:

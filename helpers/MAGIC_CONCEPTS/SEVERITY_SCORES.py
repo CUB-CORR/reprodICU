@@ -230,6 +230,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 "APACHE II",
                 "APACHE III",
                 "APACHE IV",
+                "APS III",
                 "SOFA",
                 "SAPS II",
                 "SAPS III",
