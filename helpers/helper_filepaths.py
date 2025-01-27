@@ -288,8 +288,14 @@ class MIMIC3Paths(GlobalVars):
         self.d_labitems_to_loinc_path = (
             self.mimic3_loinc_mapping_path + "d_labitems_to_loinc_mimic3.csv"
         )
+
+        # MIMIC-IV additional LOINC mapping paths
+        self.mimic_loinc_mapping_additional_path = (
+            self.mimic3_mapping_path + "mimic-additional_code_mapping/"
+        )
         self.meas_chartevents_main_additional_path = (
-            self.mimic3_loinc_mapping_path + "meas_chartevents_main.csv"
+            self.mimic_loinc_mapping_additional_path
+            + "meas_chartevents_main.csv"
         )
 
         # MIMIC-IV LOINC mapping paths (additionally used for MIMIC-III)

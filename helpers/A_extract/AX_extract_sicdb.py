@@ -253,7 +253,7 @@ class SICdbExtractor(SICdbPaths):
             # Remove rows with empty parameter results
             .filter(pl.col("Val").is_not_null())
             # Drop columns
-            .drop(["ICUOffset", "Offset"])
+            .drop("ICUOffset", "Offset")
         )
 
     # region laboratory
@@ -333,7 +333,7 @@ class SICdbExtractor(SICdbPaths):
                 & (pl.col("LaboratoryName") != "")
             )
             # Drop columns
-            .drop(["CaseOffset", "LaboratoryType"])
+            .drop("CaseOffset", "LaboratoryType")
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("LaboratoryName"))
             .with_columns(
@@ -447,7 +447,7 @@ class SICdbExtractor(SICdbPaths):
             # Remove rows with empty medication results
             .filter(pl.col(self.drug_amount_col).is_not_null())
             # Drop columns
-            .drop(["CaseOffset", "Offset", "OffsetDrugEnd"])
+            .drop("CaseOffset", "Offset", "OffsetDrugEnd")
         )
 
     # endregion
@@ -577,7 +577,7 @@ class SICdbExtractor(SICdbPaths):
                 .cast(float)
                 .alias("CaseOffset")
             )
-            .drop(["ICUOffset", "OffsetAfterFirstAdmission"])
+            .drop("ICUOffset", "OffsetAfterFirstAdmission")
         )
 
     # endregion

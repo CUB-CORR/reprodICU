@@ -180,7 +180,7 @@ if __name__ == "__main__":
                 columns=columns_to_winsorize,
                 alpha=0.9995,
             )
-            .collect(streaming=True)
+            .collect()
             .write_parquet(save_path + "patient_information.parquet")
         )
 
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         (
             diagnoses_harmonizer.harmonize_diagnoses()
             .pipe(diagnoses_imputer.impute_diagnoses)
-            .collect(streaming=True)
+            .collect()
             .write_parquet(save_path + "diagnoses_imputed.parquet")
         )
 

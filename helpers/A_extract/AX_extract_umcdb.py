@@ -256,7 +256,12 @@ class UMCdbExtractor(UMCdbPaths):
             index=self.index_cols, variable_name="item", value_name="value"
         )
         listitems = listitems.filter(
-            pl.col("item").str.starts_with("Glasgow").not_()
+            pl.col("item").str.starts_with("Glasgow").not_(),
+            pl.col("item").is_in(
+                self.relevant_vital_values
+                + self.relevant_respiratory_values
+                + self.relevant_intakeoutput_values
+            ),
         ).drop("valueid", "itemid", "registeredby")
 
         return pl.concat([listitems, gcs], how="diagonal_relaxed")

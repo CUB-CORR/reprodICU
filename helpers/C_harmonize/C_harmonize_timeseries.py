@@ -63,7 +63,9 @@ class TimeseriesHarmonizer(GlobalVars):
             [*self.index_cols, *self.relevant_intakeoutput_values]
         )
 
-        labs_prms = pl.Series([*self.index_cols, *self.relevant_lab_LOINC_components])
+        labs_prms = pl.Series(
+            [*self.index_cols, *self.relevant_lab_LOINC_components]
+        )
 
         # Harmonize the timeseries
         timeseries_vitals = []
@@ -287,7 +289,10 @@ class TimeseriesHarmonizer(GlobalVars):
                 {  # Convert all columns to float
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
-                    **{col: float for col in vitals_cols_not_index},
+                    **{
+                        col: (str if col in ["Heart rate rhythm"] else float)
+                        for col in vitals_cols_not_index
+                    },
                 }
             )
             .select([*self.index_cols, *sorted(vitals_cols_not_index)])

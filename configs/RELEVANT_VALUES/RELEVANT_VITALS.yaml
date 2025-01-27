@@ -10,7 +10,8 @@ Heart rate: # 4239408 prev. heart_rate
   - HeartRateECG
   # UMCdb
   - Heart rate.beat-to-beat by EKG
-Heart rate rhythm: [] # 3022318
+Heart rate rhythm: # 3022318
+  - Cardiac rhythm type
 Peripheral oxygen saturation: # 4196147 prev. spO2
   # MIMIC / UMCdb
   - Oxygen saturation in Arterial blood by Pulse oximetry

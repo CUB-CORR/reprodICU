@@ -29,12 +29,14 @@ class SICdbProcessor(SICdbExtractor):
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
+    # region vitals
     def process_timeseries_data_float(self) -> pl.LazyFrame:
         """
         Processes the time series data of the SICdb dataset.
         """
         ts_float_path = self.precalc_path + "SICdb_timeseries.parquet"
         ts_float_path_unsorted = self.precalc_path + "SICdb_ts.parquet"
+        ts_float_path_cache = self.precalc_path + "SICdb_ts_cache.parquet"
 
         if os.path.isfile(ts_float_path):
             # Load the preprocessed data
@@ -43,13 +45,23 @@ class SICdbProcessor(SICdbExtractor):
                 pl.exclude(self.index_cols),
             )
 
-        print("SICdb   - Processing time series data...")
+        print("SICdb   - Collecting time series data...")
+
+        # "Cache" the data before pivoting
+        if not os.path.isfile(ts_float_path_cache):
+            (
+                self.extract_timeseries()
+                .collect()
+                .write_parquet(ts_float_path_cache)
+            )
+
+        print("SICdb   - Processing numeric time series data...")
 
         # Process timeseries data
         timeseries = (
-            self.extract_timeseries()
+            pl.scan_parquet(ts_float_path_cache)
             # Pivot the timeseries data
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="DataID",
                 index=self.index_cols,
                 values="Val",
@@ -78,6 +90,7 @@ class SICdbProcessor(SICdbExtractor):
             .sink_parquet(ts_float_path)
         )
         os.remove(ts_float_path_unsorted)
+        os.remove(ts_float_path_cache)
 
         return pl.scan_parquet(ts_float_path).select(
             pl.col(self.index_cols).set_sorted(),
