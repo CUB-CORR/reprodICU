@@ -5,11 +5,11 @@
 
 import argparse
 import os
+import sys
 from textwrap import wrap
 
 import altair as alt
 import matplotlib.pyplot as plt
-import numpy as np
 import polars as pl
 import seaborn as sns
 import yaml
@@ -27,7 +27,7 @@ BLENDEDICU_PLOT_VARIABLES = {
     "Oxygen saturation": ["labs", "percent (%)"],
     "Temperature": ["vitals", "degrees Celsius (°C)"],
     "Respiratory rate": ["vitals", "breaths per minute (/min)"],
-    "": "",  # "expiratory_tidal_volume",
+    "Tidal volume.expired": ["respiratory", "mL"],
     "Pressure.plateau Respiratory system airway --on ventilator": [
         "respiratory",
         "cmH2O",
@@ -36,40 +36,43 @@ BLENDEDICU_PLOT_VARIABLES = {
         "respiratory",
         "cmH2O",
     ],
-    "Breath rate mechanical --on ventilator": [
+    "Breath rate setting Ventilator": [
         "respiratory",
         "breaths per minute (/min)",
     ],
-    "Tidal volume Ventilator --on ventilator": ["respiratory", "mL"],
+    "Tidal volume setting Ventilator": ["respiratory", "mL"],
     "Oxygen/Total gas setting [Volume Fraction] Ventilator": [
         "respiratory",
         "percent (%)",
     ],
-    "PEEP Respiratory system --on ventilator": ["respiratory", "cmH2O"],
-    "Lactate [Moles/volume]": ["labs", "mmol/L"],
-    "Glucose [Mass/volume]": ["labs", "mg/dL"],
-    "Magnesium [Moles/volume]": ["labs", "mmol/L"],
-    "Sodium [Moles/volume]": ["labs", "mmol/L"],
-    "Creatinine [Mass/volume]": ["labs", "mg/dL"],
-    "Calcium [Moles/volume]": ["labs", "mmol/L"],
-    "Chloride [Moles/volume]": ["labs", "mmol/L"],
-    "Potassium [Moles/volume]": ["labs", "mmol/L"],
+    "Positive end expiratory pressure setting Ventilator": [
+        "respiratory",
+        "cmH2O",
+    ],
+    "Lactate": ["labs", "mmol/L"],
+    "Glucose": ["labs", "mg/dL"],
+    "Magnesium": ["labs", "mmol/L"],
+    "Sodium": ["labs", "mmol/L"],
+    "Creatinine": ["labs", "mg/dL"],
+    "Calcium": ["labs", "mmol/L"],
+    "Chloride": ["labs", "mmol/L"],
+    "Potassium": ["labs", "mmol/L"],
     "aPTT": ["labs", "seconds"],
-    "Bilirubin.total [Moles/volume]": ["labs", "µmol/L"],
-    "Alanine aminotransferase [Enzymatic activity/volume]": ["labs", "U/L"],
-    "Aspartate aminotransferase [Enzymatic activity/volume]": ["labs", "U/L"],
-    "Alkaline phosphatase [Enzymatic activity/volume]": ["labs", "U/L"],
-    "Albumin [Mass/volume]": ["labs", "g/L"],
-    "Phosphate [Moles/volume]": ["labs", "mmol/L"],
-    "Bicarbonate [Moles/volume]": ["labs", "mmol/L"],
-    "Urea nitrogen [Mass/volume]": ["labs", "mg/dL"],
+    "Bilirubin": ["labs", "mg/dL"],
+    "Alanine aminotransferase": ["labs", "U/L"],
+    "Aspartate aminotransferase": ["labs", "U/L"],
+    "Alkaline phosphatase": ["labs", "U/L"],
+    "Albumin": ["labs", "g/L"],
+    "Phosphate": ["labs", "mmol/L"],
+    "Bicarbonate": ["labs", "mmol/L"],
+    "Urea nitrogen": ["labs", "mg/dL"],
     "pH": ["labs", "pH"],
-    "Oxygen [Partial pressure]": ["labs", "mmHg"],
-    "Carbon dioxide [Partial pressure]": ["labs", "mmHg"],
-    "Hemoglobin [Mass/volume]": ["labs", "g/dL"],
-    "Leukocytes [#/volume]": ["labs", "10^3/µL"],
-    "Platelets [#/volume]": ["labs", "10^3/µL"],
-    # "Urine output": ["intakeoutput", "mL"],
+    "Oxygen": ["labs", "mmHg"],
+    "Carbon dioxide": ["labs", "mmHg"],
+    "Hemoglobin": ["labs", "g/dL"],
+    "Leukocytes": ["labs", "10^3/µL"],
+    "Platelets": ["labs", "10^3/µL"],
+    "Urine output": ["intakeoutput", "mL"],
     # "Ventilation mode Ventilator": "respiratory",
     "Glasgow Coma Score total": ["vitals", "points"],
     "Glasgow Coma Score eye opening": ["vitals", "points"],
@@ -114,7 +117,7 @@ class reprodICUPaths:
 
 
 def _collect_data(
-    table: str, variable: str, sources: str, path: str, cols
+    table: str, variable: str, systems: str, path: str, cols
 ) -> pl.DataFrame:
     ####################################
     # COLLECT DATA
@@ -125,10 +128,17 @@ def _collect_data(
         cols.global_icu_stay_id_col, cols.dataset_col
     )
 
+    # Use winsorized data if available
+    _table = (
+        f"{table}_winsorized"
+        if os.path.exists(f"{path}timeseries_{table}_winsorized.parquet")
+        else table
+    )
+
     # Load data
     data = (
         pl.scan_parquet(
-            f"../reprodICU_files/timeseries_{table}.parquet",
+            f"{path}timeseries_{_table}.parquet",
             parallel="prefiltered",
         )
         .join(ID_TO_DB, on=cols.global_icu_stay_id_col, how="left")
@@ -142,11 +152,11 @@ def _collect_data(
             data.unnest(variable)
             .rename({"value": variable})
             .filter(
-                pl.col("source").str.contains_any(
-                    sources, ascii_case_insensitive=True
+                pl.col("system").str.contains_any(
+                    systems, ascii_case_insensitive=True
                 )
             )
-            .drop("source", "method")
+            .drop("system", "method")
         )
 
     # aggregate means for vitals
@@ -193,7 +203,7 @@ def _BLENDED_PLOT(PATH: str, COLS) -> None:
     for i, (ax, VARIABLE) in enumerate(
         zip(axs[1:], BLENDEDICU_PLOT_VARIABLES.keys())
     ):
-        print(" " * 83, end="\r")  # clear line
+        sys.stdout.write("\033[K")  # Clear to the end of line
         print(f"plotted variable {i:2.0f}: {VARIABLE}")  # , end="\r")
 
         if not VARIABLE:
@@ -207,11 +217,10 @@ def _BLENDED_PLOT(PATH: str, COLS) -> None:
         data = _collect_data(
             table=TABLE,
             variable=VARIABLE,
-            sources=(
+            systems=(
                 ["Blood", "Plasma"]
-                if not VARIABLE
-                in ["Oxygen saturation", "Lactate [Moles/volume]"]
-                else ["Arterial blood", "Blood"]
+                if not VARIABLE in ["Oxygen saturation", "Lactate"]
+                else ["Blood arterial", "Blood"]
             ),
             path=PATH,
             cols=COLS,
@@ -243,7 +252,7 @@ def _plot_ridgeline(
     path: str,
     cols,
     unit: str = None,
-    sources: list = None,
+    systems: list = None,
     ALL_VARS: bool = False,
 ) -> None:
     ####################################
@@ -252,7 +261,7 @@ def _plot_ridgeline(
     data = _collect_data(
         table=table,
         variable=variable,
-        sources=sources,
+        systems=systems,
         path=path,
         cols=cols,
     )
@@ -277,10 +286,10 @@ def _plot_ridgeline(
         "AmsterdamUMCdb",
         "eICU-CRD",
         "HiRID",
-        "NWICU",
         "MIMIC-III",
         "MIMIC-IV",
-        "SICdb"
+        "NWICU",
+        "SICdb",
     ]
 
     data = data.rename({variable: title})
@@ -305,8 +314,7 @@ def _plot_ridgeline(
             .sort(SORT)
             .axis(None)
             .scale(range=[step, -step * overlap]),
-            alt.Color(f"{cols.dataset_col}:N", legend=None)
-            .scale(
+            alt.Color(f"{cols.dataset_col}:N", legend=None).scale(
                 domain=SORT, range=[COLORS[dataset] for dataset in SORT]
             ),
         )
@@ -358,10 +366,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-s",
-        "--sources",
+        "--systems",
         type=str,
         nargs="*",
-        help="The variable sources to select (only for table lab).",
+        help="The variable systems to select (only for table lab).",
     )
     parser.add_argument(
         "--DEMO",
@@ -443,11 +451,10 @@ if __name__ == "__main__":
                 table=BLENDEDICU_PLOT_VARIABLES[VARIABLE][0],
                 path=PATH,
                 cols=COLS,
-                sources=(
+                systems=(
                     ["Blood", "Plasma"]
-                    if not VARIABLE
-                    in ["Oxygen saturation", "Lactate [Moles/volume]"]
-                    else ["Arterial blood", "Blood"]
+                    if not VARIABLE in ["Oxygen saturation", "Lactate"]
+                    else ["Blood arterial", "Blood"]
                 ),
                 ALL_VARS=True,
             )
@@ -457,5 +464,5 @@ if __name__ == "__main__":
             table=args.table,
             path=PATH,
             cols=COLS,
-            sources=args.sources,
+            systems=args.systems,
         )
