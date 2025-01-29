@@ -150,10 +150,10 @@ Vent Other: # Respiratory parameter
 Vent Rate: # Respiratory parameter
 Vitamin B12: Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma # vitamin_B12
 WBC x 1000: Leukocytes [#/volume] in Blood # leukocytes
-WBC's in body fluid:
-WBC's in cerebrospinal fluid:
-WBC's in pericardial fluid:
-WBC's in peritoneal fluid:
-WBC's in pleural fluid:
-WBC's in synovial fluid:
+WBC's in body fluid: Leukocytes [#/volume] in Body fluid
+WBC's in cerebrospinal fluid: Leukocytes [#/volume] in Cerebral spinal fluid
+WBC's in pericardial fluid: Leukocytes [#/volume] in Pericardial fluid
+WBC's in peritoneal fluid: Leukocytes [#/volume] in Peritoneal fluid
+WBC's in pleural fluid: Leukocytes [#/volume] in Pleural fluid
+WBC's in synovial fluid: Leukocytes [#/volume] in Synovial fluid
 WBC's in urine: Leukocytes [#/volume] in Urine by Test strip # urine_leukocytes

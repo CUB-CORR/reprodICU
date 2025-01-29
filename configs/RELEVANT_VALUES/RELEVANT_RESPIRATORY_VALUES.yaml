@@ -1,6 +1,5 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
-# Airway pressure --at mean expiratory flow on ventilator: []
 # Airway pressure --at zero inspiratory flow on ventilator: []
 Airway pressure delta --on ventilator:
   # UMCdb
@@ -64,6 +63,8 @@ Mean airway pressure:
   # SICdb
   - Mean Airway Pressure
   - pMean
+  # UMCdb
+  - Airway pressure --at mean expiratory flow on ventilator
 Minute volume setting Ventilator: []
 Oxygen [Partial pressure] in Exhaled gas: []
 Oxygen/Gas total [Pure volume fraction] Inhaled gas:
@@ -136,7 +137,8 @@ Tidal volume.inspired:
 Tidal volume setting Ventilator:
   # HiRID
   - Tidal volume setting
-Tidal volume Ventilator --on ventilator: []
+  # MIMIC
+  - Tidal volume Ventilator --on ventilator
 Tidal volume.spontaneous --on ventilator: []
 Tidal volume.spontaneous+mechanical --on ventilator: []
 Ventilation mode Ventilator: []

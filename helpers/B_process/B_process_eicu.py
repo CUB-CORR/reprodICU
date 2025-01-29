@@ -59,20 +59,22 @@ class EICUProcessor(EICUExtractor):
                 pl.exclude(self.index_cols),
             )
 
-        # Load the time series data.
-        print("eICU    - Loading time series data...")
-        ts_nurse = self._process_timeseries_nurse()
-        ts_periodics = self._process_periodics()
-        ts_resp = self._process_timeseries_resp()
+        # Check if the preprocessed data is available
+        if not os.path.isfile(timeseries_path_unsorted):
+            # Load the time series data.
+            print("eICU    - Loading time series data...")
+            ts_nurse = self._process_timeseries_nurse()
+            ts_periodics = self._process_periodics()
+            ts_resp = self._process_timeseries_resp()
 
-        # Join the time series data on the patient unit stay ID.
-        print("eICU    - Joining wide time series data...")
-        timeseries = pl.concat(
-            [ts_nurse, ts_periodics, ts_resp], how="diagonal_relaxed"
-        )
+            # Join the time series data on the patient unit stay ID.
+            print("eICU    - Joining wide time series data...")
+            timeseries = pl.concat(
+                [ts_nurse, ts_periodics, ts_resp], how="diagonal_relaxed"
+            )
 
-        # Save the preprocessed data
-        timeseries.sink_parquet(timeseries_path_unsorted)
+            # Save the preprocessed data
+            timeseries.sink_parquet(timeseries_path_unsorted)
 
         # NOTE: if process stops due to insufficient memory, use the following
         # lines instead within a terminal at the precalc_path:
