@@ -1105,6 +1105,12 @@ if __name__ == "__main__":
         default="../reprodICU_files/",
     )
     parser.add_argument(
+        "--vocab",
+        type=str,
+        help="Path to the OMOP vocabulary files",
+        default="../OMOP_vocabulary/",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         help="Path to the output directory",
@@ -1115,6 +1121,7 @@ if __name__ == "__main__":
     # Load the reprodICU data
     INPATH = args.input
     OUTPATH = args.output
+    VOCABPATH = args.vocab
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
     medications = pl.scan_parquet(INPATH + "medications.parquet")
     patient_information = pl.scan_parquet(
@@ -1125,34 +1132,19 @@ if __name__ == "__main__":
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
 
-    # Parquetize the OMOP vocabulary files
-    for file in os.listdir(OUTPATH + "../OMOP_vocabulary/"):
-        # Check if the file is already parquetized
-        if os.path.isfile(OUTPATH + file[:-4] + ".parquet"):
-            continue
-
-        print(f"reprOMOPIZE - parquetizing vocab {file}")
-
-        pl.scan_csv(
-            OUTPATH + "../OMOP_vocabulary/" + file,
-            separator="\t",
-            infer_schema_length=10000,
-            quote_char=None,
-        ).sink_parquet(OUTPATH + file[:-4] + ".parquet")
-
     #########
     # LOADING
     # Load the OMOP vocabulary files
-    CONCEPT = pl.scan_parquet(OUTPATH + "CONCEPT.parquet")
+    CONCEPT = pl.scan_parquet(VOCABPATH + "CONCEPT.parquet")
     CONCEPT_RELATIONSHIP = pl.scan_parquet(
-        OUTPATH + "CONCEPT_RELATIONSHIP.parquet"
+        VOCABPATH + "CONCEPT_RELATIONSHIP.parquet"
     )
-    CONCEPT_ANCESTOR = pl.scan_parquet(OUTPATH + "CONCEPT_ANCESTOR.parquet")
-    CONCEPT_CLASS = pl.scan_parquet(OUTPATH + "CONCEPT_CLASS.parquet")
-    CONCEPT_SYNONYM = pl.scan_parquet(OUTPATH + "CONCEPT_SYNONYM.parquet")
-    DOMAIN = pl.scan_parquet(OUTPATH + "DOMAIN.parquet")
-    RELATIONSHIP = pl.scan_parquet(OUTPATH + "RELATIONSHIP.parquet")
-    VOCABULARY = pl.scan_parquet(OUTPATH + "VOCABULARY.parquet")
+    CONCEPT_ANCESTOR = pl.scan_parquet(VOCABPATH + "CONCEPT_ANCESTOR.parquet")
+    CONCEPT_CLASS = pl.scan_parquet(VOCABPATH + "CONCEPT_CLASS.parquet")
+    CONCEPT_SYNONYM = pl.scan_parquet(VOCABPATH + "CONCEPT_SYNONYM.parquet")
+    DOMAIN = pl.scan_parquet(VOCABPATH + "DOMAIN.parquet")
+    RELATIONSHIP = pl.scan_parquet(VOCABPATH + "RELATIONSHIP.parquet")
+    VOCABULARY = pl.scan_parquet(VOCABPATH + "VOCABULARY.parquet")
 
     ############
     # CONVERTING
