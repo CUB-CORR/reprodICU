@@ -234,18 +234,16 @@ class SICdbExtractor(SICdbPaths):
                 .alias("DataID"),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            # NOTE: seems not to be necessary, as the data is already filtered
-            # Filter only relevant timeseries values
             .filter(
-                pl.col("DataID")
-                .str.replace("in HDL", "inHDL")
-                .str.replace("in LDL", "inLDL")
-                .str.replace(" (in|of) ", " INOF ")
-                .str.split_exact(by=" INOF ", n=1)
-                .struct.rename_fields(["variable", "_"])
-                .struct.field("variable")
-                .is_in(self.all_values + self.other_lab_values)
+                pl.col(self.timeseries_time_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
+                pl.col(self.timeseries_time_col)
+                < pl.duration(seconds=pl.col("TimeOfStay")).dt.total_seconds(),
             )
+            # Filter only relevant timeseries values
+            .filter(pl.col("DataID").is_in(self.all_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names
@@ -317,12 +315,23 @@ class SICdbExtractor(SICdbPaths):
             .join(LOINC_data, on="LaboratoryID")
             # Fix lab time offset
             .with_columns(
-                (pl.col("Offset") - pl.col("CaseOffset"))
+                (
+                    pl.col("Offset")
+                    - pl.col("CaseOffset")
+                    - pl.col("OffsetAfterFirstAdmission")
+                )
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            # NOTE: seems not to be necessary, as the data is already filtered
+            .filter(
+                pl.col(self.timeseries_time_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
+                pl.col(self.timeseries_time_col)
+                < pl.duration(seconds=pl.col("TimeOfStay")).dt.total_seconds(),
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
@@ -388,10 +397,18 @@ class SICdbExtractor(SICdbPaths):
             .join(offsets, on=self.icu_stay_id_col)
             .with_columns(
                 # Fix medication time offset
-                (pl.col("Offset") - pl.col("CaseOffset"))
+                (
+                    pl.col("Offset")
+                    - pl.col("CaseOffset")
+                    - pl.col("OffsetAfterFirstAdmission")
+                )
                 .cast(float)
                 .alias(self.drug_start_col),
-                (pl.col("OffsetDrugEnd") - pl.col("CaseOffset"))
+                (
+                    pl.col("OffsetDrugEnd")
+                    - pl.col("CaseOffset")
+                    - pl.col("OffsetAfterFirstAdmission")
+                )
                 .cast(float)
                 .alias(self.drug_end_col),
                 # Convert medication IDs to names, then map them
@@ -439,7 +456,14 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.drug_ingredient_col),
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-            # NOTE: seems not to be necessary, as the data is already filtered
+            .filter(
+                pl.col(self.drug_start_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
+                pl.col(self.drug_start_col)
+                < pl.duration(seconds=pl.col("TimeOfStay")).dt.total_seconds(),
+            )
             # Remove duplicate rows
             .unique()
             # Remove rows with empty medication names
@@ -447,7 +471,13 @@ class SICdbExtractor(SICdbPaths):
             # Remove rows with empty medication results
             .filter(pl.col(self.drug_amount_col).is_not_null())
             # Drop columns
-            .drop("CaseOffset", "Offset", "OffsetDrugEnd")
+            .drop(
+                "CaseOffset",
+                "OffsetAfterFirstAdmission",
+                "TimeOfStay",
+                "Offset",
+                "OffsetDrugEnd",
+            )
         )
 
     # endregion
@@ -577,7 +607,7 @@ class SICdbExtractor(SICdbPaths):
                 .cast(float)
                 .alias("CaseOffset")
             )
-            .drop("ICUOffset", "OffsetAfterFirstAdmission")
+            .drop("ICUOffset", "OffsetAfterFirstAdmission", "TimeOfStay")
         )
 
     # endregion

@@ -129,11 +129,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.mortality_hosp_col),
                 # NOTE: pre-ICU length of stay is not available in the UMCdb dataset,
                 # as there is no known hospital admission / discharge data
-                # # Calculate pre-ICU length of stay in days
-                # pl.duration(milliseconds=pl.col("admittedat"))
-                # .truediv(pl.duration(days=1))
-                # .cast(float)
-                # .alias(self.pre_icu_length_of_stay_col),
                 # Calculate ICU length of stay in days
                 pl.duration(hours=pl.col("lengthofstay"))
                 .truediv(pl.duration(days=1))
@@ -180,22 +175,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
                 .cast(self.admission_types_dtype)
                 .alias(self.admission_type_col),
-                # # Convert categorical admission type to enum
-                # pl.when(
-                #     pl.col(self.admission_diagnosis_col).str.starts_with(
-                #         "Operative"
-                #     )
-                # )
-                # .then(pl.lit("Surgical"))
-                # .when(
-                #     pl.col(self.admission_diagnosis_col).str.starts_with(
-                #         "Non-operative"
-                #     )
-                # )
-                # .then(pl.lit("Medical"))
-                # .otherwise(None)
-                # .cast(self.admission_types_dtype)
-                # .alias(self.admission_type_col),
                 # Convert categorical admission urgency to enum
                 pl.col("urgency")
                 .cast(str)
@@ -1056,7 +1035,13 @@ class UMCdbExtractor(UMCdbPaths):
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
             .with_columns(
-                pl.col("conceptName").replace(
+                pl.col("conceptName")
+                .replace(
+                    {
+                        "Tidal volume Ventilator --on ventilator": "Tidal volume.spontaneous+mechanical --on ventilator"
+                    }
+                )
+                .replace(
                     {
                         **self.relevant_vital_values_mapping,
                         **self.relevant_lab_values_mapping,
