@@ -204,11 +204,7 @@ class SICdbExtractor(SICdbPaths):
         # fix duplicate names (e.g. RespRate both in SignalFloat and RespiratorSetting)
         extracted_references.update({2282: "RespRateVentilator"})
 
-        offsets = (
-            pl.scan_csv(self.cases_path)
-            .rename({"CaseID": self.icu_stay_id_col})
-            .select(self.icu_stay_id_col, "ICUOffset")
-        )
+        offsets = self._get_offsets()
         timeseries = (
             pl.scan_csv(self.data_float_h_path)
             .select("CaseID", "Offset", "DataID", "Val")
@@ -218,7 +214,7 @@ class SICdbExtractor(SICdbPaths):
         return (
             timeseries.join(offsets, on=self.icu_stay_id_col).with_columns(
                 # Fix time offset
-                (pl.col("Offset") - pl.col("ICUOffset"))
+                (pl.col("Offset") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.timeseries_time_col),
                 # Convert parameter IDs to names, then map them
@@ -318,7 +314,6 @@ class SICdbExtractor(SICdbPaths):
                 (
                     pl.col("Offset")
                     - pl.col("CaseOffset")
-                    - pl.col("OffsetAfterFirstAdmission")
                 )
                 .cast(float)
                 .alias(self.timeseries_time_col)
@@ -400,14 +395,12 @@ class SICdbExtractor(SICdbPaths):
                 (
                     pl.col("Offset")
                     - pl.col("CaseOffset")
-                    - pl.col("OffsetAfterFirstAdmission")
                 )
                 .cast(float)
                 .alias(self.drug_start_col),
                 (
                     pl.col("OffsetDrugEnd")
                     - pl.col("CaseOffset")
-                    - pl.col("OffsetAfterFirstAdmission")
                 )
                 .cast(float)
                 .alias(self.drug_end_col),
@@ -473,7 +466,6 @@ class SICdbExtractor(SICdbPaths):
             # Drop columns
             .drop(
                 "CaseOffset",
-                "OffsetAfterFirstAdmission",
                 "TimeOfStay",
                 "Offset",
                 "OffsetDrugEnd",
@@ -600,14 +592,14 @@ class SICdbExtractor(SICdbPaths):
     def _get_offsets(self) -> float:
         return (
             pl.scan_csv(self.cases_path)
-            .select("CaseID", "ICUOffset", "OffsetAfterFirstAdmission")
+            .select("CaseID", "ICUOffset", "OffsetAfterFirstAdmission",  "TimeOfStay")
             .rename({"CaseID": self.icu_stay_id_col})
             .with_columns(
                 (pl.col("OffsetAfterFirstAdmission") + pl.col("ICUOffset"))
                 .cast(float)
                 .alias("CaseOffset")
             )
-            .drop("ICUOffset", "OffsetAfterFirstAdmission", "TimeOfStay")
+            .drop("ICUOffset", "OffsetAfterFirstAdmission")
         )
 
     # endregion
