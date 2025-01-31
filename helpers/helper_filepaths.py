@@ -145,6 +145,12 @@ class EICUPaths(GlobalVars):
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
         self.lab_mapping_path = self.eICU_mapping_path + "eicu_lab.yaml"
+        self.micro_culturesite_mapping_path = (
+            self.eICU_mapping_path + "eicu_microLab_culturesite.yaml"
+        )
+        self.micro_organism_mapping_path = (
+            self.eICU_mapping_path + "eicu_microLab_organism.yaml"
+        )
         self.resp_airwaytype_mapping_path = (
             self.eICU_mapping_path + "eicu_respiratoryCare_airwaytype.yaml"
         )
@@ -236,6 +242,7 @@ class MIMIC3Paths(GlobalVars):
         self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.csv.gz"
         self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.csv.gz"
         self.labevents_path = mimic3_path + "LABEVENTS.csv.gz"
+        self.microbiologyevents_path = mimic3_path + "MICROBIOLOGYEVENTS.csv.gz"
         self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv.gz"
         self.patients_path = mimic3_path + "PATIENTS.csv.gz"
         self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv.gz"
@@ -355,6 +362,7 @@ class MIMIC4Paths(GlobalVars):
         self.icustays_path = mimic4_path + "icu/icustays.csv.gz"
         self.inputevents_path = mimic4_path + "icu/inputevents.csv.gz"
         self.labevents_path = mimic4_path + "hosp/labevents.csv.gz"
+        self.microbiologyevents_path = mimic4_path + "hosp/microbiologyevents.csv.gz"
         self.outputevents_path = mimic4_path + "icu/outputevents.csv.gz"
         self.patients_path = mimic4_path + "hosp/patients.csv.gz"
         self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv.gz"
