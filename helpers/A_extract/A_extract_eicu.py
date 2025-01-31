@@ -996,20 +996,26 @@ class EICUExtractor(EICUPaths):
         # NOTE: a lot of calcalations can be done here
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/infusiondrug/
         infusiondrug = (
-            pl.scan_csv(self.infusionDrug_path)
+            pl.scan_csv(
+                self.infusionDrug_path,
+                schema_overrides={"drugrate": str},
+            )
             .select(
                 "patientunitstayid",
                 "infusionoffset",
                 "drugname",
-                "infusionrate",
+                "drugrate",
             )
+            # Replace "OFF" values with 0
+            .with_columns(pl.col("drugrate").str.replace("OFF", 0))
+            .cast({"drugrate": float}, strict=False)
             # Rename columns for consistency
             .rename(
                 {
                     "patientunitstayid": self.icu_stay_id_col,
                     "infusionoffset": self.drug_start_col,
                     "drugname": self.drug_name_col,
-                    "infusionrate": self.drug_rate_col,
+                    "drugrate": self.drug_rate_col,
                 }
             )
             .with_columns(
@@ -1027,10 +1033,7 @@ class EICUExtractor(EICUPaths):
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
             # Remove rows with empty drug rates
-            .filter(
-                pl.col(self.drug_rate_col).is_not_null()
-                | (pl.col(self.drug_rate_col) != "")
-            )
+            .filter(pl.col(self.drug_rate_col).is_not_null())
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,

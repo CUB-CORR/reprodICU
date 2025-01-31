@@ -820,6 +820,31 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
         )
 
+        # specifically handle certain medications differently
+        # https://github.com/MIT-LCP/mimic-code/tree/main/mimic-iv/concepts/medication
+        # -> only norepinephrine has incorrect units
+
+        inputevents = inputevents.with_columns(
+            # norepinephrine
+            # two rows in mg/kg/min... rest in mcg/kg/min
+            # -> the rows in mg/kg/min are documented incorrectly
+            # -> all rows converted into mcg/kg/min
+            pl.when(pl.col("itemid") == 221906)
+            .then(
+                pl.when(pl.col(self.drug_rate_unit_col) == "mg/kg/min")
+                .then(pl.col(self.drug_rate_col).mul(1000))
+                .otherwise(pl.col(self.drug_rate_col))
+            )
+            .alias(self.drug_rate_col),
+            pl.when(pl.col("itemid") == 221906)
+            .then(
+                pl.when(pl.col(self.drug_rate_unit_col) == "mg/kg/min")
+                .then("mcg/kg/min")
+                .otherwise(pl.col(self.drug_rate_unit_col))
+            )
+            .alias(self.drug_rate_unit_col),
+        )
+
         return (
             inputevents.join(d_items, on="itemid")
             .join(inputevents_to_rxnorm_data, on="itemid", how="left")
