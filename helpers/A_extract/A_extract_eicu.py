@@ -942,6 +942,94 @@ class EICUExtractor(EICUPaths):
 
     # endregion
 
+    # region microbiology
+    # Extract microbiology information from the microLab.csv file
+    def extract_microbiology(self) -> pl.LazyFrame:
+        """
+        Extracts microbiology information from the microLab.csv file.
+
+        Return a polars LazyFrame with the extracted microbiology information, containing the following columns:
+        - ICU stay ID
+        - Time
+        - Specimen type
+        - Organism name
+        - Organism group
+        - Antibiotic name
+        - Antibiotic result
+
+        :return: A polars LazyFrame with the extracted microbiology information.
+        :rtype: pl.LazyFrame
+        """
+
+        print("eICU    - Extracting microbiology...")
+
+        # NOTE: ASSUMPTION: These are the microbiology values of interest
+        eicu_microbiology_culturesite_mapping = self.helpers.load_mapping(
+            self.micro_culturesite_mapping_path
+        )
+        eicu_microbiology_organism_mapping = self.helpers.load_mapping(
+            self.micro_organism_mapping_path
+        )
+
+        return (
+            pl.scan_csv(self.microLab_path)
+            # Rename columns for consistency
+            .rename(
+                {
+                    "patientunitstayid": self.icu_stay_id_col,
+                    "culturetakenoffset": self.timeseries_time_col,
+                }
+            ).with_columns(
+                # Replace culture site names with mapped names
+                pl.col("culturesite")
+                .replace_strict(
+                    eicu_microbiology_culturesite_mapping, default=None
+                )
+                .alias(self.micro_specimen_col),
+                # Replace organism names with mapped names
+                pl.col("organism")
+                .replace_strict(
+                    eicu_microbiology_organism_mapping, default=None
+                )
+                .alias(self.micro_organism_col),
+                # Replace antibiotic names with mapped names
+                pl.col("antibiotic")
+                .replace(
+                    {
+                        "amoxicillin/clavulonic acid": "amoxicillin / clavulanate",
+                        "ampicillin/sulbactam": "ampicillin / sulbactam",
+                        "imipenem/cilastatin": "cilastatin / imipenem",
+                        "piperacillin/tazobactam": "piperacillin / tazobactam",
+                        "ticarcillin/clavulonic acid": "clavulanate / ticarcillin",
+                        "trimethoprim/sulfamethoxazole": "sulfamethoxazole / trimethoprim",
+                        "": None,
+                    }
+                )
+                .alias(self.micro_antibiotic_col),
+                # Replace sensitivities with shorthands
+                pl.col("sensitivitylevel")
+                .replace(
+                    {
+                        "Resistant": "R",
+                        "Intermediate": "I",
+                        "Sensitive": "S",
+                        "": None,
+                    }
+                )
+                .alias(self.micro_sensitivity_col),
+            )
+            # Remove duplicate rows
+            .unique()
+            # Convert time to seconds
+            .pipe(
+                self.helpers._convert_time_to_seconds_float,
+                self.timeseries_time_col,
+                base_unit="minutes",
+            )
+        )
+
+    # endregion
+
     # region medication
     # Extract medication information from the different medication files
     # TODO: add administration path

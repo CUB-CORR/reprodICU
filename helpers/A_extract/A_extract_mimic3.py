@@ -790,6 +790,80 @@ class MIMIC3Extractor(MIMIC3Paths):
 
     # endregion
 
+    # region microbiology
+    # Extract microbiology data from the microbiologyevents.csv file
+    def extract_microbiology(self) -> pl.LazyFrame:
+        print("MIMIC3  - Extracting microbiology...")
+
+        intimes = self.extract_patient_IDs().select(
+            self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
+        )
+        # TODO: mappings
+
+        return (
+            pl.scan_csv(self.microbiologyevents_path)
+            .select(
+                "HADM_ID",
+                "CHARTTIME",
+                "SPEC_TYPE_DESC",
+                "ORG_NAME",
+                "AB_NAME",
+                "DILUTION_COMPARISON",
+                "DILUTION_VALUE",
+                "INTERPRETATION",
+            )
+            # Rename columns for consistency
+            .rename(
+                {
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "SPEC_TYPE_DESC": self.micro_specimen_col,
+                    "ORG_NAME": self.micro_organism_col,
+                    "AB_NAME": self.micro_antibiotic_col,
+                    "INTERPRETATION": self.micro_sensitivity_col,
+                }
+            )
+            .join(self.icu_stay_id, on=self.hospital_stay_id_col)
+            .drop(self.person_id_col)
+            .join(intimes, on=self.icu_stay_id_col)
+            .with_columns(
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .with_columns(
+                (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET"),
+                pl.concat_str(
+                    pl.when(pl.col("DILUTION_COMPARISON") == "=")
+                    .then(pl.lit("=="))
+                    .otherwise(pl.col("DILUTION_COMPARISON")),
+                    pl.lit(" "),
+                    pl.col("DILUTION_VALUE"),
+                ).alias(self.micro_dilution_col),
+            )
+            .drop("CHARTTIME", "INTIME")
+            # Keep only microbiology within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            .filter(
+                pl.col("OFFSET")
+                < pl.duration(days=pl.col(self.icu_length_of_stay_col)),
+                pl.col("OFFSET")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+            )
+            .with_columns(
+                (pl.col("OFFSET").dt.total_seconds())
+                .cast(float)
+                .alias(self.timeseries_time_col)
+            )
+            .drop(self.icu_length_of_stay_col)
+            # Remove rows with empty values
+            .filter(
+                pl.col(self.timeseries_time_col).is_not_null(),
+                pl.col(self.micro_specimen_col).is_not_null(),
+            )
+            # Remove duplicate rows
+            .unique()
+        )
+
+    # endregion
+
     # region medications
     # Extract medications from the inputevents.csv file
     def extract_medications(self) -> pl.LazyFrame:
@@ -967,14 +1041,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.hospital_stay_id_col,
                 "ICD9_CODE",
                 "SEQ_NUM",
-            )
-            # include only ICU patients
-            .filter(
-                pl.col(self.hospital_stay_id_col).is_in(
-                    self.icu_stay_id.select(self.hospital_stay_id_col)
-                    .collect()
-                    .to_series()
-                )
             )
             .with_columns(
                 pl.col(self.hospital_stay_id_col).cast(int),

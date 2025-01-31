@@ -747,6 +747,85 @@ class MIMIC4Extractor(MIMIC4Paths):
 
     # endregion
 
+    # region microbiology
+    # Extract microbiology data from the microbiologyevents.csv file
+    def extract_microbiology(self) -> pl.LazyFrame:
+        print("MIMIC4  - Extracting microbiology...")
+
+        intimes = self.extract_patient_IDs().select(
+            self.icu_stay_id_col, self.icu_length_of_stay_col, "intime"
+        )
+        # TODO: mappings
+
+        return (
+            pl.scan_csv(self.microbiologyevents_path)
+            .select(
+                "hadm_id",
+                "charttime",
+                "spec_type_desc",
+                "test_name",
+                "org_name",
+                "ab_name",
+                "dilution_comparison",
+                "dilution_value",
+                "interpretation",
+            )
+            # rename columns for consistency
+            .rename(
+                {
+                    "hadm_id": self.hospital_stay_id_col,
+                    "spec_type_desc": self.micro_specimen_col,
+                    "test_name": self.micro_test_col,
+                    "org_name": self.micro_organism_col,
+                    "ab_name": self.micro_antibiotic_col,
+                    "interpretation": self.micro_sensitivity_col,
+                }
+            )
+            .join(self.icu_stay_id, on=self.hospital_stay_id_col)
+            .drop(self.person_id_col)
+            # include only ICU patients
+            .filter(pl.col(self.icu_stay_id_col).is_not_null())
+            .join(intimes, on=self.icu_stay_id_col)
+            .with_columns(
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .with_columns(
+                (pl.col("charttime") - pl.col("intime")).alias("offset"),
+                pl.concat_str(
+                    pl.when(pl.col("dilution_comparison") == "=")
+                    .then(pl.lit("=="))
+                    .otherwise(pl.col("dilution_comparison")),
+                    pl.lit(" "),
+                    pl.col("dilution_value"),
+                ).alias(self.micro_dilution_col),
+            )
+            .drop("charttime", "intime")
+            # keep only microbiology within timeframe of icu stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            .filter(
+                pl.col("offset")
+                < pl.duration(days=pl.col(self.icu_length_of_stay_col)),
+                pl.col("offset")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+            )
+            .with_columns(
+                (pl.col("offset").dt.total_seconds())
+                .cast(float)
+                .alias(self.timeseries_time_col)
+            )
+            .drop(self.icu_length_of_stay_col)
+            # remove rows with empty values
+            .filter(
+                pl.col(self.timeseries_time_col).is_not_null(),
+                pl.col(self.micro_specimen_col).is_not_null(),
+                pl.col(self.micro_test_col).is_not_null(),
+            )
+            # remove duplicate rows
+            .unique()
+        )
+
+    # endregion
+
     # region medications
     # Extract medications from the inputevents.csv file
     def extract_medications(self) -> pl.LazyFrame:

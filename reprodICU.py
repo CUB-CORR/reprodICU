@@ -16,6 +16,7 @@ from helpers.C_harmonize.C_harmonize_patient_information import (
 )
 from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
+from helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
@@ -228,6 +229,18 @@ if __name__ == "__main__":
             medication_harmonizer.harmonize_medications()
             .collect()
             .write_parquet(save_path + "medications.parquet")
+        )
+
+    # region micro
+    if "microbiology" in TABLES:
+        print("reprodICU - Combining microbiology data...")
+        microbiology_harmonizer = MicrobiologyHarmonizer(
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
+        )
+        (
+            microbiology_harmonizer.harmonize_microbiology()
+            .collect()
+            .write_parquet(save_path + "microbiology.parquet")
         )
 
     # region timeseries
