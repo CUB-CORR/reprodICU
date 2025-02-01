@@ -1,0 +1,724 @@
+# Author: Finn Fassbender
+# Last modified: 2024-09-05
+
+# Description: Converts the reprodICU structure to the Common Longitudinal ICU Format (CLIF) structure.
+# The script is based on the CLIF-2.0
+
+# Input: reprodICU structure
+# Output: CLIF structure
+
+# Usage: python Z_reprodiCLIF.py
+
+# Importing necessary libraries
+import argparse
+import os
+import sys
+
+import polars as pl
+import yaml
+from helpers.helper_OMOP import Vocabulary
+
+SECONDS_IN_DAY = 86400
+DAYS_IN_YEAR = 365.25
+DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
+
+
+def load_mapping(path: str) -> dict:
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+class reprodICUPaths:
+    def __init__(self) -> None:
+        config = load_mapping("configs/paths_local.yaml")
+        for key, value in config.items():
+            setattr(self, key, str(value))
+
+
+# region helpers
+# The CLIF schema table contains a list of fields that are used in the
+# observational data tables. Each field is uniquely identified by a field name.
+def _field_level(table_name: str, return_required: bool = False) -> list:
+    """
+    return a list of fields for the table in the CLIF schema in order
+    """
+    field_level_ = pl.read_csv("mappings/CLIF_DataDictionary.csv").filter(
+        pl.col("cdmTableName") == table_name
+    )
+    fields = field_level_.select("cdmFieldName").to_series().to_list()
+    if not return_required:
+        return fields
+
+    required = field_level_.select("isRequired").to_series().to_list()
+    return fields, required
+
+
+# The _add_missing_fields function adds missing fields to the data
+# The function checks if the fields are required for the table
+# If the field is required and missing, the function raises a ValueError
+# If the field is missing and not required, the function adds the field with a NULL value
+def _add_missing_fields(
+    data: pl.LazyFrame, table_name: str, check_required: bool = False
+) -> pl.LazyFrame:
+    """
+    add missing fields to the data
+    """
+    fields, required = _field_level(table_name, return_required=True)
+    columns = data.collect_schema().names()
+
+    for field, req in zip(fields, required):
+        if field not in columns:
+            if req == "Yes" and check_required:
+                raise ValueError(
+                    f"Field {field} is required for the {table_name} table"
+                )
+
+            data = data.with_columns(pl.lit(None).cast(pl.Int8).alias(field))
+
+    return data.select(fields)
+
+
+# The _ID function creates a table with the patient ID and additional columns
+def _ID(
+    patient_information: pl.LazyFrame, additional_columns: list = []
+) -> pl.LazyFrame:
+    return patient_information.select(
+        "Global ICU Stay ID",
+        "Global Hospital Stay ID",
+        "Global Person ID",
+        *additional_columns,
+    )
+
+
+# The _ID_ICUOFFSET function creates a table with the patient ID and the ICU admission time
+def _ID_ICUOFFSET(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    return (
+        patient_information.select(
+            "Global ICU Stay ID",
+            "Global Hospital Stay ID",
+            "Global Person ID",
+            "Admission Time (24h)",
+            "Pre-ICU Length of Stay (days)",
+        )
+        .with_columns(
+            (
+                DAY_ZERO.dt.combine(
+                    # get hospital admission time
+                    (
+                        DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
+                        - pl.duration(
+                            days=pl.col("Pre-ICU Length of Stay (days)")
+                        )
+                    ).dt.time()
+                )
+                + pl.duration(days=pl.col("Pre-ICU Length of Stay (days)"))
+            ).alias("icu_admission_dttm"),
+        )
+        .select(
+            "Global ICU Stay ID",
+            "Global Hospital Stay ID",
+            "icu_admission_dttm",
+        )
+    )
+
+
+# endregion
+
+
+#######################################
+# GENERAL INPATIENT TABLES
+#######################################
+
+
+# region Patient
+# This table contains demographic information about the patient that does not
+# vary between hospitalizations.
+def Patient(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprodiCLIF - Patient")
+    return (
+        patient_information.with_columns(
+            # patient_id
+            # Unique identifier for each patient. This is presumed to be a distinct individual.
+            pl.col("Global Person ID").alias("patient_id"),
+            # race_name
+            # Patient race string from source data
+            # (N/A)
+            # race_category
+            # A standardized CDE description of patient’s race per the US Census permissible values.
+            # The source data may contain different strings for race.
+            pl.col("Ethnicity")
+            .cast(str)
+            .replace(
+                {
+                    "Black / African American": "Black or African American",
+                    "Hispanic or Latino": "Other",
+                    "Native American": "American Indian or Alaska Native",
+                }
+            )
+            .alias("race_category"),
+            # ethnicity_name
+            # Patient ethnicity string from source data
+            # (N/A)
+            # ethnicity_category
+            # Description of patient’s ethnicity per the US census definition.
+            # The source data may contain different strings for ethnicity.
+            pl.col("Ethnicity")
+            .cast(str)
+            .replace_strict(
+                {"Hispanic or Latino": "Hispanic", "Unknown": "Unknown"},
+                default="Non-Hispanic",
+            )
+            .alias("ethnicity_category"),
+            # sex_name
+            # Patient’s biological sex as given in the source data.
+            # (N/A)
+            # sex_category
+            # Patient’s biological sex.
+            pl.col("Gender")
+            .replace({"Other": "Unknown"})
+            .alias("sex_category"),
+            # birth_date
+            # Patient’s date of birth.
+            (
+                DAY_ZERO
+                - pl.duration(
+                    days=pl.col("Admission Age (years)") * DAYS_IN_YEAR
+                )
+            ).alias("birth_date"),
+            # death_dttm
+            # Patient’s death date, including time.
+            (
+                DAY_ZERO
+                + pl.duration(
+                    days=pl.when(pl.col("Mortality in ICU"))
+                    .then(pl.col("ICU Length of Stay (days)"))
+                    .otherwise(
+                        pl.col("ICU Length of Stay (days)")
+                        + pl.col("Mortality after ICU discharge (days)")
+                    )
+                )
+            ).alias("death_dttm"),
+            # language_name
+            # Patient’s preferred language.
+            # (N/A)
+            # language_category
+            # Maps language_name to a standardized list of spoken languages.
+            # (N/A)
+        )
+        .unique()
+        .pipe(_add_missing_fields, "Patient")
+    )
+
+
+# endregion
+
+
+# region Hospitalization
+# The hospitalization table contains information about each hospitalization
+# event. Each row in this table represents a unique hospitalization event for a
+# patient. This table is inspired by the visit_occurance OMOP table but is
+# specific to inpatient hospitalizations (including those that begin in the
+# emergency room).
+def Hospitalization(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprodiCLIF - Hospitalization")
+    return (
+        patient_information
+        # Select only the first ICU stay for each patient
+        .filter(
+            (pl.col("ICU Stay Sequential Number (per Person ID)") == 1)
+            | (pl.col("ICU Stay Sequential Number (per Person ID)").is_null())
+        )
+        .with_columns(
+            # patient_id
+            # Unique identifier for each patient. This is presumed to be a distinct individual.
+            pl.col("Global Person ID").alias("patient_id"),
+            # hospitalization_id
+            # Unique identifier for each hospitalization event.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # hospitalization_joined_id
+            # Unique identifier for each continuous inpatient stay in a health system which may span different hospitals (Optional).
+            # (N/A)
+            # admission_dttm
+            # Date and time the patient is admitted to the hospital. Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                DAY_ZERO.dt.combine(
+                    # get hospital admission time
+                    (
+                        DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
+                        - pl.duration(
+                            days=pl.col("Pre-ICU Length of Stay (days)")
+                        )
+                    ).dt.time()
+                )
+            ).alias("admission_dttm"),
+            # discharge_dttm
+            # Date and time the patient is discharged from the hospital. Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                DAY_ZERO.dt.combine(
+                    # get hospital admission time
+                    (
+                        DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
+                        - pl.duration(
+                            days=pl.col("Pre-ICU Length of Stay (days)")
+                        )
+                    ).dt.time()
+                )
+                + pl.duration(days=pl.col("Hospital Length of Stay (days)"))
+            ).alias("discharge_dttm"),
+            # age_at_admission
+            # Age of the patient at the time of admission, in years.
+            pl.col("Admission Age (years)").alias("age_at_admission"),
+            # admission_type_name
+            # Type of inpatient admission. Original string from the source data.
+            # (N/A)
+            # admission_type_category
+            # Admission disposition mapped to mCIDE categories.
+            # (N/A)
+            # discharge_name
+            # Original discharge disposition name string recorded in the raw data.
+            # (N/A)
+            # discharge_category
+            # Maps discharge_name to a standardized list of discharge categories.
+            pl.col("Discharge Location")
+            .cast(str)
+            .replace(
+                {
+                    "Hospital": "Still Admitted",
+                    "Death": "Expired",
+                    "Other ICU": "Still Admitted",
+                    "Operating Room": "Still Admitted",
+                    "Rehabilitation": "Acute Inpatient Rehab Facility",
+                    "Nursing Facility": "Skilled Nursing Facility (SNF)",
+                    "Psychiatric Facility": "Psychiatric Hospital",
+                    "High-Dependency Unit": "Still Admitted",
+                    "Against Medical Advice": "Against Medical Advice (AMA)",
+                    "Unknown": "Missing",
+                }
+            )
+            .alias("discharge_category"),
+            # zipcode_nine_digit
+            # Patient’s 9 digit zip code, used to link with other indices such as ADI and SVI.
+            # (N/A)
+            # zipcode_five_digit
+            # Patient’s 5 digit zip code, used to link with other indices such as ADI and SVI.
+            # (N/A)
+            # census_block_code
+            # 15 digit FIPS code.
+            # (N/A)
+            # census_block_group_code
+            # 12 digit FIPS code.
+            # (N/A)
+            # census_tract
+            # 11 digit FIPS code.
+            # (N/A)
+            # state_code
+            # 2 digit FIPS code.
+            # (N/A)
+            # county_code
+            # 5 digit FIPS code.
+            # (N/A)
+        )
+        .unique()
+        .pipe(_add_missing_fields, "Hospitalization")
+    )
+
+
+# endregion
+
+
+# region ADT
+# The admission, discharge, and transfer (ADT) table is a start-stop
+# longitudinal dataset that contains information about each patient’s movement
+# within the hospital. It also has a hospital_id field to distinguish between
+# different hospitals within a health system.
+def ADT(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+    print("reprodiCLIF - ADT")
+    return (
+        patient_information.with_columns(
+            # hospitalization_id
+            # ID variable for each patient encounter.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # hospital_id
+            # Assign a unique ID to each hospital within a health system.
+            pl.col("Care Site").alias("hospital_id"),
+            # hospital_type
+            # Maps hospital_id to a standardized list of hospital types.
+            # (N/A)
+            # in_dttm
+            # Start date and time at a particular location. Datetime format should be %Y-%m-%d %H:%M:%S.
+            # TODO
+            # out_dttm
+            # End date and time at a particular location. Datetime format should be %Y-%m-%d %H:%M:%S.
+            # TODO
+            # location_name
+            # Location of the patient inside the hospital. This field is used to store the patient location from the source data. It is not used for analysis.
+            # (N/A)
+            # location_category
+            # Maps location_name to a standardized list of ADT location categories.
+            pl.lit("icu").alias("location_category"),
+            # location_type
+            # Maps location_name to a standardized list of ADT location types.
+            pl.col("Unit Type")
+            .cast(str)
+            .replace_strict(
+                {
+                    "Cardiac": "mixed_cardiac_icu",
+                    "Neurological": "mixed_neuro_icu",
+                    "Neonatal": "general_icu",
+                    "Medical": "medical_icu",
+                    "Medical-Surgical": "general_icu",
+                    "Pediatric": "general_icu",
+                    "Surgical": "surgical_icu",
+                    "Trauma": "surgical_icu",
+                },
+                default="general_icu",
+            )
+            .alias("location_type"),
+        )
+        .unique()
+        .pipe(_add_missing_fields, "ADT")
+    )
+
+
+# endregion
+
+
+# region Vitals
+# The vitals table is a long-form (one vital sign per row) longitudinal table.
+def Vitals(
+    patient_information: pl.LazyFrame, timeseries_vitals: pl.LazyFrame
+) -> pl.LazyFrame:
+    print("reprodiCLIF - Vitals")
+    return (
+        timeseries_vitals.select(
+            "Global ICU Stay ID",
+            "Time Relative to Admission (seconds)",
+            "Temperature",
+            "Heart rate",
+            "Invasive systolic arterial pressure",
+            "Invasive mean arterial pressure",
+            "Invasive diastolic arterial pressure",
+            "Non-invasive systolic arterial pressure",
+            "Non-invasive mean arterial pressure",
+            "Non-invasive diastolic arterial pressure",
+            "Peripheral oxygen saturation",
+            "Respiratory rate",
+        )
+        # Rename columns
+        .rename(
+            {
+                "Temperature": "temp_c",
+                "Heart rate": "heart_rate",
+                "Peripheral oxygen saturation": "spo2",
+                "Respiratory rate": "respiratory_rate",
+            }
+        )
+        # Combine invasive and non-invasive blood pressure measurements
+        # -> prefer invasive measurements
+        .with_columns(
+            pl.coalesce(
+                "Invasive systolic arterial pressure",
+                "Non-invasive systolic arterial pressure",
+            ).alias("sbp"),
+            pl.coalesce(
+                "Invasive mean arterial pressure",
+                "Non-invasive mean arterial pressure",
+            ).alias("map"),
+            pl.coalesce(
+                "Invasive diastolic arterial pressure",
+                "Non-invasive diastolic arterial pressure",
+            ).alias("dbp"),
+        )
+        # Join with patient_information to get the ICU admission time
+        .join(
+            _ID_ICUOFFSET(patient_information),
+            on="Global ICU Stay ID",
+            how="left",
+        )
+        # Unpivot the table
+        .unpivot(
+            on=[
+                "temp_c",
+                "heart_rate",
+                "sbp",
+                "map",
+                "dbp",
+                "spo2",
+                "respiratory_rate",
+            ],
+            index=[
+                "Global Hospital Stay ID",
+                "Time Relative to Admission (seconds)",
+                "icu_admission_dttm",
+            ],
+            variable_name="vital_category",
+            value_name="vital_value",
+        )
+        # Add missing fields
+        .with_columns(
+            # hospitalization_id
+            # ID variable for each patient encounter.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # recorded_dttm
+            # Date and time when the vital is recorded. Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col("Time Relative to Admission (seconds)")
+                )
+            ).alias("recorded_dttm"),
+            # vital_name
+            # This field is used to store the description of the flowsheet measure from the source data. This field is not used for analysis.
+            # (N/A)
+            # vital_category
+            # Maps vital_name to a list standard vital sign categories.
+            pl.col("vital_category"),
+            # vital_value
+            # Recorded value of the vital. Ensure that the measurement unit is aligned with the permissible units of measurements.
+            pl.col("vital_value"),
+            # meas_site_name
+            # Site where the vital is recorded. No CDE corresponding to this variable (Optional field).
+            # (N/A)
+        )
+        .drop_nulls("vital_value")
+        .unique()
+        .pipe(_add_missing_fields, "Vitals")
+    )
+
+
+# endregion
+
+# region Labs
+# The labs table is a long form (one lab result per row) longitudinal table.
+# Each lab result is associated with a hospitalization event.
+
+
+# endregion
+
+
+# region Patient Assessments
+# The patient_assessments table captures various assessments performed on
+# patients across different domains, including neurological status, sedation
+# levels, pain, and withdrawal. The table is designed to provide detailed
+# information about the assessments, such as the name of the assessment, the
+# category, and the recorded values.
+def PatientAssessments(
+    patient_information: pl.LazyFrame, timeseries_vitals: pl.LazyFrame
+) -> pl.LazyFrame:
+    print("reprodiCLIF - Patient Assessments")
+    return (
+        timeseries_vitals.select(
+            "Global ICU Stay ID",
+            "Time Relative to Admission (seconds)",
+            "Glasgow Coma Score total",
+            "Glasgow Coma Score eye opening",
+            "Glasgow Coma Score motor",
+            "Glasgow Coma Score verbal",
+            "Richmond agitation-sedation scale",
+            "Numeric Pain Rating Scale",
+        )
+        # Rename columns
+        .rename(
+            {
+                "Glasgow Coma Score total": "gcs_total",
+                "Glasgow Coma Score eye opening": "gcs_eye",
+                "Glasgow Coma Score motor": "gcs_motor",
+                "Glasgow Coma Score verbal": "gcs_verbal",
+                "Richmond agitation-sedation scale": "RASS",
+                "Numeric Pain Rating Scale": "NRS",
+            }
+        )
+        .join(
+            _ID_ICUOFFSET(patient_information),
+            on="Global ICU Stay ID",
+            how="left",
+        )
+        .unpivot(
+            on=[
+                "gcs_total",
+                "gcs_eye",
+                "gcs_motor",
+                "gcs_verbal",
+                "RASS",
+                "NRS",
+            ],
+            index=[
+                "Global Hospital Stay ID",
+                "Time Relative to Admission (seconds)",
+                "icu_admission_dttm",
+            ],
+            variable_name="assessment_category",
+            value_name="numerical_value",
+        )
+        .with_columns(
+            # hospitalization_id
+            # ID variable for each patient encounter.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # recorded_dttm
+            # Date and time when the vital is recorded. Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col("Time Relative to Admission (seconds)")
+                )
+            ).alias("recorded_dttm"),
+            # assessment_name
+            # This field is used to store the description of the flowsheet measure from the source data. This field is not used for analysis.
+            # (N/A)
+            # assessment_category
+            # Maps assessment_name to a standardized list of patient assessments.
+            pl.col("assessment_category"),
+            # assessment_group
+            # Broader Assessment Group. This groups the assessments into categories such as 'Sedation', 'Neurologic', 'Pain', etc.
+            pl.col("assessment_category")
+            .replace(
+                {
+                    "gcs_total": "Neurological",
+                    "gcs_eye": "Neurological",
+                    "gcs_motor": "Neurological",
+                    "gcs_verbal": "Neurological",
+                    "RASS": "Sedation/Agitation",
+                    "NRS": "Pain",
+                }
+            )
+            .alias("assessment_group"),
+            # numerical_value
+            # Numerical Assessment Result. The numerical result or score from the assessment component.
+            pl.col("numerical_value"),
+            # categorical_value
+            # Categorical Assessment Result. The categorical outcome from the assessment component.
+            # (N/A)
+            # text_value
+            # Textual Assessment Result. The textual explanation or notes from the assessment component.
+            # (N/A)
+        )
+        .drop_nulls("numerical_value")
+        .unique()
+        .pipe(_add_missing_fields, "Vitals")
+    )
+
+
+# endregion
+
+
+# region OTHER
+def other():
+    """
+    add missing tables to the output directory
+    """
+    tables = (
+        pl.read_csv("mappings/CLIF_DataDictionary.csv")
+        .select("cdmTableName")
+        .unique(maintain_order=True)
+        .to_series()
+        .to_list()
+    )
+
+    print(os.listdir(OUTPATH))
+
+    for table in tables:
+        if ((table + ".parquet") not in os.listdir(OUTPATH)) and (
+            (table.upper() + ".parquet") not in os.listdir(OUTPATH)
+        ):
+            print(f"reprodiCLIF - adding missing table: {table}")
+            pl.DataFrame().pipe(_add_missing_fields, table).write_parquet(
+                OUTPATH + "clif_" + table.lower() + ".parquet"
+            )
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input",
+        type=str,
+        help="Path to the reprodICU data",
+        default="../reprodICU_files/",
+    )
+    parser.add_argument(
+        "--vocab",
+        type=str,
+        help="Path to the OMOP vocabulary files",
+        default="../OMOP_vocabulary/",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Path to the output directory",
+        default="../reprodICU_files_CLIF/",
+    )
+    args = parser.parse_args()
+
+    # Initialize paths
+    paths = reprodICUPaths()
+    omop = Vocabulary(paths)
+    os.makedirs(args.output, exist_ok=True)
+
+    # Load the reprodICU data
+    INPATH = args.input
+    OUTPATH = args.output
+    VOCABPATH = args.vocab
+    diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
+    medications = pl.scan_parquet(INPATH + "medications.parquet")
+    patient_information = pl.scan_parquet(
+        INPATH + "patient_information.parquet"
+    )
+    procedures = pl.scan_parquet(INPATH + "procedures.parquet")
+    timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
+    timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
+    timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
+
+    #########
+    # LOADING
+    # Load the OMOP vocabulary files
+    CONCEPT = pl.scan_parquet(VOCABPATH + "CONCEPT.parquet")
+    CONCEPT_RELATIONSHIP = pl.scan_parquet(
+        VOCABPATH + "CONCEPT_RELATIONSHIP.parquet"
+    )
+    CONCEPT_ANCESTOR = pl.scan_parquet(VOCABPATH + "CONCEPT_ANCESTOR.parquet")
+    CONCEPT_CLASS = pl.scan_parquet(VOCABPATH + "CONCEPT_CLASS.parquet")
+    CONCEPT_SYNONYM = pl.scan_parquet(VOCABPATH + "CONCEPT_SYNONYM.parquet")
+    DOMAIN = pl.scan_parquet(VOCABPATH + "DOMAIN.parquet")
+    RELATIONSHIP = pl.scan_parquet(VOCABPATH + "RELATIONSHIP.parquet")
+    VOCABULARY = pl.scan_parquet(VOCABPATH + "VOCABULARY.parquet")
+
+    ############
+    # CONVERTING
+    # Convert the reprodICU structure to the Common Longitudinal ICU Format (CLIF) structure
+    # General inpatient tables
+    (
+        Patient(patient_information)
+        .collect()
+        .write_parquet(OUTPATH + "clif_patient.parquet")
+    )
+    (
+        Hospitalization(patient_information)
+        .collect()
+        .write_parquet(OUTPATH + "clif_hospitalization.parquet")
+    )
+    (
+        ADT(patient_information)
+        .collect()
+        .write_parquet(OUTPATH + "clif_adt.parquet")
+    )
+    (
+        Vitals(patient_information, timeseries_vitals)
+        .collect(streaming=True)
+        .write_parquet(OUTPATH + "clif_vitals.parquet")
+    )
+    # (
+    #     Labs(patient_information, timeseries_labs)
+    #     .collect()
+    #     .write_parquet(OUTPATH + "clif_labs.parquet")
+    # )
+    (
+        PatientAssessments(patient_information, timeseries_vitals)
+        .collect(streaming=True)
+        .write_parquet(OUTPATH + "clif_patient_assessments.parquet")
+    )
+
+    ####################
+    # ADD MISSING TABLES
+    # other()
+
+    print("reprodiCLIF - done")
