@@ -111,6 +111,47 @@ class Vocabulary(OMOPPaths):
             )
         )
 
+    def get_concept_names_from_codes(
+        self, concept_codes: list[str], return_dict: bool = True
+    ) -> dict:
+        """
+        Get concept_names from concept_codes.
+
+        Args:
+            concept_codes (list[str]): List of concept_codes.
+            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+
+        Returns:
+            dict: Dictionary with concept_code as key and concept_name as value.
+        """
+        concept_names = (
+            self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
+            .select("concept_code", "concept_name")
+            .collect()
+        )
+
+        if not return_dict:
+            return concept_names
+
+        return dict(
+            zip(
+                concept_names["concept_code"].to_numpy(),
+                concept_names["concept_name"].to_numpy(),
+            )
+        )
+
+    def get_concept_name_from_code(self, concept_code: str) -> str:
+        """
+        Get concept_name from concept_code.
+
+        Args:
+            concept_code (str): Concept code.
+
+        Returns:
+            str: Concept name.
+        """
+        return self.get_concept_names_from_codes([concept_code])[concept_code]
+
     def get_ingredient(
         self, drug_concept_ids: list[int], return_dict: bool = True
     ) -> dict:
@@ -210,7 +251,7 @@ class Vocabulary(OMOPPaths):
         lab_property_id_to_property_name = self.get_concept_names_from_ids(
             lab_id_to_property_id.values()
         )
-        
+
         # print("LAB_IT_TO_NAMES", lab_id_to_names)
         # print("LAB_ID_TO_PROPERTY_ID", lab_id_to_property_id)
         # print("LAB_PROPERTY_ID_TO_PROPERTY_NAME", lab_property_id_to_property_name)
