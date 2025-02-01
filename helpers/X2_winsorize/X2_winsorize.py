@@ -18,7 +18,7 @@ class X2_Winsorizer:
         pass
 
     def winsorize_quantiles(
-        data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
+        self, data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -44,7 +44,7 @@ class X2_Winsorizer:
         )
 
     def winsorize_clip_lower_0_quantiles(
-        data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
+        self, data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -67,7 +67,7 @@ class X2_Winsorizer:
         )
 
     def winsorize_clip_lower_0(
-        data: pl.LazyFrame, columns: list, **kwargs
+        self, data: pl.LazyFrame, columns: list, **kwargs
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -87,7 +87,12 @@ class X2_Winsorizer:
         )
 
     def winsorize_clip_multiple(
-        data: pl.LazyFrame, columns: list, lower: list, upper: list, **kwargs
+        self,
+        data: pl.LazyFrame,
+        columns: list,
+        lower: list,
+        upper: list,
+        **kwargs,
     ) -> pl.LazyFrame:
         """
         Winsorize the data to remove outliers.
@@ -109,6 +114,7 @@ class X2_Winsorizer:
         )
 
     def winsorize_structs(
+        self,
         data: pl.LazyFrame,
         winsorization_columns: list,
         winsorization_methods: list,

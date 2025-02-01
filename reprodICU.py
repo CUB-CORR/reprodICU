@@ -7,34 +7,32 @@
 
 import argparse
 import os
+
 import polars as pl
 import yaml
 
 # import harmonizing functions
-from helpers.C_harmonize.C_harmonize_patient_information import (
-    PatientInformationHarmonizer,
-)
 from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
+from helpers.C_harmonize.C_harmonize_patient_information import \
+    PatientInformationHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
+# import overview functions
+from helpers.helper_overview import Overview
+
 # import extra functions for cleaning, winsorizing, etc.
-from helpers.X1_clean.X1_clean_patient_information import (
-    PatientInformationCleaner,
-)
+from helpers.X1_clean.X1_clean_patient_information import \
+    PatientInformationCleaner
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
 from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
 from helpers.X3_impute.X3_impute_medications import MedicationImputer
-from helpers.X3_impute.X3_impute_patient_information import (
-    PatientInformationImputer,
-)
+from helpers.X3_impute.X3_impute_patient_information import \
+    PatientInformationImputer
 from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 from helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
-
-# import overview functions
-from helpers.helper_overview import Overview
 
 
 def load_mapping(path: str) -> dict:
@@ -157,6 +155,9 @@ if __name__ == "__main__":
     else:
         TIMESERIES = args.timeseries
 
+    # Setup the winsorizer
+    winsorizer = X2_Winsorizer()
+
     # Run harmonizing
     # region info
     if "patient_information" in TABLES:
@@ -177,10 +178,11 @@ if __name__ == "__main__":
             .pipe(patient_info_cleaner.clean_patient_information)
             .pipe(patient_info_cleaner.add_good_patient_information)
             .pipe(
-                X2_Winsorizer.winsorize_clip_lower_0_quantiles,
+                winsorizer.winsorize_clip_lower_0_quantiles,
                 columns=columns_to_winsorize,
                 alpha=0.9995,
             )
+            .pipe(patient_info_imputer.impute_patient_IDs)
             .collect()
             .write_parquet(save_path + "patient_information.parquet")
         )
@@ -276,7 +278,7 @@ if __name__ == "__main__":
             )
             (
                 labs.pipe(
-                    X2_Winsorizer.winsorize_structs,
+                    winsorizer.winsorize_structs,
                     winsorization_columns=columns_to_winsorize,
                     winsorization_methods=[
                         "quantiles" for _ in columns_to_winsorize
@@ -349,7 +351,6 @@ if __name__ == "__main__":
             # Impute the patient information
             (
                 pl.scan_parquet(save_path + "patient_information.parquet")
-                .pipe(patient_info_imputer.impute_patient_IDs)
                 .pipe(
                     patient_info_imputer.impute_patient_anthropometrics,
                     n_neighbors=5,
