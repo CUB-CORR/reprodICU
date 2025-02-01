@@ -12,11 +12,26 @@
 # Importing necessary libraries
 import argparse
 import os
+import sys
 
 import polars as pl
+import yaml
+from helpers.helper_OMOP import Vocabulary
 
 SECONDS_IN_DAY = 86400
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
+
+
+def load_mapping(path: str) -> dict:
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+class reprodICUPaths:
+    def __init__(self) -> None:
+        config = load_mapping("configs/paths_local.yaml")
+        for key, value in config.items():
+            setattr(self, key, str(value))
 
 
 # region helpers
@@ -78,8 +93,6 @@ def _ID(
     ).select(
         "Global ICU Stay ID",
         "person_id",
-        "Pre-ICU Length of Stay (days)",
-        "Admission Time (24h)",
         *additional_columns,
     )
 
@@ -101,7 +114,10 @@ def drug_exposure(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - drug_exposure")
 
-    ID = _ID(patient_information)
+    ID = _ID(
+        patient_information,
+        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+    )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Drug",
         pl.col("concept_class_id") == "Ingredient",
@@ -248,7 +264,14 @@ def condition_occurrence(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - condition_occurrence")
 
-    ID = _ID(patient_information, ["Source Dataset"])
+    ID = _ID(
+        patient_information,
+        [
+            "Pre-ICU Length of Stay (days)",
+            "Admission Time (24h)",
+            "Source Dataset",
+        ],
+    )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Condition",
     ).select("concept_id", "concept_name")
@@ -398,7 +421,10 @@ def device_exposure(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - device_exposure")
 
-    ID = _ID(patient_information)
+    ID = _ID(
+        patient_information,
+        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+    )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Device",
         pl.col("concept_class_id") == "Physical Object",
@@ -624,7 +650,10 @@ def measurement(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - measurement")
 
-    ID = _ID(patient_information)
+    ID = _ID(
+        patient_information,
+        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+    )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Measurement",
         pl.col("concept_class_id") == "Clinical Observation",
@@ -638,13 +667,13 @@ def measurement(
             data.join(ID, on="Global ICU Stay ID", how="left")
             .drop("Global ICU Stay ID")
             .with_columns(
-                ##################
-                # MEASUREMENT_DATE
+                ######################
+                # MEASUREMENT_DATETIME
                 # Create the measurement_datetime column with the datetime of the measurement
                 (
                     pl.datetime(
                         year=2000, month=1, day=1, hour=0, minute=0, second=0
-                    )
+                    ).dt.combine(pl.col("Admission Time (24h)"))
                     + pl.duration(
                         seconds=pl.col("Time Relative to Admission (seconds)")
                     )
@@ -654,85 +683,55 @@ def measurement(
                     )
                 ).alias("measurement_datetime")
             )
-            .drop("Time Relative to Admission (seconds)")
-            .with_columns(
-                ######################
-                # MEASUREMENT_DATETIME
-                # Create the measurement_date column with the date of the measurement
-                pl.col("measurement_datetime")
-                .dt.date()
-                .alias("measurement_date"),
+            .drop(
+                "Pre-ICU Length of Stay (days)",
+                "Admission Time (24h)",
+                "Time Relative to Admission (seconds)",
             )
         )
-
-    def _destruct(data: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        de-struct the data, i.e. unpack the structs into separate columns
-        makes a list unpivoted dataframes, returns them concatenated
-        """
-
-        def _unshuffle(col):
-            """
-            column with name NAME and fields STRUCT.value, STRUCT.source and STRUCT.method
-            to columns with NAME + STRUCT.source + STRUCT.method and field STRUCT.value
-            """
-            return pl.struct(
-                pl.col(col)
-                .struct.with_fields(
-                    pl.field("value").alias("value_as_number"),
-                    pl.concat_str(
-                        col,
-                        pl.lit(" in "),
-                        pl.field("source"),
-                        pl.lit(" by "),
-                        pl.field("method"),
-                    )
-                    .str.replace(" in  by ", " by ")
-                    .str.replace(" by $", "")
-                    .alias("variable_name"),
-                )
-                .struct.field("value_as_number", "variable_name")
-            ).alias(col)
-
-        cols = data.collect_schema().names()
-        dtyp = data.collect_schema().dtypes()
-
-        destructed_ = []
-        struct_cols = [
-            col for col, dtype in zip(cols, dtyp) if type(dtype) is pl.Struct
-        ]
-
-        for col in struct_cols:
-            destructed_.append(
-                data.select(
-                    "person_id",
-                    "measurement_date",
-                    "measurement_datetime",
-                    _unshuffle(col),
-                )
-                .unnest(col)
-                .drop_nulls("value_as_number")
-                .select(
-                    "person_id",
-                    "measurement_date",
-                    "measurement_datetime",
-                    "variable_name",
-                    "value_as_number",
-                )
-            )
-
-        print("reprOMOPIZE - measurement - de-structing done")
-
-        return pl.concat(destructed_, how="vertical")
 
     def _unpivot(data: pl.LazyFrame) -> pl.LazyFrame:
         """
         unpivot the data
         """
+
         return data.unpivot(
-            index=["person_id", "measurement_date", "measurement_datetime"],
+            index=["person_id", "measurement_datetime"],
             variable_name="variable_name",
             value_name="value_as_number",
+        )
+
+    def _destruct_after_unpivot(data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        de-struct the data after the unpivot operation
+        """
+        print("reprOMOPIZE - measurement - de-structing after unpivot")
+
+        LOINC_code_list = (
+            data.select("value_as_number")
+            .unnest("value_as_number")
+            .select("LOINC")
+            .unique()
+            .drop_nulls()
+            .collect(streaming=True)
+            .to_series()
+            .to_list()
+        )
+        LOINC_code_frame = omop.get_concept_names_from_codes(
+            LOINC_code_list, return_dict=False
+        ).lazy()
+
+        return (
+            data.unnest("value_as_number")
+            .rename({"value": "value_as_number", "LOINC": "variable_code"})
+            .drop("system", "method", "time")
+            .join(
+                LOINC_code_frame,
+                left_on="variable_code",
+                right_on="concept_code",
+            )
+            .drop("variable_code")
+            .rename({"concept_name": "variable_name"})
         )
 
     def _conceptualize(data: pl.LazyFrame) -> pl.LazyFrame:
@@ -759,12 +758,27 @@ def measurement(
     return (
         pl.concat(
             [
-                timeseries_vitals.pipe(_make_datetime).pipe(_unpivot),
-                timeseries_labs.pipe(_make_datetime).pipe(_destruct),
+                timeseries_vitals.drop("Heart rate rhythm")
+                .pipe(_make_datetime)
+                .pipe(_unpivot)
+                .cast({"value_as_number": float}),
+                # timeseries_resp.pipe(_make_datetime).pipe(_unpivot),
+                timeseries_labs.pipe(_make_datetime)
+                .pipe(_unpivot)
+                .pipe(_destruct_after_unpivot)
+                .cast({"value_as_number": float}),
             ],
             how="vertical",
         )
         .pipe(_conceptualize)
+        .with_columns(
+            ######################
+            # MEASUREMENT_DATE
+            # Create the measurement_date column with the date of the measurement
+            pl.col("measurement_datetime")
+            .dt.date()
+            .alias("measurement_date"),
+        )
         .with_row_index("measurement_id")
         .pipe(_add_missing_fields, "measurement")
     )
@@ -862,7 +876,10 @@ def procedure_occurrence(
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - procedure_occurrence")
 
-    ID = _ID(patient_information)
+    ID = _ID(
+        patient_information,
+        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+    )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Device",
         pl.col("concept_class_id") == "Physical Object",
@@ -1118,10 +1135,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Load the reprodICU data
+    # Initialize paths
+    paths = reprodICUPaths()
+    omop = Vocabulary(paths)
+
     INPATH = args.input
     OUTPATH = args.output
     VOCABPATH = args.vocab
+    os.makedirs(args.output, exist_ok=True)
+
+    # Load the reprodICU data
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
     medications = pl.scan_parquet(INPATH + "medications.parquet")
     patient_information = pl.scan_parquet(
