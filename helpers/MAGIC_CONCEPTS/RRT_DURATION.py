@@ -45,9 +45,9 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
         # region eICU
         # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
+        eicu_extractor = EICUExtractor(self.paths, DEMO=False)
         eicu_RENAL_REPLACEMENT_THERAPY_DURATION = (
-            EICUExtractor(self.paths, self.datasets)
-            .extract_treatments(verbose=False)
+            eicu_extractor.extract_treatments(verbose=False)
             .rename(
                 {
                     self.column_names[

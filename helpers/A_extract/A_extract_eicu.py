@@ -1510,8 +1510,13 @@ class EICUExtractor(EICUPaths):
         if verbose:
             print("eICU    - Extracting procedures...")
 
+        return self._extract_treatments_helper(pl.scan_csv(self.treatment_path))
+
+    def _extract_treatments_helper(
+        self, treatment: pl.LazyFrame
+    ) -> pl.LazyFrame:
         treatment = (
-            pl.scan_csv(self.treatment_path)
+            treatment
             # Select columns of interest
             .select(
                 "patientunitstayid",
@@ -1654,6 +1659,23 @@ class EICUExtractor(EICUPaths):
                 self.procedure_start_col,
             )
             .agg(pl.all().sort_by(self.procedure_end_col).last())
+            .with_columns(
+                pl.when(
+                    pl.col(self.procedure_discharge_col),
+                    pl.col(self.procedure_end_col).eq(
+                        pl.col(self.procedure_start_col)
+                    ),
+                )
+                .then(None)
+                .otherwise(pl.col(self.procedure_end_col))
+                .alias(self.procedure_end_col)
+            )
+            .filter(
+                pl.col(self.procedure_end_col).gt(
+                    pl.col(self.procedure_start_col)
+                )
+                | pl.col(self.procedure_end_col).is_null()
+            )
             .unique()
         )
 
