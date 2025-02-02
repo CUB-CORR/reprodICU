@@ -26,6 +26,7 @@ from helpers.helper_overview import Overview
 # import extra functions for cleaning, winsorizing, etc.
 from helpers.X1_clean.X1_clean_patient_information import \
     PatientInformationCleaner
+from helpers.X1_clean.X1_improve_timeseries import IntakeOutputImprover
 from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
 from helpers.X3_impute.X3_impute_diagnoses import DiagnosesImputer
 from helpers.X3_impute.X3_impute_medications import MedicationImputer
@@ -261,6 +262,15 @@ if __name__ == "__main__":
         # inout -> timeseries_intakeoutput.parquet
         timeseries_harmonizer.harmonize_split_timeseries(
             timeseries=TIMESERIES, save_to_default=True
+        )
+
+        print("reprodICU - Improving intake/output data...")
+        timeseries_inout_improver = IntakeOutputImprover(paths=paths)
+        (
+            pl.scan_parquet(save_path + "timeseries_intakeoutput.parquet")
+            .pipe(timeseries_inout_improver.improve_intake_output)
+            .collect()
+            .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
         )
 
         if "labs" in TIMESERIES:
