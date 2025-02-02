@@ -46,7 +46,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         SECONDS_IN_1D = 24 * 60 * 60
 
         # region eICU
-        # print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
+        print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
         eicu_extractor = EICUExtractor(self.paths, DEMO=False)
         eicu_RESPIRATORY_CARE = pl.scan_csv(
             self.eicu_paths.respiratoryCare_path,
@@ -420,21 +420,17 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        eicu_VENTILATION_DURATION = (
-            pl.concat(
-                [
-                    eicu_RESPIRATORY_CARE.collect(streaming=True),
-                    eicu_RESPIRATORY_CHARTING.collect(streaming=True),
-                    eicu_TREATMENT.collect(streaming=True),
-                ],
-                how="vertical_relaxed",
-            )
-            .lazy()
-            .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
-        )
+        eicu_VENTILATION_DURATION = pl.concat(
+            [
+                eicu_RESPIRATORY_CARE.collect(streaming=True),
+                eicu_RESPIRATORY_CHARTING.collect(streaming=True),
+                eicu_TREATMENT.collect(streaming=True),
+            ],
+            how="vertical_relaxed",
+        ).pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
 
         # region HiRID
-        # print("MAGIC_CONCEPTS: Ventilation Duration - HiRID")
+        print("MAGIC_CONCEPTS: Ventilation Duration - HiRID")
 
         # get admission times for HiRID
         hirid_ADMISSIONTIMES = (
@@ -565,11 +561,11 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
 
         hirid_VENTILATION_DURATION = hirid_VENTILATION_DURATION.pipe(
             self._add_global_id_stay_id, "hirid-", "patientid"
-        )
+        ).collect(streaming=True)
         # endregion
 
         # region MIMIC-III
-        # print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC3")
+        print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC3")
         # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_classification.sql
         # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_durations.sql
 
@@ -852,12 +848,13 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
+            .collect(streaming=True)
         )
 
         # endregion
 
         # region MIMIC-IV
-        # print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC4")
+        print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC4")
         # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/ventilator_setting.sql
         # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/oxygen_delivery.sql
         # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/treatment/ventilation.sql
@@ -1211,12 +1208,14 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
+            .collect(streaming=True)
         )
 
         # endregion
 
         # region SICdb
-        # print("MAGIC_CONCEPTS: Ventilation Duration - SICdb")
+        print("MAGIC_CONCEPTS: Ventilation Duration - SICdb")
+
         sicdb_ADMISSION_TIMES = pl.scan_csv(self.sicdb_paths.cases_path).select(
             "CaseID", "ICUOffset"
         )
@@ -1242,12 +1241,13 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .drop("DataID", "Offset", "OffsetEnd")
             .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
+            .collect(streaming=True)
         )
 
         # endregion
 
         # region UMCdb
-        # print("MAGIC_CONCEPTS: Ventilation Duration - UMCdb")
+        print("MAGIC_CONCEPTS: Ventilation Duration - UMCdb")
 
         umcdb_ADMISSION_TIMES = pl.scan_parquet(
             self.umcdb_paths.admissions_path
@@ -1303,6 +1303,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 }
             )
             .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
+            .collect(streaming=True)
         )
         # endregion
 
@@ -1323,12 +1324,12 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         VENTILATION_DURATION = (
             pl.concat(
                 [
-                    eicu_VENTILATION_DURATION.collect(),
-                    hirid_VENTILATION_DURATION.collect(streaming=True),
-                    mimic3_VENTILATION_DURATION.collect(streaming=True),
-                    mimic4_VENTILATION_DURATION.collect(streaming=True),
-                    sicdb_VENTILATION_DURATION.collect(),
-                    umcdb_VENTILATION_DURATION.collect(streaming=True),
+                    eicu_VENTILATION_DURATION,
+                    hirid_VENTILATION_DURATION,
+                    mimic3_VENTILATION_DURATION,
+                    mimic4_VENTILATION_DURATION,
+                    sicdb_VENTILATION_DURATION,
+                    umcdb_VENTILATION_DURATION,
                 ],
                 how="diagonal_relaxed",
             )
@@ -1337,7 +1338,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     pl.col("Ventilation End Relative to Admission (seconds)")
                 ),
                 pl.col("Ventilation End Relative to Admission (seconds)").gt(
-                    - self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    -self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
                     * (SECONDS_IN_1D)
                 ),
             )
@@ -1348,13 +1349,13 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
             )
-            .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
+            # .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
             .group_by(
                 "Global ICU Stay ID",
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
             )
-            .agg(pl.max("Ventilation Type"))
+            .agg(pl.col("Ventilation Type").max())
             .with_columns(
                 (
                     pl.col("Ventilation End Relative to Admission (seconds)")
@@ -1373,7 +1374,9 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         return VENTILATION_DURATION
 
     # region helpers
-    def _add_global_id_stay_id(self, data, source_dataset, stay_id_col):
+    def _add_global_id_stay_id(
+        self, data, source_dataset, stay_id_col
+    ) -> pl.DataFrame:
         return data.with_columns(
             # add global ICU stay ID
             pl.concat_str([pl.lit(source_dataset), pl.col(stay_id_col)]).alias(
