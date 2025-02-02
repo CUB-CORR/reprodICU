@@ -706,7 +706,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 pl.max("SelfExtubated"),
             )
         )
-        print(mimic3_CHARTEVENTS_VENTILATION.collect_schema())
         mimic3_PROCEDUREEVENTS_MV_VENTILATION = (
             pl.scan_csv(self.mimic3_paths.procedureevents_mv_path)
             .select("ICUSTAY_ID", "STARTTIME", "ITEMID")
@@ -727,7 +726,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .drop("ITEMID")
         )
-        print(mimic3_PROCEDUREEVENTS_MV_VENTILATION.collect_schema())
         mimic3_VENTILATION_EVENTS = (
             pl.concat(
                 [
@@ -801,7 +799,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .drop("INTIME", "STARTTIME", "ENDTIME", "VentNum")
         )
-        print(mimic3_VENTILATION_EVENTS.collect_schema())
 
         mimic3_VENTILATION_PROCEDURES = (
             pl.scan_csv(self.mimic3_paths.procedureevents_mv_path)
