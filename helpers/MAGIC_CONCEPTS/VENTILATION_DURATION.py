@@ -1340,7 +1340,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     pl.col("Ventilation End Relative to Admission (seconds)")
                 ),
                 pl.col("Ventilation End Relative to Admission (seconds)").gt(
-                    self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    - self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
                     * (SECONDS_IN_1D)
                 ),
             )
