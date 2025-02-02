@@ -9,6 +9,7 @@ import os
 import polars as pl
 
 from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from helpers.A_extract.A_extract_eicu import EICUExtractor
 
 
 class VENTILATION_DURATION(MAGIC_CONCEPTS):
@@ -24,26 +25,75 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
 
         Returns a DataFrame with the following columns:
         - ICU stay ID
-        - ventilation type "Ventilation Type"
-          (one of "tracheostomy", "invasive ventilation", "non-invasive ventilation", "other")
-        - ventilation start "Ventilation Start Relative to Admission (seconds)"
-        - ventilation end "Ventilation End Relative to Admission (seconds)"
-        - ventilation duration "Ventilation Duration (hours)"
+        - Ventilation Type, one of
+            - tracheostomy
+            - invasive ventilation
+            - non-invasive ventilation
+            - weaning
+            - other
+            - unknown
+        - Ventilation Start Relative to Admission (seconds)
+        - Ventilation End Relative to Admission (seconds)
+        - Ventilation Duration (hours)
 
         :return: DataFrame
         :rtype: pl.DataFrame
         """
 
+        MAX_VENTILATION_PAUSE_HOURS = 8
+
+        SECONDS_IN_1H = 60 * 60
+        SECONDS_IN_1D = 24 * 60 * 60
+
         # region eICU
         # print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
-        eicu_VENTILATION_DURATION = (
-            pl.scan_csv(self.eicu_paths.respiratoryCare_path)
-            # ventstartoffset and ventendoffset seem not include full ventilation duration
+        eicu_extractor = EICUExtractor(self.paths, DEMO=False)
+        eicu_RESPIRATORY_CARE = pl.scan_csv(
+            self.eicu_paths.respiratoryCare_path,
+            null_values=[
+                "",
+                # see https://github.com/MIT-LCP/eicu-code/issues/49 for why 0 is NULL
+                "0",
+            ],
+        ).cast(
+            {
+                "ventstartoffset": int,
+                "ventendoffset": int,
+                "priorventstartoffset": int,
+                "priorventendoffset": int,
+            }
+        )
+        eicu_RESPIRATORY_CARE_VENT = eicu_RESPIRATORY_CARE.filter(
+            # can't set prior end before the time
+            pl.col("ventendoffset").le(pl.col("respcarestatusoffset"))
+        ).select(
+            "patientunitstayid",
+            "airwaytype",
+            "ventstartoffset",
+            "ventendoffset",
+        )
+        eicu_RESPIRATORY_CARE_PRIOR = (
+            eicu_RESPIRATORY_CARE.filter(
+                # can't set prior end before the time
+                pl.col("priorventendoffset").le(pl.col("respcarestatusoffset"))
+            )
             .select(
                 "patientunitstayid",
                 "airwaytype",
                 "priorventstartoffset",
                 "priorventendoffset",
+            )
+            .rename(
+                {
+                    "priorventstartoffset": "ventstartoffset",
+                    "priorventendoffset": "ventendoffset",
+                }
+            )
+        )
+        eicu_RESPIRATORY_CARE = (
+            pl.concat(
+                [eicu_RESPIRATORY_CARE_VENT, eicu_RESPIRATORY_CARE_PRIOR],
+                how="vertical",
             )
             .with_columns(
                 pl.col("airwaytype")
@@ -55,30 +105,333 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 )
                 .alias("Ventilation Type"),
                 # reltimes in eICU are in minutes
-                (pl.col("priorventstartoffset") * 60).alias(
+                (pl.col("ventstartoffset") * 60).alias(
                     "Ventilation Start Relative to Admission (seconds)"
                 ),
-                (pl.col("priorventendoffset") * 60).alias(
+                (pl.col("ventendoffset") * 60).alias(
                     "Ventilation End Relative to Admission (seconds)"
                 ),
             )
-            .drop("priorventstartoffset", "priorventendoffset")
+            .select(
+                "patientunitstayid",
+                "Ventilation Type",
+                "Ventilation Start Relative to Admission (seconds)",
+                "Ventilation End Relative to Admission (seconds)",
+            )
+        )
+
+        # based on https://github.com/nus-mornin-lab/oxygenation_kc/blob/master/data-extraction/eICU/eicu_oxygen_therapy.sql
+        eicu_RESPIRATORY_CHARTING = (
+            pl.scan_csv(self.eicu_paths.respiratoryCharting_path)
+            .select(
+                "patientunitstayid",
+                "respchartoffset",
+                "respcharttypecat",
+                "respchartvaluelabel",
+                "respchartvalue",
+            )
             .with_columns(
-                # add duration
-                pl.duration(
-                    seconds=(
-                        pl.col(
-                            "Ventilation End Relative to Admission (seconds)"
-                        )
-                        - pl.col(
-                            "Ventilation Start Relative to Admission (seconds)"
-                        )
+                # oxygen device from respchart
+                pl.when(
+                    pl.col("respchartvaluelabel")
+                    .str.to_lowercase()
+                    .is_in(
+                        [
+                            "o2 device",
+                            "respiratory device",
+                            "ventilator type",
+                            "oxygen delivery method",
+                        ]
                     )
                 )
-                .truediv(pl.duration(hours=1))
-                .alias("Ventilation Duration (hours)")
+                .then(pl.col("respchartvalue").str.to_lowercase())
+                .otherwise(pl.col("respchartvaluelabel").str.to_lowercase())
+                .alias("string")
             )
-        ).pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+            .with_columns(
+                pl.when(
+                    pl.col("string").is_in(
+                        [
+                            "plateau pressure",
+                            "postion at lip",
+                            "position at lip",
+                            "pressure control",
+                        ]
+                    )
+                    | pl.col("string").str.contains_any(
+                        # fmt: off
+                        [
+                            "set vt", "sputum", "rsbi", "tube", "ett",
+                            "endotracheal", "tracheal suctioning",
+                            "tracheostomy", "reintubation",
+                            "assist controlled", "volume controlled",
+                            "pressure controlled", "trach collar"
+                        ]
+                        # fmt: on
+                    )
+                )
+                .then(4)
+                .when(
+                    pl.col("string").is_in(["bi-pap", "ambubag"])
+                    | pl.col("string").str.contains_any(
+                        # fmt: off
+                        [
+                            "ipap", "niv", "epap", "mask leak",
+                            "volume assured", "non-invasive ventilation",
+                            "cpap"
+                        ]
+                        # fmt: on
+                    )
+                )
+                .then(3)
+                .when(
+                    pl.col("string").is_in(
+                        # fmt: off
+                        [
+                            "flowtrigger", "peep", "tv/kg ibw",
+                            "mean airway pressure", "peak insp. pressure",
+                            "exhaled mv", "exhaled tv (machine)",
+                            "exhaled tv (patient)", "flow sensitivity",
+                            "peak flow", "f total", "pressure to trigger ps",
+                            "adult con setting set rr", "adult con setting set vt",
+                            "vti", "exhaled vt", "adult con alarms hi press alarm",
+                            "mve", "respiratory phase", "inspiratory pressure, set",
+                            "a1: high exhaled vt",
+                            "set fraction of inspired oxygen (fio2)",
+                            "insp flow (l/min)", "adult con setting spont exp vt",
+                            "spont tv", "pulse ox results vt",
+                            "vt spontaneous (ml)", "peak pressure", "ltv1200",
+                            "tc"
+                        ]
+                        # fmt: on
+                    )
+                    | (
+                        pl.col("string").str.contains("vent")
+                        & pl.col("string").str.contains("hyperventilat").not_()
+                    )
+                    | pl.col("string").str.contains_any(
+                        # fmt: off
+                        [
+                            "tidal", "flow rate", "minute volume",
+                            "leak", "pressure support", "peep",
+                            "tidal volume"
+                        ]
+                        # fmt: on
+                    )
+                )
+                .then(2)
+                .when(
+                    pl.col("string").is_in(
+                        # fmt: off
+                        [
+                            "t-piece", "blow-by", "oxyhood", "nc",
+                            "oxymizer", "hfnc", "oximizer", "high flow",
+                            "oxymask", "nch", "hi flow", "hiflow", "hhfnc",
+                            "nasal canula", "face tent", "high flow mask",
+                            "aerosol mask", "venturi mask", "cool aerosol mask",
+                            "simple mask", "face mask"
+                        ]
+                        # fmt: on
+                    )
+                    | pl.col("string").str.contains_any(
+                        # fmt: off
+                        [
+                            "nasal cannula", "non-rebreather",
+                            "nasal mask", "face tent"
+                        ]
+                        # fmt: on
+                    )
+                )
+                .then(1)
+                .when(
+                    pl.col("string").is_in(
+                        # fmt: off
+                        [
+                            "pressure support", "rr spont", "ps",
+                            "insp cycle off (%)", "trach mask/collar"
+                        ]
+                        # fmt: on
+                    )
+                    | pl.col("string").str.contains_any(
+                        ["spontaneous", "oxygen therapy"]
+                    )
+                )
+                .then(0)
+                .when(pl.col("string").is_in(["lpm o2"]))
+                .then(-1)
+                # fraction of inspired oxygen (fiO2) outside of [.2, .22] and [20, 22] indicates oxygen therapy
+                .when(pl.col("string").is_in(["fio2", "fio2 (%)"]))
+                .then(
+                    pl.when(
+                        pl.col("respchartvalue")
+                        .cast(float, strict=False)
+                        .is_between(0.22, 1, closed="right")
+                    )
+                    .then(-1)
+                    .when(
+                        pl.col("respchartvalue")
+                        .cast(float, strict=False)
+                        .gt(22)
+                    )
+                    .then(-1)
+                    .otherwise(0)
+                )
+                .otherwise(None)
+                .alias("oxygen_therapy_type"),
+            )
+            # if oxygen_therapy_type is NULL, then the record does not correspond with oxygen therapy
+            .filter(pl.col("oxygen_therapy_type").is_not_null())
+            # ensure charttime is unique
+            .group_by("patientunitstayid", "respchartoffset")
+            .agg(pl.max("oxygen_therapy_type"))
+            .with_columns(
+                # this carries over the previous charttime which had an oxygen therapy event
+                pl.col("respchartoffset")
+                .shift(1)
+                .over("patientunitstayid")
+                .sort_by("respchartoffset")
+                .alias("respchartoffset_lag"),
+            )
+            # If the time since the last oxygen therapy event is more than MAX_VENTILATION_PAUSE_HOURS hours,
+            # we consider that ventilation had ended in between.
+            # That is, the next ventilation record corresponds to a new ventilation session.
+            # MAX_VENTILATION_PAUSE_HOURS is set to 24 hours in the original code.
+            .with_columns(
+                pl.when(
+                    pl.col("respchartoffset")
+                    .sub(pl.col("respchartoffset_lag"))
+                    .gt(pl.duration(hours=MAX_VENTILATION_PAUSE_HOURS))
+                )
+                .then(1)
+                .when(pl.col("respchartoffset_lag").is_null())
+                .then(None)
+                .otherwise(0)
+                .alias("newvent"),
+            )
+            # create a cumulative sum of the instances of new ventilation
+            # this results in a monotonic integer assigned to each instance of ventilation
+            .with_columns(
+                pl.sum("newvent")
+                .over("patientunitstayid")
+                .sort_by("respchartoffset")
+                .alias("ventnum")
+            )
+            # now we convert CHARTTIME of ventilator settings into durations
+            # create the durations for each oxygen therapy instance
+            # we only keep the first oxygen therapy instance
+            .group_by("patientunitstayid", "ventnum")
+            .agg(
+                pl.min("respchartoffset").alias("vent_start"),
+                pl.max("respchartoffset").alias("vent_end"),
+                pl.max("oxygen_therapy_type"),
+            )
+            .with_columns(
+                pl.col("oxygen_therapy_type")
+                .replace_strict(
+                    {
+                        4: "invasive ventilation",
+                        3: "non-invasive ventilation",
+                        2: "unknown",
+                    },
+                    default=None,
+                )
+                .alias("Ventilation Type"),
+                # reltimes in eICU are in minutes
+                (pl.col("vent_start") * 60).alias(
+                    "Ventilation Start Relative to Admission (seconds)"
+                ),
+                (pl.col("vent_end") * 60).alias(
+                    "Ventilation End Relative to Admission (seconds)"
+                ),
+            )
+            .filter(pl.col("oxygen_therapy_type").is_not_null())
+            .select(
+                "patientunitstayid",
+                "Ventilation Type",
+                "Ventilation Start Relative to Admission (seconds)",
+                "Ventilation End Relative to Admission (seconds)",
+            )
+        )
+
+        eicu_TREATMENT = (
+            pl.scan_csv(self.eicu_paths.treatment_path)
+            .with_columns(
+                pl.when(
+                    pl.col("treatmentstring").str.starts_with(
+                        "pulmonary|ventilation and oxygenation|"
+                    )
+                    | pl.col("treatmentstring").str.starts_with(
+                        "surgery|pulmonary therapies|"
+                    )
+                    | pl.col("treatmentstring").str.starts_with(
+                        "toxicology|drug overdose|"
+                    )
+                )
+                .then(
+                    pl.when(
+                        pl.col("treatmentstring").str.contains_any(
+                            ["CPAP/PEEP therapy", "non-invasive ventilation"]
+                        )
+                    )
+                    .then(pl.lit("non-invasive ventilation"))
+                    .when(
+                        pl.col("treatmentstring").str.contains_any(
+                            ["mechanical ventilation", "ventilator weaning"]
+                        )
+                    )
+                    .then(pl.lit("invasive ventilation"))
+                    .when(
+                        pl.col("treatmentstring").str.contains(
+                            "ventilator weaning"
+                        )
+                    )
+                    .then(pl.lit("weaning"))
+                )
+                .alias("treatmentstring"),
+            )
+            .pipe(eicu_extractor._extract_treatments_helper)
+            .rename(
+                {
+                    self.column_names[
+                        "procedure_start_col"
+                    ]: "Ventilation Start Relative to Admission (seconds)",
+                    self.column_names[
+                        "procedure_end_col"
+                    ]: "Ventilation End Relative to Admission (seconds)",
+                    self.column_names[
+                        "procedure_description_col"
+                    ]: "Ventilation Type",
+                }
+            )
+            .filter(
+                pl.col("Ventilation Type").is_in(
+                    [
+                        "invasive ventilation",
+                        "non-invasive ventilation",
+                        "weaning",
+                    ]
+                )
+            )
+            .select(
+                pl.col("ICU Stay ID").alias("patientunitstayid"),
+                "Ventilation Type",
+                "Ventilation Start Relative to Admission (seconds)",
+                "Ventilation End Relative to Admission (seconds)",
+            )
+        )
+
+        eicu_VENTILATION_DURATION = (
+            pl.concat(
+                [
+                    eicu_RESPIRATORY_CARE.collect(streaming=True),
+                    eicu_RESPIRATORY_CHARTING.collect(streaming=True),
+                    eicu_TREATMENT.collect(streaming=True),
+                ],
+                how="vertical_relaxed",
+            )
+            .lazy()
+            .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+        )
 
         # region HiRID
         # print("MAGIC_CONCEPTS: Ventilation Duration - HiRID")
@@ -200,19 +553,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     .shift(-1)
                     .over("patientid")
                     .alias("Ventilation End Relative to Admission (seconds)")
-                )
-                .with_columns(
-                    (
-                        (
-                            pl.col(
-                                "Ventilation End Relative to Admission (seconds)"
-                            )
-                            - pl.col(
-                                "Ventilation Start Relative to Admission (seconds)"
-                            )
-                        )
-                        / (60 * 60)
-                    ).alias("Ventilation Duration (hours)")
                 )
                 .drop_nulls("Ventilation End Relative to Admission (seconds)")
                 .filter(pl.col("Ventilator Mode") == "active")
@@ -406,13 +746,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             # if this is a mechanical ventilation event, we calculate the time since the last event
             .with_columns(
-                pl.when(pl.col("MechVent") == 1)
-                .then(
-                    (pl.col("CHARTTIME") - pl.col("CHARTTIME_LAG")).truediv(
-                        pl.duration(hours=1)
-                    )
-                )
-                .alias("Ventilation Duration (hours)"),
                 pl.col("Extubated")
                 .shift(1)
                 .over(
@@ -433,7 +766,10 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 .then(1)
                 .when(
                     pl.col("CHARTTIME")
-                    > pl.col("CHARTTIME_LAG").add(pl.duration(hours=8))
+                    > pl.col("CHARTTIME_LAG").add(
+                        # is 8 hours in original code
+                        pl.duration(hours=MAX_VENTILATION_PAUSE_HOURS)
+                    )
                 )
                 .then(1)
                 .otherwise(0)
@@ -461,9 +797,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 (pl.col("ENDTIME") - pl.col("INTIME"))
                 .truediv(pl.duration(seconds=1))
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                (pl.col("ENDTIME") - pl.col("STARTTIME"))
-                .truediv(pl.duration(hours=1))
-                .alias("Ventilation Duration (hours)"),
                 pl.lit("invasive ventilation").alias("Ventilation Type"),
             )
             .drop("INTIME", "STARTTIME", "ENDTIME", "VentNum")
@@ -507,9 +840,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 (pl.col("ENDTIME") - pl.col("INTIME"))
                 .truediv(pl.duration(seconds=1))
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                (pl.col("ENDTIME") - pl.col("STARTTIME"))
-                .truediv(pl.duration(hours=1))
-                .alias("Ventilation Duration (hours)"),
             )
             .filter(pl.col("STARTTIME").ne(pl.col("ENDTIME")))
             .drop("INTIME", "STARTTIME", "ENDTIME", "ITEMID")
@@ -784,7 +1114,8 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 .then(1)
                 .when(
                     (pl.col("charttime") - pl.col("charttime_lag")).gt(
-                        pl.duration(hours=14)
+                        # is 14 hours in original code
+                        pl.duration(hours=MAX_VENTILATION_PAUSE_HOURS)
                     )
                 )
                 .then(1)
@@ -808,7 +1139,8 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 pl.when(
                     pl.col("charttime_lead").is_null()
                     | (pl.col("charttime") - pl.col("charttime_lag")).gt(
-                        pl.duration(hours=14)
+                        # is 14 hours in original code
+                        pl.duration(hours=MAX_VENTILATION_PAUSE_HOURS)
                     )
                 )
                 .then(pl.col("charttime"))
@@ -826,9 +1158,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 (pl.col("endtime") - pl.col("intime"))
                 .truediv(pl.duration(seconds=1))
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                (pl.col("endtime") - pl.col("starttime"))
-                .truediv(pl.duration(hours=1))
-                .alias("Ventilation Duration (hours)"),
                 pl.col("ventilation_status").alias("Ventilation Type"),
             )
             .drop("intime", "starttime", "endtime", "vent_seq")
@@ -871,9 +1200,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 (pl.col("endtime") - pl.col("intime"))
                 .truediv(pl.duration(seconds=1))
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                (pl.col("endtime") - pl.col("starttime"))
-                .truediv(pl.duration(hours=1))
-                .alias("Ventilation Duration (hours)"),
             )
             .drop("intime", "starttime", "endtime", "itemid")
         )
@@ -915,9 +1241,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 ),
                 pl.col("OffsetEnd").alias(
                     "Ventilation End Relative to Admission (seconds)"
-                ),
-                ((pl.col("OffsetEnd") - pl.col("Offset")) / (60 * 60)).alias(
-                    "Ventilation Duration (hours)"
                 ),
             )
             .drop("DataID", "Offset", "OffsetEnd")
@@ -972,9 +1295,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 )
                 .dt.total_seconds()
                 .alias("stop"),
-                pl.duration(milliseconds=pl.col("stop") - pl.col("start"))
-                .truediv(pl.duration(hours=1))
-                .alias("duration"),
             )
             .drop("admittedat")
             # Rename columns
@@ -983,7 +1303,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                     "item": "Ventilation Type",
                     "start": "Ventilation Start Relative to Admission (seconds)",
                     "stop": "Ventilation End Relative to Admission (seconds)",
-                    "duration": "Ventilation Duration (hours)",
                 }
             )
             .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
@@ -993,28 +1312,63 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         # region ALL
         print("MAGIC_CONCEPTS: Ventilation Duration")
 
+        VENTILATION_TYPE_ENUM = pl.Enum(
+            [
+                "tracheostomy",
+                "invasive ventilation",
+                "non-invasive ventilation",
+                "weaning",
+                "supplemental oxygen",
+                "unknown",
+                "other",
+            ]
+        )
         VENTILATION_DURATION = (
             pl.concat(
                 [
-                    eicu_VENTILATION_DURATION.collect(streaming=True),
+                    eicu_VENTILATION_DURATION.collect(),
                     hirid_VENTILATION_DURATION.collect(streaming=True),
                     mimic3_VENTILATION_DURATION.collect(streaming=True),
                     mimic4_VENTILATION_DURATION.collect(streaming=True),
-                    sicdb_VENTILATION_DURATION.collect(streaming=True),
+                    sicdb_VENTILATION_DURATION.collect(),
                     umcdb_VENTILATION_DURATION.collect(streaming=True),
                 ],
                 how="diagonal_relaxed",
             )
-            .filter(pl.col("Ventilation Duration (hours)").ne_missing(0))
+            .filter(
+                pl.col("Ventilation Start Relative to Admission (seconds)").lt(
+                    pl.col("Ventilation End Relative to Admission (seconds)")
+                ),
+                pl.col("Ventilation End Relative to Admission (seconds)").gt(
+                    self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    * (SECONDS_IN_1D)
+                ),
+            )
             .unique()
             .select(
                 "Global ICU Stay ID",
                 "Ventilation Type",
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
-                "Ventilation Duration (hours)",
             )
-            .with_columns(pl.col("Ventilation Duration (hours)").round(2))
+            .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
+            .group_by(
+                "Global ICU Stay ID",
+                "Ventilation Start Relative to Admission (seconds)",
+                "Ventilation End Relative to Admission (seconds)",
+            )
+            .agg(pl.max("Ventilation Type"))
+            .with_columns(
+                (
+                    pl.col("Ventilation End Relative to Admission (seconds)")
+                    - pl.col(
+                        "Ventilation Start Relative to Admission (seconds)"
+                    )
+                )
+                .truediv(SECONDS_IN_1H)
+                .round(2)
+                .alias("Ventilation Duration (hours)")
+            )
             .lazy()
         )
         # endregion
