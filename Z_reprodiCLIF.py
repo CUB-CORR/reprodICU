@@ -17,6 +17,7 @@ import sys
 import polars as pl
 import yaml
 from helpers.helper_OMOP import Vocabulary
+from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
 SECONDS_IN_DAY = 86400
 DAYS_IN_YEAR = 365.25
@@ -601,6 +602,222 @@ def PatientAssessments(
 # endregion
 
 
+# region Admission Diagnosis
+# Record of all diagnoses associated with the hospitalization. Expect breaking
+# changes to this table as we seek to align it with existing diagnosis
+# ontologies.
+def AdmissionDiagnosis(
+    patient_information: pl.LazyFrame,
+    diagnoses_harmonizer: DiagnosesHarmonizer,
+) -> pl.LazyFrame:
+    print("reprodiCLIF - Admission Diagnosis")
+    return (
+        diagnoses_harmonizer.harmonize_diagnoses()
+        .join(
+            _ID_ICUOFFSET(patient_information),
+            on="Global Hospital Stay ID",
+            how="left",
+        )
+        .with_columns(
+            # patient_id
+            # Unique identifier for each patient.
+            pl.col("Global Person ID").alias("patient_id"),
+            # diagnostic_code
+            # numeric diagnosis code
+            pl.col("Diagnosis ICD Code").alias("diagnostic_code"),
+            # diagnostic_code_format
+            # description of the diagnostic code format
+            pl.col("Diagnosis ICD Code Version").alias(
+                "diagnostic_code_format"
+            ),
+            # start_dttm
+            # date time the diagnosis was recorded
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col(
+                        "Diagnosis Start Relative to Admission (seconds)"
+                    )
+                )
+            ).alias("start_dttm"),
+            # end_dttm
+            # date time the diagnosis was noted as resolved (if resolved)
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col(
+                        "Diagnosis End Relative to Admission (seconds)"
+                    )
+                )
+            ).alias("end_dttm"),
+        )
+        .drop_nulls("diagnostic_code")
+        .unique()
+        .pipe(_add_missing_fields, "AdmissionDiagnosis")
+    )
+
+
+# endregion
+
+
+# region Medication Admin Intermittent
+# This table has exactly the same schema as medication_admin_continuous
+# described below. The consortium decided to separate the medications that are
+# administered intermittently from the continuously administered medications.
+# However, the CDE for medication_category remains undefined for
+# medication_admin_intermittent.
+
+# endregion
+
+# region Medication Orders
+# This table records the ordering (not administration) of medications. The table
+# is in long form (one medication order per row) longitudinal table. Linkage to
+# the medication_admin_continuous and medication_admin_intermittent tables is
+# through the med_order_id field.
+
+# endregion
+
+
+#######################################
+# CRITICAL ILLNESS SPECIFIC TABLES
+#######################################
+
+# region Respiratory Support
+# The respiratory support table is a wider longitudinal table that captures
+# simultaneously recorded ventilator settings and observed ventilator parameters.
+# The table is designed to capture the most common respiratory support devices
+# and modes used in the ICU. It will be sparse for patients who are not on
+# mechanical ventilation.
+def RespiratorySupport(
+    patient_information: pl.LazyFrame, timeseries_resp: pl.LazyFrame
+) -> pl.LazyFrame:
+    print("reprodiCLIF - Respiratory Support")
+    return (
+        timeseries_resp.join(
+            _ID_ICUOFFSET(patient_information),
+            on="Global ICU Stay ID",
+            how="left",
+        )
+        .with_columns(
+            # hospitalization_id
+            # ID variable for each patient encounter.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # recorded_dttm
+            # Date and time when the device settings and/or measurement was recorded.
+            # Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col("Time Relative to Admission (seconds)")
+                )
+            ).alias("recorded_dttm"),
+            # device_name
+            # Includes raw string of the devices. Not used for analysis.
+            # (N/A)
+            # device_category
+            # Maps device_name to a standardized list of respiratory support device categories.
+            pl.col("Oxygen delivery system").alias("device_category"),
+            # vent_brand_name
+            # Ventilator model name when device_category is IMV or NIPPV.
+            # (N/A)
+            # mode_name
+            # Includes raw string of the modes.
+            pl.col("Ventilation mode Ventilator").alias("mode_name"),
+            # mode_category
+            # Maps mode_name to a standardized list of modes of mechanical ventilation.
+            # (N/A)
+            # tracheostomy
+            # Indicates if tracheostomy is present.
+            # (N/A)
+            # fio2_set
+            # Fraction of inspired oxygen set in decimals.
+            pl.col(
+                "Oxygen/Total gas setting [Volume Fraction] Ventilator"
+            ).alias("fio2_set"),
+            # lpm_set
+            # Liters per minute set.
+            pl.col("Oxygen gas flow Oxygen delivery system").alias("lpm_set"),
+            # tidal_volume_set
+            # Tidal volume set in mL.
+            pl.col("Tidal volume setting Ventilator").alias("tidal_volume_set"),
+            # resp_rate_set
+            # Respiratory rate set in bpm.
+            pl.col("Breath rate setting Ventilator").alias("resp_rate_set"),
+            # pressure_control_set
+            # Pressure control set in cmH2O.
+            # (N/A)
+            # pressure_support_set
+            # Pressure support set in cmH2O.
+            pl.col("Pressure support setting Ventilator").alias(
+                "pressure_support_set"
+            ),
+            # flow_rate_set
+            # Flow rate set.
+            # (N/A)
+            # peak_inspiratory_pressure_set
+            # Peak inspiratory pressure set in cmH2O.
+            # (N/A)
+            # inspiratory_time_set
+            # Inspiratory time set in seconds.
+            pl.col("Inspiratory time setting Ventilator").alias(
+                "inspiratory_time_set"
+            ),
+            # peep_set
+            # Positive-end-expiratory pressure set in cmH2O.
+            pl.col("Positive end expiratory pressure setting Ventilator").alias(
+                "peep_set"
+            ),
+            # tidal_volume_obs
+            # Observed tidal volume in mL.
+            pl.col("Tidal volume.spontaneous+mechanical --on ventilator").alias(
+                "tidal_volume_obs"
+            ),
+            # resp_rate_obs
+            # Observed respiratory rate in bpm.
+            pl.col(
+                "Breath rate spontaneous and mechanical --on ventilator"
+            ).alias("resp_rate_obs"),
+            # plateau_pressure_obs
+            # Observed plateau pressure in cmH2O.
+            pl.col(
+                "Pressure.plateau Respiratory system airway --on ventilator"
+            ).alias("plateau_pressure_obs"),
+            # peak_inspiratory_pressure_obs
+            # Observed peak inspiratory pressure in cmH2O.
+            pl.col(
+                "Pressure.max Respiratory system airway --on ventilator"
+            ).alias("peak_inspiratory_pressure_obs"),
+            # peep_obs
+            # Observed positive-end-expiratory pressure in cmH2O.
+            pl.col("PEEP Respiratory system").alias("peep_obs"),
+            # minute_vent_obs
+            # Observed minute ventilation in liters.
+            # (N/A)
+            # mean_airway_pressure_obs
+            # Observed mean airway pressure.
+            pl.col("Mean airway pressure").alias("mean_airway_pressure_obs"),
+        )
+        .unique()
+        .pipe(_add_missing_fields, "RespiratorySupport")
+    )
+
+
+# endregion
+
+# region Medication Admin Continuous
+# The medication admin continuous table is a long-form (one medication
+# administration record per) longitudinal table designed for continuous
+# infusions of common ICU medications such as vasopressors and sedation
+# (Boluses of these drugs should be recorded in med_admin_intermittent).
+# Note that it only reflects dose changes of the continuous medication and does
+# not have a specific “end_time” variable to indicate the medication being
+# stopped. The end of a continuous infusion should be recorded as a new row
+# with med_dose = 0 and an appropriate mar_action_name (e.g. “stopped” or
+# “paused”).
+
+# endregion
+
+
 # region OTHER
 def other():
     """
@@ -666,7 +883,21 @@ if __name__ == "__main__":
     procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
-    timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
+    timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
+
+    # Setup some helpers instead of using the generated files
+    diagnoses_harmonizer = DiagnosesHarmonizer(
+        paths,
+        datasets=[
+            "eICU",
+            "HiRID",
+            "MIMIC3",
+            "MIMIC4",
+            "NWICU",
+            "SICdb",
+            "UMCdb",
+        ],
+    )
 
     #########
     # LOADING
@@ -702,9 +933,9 @@ if __name__ == "__main__":
         .write_parquet(OUTPATH + "clif_adt.parquet")
     )
     (
-        Vitals(patient_information, timeseries_vitals)
-        .collect(streaming=True)
-        .write_parquet(OUTPATH + "clif_vitals.parquet")
+        Vitals(patient_information, timeseries_vitals).sink_parquet(
+            OUTPATH + "clif_vitals.parquet"
+        )
     )
     # (
     #     Labs(patient_information, timeseries_labs)
@@ -712,10 +943,22 @@ if __name__ == "__main__":
     #     .write_parquet(OUTPATH + "clif_labs.parquet")
     # )
     (
-        PatientAssessments(patient_information, timeseries_vitals)
-        .collect(streaming=True)
-        .write_parquet(OUTPATH + "clif_patient_assessments.parquet")
+        PatientAssessments(patient_information, timeseries_vitals).sink_parquet(
+            OUTPATH + "clif_patient_assessments.parquet"
+        )
     )
+    (
+        AdmissionDiagnosis(
+            patient_information, diagnoses_harmonizer
+        ).collect().write_parquet(OUTPATH + "clif_admission_diagnosis.parquet")
+    )
+    # # Medication Admin Intermittent
+    # # Medication Orders
+    (
+        RespiratorySupport(patient_information, timeseries_resp)
+        .sink_parquet(OUTPATH + "clif_respiratory_support.parquet")
+    )
+    # Medication Admin Continuous
 
     ####################
     # ADD MISSING TABLES
