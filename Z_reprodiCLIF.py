@@ -682,6 +682,7 @@ def AdmissionDiagnosis(
 # CRITICAL ILLNESS SPECIFIC TABLES
 #######################################
 
+
 # region Respiratory Support
 # The respiratory support table is a wider longitudinal table that captures
 # simultaneously recorded ventilator settings and observed ventilator parameters.
@@ -817,6 +818,92 @@ def RespiratorySupport(
 
 # endregion
 
+# region Position
+# The position table is a long form (one position per row) longitudinal table
+# that captures all documented position changes of the patient. The table is
+# designed for the explicit purpose of constructing the position_category CDE
+# and identifying patients in prone position.
+
+# endregion
+
+# region Dialysis
+# The dialysis table is a wider longitudinal table that captures the start and
+# stop times of dialysis sessions, the type of dialysis performed, and the
+# amount of dialysate flow and ultrafiltration.
+
+# endregion
+
+# region ECMO/MCS
+# The ECMO/MCS table is a wider longitudinal table that captures the start and
+# stop times of ECMO/MCS support, the type of device used, and the work rate of
+# the device.
+
+# endregion
+
+# region Intake/Output
+# The intake_output table is long form table that captures the times intake and
+# output events were recorded, the type of fluid administered or recorded as
+# “out”, and the amount of fluid.
+
+# endregion
+
+# region Therapy Details
+# The therapy_details table is a wide longitudinal table that captures the
+# details of therapy sessions. The table is designed to capture and categorize
+# the most common therapy elements used in the ICU.
+
+# endregion
+
+# region Microbiology Culture
+# The microbiology culture table is a wide longitudinal table that captures the
+# order and result times of microbiology culture tests, the type of fluid
+# collected, the component of the test, and the organism identified.
+
+# endregion
+
+# region Sensitivity
+# a.k.a. (Microbiology Susceptibility)
+# This table is used to store the susceptibility results of the organisms
+# identified in the Microbiology Culture table and may be renamed to
+# Microbiology_Susceptibility.
+
+# endregion
+
+# region Microbiology Nonculture
+# The microbiology non-culture table is a wide longitudinal table that captures
+# the order and result times of non-culture microbiology tests, the type of
+# fluid collected, the component of the test, and the result of the test.
+
+# endregion
+
+# region Procedures
+# A longitudinal record of each bedside ICU procedure performed on the patient
+# (e.g. central line placement, chest tube placement). Note that this table is
+# not intended to capture the full set of procedures performed on inpatients.
+
+# endregion
+
+# region Transfusion
+# This table provides detailed information about transfusion events linked to
+# specific hospitalizations.
+
+# endregion
+
+# region Code Status
+# This table provides a longitudinal record of changes in a patient’s code
+# status during their hospitalization. It tracks the timeline and
+# categorization of code status updates, facilitating the analysis of care
+# preferences and decisions.
+
+# endregion
+
+# region Invasive Hemodynamics
+# The invasive_hemodynamics table records invasive hemodynamic measurements
+# during a patient’s hospitalization. These measurements represent pressures
+# recorded via invasive monitoring and are expressed in millimeters of
+# mercury (mmHg).
+
+# endregion
 
 # region OTHER
 def other():
@@ -948,15 +1035,16 @@ if __name__ == "__main__":
         )
     )
     (
-        AdmissionDiagnosis(
-            patient_information, diagnoses_harmonizer
-        ).collect().write_parquet(OUTPATH + "clif_admission_diagnosis.parquet")
+        AdmissionDiagnosis(patient_information, diagnoses_harmonizer)
+        .collect()
+        .write_parquet(OUTPATH + "clif_admission_diagnosis.parquet")
     )
-    # # Medication Admin Intermittent
-    # # Medication Orders
+    # Medication Admin Intermittent
+    # Medication Orders
     (
-        RespiratorySupport(patient_information, timeseries_resp)
-        .sink_parquet(OUTPATH + "clif_respiratory_support.parquet")
+        RespiratorySupport(patient_information, timeseries_resp).sink_parquet(
+            OUTPATH + "clif_respiratory_support.parquet"
+        )
     )
     # Medication Admin Continuous
 
