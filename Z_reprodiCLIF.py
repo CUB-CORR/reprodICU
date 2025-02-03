@@ -889,11 +889,53 @@ def RespiratorySupport(
 
 # endregion
 
+
 # region Code Status
 # This table provides a longitudinal record of changes in a patient’s code
 # status during their hospitalization. It tracks the timeline and
 # categorization of code status updates, facilitating the analysis of care
 # preferences and decisions.
+def CodeStatus(
+    patient_information: pl.LazyFrame, CODE_STATUS: pl.LazyFrame
+) -> pl.LazyFrame:
+    return (
+        CODE_STATUS.join(
+            _ID_ICUOFFSET(patient_information),
+            on="Global Hospital Stay ID",
+            how="left",
+        )
+        .with_columns(
+            # hospitalization_id
+            # ID variable for each patient encounter.
+            pl.col("Global Hospital Stay ID").alias("hospitalization_id"),
+            # recorded_dttm
+            # Date and time when the code status was recorded. Datetime format should be %Y-%m-%d %H:%M:%S.
+            (
+                pl.col("icu_admission_dttm")
+                + pl.duration(
+                    seconds=pl.col("Time Relative to Admission (seconds)")
+                )
+            ).alias("recorded_dttm"),
+            # code_status_name
+            # Original code status string from the source data.
+            pl.col("CODE_STATUS").alias("code_status_name"),
+            # code_status_category
+            # Maps code_status_name to a standardized list of code status categories.
+            pl.col("CODE_STATUS")
+            .replace(
+                {
+                    "full code": "Full",
+                    "DNCPR": "DNR",
+                    "DNI": "DNI/DNR",
+                    "CMO": "Other",
+                }
+            )
+            .alias("code_status_category"),
+        )
+        .unique()
+        .pipe(_add_missing_fields, "CodeStatus")
+    )
+
 
 # endregion
 
@@ -904,6 +946,15 @@ def RespiratorySupport(
 # mercury (mmHg).
 
 # endregion
+
+# region Key ICU orders
+# The key_icu_orders table captures key orders related to physical therapy (PT)
+# and occupational therapy (OT) during ICU stays. It includes details about the
+# hospitalization, the timing of the order, the specific name of the order, its
+# category, and the status of the order (completed or sent).
+
+# endregion
+
 
 # region OTHER
 def other():
@@ -971,6 +1022,8 @@ if __name__ == "__main__":
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
+
+    CODE_STATUS = pl.scan_parquet(INPATH + "MAGIC_CONCEPTS/CODE_STATUS.parquet")
 
     # Setup some helpers instead of using the generated files
     diagnoses_harmonizer = DiagnosesHarmonizer(
@@ -1047,6 +1100,23 @@ if __name__ == "__main__":
         )
     )
     # Medication Admin Continuous
+    # Position
+    # Dialysis
+    # ECMO/MCS
+    # Intake/Output
+    # Therapy Details
+    # Microbiology Culture
+    # Sensitivity
+    # Microbiology Nonculture
+    # Procedures
+    # Transfusion
+    (
+        CodeStatus(patient_information, CODE_STATUS)
+        .collect()
+        .write_parquet(OUTPATH + "clif_code_status.parquet")
+    )
+    # Invasive Hemodynamics
+    # Key ICU orders
 
     ####################
     # ADD MISSING TABLES

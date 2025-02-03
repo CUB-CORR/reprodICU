@@ -71,12 +71,9 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             )
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+            .collect()
         )
 
-        # endregion
-
-        # region HiRID
-        # NOTE: No data available
         # endregion
 
         # region MIMIC-III
@@ -145,6 +142,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .drop("VALUE")
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
+            .collect(streaming=True)
         )
 
         # endregion
@@ -168,7 +166,13 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                     "DNR (do not resuscitate)",
                     "DNR / DNI",
                 ],
-                "CODE_STATUS": ["full code", "CMO", "DNI", "DNR", "DNR / DNI"],
+                "CODE_STATUS": [
+                    "full code",
+                    "CMO",
+                    "DNI",
+                    "DNR",
+                    "DNR / DNI",
+                ],
             }
         )
 
@@ -196,12 +200,9 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .drop("value")
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
+            .collect(streaming=True)
         )
 
-        # endregion
-
-        # region SICdb
-        # NOTE: No data available
         # endregion
 
         # region UMCdb
@@ -236,6 +237,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             )
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
+            .collect(streaming=True)
         )
 
         # endregion
@@ -249,12 +251,10 @@ class CODE_STATUS(MAGIC_CONCEPTS):
         CODE_STATUS = (
             pl.concat(
                 [
-                    eicu_CODE_STATUS.collect(),
-                    # hirid_CODE_STATUS,
-                    mimic3_CODE_STATUS.collect(),
-                    mimic4_CODE_STATUS.collect(),
-                    # sicdb_CODE_STATUS,
-                    umcdb_CODE_STATUS.collect(),
+                    eicu_CODE_STATUS,
+                    mimic3_CODE_STATUS,
+                    mimic4_CODE_STATUS,
+                    umcdb_CODE_STATUS,
                 ],
                 how="diagonal_relaxed",
             )
@@ -265,12 +265,23 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             )
             .lazy()
             .cast({"CODE_STATUS": CODE_STATUS_ENUM})
-            .sort("CODE_STATUS")
             .group_by(
                 self.column_names["global_icu_stay_id_col"],
                 "Time Relative to Admission (seconds)",
             )
-            .first()
+            .agg(
+                pl.col("CODE_STATUS")
+                .sort_by(pl.col("CODE_STATUS"))
+                .first()
+                .alias("CODE_STATUS")
+            )
+            # Remove duplicates
+            .filter(
+                pl.col("CODE_STATUS").ne_missing(
+                    pl.col("CODE_STATUS").shift(1).over("Global ICU Stay ID")
+                ),
+            )
+            .sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
         )
         # endregion
 
