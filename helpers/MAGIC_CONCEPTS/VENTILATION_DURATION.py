@@ -635,16 +635,18 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        mimic3_CHARTEVENTS_VENTILATION = (
+        # ventilation_classification.sql
+        mimic3_CHARTEVENTS_VENTILATION_CLASSIFICATION = (
             pl.scan_csv(
                 self.mimic3_paths.chartevents_path,
-                schema_overrides={"VALUE": pl.String},
+                schema_overrides={"VALUE": str},
             )
-            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE", "ERROR")
-            .filter(pl.col("ERROR").ne_missing(1))
-            .drop("ERROR")
-            # Filter for ventilation IDs
-            .filter(pl.col("ITEMID").is_in(mimic3_chartevents_all_ids))
+            .filter(
+                pl.col("ITEMID").is_in(mimic3_chartevents_all_ids),
+                pl.col("ERROR").ne_missing(1),
+                pl.col("VALUE").is_not_null(),
+            )
+            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE")
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 # case statement determining whether it is an instance of mech vent
@@ -702,7 +704,8 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 pl.max("SelfExtubated"),
             )
         )
-        mimic3_PROCEDUREEVENTS_MV_VENTILATION = (
+
+        mimic3_PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION = (
             pl.scan_csv(self.mimic3_paths.procedureevents_mv_path)
             .select("ICUSTAY_ID", "STARTTIME", "ITEMID")
             .rename({"STARTTIME": "CHARTTIME"})
@@ -722,14 +725,21 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .drop("ITEMID")
         )
+
+        # ventilation_durations.sql
         mimic3_VENTILATION_EVENTS = (
             pl.concat(
                 [
-                    mimic3_CHARTEVENTS_VENTILATION,
-                    mimic3_PROCEDUREEVENTS_MV_VENTILATION,
+                    mimic3_CHARTEVENTS_VENTILATION_CLASSIFICATION.collect(
+                        streaming=True
+                    ),
+                    mimic3_PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION.collect(
+                        streaming=True
+                    ),
                 ],
                 how="vertical",
             )
+            .lazy()
             .sort("ICUSTAY_ID", "CHARTTIME")
             .unique()
             .with_columns(
@@ -786,10 +796,10 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             .join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias("Ventilation Start Relative to Admission (seconds)"),
                 (pl.col("ENDTIME") - pl.col("INTIME"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias("Ventilation End Relative to Admission (seconds)"),
                 pl.lit("invasive ventilation").alias("Ventilation Type"),
             )
@@ -841,14 +851,13 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         mimic3_VENTILATION_DURATION = (
             pl.concat(
                 [
-                    mimic3_VENTILATION_EVENTS,
-                    mimic3_VENTILATION_PROCEDURES,
+                    mimic3_VENTILATION_EVENTS.collect(streaming=True),
+                    mimic3_VENTILATION_PROCEDURES.collect(streaming=True),
                 ],
                 how="diagonal_relaxed",
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
-            .collect(streaming=True)
         )
 
         # endregion
@@ -874,6 +883,11 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             223848,  # vent type
             224691,  # Flow Rate (L)
         ]
+        mimic4_o2_flow_chartevents_ids = [
+            223834, # o2 flow
+            227582, # bipap o2 flow
+            227287, # additional o2 flow
+        ]
         mimic4_o2_delivery_chartevents_ids = [
             226732,  # oxygen delivery device(s)
         ]
@@ -888,12 +902,103 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
         )
 
-        mimic4_CHARTEVENTS_VENTILATION = (
-            pl.scan_csv(
-                self.mimic4_paths.chartevents_path,
-                schema_overrides={"value": str},
+        # common chartevents scan
+        mimic4_chartevents = pl.scan_csv(
+            self.mimic4_paths.chartevents_path,
+            schema_overrides={"value": str},
+        ).filter(
+            pl.col("itemid").is_in(
+                mimic4_vent_setting_chartevents_ids
+                + mimic4_o2_flow_chartevents_ids
+                + mimic4_o2_delivery_chartevents_ids
             )
-            .select(
+        )
+
+        # oxygen_therapy.sql
+        mimic4_CHARTEVENTS_OXYGEN_FLOW = (
+            mimic4_chartevents.select(
+                "subject_id",
+                "stay_id",
+                "charttime",
+                "storetime",
+                "itemid",
+                "value",
+                "valuenum",
+            )
+            .sort("subject_id", "charttime")
+            .filter(pl.col("itemid").is_in(mimic4_o2_flow_chartevents_ids))
+            .with_columns(
+                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("storetime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                # merge o2 flows into a single row
+                pl.when(pl.col("itemid") == 226732)
+                .then(223834)
+                .otherwise(pl.col("itemid"))
+                .alias("itemid"),
+            )
+            .with_columns(
+                pl.int_range(pl.len())
+                .over("subject_id", "charttime", "itemid")
+                .sort_by("storetime")
+                .alias("rn"),
+            )
+        )
+        mimic4_CHARTEVENTS_OXYGEN_DELIVERY = (
+            mimic4_chartevents.select(
+                "subject_id",
+                "stay_id",
+                "charttime",
+                "storetime",
+                "itemid",
+                "value",
+            )
+            .sort("subject_id", "charttime")
+            .filter(pl.col("itemid").is_in(mimic4_o2_delivery_chartevents_ids))
+            .rename({"value": "o2_device"})
+            .with_columns(
+                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("storetime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .with_columns(
+                pl.int_range(pl.len())
+                .over("subject_id", "charttime", "itemid")
+                .sort_by("storetime")
+                .alias("rn"),
+            )
+        )
+        mimic4_OXYGEN_THERAPY = (
+            mimic4_CHARTEVENTS_OXYGEN_DELIVERY.join(
+                mimic4_CHARTEVENTS_OXYGEN_FLOW.filter(pl.col("rn") == 1),
+                on=["subject_id", "stay_id", "charttime", "itemid"],
+                how="outer",
+                coalesce=True,
+            )
+            .group_by("subject_id", "charttime")
+            .agg(
+                pl.max("stay_id"),
+                pl.when(pl.col("itemid") == 223834)
+                .then(pl.col("valuenum"))
+                .otherwise(None)
+                .max()
+                .alias("o2_flow"),
+                pl.when(pl.col("itemid") == 227287)
+                .then(pl.col("valuenum"))
+                .otherwise(None)
+                .max()
+                .alias("o2_flow_additional"),
+                # contrary to mimic-code template we only need the first o2_device
+                pl.when(pl.col("rn") == 1)
+                .then(pl.col("o2_device"))
+                .otherwise(None)
+                .max()
+                .alias("o2_device"),
+            )
+            .collect(streaming=True)
+        )
+
+        # ventilator_setting.sql
+        mimic4_VENTILATOR_SETTINGS = (
+            mimic4_chartevents.select(
                 "subject_id",
                 "stay_id",
                 "charttime",
@@ -901,12 +1006,9 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 "value",
                 "valuenum",
             )
-            .sort("subject_id", "charttime")
             .filter(
-                pl.col("itemid").is_in(
-                    mimic4_vent_setting_chartevents_ids
-                    + mimic4_o2_delivery_chartevents_ids
-                )
+                pl.col("itemid").is_in(mimic4_vent_setting_chartevents_ids),
+                pl.col("value").is_not_null(),
             )
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -931,17 +1033,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 )
                 .otherwise(pl.col("valuenum"))
                 .alias("valuenum"),
-                # select oxygen delivery device(s)
-                pl.when(pl.col("itemid") == 226732)
-                .then(pl.col("value"))
-                .otherwise(None)
-                .alias("o2_device"),
-            )
-            .with_columns(
-                pl.int_range(pl.len())
-                .over("subject_id", "charttime", "o2_device")
-                .sort_by("o2_device")
-                .alias("rn"),
             )
             .group_by("subject_id", "charttime")
             .agg(
@@ -1016,13 +1107,36 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .max()
                 .alias("ventilator_type"),
-                pl.when(pl.col("itemid") == 226732, pl.col("rn") == 1)
-                .then(pl.col("o2_device"))
-                .otherwise(None)
-                .max()
-                .alias("o2_device"),
             )
-            # ventilation.sql
+            .collect(streaming=True)
+        )
+
+        # ventilation.sql
+        mimic4_VENT_IDS = (
+            pl.concat(
+                [
+                    mimic4_OXYGEN_THERAPY.select("stay_id", "charttime"),
+                    mimic4_VENTILATOR_SETTINGS.select("stay_id", "charttime"),
+                ],
+                how="vertical",
+            )
+            .unique()
+            .lazy()
+        )
+
+        mimic4_CHARTEVENTS_VENTILATION = (
+            mimic4_VENT_IDS.join(
+                mimic4_OXYGEN_THERAPY.lazy(),
+                on=["stay_id", "charttime"],
+                how="left",
+                coalesce=True,
+            )
+            .join(
+                mimic4_VENTILATOR_SETTINGS.lazy(),
+                on=["stay_id", "charttime"],
+                how="left",
+                coalesce=True,
+            )
             .with_columns(
                 # case statement determining the type of intervention
                 # done in order of priority: trach > mech vent > NIV > o2 / hiflow
@@ -1074,11 +1188,22 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 )
                 .then(pl.lit("non-invasive ventilation"))
                 .when(
-                    (pl.col("o2_device") == "None")
-                    | pl.col("o2_device").is_null()
+                    pl.col("o2_device").is_in(
+                        # fmt: off
+                        [
+                            "High flow nasal cannula", # HFNC not extra
+                            "Non-rebreather", "Face tent", "Aerosol-cool",
+                            "Venti mask ", "Medium conc mask ",
+                            "Ultrasonic neb", "Vapomist", "Oxymizer",
+                            "High flow neb", "Nasal cannula",
+                        ]
+                        # fmt: on
+                    )
                 )
-                .then(None)
-                .otherwise(pl.lit("supplemental oxygen"))
+                .then(pl.lit("supplemental oxygen"))
+                .when(pl.col("o2_device") == "None")
+                .then(pl.lit("None"))
+                .otherwise(None)
                 .alias("ventilation_status"),
             )
             .with_columns(
@@ -1147,10 +1272,10 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             .join(mimic4_ADMISSIONTIMES, on="stay_id", how="left")
             .with_columns(
                 (pl.col("starttime") - pl.col("intime"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias("Ventilation Start Relative to Admission (seconds)"),
                 (pl.col("endtime") - pl.col("intime"))
-                .truediv(pl.duration(seconds=1))
+                .dt.total_seconds()
                 .alias("Ventilation End Relative to Admission (seconds)"),
                 pl.col("ventilation_status").alias("Ventilation Type"),
             )
@@ -1201,14 +1326,13 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         mimic4_VENTILATION_DURATION = (
             pl.concat(
                 [
-                    mimic4_CHARTEVENTS_VENTILATION,
-                    mimic4_PROCEDUREEVENTS_VENTILATION,
+                    mimic4_CHARTEVENTS_VENTILATION.collect(streaming=True),
+                    mimic4_PROCEDUREEVENTS_VENTILATION.collect(streaming=True),
                 ],
                 how="diagonal_relaxed",
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
-            .collect(streaming=True)
         )
 
         # endregion
@@ -1369,7 +1493,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             .lazy()
         )
-        # endregion
 
         return VENTILATION_DURATION
 
