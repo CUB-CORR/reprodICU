@@ -94,12 +94,12 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         VENTILATION_DURATION = (
             pl.concat(
                 [
-                    eicu_VENTILATION_DURATION,
-                    hirid_VENTILATION_DURATION,
-                    mimic3_VENTILATION_DURATION,
-                    mimic4_VENTILATION_DURATION,
-                    sicdb_VENTILATION_DURATION,
-                    umcdb_VENTILATION_DURATION,
+                    eicu_VENTILATION_DURATION.lazy(),
+                    hirid_VENTILATION_DURATION.lazy(),
+                    mimic3_VENTILATION_DURATION.lazy(),
+                    mimic4_VENTILATION_DURATION.lazy(),
+                    sicdb_VENTILATION_DURATION.lazy(),
+                    umcdb_VENTILATION_DURATION.lazy(),
                 ],
                 how="diagonal_relaxed",
             )

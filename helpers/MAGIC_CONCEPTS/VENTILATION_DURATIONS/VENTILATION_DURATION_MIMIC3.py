@@ -13,6 +13,19 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
     def VENTILATION_DURATION(self) -> pl.DataFrame:
         print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC3")
 
+        # get admission times for MIMIC-III
+        ADMISSIONTIMES = (
+            pl.scan_csv(self.mimic3_paths.icustays_path)
+            .select("ICUSTAY_ID", "INTIME")
+            .with_columns(
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .collect()
+        )
+
+        ##############################################################################
+        # ventilation_classification.sql
+        ##############################################################################
         # fmt: off
         # the below are settings used to indicate ventilation
         chartevents_ventilation_ids = [
@@ -78,18 +91,6 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             225477,  # Unplanned Extubation (non-patient initiated)
         ]
 
-        # get admission times for MIMIC-III
-        ADMISSIONTIMES = (
-            pl.scan_csv(self.mimic3_paths.icustays_path)
-            .select("ICUSTAY_ID", "INTIME")
-            .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
-        )
-
-        ##############################################################################
-        # ventilation_classification.sql
-        ##############################################################################
         # Identify the presence of a mechanical ventilation using settings
         CHARTEVENTS_VENTILATION_CLASSIFICATION = (
             pl.scan_csv(
@@ -156,6 +157,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.col("Extubated").max(),
                 pl.col("SelfExtubated").max(),
             )
+            .collect(streaming=True)
         )
 
         # add in the extubation flags from procedureevents_mv
@@ -178,6 +180,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .alias("SelfExtubated"),
             )
             .drop("ITEMID")
+            .collect(streaming=True)
         )
 
         ##############################################################################
@@ -198,29 +201,22 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
 
         # See the ventilation_classification.sql query for step 1 of the above.
         # This query has the logic for converting events into durations.
-        VENTILATION_EVENTS = (
+        VENTILATION_DURATIONS = (
             pl.concat(
                 [
-                    CHARTEVENTS_VENTILATION_CLASSIFICATION.collect(
-                        streaming=True
-                    ),
-                    PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION.collect(
-                        streaming=True
-                    ),
+                    CHARTEVENTS_VENTILATION_CLASSIFICATION,
+                    PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION,
                 ],
                 how="vertical",
             )
-            .lazy()
-            .sort("ICUSTAY_ID", "CHARTTIME")
             .unique()
             # this carries over the previous charttime which had a mechanical ventilation event
             .with_columns(
                 pl.when(pl.col("MechVent") == 1)
                 .then(
                     pl.col("CHARTTIME")
-                    .sort_by(pl.col("CHARTTIME"))
                     .shift(1)
-                    .over("ICUSTAY_ID", "MechVent")
+                    .over("ICUSTAY_ID", "MechVent", order_by="CHARTTIME")
                 )
                 .otherwise(None)
                 .alias("CHARTTIME_LAG"),
@@ -264,9 +260,8 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.when((pl.col("NewVent") == 1) | (pl.col("Extubated") == 1))
                 .then(
                     pl.col("NewVent")
-                    .sort_by("CHARTTIME")
                     .cum_sum()
-                    .over("ICUSTAY_ID")
+                    .over("ICUSTAY_ID", order_by="CHARTTIME")
                 )
                 .otherwise(None)
                 .alias("VentNum")
@@ -295,64 +290,16 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             )
         )
 
-        # VENTILATION_PROCEDURES = (
-        #     pl.scan_csv(self.mimic3_paths.procedureevents_mv_path)
-        #     .select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID")
-        #     .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
-        #     # Filter for ventilation IDs
-        #     .filter(
-        #         pl.col("ITEMID").is_in(
-        #             self.ricu_mappings.ricu_concept_dict["mech_vent"][
-        #                 "sources"
-        #             ]["miiv"][0]["ids"]
-        #         )
-        #     )
-        #     .cast({"ITEMID": str})
-        #     # replace ventilation concepts
-        #     .with_columns(
-        #         pl.col("ITEMID")
-        #         .replace(
-        #             {
-        #                 225792: "invasive ventilation",
-        #                 225794: "non-invasive ventilation",
-        #             }
-        #         )
-        #         .cast(str)
-        #         .alias("Ventilation Type")
-        #     )
-        #     # Make datetime relative to admission in seconds
-        #     .with_columns(
-        #         pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-        #         pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-        #     )
-        #     .with_columns(
-        #         (pl.col("STARTTIME") - pl.col("INTIME"))
-        #         .dt.total_seconds()
-        #         .alias("Ventilation Start Relative to Admission (seconds)"),
-        #         (pl.col("ENDTIME") - pl.col("INTIME"))
-        #         .dt.total_seconds()
-        #         .alias("Ventilation End Relative to Admission (seconds)"),
-        #     )
-        #     .filter(pl.col("STARTTIME").ne(pl.col("ENDTIME")))
-        #     .drop("INTIME", "STARTTIME", "ENDTIME", "ITEMID")
-        # )
-
         return (
-            pl.concat(
-                [
-                    VENTILATION_EVENTS.collect(streaming=True),
-                    # VENTILATION_PROCEDURES.collect(streaming=True),
-                ],
-                how="diagonal_relaxed",
-            )
-            .unique()
+            VENTILATION_DURATIONS.unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
+            .lazy()
         )
 
     # region helpers
     def _add_global_id_stay_id(
         self, data, source_dataset, stay_id_col
-    ) -> pl.DataFrame:
+    ) -> pl.LazyFrame:
         return data.with_columns(
             # add global ICU stay ID
             pl.concat_str([pl.lit(source_dataset), pl.col(stay_id_col)]).alias(
