@@ -145,7 +145,7 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
     # region helpers
     def _add_global_id_stay_id(
         self, data, source_dataset, stay_id_col
-    ) -> pl.DataFrame:
+    ) -> pl.LazyFrame:
         return data.with_columns(
             # add global ICU stay ID
             pl.concat_str([pl.lit(source_dataset), pl.col(stay_id_col)]).alias(

@@ -45,6 +45,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
+            .collect()
         )
 
         # common chartevents scan
@@ -223,8 +224,8 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         # Classify oxygen devices and ventilator modes into six clinical categories.
 
         # Categories include..
-        #  Invasive oxygen delivery types: 
-        #      Tracheostomy (with or without positive pressure ventilation) 
+        #  Invasive oxygen delivery types:
+        #      Tracheostomy (with or without positive pressure ventilation)
         #      InvasiveVent (positive pressure ventilation via endotracheal tube,
         #          could be oro/nasotracheal or tracheostomy)
         #  Non invasive oxygen delivery types (ref doi:10.1001/jama.2020.9524):
@@ -243,27 +244,23 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         #  stay_id = 30000117 has explicit documentation of extubation
 
         # first we collect all times which have relevant documentation
-        VENT_IDS = (
-            pl.concat(
-                [
-                    OXYGEN_DELIVERY.select("stay_id", "charttime"),
-                    VENTILATOR_SETTINGS.select("stay_id", "charttime"),
-                ],
-                how="vertical",
-            )
-            .unique()
-            .lazy()
-        )
+        VENT_IDS = pl.concat(
+            [
+                OXYGEN_DELIVERY.select("stay_id", "charttime"),
+                VENTILATOR_SETTINGS.select("stay_id", "charttime"),
+            ],
+            how="vertical",
+        ).unique()
 
-        CHARTEVENTS_VENTILATION = (
+        VENTILATION = (
             VENT_IDS.join(
-                OXYGEN_DELIVERY.lazy(),
+                OXYGEN_DELIVERY,
                 on=["stay_id", "charttime"],
                 how="left",
                 coalesce=True,
             )
             .join(
-                VENTILATOR_SETTINGS.lazy(),
+                VENTILATOR_SETTINGS,
                 on=["stay_id", "charttime"],
                 how="left",
                 coalesce=True,
@@ -340,21 +337,18 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .with_columns(
                 # carry over the previous charttime which had the same state
                 pl.col("charttime")
-                .sort_by("charttime")
                 .shift(1)
-                .over("stay_id", "ventilation_status")
+                .over("stay_id", "ventilation_status", order_by="charttime")
                 .alias("charttime_lag"),
                 # bring back the next charttime, regardless of the state
                 # this will be used as the end time for state transitions
                 pl.col("charttime")
-                .sort_by("charttime")
                 .shift(-1)
-                .over("stay_id")
+                .over("stay_id", order_by="charttime")
                 .alias("charttime_lead"),
                 pl.col("ventilation_status")
-                .sort_by("charttime")
                 .shift(1)
-                .over("stay_id")
+                .over("stay_id", order_by="charttime")
                 .alias("ventilation_status_lag"),
             )
             .with_columns(
@@ -385,9 +379,8 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 # this results in a monotonically increasing integer assigned
                 # to each instance of ventilation
                 pl.col("new_ventilation_event")
-                .sort_by("charttime")
                 .cum_sum()
-                .over("stay_id")
+                .over("stay_id", order_by="charttime")
                 .alias("vent_seq")
             )
             # create the durations for each ventilation instance
@@ -430,63 +423,16 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .drop("intime", "starttime", "endtime", "vent_seq")
         )
 
-        # PROCEDUREEVENTS_VENTILATION = (
-        #     pl.scan_csv(self.mimic4_paths.procedureevents_path)
-        #     .select("stay_id", "starttime", "endtime", "itemid")
-        #     .join(ADMISSIONTIMES, on="stay_id", how="left")
-        #     # Filter for ventilation IDs
-        #     .filter(
-        #         pl.col("itemid").is_in(
-        #             self.ricu_mappings.ricu_concept_dict["mech_vent"][
-        #                 "sources"
-        #             ]["miiv"][0]["ids"]
-        #         )
-        #     )
-        #     .cast({"itemid": str})
-        #     # replace ventilation concepts
-        #     .with_columns(
-        #         pl.col("itemid")
-        #         .replace(
-        #             {
-        #                 225792: "invasive ventilation",
-        #                 225794: "non-invasive ventilation",
-        #             }
-        #         )
-        #         .cast(str)
-        #         .alias("Ventilation Type")
-        #     )
-        #     # Make datetime relative to admission in seconds
-        #     .with_columns(
-        #         pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-        #         pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-        #     )
-        #     .with_columns(
-        #         (pl.col("starttime") - pl.col("intime"))
-        #         .dt.total_seconds()
-        #         .alias("Ventilation Start Relative to Admission (seconds)"),
-        #         (pl.col("endtime") - pl.col("intime"))
-        #         .dt.total_seconds()
-        #         .alias("Ventilation End Relative to Admission (seconds)"),
-        #     )
-        #     .drop("intime", "starttime", "endtime", "itemid")
-        # )
-
         return (
-            pl.concat(
-                [
-                    CHARTEVENTS_VENTILATION.collect(streaming=True),
-                    # PROCEDUREEVENTS_VENTILATION.collect(streaming=True),
-                ],
-                how="diagonal_relaxed",
-            )
-            .unique()
+            VENTILATION.unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
+            .lazy()
         )
 
     # region helpers
     def _add_global_id_stay_id(
         self, data, source_dataset, stay_id_col
-    ) -> pl.DataFrame:
+    ) -> pl.LazyFrame:
         return data.with_columns(
             # add global ICU stay ID
             pl.concat_str([pl.lit(source_dataset), pl.col(stay_id_col)]).alias(

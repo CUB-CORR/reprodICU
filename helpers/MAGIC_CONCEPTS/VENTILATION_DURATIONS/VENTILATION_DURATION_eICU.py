@@ -89,6 +89,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         #         "Ventilation Start Relative to Admission (seconds)",
         #         "Ventilation End Relative to Admission (seconds)",
         #     )
+        #     .collect(streaming=True)
         # )
 
         # # region treatment
@@ -163,6 +164,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         #         "Ventilation Start Relative to Admission (seconds)",
         #         "Ventilation End Relative to Admission (seconds)",
         #     )
+        #     .collect(streaming=True)
         # )
 
         # region NUS Mornin Lab
@@ -337,9 +339,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             .with_columns(
                 # this carries over the previous charttime which had an oxygen therapy event
                 pl.col("respchartoffset")
-                .sort_by("respchartoffset")
                 .shift(1)
-                .over("patientunitstayid")
+                .over("patientunitstayid", order_by="respchartoffset")
                 .alias("respchartoffset_lag"),
             )
             # If the time since the last oxygen therapy event is more than MAX_VENTILATION_PAUSE_HOURS hours,
@@ -362,9 +363,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             # this results in a monotonic integer assigned to each instance of ventilation
             .with_columns(
                 pl.col("newvent")
-                .sort_by("respchartoffset")
                 .cum_sum()
-                .over("patientunitstayid")
+                .over("patientunitstayid", order_by="respchartoffset")
                 .alias("ventnum")
             )
             # now we convert CHARTTIME of ventilator settings into durations
@@ -402,21 +402,27 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
             )
+            .collect(streaming=True)
         )
 
-        return pl.concat(
-            [
-                # RESPIRATORY_CARE.collect(streaming=True),
-                # TREATMENT.collect(streaming=True),
-                RESPIRATORY_CHARTING.collect(streaming=True),
-            ],
-            how="vertical_relaxed",
-        ).pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+        return (
+            pl.concat(
+                [
+                    # RESPIRATORY_CARE,
+                    # TREATMENT,
+                    RESPIRATORY_CHARTING,
+                ],
+                how="vertical_relaxed",
+            )
+            .unique()
+            .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+            .lazy()
+        )
 
     # region helpers
     def _add_global_id_stay_id(
         self, data, source_dataset, stay_id_col
-    ) -> pl.DataFrame:
+    ) -> pl.LazyFrame:
         return data.with_columns(
             # add global ICU stay ID
             pl.concat_str([pl.lit(source_dataset), pl.col(stay_id_col)]).alias(
