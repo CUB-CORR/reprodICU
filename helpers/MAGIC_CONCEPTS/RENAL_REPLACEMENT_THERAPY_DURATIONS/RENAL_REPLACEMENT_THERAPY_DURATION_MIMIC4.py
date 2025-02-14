@@ -5,9 +5,8 @@ from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
-    def __init__(self, paths, datasets, MAX_VENTILATION_PAUSE_HOURS):
+    def __init__(self, paths, datasets):
         super().__init__(paths, datasets)
-        self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
@@ -23,7 +22,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
 
         # region ITEMIDS
         # metavision itemids for both MIMIC-III and MIMIC-IV
-        mimic_chartevents_dialysis_present = [
+        chartevents_dialysis_present = [
             # checkboxes
             226118,  # Dialysis Catheter placed in outside facility
             227357,  # Dialysis Catheter Dressing Occlusive
@@ -76,7 +75,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             227640,  # Medication Added Units #2 (Peritoneal Dialysis)
             227753,  # Dialysis Catheter Placement Confirmed by X-ray
         ]
-        mimic_chartevents_dialysis_active = [
+        chartevents_dialysis_active = [
             226499,  # Hemodialysis Output
             224154,  # Dialysate Rate
             225183,  # Current Goal
@@ -92,8 +91,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             224153,  # Replacement Rate
             226457,  # Ultrafiltrate Output
         ]
-        mimic_chartevents_dialysis_mode = [227290]
-        mimic_chartevents_dialysis_mode_peritoneal = [
+        chartevents_dialysis_mode = [227290]
+        chartevents_dialysis_mode_peritoneal = [
             225810,  # Dwell Time (Peritoneal Dialysis)
             225806,  # Volume In (PD)
             225807,  # Volume Out (PD)
@@ -109,12 +108,12 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             227638,  # Medication Added #2 (Peritoneal Dialysis)
             227640,  # Medication Added Units #2 (Peritoneal Dialysis)
         ]
-        mimic_chartevents_dialysis_mode_ihd = [226499]
-        mimic_inputevents = [
+        chartevents_dialysis_mode_ihd = [226499]
+        inputevents = [
             227536,  # KCl (CRRT) Medications	inputevents_mv	Solution
             227525,  # Calcium Gluconate (CRRT)	Medications	inputevents_mv	Solutio
         ]
-        mimic_procedureevents = [
+        procedureevents = [
             225441,  # Hemodialysis
             225802,  # Dialysis - CRRT
             225803,  # Dialysis - CVVHD
@@ -138,38 +137,34 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             # Filter for renal replacement therapy IDs
             .filter(
                 pl.col("itemid").is_in(
-                    mimic_chartevents_dialysis_present
-                    + mimic_chartevents_dialysis_active
-                    + mimic_chartevents_dialysis_mode
-                    + mimic_chartevents_dialysis_mode_peritoneal
-                    + mimic_chartevents_dialysis_mode_ihd
+                    chartevents_dialysis_present
+                    + chartevents_dialysis_active
+                    + chartevents_dialysis_mode
+                    + chartevents_dialysis_mode_peritoneal
+                    + chartevents_dialysis_mode_ihd
                 )
             )
             # replace renal replacement therapy concepts
             .with_columns(
                 (
-                    pl.col("itemid").is_in(mimic_chartevents_dialysis_present)
+                    pl.col("itemid").is_in(chartevents_dialysis_present)
                     & pl.col("value").is_not_null()
                 )
                 # .fill_null(False)
                 .alias("dialysis_present"),
                 (
-                    pl.col("itemid").is_in(mimic_chartevents_dialysis_active)
+                    pl.col("itemid").is_in(chartevents_dialysis_active)
                     & pl.col("value").is_not_null()
                 )
                 # .fill_null(False)
                 .alias("dialysis_active"),
-                pl.when(pl.col("itemid").is_in(mimic_chartevents_dialysis_mode))
+                pl.when(pl.col("itemid").is_in(chartevents_dialysis_mode))
                 .then(pl.col("value"))
                 .when(
-                    pl.col("itemid").is_in(
-                        mimic_chartevents_dialysis_mode_peritoneal
-                    )
+                    pl.col("itemid").is_in(chartevents_dialysis_mode_peritoneal)
                 )
                 .then(pl.lit("Peritoneal dialysis"))
-                .when(
-                    pl.col("itemid").is_in(mimic_chartevents_dialysis_mode_ihd)
-                )
+                .when(pl.col("itemid").is_in(chartevents_dialysis_mode_ihd))
                 .then(pl.lit("IHD"))
                 .otherwise(None)
                 .alias("dialysis_type"),
@@ -187,7 +182,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             pl.scan_csv(self.mimic4_paths.inputevents_path)
             .select("stay_id", "starttime", "endtime", "itemid", "amount")
             .filter(
-                pl.col("itemid").is_in(mimic_inputevents),
+                pl.col("itemid").is_in(inputevents),
                 pl.col("amount") > 0,
             )
             .with_columns(
@@ -209,7 +204,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             pl.scan_csv(self.mimic4_paths.procedureevents_path)
             .select("stay_id", "starttime", "endtime", "itemid", "value")
             .filter(
-                pl.col("itemid").is_in(mimic_procedureevents),
+                pl.col("itemid").is_in(procedureevents),
                 pl.col("value").is_not_null(),
             )
             .with_columns(
@@ -257,9 +252,9 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                     RENAL_REPLACEMENT_THERAPY_CHARTEVENTS.filter(
                         pl.col("dialysis_present") == 1
                     ),
-                    RENAL_REPLACEMENT_THERAPY_RANGES.drop(
-                        "endtime"
-                    ).rename({"starttime": "charttime"}),
+                    RENAL_REPLACEMENT_THERAPY_RANGES.drop("endtime").rename(
+                        {"starttime": "charttime"}
+                    ),
                 ],
                 how="vertical",
             )
@@ -303,11 +298,12 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 ).alias("Renal Replacement Therapy Type"),
             )
             .drop("intime", "starttime", "endtime")
+            .collect(streaming=True)
         )
 
         return (
             RENAL_REPLACEMENT_THERAPY_DURATION.unique()
-            .pipe(self._add_global_id_stay_id, "MIMIC4-", "ICUSTAY_ID")
+            .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
             .lazy()
         )
 

@@ -3,9 +3,8 @@ from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
-    def __init__(self, paths, datasets, MAX_VENTILATION_PAUSE_HOURS):
+    def __init__(self, paths, datasets):
         super().__init__(paths, datasets)
-        self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - SICdb")
@@ -65,6 +64,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
                     "RRT End": "Renal Replacement Therapy End Relative to Admission (seconds)",
                 }
             )
+            .collect(streaming=True)
         )
 
         return (

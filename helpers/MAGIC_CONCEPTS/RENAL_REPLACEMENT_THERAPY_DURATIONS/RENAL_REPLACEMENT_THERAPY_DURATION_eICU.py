@@ -4,9 +4,8 @@ from helpers.A_extract.A_extract_eicu import EICUExtractor
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
-    def __init__(self, paths, datasets, MAX_VENTILATION_PAUSE_HOURS):
+    def __init__(self, paths, datasets):
         super().__init__(paths, datasets)
-        self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
@@ -49,6 +48,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("Renal Replacement Therapy Type"),
             )
+            .collect(streaming=True)
         )
         
         return RENAL_REPLACEMENT_THERAPY_DURATION.unique().pipe(
