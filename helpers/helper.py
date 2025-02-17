@@ -106,7 +106,7 @@ class GlobalHelpers:
             print(
                 "Dropping null, NaN and empty string values from DataFrame"
                 + f" in columns {subset_cols}"
-                if not subset_cols is None
+                if subset_cols is not None
                 else "" + "..."
             )
 
@@ -319,28 +319,28 @@ class GlobalVars(GlobalHelpers):
 
         self.relevant_vital_values = list(
             set(
-                self.load_mapping_keys(
+                self.load_mapping_true_keys(
                     self.relevant_values_path + "RELEVANT_VITALS.yaml"
                 )
             )
         )
         self.relevant_lab_values = list(
             set(
-                self.load_mapping_keys(
+                self.load_mapping_true_keys(
                     self.relevant_values_path + "RELEVANT_LABS.yaml"
                 )
             )
         )
         self.relevant_respiratory_values = list(
             set(
-                self.load_mapping_keys(
+                self.load_mapping_true_keys(
                     self.relevant_values_path + "RELEVANT_RESPIRATORY.yaml"
                 )
             )
         )
         self.relevant_intakeoutput_values = list(
             set(
-                self.load_mapping_keys(
+                self.load_mapping_true_keys(
                     self.relevant_values_path + "RELEVANT_INTAKEOUTPUT.yaml"
                 )
             )
