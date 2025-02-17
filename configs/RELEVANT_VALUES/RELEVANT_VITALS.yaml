@@ -1,0 +1,32 @@
+Temperature: True # 45771331 prev. temperature
+Heart rate: True # 4239408 prev. heart_rate
+Heart rate rhythm: True # 3022318
+Peripheral oxygen saturation: True # 4196147 prev. spO2
+Respiratory rate: True # 4313591 prev. respiratory_rate_measured
+Invasive systolic arterial pressure: True # 4353843 prev. invasive_systolic_blood_pressure
+Invasive diastolic arterial pressure: True # 4354253 prev. invasive_diastolic_blood_pressure
+Invasive mean arterial pressure: True # 4108290 prev. invasive_mean_blood_pressure
+Non-invasive systolic arterial pressure: True # 4354252 prev. noninvasive_systolic_blood_pressure
+Non-invasive diastolic arterial pressure: True # 4068414 prev. noninvasive_diastolic_blood_pressure
+Non-invasive mean arterial pressure: True # 4108289 prev. noninvasive_mean_blood_pressure
+Central venous pressure: True # 4323687 prev. central_venous_pressure
+Intracranial pressure: True # 4353953 prev. intracranial_pressure
+Glasgow Coma Score total: True # 44802289 prev. glasgow_coma_score
+Glasgow Coma Score eye opening: True # prev. glasgow_coma_score_eye
+Glasgow Coma Score verbal: True # prev. glasgow_coma_score_verbal
+Glasgow Coma Score motor: True # prev. glasgow_coma_score_motor
+Richmond agitation-sedation scale: True # 36684829 prev. richmond_agitation_sedation_scale
+Numeric Pain Rating Scale: True # 37151627 prev. numeric_pain_rating_scale
+
+
+####################################################################################################
+# not yet harmonised and not included by default
+####################################################################################################
+# Right atrial pressure: False # 276755008
+# Right ventricular pressure: False # 276756009
+# Pulmonary artery systolic pressure: False # 250768007
+# Pulmonary artery diastolic pressure: False # 250769004
+# Pulmonary artery mean pressure: False # 250770003
+# Pulmonary artery wedge pressure: False # 118433006
+# Cardiac output: False # 82799009
+# Cardiac index: False # 54993008
