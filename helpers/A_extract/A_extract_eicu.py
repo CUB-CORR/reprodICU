@@ -784,7 +784,7 @@ class EICUExtractor(EICUPaths):
                 pl.col("cellpath")
                 .replace_strict(intakeoutput_mapping, default=None)
                 .replace_strict(
-                    self.relevant_intakeoutput_values_mapping, default=None
+                    self.timeseries_intakeoutput_mapping, default=None
                 )
                 .alias("celllabel"),
             )

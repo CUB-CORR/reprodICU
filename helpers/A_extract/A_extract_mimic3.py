@@ -489,10 +489,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             ).with_columns(
                 pl.col("LABEL").replace(
                     {
-                        **self.relevant_vital_values_mapping,
+                        **self.timeseries_vitals_mapping,
                         **self.relevant_lab_values_mapping,
-                        **self.relevant_intakeoutput_values_mapping,
-                        **self.relevant_respiratory_values_mapping,
+                        **self.timeseries_intakeoutput_mapping,
+                        **self.timeseries_respiratory_mapping,
                     }
                 )
             )
@@ -699,7 +699,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Harmonize names of interest
             .with_columns(
                 pl.col("LABEL").replace_strict(
-                    self.relevant_intakeoutput_values_mapping, default=None
+                    self.timeseries_intakeoutput_mapping, default=None
                 )
             )
             # Filter for names of interest
