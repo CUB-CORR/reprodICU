@@ -706,10 +706,10 @@ class HiRIDExtractor(HiRIDPaths):
                 # Replace the variable names with the reprodICU mapping
                 .replace(
                     {
-                        **self.relevant_vital_values_mapping,
+                        **self.timeseries_vitals_mapping,
                         **self.relevant_lab_values_mapping,
-                        **self.relevant_intakeoutput_values_mapping,
-                        **self.relevant_respiratory_values_mapping,
+                        **self.timeseries_intakeoutput_mapping,
+                        **self.timeseries_respiratory_mapping,
                     }
                 )
             )

@@ -591,7 +591,7 @@ class NWICUExtractor(NWICUPaths):
     #         # Harmonize names of interest
     #         .with_columns(
     #             pl.col("label").replace_strict(
-    #                 self.relevant_intakeoutput_values_mapping, default=None
+    #                 self.timeseries_intakeoutput_mapping, default=None
     #             )
     #         )
     #         # Filter for names of interest

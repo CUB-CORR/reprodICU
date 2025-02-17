@@ -156,7 +156,6 @@ class GlobalVars(GlobalHelpers):
         # append globally configured paths as class attributes
         self.config_path = config_path
         self.relevant_values_path = config_path + "RELEVANT_VALUES/"
-        self.relevant_OMOP_values_path = config_path + "RELEVANT_VALUES_OMOP/"
         self.mapping_path = mapping_path
         self.precalc_path = tempfiles_path
 
@@ -292,28 +291,25 @@ class GlobalVars(GlobalHelpers):
             )
         )
 
+        # region GLOBAL MAPPINGS
+        self.timeseries_vitals_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path + "TIMESERIES_VITALS.yaml"
+            )
+        )
+        self.timeseries_respiratory_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path + "TIMESERIES_RESPIRATORY.yaml"
+            )
+        )
+        self.timeseries_intakeoutput_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path + "TIMESEREIS_INTAKEOUTPUT.yaml"
+            )
+        )
+
         # region RELEVANT
         # Select relevant variables
-        self.relevant_vital_values_mapping = (
-            self.load_many_to_one_mapping_incl_keys(
-                self.relevant_values_path + "RELEVANT_VITALS.yaml"
-            )
-        )
-        self.relevant_lab_values_mapping = (
-            self.load_many_to_one_mapping_incl_keys(
-                self.relevant_values_path + "RELEVANT_LABS.yaml"
-            )
-        )
-        self.relevant_respiratory_values_mapping = (
-            self.load_many_to_one_mapping_incl_keys(
-                self.relevant_values_path + "RELEVANT_RESPIRATORY_VALUES.yaml"
-            )
-        )
-        self.relevant_intakeoutput_values_mapping = (
-            self.load_many_to_one_mapping_incl_keys(
-                self.relevant_values_path + "RELEVANT_INTAKE_OUTPUT_VALUES.yaml"
-            )
-        )
         self.relevant_lab_LOINC_components = self.load_mapping_keys(
             self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml"
         )
@@ -322,16 +318,32 @@ class GlobalVars(GlobalHelpers):
         )
 
         self.relevant_vital_values = list(
-            set(self.relevant_vital_values_mapping.values())
+            set(
+                self.load_mapping_keys(
+                    self.relevant_values_path + "RELEVANT_VITALS.yaml"
+                )
+            )
         )
         self.relevant_lab_values = list(
-            set(self.relevant_lab_values_mapping.values())
+            set(
+                self.load_mapping_keys(
+                    self.relevant_values_path + "RELEVANT_LABS.yaml"
+                )
+            )
         )
         self.relevant_respiratory_values = list(
-            set(self.relevant_respiratory_values_mapping.values())
+            set(
+                self.load_mapping_keys(
+                    self.relevant_values_path + "RELEVANT_RESPIRATORY.yaml"
+                )
+            )
         )
         self.relevant_intakeoutput_values = list(
-            set(self.relevant_intakeoutput_values_mapping.values())
+            set(
+                self.load_mapping_keys(
+                    self.relevant_values_path + "RELEVANT_INTAKEOUTPUT.yaml"
+                )
+            )
         )
 
         self.all_relevant_values = (
