@@ -46,31 +46,36 @@ class EICUExtractor(EICUPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extracts patient information from the patient.csv file.
+        Extract patient information from the CSV file.
 
-        Return a polars LazyFrame with the extracted patient information, containing the following columns:
-        - ICU stay ID
-        - Hospital stay ID
-        - Person ID
-        - Gender
-        - Age
-        - Height
-        - Weight
-        - Ethnicity
-        - pre-ICU length of stay
-        - ICU length of stay
-        - Mortality in hospital
-        - Mortality in ICU
-        - Mortality after ICU discharge
-        - Admission location
-        - Unit type
-        - Care site
-        - Discharge location
+        This method reads data from the patient CSV file (self.patient_path), selects a subset of columns, renames them for consistency,
+        applies necessary transformations, and joins with admission diagnosis information.
 
-        :return: A polars LazyFrame with the extracted patient information.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame containing the following columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {hospital_stay_id_col}: Hospital stay identifier.
+                - {person_id_col}: Patient identifier.
+                - {gender_col}: Patient gender.
+                - {age_col}: Patient age.
+                - {height_col}: Patient height.
+                - {weight_col}: Patient weight.
+                - {ethnicity_col}: Patient ethnicity.
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_type_col}: Admission type.
+                - {admission_time_col}: Admission time.
+                - {admission_diagnosis_col}: Admission diagnosis description.
+                - {pre_icu_length_of_stay_col}: Pre-ICU length of stay.
+                - {icu_length_of_stay_col}: ICU length of stay.
+                - {hospital_length_of_stay_col}: Hospital length of stay.
+                - {mortality_hosp_col}: In-hospital mortality flag.
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_after_col}: Mortality after ICU discharge.
+                - {admission_loc_col}: Admission location.
+                - {unit_type_col}: Unit type.
+                - {care_site_col}: Care site.
+                - {discharge_loc_col}: Discharge location.
         """
-
         return (
             pl.scan_csv(self.patient_path)
             .select(  # Select columns of interest
@@ -272,12 +277,18 @@ class EICUExtractor(EICUPaths):
     # Extract admission diagnosis information from the admissionDx.csv file
     def extract_admission_diagnoses(self) -> pl.LazyFrame:
         """
-        Extracts admission diagnosis information from the admissionDx.csv file.
+        Extract admission diagnosis information from the CSV file.
 
-        :return: A polars LazyFrame with the extracted admission diagnosis information.
-        :rtype: pl.LazyFrame
+        This method reads data from the admissionDx CSV file (self.admissionDx_path) and extracts details on diagnosis,
+        admission type, and urgency, while also applying necessary string transformations.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {admission_type_col}: Admission type.
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_diagnosis_col}: Admission diagnosis description.
         """
-
         return (
             pl.scan_csv(self.admissionDx_path)
             .select("patientunitstayid", "admitdxpath", "admitdxname")
@@ -384,19 +395,23 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for lab values from the lab.csv file
     def extract_time_series_lab(self) -> pl.LazyFrame:
         """
-        Extracts time series information for lab values from the lab.csv file.
-        Pivoting has to be done in a separate step.
+        Extract lab time series data from the CSV file.
 
-        Return a polars LazyFrame with the extracted lab values in long format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Lab name
-        - Lab result
+        Reads lab data from self.lab_path, applies name mappings and filtering to select relevant lab measurements.
+        Constructs a structured lab result with related LOINC details.
 
-        :return: A polars LazyFrame with the extracted lab values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {timeseries_time_col}: Recorded time (in seconds).
+                - labname: Lab test name.
+                - labstruct: A structured column containing:
+                    * value: Lab result.
+                    * system: LOINC system.
+                    * method: LOINC method.
+                    * time: LOINC time aspect.
+                    * LOINC: LOINC code.
         """
-
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
         labs = (
@@ -510,18 +525,18 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for respiratory values from the respiratorycharting.csv file
     def extract_time_series_resp(self) -> pl.LazyFrame:
         """
-        Extracts time series information for respiratory values from the respiratorycharting.csv file.
+        Extract respiratory time series data from the CSV file.
 
-        Return a polars LazyFrame with the extracted respiratory values in long format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Respiratory value name
-        - Respiratory value
+        Reads respiratory charting data from self.respiratoryCharting_path, applies name mappings and filters,
+        and converts measurement times to seconds.
 
-        :return: A polars LazyFrame with the extracted respiratory values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {timeseries_time_col}: Time of recording (in seconds).
+                - respchartvaluelabel: Label for the respiratory measurement.
+                - respchartvalue: Recorded respiratory value.
         """
-
         # NOTE: ASSUMPTION: These are the respiratory values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
         keep_resp_names = self.relevant_respiratory_values
@@ -596,18 +611,18 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for nurse values from the nurseCharting.csv file
     def extract_time_series_nurse(self) -> pl.LazyFrame:
         """
-        Extracts time series information for nurse values from the nurseCharting.csv file.
+        Extract nurse charting time series data from the CSV file.
 
-        Return a polars LazyFrame with the extracted nurse values in long format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Nurse value name
-        - Nurse value
+        Processes nurse charting data from self.nurseCharting_path, applies filtering via mappings, and handles duplicates.
+        Time values are converted to seconds.
 
-        :return: A polars LazyFrame with the extracted nurse values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {timeseries_time_col}: Timestamp converted to seconds.
+                - nursingchartcelltypevalname: Nurse value name.
+                - nursingchartvalue: Corresponding nurse value.
         """
-
         # NOTE: keep only the nurse charting values not covered by the other TS
         keep_nurse_names = [
             # "Non-Invasive BP",
@@ -743,18 +758,18 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for intake/output values from the intakeOutput.csv file
     def extract_time_series_intake_output(self) -> pl.LazyFrame:
         """
-        Extracts time series information for intake/output values from the intakeOutput.csv file.
+        Extract intake/output time series data from the CSV file.
 
-        Return a polars LazyFrame with the extracted intake/output values in long format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Intake/output value name
-        - Intake/output value
+        Processes intake/output records from self.intakeOutput_path by applying mappings on variable names,
+        filtering valid numerical values, and converting time units.
 
-        :return: A polars LazyFrame with the extracted intake/output values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of observation in seconds.
+                - celllabel: Mapped intake/output variable name.
+                - cellvaluenumeric: Numerical value of the intake/output measurement.
         """
-
         # NOTE: ASSUMPTION: These are the intake/output values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
         intakeoutput_mapping = self.load_mapping(self.intakeoutput_mapping_path)
@@ -811,26 +826,14 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for periodic values from the vitalPeriodic.csv file
     def extract_time_series_periodic(self) -> pl.LazyFrame:
         """
-        Extracts time series information for periodic values from the vitalPeriodic.csv file.
+        Extract periodic vital sign data from the CSV file.
 
-        Return a polars LazyFrame with the extracted periodic values in wide format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Temperature
-        - Oxygen saturation by pulse oximetry
-        - Heart rate
-        - Respiratory rate
-        - Central venous pressure
-        - end tidal CO2
-        - Invasive systolic blood pressure
-        - Invasive diastolic blood pressure
-        - Invasive mean blood pressure
-        - Intracranial pressure
+        Reads periodic measurement data from self.vitalPeriodic_path, removes duplicates,
+        and converts observation times to seconds.
 
-        :return: A polars LazyFrame with the extracted periodic values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with periodic vital signs across multiple columns.
         """
-
         return (
             pl.scan_csv(self.vitalPeriodic_path)
             # Rename columns for consistency
@@ -856,19 +859,19 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for aperiodic values from the vitalAperiodic.csv file
     def extract_time_series_aperiodic(self) -> pl.LazyFrame:
         """
-        Extracts time series information for aperiodic values from the vitalAperiodic.csv file.
+        Extract aperiodic vital sign data from the CSV file.
 
-        Return a polars LazyFrame with the extracted aperiodic values in wide format, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Non-invasive systolic blood pressure
-        - Non-invasive diastolic blood pressure
-        - Non-invasive mean blood pressure
+        Retrieves aperiodic measurements from self.vitalAperiodic_path and transforms
+        them by converting times and renaming columns.
 
-        :return: A polars LazyFrame with the extracted aperiodic values.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {timeseries_time_col}: Time of observation (in seconds).
+                - noninvasivesystolic: Non-invasive systolic blood pressure.
+                - noninvasivediastolic: Non-invasive diastolic blood pressure.
+                - noninvasivemean: Non-invasive mean blood pressure.
         """
-
         return (
             pl.scan_csv(self.vitalAperiodic_path).select(
                 "patientunitstayid",
@@ -900,29 +903,14 @@ class EICUExtractor(EICUPaths):
     # Combine the aperiodic and periodic time series data
     def extract_and_combine_periodics(self) -> pl.LazyFrame:
         """
-        Extracts and combines the aperiodic and periodic time series data.
+        Combine periodic and aperiodic vital sign data.
 
-        Return a polars LazyFrame with the extracted and combined time series data, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Temperature
-        - Oxygen saturation by pulse oximetry
-        - Heart rate
-        - Respiratory rate
-        - Central venous pressure
-        - end tidal CO2
-        - Invasive systolic blood pressure
-        - Invasive diastolic blood pressure
-        - Invasive mean blood pressure
-        - Intracranial pressure
-        - Non-invasive systolic blood pressure
-        - Non-invasive diastolic blood pressure
-        - Non-invasive mean blood pressure
+        Joins the periodic data (vitalPeriodic) and aperiodic data (vitalAperiodic),
+        aggregates measurements per ICU stay and timepoint, and renames columns as per mapping.
 
-        :return: A polars LazyFrame with the extracted and combined time series data.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with combined periodic and aperiodic vital sign measurements.
         """
-
         periodic_mapping = self.helpers.load_mapping(self.periodic_mapping_path)
         periodic_mapping_keys = list(periodic_mapping.values())
 
@@ -946,21 +934,20 @@ class EICUExtractor(EICUPaths):
     # Extract microbiology information from the microLab.csv file
     def extract_microbiology(self) -> pl.LazyFrame:
         """
-        Extracts microbiology information from the microLab.csv file.
+        Extract microbiology data from the CSV file.
 
-        Return a polars LazyFrame with the extracted microbiology information, containing the following columns:
-        - ICU stay ID
-        - Time
-        - Specimen type
-        - Organism name
-        - Organism group
-        - Antibiotic name
-        - Antibiotic result
+        Reads microbiology records from self.microLab_path, applies mappings for specimen type, organism, and antibiotics,
+        removes duplicates, and converts time units.
 
-        :return: A polars LazyFrame with the extracted microbiology information.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of the culture measurement (in seconds).
+                - {micro_specimen_col}: Mapped specimen type.
+                - {micro_organism_col}: Mapped organism name.
+                - {micro_antibiotic_col}: Mapped antibiotic name.
+                - {micro_sensitivity_col}: Sensitivity shorthand (if available).
         """
-
         print("eICU    - Extracting microbiology...")
 
         # NOTE: ASSUMPTION: These are the microbiology values of interest
@@ -1032,27 +1019,22 @@ class EICUExtractor(EICUPaths):
 
     # region medication
     # Extract medication information from the different medication files
-    # TODO: add administration path
     def extract_medications(self) -> pl.LazyFrame:
         """
-        Extracts medication information from the medication files.
-        Medication information is extracted from the medication.csv, infusionDrug.csv and admissionDrug.csv files.
+        Extract medication administration data from CSV files.
 
-        Medication names are mapped to a common set of medication names using the MEDICATIONS.yaml mapping file.
+        Processes data from medication, infusionDrug, and (optionally) admissionDrug files.
+        Applies extensive mapping and calculations including duration and dosage conversions.
 
-        Return a polars LazyFrame with the extracted medication information, containing the following columns:
-        - ICU stay ID
-        - Start time
-        - End time
-        - Medication name
-        - Medication ingredient
-        - Medication amount
-        - Medication amount unit
-
-        :return: A polars LazyFrame with the extracted medication information.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with medication records containing:
+                - {icu_stay_id_col}: ICU stay ID.
+                - {drug_start_col}: Medication start time.
+                - {drug_end_col}: Medication end time.
+                - {drug_name_col}: Original medication name.
+                - {drug_ingredient_col}: Mapped medication ingredient.
+                - {drug_rate_col} (and {fluid_rate_col}): Dosage/Infusion rate.
         """
-
         print("eICU    - Extracting medications...")
 
         eicu_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
@@ -1119,7 +1101,7 @@ class EICUExtractor(EICUPaths):
                 self.drug_start_col,
                 base_unit="minutes",
             )
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
+            .sort(self.icu_stay_id, self.drug_name_col, self.drug_start_col)
         )
 
         # Get infusion duration where possible, by checking whether the drugname reappears
@@ -1304,20 +1286,19 @@ class EICUExtractor(EICUPaths):
     # Extract diagnosis information from the diagnosis.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
         """
-        Extracts diagnosis information from the diagnosis.csv file.
+        Extract diagnosis information from the CSV file.
 
-        Return a polars LazyFrame with the extracted diagnosis information, containing the following columns:
-        - ICU stay ID
-        - Diagnosis ICD code
-        - Diagnosis ICD code version (ICD '9' or '10')
-        - Diagnosis start time
-        - Diagnosis priority (Primary, Major, Other -> 1, 2, 3)
-        - Diagnosis active upon discharge (True/False)
+        Reads diagnosis data from diagnosis.csv.gz, splits and processes ICD codes, handles priority,
+        and determines active status upon discharge.
 
-        :return: A polars LazyFrame with the extracted diagnosis information.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {diagnosis_icd_code_col}: One ICD diagnosis code per row.
+                - {diagnosis_start_col}: Time of diagnosis onset (in seconds).
+                - {diagnosis_priority_col}: Diagnosis priority as a numeric value.
+                - {diagnosis_discharge_col}: True if diagnosis is active upon discharge.
         """
-
         diagnosis = (
             pl.scan_csv(self.path + "diagnosis.csv.gz")
             .select(  # Select columns of interest
@@ -1492,21 +1473,21 @@ class EICUExtractor(EICUPaths):
     # Extract procedure information from the treatment.csv file
     def extract_treatments(self, verbose=True) -> pl.LazyFrame:
         """
-        Extracts procedure information from the treatment.csv file.
+        Extract procedure/treatment data from the CSV file.
 
-        Procedures in eICU are not well defined and are stored as free text in the treatmentstring column.
-        -> TODO: Extract procedure information from the treatmentstring column.
+        Reads treatment data from self.treatment_path, processes free-text descriptions,
+        and determines procedure timing. Optionally prints progress.
 
-        Return a polars LazyFrame with the extracted procedure information, containing the following columns:
-        - ICU stay ID
-        - Procedure start time
-        - Procedure description
-        - Procedure active upon discharge (True/False)
+        Args:
+            verbose (bool): If True, prints progress messages.
 
-        :return: A polars LazyFrame with the extracted procedure information.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: A LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {procedure_start_col}: Start time of the procedure (in seconds).
+                - {procedure_description_col}: Description of the procedure.
+                - {procedure_discharge_col}: Boolean flag indicating active procedure upon discharge.
         """
-
         if verbose:
             print("eICU    - Extracting procedures...")
 
@@ -1515,6 +1496,18 @@ class EICUExtractor(EICUPaths):
     def _extract_treatments_helper(
         self, treatment: pl.LazyFrame
     ) -> pl.LazyFrame:
+        """
+        Helper function to process treatment data.
+
+        Converts treatment offsets to seconds, identifies repeated procedure entries,
+        and computes end times where applicable.
+
+        Args:
+            treatment (pl.LazyFrame): Raw LazyFrame of treatment data.
+
+        Returns:
+            pl.LazyFrame: Processed treatment data with updated start and end times.
+        """
         treatment = (
             treatment
             # Select columns of interest

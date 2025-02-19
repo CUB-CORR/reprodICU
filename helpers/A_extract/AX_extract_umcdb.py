@@ -54,6 +54,34 @@ class UMCdbExtractor(UMCdbPaths):
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
+        """
+        Extract and transform patient admission information.
+
+        Reads admission data from a Parquet file, joins with APACHE admission data, and performs type casts and
+        transformations on categorical values. The final LazyFrame includes, at a minimum, the following columns:
+            - {person_id_col}: Patient identifier.
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {icu_stay_seq_num_col}: ICU stay sequence number.
+            - {age_col}: Patient age (average of age groups).
+            - {weight_col}: Patient weight (average of weight groups).
+            - {height_col}: Patient height (average of height groups).
+            - {mortality_icu_col}: ICU mortality flag.
+            - {mortality_hosp_col}: Hospital mortality flag.
+            - {icu_length_of_stay_col}: ICU length of stay (in days).
+            - {mortality_after_col}: Mortality after discharge (in days).
+            - {gender_col}: Patient gender (converted to enum).
+            - {admission_loc_col}: Admission location.
+            - {discharge_loc_col}: Discharge location.
+            - {unit_type_col}: ICU unit type.
+            - {specialty_col}: Specialty information.
+            - {admission_type_col}: Admission type.
+            - {admission_urgency_col}: Admission urgency.
+            - {care_site_col}: Hospital name.
+
+        Returns:
+            pl.LazyFrame: Transformed patient information with explicitly named columns.
+        """
+
         return (
             pl.scan_parquet(self.admissions_path)
             .select(
@@ -207,6 +235,22 @@ class UMCdbExtractor(UMCdbPaths):
     # region listitems
     # Extract timeseries information from the listitems.csv file
     def extract_timeseries_listitems(self) -> pl.LazyFrame:
+        """
+        Extract and process timeseries list items from the UMCdb dataset.
+
+        Reads list items from a Parquet file, maps item IDs to standardized names, and applies helper functions to
+        transform the data. Special adjustments are made for pain and sedation scores. Additionally, Glasgow Coma
+        Scale (GCS) data is computed and merged.
+
+        The resulting LazyFrame includes at least the following columns:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - "item": Standardized name of the item.
+            - "value": Recorded value (after adjustments).
+
+        Returns:
+            pl.LazyFrame: Processed timeseries listitems with standardized columns.
+        """
+
         listitems = (
             pl.scan_parquet(self.listitems_path)
             .select(
@@ -249,6 +293,21 @@ class UMCdbExtractor(UMCdbPaths):
 
     # region numeric
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
+        """
+        Extract and filter timeseries numeric items from the dataset.
+
+        Reads numeric items from a Parquet file, maps item IDs to a standardized name via a helper join,
+        and attempts to cast the 'value' field to float.
+
+        The final LazyFrame includes the following columns:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - "item": Standardized numeric item name.
+            - "value": Numeric measurement value.
+
+        Returns:
+            pl.LazyFrame: Processed numeric timeseries data with standardized column names.
+        """
+
         return self._extract_timeseries_numericitems().filter(
             pl.col("item").is_in(
                 self.relevant_vital_values
@@ -259,12 +318,41 @@ class UMCdbExtractor(UMCdbPaths):
 
     # Separate the lab values from the rest
     def extract_timeseries_labs(self) -> pl.LazyFrame:
+        """
+        Extract timeseries laboratory data from numeric items.
+
+        Invokes a helper function to map laboratory items using LOINC components and systems.
+        The output LazyFrame includes:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {timeseries_time_col}: Time offset (in seconds) from ICU admission.
+            - "item": Mapped laboratory test name.
+            - "labstruct": A struct with {value}, {system}, {method}, {time}, and {LOINC} information.
+
+        Returns:
+            pl.LazyFrame: Processed laboratory timeseries data with structured lab details.
+        """
+
         return self._extract_timeseries_labs_helper(
             self._extract_timeseries_numericitems()
         )
 
     # Extract timeseries information from the numericitems.csv file
     def _extract_timeseries_numericitems(self) -> pl.LazyFrame:
+        """
+        Extract and process timeseries data for numeric items from a Parquet file.
+        This method reads numeric item data from a Parquet file, selects relevant columns,
+        renames the admission ID column, replaces item IDs with standardized names, processes
+        the timeseries data using a helper method, and attempts to convert the values to floats.
+
+        The final LazyFrame includes the following columns:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - "item": Standardized numeric item name.
+            - "value": Numeric measurement value.
+
+        Returns:
+            pl.LazyFrame: A Polars LazyFrame containing the processed timeseries data.
+        """
+
         return (
             pl.scan_parquet(self.numericitems_path)
             .select("admissionid", "itemid", "value", "measuredat")
@@ -280,6 +368,24 @@ class UMCdbExtractor(UMCdbPaths):
     # region ts helper
     # filter and rename columns for timeseries data
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Filter and process raw timeseries data based on ICU admission and discharge times.
+
+        Joins the provided data with admission times to compute time offset values (in seconds) relative to the ICU
+        admission. Filters to include only those entries within the ICU stay plus a predefined pre-ICU cutoff period.
+
+        The output LazyFrame includes:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {timeseries_time_col}: Time offset in seconds (computed from admission time).
+            - (Other columns from the input data, with timeseries alignment applied.)
+
+        Args:
+            data (pl.LazyFrame): Raw timeseries data that includes a 'measuredat' timestamp.
+
+        Returns:
+            pl.LazyFrame: Filtered and processed timeseries data with adjusted time offsets.
+        """
+
         intimes = (
             pl.scan_parquet(self.admissions_path)
             .select("admissionid", "admittedat", "dischargedat")
@@ -325,6 +431,30 @@ class UMCdbExtractor(UMCdbPaths):
     def _extract_timeseries_labs_helper(
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
+        """
+        Process laboratory timeseries data by mapping numeric items to LOINC concepts.
+
+        Joins the numeric lab data with LOINC mapping data (components, systems, methods, and time aspects) to create a
+        structured lab column. Also, filters for lab tests of interest.
+
+        The resulting LazyFrame includes:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {timeseries_time_col}: Time offset in seconds from ICU admission.
+            - "item": Laboratory test name (after replacement with LOINC component).
+            - "labstruct": A struct containing:
+                   • value: Lab result value.
+                   • system: LOINC system.
+                   • method: LOINC method.
+                   • time: LOINC time aspect.
+                   • LOINC: LOINC code.
+
+        Args:
+            data (pl.LazyFrame): Raw laboratory numeric data.
+
+        Returns:
+            pl.LazyFrame: Lab timeseries data with structured lab information.
+        """
+
         LOINC_data = (
             pl.read_csv(self.numericitems_lab_mapping_path)
             .select("conceptName")
@@ -414,6 +544,20 @@ class UMCdbExtractor(UMCdbPaths):
     # Implementation based on the SQL query from the AmsterdamUMCdb project
     # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/gcs.sql
     def _compute_gcs(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Compute the Glasgow Coma Scale (GCS) scores from the given data.
+        This method processes the input data to compute the GCS eye opening, motor, and verbal scores,
+        and then aggregates these scores to compute the total GCS score. If a precomputed GCS file is
+        available, it loads the data from the file instead of recomputing it.
+
+        Args:
+            data (pl.LazyFrame): The input data containing timeseries information and item values.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing the computed GCS scores (eye opening, motor, verbal, and total)
+                          for each ICU stay, prioritized by the registeredby field.
+        """
+
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
@@ -561,6 +705,29 @@ class UMCdbExtractor(UMCdbPaths):
     # region medication
     # Extract medication information from the drugitems.csv file
     def extract_medications(self) -> pl.LazyFrame:
+        """
+        Extract and process medication administration data from UMCdb.
+
+        Loads medication data from a Parquet file and multiple mapping files. Applies transformations to calculate
+        relative start and end times from ICU admission, standardize medication names (both local and OMOP concepts), and
+        structure dosing information.
+
+        The output LazyFrame includes:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {drug_name_col}: Original drug name.
+            - {drug_ingredient_col}: Mapped active drug ingredient.
+            - {drug_amount_col}: Drug amount (if available).
+            - {drug_amount_unit_col}: Unit of the drug amount.
+            - {drug_rate_col}: Calculated drug infusion rate.
+            - {drug_rate_unit_col}: Unit for the drug rate.
+            - {drug_start_col}: Start time relative to ICU admission (seconds).
+            - {drug_end_col}: End time relative to ICU admission (seconds).
+            - {fluid_amount_col}: Fluid amount (if available).
+
+        Returns:
+            pl.LazyFrame: Mediaction data with timing and dosing details.
+        """
+
         print("UMCdb   - Extracting medications...")
 
         umcdb_medication_mapping = (
@@ -601,8 +768,7 @@ class UMCdbExtractor(UMCdbPaths):
                 "dose",
                 "doseunit",
                 "doserateunit",
-                "fluidin"
-                
+                "fluidin",
             )
             .rename(
                 {
@@ -718,6 +884,22 @@ class UMCdbExtractor(UMCdbPaths):
     # region procedures
     # Extract procedure information from the procedures.csv file
     def extract_procedures(self) -> pl.LazyFrame:
+        """
+        Extract and process procedure data from UMCdb.
+
+        Reads procedure events from multiple sources and joins them with admission times to compute relative procedure start
+        and end times. Standardizes procedure descriptions using reference mappings.
+
+        Expected columns in the output include:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {procedure_start_col}: Procedure start time relative to ICU admission (seconds).
+            - {procedure_end_col}: Procedure end time relative to ICU admission (seconds).
+            - {procedure_description_col}: Standardized description of the procedure.
+
+        Returns:
+            pl.LazyFrame: Processed procedures data with standardized names and time offsets.
+        """
+
         print("UMCdb   - Extracting procedures...")
         intimes = (
             pl.scan_parquet(self.admissions_path)
@@ -789,6 +971,20 @@ class UMCdbExtractor(UMCdbPaths):
     # region APACHE
     # Extract APACHE admission information from the listitems.csv file
     def extract_APACHE_admission(self) -> pl.LazyFrame:
+        """
+        Extract APACHE admission diagnoses and process them for ICU patients.
+
+        Reads APACHE admission data from list items, categorizes diagnoses into several levels, and standardizes
+        the diagnosis descriptions according to predefined mappings.
+
+        The expected output columns are:
+            - {icu_stay_id_col}: ICU Stay ID.
+            - {admission_diagnosis_col}: Standardized admission diagnosis (mapped via the APACHE mapping).
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing APACHE admission diagnoses with standardized columns.
+        """
+
         APACHE_mapping = self.helpers.load_mapping(self.apache_mapping_path)
 
         NICE = [18669, 18671]
@@ -1018,6 +1214,17 @@ class UMCdbExtractor(UMCdbPaths):
     # region references
     # Extract the information from the numericitems_XXX.usagi.csv files
     def _extract_numeric_references(self) -> pl.LazyFrame:
+        """
+        Extracts and processes numeric references from CSV files.
+        This method reads multiple CSV files containing numeric item mappings, concatenates them,
+        and processes the resulting DataFrame to extract relevant references. The references
+        are filtered and transformed based on predefined mappings and conditions.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing the processed numeric item mappings with columns
+            for item IDs and standardized item names.
+        """
+
         return (
             pl.concat(
                 [
@@ -1055,6 +1262,17 @@ class UMCdbExtractor(UMCdbPaths):
 
     # Extract the information from the listitems_XXX.usagi.csv file
     def _extract_list_references(self) -> pl.LazyFrame:
+        """
+        Extracts and processes list references from CSV files.
+        This method reads two CSV files containing list item mappings, concatenates them,
+        and processes the resulting DataFrame to extract relevant references. The references
+        are filtered and transformed based on predefined mappings and conditions.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing the processed list item mappings with columns
+            for item IDs and standardized item names.
+        """
+
         return (
             pl.concat(
                 [
@@ -1084,6 +1302,17 @@ class UMCdbExtractor(UMCdbPaths):
 
     # Extract the information from the drugitems_XXX.usagi.csv files
     def _extract_drug_references(self) -> dict:
+        """
+        Extracts and processes drug references from CSV files.
+        This method reads multiple CSV files containing drug item mappings, concatenates them,
+        and processes the resulting DataFrame to extract relevant references. The references
+        are filtered and transformed based on predefined mappings and conditions.
+
+        Returns:
+            dict: A dictionary where the keys are source names (as strings) and the values
+            are concept names (as strings) that match the specified criteria.
+        """
+
         references = (
             pl.concat(
                 [
@@ -1109,6 +1338,17 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract the information from the processitems_item.usagi.csv
     # and procedureorderitems_item.usagi.csv files
     def _extract_procedure_references(self) -> dict:
+        """
+        Extracts and processes procedure references from CSV files.
+        This method reads two CSV files containing procedure item mappings, concatenates them,
+        and processes the resulting DataFrame to extract relevant references. The references
+        are filtered and transformed based on predefined mappings and conditions.
+
+        Returns:
+            dict: A dictionary where the keys are source codes (as integers) and the values
+            are concept names (as strings) that match the specified criteria.
+        """
+
         references = (
             pl.concat(
                 [
