@@ -1061,25 +1061,11 @@ class EICUExtractor(EICUPaths):
         eicu_drug_administration_route_mapping = self.helpers.load_mapping(
             self.drug_administration_route_mapping_path
         )
+        SECONDS_IN_1H = 3600
 
-        # # NOTE: Extremely infrequently used.
-        # # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
-        # admissiondrug = (
-        #     pl.scan_csv(self.admissiondrug_path)
-        #     .select("patientunitstayid", "drugoffset", "drugname")
-        #     .rename(
-        #         {
-        #             "patientunitstayid": self.icu_stay_id_col,
-        #             "drugoffset": self.timeseries_time_col,
-        #             "drugname": "medication",
-        #         }
-        #     )
-        #     .pipe(
-        #         self.helpers._convert_time_to_seconds_float,
-        #         self.timeseries_time_col,
-        #         base_unit="minutes",
-        #     )
-        # )
+        # NOTE: Extremely infrequently used.
+        # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
+        admissiondrug = None
 
         # NOTE: a lot of calcalations can be done here
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/infusiondrug/
@@ -1093,10 +1079,12 @@ class EICUExtractor(EICUPaths):
                 "infusionoffset",
                 "drugname",
                 "drugrate",
+                "infusionrate",
+                "patientweight",
             )
             # Replace "OFF" values with 0
             .with_columns(pl.col("drugrate").str.replace("OFF", 0))
-            .cast({"drugrate": float}, strict=False)
+            .cast({"drugrate": float, "infusionrate": float}, strict=False)
             # Rename columns for consistency
             .rename(
                 {
@@ -1104,10 +1092,13 @@ class EICUExtractor(EICUPaths):
                     "infusionoffset": self.drug_start_col,
                     "drugname": self.drug_name_col,
                     "drugrate": self.drug_rate_col,
+                    "infusionrate": self.fluid_rate_col,
+                    "patientweight": self.drug_patient_weight_col,
                 }
             )
             .with_columns(
                 # Get unit from drugname
+                # e.g. Norepinephrine (mcg/min) -> mcg/min
                 pl.col(self.drug_name_col)
                 .str.extract(r".*\((.*?)\)$")
                 .alias(self.drug_rate_unit_col),
@@ -1233,6 +1224,15 @@ class EICUExtractor(EICUPaths):
                 "next_drug_start",
                 "drug_status_prev",
                 "drug_status_next",
+            )
+            # 6. calculate infused fluid volume
+            # eICU documentation: "Infusion rate is generally charted as ml/hr."
+            .with_columns(
+                (
+                    pl.col(self.fluid_rate_col)
+                    * (pl.col(self.drug_end_col) - pl.col(self.drug_start_col))
+                    / SECONDS_IN_1H
+                ).alias(self.fluid_amount_col)
             )
         )
 

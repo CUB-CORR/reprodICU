@@ -239,7 +239,7 @@ class SICdbExtractor(SICdbPaths):
                 < pl.duration(seconds=pl.col("TimeOfStay")).dt.total_seconds(),
             )
             # Filter only relevant timeseries values
-            .filter(pl.col("DataID").is_in(self.all_values))
+            .filter(pl.col("DataID").is_in(self.all_relevant_values))
             # Remove duplicate rows
             .unique()
             # Remove rows with empty parameter names

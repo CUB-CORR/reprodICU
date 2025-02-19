@@ -324,9 +324,9 @@ class HiRIDExtractor(HiRIDPaths):
             )
             .with_columns(
                 (
-                    (pl.col("datetime") - pl.col("admissiontime"))
-                    .truediv(pl.duration(seconds=1))
-                    .round(0)
+                    (
+                        pl.col("datetime") - pl.col("admissiontime")
+                    ).dt.total_seconds()
                 ).alias(self.timeseries_time_col)
             )
             .drop("admissiontime", "datetime")
@@ -453,6 +453,8 @@ class HiRIDExtractor(HiRIDPaths):
             print(f"Processing file {file}...", end="\r")
             data = (
                 pl.scan_parquet(self.pharma_path + file)
+                # Filter out invalidated records
+                .filter((pl.col("recordstatus") & 2) == 0)
                 .select(
                     "patientid",
                     "pharmaid",
@@ -471,6 +473,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "doseunit": self.drug_amount_unit_col,
                         "route": self.drug_admin_route_col,
                         "subtypeid": self.drug_class_col,
+                        "fluidamount_calc": self.fluid_amount_col,
                     }
                 )
                 # Cast the datetime to string to avoid the following error:
@@ -492,8 +495,7 @@ class HiRIDExtractor(HiRIDPaths):
                 )
                 .with_columns(
                     (pl.col("givenat") - pl.col("admissiontime"))
-                    .truediv(pl.duration(seconds=1))
-                    .round(0)
+                    .dt.total_seconds()
                     .alias(self.drug_end_col),
                     # Map the medication names to the ingredients
                     pl.col(self.drug_name_col)
@@ -519,21 +521,6 @@ class HiRIDExtractor(HiRIDPaths):
                 .unique()
                 # Remove rows with empty lab names
                 .filter(pl.col(self.drug_amount_col).is_not_null())
-                # # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                # .filter(
-                #     (
-                #         pl.col(self.drug_end_col)
-                #         < pl.duration(
-                #             days=pl.col(self.icu_length_of_stay_col)
-                #         ).truediv(pl.duration(seconds=1))
-                #     )
-                #     & (
-                #         pl.col(self.drug_end_col)
-                #         > pl.duration(
-                #             days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                #         ).truediv(pl.duration(seconds=1))
-                #     )
-                # )
                 .drop(self.icu_length_of_stay_col)
             )
 
@@ -573,18 +560,26 @@ class HiRIDExtractor(HiRIDPaths):
                 self.drug_end_col,
                 "prev_drug_end",  # sometimes, there is the same drug given twice at the same time
             )
-            # NOTE: Convert drug_amount to drug_rates
+            # NOTE: Convert drug_amount to drug_rates, fluid_amount to fluid_rates
             .with_columns(
                 (
-                    (pl.col(self.drug_amount_col) * 60 * 60)
+                    pl.col(self.drug_amount_col)
                     / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
+                    * 3600
                 )
-                .round(1)
+                .round_sig_figs(2)
                 .alias(self.drug_rate_col),
                 pl.col(self.drug_amount_unit_col).str.replace("µ", "mc"),
                 (pl.col(self.drug_amount_unit_col) + pl.lit("/hr"))
                 .str.replace("µ", "mc")
                 .alias(self.drug_rate_unit_col),
+                (
+                    pl.col(self.fluid_amount_col)
+                    / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
+                    * 3600
+                )
+                .round_sig_figs(2)
+                .alias(self.fluid_rate_col),
             )
             # 2. Check if drug is continued from the previous log entry
             #    and if it is continued in the next log entry

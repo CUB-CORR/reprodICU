@@ -870,6 +870,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 "rate",
                 "rateuom",
                 "ordercategoryname",
+                "patientweight"
             )
             .rename(
                 {
@@ -879,6 +880,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "amountuom": self.drug_amount_unit_col,
                     "rate": self.drug_rate_col,
                     "rateuom": self.drug_rate_unit_col,
+                    "patientweight": self.drug_patient_weight_col,
                 }
             )
             .with_columns(
@@ -918,7 +920,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             pl.when(pl.col("itemid") == 221906)
             .then(
                 pl.when(pl.col(self.drug_rate_unit_col) == "mg/kg/min")
-                .then("mcg/kg/min")
+                .then(pl.lit("mcg/kg/min"))
                 .otherwise(pl.col(self.drug_rate_unit_col))
             )
             .alias(self.drug_rate_unit_col),

@@ -601,8 +601,8 @@ class UMCdbExtractor(UMCdbPaths):
                 "dose",
                 "doseunit",
                 "doserateunit",
-                # "rate",
-                # "rateunit",
+                "fluidin"
+                
             )
             .rename(
                 {
@@ -610,10 +610,7 @@ class UMCdbExtractor(UMCdbPaths):
                     "item": self.drug_name_col,
                     "start": self.drug_start_col,
                     "stop": self.drug_end_col,
-                    # "administered": self.drug_amount_col,
-                    # "administeredunit": self.drug_amount_unit_col,
-                    # "rate": self.drug_rate_col,
-                    # "rateunit": self.drug_rate_unit_col,
+                    "fluidin": self.fluid_amount_col,
                 }
             )
             .join(intimes, on=self.icu_stay_id_col)

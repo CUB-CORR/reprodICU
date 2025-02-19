@@ -910,6 +910,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 "RATE",
                 "RATEUOM",
                 "ORDERCATEGORYNAME",
+                "PATIENTWEIGHT"
             )
             .with_columns(
                 pl.col("ORDERCATEGORYNAME")
@@ -966,6 +967,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "AMOUNTUOM": self.drug_amount_unit_col,
                     "RATE": self.drug_rate_col,
                     "RATEUOM": self.drug_rate_unit_col,
+                    "PATIENTWEIGHT": self.drug_patient_weight_col,
                 }
             )
             .join(d_items, on="ITEMID")
