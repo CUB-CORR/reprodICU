@@ -40,6 +40,34 @@ class SICdbExtractor(SICdbPaths):
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
+        """
+        Extract patient information from the SICdb cases CSV file.
+
+        Renames and converts raw columns, computes lengths of stay and assigns a sequence number for ICU admissions.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {person_id_col}: Patient identifier.
+              - {age_col}: Patient age on admission.
+              - {height_col}: Patient height (cm).
+              - {weight_col}: Patient weight (kg) converted from grams.
+              - {admission_diagnosis_col}: Admission diagnosis mapped to APACHE group.
+              - {icu_length_of_stay_col}: ICU length of stay in days.
+              - {pre_icu_length_of_stay_col}: Pre-ICU length of stay in days.
+              - {hospital_length_of_stay_col}: Hospital length of stay in days.
+              - {gender_col}: Patient gender.
+              - {admission_type_col}: Admission type.
+              - {admission_urgency_col}: Admission urgency.
+              - {admission_loc_col}: Admission location.
+              - {specialty_col}: Treating specialty.
+              - {unit_type_col}: ICU unit type.
+              - {discharge_loc_col}: Discharge location.
+              - {mortality_icu_col}: ICU mortality flag.
+              - {mortality_hosp_col}: Hospital mortality flag.
+              - {mortality_after_col}: Post-ICU (post-discharge) mortality in days.
+              - {care_site_col}: Care site information.
+        """
         diagnosis_mapping = (
             pl.read_csv(
                 self.mapping_path + "_icd_codes/icd_diagnoses_apache.csv",
@@ -194,6 +222,18 @@ class SICdbExtractor(SICdbPaths):
     # region timeseries
     # Extract timeseries information from the data_float_h.csv file
     def extract_timeseries(self) -> pl.LazyFrame:
+        """
+        Extract timeseries data from the SICdb data_float_h CSV file.
+
+        Joins raw timeseries data with offset information and converts event times relative to ICU admission.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {timeseries_time_col}: Time offset in seconds from ICU admission.
+              - DataID: Parameter identifier mapped to a descriptive name.
+              - Val: Measurement value.
+        """
         print("SICdb   - Extracting timeseries...")
         extracted_references = self._extract_references("RespiratorSetting")
         extracted_references.update(
@@ -253,6 +293,23 @@ class SICdbExtractor(SICdbPaths):
     # region laboratory
     # Extract laboratory information from the laboratory.csv file
     def extract_laboratory_timeseries(self) -> pl.LazyFrame:
+        """
+        Extract laboratory timeseries data from the laboratory CSV file.
+
+        Joins laboratory data with LOINC mapping to produce a structured lab result.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {timeseries_time_col}: Time offset (in seconds) from ICU admission.
+              - LaboratoryName: Name of the laboratory test.
+              - labstruct: A struct containing details with keys:
+                    • value: Laboratory measurement value.
+                    • system: LOINC system.
+                    • method: LOINC method.
+                    • time: LOINC time aspect.
+                    • LOINC: LOINC code.
+        """
         offsets = self._get_offsets()
 
         LOINC_data = self._extract_references_LOINC()
@@ -311,10 +368,7 @@ class SICdbExtractor(SICdbPaths):
             .join(LOINC_data, on="LaboratoryID")
             # Fix lab time offset
             .with_columns(
-                (
-                    pl.col("Offset")
-                    - pl.col("CaseOffset")
-                )
+                (pl.col("Offset") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
@@ -362,6 +416,24 @@ class SICdbExtractor(SICdbPaths):
     # region medication
     # Extract medication information from the medication.csv file
     def extract_medications(self) -> pl.LazyFrame:
+        """
+        Extract medication data from the medication CSV file.
+
+        Processes medication events by adjusting time offsets relative to ICU admission, mapping medication names,
+        units and rates, and dropping single-dose medication rates.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {drug_name_col}: Original medication identifier.
+              - {drug_amount_col}: Drug amount.
+              - {drug_rate_col}: Drug administration rate.
+              - {drug_start_col}: Medication start time offset (in seconds).
+              - {drug_end_col}: Medication end time offset (in seconds).
+              - {drug_amount_unit_col}: Drug amount unit.
+              - {drug_rate_unit_col}: Medication rate unit.
+              - {drug_ingredient_col}: Mapped active drug ingredient.
+        """
         print("SICdb   - Extracting medications...")
 
         sicdb_medication_mapping = (
@@ -392,16 +464,10 @@ class SICdbExtractor(SICdbPaths):
             .join(offsets, on=self.icu_stay_id_col)
             .with_columns(
                 # Fix medication time offset
-                (
-                    pl.col("Offset")
-                    - pl.col("CaseOffset")
-                )
+                (pl.col("Offset") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.drug_start_col),
-                (
-                    pl.col("OffsetDrugEnd")
-                    - pl.col("CaseOffset")
-                )
+                (pl.col("OffsetDrugEnd") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.drug_end_col),
                 # Convert medication IDs to names, then map them
@@ -477,6 +543,20 @@ class SICdbExtractor(SICdbPaths):
     # region diagnosis
     # Extract diagnosis information from the cases.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
+        """
+        Extract diagnosis information from the SICdb cases CSV file.
+
+        Processes and cleans diagnosis codes by removing dots and assigning default static values.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {person_id_col}: Patient identifier.
+              - {diagnosis_icd_code_col}: Diagnosis ICD code without dots.
+              - {diagnosis_start_col}: Diagnosis start time (default 0).
+              - {diagnosis_priority_col}: Diagnosis priority (default 1).
+              - {diagnosis_icd_version_col}: ICD version (default 10).
+        """
         print("SICdb   - Extracting diagnoses...")
 
         return (
@@ -503,6 +583,20 @@ class SICdbExtractor(SICdbPaths):
     # region procedures
     # Extract procedure information from the data_range.csv file
     def extract_procedures(self) -> pl.LazyFrame:
+        """
+        Extract procedure data from the SICdb data_range CSV file.
+
+        Joins procedure events with case identifiers and maps device identifiers into procedure descriptions.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - {person_id_col}: Patient identifier.
+              - DataID: Procedure device identifier mapped to a descriptive string.
+              - {procedure_start_col}: Procedure start time offset (in seconds).
+              - {procedure_end_col}: Procedure end time offset (in seconds).
+              - {procedure_description_col}: Procedure description.
+        """
         print("SICdb   - Extracting procedures...")
 
         IDs = pl.scan_csv(self.cases_path).select("CaseID", "PatientID")
@@ -531,6 +625,15 @@ class SICdbExtractor(SICdbPaths):
     # region mappers
     # Extract the information from the d_references.csv file
     def _extract_references(self, ReferenceName: str) -> dict:
+        """
+        Extract reference mappings from the d_references CSV file.
+
+        Args:
+            ReferenceName (str): The reference category for which to extract mappings.
+
+        Returns:
+            dict: Mapping from ReferenceGlobalID to ReferenceValue.
+        """
         references = (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == ReferenceName)
@@ -545,6 +648,14 @@ class SICdbExtractor(SICdbPaths):
         )
 
     def _extract_references_LOINC(self) -> pl.DataFrame:
+        """
+        Extract LOINC mapping data for laboratory tests from the d_references CSV file.
+
+        Returns:
+            pl.DataFrame: A DataFrame with the following columns:
+              - LaboratoryID: ReferenceGlobalID.
+              - LaboratoryName: Long LOINC description (LOINC_long).
+        """
         return (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == "Laboratory")
@@ -566,7 +677,13 @@ class SICdbExtractor(SICdbPaths):
             )
         )
 
-    def _extract_drug_units(self) -> pl.LazyFrame:
+    def _extract_drug_units(self) -> dict:
+        """
+        Extract drug unit mappings from the d_references CSV file for drugs.
+
+        Returns:
+            dict: Mapping of drug names to their reference units.
+        """
         drug_units = (
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == "Drug")
@@ -590,9 +707,20 @@ class SICdbExtractor(SICdbPaths):
 
     # region timehelper
     def _get_offsets(self) -> float:
+        """
+        Compute time offsets for SICdb cases.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the following columns:
+              - {icu_stay_id_col}: ICU stay identifier.
+              - CaseOffset: Computed offset from the sum of ICUOffset and OffsetAfterFirstAdmission.
+              - TimeOfStay: Total duration of ICU stay.
+        """
         return (
             pl.scan_csv(self.cases_path)
-            .select("CaseID", "ICUOffset", "OffsetAfterFirstAdmission",  "TimeOfStay")
+            .select(
+                "CaseID", "ICUOffset", "OffsetAfterFirstAdmission", "TimeOfStay"
+            )
             .rename({"CaseID": self.icu_stay_id_col})
             .with_columns(
                 (pl.col("OffsetAfterFirstAdmission") + pl.col("ICUOffset"))
