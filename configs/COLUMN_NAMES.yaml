@@ -49,6 +49,9 @@ drug_amount_col: Drug Amount # drug_amount
 drug_amount_unit_col: Drug Amount Unit # drug_amount_unit
 drug_rate_col: Drug Rate # drug_rate
 drug_rate_unit_col: Drug Rate Unit # drug_rate_unit
+fluid_amount_col: Fluid Amount (ml)
+fluid_rate_col: Fluid Rate (ml/hr)
+drug_patient_weight_col: Patient Weight (kg) Used for Dose Calculations
 micro_specimen_col: Specimen
 micro_test_col: Test
 micro_organism_col: Organism

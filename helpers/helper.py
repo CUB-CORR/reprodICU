@@ -304,7 +304,7 @@ class GlobalVars(GlobalHelpers):
         )
         self.timeseries_intakeoutput_mapping = (
             self.load_many_to_one_mapping_incl_keys(
-                mapping_path + "TIMESEREIS_INTAKEOUTPUT.yaml"
+                mapping_path + "TIMESERIES_INTAKEOUTPUT.yaml"
             )
         )
 
@@ -327,7 +327,7 @@ class GlobalVars(GlobalHelpers):
         self.relevant_lab_values = list(
             set(
                 self.load_mapping_true_keys(
-                    self.relevant_values_path + "RELEVANT_LABS.yaml"
+                    self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml"
                 )
             )
         )
@@ -347,19 +347,9 @@ class GlobalVars(GlobalHelpers):
         )
 
         self.all_relevant_values = (
-            self.relevant_lab_values
-            + self.relevant_vital_values
+            self.relevant_vital_values
             + self.relevant_respiratory_values
             + self.relevant_intakeoutput_values
-        )
-
-        self.relevant_lab_values_pre_conversion = [
-            "Temperature Fahrenheit",  # for temperature conversion in MIMIC
-            "Temperature Celsius",  # for temperature conversion in MIMIC
-        ]
-
-        self.all_values = (
-            self.relevant_lab_values_pre_conversion + self.all_relevant_values
         )
 
     def ICD_TO_ICDSUBCHAPTER(self, data: pl.LazyFrame):

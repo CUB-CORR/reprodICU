@@ -141,13 +141,19 @@ class MedicationHarmonizer(GlobalVars):
                 self.drug_amount_unit_col,
                 self.drug_rate_col,
                 self.drug_rate_unit_col,
+                self.fluid_amount_col,
+                self.fluid_rate_col,
                 self.drug_start_col,
                 self.drug_end_col,
+                self.drug_patient_weight_col,
             )
             .cast(
                 {
                     self.drug_amount_col: float,
                     self.drug_rate_col: float,
+                    self.fluid_amount_col: float,
+                    self.fluid_rate_col: float,
+                    self.drug_patient_weight_col: float,
                     self.drug_class_col: str,
                     self.drug_admin_route_col: str,
                 },
