@@ -29,11 +29,13 @@ Direct Admit:
   - WALK-IN/SELF REFERRAL
   - Direct Admit
   - Home
+  # UMCdb
   - Huis # Home
 Operating Room:
   - PROCEDURE SITE
   - AMBULATORY SURGERY TRANSFER
   - Operating Room
+  # UMCdb
   - Operatiekamer vanaf verpleegafdeling zelfde ziekenhuis # Operating room from ward of same hospital
   - operating room from emergency department of the same hospital # Operating room from the Emergency Department of the same hospital
 Recovery Room:

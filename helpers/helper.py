@@ -191,10 +191,10 @@ class GlobalVars(GlobalHelpers):
         )
 
         self.HEART_RHYTHM_MAP = self.load_many_to_one_mapping(
-            mapping_path + "ADDITIONAL_FILES/heart_rhythm_mapping.yaml"
+            mapping_path + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
         )
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
-            mapping_path + "ADDITIONAL_FILES/ventilator_mode_mapping.yaml"
+            mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
         )
 
         # region DATA TYPES
@@ -227,7 +227,8 @@ class GlobalVars(GlobalHelpers):
             v: i
             for i, v in enumerate(
                 self.load_mapping_keys(
-                    mapping_path + "ADDITIONAL_FILES/heart_rhythm_mapping.yaml"
+                    mapping_path
+                    + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
                 )
             )
         }
@@ -239,7 +240,7 @@ class GlobalVars(GlobalHelpers):
             for i, v in enumerate(
                 self.load_mapping_keys(
                     mapping_path
-                    + "ADDITIONAL_FILES/ventilator_mode_mapping.yaml"
+                    + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
                 )
             )
         }
