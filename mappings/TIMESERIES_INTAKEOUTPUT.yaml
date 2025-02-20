@@ -5,7 +5,7 @@ Blood loss: # 1014933 # LOINC
   # UMCDb
   - Blood loss [Volume] Measured
 Blood loss.total intraoperative: # 1030226 # LOINC
-  # MIMIC4
+  # MIMIC-IV
   - Blood loss.total intraoperative [Volume] Estimated
 Fluid output biliary drain: [] # 1033547 # LOINC
 Fluid output cerebral ventricle drain: [] # 1033549 # LOINC

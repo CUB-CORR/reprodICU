@@ -1,45 +1,58 @@
 # https://athena.ohdsi.org/search-terms/terms/4222966
+Oxygen mask: # 4222966 # SNOMED
+  # eICU -> same name
 Aerosol oxygen mask: # 4145694 # SNOMED
+  # eICU -> same name
 Blow by oxygen mask: # 4137849 # SNOMED
+  # eICU -> same name
 Capnography oxygen mask: # 36714464 # SNOMED
 Continuous positive airway pressure/Bilevel positive airway pressure mask: # 45768222 # SNOMED
+  # eICU -> same name
   # UMCdb
   - CPAP
 High-altitude sleep mask: # 36676809 # SNOMED
 Nonrebreather oxygen mask: # 4145528 # SNOMED
+  # eICU -> same name
   # UMCdb
   - Non-Rebreathing masker
 Partial rebreather oxygen mask: # 4138748 # SNOMED
+  # eICU -> same name
 Partial-rebreathing oxygen face mask: # 45759146 # SNOMED
 Rebreathing oxygen face mask: # 45772392 # SNOMED
 # Resuscitator face mask: # 605912 # SNOMED
 # Resuscitator face mask, reusable: # 45760053 # SNOMED
 # Resuscitator face mask, single-use: # 45760350 # SNOMED
 Sleep apnea mask: # 45768221 # SNOMED
-Tracheostomy mask, oxygen: # 45760219 # SNOMED
+"Tracheostomy mask, oxygen": # 45760219 # SNOMED
+  # eICU -> same name
   # UMCdb
   - Trach.stoma
   - Spreekcanule
   - Spreekklepje
 Venturi mask: # 4322904 # SNOMED
+  # eICU -> same name
 Venturi oxygen face mask: # 45759930 # SNOMED
 Vortex oxygen face mask: # 45773303 # SNOMED
 
 # https://athena.ohdsi.org/search-terms/terms/4224038 
 Basic nasal oxygen cannula: # 45760842 # SNOMED
+  # eICU -> same name
   # UMCdb
   - Nasaal
   - O2-bril
 High flow oxygen nasal cannula: # 4139525 # SNOMED
+  # eICU -> same name
   # UMCdb
   - Diep Nasaal
 
 ####
 Mechanical ventilator: # 40493026 # SNOMED
+  # eICU -> same name
   # UMCdb
   - IV
 
 ####
 Ambu bag: # 4160626 # SNOMED
+  # eICU -> same name
   # UMCdb
   - Ambu

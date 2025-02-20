@@ -1,11 +1,13 @@
 Temperature: # 45771331 prev. temperature
   # TODO: make struct with location
+  # NWICU -> same name
   # UMCdb
   - Axillary temperature
   - Body temperature # also in MIMIC
   - Oral temperature
   - Rectal temperature
 Heart rate: # 4239408 prev. heart_rate
+  # NWICU -> same name
   # SICdb
   - HeartRateECG
   # UMCdb
@@ -15,14 +17,17 @@ Heart rate rhythm: # 3022318
 Peripheral oxygen saturation: # 4196147 prev. spO2
   # MIMIC / UMCdb
   - Oxygen saturation in Arterial blood by Pulse oximetry
+  # NWICU -> same name
   # SICdb
   - SPO2
 Respiratory rate: # 4313591 prev. respiratory_rate_measured
+  # NWICU -> same name
   # SICdb
   - RespRate
 Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pressure
   # MIMIC
   - Systolic blood pressure
+  # NWICU -> same name
   # SICdb
   - BloodPressureArterialSystolic
   # UMCdb
@@ -30,6 +35,7 @@ Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pre
 Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_pressure
   # MIMIC
   - Diastolic blood pressure
+  # NWICU -> same name
   # SICdb
   - BloodPressureArterialDiastolic
   # UMCdb
@@ -37,6 +43,7 @@ Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_p
 Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
   # MIMIC
   - Mean blood pressure
+  # NWICU -> same name
   # SICdb
   - BloodPressureArterialMAP
   # UMCdb
@@ -44,16 +51,19 @@ Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
 Non-invasive systolic arterial pressure: # 4354252 prev. noninvasive_systolic_blood_pressure
   # MIMIC / UMCdb
   - Systolic blood pressure by Noninvasive
+  # NWICU -> same name
   # SICdb
   - BloodPressureNISystolic
 Non-invasive diastolic arterial pressure: # 4068414 prev. noninvasive_diastolic_blood_pressure
   # MIMIC / UMCdb
   - Diastolic blood pressure by Noninvasive
+  # NWICU -> same name
   # SICdb
   - BloodPressureNIDiastolic
 Non-invasive mean arterial pressure: # 4108289 prev. noninvasive_mean_blood_pressure
   # MIMIC / UMCdb
   - Mean blood pressure by Noninvasive
+  # NWICU -> same name
   # SICdb
   - BloodPressureNIMAP
 Central venous pressure: # 4323687 prev. central_venous_pressure

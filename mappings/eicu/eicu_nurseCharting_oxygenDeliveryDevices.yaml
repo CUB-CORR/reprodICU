@@ -1,141 +1,141 @@
-" t- piece": t_piece
+" t- piece": Tracheostomy mask, oxygen
 "12": unknown
 "2 l": unknown
 "2L": unknown
 "2lnc": unknown
 "7": unknown
-"8 L": facemask
-"8 L oxy/ NRB": non_rebreather_mask
-"8 L oxymizer": nasal_cannula
+"8 L": Oxygen mask
+"8 L oxy/ NRB": Nonrebreather oxygen mask
+"8 L oxymizer": Basic nasal oxygen cannula
 "88": unknown
 "96": unknown
-"ambu": ambu_bag
-"Bi-PAP": BiPAP
-"bipap": BiPAP
-"Bipap": BiPAP
-"BiPap": BiPAP
-"BiPaP": BiPAP
-"BiPAP": BiPAP
-"BiPAP": BiPAP
-"BiPAP 10/5": BiPAP
-"BiPAP 12/5": BiPAP
-"BiPAP 12/8": BiPAP
-"BiPAP 14/8": BiPAP
-"BiPAP 16/8": BiPAP
-"BiPAP 22/16": BiPAP
-"BiPAP/CPAP": BiPAP
-"BiPAP12/8": BiPAP
-"BiPAP14/8": BiPAP
-"BPap": BiPAP
-"cool aerosol mask": # what is this?
-"cpap": CPAP
-"CPap": CPAP
-"CPAP": CPAP
-"CPAP 16/5": CPAP
-"HF": high_flow_nasal_cannula
-"HF  20L": high_flow_nasal_cannula
-"HFNC": high_flow_nasal_cannula
-"HHHF": high_flow_nasal_cannula
-"Hi Flow NC": high_flow_nasal_cannula
-"hi flow vapotherm": high_flow_nasal_cannula
-"hi-flo": high_flow_nasal_cannula
-"hi-flow": high_flow_nasal_cannula
-"HiFloNC": high_flow_nasal_cannula
-"HIGH FLOW": high_flow_nasal_cannula
-"high flow NC": high_flow_nasal_cannula
-"HIGH FLOW VAPORTHREM": high_flow_nasal_cannula
-"HIGH FLOW vapotherm": high_flow_nasal_cannula
-"mask": facemask
-"MASK": facemask
-"mask99": facemask
-"misty ox": nebulizer
-"Misty Ox": nebulizer
-"N/C": nasal_cannula
-"nasal cannula": nasal_cannula
-"Nasal cannula": nasal_cannula
-"nasal cannula ": nasal_cannula
-"Nasal cannula (NC)": nasal_cannula
-"nasal cannula-oximizer": nasal_cannula
-"nc": nasal_cannula
-"NC": nasal_cannula
-"NC ": nasal_cannula
-"NCH": nasal_cannula
-"non-rebreather": non_rebreather_mask
-"none": room_air
-"nonrebreather": non_rebreather_mask
-"NRB": non_rebreather_mask
-"NRBM": non_rebreather_mask
-"NRM": non_rebreather_mask
+"ambu": Ambu bag
+"Bi-PAP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"bipap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"Bipap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPaP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 10/5": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 12/5": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 12/8": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 14/8": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 16/8": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP 22/16": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP/CPAP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP12/8": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BiPAP14/8": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"BPap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"cool aerosol mask": unknown # what is this?
+"cpap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"CPap": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"CPAP": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"CPAP 16/5": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"HF": High flow oxygen nasal cannula
+"HF  20L": High flow oxygen nasal cannula
+"HFNC": High flow oxygen nasal cannula
+"HHHF": High flow oxygen nasal cannula
+"Hi Flow NC": High flow oxygen nasal cannula
+"hi flow vapotherm": High flow oxygen nasal cannula
+"hi-flo": High flow oxygen nasal cannula
+"hi-flow": High flow oxygen nasal cannula
+"HiFloNC": High flow oxygen nasal cannula
+"HIGH FLOW": High flow oxygen nasal cannula
+"high flow NC": High flow oxygen nasal cannula
+"HIGH FLOW VAPORTHREM": High flow oxygen nasal cannula
+"HIGH FLOW vapotherm": High flow oxygen nasal cannula
+"mask": Oxygen mask
+"MASK": Oxygen mask
+"mask99": Oxygen mask
+"misty ox": Aerosol oxygen mask
+"Misty Ox": Aerosol oxygen mask
+"N/C": Basic nasal oxygen cannula
+"nasal cannula": Basic nasal oxygen cannula
+"Nasal cannula": Basic nasal oxygen cannula
+"nasal cannula ": Basic nasal oxygen cannula
+"Nasal cannula (NC)": Basic nasal oxygen cannula
+"nasal cannula-oximizer": Basic nasal oxygen cannula
+"nc": Basic nasal oxygen cannula
+"NC": Basic nasal oxygen cannula
+"NC ": Basic nasal oxygen cannula
+"NCH": Basic nasal oxygen cannula
+"non-rebreather": Nonrebreather oxygen mask
+"none":
+"nonrebreather": Nonrebreather oxygen mask
+"NRB": Nonrebreather oxygen mask
+"NRBM": Nonrebreather oxygen mask
+"NRM": Nonrebreather oxygen mask
 "other": other
-"other oximizer": nasal_cannula
-"other-oximizer": nasal_cannula
-"oximask": facemask
-"oximizer": nasal_cannula
-"Oximizer": nasal_cannula
-"oximyzer": nasal_cannula
-"oxy mask": facemask
-"oxy mask and cannula": facemask
-"oxymask": facemask
-"OXYMASK": facemask
-"OXYMASK ": facemask
-"oxymizer": nasal_cannula
-"Oxymizer": nasal_cannula
-"oxymizer/NRM": nasal_cannula
-"partial-rebreather": # what is this?
-"PS-Auto": # pressure support auto?
-"R.A": room_air
-"r/a": room_air
-"R/A": room_air
-"ra": room_air
-"Ra": room_air
-"RA": room_air
-"RA/trach capped": tracheostomy # or room air?
-"rm air": room_air
-"room air": room_air
-"Room air": room_air
-"Room Air": room_air
-"ROOM AIR": room_air
-"room air ": room_air
-"Room Air ": room_air
-"ROOM AIR ": room_air
-"roomair": room_air
-"rooom air": room_air
-"simple mask": facemask
-"Simple mask": facemask
-"SIMPLE MASK": facemask
-"simple mask ": facemask
-"SIMV": ventilator # synchronized intermittent mandatory ventilation -> ventilator?
-"T -piece": t_piece
-"t piece": t_piece
-"T piece": t_piece
-"T Piece": t_piece
-"T Piece ": t_piece
-"t-piece": t_piece
-"T-piece": t_piece
-"T-Piece": t_piece
-"T-PIECE": t_piece
+"other oximizer": Basic nasal oxygen cannula
+"other-oximizer": Basic nasal oxygen cannula
+"oximask": Oxygen mask
+"oximizer": Basic nasal oxygen cannula
+"Oximizer": Basic nasal oxygen cannula
+"oximyzer": Basic nasal oxygen cannula
+"oxy mask": Oxygen mask
+"oxy mask and cannula": Oxygen mask
+"oxymask": Oxygen mask
+"OXYMASK": Oxygen mask
+"OXYMASK ": Oxygen mask
+"oxymizer": Basic nasal oxygen cannula
+"Oxymizer": Basic nasal oxygen cannula
+"oxymizer/NRM": Basic nasal oxygen cannula
+"partial-rebreather": Partial rebreather oxygen mask
+"PS-Auto": Continuous positive airway pressure/Bilevel positive airway pressure mask
+"R.A":
+"r/a":
+"R/A":
+"ra":
+"Ra":
+"RA":
+"RA/trach capped": # or room air?
+"rm air":
+"room air":
+"Room air":
+"Room Air":
+"ROOM AIR":
+"room air ":
+"Room Air ":
+"ROOM AIR ":
+"roomair":
+"rooom air":
+"simple mask": Oxygen mask
+"Simple mask": Oxygen mask
+"SIMPLE MASK": Oxygen mask
+"simple mask ": Oxygen mask
+"SIMV": Mechanical ventilator # synchronized intermittent mandatory ventilation -> ventilator?
+"T -piece": Tracheostomy mask, oxygen
+"t piece": Tracheostomy mask, oxygen
+"T piece": Tracheostomy mask, oxygen
+"T Piece": Tracheostomy mask, oxygen
+"T Piece ": Tracheostomy mask, oxygen
+"t-piece": Tracheostomy mask, oxygen
+"T-piece": Tracheostomy mask, oxygen
+"T-Piece": Tracheostomy mask, oxygen
+"T-PIECE": Tracheostomy mask, oxygen
 "tc": unknown # no clue what this is
-"tpiece": t_piece
-"Tpiece": t_piece
-"TPiece": t_piece
-"TPIECE": t_piece
-"trach /  vent": tracheostomy
-"trach / vent": tracheostomy
-"trach /vent": tracheostomy
-"trach collar": tracheostomy
-"Trach T piece": tracheostomy
-"trach to T-Piece": tracheostomy
-"trach to vent": tracheostomy
-"trach to ventilator": tracheostomy
-"Trach/tpiece": tracheostomy
-"trach/vent": tracheostomy
-"Vapotherm": high_flow_nasal_cannula
-"vent": ventilator
-"VENT": ventilator
-"ventilator": ventilator
-"Ventilator": ventilator
-"VENTILATOR": ventilator
-"Ventilator ": ventilator
-"ventilator/trach": tracheostomy
-"venturi mask": facemask
-"vm": facemask
+"tpiece": Tracheostomy mask, oxygen
+"Tpiece": Tracheostomy mask, oxygen
+"TPiece": Tracheostomy mask, oxygen
+"TPIECE": Tracheostomy mask, oxygen
+"trach /  vent": Tracheostomy mask, oxygen
+"trach / vent": Tracheostomy mask, oxygen
+"trach /vent": Tracheostomy mask, oxygen
+"trach collar": Tracheostomy mask, oxygen
+"Trach T piece": Tracheostomy mask, oxygen
+"trach to T-Piece": Tracheostomy mask, oxygen
+"trach to vent": Tracheostomy mask, oxygen
+"trach to ventilator": Tracheostomy mask, oxygen
+"Trach/tpiece": Tracheostomy mask, oxygen
+"trach/vent": Tracheostomy mask, oxygen
+"Vapotherm": High flow oxygen nasal cannula
+"vent": Mechanical ventilator
+"VENT": Mechanical ventilator
+"ventilator": Mechanical ventilator
+"Ventilator": Mechanical ventilator
+"VENTILATOR": Mechanical ventilator
+"Ventilator ": Mechanical ventilator
+"ventilator/trach": Tracheostomy mask, oxygen
+"venturi mask": Venturi mask
+"vm": Venturi mask
