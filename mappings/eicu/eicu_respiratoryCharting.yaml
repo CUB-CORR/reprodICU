@@ -124,15 +124,15 @@ Patient Position:
 Peak Flow: peak_flow
 Peak Insp. Pressure: Pressure.max Respiratory system airway --on ventilator
 Peak Pressure: Pressure.max Respiratory system airway --on ventilator # peak_pressure
-PEEP/CPAP: PEEP Respiratory system --on ventilator
-PEEP: PEEP Respiratory system --on ventilator
+PEEP/CPAP: PEEP Respiratory system
+PEEP: PEEP Respiratory system
 Plateau Pressure: Pressure.plateau Respiratory system airway --on ventilator
 Position at lip:
 Postion at Lip:
 Pressure Control:
 Pressure Support: Pressure support setting Ventilator
 Pressure to Trigger PS:
-PS above PEEP:
+PS above PEEP: Pressure support setting Ventilator
 PS: Pressure support setting Ventilator
 PULSE OX RESULTS VT:
 Resp Rate Total: Breath rate spontaneous and mechanical --on ventilator

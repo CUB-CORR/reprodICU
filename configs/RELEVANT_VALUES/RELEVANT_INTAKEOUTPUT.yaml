@@ -28,8 +28,8 @@ Urine output: True
 # INTAKE #
 ##########
 Fluid intake: True # 1030543
-Fluid intake chest tube: True # 1033597
-Fluid intake enema: True # 1033598
+# Fluid intake chest tube: True # 1033597
+# Fluid intake enema: True # 1033598
 Fluid intake enteral tube: True # 1033599
 Fluid intake intravascular: True # 1033602
 Fluid intake nasogastric tube: True # 1033603
