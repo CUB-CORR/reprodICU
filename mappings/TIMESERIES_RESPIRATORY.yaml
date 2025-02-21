@@ -1,128 +1,172 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
-# Airway pressure --at zero inspiratory flow on ventilator: []
-Airway pressure delta --on ventilator:
-  # UMCdb
-  - Airway pressure delta setting Ventilator
+Airway pressure delta setting Ventilator:
+  # UMCdb -> same name
 Breath rate setting Ventilator:
+  # eICU-CRD -> same name
   # HiRID
   - Ventilator rate
+  # MIMIC-III / MIMIC-IV -> same name
   # SICdb
   - RespRateVentilator
-  # UMCdb
+  # UMCdb -> same name
   - Breath rate minimum setting Ventilator
   - Breath rate setting Intermittent mandatory ventilator
   - Breath rate setting Ventilator synchronized intermittent mandatory
 Breath rate spontaneous --on ventilator:
-  # MIMIC
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
   - Breath rate spontaneous
   # SICdb
   - RespRateSpontanous
+  # UMCdb -> same name
 Breath rate spontaneous and mechanical --on ventilator:
-  # MIMIC
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
   - Breath rate
-  # Both of these refer to non-ventilated data as well as ventilated data
-  # and are better suited for the vitals table
-  # # HiRID / UMCdb
-  # - Respiratory rate
-  # # SICdb
-  # - RespRate
-Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration:
+  # UMCdb -> same name
+  ### Both of these refer to non-ventilated data as well as ventilated data
+  ### and are better suited for the vitals table
+  ### HiRID / UMCdb
+  ### - Respiratory rate
+  ### SICdb
+  ### - RespRate
+"Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration":
+  # eICU-CRD -> same name
   # HiRID
   - End tidal carbon dioxide concentration
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
   # SICdb
   - etCO2
 Dynamic lung compliance:
   # SICdb
   - DynCompliance
-  # UMCdb
+  # UMCdb -> same name
   - Dynamic compliance
-Expiratory gas flow Respiratory system airway --on ventilator: []
+# Expiratory gas flow Respiratory system airway --on ventilator: []
 Expiratory hold time setting Ventilator:
   # UMCdb
   - Expiration setting [Time] Ventilator
 Expired minute Volume during Mechanical ventilation:
-  # UMCdb
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
+  - Volume expired per minute Respiratory system
+  # SICdb
+  - MV (exp)
+  # UMCdb -> same name
   - Expiratory minute volume
 High pressure hold time setting Ventilator: []
-Horowitz index in Arterial blood: []
+  # UMCdb -> same name
+# Horowitz index in Arterial blood: []
 Inspiration/Expiration time Ratio:
+  # eICU-CRD -> same name
   # SICdb
   - IERatio
   # UMCdb
   - Inspiration/Expiration setting Ventilator
 Inspiratory flow setting Ventilator: []
-Inspiratory gas flow Respiratory system airway --on ventilator: []
+  # eICU-CRD -> same name
+# Inspiratory gas flow Respiratory system airway --on ventilator: []
 Inspiratory time setting Ventilator:
+  # eICU-CRD -> same name
+  # UMCdb -> same name
   - Inspiration setting [Time] Ventilator
 Inspired minute Volume during Mechanical ventilation: []
+  # UMCdb -> same name
 Low pressure hold time setting Ventilator: []
+  # UMCdb -> same name
 Mean airway pressure:
   # HiRID
   - Mean inspiratory airway pressure
+  # MIMIC-III / MIMIC-IV -> same name
   # SICdb
   - Mean Airway Pressure
   - pMean
-  # UMCdb
+  # UMCdb -> same name
   - Airway pressure --at mean expiratory flow on ventilator
 Minute volume setting Ventilator: []
-Oxygen [Partial pressure] in Exhaled gas: []
-Oxygen/Gas total [Pure volume fraction] Inhaled gas:
+  # eICU-CRD -> same name
+  # SICdb
+  - MV
+  # UMCdb -> same name
+# Oxygen [Partial pressure] in Exhaled gas: []
+"Oxygen/Gas total [Pure volume fraction] Inhaled gas":
+  # eICU-CRD -> same name
   # SICdb
   - Oxyflow O2
   - Optiflow O2
-  # UMCdb
+  # UMCdb -> same name
   - Inhaled oxygen concentration
-Oxygen/Total gas setting [Volume Fraction] Ventilator:
+"Oxygen/Total gas setting [Volume Fraction] Ventilator":
+  # eICU-CRD -> same name
   # HiRID
   - Inspired oxygen concentration
-  # MIMIC
+  # MIMIC-III / MIMIC-IV
   - Inhaled oxygen concentration # refers to FiO2 values according to the original values
   # SICdb
   - FIO2
+  # UMCdb -> same name
 Oxygen delivery system:
-  # MIMIC
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
   - Oxygen delivery
   # UMCdb
   - Oxygen therapy support
 Oxygen gas flow Oxygen delivery system:
+  # eICU-CRD -> same name
   # HiRID
   - Oxygen administration by mask
   - Oxygen administration by nasal cannula
+  # MIMIC-III / MIMIC-IV -> same name
   # SICdb
   - Oxyflow Flow
   - Optiflow Flow
   - O2 Flow
+  # UMCdb -> same name
 PEEP Respiratory system:
+  # eICU-CRD -> same name
   # HiRID
   - Positive end expiratory pressure
+  # MIMIC-III / UMCdb
+  - PEEP Respiratory system --on ventilator
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Total PEEP Respiratory system
   # UMCdb
   - Intrinsic PEEP Respiratory system
-  - PEEP Respiratory system --on ventilator
-  - Total PEEP Respiratory system
 Positive end expiratory pressure setting Ventilator:
   # HiRID
   - Positive end expiratory pressure setting
+  # MIMIC-III / MIMIC-IV -> same name
   # SICdb
   - PEEP
+  # UMCdb -> same name
 Pressure support setting Ventilator:
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
   # SICdb
   - PressureSupport
+  # UMCdb -> same name
 Pressure.max Respiratory system airway --on ventilator:
-  - Maximum [Pressure] Respiratory system airway opening --during inspiration on ventilator
-  # MIMIC
+  # eICU-CRD -> same name
+  # HiRID
+  - Peak inspiratory pressure
+  # MIMIC-III -> same name
+  # MIMIC-III / MIMIC-IV
   - Pressure max Respiratory system airway --during inspiration
   # SICdb
   - pPeak
   - PeakInspiratoryPressure
-  # HiRID
-  - Peak inspiratory pressure
+  # UMCdb
+  - Maximum [Pressure] Respiratory system airway opening --during inspiration on ventilator
 Pressure.plateau Respiratory system airway --on ventilator:
+  # eICU-CRD -> same name
   # HiRID
   - Plateau pressure
+  # MIMIC-III / MIMIC-IV -> same name
   # UMCdb
+  - Airway plateau pressure
   - Airway pressure --during respiratory pause
 Tidal volume.expired:
+  # eICU-CRD -> same name
   # SICdb
   - TV (exp)
   # UMCdb
@@ -135,11 +179,17 @@ Tidal volume.inspired:
   # UMCdb
   - Tidal volume inspired spontaneous+mechanical Measured --on ventilator
 Tidal volume setting Ventilator:
+  # eICU-CRD -> same name
   # HiRID
   - Tidal volume setting
-  # MIMIC
+  # MIMIC-III / MIMIC-IV / UMCdb
   - Tidal volume Ventilator --on ventilator
+  # UMCdb -> same name
 Tidal volume.spontaneous --on ventilator: []
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
 Tidal volume.spontaneous+mechanical --on ventilator: []
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
 Ventilation mode Ventilator: []
+  # eICU-CRD / MIMIC-III / MIMIC-IV / UMCdb -> same name
 Ventilator type: []
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
