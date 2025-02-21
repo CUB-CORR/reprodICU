@@ -24,8 +24,37 @@ omop_concept = (
     .collect()
 )
 
+# ------------------------------------------------------------------------------
+# MIMIC-III to LOINC Mapping
+# ------------------------------------------------------------------------------
+"""
+Creates the MIMIC-III to LOINC mapping.
 
-# Create the MIMIC-III to LOINC mapping
+Steps:
+    1. Join d_labitems_mimic3 with omop_concept:
+       - Left join on {LOINC_CODE} (from d_labitems_mimic3) with {concept_code} (from omop_concept).
+       - Retrieve {LOINC_CONCEPT_NAME} from omop_concept (original lab concept name).
+    2. Join with d_labitems_to_loinc:
+       - Left join on {ITEMID} (from MIMIC-III) with {"itemid (omop_source_code)"} (from mapping).
+       - Adds {MAPPED_CONCEPT_NAME} and {MAPPED_CONCEPT_CODE} from MIMIC-IV mappings.
+    3. Create a boolean column {LOINC_CODE_MATCH}:
+       - Indicates whether {LOINC_CODE} equals {MAPPED_CONCEPT_CODE} (with missing values comparison).
+    4. Replace {LOINC_CONCEPT_NAME} with None when {LOINC_CODE_MATCH} is True.
+    5. Coalesce between {MAPPED_CONCEPT_NAME} and {LOINC_CONCEPT_NAME}:
+       - Prefer {MAPPED_CONCEPT_NAME} if available.
+    6. Select and write following columns:
+       • ITEMID: Unique identifier for the lab item.
+       • COALESCED_CONCEPT_NAME: Final lab concept name after coalescing.
+       • LABEL: Lab item label.
+       • FLUID: Type of fluid sampled.
+       • CATEGORY: Category of the lab test.
+       • LOINC_CODE: Original LOINC code.
+       • LOINC_CONCEPT_NAME: Original LOINC concept name from OMOP.
+       • LOINC_CODE_MATCH: Boolean indicating if {LOINC_CODE} matches {MAPPED_CONCEPT_CODE}.
+       • MAPPED_CONCEPT_CODE: Concept code from MIMIC-IV mapping.
+       • MAPPED_CONCEPT_NAME: Concept name from MIMIC-IV mapping.
+"""
+
 (
     d_labitems_mimic3
     # Join with OMOP vocabulary
@@ -72,22 +101,44 @@ omop_concept = (
     )
     # Drop unnecessary columns
     .select(
-        "ITEMID",
-        "COALESCED_CONCEPT_NAME",
-        "LABEL",
-        "FLUID",
-        "CATEGORY",
-        "LOINC_CODE",
-        "LOINC_CONCEPT_NAME",
-        "LOINC_CODE_MATCH",
-        "MAPPED_CONCEPT_CODE",
-        "MAPPED_CONCEPT_NAME",
+        "ITEMID",  # Unique lab item identifier.
+        "COALESCED_CONCEPT_NAME",  # Final lab concept name after coalescing.
+        "LABEL",  # Lab item label.
+        "FLUID",  # Type of fluid sampled.
+        "CATEGORY",  # Category of the lab test.
+        "LOINC_CODE",  # Original LOINC code.
+        "LOINC_CONCEPT_NAME",  # Revised LOINC concept name.
+        "LOINC_CODE_MATCH",  # Boolean indicating if LOINC_CODE matches MAPPED_CONCEPT_CODE.
+        "MAPPED_CONCEPT_CODE",  # Concept code from MIMIC-IV mapping.
+        "MAPPED_CONCEPT_NAME",  # Concept name from MIMIC-IV mapping.
     )
     .write_csv("../mimic3/mimic-code_mapping/d_labitems_to_loinc_mimic3.csv")
 )
 
+# ------------------------------------------------------------------------------
+# NWICU to LOINC Mapping
+# ------------------------------------------------------------------------------
+"""
+Creates the NWICU to LOINC mapping.
 
-# Create the NWICU to LOINC mapping
+Steps:
+    1. Join d_labitems_nwicu with d_labitems_to_loinc based on:
+       - {label}: Lab item label.
+       - {fluid}: Fluid type.
+       - {category}: Lab test category.
+    2. Rename the mapping columns:
+       - Rename {omop_concept_name} to {mapped_concept_name}.
+       - Rename {omop_concept_code} to {mapped_concept_code}.
+    3. Remove duplicate rows and sort the data based on {itemid} (unique lab item identifier).
+    4. Select and write the following columns:
+       • itemid: Unique identifier for the lab item.
+       • label: Lab item label.
+       • fluid: Type of fluid.
+       • category: Category of the lab test.
+       • mapped_concept_code: Mapped lab concept code from MIMIC-IV mapping.
+       • mapped_concept_name: Mapped lab concept name from MIMIC-IV mapping.
+"""
+
 (
     d_labitems_nwicu
     # Join with MIMIC-IV to LOINC mapping
@@ -106,12 +157,12 @@ omop_concept = (
     .sort("itemid")
     # Drop unnecessary columns
     .select(
-        "itemid",
-        "label",
-        "fluid",
-        "category",
-        "mapped_concept_code",
-        "mapped_concept_name",
+        "itemid",  # Unique lab item identifier.
+        "label",  # Lab item label.
+        "fluid",  # Type of fluid.
+        "category",  # Category of the lab test.
+        "mapped_concept_code",  # Mapped lab concept code.
+        "mapped_concept_name",  # Mapped lab concept name.
     )
     .write_csv("../nwicu/d_labitems_to_loinc_nwicu.csv")
 )
