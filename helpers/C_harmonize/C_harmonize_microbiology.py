@@ -16,6 +16,14 @@ from helpers.helper import GlobalHelpers
 
 class MicrobiologyHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the MicrobiologyHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUExtractor(paths, DEMO)
         self.mimic3 = MIMIC3Extractor(paths, DEMO)
@@ -25,7 +33,36 @@ class MicrobiologyHarmonizer(GlobalVars):
         self.datasets = datasets
 
     def harmonize_microbiology(self) -> pl.LazyFrame:
+        """
+        Harmonizes microbiology data from multiple databases into a single LazyFrame.
 
+        This function performs the following steps:
+            1. Validates that a non-empty list of datasets is provided; raises ValueError if empty.
+            2. Initializes an empty list to accumulate microbiology datasets.
+            3. For each dataset in {datasets}:
+               - If "eICU" is present: Extracts microbiology data using EICUExtractor, applies _concat_helper to create a global ID and prints the unique cases using _print_unique_cases.
+               - If "MIMIC3" is present: Extracts microbiology data using MIMIC3Extractor with similar processing.
+               - If "MIMIC4" is present: Extracts microbiology data using MIMIC4Extractor with similar processing.
+               - (Note: Extraction for "UMCdb" is commented out.)
+            4. Concatenates all accumulated datasets using a "diagonal_relaxed" join.
+            5. Selects specific columns, removes duplicate records, and sorts based on {global_icu_stay_id_col} and {timeseries_time_col}.
+
+        The final returned LazyFrame contains the following columns:
+            - {global_icu_stay_id_col}: Global ICU stay identifier.
+            - {timeseries_time_col}: Timestamp for the time series data.
+            - {micro_specimen_col}: Specimen type used in the microbiology test.
+            - {micro_test_col}: Identifier or name of the microbiology test.
+            - {micro_organism_col}: Identified microorganism in the test.
+            - {micro_antibiotic_col}: Antibiotic used or administered.
+            - {micro_dilution_col}: Dilution value reported in the test.
+            - {micro_sensitivity_col}: Result indicating microorganism sensitivity.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing harmonized microbiology data with the columns listed above.
+
+        Raises:
+            ValueError: If no datasets are provided.
+        """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the microbiology from.")
 

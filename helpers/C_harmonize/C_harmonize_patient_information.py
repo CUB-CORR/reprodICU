@@ -4,10 +4,7 @@
 # Description: This script combines the preprocessed patient information from the differet
 # databases into one common table
 
-import numpy as np
-import pandas as pd
 import polars as pl
-import os.path
 
 from helpers.A_extract.A_extract_eicu import EICUExtractor
 from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
@@ -21,6 +18,14 @@ from helpers.helper import GlobalVars
 
 class PatientInformationHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the PatientInformationHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUExtractor(paths, DEMO)
         self.hirid = HiRIDExtractor(paths)
@@ -32,7 +37,56 @@ class PatientInformationHarmonizer(GlobalVars):
         self.datasets = datasets
 
     def harmonize_patient_information(self) -> pl.LazyFrame:
+        """
+        Harmonizes patient information from multiple databases into a single LazyFrame.
 
+        This function performs the following steps:
+            1. Validates that a non-empty list of datasets is provided; raises a ValueError if empty.
+            2. Initializes an empty list to accumulate patient information datasets.
+            3. For each dataset in {datasets}:
+               - Extracts patient information using the corresponding extractor.
+               - Uses a helper method (_concat_helper1 or _concat_helper2) to concatenate database-specific identifiers with a prefix to form a global identifier.
+               - Adds a constant column {dataset_col} with an alias indicating the originating dataset.
+            4. Concatenates all the patient information datasets using a "diagonal_relaxed" join.
+            5. Selects the desired columns in a pre-defined order.
+            6. Applies a cast operation to ensure the correct data types for each column.
+
+        The final returned LazyFrame contains the following columns:
+            - {global_person_id_col}: Unique global person identifier.
+            - {global_hospital_stay_id_col}: Unique global hospital stay identifier.
+            - {global_icu_stay_id_col}: Unique global ICU stay identifier.
+            - {icu_stay_seq_num_col}: Sequence number for the ICU stay.
+            - {dataset_col}: Identifier for the source dataset.
+            - {person_id_col}: Original person identifier (per dataset).
+            - {hospital_stay_id_col}: Original hospital stay identifier.
+            - {icu_stay_id_col}: Original ICU stay identifier.
+            - {age_col}: Patient age.
+            - {gender_col}: Patient gender.
+            - {height_col}: Patient height (in cm or m as defined).
+            - {weight_col}: Patient weight (in kg).
+            - {ethnicity_col}: Patient ethnicity.
+            - {admission_diagnosis_col}: Diagnosis at admission.
+            - {admission_type_col}: Type of admission.
+            - {admission_urgency_col}: Urgency level of the admission.
+            - {admission_time_col}: Time of admission.
+            - {admission_loc_col}: Admission location.
+            - {specialty_col}: Medical specialty relevant to the admission.
+            - {care_site_col}: Hospital care site.
+            - {unit_type_col}: Type of hospital unit.
+            - {pre_icu_length_of_stay_col}: Length of stay before ICU (in days).
+            - {icu_length_of_stay_col}: ICU length of stay (in days).
+            - {hospital_length_of_stay_col}: Total hospital length of stay (in days).
+            - {discharge_loc_col}: Location at discharge.
+            - {mortality_hosp_col}: Hospital mortality indicator (True/False).
+            - {mortality_icu_col}: ICU mortality indicator (True/False).
+            - {mortality_after_col}: Post-discharge mortality (in days).
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing harmonized patient information with the columns listed above and the correct data types.
+
+        Raises:
+            ValueError: If no datasets are provided.
+        """
         if self.datasets == []:
             raise ValueError(
                 "No datasets to harmonize the patient information from."
@@ -94,6 +148,35 @@ class PatientInformationHarmonizer(GlobalVars):
                 patient_information_datasets,
                 how="diagonal_relaxed",
             )
+            # Define the data types of the columns
+            .cast(
+                {
+                    self.global_person_id_col: str,
+                    self.global_hospital_stay_id_col: str,
+                    self.global_icu_stay_id_col: str,
+                    self.icu_stay_seq_num_col: int,
+                    self.person_id_col: str,
+                    self.hospital_stay_id_col: str,
+                    self.icu_stay_id_col: str,
+                    self.age_col: float,
+                    self.gender_col: self.gender_dtype,
+                    self.height_col: float,
+                    self.weight_col: float,
+                    self.ethnicity_col: self.ethnicity_dtype,
+                    self.admission_type_col: self.admission_types_dtype,
+                    self.admission_urgency_col: self.admission_urgency_dtype,
+                    self.admission_loc_col: self.admission_locations_dtype,
+                    self.care_site_col: str,
+                    self.unit_type_col: self.unit_types_dtype,
+                    self.pre_icu_length_of_stay_col: float,
+                    self.icu_length_of_stay_col: float,
+                    self.hospital_length_of_stay_col: float,
+                    self.discharge_loc_col: self.discharge_locations_dtype,
+                    self.mortality_hosp_col: bool,
+                    self.mortality_icu_col: bool,
+                    self.mortality_after_col: float,
+                }
+            )
             # Define the order of the columns
             .select(
                 self.global_person_id_col,
@@ -125,35 +208,6 @@ class PatientInformationHarmonizer(GlobalVars):
                 self.mortality_icu_col,
                 self.mortality_after_col,
             ).unique()
-            # Define the data types of the columns
-            .cast(
-                {
-                    self.global_person_id_col: str,
-                    self.global_hospital_stay_id_col: str,
-                    self.global_icu_stay_id_col: str,
-                    self.icu_stay_seq_num_col: int,
-                    self.person_id_col: str,
-                    self.hospital_stay_id_col: str,
-                    self.icu_stay_id_col: str,
-                    self.age_col: float,
-                    self.gender_col: self.gender_dtype,
-                    self.height_col: float,
-                    self.weight_col: float,
-                    self.ethnicity_col: self.ethnicity_dtype,
-                    self.admission_type_col: self.admission_types_dtype,
-                    self.admission_urgency_col: self.admission_urgency_dtype,
-                    self.admission_loc_col: self.admission_locations_dtype,
-                    self.care_site_col: str,
-                    self.unit_type_col: self.unit_types_dtype,
-                    self.pre_icu_length_of_stay_col: float,
-                    self.icu_length_of_stay_col: float,
-                    self.hospital_length_of_stay_col: float,
-                    self.discharge_loc_col: self.discharge_locations_dtype,
-                    self.mortality_hosp_col: bool,
-                    self.mortality_icu_col: bool,
-                    self.mortality_after_col: float,
-                }
-            )
         )
 
     # Helper functions

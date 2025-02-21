@@ -19,6 +19,14 @@ from helpers.helper import GlobalHelpers
 
 class MedicationHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the MedicationHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUExtractor(paths, DEMO)
         self.hirid = HiRIDExtractor(paths)
@@ -31,7 +39,60 @@ class MedicationHarmonizer(GlobalVars):
         self.datasets = datasets
 
     def harmonize_medications(self) -> pl.LazyFrame:
+        """
+        Harmonizes medication data from multiple databases into a single table.
 
+        This function performs the following steps:
+            1. Validates that datasets are provided; raises a ValueError if empty.
+            2. Loads mapping files for fluids and drugs classes:
+               - {fluids_class_mapping}: Maps medication names to fluid classes.
+               - {drugs_class_mapping}: Maps drug ingredients to drug classes.
+            3. Iterates over each dataset provided in {datasets}:
+               - Extracts medication data using dataset-specific extractors.
+               - Applies helper methods to concatenate and print unique case information.
+            4. Concatenates all medication datasets using a relaxed diagonal join.
+            5. Adds missing drug class information by replacing columns:
+               - Updates {drug_class_col} based on matches from {drug_name_col} and {drug_ingredient_col} using the mappings.
+            6. Harmonizes units in {drug_amount_unit_col} by normalizing common differences (e.g., 'mL' to 'ml', 'µ' to 'mc').
+            7. Selects and casts the following columns:
+               - {global_icu_stay_id_col}: Global ICU stay identifier.
+               - {drug_ingredient_col}: Drug ingredient.
+               - {drug_name_col}: Original medication name.
+               - {drug_name_OMOP_col}: Medications mapped to OMOP convention.
+               - {drug_class_col}: Drug/medication classification.
+               - {drug_admin_route_col}: Administration route.
+               - {drug_amount_col}: Amount of drug administered (float).
+               - {drug_amount_unit_col}: Unit for amount (normalized).
+               - {drug_rate_col}: Rate of administration (float).
+               - {drug_rate_unit_col}: Unit for the rate.
+               - {fluid_amount_col}: Fluid amount administered (float).
+               - {fluid_rate_col}: Fluid rate administered (float).
+               - {drug_start_col}: Start time of medication.
+               - {drug_end_col}: End time of medication.
+               - {drug_patient_weight_col}: Patient weight used for dosing (float).
+            8. Returns a unique and sorted pl.LazyFrame sorted by {global_icu_stay_id_col} and {drug_start_col}.
+
+        Returns:
+            pl.LazyFrame: A lazy frame containing the harmonized medication data with columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {drug_ingredient_col}: Drug ingredient.
+                - {drug_name_col}: Original medication name.
+                - {drug_name_OMOP_col}: OMOP mapped medication name.
+                - {drug_class_col}: Medication class.
+                - {drug_admin_route_col}: Route of administration.
+                - {drug_amount_col}: Medication amount.
+                - {drug_amount_unit_col}: Normalized unit for amount.
+                - {drug_rate_col}: Medication rate.
+                - {drug_rate_unit_col}: Unit for rate.
+                - {fluid_amount_col}: Fluid amount.
+                - {fluid_rate_col}: Fluid rate.
+                - {drug_start_col}: Medication start time.
+                - {drug_end_col}: Medication end time.
+                - {drug_patient_weight_col}: Patient weight.
+
+        Raises:
+            ValueError: If no datasets are provided.
+        """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the medications from.")
 

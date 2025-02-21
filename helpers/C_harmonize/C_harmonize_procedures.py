@@ -17,6 +17,14 @@ from helpers.helper import GlobalVars
 
 class ProceduresHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the ProceduresHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUExtractor(paths, DEMO)
         # self.hirid = HiRIDExtractor(paths)
@@ -28,7 +36,41 @@ class ProceduresHarmonizer(GlobalVars):
         self.datasets = datasets
 
     def harmonize_procedures(self) -> pl.LazyFrame:
+        """
+        Harmonizes procedure data from multiple databases into a single LazyFrame.
 
+        This function performs the following steps:
+            1. Validates that a non-empty list of datasets is provided; raises a ValueError if empty.
+            2. Initializes an empty list to accumulate procedure datasets.
+            3. For each dataset in {datasets}:
+               - If "eICU" is present: Extracts procedures using EICUExtractor and applies _concat_helper1 to generate global IDs.
+               - If "MIMIC3" is present: Extracts procedures using MIMIC3Extractor and applies _concat_helper1.
+               - If "MIMIC4" is present: Extracts procedures using MIMIC4Extractor and applies _concat_helper1.
+               - If "NWICU" is present: Extracts procedures using NWICUExtractor and applies _concat_helper1.
+               - If "SICdb" is present: Extracts procedures using SICdbExtractor and applies _concat_helper2.
+               - If "UMCdb" is present: Extracts procedures using UMCdbExtractor and applies _concat_helper2.
+            4. Concatenates all accumulated procedure datasets using a "diagonal_relaxed" join.
+            5. Selects specific columns and removes duplicate records.
+
+        The final returned LazyFrame contains the following columns:
+            - {global_person_id_col}: Global person identifier.
+            - {global_hospital_stay_id_col}: Global hospital stay identifier.
+            - {global_icu_stay_id_col}: Global ICU stay identifier.
+            - {procedure_icd_code_col}: ICD code corresponding to the procedure.
+            - {procedure_icd_version_col}: Version of the ICD code (e.g., ICD-9, ICD-10).
+            - {procedure_category_col}: Category grouping for the procedure.
+            - {procedure_start_col}: Start time of the procedure.
+            - {procedure_end_col}: End time of the procedure.
+            - {procedure_priority_col}: Priority level for the procedure.
+            - {procedure_discharge_col}: Indicates if the procedure is active at discharge.
+            - {procedure_description_col}: Description of the procedure.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing harmonized procedure data with the columns listed above.
+
+        Raises:
+            ValueError: If no datasets are provided.
+        """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the procedures from.")
 

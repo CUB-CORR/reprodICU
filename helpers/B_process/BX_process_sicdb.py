@@ -15,6 +15,20 @@ from helpers.helper_conversions import UnitConverter
 
 class SICdbProcessor(SICdbExtractor):
     def __init__(self, paths):
+        """
+        Initializes the SICdbProcessor instance.
+
+        Args:
+            paths: Object containing source and destination paths.
+
+        Sets:
+            self.path: Source path for SICdb data ({sicdb_source_path}).
+            self.helpers: Instance of GlobalHelpers.
+            self.convert: Instance of SICdbConverter.
+            self.icu_stay_id: LazyFrame with columns {icu_stay_id_col}, {hospital_stay_id_col}, and {person_id_col}.
+            self.icu_length_of_stay: LazyFrame with columns {icu_stay_id_col} and {icu_length_of_stay_col}.
+            self.index_cols: List containing {icu_stay_id_col} and {timeseries_time_col}.
+        """
         super().__init__(paths)
         self.path = paths.sicdb_source_path
         self.helpers = GlobalHelpers()
@@ -32,7 +46,24 @@ class SICdbProcessor(SICdbExtractor):
     # region vitals
     def process_timeseries_data_float(self) -> pl.LazyFrame:
         """
-        Processes the time series data of the SICdb dataset.
+        Processes numerical time series data for SICdb.
+
+        Steps:
+          1. Check if a preprocessed numeric file exists in {precalc_path}.
+          2. If it exists, load the data with sorted index columns.
+          3. Otherwise, cache the raw data via extract_timeseries() and save to a temporary cache file.
+          4. Pivot the cached data on "DataID" using the first-occurrence aggregation.
+          5. Drop rows where all non-{icu_stay_id_col} and non-{timeseries_time_col} columns are null.
+          6. Save the unsorted result, sort by {icu_stay_id_col} and {timeseries_time_col}, remove temporary files.
+          7. Return the sorted data.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time offset (in seconds) from ICU admission.
+          - Additional columns: Numeric measurements pivoted from "DataID" with values in "Val".
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame with numerical data.
         """
         ts_float_path = self.precalc_path + "SICdb_timeseries.parquet"
         ts_float_path_unsorted = self.precalc_path + "SICdb_ts.parquet"
@@ -102,7 +133,25 @@ class SICdbProcessor(SICdbExtractor):
     # region lab values
     def process_timeseries_data_labs(self) -> pl.LazyFrame:
         """
-        Processes the laboratory time series data of the SICdb dataset.
+        Processes laboratory time series data for SICdb.
+
+        Steps:
+          1. Check if a preprocessed lab data file exists in {precalc_path}.
+          2. If it exists, load the data with sorted index columns.
+          3. Otherwise, extract raw lab data using extract_laboratory_timeseries().
+          4. Convert lab values to canonical units using _convert_lab_values.
+          5. JSON encode the "labstruct" field.
+          6. Pivot the data on "LaboratoryName" using first-occurrence aggregation.
+          7. Save the unsorted file, sort by {icu_stay_id_col} and {timeseries_time_col}, and remove temporary files.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+          - "LaboratoryName": Lab test name used as pivot key.
+          - "labstruct": JSON-encoded lab result structure (including {value}).
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame with laboratory measurements.
         """
         ts_labs_path = self.precalc_path + "SICdb_timeseries_labs.parquet"
         ts_labs_path_unsorted = self.precalc_path + "SICdb_ts_labs.parquet"
@@ -161,7 +210,6 @@ class SICdbConverter(UnitConverter):
     def __init__(self):
         super().__init__()
 
-    # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
         self,
         data: pl.LazyFrame,
@@ -170,10 +218,20 @@ class SICdbConverter(UnitConverter):
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
-        Convert the lab values of the SICdb dataset.
-        """
+        Converts laboratory measurement values of SICdb to canonical units.
 
-        # Convert the lab values to the correct units.
+        Steps:
+          1. Apply the conversion for {Cobalamin} using convert_VitB12_pg_mL_to_pmol_L.
+          2. Convert {Iron} using convert_iron_ug_dL_to_umol_L.
+          3. Convert {Urea} to {Urea nitrogen} using convert_urea_nitrogen_from_urea followed by convert_blood_urea_nitrogen_mmol_L_to_mg_dL.
+
+        Expected input columns:
+          - {labelcol}: Contains lab test identifiers.
+          - {valuecol}: Contains measurement values or structured values with key {structfield}.
+
+        Returns:
+            pl.LazyFrame: Data with lab values converted.
+        """
         return (
             data.pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
@@ -212,9 +270,20 @@ class SICdbConverter(UnitConverter):
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Convert the lab values of the SICdb dataset.
-        """
+        Converts wide-format lab counts into relative percentages for SICdb.
 
+        Steps:
+          1. For each lab analyte ("Basophils", "Eosinophils", "Lymphocytes", "Monocytes", "Neutrophils", "Reticulocytes"),
+             compute the relative count per 100 of total {Leukocytes} or {Erythrocytes}.
+
+        Columns produced include:
+          - "Eosinophils/100 leukocytes"
+          - "Lymphocytes/100 leukocytes"
+          - "Reticulocytes/100 erythrocytes"
+
+        Returns:
+            pl.LazyFrame: Data with selected lab count columns converted to relative values.
+        """
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,

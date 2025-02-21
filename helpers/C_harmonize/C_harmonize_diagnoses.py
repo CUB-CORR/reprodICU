@@ -16,6 +16,14 @@ from helpers.helper import GlobalVars
 
 class DiagnosesHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the DiagnosesHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUProcessor(paths, DEMO)
         # self.hirid = HiRIDExtractor(paths)
@@ -28,31 +36,44 @@ class DiagnosesHarmonizer(GlobalVars):
 
     def harmonize_diagnoses(self) -> pl.LazyFrame:
         """
-        Harmonize the diagnoses from the different databases.
+        Harmonizes diagnoses from multiple databases into a single LazyFrame.
 
-        The final table contains the following columns:
-        - Person ID
-        - Hospital stay ID
-        - ICU stay ID
-        - Diagnosis ICD code
-        - Diagnosis ICD version
-        - Diagnosis start
-        - Diagnosis priority
-        - Diagnosis active at discharge
-        - Diagnosis description
+        This function performs the following steps:
+            1. Validates that a non-empty list of datasets is provided; raises ValueError if empty.
+            2. Initializes an empty list to accumulate diagnoses datasets.
+            3. For each dataset in {datasets}:
+               - If "eICU" is present: Processes diagnoses using eICUProcessor and applies _concat_helper1 to generate global identifiers.
+               - If "MIMIC3" is present: Extracts diagnoses via MIMIC3Extractor and applies _concat_helper2.
+               - If "MIMIC4" is present: Extracts diagnoses via MIMIC4Extractor and applies _concat_helper2.
+               - If "NWICU" is present: Extracts diagnoses via NWICUExtractor and applies _concat_helper2.
+               - If "SICdb" is present: Extracts diagnoses via SICdbExtractor and applies _concat_helper3.
+            4. Concatenates all accumulated diagnoses datasets using a "diagonal_relaxed" join.
+            5. Selects specific columns and ensures uniqueness and sorting based on {global_icu_stay_id_col} and {diagnosis_start_col}.
 
-        :param self.datasets: The datasets to harmonize the diagnoses from.
+        The final returned LazyFrame contains the following columns:
+            - {global_person_id_col}: Global person identifier.
+            - {global_hospital_stay_id_col}: Global hospital stay identifier.
+            - {global_icu_stay_id_col}: Global ICU stay identifier.
+            - {diagnosis_icd_code_col}: Diagnosis ICD code.
+            - {diagnosis_icd_version_col}: Diagnosis ICD version.
+            - {diagnosis_start_col}: Start time of the diagnosis.
+            - {diagnosis_end_col}: End time of the diagnosis.
+            - {diagnosis_priority_col}: Priority level of the diagnosis.
+            - {diagnosis_discharge_col}: Indicates if the diagnosis was active at discharge.
+            - {diagnosis_description_col}: Textual description of the diagnosis.
 
-        :return: The harmonized diagnoses.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: Harmonized diagnoses data containing the columns listed above.
+
+        Raises:
+            ValueError: If no datasets are provided.
         """
-
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the diagnoses from.")
 
         diagnoses_datasets = []
 
-        # Harmonize the diagnoses
+        # Harmonize the diagnoses per dataset
         if "eICU" in self.datasets:
             diagnoses_datasets.append(
                 self.eicu.process_diagnoses().pipe(

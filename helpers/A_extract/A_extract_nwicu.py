@@ -56,15 +56,25 @@ class NWICUExtractor(NWICUPaths):
         """
         Extract patient IDs from the NWICU dataset.
 
-        Reads the ICU stays CSV file and returns a LazyFrame with the following columns:
-          - {icu_stay_id_col}: Unique ICU stay identifier.
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {person_id_col}: Patient identifier.
-          - {icu_length_of_stay_col}: Length of ICU stay.
-          - intime: ICU admission time.
+        Reads the ICU stays CSV file, renames columns, casts IDs to integers, and selects the required columns.
+
+        Steps:
+            1. Scan the CSV from {icustays_path}.
+            2. Rename columns:
+               - "stay_id" → {icu_stay_id_col}
+               - "hadm_id" → {hospital_stay_id_col}
+               - "subject_id" → {person_id_col}
+               - "los" → {icu_length_of_stay_col}.
+            3. Remove duplicates and cast ID columns to int.
+            4. Select columns: {icu_stay_id_col}, {hospital_stay_id_col}, {person_id_col}, {icu_length_of_stay_col}, and "intime".
 
         Returns:
-            pl.LazyFrame: Extracted patient IDs with specified columns.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {person_id_col}: Patient identifier.
+                - {icu_length_of_stay_col}: ICU length of stay in days.
+                - intime: ICU admission timestamp.
         """
         return (
             pl.scan_csv(self.icustays_path)
@@ -97,32 +107,43 @@ class NWICUExtractor(NWICUPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extract comprehensive patient information.
+        Extract and transform patient information from the NWICU source files.
 
-        Joins ICU stays, admissions, and patient demographics, converts timestamps and ensures proper casting.
-        The final DataFrame includes the following columns:
-          - {icu_stay_id_col}
-          - {hospital_stay_id_col}
-          - {person_id_col}
-          - {icu_stay_seq_num_col}: ICU stay sequence number.
-          - {gender_col}: Patient gender (as enum).
-          - {age_col}: Age at admission.
-          - {height_col} and {weight_col}: Patient height and weight.
-          - {ethnicity_col}: Ethnicity (as enum).
-          - {pre_icu_length_of_stay_col}: Pre-ICU length of stay.
-          - {icu_length_of_stay_col}: ICU length of stay.
-          - {hospital_length_of_stay_col}: Hospital length of stay.
-          - {mortality_hosp_col}: Hospital mortality flag.
-          - {mortality_icu_col}: ICU mortality flag.
-          - {mortality_after_col}: Post-discharge mortality.
-          - {admission_urgency_col}: Admission urgency.
-          - {admission_time_col}: Admission time (extracted from ICU intime).
-          - {admission_loc_col}: Admission location.
-          - {unit_type_col}: ICU unit type.
-          - {discharge_loc_col}: Discharge location.
+        Aggregates data from ICU stays, admissions, and patients CSVs, and performs transformations
+        including date conversions, derived columns, and categorical recasting.
+
+        Steps:
+            1. Scan and rename ICU stays, admissions, and patients CSV files.
+            2. Join the datasets on key identifiers.
+            3. Join height and weight data via _extract_patient_height_weight.
+            4. (Optionally) join specialties (commented out).
+            5. Convert timestamp columns to datetime and cast numeric columns appropriately.
+            6. Compute derived columns (e.g., pre ICU length of stay, hospital length of stay, ICU mortality).
+            7. Sort by {person_id_col} and ICU admission time; compute ICU stay sequence number.
+            8. Fill missing ICU mortality values with False if the hospital mortality flag is False.
 
         Returns:
-            pl.LazyFrame: Patient information with detailed demographics and stay details.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {person_id_col}: Patient identifier.
+                - {icu_stay_seq_num_col}: ICU stay sequence number.
+                - {gender_col}: Patient gender.
+                - {age_col}: Patient age in years.
+                - {height_col}: Patient height (cm).
+                - {weight_col}: Patient weight (kg).
+                - {ethnicity_col}: Patient ethnicity.
+                - {pre_icu_length_of_stay_col}: Pre-ICU length of stay in days.
+                - {icu_length_of_stay_col}: ICU length of stay in days.
+                - {hospital_length_of_stay_col}: Hospital length of stay in days.
+                - {mortality_hosp_col}: Hospital mortality flag.
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_after_col}: Post-discharge mortality (days).
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_time_col}: Time of ICU admission.
+                - {admission_loc_col}: Admission location.
+                - {unit_type_col}: ICU unit type.
+                - {discharge_loc_col}: Discharge location.
         """
         # scanning csv files to build labels DataFrame
         icustays = pl.scan_csv(self.icustays_path).rename(
@@ -354,19 +375,25 @@ class NWICUExtractor(NWICUPaths):
         self, icustays: pl.LazyFrame, force=False
     ) -> pl.DataFrame:
         """
-        Extract patient height and weight.
+        Extract patient height and weight information from the chartevents CSV file.
 
-        Retrieves data from the chartevents.csv file (or a cached parquet file if available) and computes:
-          - {height_col}: Patient height in centimeters.
-          - {weight_col}: Patient weight in kilograms.
-          - {icu_stay_id_col}: ICU stay identifier.
+        Checks for existing precalculated parquet data. If available (and force is False), the method
+        loads the cached data; otherwise, it recalculates from the CSV.
 
-        Args:
-            icustays (pl.LazyFrame): ICU stays data.
-            force (bool, optional): If True, force recalculation even if cached data exists. Defaults to False.
+        Steps:
+            1. Check if precalculated parquet file exists at {precalc_path} + "NWICU_height_weight.parquet".
+            2. If available and not forced, load the parquet file.
+            3. Otherwise, scan chartevents CSV, filter by ITEMIDs of interest and join with {intime} from ICU stays.
+            4. Convert time columns from string to datetime.
+            5. Perform unit conversion (inches to cm, oz to kg).
+            6. Pivot the data to create separate columns for {height_col} and {weight_col}.
+            7. Cast the final columns to float and save the result as a parquet file.
 
         Returns:
-            pl.DataFrame: DataFrame with columns {icu_stay_id_col}, {weight_col}, and {height_col}.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {weight_col}: Patient weight (kg) as float.
+                - {height_col}: Patient height (cm) as float.
         """
         # check if precalculated data is available
         if (
@@ -449,17 +476,22 @@ class NWICUExtractor(NWICUPaths):
     # make available the common processing steps for the NWICU timeseries
     def extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Process timeseries data by aligning with ICU admission time.
+        Align timeseries data with ICU admission time and compute time offsets.
 
-        Joins the given data with patient IDs, computes the time offset relative to ICU admission,
-        and filters based on ICU length of stay and pre-ICU cutoff. Adds the column:
-          - {timeseries_time_col}: Offset in seconds from ICU admission time.
+        Joins the provided data with patient IDs (including {intime}), converts timestamp strings
+        to datetime, computes the offset relative to ICU admission, and filters by the ICU stay window.
 
-        Args:
-            data (pl.LazyFrame): Raw timeseries data.
+        Steps:
+            1. Join input data with patient IDs from extract_patient_IDs.
+            2. Convert "intime" from string to datetime.
+            3. Compute time offset by subtracting "intime" from "charttime".
+            4. Filter out rows outside the ICU stay duration and pre-ICU cutoff.
+            5. Convert the offset to total seconds.
 
         Returns:
-            pl.LazyFrame: Processed timeseries data containing the {timeseries_time_col} and other relevant fields.
+            pl.LazyFrame: Contains columns:
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - Other original measurement columns (e.g., "valuenum").
         """
         IDs = self.extract_patient_IDs()
 
@@ -495,16 +527,17 @@ class NWICUExtractor(NWICUPaths):
     # Extract measurements from the chartevents.csv file
     def extract_chartevents(self) -> pl.LazyFrame:
         """
-        Extract vital measurements from chartevents.csv.
+        Extract vital measurements from the chartevents CSV file and compute relative time offsets.
 
-        Processes vital sign data and returns a LazyFrame with:
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - label: Mapped vital name.
-          - valuenum: Measurement value.
-          - {timeseries_time_col}: Time offset in seconds relative to ICU admission.
+        Processes vital sign data, applies necessary mappings, converts data types, and calculates the offset
+        relative to ICU admission.
 
         Returns:
-            pl.LazyFrame: Vital measurements with detailed column mapping.
+            pl.LazyFrame: Contains columns:
+                - {hospital_stay_id_col}: Hospital stay identifier.
+                - label: Mapped vital sign name.
+                - valuenum: Measurement value (float).
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
         """
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -543,21 +576,22 @@ class NWICUExtractor(NWICUPaths):
     # Extract lab measurements from the labevents.csv file
     def extract_lab_measurements(self) -> pl.LazyFrame:
         """
-        Extract lab measurements from labevents.csv.
+        Extract laboratory measurements from the labevents CSV file and structure LOINC details.
 
-        Processes lab data by joining with LOINC mappings and returns a LazyFrame with:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time offset in seconds.
-          - label: Lab test name.
-          - labstruct: A structured column containing:
-              • value: Lab value.
-              • system: LOINC system.
-              • method: LOINC method.
-              • time: LOINC time aspect.
-              • LOINC: LOINC code.
+        Joins lab measurements with LOINC mapping information and creates a structured column ("labstruct")
+        containing detailed lab test information.
 
         Returns:
-            pl.LazyFrame: Lab measurement data with the specified structured columns.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - label: Lab test name.
+                - labstruct: Struct with detailed lab data, including:
+                    • value: Lab measurement value (float).
+                    • system: LOINC system.
+                    • method: LOINC method.
+                    • time: LOINC time aspect.
+                    • LOINC: LOINC code.
         """
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -725,18 +759,22 @@ class NWICUExtractor(NWICUPaths):
     # TODO: check with NWICU documentation about the medication data
     def extract_medications(self) -> pl.LazyFrame:
         """
-        Extract medication administration data.
+        Extract medication administration data from the prescriptions CSV file and convert times.
 
-        Retrieves data from prescriptions.csv (and emar.csv if applicable), normalizes drug names, units, and times.
-        The resulting LazyFrame contains:
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {drug_name_col}: Original drug name mapped to {drug_ingredient_col}.
-          - {drug_amount_col} and {drug_amount_unit_col}: Drug amount and unit (if not a rate).
-          - {drug_rate_col} and {drug_rate_unit_col}: Drug rate and rate unit (if applicable).
-          - {drug_start_col} and {drug_end_col}: Relative start and end times (in seconds) from ICU admission.
+        Normalizes drug names using mapping files, computes relative start and end times from ICU admission,
+        and handles rate versus amount dosing.
 
         Returns:
-            pl.LazyFrame: Medication administration data with timing and dosing details.
+            pl.LazyFrame: Contains columns:
+                - {hospital_stay_id_col}: Hospital stay identifier.
+                - {drug_name_col}: Original drug name.
+                - {drug_ingredient_col}: Normalized drug ingredient.
+                - {drug_amount_col}: Drug amount (if applicable).
+                - {drug_amount_unit_col}: Unit for drug amount.
+                - {drug_rate_col}: Drug rate (if applicable).
+                - {drug_rate_unit_col}: Unit for drug rate.
+                - {drug_start_col}: Start time offset (seconds) from ICU admission.
+                - {drug_end_col}: End time offset (seconds) from ICU admission.
         """
         print("NWICU   - Extracting medications...")
 
@@ -864,20 +902,19 @@ class NWICUExtractor(NWICUPaths):
     # Extract diagnoses from the diagnoses_icd.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
         """
-        Extract diagnoses from diagnoses_icd.csv.
+        Extract diagnostic codes from diagnoses CSV and merge them with ICD description details.
 
-        Retrieves diagnosis data and joins with detailed ICD diagnosis descriptions.
-        The final LazyFrame includes:
-          - {person_id_col}: Patient identifier.
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {diagnosis_icd_code_col}: Diagnosis ICD code.
-          - {diagnosis_icd_version_col}: ICD version.
-          - {diagnosis_priority_col}: Diagnosis order (priority).
-          - {diagnosis_description_col}: Long diagnosis description.
-          - 'diagnosis_discharge_col': Flag indicating a discharge diagnosis.
+        Retrieves diagnosis data and assigns additional information such as discharge flag and long description.
 
         Returns:
-            pl.LazyFrame: Diagnosis data with complete ICD and priority details.
+            pl.LazyFrame: Contains columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {diagnosis_icd_code_col}: Diagnosis ICD code.
+                - {diagnosis_icd_version_col}: ICD version.
+                - {diagnosis_priority_col}: Diagnosis order.
+                - {diagnosis_description_col}: Detailed diagnosis description.
+                - {diagnosis_discharge_col}: Discharge diagnosis flag (always True).
         """
         print("NWICU   - Extracting diagnoses...")
         diagnoses = pl.scan_csv(
@@ -940,20 +977,19 @@ class NWICUExtractor(NWICUPaths):
     # Extract procedures from the procedureevents.csv and procedures_icd.csv file
     def extract_procedures(self) -> pl.LazyFrame:
         """
-        Extract procedures from procedureevents.csv and procedures_icd.csv.
+        Extract procedures from procedure events and ICD procedure CSVs, converting times relative to ICU admission.
 
-        Processes procedure events by aligning with ICU admission time and joins additional item details.
-        The output LazyFrame comprises:
-          - {person_id_col}: Patient identifier.
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {procedure_start_col}: Procedure start time offset in seconds.
-          - {procedure_end_col}: Procedure end time offset in seconds.
-          - {procedure_category_col}: Procedure category.
-          - {procedure_description_col}: Detailed procedure description.
+        Processes procedure event data and merges it with ICD procedure details.
 
         Returns:
-            pl.LazyFrame: Procedure events data with timing and descriptive details.
+            pl.LazyFrame: Contains columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {procedure_start_col}: Procedure start time offset (seconds) from ICU admission.
+                - {procedure_end_col}: Procedure end time offset (seconds) from ICU admission.
+                - {procedure_category_col}: Category for the procedure.
+                - {procedure_description_col}: Detailed procedure description.
         """
         print("NWICU   - Extracting procedures...")
 
