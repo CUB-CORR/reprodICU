@@ -14,6 +14,20 @@ from helpers.helper_conversions import UnitConverter
 
 class MIMIC3Processor(MIMIC3Extractor):
     def __init__(self, paths, DEMO=False):
+        """
+        Initialize the MIMIC3Processor.
+
+        Args:
+            paths: Object containing file paths.
+            DEMO (bool): If True, use demo mode parameters.
+
+        Attributes:
+            {icu_stay_id_col}: ICU stay identifier.
+            {hospital_stay_id_col}: Hospital stay identifier.
+            {person_id_col}: Patient identifier.
+            {icu_length_of_stay_col}: ICU length of stay.
+            index_cols (list): Index columns used for pivoting, specifically [{icu_stay_id_col}, {timeseries_time_col}].
+        """
         super().__init__(paths, DEMO)
         self.path = paths.mimic3_source_path
         self.helpers = GlobalHelpers()
@@ -32,7 +46,26 @@ class MIMIC3Processor(MIMIC3Extractor):
     # Processes the vital data of the MIMIC3 dataset.
     def process_timeseries_vitals(self):
         """
-        Processes the vital data of the MIMIC3 dataset.
+        Processes vital and respiratory time series data for MIMIC-III.
+
+        Steps:
+          1. Check if a sorted parquet file exists in {precalc_path}.
+          2. If it exists, load and return data with index columns ({icu_stay_id_col} and {timeseries_time_col}) sorted.
+          3. Otherwise, extract chart events and:
+             • Convert temperature from Fahrenheit to Celsius.
+             • Convert fractions to percentages.
+          4. Pivot the data using "LABEL" as the key.
+          5. Drop rows where all non-index columns are null.
+          6. Save the unsorted data, sort it, and remove temporary files.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time offset in seconds relative to ICU admission.
+          - "LABEL": Pivot key for measurement types.
+          - Other columns: Individual vital sign measurements.
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame with vital and respiratory measurements.
         """
         ts_vitals_path = self.precalc_path + "MIMIC3_timeseries_vitals.parquet"
         ts_vitals_path_unsorted = self.precalc_path + "MIMIC3_ts_vitals.parquet"
@@ -104,10 +137,27 @@ class MIMIC3Processor(MIMIC3Extractor):
     # endregion
 
     # region lab
-    # Processes the lab data of the MIMIC3 dataset.
     def process_timeseries_labevents(self):
         """
-        Processes the lab data of the MIMIC3 dataset.
+        Processes laboratory time series data for MIMIC-III.
+
+        Steps:
+          1. Check if a preprocessed lab file exists in {precalc_path}; load it if available.
+          2. Otherwise, extract raw lab data using extract_lab_measurements().
+          3. Convert lab values to canonical units via _convert_lab_values.
+          4. JSON encode the "labstruct" field.
+          5. Pivot on "LABEL" to create a wide-format dataset.
+          6. Apply wide-format adjustments via _convert_wide_lab_values.
+          7. Save, sort the data by {icu_stay_id_col} and {timeseries_time_col}, and remove any temporary files.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time offset (in seconds).
+          - "LABEL": Lab test name used as pivot key.
+          - "labstruct": JSON-encoded structured lab result (including {value}).
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame of lab measurements.
         """
         ts_labs_path = self.precalc_path + "MIMIC3_timeseries_labs.parquet"
         ts_labs_path_unsorted = self.precalc_path + "MIMIC3_ts_labs.parquet"
@@ -164,10 +214,26 @@ class MIMIC3Processor(MIMIC3Extractor):
     # endregion
 
     # region input/output
-    # Processes the input/output data of the MIMIC3 dataset.
     def process_timeseries_inputoutput(self):
         """
-        Processes the input/output data of the MIMIC3 dataset.
+        Processes input/output measurement data for MIMIC-III.
+
+        Steps:
+          1. Check for an existing preprocessed input/output file in {precalc_path}.
+          2. If found, load it with sorted index columns.
+          3. Otherwise, extract output measurements.
+          4. Pivot the data using "LABEL" as key with mean aggregation.
+          5. Drop rows where all non-index columns are null.
+          6. Save the unsorted data, sort by {icu_stay_id_col} and {timeseries_time_col}, and remove temporary files.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time offset (seconds).
+          - "LABEL": Measurement label for input/output events.
+          - "VALUENUM": Aggregated value (mean).
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame containing input/output data.
         """
         ts_inout_path = self.precalc_path + "MIMIC3_timeseries_inout.parquet"
         ts_inout_path_unsorted = self.precalc_path + "MIMIC3_ts_inout.parquet"
@@ -222,10 +288,22 @@ class MIMIC3Processor(MIMIC3Extractor):
     # endregion
 
     # region helpers
-    # Print the number of unique cases in the timeseries data
     def _print_unique_cases(
         self, data: pl.LazyFrame, name: str
     ) -> pl.LazyFrame:
+        """
+        Prints the number of unique ICU cases in the given timeseries data.
+
+        Args:
+            data (LazyFrame): The input timeseries data containing at least the column {icu_stay_id_col}.
+            name (str): Descriptor for the timeseries data type (e.g., "vitals", "labs").
+
+        Returns:
+            LazyFrame: The unmodified input data.
+
+        Columns:
+            - {icu_stay_id_col}: ICU stay identifier used for uniqueness count.
+        """
         unique_count = (
             data.select(self.icu_stay_id_col)
             .unique()
@@ -245,7 +323,6 @@ class MIMIC3Converter(UnitConverter):
     def __init__(self):
         super().__init__()
 
-    # Convert the lab values of the MIMIC-III dataset.
     def _convert_lab_values(
         self,
         data: pl.LazyFrame,
@@ -254,10 +331,21 @@ class MIMIC3Converter(UnitConverter):
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
-        Convert the lab values of the MIMIC dataset.
-        """
+        Converts raw lab values for MIMIC-III into canonical units.
 
-        # Convert the lab values to the correct units.
+        Applies a series of sequential unit conversions to adjust lab measurements for tests such as:
+          • {Calcium} and {Calcium.ionized}: mg/dL to mmol/L.
+          • {Creatine kinase.MB}: ng/mL to U/L.
+          • {C reactive protein}: mg/dL to mg/L.
+          • Additional tests: {Fibrin D-dimer}, {Iron}, {Magnesium}, {Myoglobin}, {Triiodothyronine}, {Thyroxine}, {Troponin}, and {Cobalamin}.
+
+        Expected columns:
+          - {labelcol}: Lab test identifier.
+          - {valuecol}: Numeric lab measurement or a structured value with key {structfield}.
+
+        Returns:
+            pl.LazyFrame: Lab data with adjusted unit values.
+        """
         return (
             data.pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
@@ -399,9 +487,19 @@ class MIMIC3Converter(UnitConverter):
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Convert the lab values of the MIMIC3 dataset.
-        """
+        Converts lab values in wide format to relative percentages.
 
+        Args:
+            data (LazyFrame): Input pivoted lab data after initial unit conversion.
+
+        Returns:
+            LazyFrame: Lab data with absolute counts converted to relative percentages.
+
+        Columns modified:
+            - "Eosinophils/100 leukocytes"
+            - "Lymphocytes/100 leukocytes"
+            - "Reticulocytes/100 erythrocytes"
+        """
         return (
             data.pipe(
                 self.convert_absolute_count_to_relative,

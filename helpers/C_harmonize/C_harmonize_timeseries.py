@@ -4,10 +4,8 @@
 # Description: This script combines the preprocessed patient information from the differet
 # databases into one common table
 
-import os
-import re
-
 import polars as pl
+
 from helpers.B_process.B_process_eicu import EICUProcessor
 from helpers.B_process.B_process_mimic3 import MIMIC3Processor
 from helpers.B_process.B_process_mimic4 import MIMIC4Processor
@@ -20,6 +18,14 @@ from helpers.helper import GlobalHelpers, GlobalVars
 
 class TimeseriesHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
+        """
+        Initializes the TimeseriesHarmonizer class with the given paths and datasets.
+
+        Args:
+            paths (str): The file paths required for data extraction.
+            datasets (list): A list of datasets to be harmonized.
+            DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
+        """
         super().__init__(paths)
         self.eicu = EICUProcessor(paths, DEMO)
         self.hirid = HiRIDProcessor(paths)
@@ -42,14 +48,37 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
     # region harmonize/split
-    # Split the timeseries data into vitals, labs, resp and inout
     def harmonize_split_timeseries(
         self, timeseries=[], save_to_default=True
     ) -> None:
         """
-        Splits the timeseries data into vitals, labs, resp and inout
-        """
+        Splits and harmonizes the timeseries data into four categories: vitals, labs, respiratory, and intake/output.
 
+        This function performs the following steps:
+            1. Validates that {datasets} and the list of timeseries categories are provided; raises ValueError if either is empty.
+            2. Constructs Polars Series for each category to represent the relevant column names:
+               - {index_cols}: Identifiers such as {global_icu_stay_id_col} and {timeseries_time_col}.
+               - {relevant_vital_values}, {relevant_respiratory_values}, {relevant_intakeoutput_values}, {relevant_lab_LOINC_components}: These subsets are used for filtering.
+            3. For each dataset in {datasets} (e.g., "eICU", "HiRID", "MIMIC3", etc.):
+               - Processes the corresponding timeseries data via dataset-specific methods.
+               - Applies a helper method (_concat_helper) to create a global ID by concatenating a dataset prefix.
+               - Filters the schema to select the columns that match the pre-defined Series for each category.
+            4. Concatenates the data for each category using a "diagonal_relaxed" join.
+            5. For each category:
+               - Vitals: Cleans and casts to the appropriate data types, fixes temperature values (e.g., converting accidental Fahrenheit values), and sums subscores for Glasgow Coma Score.
+               - Labs, Respiratory, and Intake/Output: Cast and remove duplicate records while ensuring {global_icu_stay_id_col} and {timeseries_time_col} are maintained.
+            6. If save_to_default is True, writes the processed data for each category to parquet files under {save_path}; otherwise, returns a tuple containing:
+               - vitals: Contains {global_icu_stay_id_col}, {timeseries_time_col} plus sorted vital measurement columns.
+               - labs: Contains {global_icu_stay_id_col}, {timeseries_time_col} plus lab result columns.
+               - resp: Contains {global_icu_stay_id_col}, {timeseries_time_col} and respiratory parameters.
+               - inout: Contains {global_icu_stay_id_col}, {timeseries_time_col} and intake/output measurements.
+
+        Returns:
+            None if saving to files; otherwise, a tuple (vitals, labs, resp, inout) of processed Polars DataFrames.
+
+        Raises:
+            ValueError: If {datasets} is empty or if no timeseries categories are selected.
+        """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the timeseries from.")
         if timeseries == []:
@@ -67,7 +96,7 @@ class TimeseriesHarmonizer(GlobalVars):
             [*self.index_cols, *self.relevant_lab_LOINC_components]
         )
 
-        # Harmonize the timeseries
+        # Harmonize the timeseries per category
         timeseries_vitals = []
         timeseries_labs = []
         timeseries_resp = []
@@ -276,7 +305,7 @@ class TimeseriesHarmonizer(GlobalVars):
             timeseries_inout.append(umcdb_timeseries.select(*umcdb_inout))
         # endregion
 
-        # Combine the timeseries data of the datasets
+        # Concatenate the timeseries data for each category
         # region vitals
         vitals = pl.concat(timeseries_vitals, how="diagonal_relaxed")
         vitals_cols = vitals.collect_schema().names()
@@ -286,7 +315,7 @@ class TimeseriesHarmonizer(GlobalVars):
                 self.helpers.dropna, "all", vitals_cols_not_index, False
             )
             .cast(
-                {  # Convert all columns to float
+                {  # Convert columns to appropriate types
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
@@ -297,12 +326,12 @@ class TimeseriesHarmonizer(GlobalVars):
             )
             .select([*self.index_cols, *sorted(vitals_cols_not_index)])
             .with_columns(
-                # Fix Temperature values for accidental Fahrenheit values
+                # Fix Temperature if value appears to be in Fahrenheit
                 pl.when(pl.col("Temperature").gt(60))
                 .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
                 .otherwise(pl.col("Temperature"))
                 .alias("Temperature"),
-                # Sum the GCS subscores
+                # Sum Glasgow Coma Score components if total is missing
                 pl.when(pl.col("Glasgow Coma Score total").is_null())
                 .then(
                     pl.sum_horizontal(
@@ -429,6 +458,25 @@ class TimeseriesHarmonizer(GlobalVars):
     # region decode
     # Decode the lab values
     def decode_lab_values(self, lf: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Decodes lab values stored as JSON strings in columns to a structured format.
+
+        For each non-index column in the input LazyFrame, this function:
+            - Treats the column value as a JSON string.
+            - Decodes it into a struct with fields:
+                 "value": Numeric lab value.
+                 "system": Coding system.
+                 "method": Measurement method.
+                 "time": Time of measurement.
+                 "LOINC": LOINC code.
+
+        Args:
+            lf (pl.LazyFrame): Input LazyFrame with lab value columns.
+
+        Returns:
+            pl.LazyFrame: The LazyFrame with decoded lab value columns.
+        """
+
         def decode_lab_value(lab_value):
             return pl.col(lab_value).str.json_decode(labstructdtype)
 
@@ -453,9 +501,24 @@ class TimeseriesHarmonizer(GlobalVars):
     # Remove the metadata columns from the timeseries data
     # i.e. remove the structs, keeping only the value field per column
     def remove_metadata(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        # based on the github comments by @daviewales here:
-        # https://github.com/pola-rs/polars/issues/7078#issuecomment-2258225305
-        # modified for LazyFrames
+        """
+        Removes metadata from timeseries data by flattening structured columns.
+
+        Specifically, for columns with struct types, this method:
+            1. Prefixes nested field names (except "value") with the parent column name.
+            2. Unnests the struct, keeping the primary "value" field intact.
+            3. Excludes columns matching metadata patterns (e.g., ending in "source" or "method").
+
+        This approach is based on the GitHub comments by @daviewales here:
+        https://github.com/pola-rs/polars/issues/7078#issuecomment-2258225305
+        and has been modified for LazyFrames.
+
+        Args:
+            data (pl.LazyFrame): The input LazyFrame containing metadata.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with metadata removed and sorted based on {global_icu_stay_id_col} and {timeseries_time_col}.
+        """
 
         def _prefix_field(field):
             return pl.col(field).name.map_fields(

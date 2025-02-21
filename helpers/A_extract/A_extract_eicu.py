@@ -46,32 +46,48 @@ class EICUExtractor(EICUPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extract patient information from the CSV file.
+        Extract and transform patient-level data from the eICU patient CSV file.
 
-        This method reads data from the patient CSV file (self.patient_path), selects a subset of columns, renames them for consistency,
-        applies necessary transformations, and joins with admission diagnosis information.
+        Steps:
+            1. Read the raw patient CSV using Polars scan.
+            2. Select a set of key columns including:
+               - "uniquepid" → {person_id_col}: Unique patient identifier.
+               - "patienthealthsystemstayid" → {hospital_stay_id_col}: Hospital admission identifier.
+               - "patientunitstayid" → {icu_stay_id_col}: ICU stay identifier.
+               - "gender" → {gender_col}: Patient gender.
+               - "age" → {age_col}: Patient age.
+               - "ethnicity" → {ethnicity_col}: Patient ethnicity.
+               - "admissionheight" → {height_col}: Patient height.
+               - "admissionweight" → {weight_col}: Patient weight.
+               - "unittype" → {unit_type_col}: Type of care unit.
+               - "unitadmitsource" → {admission_loc_col}: Admission source/location.
+            3. Join with admission diagnoses via extract_admission_diagnoses().
+            4. Convert time strings to proper datetime objects.
+            5. Derive new columns:
+               - {pre_icu_length_of_stay_col}: Pre-ICU length (in days).
+               - {icu_length_of_stay_col}: ICU length (in days).
+               - {hospital_length_of_stay_col}: Hospital length (in days).
+               - {mortality_icu_col}: ICU mortality flag.
+            6. Handle zero values in height/weight and calculate {icu_stay_seq_num_col}.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing the following columns:
+            pl.LazyFrame: Dataframe with columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {hospital_stay_id_col}: Hospital stay identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
                 - {person_id_col}: Patient identifier.
+                - {icu_stay_seq_num_col}: ICU stay sequence number.
                 - {gender_col}: Patient gender.
                 - {age_col}: Patient age.
                 - {height_col}: Patient height.
                 - {weight_col}: Patient weight.
                 - {ethnicity_col}: Patient ethnicity.
-                - {admission_urgency_col}: Admission urgency.
-                - {admission_type_col}: Admission type.
-                - {admission_time_col}: Admission time.
-                - {admission_diagnosis_col}: Admission diagnosis description.
+                - {admission_loc_col}: Admission location.
                 - {pre_icu_length_of_stay_col}: Pre-ICU length of stay.
                 - {icu_length_of_stay_col}: ICU length of stay.
                 - {hospital_length_of_stay_col}: Hospital length of stay.
-                - {mortality_hosp_col}: In-hospital mortality flag.
+                - {mortality_hosp_col}: Hospital mortality flag.
                 - {mortality_icu_col}: ICU mortality flag.
-                - {mortality_after_col}: Mortality after ICU discharge.
-                - {admission_loc_col}: Admission location.
+                - {mortality_after_col}: Mortality after discharge (days).
                 - {unit_type_col}: Unit type.
                 - {care_site_col}: Care site.
                 - {discharge_loc_col}: Discharge location.
@@ -277,16 +293,21 @@ class EICUExtractor(EICUPaths):
     # Extract admission diagnosis information from the admissionDx.csv file
     def extract_admission_diagnoses(self) -> pl.LazyFrame:
         """
-        Extract admission diagnosis information from the CSV file.
+        Extracts admission diagnosis information from the eICU admissionDx CSV file.
 
-        This method reads data from the admissionDx CSV file (self.admissionDx_path) and extracts details on diagnosis,
-        admission type, and urgency, while also applying necessary string transformations.
+        Reads the admissionDx CSV, cleans and processes the diagnosis text, and infers related admission properties.
+        Steps:
+            1. Read the CSV file containing admission diagnosis data.
+            2. Rename "patientunitstayid" to {icu_stay_id_col} for consistency.
+            3. Clean diagnosis strings and harmonize delimiters.
+            4. Infer admission type and urgency from text.
+            5. Group rows by {icu_stay_id_col} and aggregate the first available non-null value.
 
         Returns:
             pl.LazyFrame: A LazyFrame with the following columns:
-                - {icu_stay_id_col}: ICU stay ID.
-                - {admission_type_col}: Admission type.
-                - {admission_urgency_col}: Admission urgency.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {admission_type_col}: Admission type (e.g., Surgical or Medical).
+                - {admission_urgency_col}: Admission urgency status.
                 - {admission_diagnosis_col}: Admission diagnosis description.
         """
         return (
@@ -395,18 +416,26 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for lab values from the lab.csv file
     def extract_time_series_lab(self) -> pl.LazyFrame:
         """
-        Extract lab time series data from the CSV file.
+        Extracts laboratory time series measurements from the lab CSV file.
 
-        Reads lab data from self.lab_path, applies name mappings and filtering to select relevant lab measurements.
-        Constructs a structured lab result with related LOINC details.
+        Reads lab records, applies name mapping, joins LOINC details and converts times to seconds.
+        Steps:
+            1. Read lab data from self.lab_path and select key columns.
+            2. Rename columns for consistency, replacing "patientunitstayid" with {icu_stay_id_col} and "labresultoffset" with {timeseries_time_col}.
+            3. Replace lab names using a mapping.
+            4. Join with LOINC components to add: LOINC_component, LOINC_system, LOINC_method, LOINC_time, and LOINC_code.
+            5. Filter records based on relevant lab components and systems.
+            6. Remove duplicate and null value records.
+            7. Convert time offsets from minutes to seconds.
+            8. Assemble a structured column "labstruct" containing lab result details.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the following columns:
-                - {icu_stay_id_col}: ICU stay ID.
-                - {timeseries_time_col}: Recorded time (in seconds).
-                - labname: Lab test name.
-                - labstruct: A structured column containing:
-                    * value: Lab result.
+            pl.LazyFrame: A LazyFrame with columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of recording (in seconds).
+                - "labname": Mapped laboratory test name.
+                - "labstruct": A struct with keys:
+                    * value: Lab result value.
                     * system: LOINC system.
                     * method: LOINC method.
                     * time: LOINC time aspect.
@@ -525,17 +554,23 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for respiratory values from the respiratorycharting.csv file
     def extract_time_series_resp(self) -> pl.LazyFrame:
         """
-        Extract respiratory time series data from the CSV file.
+        Extracts respiratory time series measurements from the respiratoryCharting CSV file.
 
-        Reads respiratory charting data from self.respiratoryCharting_path, applies name mappings and filters,
-        and converts measurement times to seconds.
+        Reads respiratory data, maps measurement labels, cleans values and converts recording times.
+        Steps:
+            1. Read respiratory charting data from self.respiratoryCharting_path.
+            2. Rename key columns replacing "patientunitstayid" with {icu_stay_id_col} and "respchartoffset" with {timeseries_time_col}.
+            3. Apply a mapping for respiratory measurement labels.
+            4. Clean measurement values (e.g., removing percentage symbols and extraneous text).
+            5. Filter for the defined set of respiratory measurements.
+            6. Remove duplicate rows and convert times from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
-                - {icu_stay_id_col}: ICU stay ID.
-                - {timeseries_time_col}: Time of recording (in seconds).
-                - respchartvaluelabel: Label for the respiratory measurement.
-                - respchartvalue: Recorded respiratory value.
+            pl.LazyFrame: A LazyFrame with columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Adjusted time in seconds.
+                - "respchartvaluelabel": Respiratory measurement label.
+                - "respchartvalue": Recorded respiratory measurement value.
         """
         # NOTE: ASSUMPTION: These are the respiratory values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -611,17 +646,22 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for nurse values from the nurseCharting.csv file
     def extract_time_series_nurse(self) -> pl.LazyFrame:
         """
-        Extract nurse charting time series data from the CSV file.
+        Extracts nurse charting time series measurements from the nurseCharting CSV file.
 
-        Processes nurse charting data from self.nurseCharting_path, applies filtering via mappings, and handles duplicates.
-        Time values are converted to seconds.
+        Reads nurse charting data filtering only for selected measurement types, cleans them and adjusts recording times.
+        Steps:
+            1. Read nurse charting data from self.nurseCharting_path.
+            2. Rename columns to standard names (e.g., replacing "patientunitstayid" with {icu_stay_id_col} and "nursingchartoffset" with {timeseries_time_col}).
+            3. Filter rows to keep only nurse measurements of interest.
+            4. Clean measurement names and values (e.g., replacing special text or null values).
+            5. Convert recording time from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with:
-                - {icu_stay_id_col}: ICU stay ID.
-                - {timeseries_time_col}: Timestamp converted to seconds.
-                - nursingchartcelltypevalname: Nurse value name.
-                - nursingchartvalue: Corresponding nurse value.
+            pl.LazyFrame: A LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of recording (in seconds).
+                - "nursingchartcelltypevalname": Nurse measurement name.
+                - "nursingchartvalue": Nurse measurement value.
         """
         # NOTE: keep only the nurse charting values not covered by the other TS
         keep_nurse_names = [
@@ -758,17 +798,22 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for intake/output values from the intakeOutput.csv file
     def extract_time_series_intake_output(self) -> pl.LazyFrame:
         """
-        Extract intake/output time series data from the CSV file.
+        Extracts intake/output time series measurements from the intakeOutput CSV file.
 
-        Processes intake/output records from self.intakeOutput_path by applying mappings on variable names,
-        filtering valid numerical values, and converting time units.
+        Reads intake/output data, applies mapping to measurement names, filters for relevant values and adjusts time offsets.
+        Steps:
+            1. Read intake/output data from self.intakeOutput_path.
+            2. Rename columns (e.g., "patientunitstayid" to {icu_stay_id_col} and "intakeoutputoffset" to {timeseries_time_col}).
+            3. Replace and map intake/output labels using provided mappings.
+            4. Filter out null numeric measurement values and remove duplicates.
+            5. Convert time offsets from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: A LazyFrame with columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time of observation in seconds.
-                - celllabel: Mapped intake/output variable name.
-                - cellvaluenumeric: Numerical value of the intake/output measurement.
+                - {timeseries_time_col}: Adjusted time in seconds.
+                - "celllabel": Mapped intake/output variable name.
+                - "cellvaluenumeric": Numerical value of the measurement.
         """
         # NOTE: ASSUMPTION: These are the intake/output values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -826,13 +871,20 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for periodic values from the vitalPeriodic.csv file
     def extract_time_series_periodic(self) -> pl.LazyFrame:
         """
-        Extract periodic vital sign data from the CSV file.
+        Extracts periodic vital sign measurements from the vitalPeriodic CSV file.
 
-        Reads periodic measurement data from self.vitalPeriodic_path, removes duplicates,
-        and converts observation times to seconds.
+        Reads periodic vital sign data and converts time offsets.
+        Steps:
+            1. Read periodic data from self.vitalPeriodic_path.
+            2. Rename key columns (e.g., "patientunitstayid" to {icu_stay_id_col} and "observationoffset" to {timeseries_time_col}).
+            3. Remove duplicate records.
+            4. Convert observation times from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with periodic vital signs across multiple columns.
+            pl.LazyFrame: A LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of observation (in seconds).
+                - Plus any additional vital sign columns present in the CSV.
         """
         return (
             pl.scan_csv(self.vitalPeriodic_path)
@@ -859,18 +911,23 @@ class EICUExtractor(EICUPaths):
     # Extract time series information for aperiodic values from the vitalAperiodic.csv file
     def extract_time_series_aperiodic(self) -> pl.LazyFrame:
         """
-        Extract aperiodic vital sign data from the CSV file.
+        Extracts aperiodic vital sign measurements from the vitalAperiodic CSV file.
 
-        Retrieves aperiodic measurements from self.vitalAperiodic_path and transforms
-        them by converting times and renaming columns.
+        Reads aperiodic vital sign data, selects key blood pressure measurements and converts time offsets.
+        Steps:
+            1. Read data from self.vitalAperiodic_path.
+            2. Select key columns including noninvasive blood pressure measures.
+            3. Rename columns for consistency (e.g., "patientunitstayid" to {icu_stay_id_col}, "observationoffset" to {timeseries_time_col}).
+            4. Remove duplicate rows.
+            5. Convert recording time from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the following columns:
-                - {icu_stay_id_col}: ICU stay ID.
+            pl.LazyFrame: A LazyFrame with columns:
+                - {icu_stay_id_col}: ICU stay identifier.
                 - {timeseries_time_col}: Time of observation (in seconds).
-                - noninvasivesystolic: Non-invasive systolic blood pressure.
-                - noninvasivediastolic: Non-invasive diastolic blood pressure.
-                - noninvasivemean: Non-invasive mean blood pressure.
+                - "noninvasivesystolic": Non-invasive systolic blood pressure.
+                - "noninvasivediastolic": Non-invasive diastolic blood pressure.
+                - "noninvasivemean": Non-invasive mean blood pressure.
         """
         return (
             pl.scan_csv(self.vitalAperiodic_path).select(
@@ -903,13 +960,21 @@ class EICUExtractor(EICUPaths):
     # Combine the aperiodic and periodic time series data
     def extract_and_combine_periodics(self) -> pl.LazyFrame:
         """
-        Combine periodic and aperiodic vital sign data.
+        Combines periodic and aperiodic vital sign measurements into one wide-format dataframe.
 
-        Joins the periodic data (vitalPeriodic) and aperiodic data (vitalAperiodic),
-        aggregates measurements per ICU stay and timepoint, and renames columns as per mapping.
+        Merges periodic and aperiodic data based on time and patient, aggregating and renaming fields according to a mapping.
+        Steps:
+            1. Extract periodic vital sign data using extract_time_series_periodic.
+            2. Extract aperiodic vital sign data using extract_time_series_aperiodic.
+            3. Concatenate both datasets in a diagonal-relaxed fashion.
+            4. Group by {icu_stay_id_col} and {timeseries_time_col} to aggregate using the first available value.
+            5. Rename columns based on a provided mapping.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with combined periodic and aperiodic vital sign measurements.
+            pl.LazyFrame: A combined LazyFrame with columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time of observation (in seconds).
+                - Plus vital sign columns as defined by the mapping.
         """
         periodic_mapping = self.helpers.load_mapping(self.periodic_mapping_path)
         periodic_mapping_keys = list(periodic_mapping.values())
@@ -934,19 +999,24 @@ class EICUExtractor(EICUPaths):
     # Extract microbiology information from the microLab.csv file
     def extract_microbiology(self) -> pl.LazyFrame:
         """
-        Extract microbiology data from the CSV file.
+        Extracts microbiology culture information from the microLab CSV file.
 
-        Reads microbiology records from self.microLab_path, applies mappings for specimen type, organism, and antibiotics,
-        removes duplicates, and converts time units.
+        Reads microbiology data, applies mappings to specimen, organism and antibiotic names, and adjusts time offsets.
+        Steps:
+            1. Read microbiology data from self.microLab_path.
+            2. Rename key columns (e.g., "patientunitstayid" to {icu_stay_id_col} and "culturetakenoffset" to {timeseries_time_col}).
+            3. Map specimen sites, organisms and antibiotics using provided mappings.
+            4. Remove duplicate records.
+            5. Convert time offsets from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the following columns:
+            pl.LazyFrame: A LazyFrame with columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time of the culture measurement (in seconds).
+                - {timeseries_time_col}: Time of culture measurement (in seconds).
                 - {micro_specimen_col}: Mapped specimen type.
                 - {micro_organism_col}: Mapped organism name.
                 - {micro_antibiotic_col}: Mapped antibiotic name.
-                - {micro_sensitivity_col}: Sensitivity shorthand (if available).
+                - {micro_sensitivity_col}: Sensitivity shorthand.
         """
         print("eICU    - Extracting microbiology...")
 
@@ -1021,19 +1091,30 @@ class EICUExtractor(EICUPaths):
     # Extract medication information from the different medication files
     def extract_medications(self) -> pl.LazyFrame:
         """
-        Extract medication administration data from CSV files.
+        Extracts medication administration records from infusionDrug and medication CSV files.
 
-        Processes data from medication, infusionDrug, and (optionally) admissionDrug files.
-        Applies extensive mapping and calculations including duration and dosage conversions.
+        Reads medication data, standardizes names using mappings and computes dosage, infusion rates and durations.
+        Steps:
+            1. Read medication administration data from infusionDrug and medication CSV files.
+            2. Rename columns (e.g., replacing "patientunitstayid" with {icu_stay_id_col}).
+            3. Replace and map drug names and derive ingredients.
+            4. Calculate dosage, infusion duration, and fluid amounts.
+            5. Fix inconsistencies in stop offsets and remove incomplete records.
+            6. Convert time offsets from minutes to seconds.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with medication records containing:
-                - {icu_stay_id_col}: ICU stay ID.
-                - {drug_start_col}: Medication start time.
-                - {drug_end_col}: Medication end time.
+            pl.LazyFrame: A LazyFrame with columns including:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {drug_start_col}: Start time of medication (in seconds).
+                - {drug_end_col}: End time of medication (in seconds).
                 - {drug_name_col}: Original medication name.
                 - {drug_ingredient_col}: Mapped medication ingredient.
-                - {drug_rate_col} (and {fluid_rate_col}): Dosage/Infusion rate.
+                - {drug_rate_col}: Dosage or drug rate.
+                - {fluid_rate_col}: Infusion fluid rate.
+                - {fluid_amount_col}: Calculated infused fluid volume.
+                - {drug_patient_weight_col}: Patient weight used for dosing.
+                - {drug_rate_unit_col}: Unit extracted from the drug name.
+                - {drug_admin_route_col}: Administration route (e.g., intravenous).
         """
         print("eICU    - Extracting medications...")
 
@@ -1286,18 +1367,27 @@ class EICUExtractor(EICUPaths):
     # Extract diagnosis information from the diagnosis.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
         """
-        Extract diagnosis information from the CSV file.
+        Extracts diagnosis information from the diagnosis CSV file.
 
-        Reads diagnosis data from diagnosis.csv.gz, splits and processes ICD codes, handles priority,
-        and determines active status upon discharge.
+        Reads diagnosis records, processes ICD9 codes and calculates diagnosis timing and priority.
+        Steps:
+            1. Read diagnosis records from diagnosis.csv.gz.
+            2. Select and rename key columns where "patientunitstayid" becomes {icu_stay_id_col}.
+            3. Split and clean diagnosis ICD codes.
+            4. Cast and convert diagnosis offset times (converted to seconds).
+            5. Explode list of ICD codes to create one row per code.
+            6. Remove duplicate and empty records.
+            7. Group rows to keep only the most severe diagnosis when duplicates exist.
+            8. Identify continuation of a diagnosis by comparing adjacent log offsets.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the following columns:
+            pl.LazyFrame: A LazyFrame with columns:
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {diagnosis_icd_code_col}: One ICD diagnosis code per row.
                 - {diagnosis_start_col}: Time of diagnosis onset (in seconds).
-                - {diagnosis_priority_col}: Diagnosis priority as a numeric value.
-                - {diagnosis_discharge_col}: True if diagnosis is active upon discharge.
+                - {diagnosis_priority_col}: Numeric priority of the diagnosis.
+                - {diagnosis_discharge_col}: Flag (Boolean) if diagnosis active upon discharge.
+                - {diagnosis_end_col}: End time of the diagnosis (if applicable, in seconds).
         """
         diagnosis = (
             pl.scan_csv(self.path + "diagnosis.csv.gz")
@@ -1473,40 +1563,51 @@ class EICUExtractor(EICUPaths):
     # Extract procedure information from the treatment.csv file
     def extract_treatments(self, verbose=True) -> pl.LazyFrame:
         """
-        Extract procedure/treatment data from the CSV file.
+        Extracts procedure/treatment data from the treatment CSV file.
 
-        Reads treatment data from self.treatment_path, processes free-text descriptions,
-        and determines procedure timing. Optionally prints progress.
-
-        Args:
-            verbose (bool): If True, prints progress messages.
+        Reads treatment data, cleans procedure descriptions, and calculates start and end times for each procedure.
+        Steps:
+            1. Read treatment records from self.treatment_path.
+            2. Rename columns (e.g., "patientunitstayid" to {icu_stay_id_col}, "treatmentoffset" to {procedure_start_col}).
+            3. Convert treatment offsets from minutes to seconds.
+            4. Identify repeated procedure entries and calculate end times.
+            5. Clean free-text procedure descriptions.
 
         Returns:
             pl.LazyFrame: A LazyFrame containing:
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {procedure_start_col}: Start time of the procedure (in seconds).
-                - {procedure_description_col}: Description of the procedure.
+                - {procedure_description_col}: Cleaned procedure description.
+                - {procedure_end_col}: Calculated end time of the procedure (in seconds).
                 - {procedure_discharge_col}: Boolean flag indicating active procedure upon discharge.
         """
         if verbose:
             print("eICU    - Extracting procedures...")
-
         return self._extract_treatments_helper(pl.scan_csv(self.treatment_path))
 
     def _extract_treatments_helper(
         self, treatment: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Helper function to process treatment data.
+        Helper function to process treatment/procedure data.
 
-        Converts treatment offsets to seconds, identifies repeated procedure entries,
-        and computes end times where applicable.
-
-        Args:
-            treatment (pl.LazyFrame): Raw LazyFrame of treatment data.
+        Processes treatment records by converting time offsets, determining procedure continuation,
+        computing end times and cleaning procedure descriptions.
+        Steps:
+            1. Select and rename treatment columns (e.g., "patientunitstayid" to {icu_stay_id_col}).
+            2. Convert treatment offsets from minutes to seconds.
+            3. Determine procedure continuation by comparing adjacent rows.
+            4. Compute end times for discontinued procedures.
+            5. Clean and reformat procedure description text.
+            6. Group by appropriate keys to select entries with the longest duration.
 
         Returns:
-            pl.LazyFrame: Processed treatment data with updated start and end times.
+            pl.LazyFrame: A processed LazyFrame containing:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {procedure_start_col}: Computed start time of the procedure (in seconds).
+                - {procedure_description_col}: Re-formatted procedure/treatment description.
+                - {procedure_end_col}: End time of the procedure (in seconds), if applicable.
+                - {procedure_discharge_col}: Boolean flag indicating if the procedure was active at discharge.
         """
         treatment = (
             treatment

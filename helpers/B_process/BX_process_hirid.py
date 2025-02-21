@@ -16,6 +16,18 @@ from helpers.helper_conversions import UnitConverter
 
 class HiRIDProcessor(HiRIDExtractor):
     def __init__(self, paths):
+        """
+        Initializes the HiRIDProcessor instance.
+
+        Args:
+            paths: Object containing various source and destination paths.
+
+        Sets:
+            path: Source path for HiRID data ({hirid_source_path}).
+            helpers: Instance of GlobalHelpers.
+            convert: Instance of HiRIDConverter.
+            index_cols: List containing {icu_stay_id_col} and {timeseries_time_col}.
+        """
         super().__init__(paths)
         self.path = paths.hirid_source_path
         self.helpers = GlobalHelpers()
@@ -23,10 +35,28 @@ class HiRIDProcessor(HiRIDExtractor):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
     # region time series
-    # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
         """
-        Processes the time series data of the HiRID dataset.
+        Processes and combines time series data for HiRID.
+
+        Steps:
+          1. Check if preprocessed main and lab parquet files exist in {precalc_path}.
+          2. If available, load both LazyFrames (main and lab data) with sorted index columns {icu_stay_id_col} and {timeseries_time_col}.
+          3. If not, for each raw timeseries file:
+             a. Extract admissions and length of stay data.
+             b. Process timeseries data with _extract_timeseries_helper.
+             c. Separate lab measurements by mapping "variable" to "LOINC_component".
+             d. Pivot main and lab datasets separately.
+             e. Concatenate results into two LazyFrames.
+          4. Save and return a tuple of (main timeseries, lab timeseries) sorted by the index.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time (as string) after conversion.
+          - Additional columns: Pivoted measurement variables from raw files.
+
+        Returns:
+            tuple: Two LazyFrames (main, lab) sorted by [{icu_stay_id_col}, {timeseries_time_col}].
         """
         ts_path = self.precalc_path + "HiRID_timeseries.parquet"
         ts_labs_path = self.precalc_path + "HiRID_timeseries_labs.parquet"
@@ -179,7 +209,6 @@ class HiRIDConverter(UnitConverter):
     def __init__(self):
         super().__init__()
 
-    # Convert the lab values of the eICU dataset.
     def _convert_lab_values(
         self,
         data: pl.LazyFrame,
@@ -188,10 +217,32 @@ class HiRIDConverter(UnitConverter):
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
-        Convert the lab values of the HiRID dataset.
-        """
+        Convert laboratory measurement values to canonical units for the HiRID dataset.
 
-        # Convert the lab values to the correct units.
+        Applies a series of conversion functions sequentially to the input lab values. The conversion is performed
+        for the following lab tests:
+          - {Bilirubin.direct}
+          - {Bilirubin.total}
+          - {Creatinine}
+          - {Cortisol}
+          - {Fibrinogen}
+          - {Glucose}
+          - {Hemoglobin}
+          - {Erythrocyte mean corpuscular hemoglobin concentration}
+          - {Urea} to {Urea nitrogen} conversions
+
+        Each function converts the lab value from an original unit to a canonical unit. The input data must include
+        a column with the lab label (default: {labelcol}) and lab value stored in the field specified by {structfield}.
+
+        Args:
+            data (pl.LazyFrame): Input lab data containing lab values.
+            labelcol (str, optional): Name of the column with lab identifiers. Defaults to "variableid".
+            valuecol (str, optional): Name of the column containing lab values or structured lab data. Defaults to "value_struct".
+            structfield (str, optional): Field within the structured lab data to extract for conversion. Defaults to "value".
+
+        Returns:
+            pl.LazyFrame: The input LazyFrame with lab values converted to canonical units.
+        """
         return (
             data.pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
@@ -269,9 +320,19 @@ class HiRIDConverter(UnitConverter):
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Convert the lab values of the HiRID dataset.
-        """
+        Convert wide-format lab values to relative units for the HiRID dataset.
 
+        Specifically, this method converts absolute lab counts into relative values. For example, it converts
+        the absolute value of {Lymphocytes} into a relative value per 100 {Leukocytes}. The conversion is applied
+        to the following columns (if available):
+          - {Lymphocytes} relative to {Leukocytes}.
+
+        Args:
+            data (pl.LazyFrame): Lab data in wide format after pivoting.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame with the applicable lab columns converted to relative units.
+        """
         return data.pipe(
             self.convert_absolute_count_to_relative,
             itemcol="Lymphocytes",

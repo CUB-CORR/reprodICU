@@ -54,17 +54,26 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract the patient IDs that are used in the MIMIC-III dataset
     def extract_patient_IDs(self) -> pl.LazyFrame:
         """
-        Extract patient IDs used in the MIMIC-III dataset.
+        Extract patient ID information from the ICU stays CSV file.
 
-        Reads the ICU stays CSV file, renames fields and returns a LazyFrame with the following columns:
-          - {icu_stay_id_col}: ICU stay ID.
-          - {hospital_stay_id_col}: Hospital stay ID.
-          - {person_id_col}: Patient (subject) ID.
-          - {icu_length_of_stay_col}: ICU length of stay.
-          - INTIME: ICU admission datetime.
+        Steps:
+            1. Read the ICU stays CSV file using Polars scan.
+            2. Rename columns:
+               - "ICUSTAY_ID" → {icu_stay_id_col}: Unique ICU stay identifier.
+               - "HADM_ID" → {hospital_stay_id_col}: Hospital admission identifier.
+               - "SUBJECT_ID" → {person_id_col}: Patient identifier.
+               - "LOS" → {icu_length_of_stay_col}: ICU length of stay in days.
+            3. Remove duplicate rows.
+            4. Cast the patient ID columns to integer.
+            5. Select and return the following columns.
 
         Returns:
-            pl.LazyFrame: Patient identification data.
+            pl.LazyFrame: A lazy frame with the following columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {person_id_col}: Patient identifier.
+                - {icu_length_of_stay_col}: ICU length of stay (days).
+                - INTIME: ICU admission datetime.
         """
         return (
             pl.scan_csv(self.icustays_path)
@@ -97,37 +106,52 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extract aggregated patient information.
+        Aggregate and enrich patient information by joining multiple CSV files.
 
-        Joins ICU stays, admissions, patients and additional information (height/weight and specialties) while
-        converting timestamps and performing type casts.
-
-        Expected output columns (after all joins and processing) include:
-          - {icu_stay_id_col}
-          - {hospital_stay_id_col}
-          - {person_id_col}
-          - {icu_stay_seq_num_col}: ICU stay sequence number.
-          - {gender_col}: Patient gender.
-          - {age_col}: Patient age (with corrected outliers).
-          - {height_col}, {weight_col}: Patient height and weight.
-          - {ethnicity_col}: Patient ethnicity.
-          - {pre_icu_length_of_stay_col}: Pre-ICU length of stay.
-          - {icu_length_of_stay_col}: ICU length of stay.
-          - {hospital_length_of_stay_col}: Hospital length of stay.
-          - {mortality_hosp_col}: Hospital mortality flag.
-          - {mortality_icu_col}: ICU mortality flag.
-          - {mortality_after_col}: Post-discharge mortality.
-          - {admission_type_col}: Admission type.
-          - {admission_urgency_col}: Admission urgency.
-          - {admission_time_col}: Time of admission extracted from INTIME.
-          - {admission_loc_col}: Admission location.
-          - {specialty_col}: Specialty information.
-          - {unit_type_col}: ICU unit type.
-          - {care_site_col}: Care site (constant string).
-          - {discharge_loc_col}: Discharge location.
+        Steps:
+            1. Read ICU stays, admissions, and patients CSV files.
+            2. Rename keys:
+               - "ICUSTAY_ID" → {icu_stay_id_col}: ICU stay identifier.
+               - "HADM_ID" → {hospital_stay_id_col}: Hospital admission identifier.
+               - "SUBJECT_ID" → {person_id_col}: Patient identifier.
+               - "LOS" → {icu_length_of_stay_col}: ICU length of stay.
+            3. Join the datasets on {hospital_stay_id_col} and {person_id_col}.
+            4. Incorporate additional details such as height/weight and treating specialty.
+            5. Convert timestamp strings to datetime objects.
+            6. Derive new columns including:
+               - {age_col}: Patient age computed from DOB and INTIME.
+               - {pre_icu_length_of_stay_col}: Time difference (days) between ADMITTIME and INTIME.
+               - {hospital_length_of_stay_col}: Hospital length of stay calculated from DISCHTIME and ADMITTIME.
+               - {mortality_icu_col}: ICU mortality flag based on discharge time difference.
+            7. Cast columns to appropriate types and compute ICU stay sequence using {icu_stay_seq_num_col}.
+            8. Fill missing ICU mortality values with False when applicable.
+            9. Select and return the following columns.
 
         Returns:
-            pl.LazyFrame: Comprehensive patient information.
+            pl.LazyFrame: A lazy frame containing the columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {person_id_col}: Patient identifier.
+                - {icu_stay_seq_num_col}: Sequence number of ICU stay for each patient.
+                - {gender_col}: Patient gender.
+                - {age_col}: Patient age (years).
+                - {height_col}: Patient height (cm).
+                - {weight_col}: Patient weight (kg).
+                - {ethnicity_col}: Patient ethnicity.
+                - {pre_icu_length_of_stay_col}: Pre-ICU length of stay (days).
+                - {icu_length_of_stay_col}: ICU length of stay (days).
+                - {hospital_length_of_stay_col}: Hospital length of stay (days).
+                - {mortality_hosp_col}: Hospital mortality flag.
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_after_col}: Post-discharge mortality (days difference).
+                - {admission_type_col}: Admission type based on treating specialty.
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_time_col}: Time of ICU admission.
+                - {admission_loc_col}: Admission location.
+                - {specialty_col}: Treating specialty.
+                - {unit_type_col}: ICU unit type.
+                - {care_site_col}: Care site identifier.
+                - {discharge_loc_col}: Discharge location.
         """
         # scanning csv files to build labels DataFrame
         icustays = pl.scan_csv(self.icustays_path).rename(
@@ -342,14 +366,18 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract specialties from the services.csv file
     def _extract_specialties(self) -> pl.LazyFrame:
         """
-        Extract specialties from the services CSV file.
+        Extract treating specialty information from the services CSV file.
 
-        Joins specialty data with patient ICU stay information. The output includes:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {specialty_col}: Treating specialty.
+        Steps:
+            1. Extract patient IDs and ICU admission time using extract_patient_IDs.
+            2. Read the services CSV file and rename columns.
+            3. Join specialty data with the ICU admission information.
+            4. Filter and group by ICU stay to get the most recent specialty before admission.
 
         Returns:
-            pl.LazyFrame: Specialty information for each ICU stay.
+            pl.LazyFrame: A lazy frame with the following columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {specialty_col}: Treating specialty.
         """
         IDs = self.extract_patient_IDs().select(
             self.hospital_stay_id_col, self.icu_stay_id_col, "INTIME"
@@ -388,20 +416,23 @@ class MIMIC3Extractor(MIMIC3Paths):
         self, icustays: pl.LazyFrame, force=False
     ) -> pl.DataFrame:
         """
-        Extract patient height and weight from chartevents.csv.
+        Extract and compute patient height and weight from chartevents.csv.
 
-        Uses precalculated data in a parquet file if available (unless force=True). Converts measurements and applies
-        unit conversions. The final DataFrame has:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {weight_col}: Patient weight (in kg).
-          - {height_col}: Patient height (in cm).
-
-        Args:
-            icustays (pl.LazyFrame): ICU stay data.
-            force (bool, optional): Force recalculation and overwrite cached data. Defaults to False.
+        Steps:
+            1. Check if pre-calculated parquet file exists; if so, load unless force=True.
+            2. Read chartevents CSV and filter rows based on ITEMID values corresponding to height and weight.
+            3. Join with ICU stays data to constrain measurements within a given time cutoff.
+            4. Convert CHARTTIME and INTIME to datetime and perform unit conversions:
+               - Convert height from inches to centimeters.
+               - Convert weight from pounds to kilograms.
+            5. Pivot the data so each ICU stay has separate columns for weight and height.
+            6. Save the resulting DataFrame as a parquet file for caching.
 
         Returns:
-            pl.DataFrame: Height and weight data.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {weight_col}: Patient weight in kilograms.
+                - {height_col}: Patient height in centimeters.
         """
         # check if precalculated data is available
         if (
@@ -493,20 +524,20 @@ class MIMIC3Extractor(MIMIC3Paths):
     # make available the common processing steps for the MIMIC-III timeseries
     def extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Process timeseries data by aligning with ICU admission time.
+        Process raw timeseries data by aligning measurements with the ICU admission time.
 
-        Joins input data with patient IDs, converts timestamps, calculates the offset from ICU admission time and
-        filters data according to the ICU length of stay and a pre-ICU cutoff.
-
-        The resulting data includes:
-          - {timeseries_time_col}: Offset in seconds from ICU admission.
-          (Other columns from the input data remain.)
-
-        Args:
-            data (pl.LazyFrame): Raw timeseries events.
+        Steps:
+            1. Join raw timeseries data with patient IDs to include {hospital_stay_id_col} and "INTIME".
+            2. Convert "INTIME" and "CHARTTIME" to datetime.
+            3. Calculate the time offset ("OFFSET") as the difference between CHARTTIME and INTIME.
+            4. Filter rows so that the offset falls within pre-defined ICU stay and pre-ICU cutoff.
+            5. Compute the {timeseries_time_col} by converting offset to total seconds.
+            6. Cast "VALUENUM" as float and remove rows with nulls in "VALUENUM".
 
         Returns:
-            pl.LazyFrame: Timeseries data with calculated time offset.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {timeseries_time_col}: Time offset (in seconds) relative to ICU admission.
+                - Other columns from the input data (with "VALUENUM" as float).
         """
         IDs = self.extract_patient_IDs()
 
@@ -541,17 +572,23 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract measurements from the chartevents.csv file
     def extract_chartevents(self) -> pl.LazyFrame:
         """
-        Extract vital measurements from chartevents.csv for timeseries processing.
+        Extract vital measurement events from chartevents.csv for timeseries processing.
 
-        Merges data from original and additional measurement mappings and replaces/corrects values as needed.
-        Final columns include:
-          - {hospital_stay_id_col}: Hospital stay ID.
-          - LABEL: Mapped vital sign name.
-          - VALUE/VALUENUM: Measurement value (as float).
-          - {timeseries_time_col}: Time offset in seconds relative to ICU admission.
+        Steps:
+            1. Load and merge mapping data for vital signs from two CSV files.
+            2. Process and harmonize labels using provided mappings (e.g., temperature, heart rate).
+            3. Read chartevents CSV to select and rename key columns.
+            4. Convert timestamps to datetime and cast {hospital_stay_id_col} to integer.
+            5. Process the data using extract_timeseries_helper to compute {timeseries_time_col}.
+            6. Join the measurement labels and replace values if necessary.
+            7. Filter out rows with null or duplicate values.
 
         Returns:
-            pl.LazyFrame: Vital signs timeseries data.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - LABEL: Mapped vital sign name.
+                - VALUENUM: Measurement value (float).
+                - {timeseries_time_col}: Time offset (in seconds) relative to ICU admission.
         """
         meas_chartevents_main_original_data = (
             pl.scan_csv(self.meas_chartevents_main_path)
@@ -674,22 +711,28 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract lab measurements from the labevents.csv file
     def extract_lab_measurements(self) -> pl.LazyFrame:
         """
-        Extract laboratory measurements from labevents.csv.
+        Extract laboratory measurement events from labevents.csv.
 
-        Joins lab events with LOINC mapping data and creates a structured column with lab details.
-        Output columns include:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time offset in seconds.
-          - LABEL: Lab test name.
-          - labstruct: Struct containing:
-              • value: Lab measurement value.
-              • system: LOINC system.
-              • method: LOINC method.
-              • time: LOINC time aspect.
-              • LOINC: LOINC code.
+        Steps:
+            1. Load LOINC mapping data from d_labitems_to_loinc CSV file and enrich with lab components.
+            2. Filter mapping data to keep lab names of interest based on LOINC components and systems.
+            3. Read labevents CSV, rename columns, and convert timestamps.
+            4. Process lab events using extract_timeseries_helper for time offset computation.
+            5. Join with LOINC mapping information.
+            6. Filter out rows with null lab names or result values.
+            7. Cast lab value to float and form a structured column "labstruct" for additional lab details.
 
         Returns:
-            pl.LazyFrame: Lab measurements data with structured lab details.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (in seconds) relative to ICU admission.
+                - LABEL: Lab test name.
+                - labstruct: A struct containing the keys:
+                    • value: Lab measurement value.
+                    • system: LOINC system.
+                    • method: LOINC method.
+                    • time: LOINC time aspect.
+                    • LOINC: LOINC code.
         """
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -804,17 +847,22 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract output measurements from the outputevents.csv file
     def extract_output_measurements(self) -> pl.LazyFrame:
         """
-        Extract output (fluid balance) measurements from output and input events.
+        Extract output (fluid balance) measurements by combining input and output events.
 
-        Combines multiple sources (inputevents_cv, inputevents_mv, outputevents) after mapping and converts timestamps.
-        The resulting LazyFrame includes:
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {timeseries_time_col}: Time offset in seconds relative to ICU admission.
-          - LABEL: Output measurement name.
-          - VALUENUM: Measurement value.
+        Steps:
+            1. Load mapping data for output events.
+            2. Read input events from multiple sources and output events from outputevents.csv.
+            3. Standardize column names and convert time to datetime.
+            4. Process data through extract_timeseries_helper to compute {timeseries_time_col}.
+            5. Merge with mapping data to harmonize output measurement labels.
+            6. Filter out rows with null labels or values and remove duplicates.
 
         Returns:
-            pl.LazyFrame: Aggregated output measurements data.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {timeseries_time_col}: Time offset (in seconds) relative to ICU admission.
+                - LABEL: Output measurement name.
+                - VALUENUM: Measurement value.
         """
         # NOTE: ASSUMPTION: These are the lab values of interest
         # TODO: Confer with medical experts to confirm these are the correct values
@@ -928,19 +976,25 @@ class MIMIC3Extractor(MIMIC3Paths):
         """
         Extract microbiology test results from microbiologyevents.csv.
 
-        Retrieves microbiology results, converts timestamps and computes time offsets.
-        Columns include:
-          - {hospital_stay_id_col}: Hospital stay ID.
-          - {icu_stay_id_col}: ICU stay ID.
-          - {timeseries_time_col}: Offset in seconds.
-          - {micro_specimen_col}: Specimen type.
-          - {micro_organism_col}: Identified organism.
-          - {micro_antibiotic_col}: Antibiotic tested.
-          - {micro_sensitivity_col}: Sensitivity result.
-          - {micro_dilution_col}: Combined dilution comparison and value.
+        Steps:
+            1. Read microbiology events and rename columns appropriately.
+            2. Join with patient ICU stay information to include {icu_stay_id_col} and {icu_length_of_stay_col}.
+            3. Convert timestamps to datetime and compute time offsets.
+            4. Create a combined column {micro_dilution_col} based on dilution comparison and value.
+            5. Filter events to retain those within the ICU admission timeframe.
+            6. Compute {timeseries_time_col} by converting offset to seconds.
+            7. Remove rows with null values and duplicates.
 
         Returns:
-            pl.LazyFrame: Microbiology data filtered by relevant timeframes.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (in seconds) relative to ICU admission.
+                - {micro_specimen_col}: Microbiology specimen type.
+                - {micro_organism_col}: Identified microorganism.
+                - {micro_antibiotic_col}: Antibiotic administered/tested.
+                - {micro_sensitivity_col}: Sensitivity result.
+                - {micro_dilution_col}: Dilution comparison with value.
         """
         print("MIMIC3  - Extracting microbiology...")
 
@@ -1019,22 +1073,28 @@ class MIMIC3Extractor(MIMIC3Paths):
         """
         Extract medication administration data from input events.
 
-        Aggregates data from multiple input events, normalizes drug names, units, and computes relative times.
-        Final output columns include:
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {drug_name_col}: Original drug name.
-          - {drug_ingredient_col}: Mapped active drug ingredient.
-          - {drug_amount_col}: Drug amount (if applicable).
-          - {drug_amount_unit_col}: Drug unit (if applicable).
-          - {drug_rate_col}: Drug administration rate.
-          - {drug_rate_unit_col}: Unit for rate measurement.
-          - {drug_start_col}: Relative start time (in seconds) from ICU admission.
-          - {drug_end_col}: Relative end time (in seconds) from ICU admission.
-          - {drug_patient_weight_col}: Patient weight used for dosing (if available).
+        Steps:
+            1. Read input events from different CSV sources for medication dosing.
+            2. Load mapping data for medication names, administration routes, and drug classes.
+            3. Rename and standardize columns, including time conversion to datetime.
+            4. Calculate relative start and end times based on the ICU admission time (using {drug_start_col} and {drug_end_col}).
+            5. Apply mappings to replace original drug names with active ingredients.
+            6. Filter rows to keep medication events within a relative time window.
+            7. Remove unnecessary columns after processing.
 
         Returns:
-            pl.LazyFrame: Medication data with dosing and timing details.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {drug_name_col}: Original drug name.
+                - {drug_ingredient_col}: Mapped active drug ingredient.
+                - {drug_amount_col}: Drug amount (if available).
+                - {drug_amount_unit_col}: Unit for the drug amount.
+                - {drug_rate_col}: Drug administration rate.
+                - {drug_rate_unit_col}: Unit for the rate.
+                - {drug_start_col}: Relative start time (in seconds) of drug administration.
+                - {drug_end_col}: Relative end time (in seconds) of drug administration.
+                - {drug_patient_weight_col}: Patient weight used for dosing.
         """
         print("MIMIC3  - Extracting medications...")
 
@@ -1194,19 +1254,25 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract diagnoses from the diagnoses_icd.csv file
     def extract_diagnoses(self) -> pl.LazyFrame:
         """
-        Extract diagnosis information from diagnoses_icd.csv.
+        Extract and process diagnoses information from diagnoses_icd.csv.
 
-        Joins diagnosis events with ICD descriptions. Output columns include:
-          - {person_id_col}: Patient identifier.
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {diagnosis_icd_code_col}: ICD code.
-          - {diagnosis_icd_version_col}: ICD version (set to 9).
-          - {diagnosis_priority_col}: Diagnosis order/priority.
-          - {diagnosis_description_col}: Detailed diagnosis description.
-          - {diagnosis_discharge_col}: Flag indicating a discharge diagnosis.
+        Steps:
+            1. Read diagnosis events and rename columns for merging.
+            2. Load ICD diagnoses descriptions from d_icd_diagnoses CSV.
+            3. Cast {hospital_stay_id_col} to integer and add ICD version information.
+            4. Mark all diagnoses as discharge diagnoses.
+            5. Join to enrich diagnoses with detailed descriptions.
+            6. Filter out rows with null ICD codes and remove duplicates.
 
         Returns:
-            pl.LazyFrame: Processed diagnosis data.
+            pl.LazyFrame: A lazy frame with the columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {diagnosis_icd_code_col}: ICD code.
+                - {diagnosis_icd_version_col}: ICD version (e.g., 9).
+                - {diagnosis_priority_col}: Diagnosis order or priority.
+                - {diagnosis_description_col}: Detailed diagnosis description.
+                - {diagnosis_discharge_col}: Flag indicating a discharge diagnosis.
         """
         print("MIMIC3  - Extracting diagnoses...")
         diagnoses = pl.scan_csv(
@@ -1257,21 +1323,25 @@ class MIMIC3Extractor(MIMIC3Paths):
     # Extract procedures from the procedureevents.csv and procedures_icd.csv file
     def extract_procedures(self) -> pl.LazyFrame:
         """
-        Extract procedures from procedure events and ICD procedure files.
+        Extract procedure data from multiple sources including procedureevents and procedures_icd.
 
-        Aggregates multiple sources of procedure data including event timings and ICD codes.
-        Expected output columns include:
-          - {person_id_col}: Patient identifier.
-          - {hospital_stay_id_col}: Hospital stay identifier.
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {procedure_start_col}: Relative procedure start time (seconds).
-          - {procedure_end_col}: Relative procedure end time (seconds).
-          - {procedure_category_col}: Procedure category.
-          - {procedure_description_col}: Detailed procedure description.
-          - (Additional columns from ICD procedures such as {procedure_icd_code_col} and {procedure_priority_col} may be included.)
+        Steps:
+            1. Extract procedure events from procedureevents_mv and compute relative start/end times using INTIME.
+            2. Load additional procedure data from procedures_icd and add ICD details.
+            3. Read datetime events to extract procedure timestamps.
+            4. Standardize and convert timestamps, computing {procedure_start_col} and {procedure_end_col}.
+            5. Merge the multiple procedure sources and remove duplicates.
 
         Returns:
-            pl.LazyFrame: Combined procedure data from multiple sources.
+            pl.LazyFrame: A lazy frame containing the columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {procedure_start_col}: Relative procedure start time (in seconds).
+                - {procedure_end_col}: Relative procedure end time (in seconds).
+                - {procedure_category_col}: Procedure category.
+                - {procedure_description_col}: Detailed procedure description.
+                (Additional ICD procedure columns such as {procedure_icd_code_col} and {procedure_priority_col} may be present.)
         """
         print("MIMIC3  - Extracting procedures...")
 
