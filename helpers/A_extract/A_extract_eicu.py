@@ -1182,7 +1182,7 @@ class EICUExtractor(EICUPaths):
                 self.drug_start_col,
                 base_unit="minutes",
             )
-            .sort(self.icu_stay_id, self.drug_name_col, self.drug_start_col)
+            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
         )
 
         # Get infusion duration where possible, by checking whether the drugname reappears

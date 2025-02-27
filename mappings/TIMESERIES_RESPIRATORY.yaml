@@ -84,7 +84,7 @@ Mean airway pressure:
   - pMean
   # UMCdb -> same name
   - Airway pressure --at mean expiratory flow on ventilator
-Minute volume setting Ventilator: []
+Minute volume setting Ventilator:
   # eICU-CRD -> same name
   # SICdb
   - MV
