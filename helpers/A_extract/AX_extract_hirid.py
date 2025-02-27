@@ -652,6 +652,7 @@ class HiRIDExtractor(HiRIDPaths):
                     "route",
                     "infusionid",
                     "subtypeid",
+                    "fluidamount_calc"
                 )
                 # Rename columns for consistency
                 .rename(

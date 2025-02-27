@@ -2907,6 +2907,33 @@ insulin:
     - Insulin-Aspart-Protamin-Kristall 50/50
     - Insulin-Aspart-Protamin-Kristall 70/30
     - Insulin-Isophan
+isoproterenol:
+  blended: 19132933
+  amsterdam:
+    - isoprenaline
+  eicu:
+    - Isoproterenol
+    - Isoproterenol ()
+    - Isoproterenol (mcg/min)
+    - Isoproterenol (ml/hr)
+    - Isoproterenol(Isuprel)STD 1 mg Dextrose 5% 250 ml (mcg/min)
+    - Isuprel  drip (mcg/min)
+    - Isuprel (mcg/min)
+  hirid: []
+  mimic: []
+  mimic3:
+    - Isoproterenol
+    - isoproterenolmcg/min
+    - ISUPEL
+    - IV Isuprel 1mcg/min
+    - Isuprel
+  mimic4:
+    - Isuprel
+  nwicu:
+    - ISOPROTERENOL HCL 0.2 MG/ML INJ SOLN
+    - ISOPROTERENOL HCL 200 MCG/D5W 50 ML IV INFUSION
+  sicdb:
+    - Isoprenalin
 ketamine:
   blended: 785649
   amsterdam:
