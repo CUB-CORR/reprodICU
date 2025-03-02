@@ -108,6 +108,7 @@ Minute volume setting Ventilator:
   # UMCdb -> same name
 Oxygen delivery system:
   # eICU-CRD -> same name
+  # MIMIC-III -> same name
   # MIMIC-III / MIMIC-IV
   - Oxygen delivery
   # UMCdb

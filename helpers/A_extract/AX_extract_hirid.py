@@ -918,7 +918,6 @@ class HiRIDExtractor(HiRIDPaths):
                 .replace(
                     {
                         **self.timeseries_vitals_mapping,
-                        **self.relevant_lab_values_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
                     }
