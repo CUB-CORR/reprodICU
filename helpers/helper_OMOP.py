@@ -40,7 +40,7 @@ class Vocabulary(OMOPPaths):
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_id").is_in(concept_ids))
             .select("concept_id", "concept_name")
-            .collect()
+            .collect(streaming=True)
         )
 
         if not return_dict:
@@ -69,7 +69,7 @@ class Vocabulary(OMOPPaths):
         concept_ids = (
             self.CONCEPT.filter(pl.col("concept_name").is_in(concept_names))
             .select("concept_id", "concept_name")
-            .collect()
+            .collect(streaming=True)
         )
 
         if not return_dict:
@@ -98,7 +98,7 @@ class Vocabulary(OMOPPaths):
         concept_codes = (
             self.CONCEPT.filter(pl.col("concept_name").is_in(concept_names))
             .select("concept_name", "concept_code")
-            .collect()
+            .collect(streaming=True)
         )
 
         if not return_dict:
@@ -127,7 +127,7 @@ class Vocabulary(OMOPPaths):
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
             .select("concept_code", "concept_name")
-            .collect()
+            .collect(streaming=True)
         )
 
         if not return_dict:
@@ -203,7 +203,7 @@ class Vocabulary(OMOPPaths):
                     "concept_name": "ingredient_name",
                 }
             )
-            .collect()
+            .collect(streaming=True)
         )
 
         if not return_dict:
@@ -239,7 +239,7 @@ class Vocabulary(OMOPPaths):
                 pl.col("relationship_id") == lab_relationship,
             )
             .select("concept_id_1", "concept_id_2")
-            .collect()
+            .collect(streaming=True)
         )
         lab_id_to_property_id = dict(
             zip(

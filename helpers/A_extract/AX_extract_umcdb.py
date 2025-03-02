@@ -287,6 +287,26 @@ class UMCdbExtractor(UMCdbPaths):
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
+            # Fix the values for the mapped listitems
+            .with_columns(
+                pl.when(pl.col("label") == "Heart rate rhythm")
+                .then(
+                    pl.col("value")
+                    .replace_strict(self.HEART_RHYTHM_MAP, default=None)
+                )
+                .when(pl.col("label") == "Oxygen delivery system")
+                .then(
+                    pl.col("value")
+                    .replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None)
+                )
+                .when(pl.col("label") == "Ventilation mode Ventilator")
+                .then(
+                    pl.col("value")
+                    .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
+                )
+                .otherwise(pl.col("value"))
+                .alias("value"),
+            )
         )
 
         gcs = self._compute_gcs(listitems).unpivot(
@@ -1280,7 +1300,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .replace(
                     {
                         **self.timeseries_vitals_mapping,
-                        **self.relevant_lab_values_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
                     }
@@ -1325,7 +1344,6 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("conceptName").replace(
                     {
                         **self.timeseries_vitals_mapping,
-                        **self.relevant_lab_values_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
                     }

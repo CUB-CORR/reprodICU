@@ -193,6 +193,9 @@ class GlobalVars(GlobalHelpers):
         self.HEART_RHYTHM_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
         )
+        self.OXYGEN_DELIVERY_SYSTEM_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+        )
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
         )
@@ -234,6 +237,18 @@ class GlobalVars(GlobalHelpers):
         }
         self.heart_rhythm_enum_map_inverted = {
             i: v for v, i in self.heart_rhythm_enum_map.items()
+        }
+        self.oxygen_delivery_system_enum_map = {
+            v: i
+            for i, v in enumerate(
+                self.load_mapping_keys(
+                    mapping_path
+                    + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+                )
+            )
+        }
+        self.oxygen_delivery_system_enum_map_inverted = {
+            i: v for v, i in self.oxygen_delivery_system_enum_map.items()
         }
         self.ventilator_mode_enum_map = {
             v: i

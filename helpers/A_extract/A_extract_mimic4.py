@@ -572,7 +572,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .drop(self.icu_length_of_stay_col)
             .cast({"valuenum": float})
-            .drop_nulls("valuenum")
         )
 
     # region vitals
@@ -630,7 +629,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col("label").replace(
                     {
                         **self.timeseries_vitals_mapping,
-                        **self.relevant_lab_values_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
                     }
@@ -669,6 +667,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                     pl.col("value")
                     .replace_strict(self.HEART_RHYTHM_MAP, default=None)
                     .replace(self.heart_rhythm_enum_map)
+                )
+                .when(pl.col("label") == "Oxygen delivery system")
+                .then(
+                    pl.col("value")
+                    .replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
+                    )
+                    .replace(self.oxygen_delivery_system_enum_map)
                 )
                 .when(pl.col("label") == "Ventilation mode Ventilator")
                 .then(
@@ -1076,7 +1082,10 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
         inputevents = (
-            pl.scan_csv(self.inputevents_path)
+            pl.scan_csv(
+                self.inputevents_path,
+                schema_overrides={"amount": float, "patientweight": float},
+            )
             .select(
                 "hadm_id",
                 "stay_id",

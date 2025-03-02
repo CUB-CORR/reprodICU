@@ -94,7 +94,22 @@ class MIMIC4Processor(MIMIC4Extractor):
                 on="label",
                 index=self.index_cols,
                 values="valuenum",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                aggregate_function="first",
+            )
+            # Replace the integerized values with the original values
+            .with_columns(
+                pl.col("Heart rate rhythm").replace_strict(
+                    self.heart_rhythm_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Oxygen delivery system").replace_strict(
+                    self.oxygen_delivery_system_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Ventilation mode Ventilator").replace_strict(
+                    self.ventilator_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
             )
         )
 

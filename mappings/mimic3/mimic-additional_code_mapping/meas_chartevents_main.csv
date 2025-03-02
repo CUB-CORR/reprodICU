@@ -31,3 +31,7 @@ itemid (omop_source_code),Label,omop_concept_name,comment
 543,Plateau Pressure,Pressure.plateau Respiratory system airway --on ventilator,
 619,Respiratory Rate Set,Breath rate mechanical --on ventilator,
 0,,Not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 500
+467,O2 Delivery Device,Oxygen delivery system,
+468,O2 Delivery Device#2,Oxygen delivery system,
+212,Heart Rhythm,Heart rate rhythm,
+3354,Cardiac Rhythm,Heart rate rhythm,
