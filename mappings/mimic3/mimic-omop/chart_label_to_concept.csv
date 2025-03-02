@@ -1,0 +1,320 @@
+d_label,label_type,value_lb,value_ub,measurement_concept_id,measurement_type_concept_id,unit_concept_id
+Code Status,resuscitation,,,4127294,44818701,8510
+Dialysis Type,dialysis,,,45884382,44818701,8510
+Fingerstick Glucose,glucose,,,3034962,44818701,8510
+Glucose finger stick,glucose,,,3034962,44818701,8510
+INV Line#1 [Type],dialysis,,,45882941,44818701,8510
+INV Line#2 [Type],dialysis,,,45880764,44818701,8510
+INV Line#3 [Type],dialysis,,,45882279,44818701,8510
+INV Line#4 [Type],dialysis,,,45880765,44818701,8510
+INV Line#5 [Type],dialysis,,,45876994,44818701,8510
+INV Line#6 [Type],dialysis,,,45876711,44818701,8510
+INV Line#7 [Type],dialysis,,,45879196,44818701,8510
+INV Line#8 [Type],dialysis,,,45883840,44818701,8510
+Bowel Sounds,sounds,,,4337265,44818701,8510
+Pain Management,pain,,,4192791,44818701,8510
+Pain Assess Method,pain,,,4021323,44818701,8510
+Pain Assessment Method,pain,,,4021323,44818701,8510
+Eye Opening,gcs,,,3016335,44818701,8510
+GCS - Eye Opening,gcs,,,3016335,44818701,8510
+Verbal Response,gcs,,,3009094,44818701,8510
+GCS - Verbal Response,gcs,,,3009094,44818701,8510
+Motor Response,gcs,,,3008223,44818701,8510
+GCS - Motor Response,gcs,,,3008223,44818701,8510
+GCS Total,gcs,,,3032652,44818701,8510
+Pain Present,pain_level,,,40757693,44818701,8510
+Currently experiencing pain,pain_level,,,40757693,44818701,8510
+Pain Level (Rest),pain_level,,,3034263,44818701,8510
+Pain Level,pain_level,,,3034263,44818701,8510
+Pain Level Response,pain_level,,,3034263,44818701,8510
+Pain Level/Response,pain_level,,,3034263,44818701,8510
+Riker-SAS Scale,sas_rass,,,21494989,44818701,8510
+Richmond-RAS Scale,sas_rass,,,21494989,44818701,8510
+Admit Wt,height_weight,,,3025315,44818701,9529
+Previous WeightF,height_weight,,,3025315,44818701,9529
+Birth Weight    (kg),height_weight,,,3025315,44818701,9529
+Present Weight  (kg),height_weight,,,3025315,44818701,9529
+Previous Weight (kg),height_weight,,,3025315,44818701,9529
+Previous Weight,height_weight,,,3025315,44818701,9529
+Weight Kg,height_weight,,,3025315,44818701,9529
+Admission Weight (lbs.),height_weight,,,3025315,44818701,9529
+Admission Weight (Kg),height_weight,,,3025315,44818701,9529
+Height Inches,height_weight,,,3036277,44818701,9546
+Admit Ht,height_weight,,,3036277,44818701,9546
+Height,height_weight,,,3036277,44818701,9546
+Height (cm),height_weight,,,3036277,44818701,9546
+Heart Rhythm,heart_rhythm,,,3022318,44818701,8510
+Cardiac Rhythm,heart_rhythm,,,3022318,44818701,8510
+Heart Rate,heart_rate,20,300,3027018,44818701,8581
+High Resp. Rate,respiratory_rate,0,100,3024171,44818701,8541
+Respiratory Rate,respiratory_rate,0,100,3024171,44818701,8541
+Respiratory Rate (spontaneous),respiratory_rate,0,100,3024171,44818701,8541
+Respiratory Rate (Total),respiratory_rate,0,100,3024171,44818701,8541
+Resp Rate,respiratory_rate,0,100,3024171,44818701,8541
+Resp Rate (Total),respiratory_rate,0,100,3024171,44818701,8541
+Resp Rate (Spont),respiratory_rate,0,100,3024171,44818701,8541
+Breath Rate,respiratory_rate,0,100,3024171,44818701,8541
+Spont. Resp. Rate,respiratory_rate,0,100,3024171,44818701,8541
+Spont Resp rate,respiratory_rate,0,100,3024171,44818701,8541
+Spont RR,respiratory_rate,0,100,3024171,44818701,8541
+FIO2,fio2,0,100,3020716,44818701,8554
+FiO2 Set,fio2,0,100,3020716,44818701,8554
+FIO2 [Meas],fio2,0,100,3020716,44818701,8554
+FiO2 (Analyzed),fio2,0,100,3020716,44818701,8554
+Vision FiO2,fio2,0,100,3020716,44818701,8554
+FiO2/O2 Delivered,fio2,0,100,3020716,44818701,8554
+Inspired O2 Fraction,fio2,0,100,3020716,44818701,8554
+HFO- FIO2,fio2,0,100,3020716,44818701,8554
+HFO-FiO2,fio2,0,100,3020716,44818701,8554
+ecmo fio2,fio2,0,100,3020716,44818701,8554
+FiO2ApacheIIValue,fio2,0,100,3020716,44818701,8554
+Analyzed INOV FiO2,fio2,0,100,3020716,44818701,8554
+FiO2_ApacheIV,fio2,0,100,3020716,44818701,8554
+HFO FIO2:,fio2,0,100,3020716,44818701,8554
+FiO2,fio2,0,100,3020716,44818701,8554
+BIpap FIO2,fio2,0,100,3020716,44818701,8554
+FIO2 SET,fio2,0,100,3020716,44818701,8554
+vapotherm fio2,fio2,0,100,3020716,44818701,8554
+O2 Flow (lpm),o2flow,0,100,3014080,44818701,8698
+O2 Flow,o2flow,0,100,3014080,44818701,8698
+O2 Flow (lpm) #2,o2flow,0,100,3014080,44818701,8698
+O2 Flow (additional cannula),o2flow,0,100,3014080,44818701,8698
+Additional Gas (lpm),o2flow,0,100,3014080,44818701,8698
+O2 Delivery Device,o2delivery,,,4036936,44818701,8510
+O2 Delivery Device#2,o2delivery,,,4036936,44818701,8510
+O2 Delivery Mode,o2delivery,,,4036936,44818701,8510
+O2 Delivery Device(s),o2delivery,,,4036936,44818701,8510
+BIPAP - O2 lpm,o2flow,0,100,3014080,44818701,8698
+BiPap O2 Flow,o2flow,0,100,3014080,44818701,8698
+Flow-By (lpm),o2flow,0,100,3014080,44818701,8698
+Pulmonary Artery Pressure diastolic,hemodynamic,0,120,3017188,44818701,8876
+Pulmonary Artery Pressure systolic,hemodynamic,0,120,3005606,44818701,8876
+Pulmonary Artery Pressure mean,hemodynamic,0,120,3028074,44818701,8876
+PAP [Systolic],hemodynamic,0,120,3005606,44818701,8876
+PAP [Diastolic],hemodynamic,0,120,3017188,44818701,8876
+PAP Mean,hemodynamic,0,120,3028074,44818701,8876
+CO-Tandem Heart Flow,hemodynamic,0,20,3005555,44818701,8698
+CO (Arterial),hemodynamic,0,20,3005555,44818701,8698
+CO (PiCCO),hemodynamic,0,20,3005555,44818701,8698
+Cardiac Output (CO NICOM),hemodynamic,0,20,3005555,44818701,8698
+CCO CO,hemodynamic,0,20,3005555,44818701,8698
+Cardiac Output (CCO),hemodynamic,0,20,3005555,44818701,8698
+Cardiac Output (thermodilution),hemodynamic,0,20,3005555,44818701,8698
+C.O. (fick),hemodynamic,0,20,3005555,44818701,8698
+C.O.(thermodilution),hemodynamic,0,20,3005555,44818701,8698
+Cardiac Index,hemodynamic,0,20,21490712,44818701,2000000002
+Cardiac Index (CI NICOM),hemodynamic,0,20,21490712,44818701,2000000002
+CI (PiCCO),hemodynamic,0,20,21490712,44818701,2000000002
+SVV (PiCCO),hemodynamic,0,50,2000000000,44818701,8554
+Stroke Volume Variation (SVV NICOM),hemodynamic,0,50,2000000000,44818701,8554
+SVV (Arterial),hemodynamic,0,50,2000000000,44818701,8554
+SVR,hemodynamic,0,5000,3035146,44818701,4079131
+SVRI,hemodynamic,0,5000,3008047,44818701,2000000001
+SVRI (PiCCO),hemodynamic,0,5000,3008047,44818701,2000000001
+Central Venous Pressure,hemodynamic,0,50,21490675,44818701,8876
+CVP,hemodynamic,0,50,21490675,44818701,8876
+PCWP,hemodynamic,0,50,21490776,44818701,8876
+Minute Volume,vent_settings,2,30,21490753,44818701,8698
+Minute Volume(Obser),vent_settings,2,30,21490753,44818701,8698
+PEEP set,vent_settings,3,25,3016226,44818701,44777590
+PEEP Set,vent_settings,3,25,3016226,44818701,44777590
+PEEP,vent_settings,3,25,3016226,44818701,44777590
+Total PEEP Level,vent_settings,3,25,3016226,44818701,44777590
+Peak Insp. Pressure,vent_settings,3,60,21490650,44818701,44777590
+PIP,vent_settings,3,60,21490650,44818701,44777590
+Mean Airway Pressure,vent_settings,3,60,3028354,44818701,44777590
+Arterial BP [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+Arterial Blood Pressure diastolic,diastolic_bp,10,300,3012888,44818701,8876
+ART BP Diastolic,diastolic_bp,10,300,3012888,44818701,8876
+Arterial BP #2 [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+NBP [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP UAC [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP PAL [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+Manual BP [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP Left Arm [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP Left Leg [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP Right Leg [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+BP Right Arm [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+ABP [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+Non Invasive Blood Pressure diastolic,diastolic_bp,10,300,3012888,44818701,8876
+Manual Blood Pressure Diastolic Left,diastolic_bp,10,300,3012888,44818701,8876
+Manual Blood Pressure Diastolic Right,diastolic_bp,10,300,3012888,44818701,8876
+BP Cuff [Diastolic],diastolic_bp,10,300,3012888,44818701,8876
+Arterial BP Mean,map_bp,10,400,3027598,44818701,8876
+Arterial Blood Pressure mean,map_bp,10,400,3027598,44818701,8876
+ART BP mean,map_bp,10,400,3027598,44818701,8876
+Arterial BP Mean #2,map_bp,10,400,3027598,44818701,8876
+FEM ART MEAN,map_bp,10,400,3027598,44818701,8876
+FEM ART S/D,map_bp,10,400,3027598,44818701,8876
+FEM ART BP,map_bp,10,400,3027598,44818701,8876
+R FEM ART LINE,map_bp,10,400,3027598,44818701,8876
+femoral ART Line,map_bp,10,400,3027598,44818701,8876
+FEM ART MAP,map_bp,10,400,3027598,44818701,8876
+ART,map_bp,10,400,3027598,44818701,8876
+left femerol artery,map_bp,10,400,3027598,44818701,8876
+FEM. ART BP,map_bp,10,400,3027598,44818701,8876
+L FEM ART LINE,map_bp,10,400,3027598,44818701,8876
+RT FEM ART LINE,map_bp,10,400,3027598,44818701,8876
+R fem Art line,map_bp,10,400,3027598,44818701,8876
+RAD ART BP,map_bp,10,400,3027598,44818701,8876
+R fem art BP,map_bp,10,400,3027598,44818701,8876
+fem art,map_bp,10,400,3027598,44818701,8876
+ART BP,map_bp,10,400,3027598,44818701,8876
+RT FEMORAL ART BP,map_bp,10,400,3027598,44818701,8876
+ART MEAN,map_bp,10,400,3027598,44818701,8876
+L rad art BP,map_bp,10,400,3027598,44818701,8876
+ART MAP,map_bp,10,400,3027598,44818701,8876
+L fem art bp,map_bp,10,400,3027598,44818701,8876
+L fem art line,map_bp,10,400,3027598,44818701,8876
+art #3,map_bp,10,400,3027598,44818701,8876
+Arterial BP #3,map_bp,10,400,3027598,44818701,8876
+Arterial Mean #3,map_bp,10,400,3027598,44818701,8876
+R fem art line,map_bp,10,400,3027598,44818701,8876
+FEM ART,map_bp,10,400,3027598,44818701,8876
+(R) FEM ART,map_bp,10,400,3027598,44818701,8876
+rt art line,map_bp,10,400,3027598,44818701,8876
+ART R Groin,map_bp,10,400,3027598,44818701,8876
+L FEM ART BP,map_bp,10,400,3027598,44818701,8876
+(L) FEM ART,map_bp,10,400,3027598,44818701,8876
+RAD ART S/D,map_bp,10,400,3027598,44818701,8876
+Fem Art BP,map_bp,10,400,3027598,44818701,8876
+Arterial BP(Rad),map_bp,10,400,3027598,44818701,8876
+r fem art line,map_bp,10,400,3027598,44818701,8876
+art mean,map_bp,10,400,3027598,44818701,8876
+arterial mean #2,map_bp,10,400,3027598,44818701,8876
+NBP Mean,map_bp,10,400,3027598,44818701,8876
+BP Cuff [Mean],map_bp,10,400,3027598,44818701,8876
+BP UAC [Mean],map_bp,10,400,3027598,44818701,8876
+BP PAL [Mean],map_bp,10,400,3027598,44818701,8876
+BP Left Arm [Mean],map_bp,10,400,3027598,44818701,8876
+Manual BP Mean(calc),map_bp,10,400,3027598,44818701,8876
+BP Left Leg [Mean],map_bp,10,400,3027598,44818701,8876
+BP Right Leg [Mean],map_bp,10,400,3027598,44818701,8876
+BP Right Arm [Mean],map_bp,10,400,3027598,44818701,8876
+FEM ABP,map_bp,10,400,3027598,44818701,8876
+RIGHT FEM ABP,map_bp,10,400,3027598,44818701,8876
+IABP-BP,map_bp,10,400,3027598,44818701,8876
+LEFT FEM ABP,map_bp,10,400,3027598,44818701,8876
+left radial ABP,map_bp,10,400,3027598,44818701,8876
+"FEM, ABP",map_bp,10,400,3027598,44818701,8876
+right fem bp,map_bp,10,400,3027598,44818701,8876
+FEMORAL ABP,map_bp,10,400,3027598,44818701,8876
+Femoral ABP,map_bp,10,400,3027598,44818701,8876
+LFEMABP,map_bp,10,400,3027598,44818701,8876
+FEM LINE BP,map_bp,10,400,3027598,44818701,8876
+RADIAL ABP,map_bp,10,400,3027598,44818701,8876
+L ulnar ABP,map_bp,10,400,3027598,44818701,8876
+IABP BP,map_bp,10,400,3027598,44818701,8876
+iabp-bp,map_bp,10,400,3027598,44818701,8876
+BP Q8H,map_bp,10,400,3027598,44818701,8876
+fem abp,map_bp,10,400,3027598,44818701,8876
+FEMORAL ABP S/D,map_bp,10,400,3027598,44818701,8876
+femoral abp mean,map_bp,10,400,3027598,44818701,8876
+Femoral ABP (Mean),map_bp,10,400,3027598,44818701,8876
+FEMORAL ABP MEAN,map_bp,10,400,3027598,44818701,8876
+Lt. arm BP S/D,map_bp,10,400,3027598,44818701,8876
+BP Rt. Arm Mean,map_bp,10,400,3027598,44818701,8876
+GROIN BP,map_bp,10,400,3027598,44818701,8876
+BP Lt. leg Mean,map_bp,10,400,3027598,44818701,8876
+BP Rt. Leg Mean,map_bp,10,400,3027598,44818701,8876
+Non Invasive Blood Pressure mean,map_bp,10,400,3027598,44818701,8876
+map,map_bp,10,400,3027598,44818701,8876
+MAP,map_bp,10,400,3027598,44818701,8876
+femoral line left,map_bp,10,400,3027598,44818701,8876
+RIGHT FEM ALINE,map_bp,10,400,3027598,44818701,8876
+Radial a-line,map_bp,10,400,3027598,44818701,8876
+rad. aline,map_bp,10,400,3027598,44818701,8876
+Femoral A-Line,map_bp,10,400,3027598,44818701,8876
+FEM ALINE MAP,map_bp,10,400,3027598,44818701,8876
+SV (Arterial),hemodynamic,10,300,3036518,44818701,9569
+Stroke Volume,hemodynamic,10,300,3036518,44818701,9569
+Stroke Volume (SV NICOM),hemodynamic,10,300,3036518,44818701,9569
+SVI,hemodynamic,10,300,21490880,44818701,4189495
+SVI (PiCCO),hemodynamic,10,300,21490880,44818701,4189495
+Stroke Volume Index (SVI NICOM),hemodynamic,10,300,21490880,44818701,4189495
+ScvO2 (Presep),hemodynamic,10,100,3018465,44818701,8554
+ScvO2 (Presep) SQI,hemodynamic,10,100,3018465,44818701,8554
+SvO2,hemodynamic,10,100,3018465,44818701,8554
+SVO2,hemodynamic,10,100,3018465,44818701,8554
+svo2,hemodynamic,10,100,3018465,44818701,8554
+SV02,hemodynamic,10,100,3018465,44818701,8554
+svo2 RIJ,hemodynamic,10,100,3018465,44818701,8554
+SVO2 SAT,hemodynamic,10,100,3018465,44818701,8554
+SVO2-Presep. cath.,hemodynamic,10,100,3018465,44818701,8554
+ScvO2 Central Venous O2% Sat,hemodynamic,10,100,3018465,44818701,8554
+Mixed Venous O2% Sat,hemodynamic,10,100,3018465,44818701,8554
+Mixed Venous O2,hemodynamic,10,100,3018465,44818701,8554
+Arterial BP [Systolic],systolic_bp,20,400,3004249,44818701,8876
+Arterial Blood Pressure systolic,systolic_bp,20,400,3004249,44818701,8876
+ART BP Systolic,systolic_bp,20,400,3004249,44818701,8876
+Arterial BP #2 [Systolic],systolic_bp,20,400,3004249,44818701,8876
+NBP [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP Cuff [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP UAC [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP PAL [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP Left Arm [Systolic],systolic_bp,20,400,3004249,44818701,8876
+Manual BP [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP Left Leg [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP Right Leg [Systolic],systolic_bp,20,400,3004249,44818701,8876
+BP Right Arm [Systolic],systolic_bp,20,400,3004249,44818701,8876
+ABP [Systolic],systolic_bp,20,400,3004249,44818701,8876
+Non Invasive Blood Pressure systolic,systolic_bp,20,400,3004249,44818701,8876
+Manual Blood Pressure Systolic Left,systolic_bp,20,400,3004249,44818701,8876
+Manual Blood Pressure Systolic Right,systolic_bp,20,400,3004249,44818701,8876
+Temperature F,temperature,30,45,3020891,44818701,4122393
+Temperature C (calc),temperature,30,45,3020891,44818701,4122393
+Temp Skin [C],temperature,30,45,3020891,44818701,4122393
+Temperature Fahrenheit,temperature,30,45,3020891,44818701,4122393
+Temp Axillary [F],temperature,30,45,3020891,44818701,4122393
+Temperature C,temperature,30,45,3020891,44818701,4122393
+Temperature F (calc),temperature,30,45,3020891,44818701,4122393
+Temperature Celsius,temperature,30,45,3020891,44818701,4122393
+Temp Rectal [F],temperature,30,45,3020891,44818701,4122393
+Temp Rectal,temperature,30,45,3020891,44818701,4122393
+Blood Temperature CCO (C),temperature,30,45,3020891,44818701,4122393
+O2 saturation pulseoxymetry,spo2,50,100,3016502,44818701,8554
+Arterial O2 Saturation,spo2,50,100,3016502,44818701,8554
+PAR-Oxygen saturation,spo2,50,100,3016502,44818701,8554
+SpO2,spo2,50,100,3016502,44818701,8554
+SpO2-L,spo2,50,100,3016502,44818701,8554
+SaO2,spo2,50,100,3016502,44818701,8554
+Tidal Volume (observed),vent_settings,50,1000,21490854,44818701,8587
+Tidal Volume (Obser),vent_settings,50,1000,21490854,44818701,8587
+Tidal Volume (Set),vent_settings,50,1000,21490854,44818701,8587
+Tidal Volume (set),vent_settings,50,1000,21490854,44818701,8587
+Tidal Volume (spontaneous),vent_settings,50,1000,3017594,44818701,8587
+Tidal Volume (Spont),vent_settings,50,1000,3017594,44818701,8587
+Vt [Spontaneous],vent_settings,50,1000,3017594,44818701,8587
+ICP,hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure,hemodynamic,,,21490653,44818701,8876
+ICP Alarm [High],hemodynamic,,,21490653,44818701,8876
+ICP Alarm [Low],hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure Alarm - Low,hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure Alarm - High,hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure #2,hemodynamic,,,21490653,44818701,8876
+ICP LEFT,hemodynamic,,,21490653,44818701,8876
+RIGHT VENT ICP,hemodynamic,,,21490653,44818701,8876
+VENT ICP,hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure #2 Alarm - Low,hemodynamic,,,21490653,44818701,8876
+Intra Cranial Pressure #2 Alarm - High,hemodynamic,,,21490653,44818701,8876
+icp left,hemodynamic,,,21490653,44818701,8876
+ICP-ventriculostomuy,hemodynamic,,,21490653,44818701,8876
+R ICP,hemodynamic,,,21490653,44818701,8876
+ICP ventricle,hemodynamic,,,21490653,44818701,8876
+icp,hemodynamic,,,21490653,44818701,8876
+ICP  Right,hemodynamic,,,21490653,44818701,8876
+Rt ICP,hemodynamic,,,21490653,44818701,8876
+ICP Camino,hemodynamic,,,21490653,44818701,8876
+L ICP,hemodynamic,,,21490653,44818701,8876
+left icp,hemodynamic,,,21490653,44818701,8876
+ICP Right,hemodynamic,,,21490653,44818701,8876
+ventriculostomy icp,hemodynamic,,,21490653,44818701,8876
+Cerebral Perfusion Pressure Alarm - Low,hemodynamic,,,21490695,44818701,8876
+Cerebral Perfusion Pressure Alarm - High,hemodynamic,,,21490695,44818701,8876
+Cerebral Perfusion Pressure,hemodynamic,,,21490695,44818701,8876
+CPP,hemodynamic,,,21490695,44818701,8876
+cpp,hemodynamic,,,21490695,44818701,8876
+VENT CPP,hemodynamic,,,21490695,44818701,8876
+Vent CPP,hemodynamic,,,21490695,44818701,8876
+Camino CPP,hemodynamic,,,21490695,44818701,8876
+CPP WITH CAMINO ICP,hemodynamic,,,21490695,44818701,8876

@@ -124,6 +124,10 @@ class Vocabulary(OMOPPaths):
         Returns:
             dict: Dictionary with concept_code as key and concept_name as value.
         """
+        
+        # ensure concept_codes are strings
+        concept_codes = [str(concept_code) for concept_code in concept_codes]
+        
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
             .select("concept_code", "concept_name")

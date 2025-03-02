@@ -100,7 +100,7 @@ class EICUPaths(GlobalVars):
         self.vitalPeriodic_path = eicu_path + "vitalPeriodic.csv.gz"
 
         # eICU DEMO data paths
-        if DEMO == True:
+        if DEMO:
             eicu_path = paths.eicu_demo_source_path
             self.admissionDrug_path = eicu_path + "admissionDrug.csv"
             self.admissionDx_path = eicu_path + "admissionDx.csv"
@@ -251,7 +251,7 @@ class MIMIC3Paths(GlobalVars):
         self.services_path = mimic3_path + "SERVICES.csv.gz"
 
         # MIMIC-III DEMO data paths
-        if DEMO == True:
+        if DEMO:
             mimic3_path = paths.mimic3_demo_source_path
             self.admissions_path = mimic3_path + "ADMISSIONS.csv"
             self.chartevents_path = mimic3_path + "CHARTEVENTS.csv"
@@ -286,6 +286,129 @@ class MIMIC3Paths(GlobalVars):
         )
         self.drug_class_mapping_path = (
             self.mimic3_mapping_path + "mimic3_inputevents_drug_class.yaml"
+        )
+
+        # MIMIC-III OMOP mapping paths
+        # https://github.com/MIT-LCP/mimic-omop
+        self.mimic3_omop_mapping_path = self.mimic3_mapping_path + "mimic-omop/"
+        self.care_site_path = self.mimic3_omop_mapping_path + "care_site.csv"
+        self.admission_location_to_concept_path = (
+            self.mimic3_omop_mapping_path + "admission_location_to_concept.csv"
+        )
+        self.admission_type_to_concept_path = (
+            self.mimic3_omop_mapping_path + "admission_type_to_concept.csv"
+        )
+        self.admissions_diagnosis_to_concept_path = (
+            self.mimic3_omop_mapping_path
+            + "admissions_diagnosis_to_concept.csv"
+        )
+        self.atb_to_concept_path = (
+            self.mimic3_omop_mapping_path + "atb_to_concept.csv"
+        )
+        self.chart_label_to_concept_path = (
+            self.mimic3_omop_mapping_path + "chart_label_to_concept.csv"
+        )
+        self.chart_observation_to_concept_path = (
+            self.mimic3_omop_mapping_path + "chart_observation_to_concept.csv"
+        )
+        self.continuous_unit_carevue_path = (
+            self.mimic3_omop_mapping_path + "continuous_unit_carevue.csv"
+        )
+        self.cpt4_to_concept_path = (
+            self.mimic3_omop_mapping_path + "cpt4_to_concept.csv"
+        )
+        self.cv_input_label_to_concept_path = (
+            self.mimic3_omop_mapping_path + "cv_input_label_to_concept.csv"
+        )
+        self.datetimeevents_to_concept_path = (
+            self.mimic3_omop_mapping_path + "datetimeevents_to_concept.csv"
+        )
+        self.derived_to_concept_path = (
+            self.mimic3_omop_mapping_path + "derived_to_concept.csv"
+        )
+        self.discharge_location_to_concept_path = (
+            self.mimic3_omop_mapping_path + "discharge_location_to_concept.csv"
+        )
+        self.drgcode_to_concept_path = (
+            self.mimic3_omop_mapping_path + "drgcode_to_concept.csv"
+        )
+        self.ethnicity_to_concept_path = (
+            self.mimic3_omop_mapping_path + "ethnicity_to_concept.csv"
+        )
+        self.heart_rhythm_to_concept_path = (
+            self.mimic3_omop_mapping_path + "heart_rhythm_to_concept.csv"
+        )
+        self.inputevents_drug_to_concept_path = (
+            self.mimic3_omop_mapping_path + "inputevents_drug_to_concept.csv"
+        )
+        self.insurance_to_concept_path = (
+            self.mimic3_omop_mapping_path + "insurance_to_concept.csv"
+        )
+        self.lab_label_to_concept_path = (
+            self.mimic3_omop_mapping_path + "lab_label_to_concept.csv"
+        )
+        self.lab_unit_to_concept_path = (
+            self.mimic3_omop_mapping_path + "lab_unit_to_concept.csv"
+        )
+        self.lab_value_to_concept_path = (
+            self.mimic3_omop_mapping_path + "lab_value_to_concept.csv"
+        )
+        self.labs_from_chartevents_to_concept_path = (
+            self.mimic3_omop_mapping_path
+            + "labs_from_chartevents_to_concept.csv"
+        )
+        self.labs_specimen_to_concept_path = (
+            self.mimic3_omop_mapping_path + "labs_specimen_to_concept.csv"
+        )
+        self.map_route_to_concept_path = (
+            self.mimic3_omop_mapping_path + "map_route_to_concept.csv"
+        )
+        self.marital_status_to_concept_path = (
+            self.mimic3_omop_mapping_path + "marital_status_to_concept.csv"
+        )
+        self.microbiology_specimen_to_concept_path = (
+            self.mimic3_omop_mapping_path
+            + "microbiology_specimen_to_concept.csv"
+        )
+        self.mv_input_label_to_concept_path = (
+            self.mimic3_omop_mapping_path + "mv_input_label_to_concept.csv"
+        )
+        self.note_category_to_concept_path = (
+            self.mimic3_omop_mapping_path + "note_category_to_concept.csv"
+        )
+        self.note_section_to_concept_path = (
+            self.mimic3_omop_mapping_path + "note_section_to_concept.csv"
+        )
+        self.org_name_to_concept_path = (
+            self.mimic3_omop_mapping_path + "org_name_to_concept.csv"
+        )
+        self.output_label_to_concept_path = (
+            self.mimic3_omop_mapping_path + "output_label_to_concept.csv"
+        )
+        self.prescriptions_ndcisnullzero_to_concept_path = (
+            self.mimic3_omop_mapping_path
+            + "prescriptions_ndcisnullzero_to_concept.csv"
+        )
+        self.procedure_to_concept_path = (
+            self.mimic3_omop_mapping_path + "procedure_to_concept.csv"
+        )
+        self.religion_to_concept_path = (
+            self.mimic3_omop_mapping_path + "religion_to_concept.csv"
+        )
+        self.resistance_to_concept_path = (
+            self.mimic3_omop_mapping_path + "resistance_to_concept.csv"
+        )
+        self.route_to_concept_path = (
+            self.mimic3_omop_mapping_path + "route_to_concept.csv"
+        )
+        self.seq_num_to_concept_path = (
+            self.mimic3_omop_mapping_path + "seq_num_to_concept.csv"
+        )
+        self.spec_type_to_concept_path = (
+            self.mimic3_omop_mapping_path + "spec_type_to_concept.csv"
+        )
+        self.unit_doseera_concept_id_path = (
+            self.mimic3_omop_mapping_path + "unit_doseera_concept_id.csv"
         )
 
         # MIMIC-III LOINC mapping paths
@@ -362,7 +485,9 @@ class MIMIC4Paths(GlobalVars):
         self.icustays_path = mimic4_path + "icu/icustays.csv.gz"
         self.inputevents_path = mimic4_path + "icu/inputevents.csv.gz"
         self.labevents_path = mimic4_path + "hosp/labevents.csv.gz"
-        self.microbiologyevents_path = mimic4_path + "hosp/microbiologyevents.csv.gz"
+        self.microbiologyevents_path = (
+            mimic4_path + "hosp/microbiologyevents.csv.gz"
+        )
         self.outputevents_path = mimic4_path + "icu/outputevents.csv.gz"
         self.patients_path = mimic4_path + "hosp/patients.csv.gz"
         self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv.gz"
@@ -371,7 +496,7 @@ class MIMIC4Paths(GlobalVars):
         self.services_path = mimic4_path + "hosp/services.csv.gz"
 
         # MIMIC-IV DEMO data paths
-        if DEMO == True:
+        if DEMO:
             mimic4_path = paths.mimic4_demo_source_path
             self.admissions_path = mimic4_path + "hosp/admissions.csv"
             self.chartevents_path = mimic4_path + "icu/chartevents.csv"
@@ -404,6 +529,73 @@ class MIMIC4Paths(GlobalVars):
         )
         self.drug_class_mapping_path = (
             self.mimic4_mapping_path + "mimic4_inputevents_drug_class.yaml"
+        )
+
+        # MIMIC-IV OMOP mapping paths
+        # https://github.com/MIT-LCP/mimic-iv-demo-omop
+        self.mimic4_omop_mapping_path = (
+            self.mimic4_mapping_path + "mimic-iv-omop/"
+        )
+        self.vis_admission_path = (
+            self.mimic4_omop_mapping_path + "gcpt_vis_admission.csv"
+        )
+        self.cs_place_of_service_path = (
+            self.mimic4_omop_mapping_path + "gcpt_cs_place_of_service.csv"
+        )
+        self.drug_ndc_path = self.mimic4_omop_mapping_path + "gcpt_drug_ndc.csv"
+        self.drug_route_path = (
+            self.mimic4_omop_mapping_path + "gcpt_drug_route.csv"
+        )
+        self.meas_chartevents_main_mod_path = (
+            self.mimic4_omop_mapping_path + "gcpt_meas_chartevents_main_mod.csv"
+        )
+        self.meas_chartevents_value_path = (
+            self.mimic4_omop_mapping_path + "gcpt_meas_chartevents_value.csv"
+        )
+        self.meas_lab_loinc_mod_path = (
+            self.mimic4_omop_mapping_path + "gcpt_meas_lab_loinc_mod.csv"
+        )
+        self.meas_unit_path = (
+            self.mimic4_omop_mapping_path + "gcpt_meas_unit.csv"
+        )
+        self.meas_waveforms_path = (
+            self.mimic4_omop_mapping_path + "gcpt_meas_waveforms.csv"
+        )
+        self.micro_antibiotic_path = (
+            self.mimic4_omop_mapping_path + "gcpt_micro_antibiotic.csv"
+        )
+        self.micro_microtest_path = (
+            self.mimic4_omop_mapping_path + "gcpt_micro_microtest.csv"
+        )
+        self.micro_organism_path = (
+            self.mimic4_omop_mapping_path + "gcpt_micro_organism.csv"
+        )
+        self.micro_resistance_path = (
+            self.mimic4_omop_mapping_path + "gcpt_micro_resistance.csv"
+        )
+        self.micro_specimen_path = (
+            self.mimic4_omop_mapping_path + "gcpt_micro_specimen.csv"
+        )
+        self.mimic_generated_path = (
+            self.mimic4_omop_mapping_path + "gcpt_mimic_generated.csv"
+        )
+        self.obs_drgcodes_path = (
+            self.mimic4_omop_mapping_path + "gcpt_obs_drgcodes.csv"
+        )
+        self.obs_insurance_path = (
+            self.mimic4_omop_mapping_path + "gcpt_obs_insurance.csv"
+        )
+        self.obs_marital_path = (
+            self.mimic4_omop_mapping_path + "gcpt_obs_marital.csv"
+        )
+        self.per_ethnicity_path = (
+            self.mimic4_omop_mapping_path + "gcpt_per_ethnicity.csv"
+        )
+        self.proc_datetimeevents_path = (
+            self.mimic4_omop_mapping_path + "gcpt_proc_datetimeevents.csv"
+        )
+        self.proc_itemid_path = (
+            self.mimic4_omop_mapping_path + "gcpt_proc_itemid.csv"
         )
 
         # MIMIC-IV LOINC mapping paths
