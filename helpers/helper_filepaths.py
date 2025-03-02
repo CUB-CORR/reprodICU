@@ -144,41 +144,41 @@ class EICUPaths(GlobalVars):
 
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
+        self.careprovider_mapping_path = (
+            self.eICU_mapping_path + "eicu_carePlanCareProvider_specialty.yaml"
+        )
+        self.intakeoutput_mapping_path = (
+            self.eICU_mapping_path + "eicu_intakeOutput_cellpath.yaml"
+        )
         self.lab_mapping_path = self.eICU_mapping_path + "eicu_lab.yaml"
+        self.drug_administration_route_mapping_path = (
+            self.eICU_mapping_path + "eicu_medication_routeadmin.yaml"
+        )
         self.micro_culturesite_mapping_path = (
             self.eICU_mapping_path + "eicu_microLab_culturesite.yaml"
         )
         self.micro_organism_mapping_path = (
             self.eICU_mapping_path + "eicu_microLab_organism.yaml"
         )
+        self.nurse_oxygen_delivery_device_mapping_path = (
+            self.eICU_mapping_path
+            + "eicu_nurseCharting_oxygenDeliveryDevices.yaml"
+        )
+        self.nurse_mapping_path = (
+            self.eICU_mapping_path + "eicu_nurseCharting.yaml"
+        )
         self.resp_airwaytype_mapping_path = (
             self.eICU_mapping_path + "eicu_respiratoryCare_airwaytype.yaml"
-        )
-        self.resp_mapping_path = (
-            self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
         self.resp_oxygen_delivery_device_mapping_path = (
             self.eICU_mapping_path
             + "eicu_respiratoryCharting_oxygenDeliveryDevices.yaml"
         )
-        self.intakeoutput_mapping_path = (
-            self.eICU_mapping_path + "eicu_intakeOutput_cellpath.yaml"
-        )
-        self.nurse_mapping_path = (
-            self.eICU_mapping_path + "eicu_nurseCharting.yaml"
-        )
-        self.nurse_oxygen_delivery_device_mapping_path = (
-            self.eICU_mapping_path
-            + "eicu_nurseCharting_oxygenDeliveryDevices.yaml"
+        self.resp_mapping_path = (
+            self.eICU_mapping_path + "eicu_respiratoryCharting.yaml"
         )
         self.periodic_mapping_path = (
             self.eICU_mapping_path + "eicu_vitalPeriodic.yaml"
-        )
-        self.medication_mapping_path = (
-            self.eICU_mapping_path + "eicu_medication.yaml"
-        )
-        self.drug_administration_route_mapping_path = (
-            self.eICU_mapping_path + "eicu_medication_routeadmin.yaml"
         )
 
 
@@ -208,6 +208,9 @@ class HiRIDPaths(GlobalVars):
 
         # HiRID custom mapping paths
         self.hirid_mapping_path = self.mapping_path + "hirid/"
+        self.specialty_mapping_path = (
+            self.hirid_mapping_path + "hirid_OBSERVATION_APACHE_specialty.yaml"
+        )
         self.apache_mapping_path = (
             self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml"
         )

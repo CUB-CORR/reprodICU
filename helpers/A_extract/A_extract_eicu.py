@@ -139,6 +139,11 @@ class EICUExtractor(EICUPaths):
             )
             .sort(self.icu_stay_id_col)
             .join(
+                self.extract_specialty_information(),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
+            .join(
                 self.extract_admission_diagnoses(),
                 on=self.icu_stay_id_col,
                 how="left",
@@ -281,12 +286,57 @@ class EICUExtractor(EICUPaths):
                 self.mortality_icu_col,
                 self.mortality_after_col,
                 self.admission_loc_col,
+                self.specialty_col,
                 self.unit_type_col,
                 self.care_site_col,
                 self.discharge_loc_col,
             )
         )
 
+    # endregion
+
+    # region specialty
+    # Extract specialty information from the carePlanCareProvider.csv file
+    def extract_specialty_information(self) -> pl.LazyFrame:
+        """
+        Extracts specialty information from the carePlanCareProvider CSV file.
+
+        Reads specialty data, applies name mapping and filters for relevant specialties.
+        Steps:
+            1. Read specialty data from self.carePlanCareProvider_path.
+            2. Replace specialty names using a provided mapping.
+            3. Select the first specialty for each ICU stay.
+        Returns:
+            pl.LazyFrame: A LazyFrame with columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {specialty_col}: Mapped specialty name.
+        """
+        careprovider_mapping = self.helpers.load_mapping(
+            self.careprovider_mapping_path
+        )
+
+        return (
+            pl.scan_csv(self.carePlanCareProvider_path)
+            .rename({"patientunitstayid": self.icu_stay_id_col})
+            .filter(pl.col("managingphysician") == "Managing")
+            .with_columns(
+                # Replace specialty names with mapped names
+                pl.col("specialty")
+                .replace_strict(careprovider_mapping, default=None)
+                .alias(self.specialty_col)
+            )
+            .group_by(self.icu_stay_id_col)
+            .agg(
+                pl.col(self.specialty_col)
+                .sort_by("careprovidersaveoffset")
+                .first()
+            )
+            # Filter for relevant specialties
+            .filter(pl.col(self.specialty_col).is_not_null())
+            # Remove duplicate rows
+            .unique()
+        )
+        
     # endregion
 
     # region admitDX
@@ -325,32 +375,64 @@ class EICUExtractor(EICUPaths):
                     pl.col("admitdxpath")
                     .str.replace("admission diagnosis\|All Diagnosis\|", "")
                     .str.replace("\|Diagnosis\|", " - ")
-                    .str.replace("\|", " - ")
+                    .str.replace_all("\|", " - ")
+                    .str.replace_all(" ,", ",")
+                    .str.replace_all(",", ", ")
+                    .str.replace_all("  ", " ")
                     # clean comments
                     .str.replace(
-                        " (with or without respiratory arrest; for respiratory arrest see Respiratory System)",
+                        " \(angina interferes w/quality of life or meds are tolerated poorly\)",
                         "",
                     )
                     .str.replace(
-                        " (for gastrointestinal bleeding GI-see GI system) (for trauma see Trauma)",
+                        " \(with or without respiratory arrest; for respiratory arrest see Respiratory System\)",
                         "",
                     )
                     .str.replace(
-                        " (for cerebrovascular accident-see Neurological System)",
+                        " \(for gastrointestinal bleeding GI-see GI system\) \(for trauma see Trauma\)",
                         "",
                     )
-                    .str.replace(", Do not include shock states", "")
                     .str.replace(
-                        " (for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV)",
+                        " \(for cerebrovascular accident-see Neurological System\)",
                         "",
                     )
-                    .str.replace(" (excluding vascular shunting-see surgery for portosystemic shunt)", "")
-                    .str.replace(" (if related to trauma, see Trauma)", "")
-                    .str.replace("-no structural brain disease", "")
-                    .str.replace(", for fractures due to trauma see Trauma", "")
+                    .str.replace(
+                        ", Do not include shock states",
+                        "",
+                    )
+                    .str.replace(
+                        " \(for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV\)",
+                        "",
+                    )
+                    .str.replace(
+                        " \(excluding vascular shunting-see surgery for portosystemic shunt\)",
+                        "",
+                    )
+                    .str.replace(
+                        " \(if related to trauma, see Trauma\)",
+                        "",
+                    )
+                    .str.replace(
+                        "-no structural brain disease",
+                        "",
+                    )
+                    .str.replace(
+                        ", for fractures due to trauma see Trauma",
+                        "",
+                    )
                     # harmonize comments
                     .str.replace("Hematoma subdural", "Hematoma, subdural")
                     .str.replace("Hematoma-epidural", "Hematoma, epidural")
+                    .str.replace_all("i.e.,", "i.e.", literal=True)
+                    .str.replace_all("i.e.", "i.e. ", literal=True)
+                    .str.replace_all("i.e.  ", "i.e. ", literal=True)
+                    .str.replace("ileal-conduit", "ileal conduit")
+                    .str.replace(
+                        "Pneumocystic pneumonia", "Pneumocystis pneumonia"
+                    )
+                    .str.replace("surgery,surgery", "surgery, surgery")
+                    .str.replace("; surgery", ", surgery")
+                    .str.replace("for;", "for")
                 )
                 .otherwise(None)
                 .alias(self.admission_diagnosis_col),
