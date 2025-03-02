@@ -366,6 +366,7 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Load the mapping of the diagnoses
         hirid_diagnosis_mapping = self.load_mapping(self.apache_mapping_path)
+        hirid_specialty_mapping = self.load_mapping(self.specialty_mapping_path)
 
         # Create an empty DataFrame to store the admission diagnoses data
         admitDX = pl.LazyFrame()
@@ -391,9 +392,16 @@ class HiRIDExtractor(HiRIDPaths):
             .with_columns(
                 pl.col("value")
                 .replace(hirid_diagnosis_mapping, default=None)
-                .alias(self.admission_diagnosis_col)
+                .alias(self.admission_diagnosis_col),
+                pl.col("value")
+                .replace(hirid_specialty_mapping, default=None)
+                .alias(self.specialty_col),
             )
-            .select(self.icu_stay_id_col, self.admission_diagnosis_col)
+            .select(
+                self.icu_stay_id_col,
+                self.admission_diagnosis_col,
+                self.specialty_col,
+            )
             .cast({self.icu_stay_id_col: str})
         )
 
@@ -652,7 +660,7 @@ class HiRIDExtractor(HiRIDPaths):
                     "route",
                     "infusionid",
                     "subtypeid",
-                    "fluidamount_calc"
+                    "fluidamount_calc",
                 )
                 # Rename columns for consistency
                 .rename(
