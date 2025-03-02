@@ -1007,7 +1007,44 @@ class MIMIC3Extractor(MIMIC3Paths):
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
         )
-        # TODO: mappings
+
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace_strict(
+                    self.omop.get_concept_names_from_codes(
+                        data.select(column_in).collect().to_series().to_list()
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
+                )
+                .alias(column_out)
+            )
+
+        microbiology_specimen_to_concept_mapping = (
+            pl.scan_csv(self.microbiology_specimen_to_concept_path)
+            .rename(
+                {
+                    "label": "SPEC_TYPE_DESC",
+                    "concept_name": self.micro_specimen_col,
+                }
+            )
+            .select("SPEC_TYPE_DESC", self.micro_specimen_col)
+        )
+        org_name_to_concept_mapping = pl.scan_csv(self.org_name_to_concept_path)
+        org_name_to_concept_mapping = (
+            org_name_to_concept_mapping.rename({"org_name": "ORG_NAME"})
+            .pipe(_create_mapping, "snomed", self.micro_organism_col)
+            .select("ORG_NAME", self.micro_organism_col)
+        )
+        atb_to_concept_mapping = pl.scan_csv(self.atb_to_concept_path)
+        atb_to_concept_mapping = (
+            atb_to_concept_mapping.rename({"ab_name": "AB_NAME"})
+            .pipe(_create_mapping, "concept_code", self.micro_antibiotic_col)
+            .select("AB_NAME", self.micro_antibiotic_col)
+        )
 
         return (
             pl.scan_csv(self.microbiologyevents_path)
@@ -1025,15 +1062,24 @@ class MIMIC3Extractor(MIMIC3Paths):
             .rename(
                 {
                     "HADM_ID": self.hospital_stay_id_col,
-                    "SPEC_TYPE_DESC": self.micro_specimen_col,
-                    "ORG_NAME": self.micro_organism_col,
-                    "AB_NAME": self.micro_antibiotic_col,
+                    # "SPEC_TYPE_DESC": self.micro_specimen_col,
+                    # "ORG_NAME": self.micro_organism_col,
+                    # "AB_NAME": self.micro_antibiotic_col,
                     "INTERPRETATION": self.micro_sensitivity_col,
                 }
             )
             .join(self.icu_stay_id, on=self.hospital_stay_id_col)
             .drop(self.person_id_col)
             .join(intimes, on=self.icu_stay_id_col)
+            # Add mappings
+            .join(
+                microbiology_specimen_to_concept_mapping,
+                on="SPEC_TYPE_DESC",
+                how="left",
+            )
+            .join(org_name_to_concept_mapping, on="ORG_NAME", how="left")
+            .join(atb_to_concept_mapping, on="AB_NAME", how="left")
+            # Convert timestamps to datetime
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),

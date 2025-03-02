@@ -959,7 +959,44 @@ class MIMIC4Extractor(MIMIC4Paths):
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col, "intime"
         )
-        # TODO: mappings
+
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace(
+                    self.omop.get_concept_names_from_ids(
+                        data.select(column_in).collect().to_series().to_list()
+                    ), return_dtype=pl.String, default=None
+                )
+                .alias(column_out)
+            )
+
+        micro_specimen_mapping = pl.scan_csv(self.micro_specimen_path)
+        micro_specimen_mapping = (
+            micro_specimen_mapping.rename({"concept_name": "spec_type_desc"})
+            .pipe(_create_mapping, "target_concept_id", self.micro_specimen_col)
+            .select("spec_type_desc", self.micro_specimen_col)
+        )
+        micro_test_mapping = pl.scan_csv(self.micro_microtest_path)
+        micro_test_mapping = (
+            micro_test_mapping.rename({"concept_name": "test_name"})
+            .pipe(_create_mapping, "target_concept_id", self.micro_test_col)
+            .select("test_name", self.micro_test_col)
+        )
+        micro_organism_mapping = pl.scan_csv(self.micro_organism_path)
+        micro_organism_mapping = (
+            micro_organism_mapping.rename({"concept_name": "org_name"})
+            .pipe(_create_mapping, "target_concept_id", self.micro_organism_col)
+            .select("org_name", self.micro_organism_col)
+        )
+        micro_antibiotic_mapping = pl.scan_csv(self.micro_antibiotic_path)
+        micro_antibiotic_mapping = (
+            micro_antibiotic_mapping.rename({"concept_name": "ab_name"})
+            .pipe(_create_mapping, "target_concept_id", self.micro_antibiotic_col)
+            .select("ab_name", self.micro_antibiotic_col)
+        )
 
         return (
             pl.scan_csv(self.microbiologyevents_path)
@@ -978,10 +1015,10 @@ class MIMIC4Extractor(MIMIC4Paths):
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
-                    "spec_type_desc": self.micro_specimen_col,
-                    "test_name": self.micro_test_col,
-                    "org_name": self.micro_organism_col,
-                    "ab_name": self.micro_antibiotic_col,
+                    # "spec_type_desc": self.micro_specimen_col,
+                    # "test_name": self.micro_test_col,
+                    # "org_name": self.micro_organism_col,
+                    # "ab_name": self.micro_antibiotic_col,
                     "interpretation": self.micro_sensitivity_col,
                 }
             )
@@ -990,6 +1027,12 @@ class MIMIC4Extractor(MIMIC4Paths):
             # include only ICU patients
             .filter(pl.col(self.icu_stay_id_col).is_not_null())
             .join(intimes, on=self.icu_stay_id_col)
+            # Add mappings
+            .join(micro_specimen_mapping, on="spec_type_desc", how="left")
+            .join(micro_test_mapping, on="test_name", how="left")
+            .join(micro_organism_mapping, on="org_name", how="left")
+            .join(micro_antibiotic_mapping, on="ab_name", how="left")
+            # Convert timestamps to datetime
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
