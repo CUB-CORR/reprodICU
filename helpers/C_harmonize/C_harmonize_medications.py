@@ -17,6 +17,10 @@ from helpers.helper import GlobalVars
 from helpers.helper import GlobalHelpers
 
 
+SECONDS_IN_1MIN = 60
+SECONDS_IN_1H = 3600
+
+
 class MedicationHarmonizer(GlobalVars):
     def __init__(self, paths, datasets: list, DEMO=False):
         """
@@ -159,6 +163,76 @@ class MedicationHarmonizer(GlobalVars):
                 medications_datasets,
                 how="diagonal_relaxed",
             )
+            .cast(
+                {
+                    self.drug_amount_col: float,
+                    self.drug_rate_col: float,
+                    self.fluid_amount_col: float,
+                    self.fluid_rate_col: float,
+                    self.drug_patient_weight_col: float,
+                    self.drug_class_col: str,
+                    self.drug_admin_route_col: str,
+                    self.drug_start_col: float,
+                    self.drug_end_col: float,
+                },
+                strict=False,
+            )
+            # add missing drug rates
+            .with_columns(
+                pl.when(
+                    pl.all_horizontal(
+                        pl.col(self.drug_amount_col).is_not_null(),
+                        pl.col(self.drug_amount_unit_col).is_in(
+                            ["mcg", "mg", "g", "units"]
+                        ),
+                        pl.col(self.drug_start_col).is_not_null(),
+                        pl.col(self.drug_end_col).is_not_null(),
+                    )
+                    & pl.col(self.drug_rate_col).is_null()
+                )
+                .then(
+                    pl.col(self.drug_amount_col)
+                    / pl.when(
+                        pl.col(self.drug_patient_weight_col).is_not_null(),
+                        pl.col(self.drug_amount_unit_col) != "units",
+                    )
+                    .then(pl.col(self.drug_patient_weight_col))
+                    .otherwise(1)
+                    / (pl.col(self.drug_end_col) - pl.col(self.drug_start_col))
+                    * SECONDS_IN_1MIN
+                )
+                .otherwise(pl.col(self.drug_rate_col))
+                .alias(self.drug_rate_col),
+                pl.when(
+                    pl.all_horizontal(
+                        pl.col(self.drug_amount_col).is_not_null(),
+                        pl.col(self.drug_amount_unit_col).is_in(
+                            ["mcg", "mg", "g", "units"]
+                        ),
+                        pl.col(self.drug_start_col).is_not_null(),
+                        pl.col(self.drug_end_col).is_not_null(),
+                    )
+                    & pl.col(self.drug_rate_col).is_null()
+                )
+                .then(
+                    pl.concat_str(
+                        [
+                            pl.col(self.drug_amount_unit_col),
+                            pl.when(
+                                pl.col(
+                                    self.drug_patient_weight_col
+                                ).is_not_null(),
+                                pl.col(self.drug_amount_unit_col) != "units",
+                            )
+                            .then(pl.lit("/kg"))
+                            .otherwise(pl.lit("")),
+                            pl.lit("/min"),
+                        ]
+                    )
+                )
+                .otherwise(pl.col(self.drug_rate_unit_col))
+                .alias(self.drug_rate_unit_col),
+            )
             # add missing drug class information
             # NOTE: -> refactor into imputation?
             # NOTE: -> prob yes, since one also needs to deal with boluses
@@ -207,18 +281,6 @@ class MedicationHarmonizer(GlobalVars):
                 self.drug_start_col,
                 self.drug_end_col,
                 self.drug_patient_weight_col,
-            )
-            .cast(
-                {
-                    self.drug_amount_col: float,
-                    self.drug_rate_col: float,
-                    self.fluid_amount_col: float,
-                    self.fluid_rate_col: float,
-                    self.drug_patient_weight_col: float,
-                    self.drug_class_col: str,
-                    self.drug_admin_route_col: str,
-                },
-                strict=False,
             )
             .unique()
             .sort(self.global_icu_stay_id_col, self.drug_start_col)
