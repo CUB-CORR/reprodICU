@@ -87,7 +87,7 @@ class HiRIDExtractor(HiRIDPaths):
                 # Set unit type
                 # NOTE: the Bern University Hospital only has one unit type
                 # -> all ICU patients are cared for within a interdisciplinary 60-bed unit in the Department of Intensive Care Medicine
-                pl.lit("Medical-Surgical")
+                pl.lit("Intensive care unit")
                 .replace(self.UNIT_TYPES_MAP)
                 .cast(self.unit_types_dtype)
                 .first()

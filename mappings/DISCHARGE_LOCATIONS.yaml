@@ -1,3 +1,11 @@
+# eICU-CRD:  patient table -> unitdischargelocation column
+# HiRID:      –
+# MIMIC-III: admissions table -> DISCHARGE_LOCATION column
+# MIMIC-IV:  admissions table -> discharge_location column
+# NWICU:     admissions table -> discharge_location column
+# SICdb:     cases table -> DischargeUnit column
+# UMCdb:     admissions table -> destination column
+
 Hospital:
   # eICU-CRD
   - Floor

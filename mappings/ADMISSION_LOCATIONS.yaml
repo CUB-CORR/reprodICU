@@ -1,3 +1,11 @@
+# eICU-CRD:  patient table -> unitadmitsource column
+# HiRID:      –
+# MIMIC-III: admissions table -> ADMISSION_LOCATION column
+# MIMIC-IV:  admissions table -> admission_location column
+# NWICU:     admissions table -> admission_location column
+# SICdb:     cases table -> ReferringUnit column
+# UMCdb:     admissions table -> origin column
+
 Other ICU:
   # eICU-CRD
   - Chest Pain Center

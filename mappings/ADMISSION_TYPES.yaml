@@ -1,6 +1,15 @@
 # MAPPING SPECIALTIES TO ADMISSION TYPES LIKE RICU
 # Necessary since the SPECIALTIES.yaml file combines some specialties into categories,
 # where their relevant expression (i.e. medical, surgical, other) might differ between datasets.
+
+# eICU-CRD:  admissionDx table -> created from admitdxpath column
+# HiRID:      –
+# MIMIC-III: services table -> CURR_SERVICE column
+# MIMIC-IV:  services table -> curr_service column
+# NWICU:      –
+# SICdb:     cases table -> SurgicalAdmissionType column
+# UMCdb:     admissions table -> specialty column
+
 Medical:
   # MIMIC
   - CMED # Cardiac Medical - for non-surgical cardiac related admissions
