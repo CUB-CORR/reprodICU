@@ -344,6 +344,8 @@ class EICUExtractor(EICUPaths):
                         " (for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV)",
                         "",
                     )
+                    .str.replace(" (excluding vascular shunting-see surgery for portosystemic shunt)", "")
+                    .str.replace(" (if related to trauma, see Trauma)", "")
                     .str.replace("-no structural brain disease", "")
                     .str.replace(", for fractures due to trauma see Trauma", "")
                     # harmonize comments

@@ -18,6 +18,7 @@ Heart rate: # 4239408 prev. heart_rate
   # UMCdb -> same name
   - Heart rate.beat-to-beat by EKG
 Heart rate rhythm: # 3022318
+  # MIMIC-III / MIMIC-IV -> same name
   # HiRID
   - Circadian rhythm
   # UMCdb

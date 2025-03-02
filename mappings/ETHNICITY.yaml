@@ -1,3 +1,11 @@
+# eICU-CRD:  patient table -> ethnicity column
+# HiRID:      –
+# MIMIC-III: admissions table -> ETHNICITY column
+# MIMIC-IV:  admissions table -> race column
+# NWICU:     admissions table -> race column
+# SICdb:      -
+# UMCdb:      -
+
 Asian:
   # eICU-CRD
   - Asian

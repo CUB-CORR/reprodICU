@@ -35,6 +35,21 @@
   # UMCdb
   - Atrial flutter
 
+"EKG: atrial tachycardia": # 37017190
+  # MIMIC-III
+  - MultFocalAtrTach
+  # MIMIC-III / MIMIC-IV
+  - MAT (Multifocal atrial tachycardia)
+  # UMCdb
+  - Atrial paroxysmal tachycardia
+  - Paroxysmal atrial tachycardia with block
+
+"ECG: paroxysmal atrial tachycardia": # 4064869
+  # MIMIC-III
+  - Parox Atr Tachy
+  # MIMIC-III / MIMIC-IV
+  - PAT (Paroxysmal Atrial Tachycardia)
+
 "ECG: partial atrioventricular block - long PR": # 45884784
   # HiRID
   - AV bl (I)
@@ -72,6 +87,8 @@
   # HiRID
   - AV bl (III)
   - AV Block Grad 3
+  # MIMIC-III
+  - Comp Heart Block
   # MMIIC-III / MIMIC-IV
   - "3rd AV (Complete Heart Block) "
   # UMCdb
@@ -91,6 +108,11 @@
   - Junctional
   # UMCdb
   - AV junctional rhythm
+
+"ECG: junctional tachycardia": # 4142573
+  # MIMIC-III / MIMIC-IV
+  - "JT (Junctional Tachycardia) "
+  - "PJT (Paroxysmal Junctional Tachycardia) "
 
 "ECG: paced rhythm": # 4142412
   # HiRID
@@ -115,6 +137,8 @@
   - Multiple atrial ectopics
 
 "ECG: premature ventricular contractions": # 4145998
+  # MIMIC-III
+  - PVC's # Cardiac Rhythm
   # UMCdb
   - Premature ventricular contractions
   - Multifocal premature ventricular complexes
@@ -131,6 +155,7 @@
   - SR
   # MIMIC-III
   - Normal Sinus
+  - Normal # Cardiac Rhythm
   # MIMIC-III / MIMIC-IV
   - SR (Sinus Rhythm)
   # UMCdb
@@ -210,32 +235,22 @@
 Other (not listed): # 45883627 # LOINC
   # HiRID
   - siehe PD Spez.Rhyth
+  # MIMIC-III
+  - Comment
+  - Other/Remarks
 
 
 
 # UMCdb
-# Atrial paroxysmal tachycardia
-# Paroxysmal atrial tachycardia with block
 # Prolonged QT interval
 # ST segment depression
 # ST segment elevation
 # Wide QRS complex
 
 # MIMIC-III
-# Comp Heart Block
-# MultFocalAtrTach
-# Other/Remarks
-# Parox Atr Tachy
 # Wand.Atrial Pace
-
-# Comment
-# Gallop
-# Normal
-# PVC's
+# Comment # Cardiac Rhythm
+# Gallop # Cardiac Rhythm
 
 # MIMIC-III / MIMIC-IV
-# "JT (Junctional Tachycardia) "
-# MAT (Multifocal atrial tachycardia)
-# PAT (Paroxysmal Atrial Tachycardia)
-# "PJT (Paroxysmal Junctional Tachycardia) "
 # WAP (Wandering atrial pacemaker)

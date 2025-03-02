@@ -1,3 +1,11 @@
+# eICU-CRD:   –
+# HiRID:      –
+# MIMIC-III: services table -> CURR_SERVICE column
+# MIMIC-IV:  services table -> curr_service column
+# NWICU:      –
+# SICdb:     cases table -> ReferringUnit column
+# UMCdb:     admissions table -> specialty column
+
 Cardiology:
   # MIMIC-III / MIMIC-IV
   - CMED # Cardiac Medical - for non-surgical cardiac related admissions
