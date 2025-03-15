@@ -277,6 +277,8 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             .agg(
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
+                pl.col("MechVent").max().alias("MechVent"),
+                pl.col("OxygenTherapy").max().alias("OxygenTherapy"),
             )
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
@@ -287,7 +289,11 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 (pl.col("ENDTIME") - pl.col("INTIME"))
                 .dt.total_seconds()
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                pl.lit("invasive ventilation").alias("Ventilation Type"),
+                pl.when(pl.col("MechVent") == 1)
+                .then(pl.lit("invasive ventilation"))
+                .when(pl.col("OxygenTherapy") == 1)
+                .then(pl.lit("supplemental oxygen"))
+                .alias("Ventilation Type"),
             )
             .select(
                 "ICUSTAY_ID",
