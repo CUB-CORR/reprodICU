@@ -218,6 +218,24 @@ class MIMIC4Extractor(MIMIC4Paths):
             .select(self.person_id_col, self.gender_col, self.age_col, "dod")
         )
 
+        # calculate mortality after discharge censor cutoff (1 year after last hospital discharge)
+        # Dates of death are censored at one-year from the patient’s last hospital discharge.
+        # As a result, null dates of death indicate the patient was alive at least up to that time point.
+        MORTALITY_AFTER_CENSOR_CUTOFF = (
+            pl.scan_csv(self.admissions_path)
+            .select("subject_id", "dischtime")
+            .rename({"subject_id": self.person_id_col})
+            .with_columns(
+                pl.col("dischtime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+            )
+            .group_by(self.person_id_col)
+            .agg(pl.col("dischtime").max().alias("last_dischtime"))
+            .with_columns(
+                pl.col("last_dischtime").dt.offset_by("1y").alias("censortime")
+            )
+            .select(self.person_id_col, "censortime")
+        )
+
         return (
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
@@ -228,6 +246,9 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(
                 self._extract_specialties(), on=self.icu_stay_id_col, how="left"
+            )
+            .join(
+                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
             )
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -255,29 +276,20 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace(self.ETHNICITY_MAP)
                 .cast(self.ethnicity_dtype),
                 # Calculate pre ICU length of stay
-                (
-                    (pl.col("intime") - pl.col("admittime")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("intime") - pl.col("admittime"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate hospital length of stay
-                (
-                    (pl.col("dischtime") - pl.col("admittime")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("dischtime") - pl.col("admittime"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.hospital_length_of_stay_col),
                 # Calculate admission time
                 pl.col("intime").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (
-                    (pl.col("deathtime") - pl.col("outtime")).truediv(
-                        pl.duration(hours=1)
-                    )
-                )
+                (pl.col("deathtime") - pl.col("outtime"))
+                .truediv(pl.duration(hours=1))
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
                 # .fill_null(False)
@@ -285,13 +297,15 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
                 # Calculate mortality after discharge
-                (
-                    (pl.col("dod") - pl.col("outtime")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("dod") - pl.col("outtime"))
+                .truediv(pl.duration(days=1))
                 .cast(int)
                 .alias(self.mortality_after_col),
+                # Calculate mortality after discharge cutoff
+                (pl.col("censortime") - pl.col("outtime"))
+                .truediv(pl.duration(days=1))
+                .cast(int)
+                .alias(self.mortality_after_cutoff_col),
                 # Convert categorical admission location to enum
                 pl.col(self.admission_loc_col)
                 .replace(self.ADMISSION_LOCATIONS_MAP)
@@ -352,6 +366,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 self.mortality_hosp_col,
                 self.mortality_icu_col,
                 self.mortality_after_col,
+                self.mortality_after_cutoff_col,
                 self.admission_type_col,
                 self.admission_urgency_col,
                 self.admission_time_col,

@@ -98,6 +98,9 @@ class SICdbExtractor(SICdbPaths):
                     "HeightOnAdmission": self.height_col,
                     "WeightOnAdmission": self.weight_col,
                     "ICD10Main": self.admission_diagnosis_col,
+                    "EstimatedSurvivalObservationTime": (
+                        self.mortality_after_cutoff_col
+                    ),
                 }
             )
             .with_columns(
@@ -202,9 +205,23 @@ class SICdbExtractor(SICdbPaths):
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
-                pl.duration(seconds=pl.col("OffsetOfDeath"))
+                pl.duration(
+                    seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset")
+                )
                 .truediv(pl.duration(days=1))
                 .alias(self.mortality_after_col),
+                # Get mortality after discharge cutoff
+                (
+                    pl.when(self.mortality_after_cutoff_col == 3076)  # 6 Months
+                    .then(pl.duration(days=180))
+                    .when(self.mortality_after_cutoff_col == 3077)  # 1 Year
+                    .then(pl.duration(days=365))
+                    .otherwise(pl.duration(days=365))  # Default to 1 year
+                    - pl.duration(seconds=pl.col("TimeOfStay"))
+                )
+                .truediv(pl.duration(days=1))
+                .cast(int)
+                .alias(self.mortality_after_cutoff_col),
                 # Set care site
                 pl.lit(
                     "Landeskrankenhaus Salzburg (SALK) - Universitätsklinikum der PMU"
@@ -302,7 +319,7 @@ class SICdbExtractor(SICdbPaths):
             # Remove rows with empty parameter results
             .filter(pl.col("Val").is_not_null())
             # Drop columns
-            .drop("ICUOffset", "Offset")
+            .drop("CaseOffset", "Offset")
         )
 
     # region laboratory

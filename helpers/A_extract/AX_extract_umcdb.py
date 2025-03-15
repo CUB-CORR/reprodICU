@@ -95,6 +95,24 @@ class UMCdbExtractor(UMCdbPaths):
                 - {care_site_col}: Hospital name.
         """
 
+        # calculate mortality after discharge censor cutoff (1 year after last ICU discharge)
+        MORTALITY_AFTER_CENSOR_CUTOFF = (
+            pl.scan_parquet(self.admissions_path)
+            .select("patientid", "dischargedat")
+            .rename({"patientid": self.person_id_col})
+            .group_by(self.person_id_col)
+            .agg(pl.col("dischargedat").max().alias("last_discharge"))
+            .with_columns(
+                (
+                    pl.col("last_discharge")
+                    + pl.duration(days=365).dt.total_milliseconds()
+                )
+                .cast(int)
+                .alias("dateofdeathcutoff")
+            )
+            .select(self.person_id_col, "dateofdeathcutoff")
+        )
+
         return (
             pl.scan_parquet(self.admissions_path)
             .select(
@@ -127,6 +145,9 @@ class UMCdbExtractor(UMCdbPaths):
                 self.extract_APACHE_admission(),
                 on=self.icu_stay_id_col,
                 how="left",
+            )
+            .join(
+                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
             )
             .with_columns(
                 # for age, weight and height, assume average of the group
@@ -182,8 +203,17 @@ class UMCdbExtractor(UMCdbPaths):
                     )
                 )
                 .truediv(pl.duration(days=1))
-                .cast(float)
+                .cast(int)
                 .alias(self.mortality_after_col),
+                # Calculate mortality after discharge censor cutoff
+                pl.duration(
+                    milliseconds=(
+                        pl.col("dateofdeathcutoff") - pl.col("dischargedat")
+                    )
+                )
+                .truediv(pl.duration(days=1))
+                .cast(int)
+                .alias(self.mortality_after_cutoff_col),
                 # Convert categorical gender to enum
                 pl.col("gender")
                 .replace_strict(

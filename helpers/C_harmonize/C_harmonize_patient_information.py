@@ -174,7 +174,8 @@ class PatientInformationHarmonizer(GlobalVars):
                     self.discharge_loc_col: self.discharge_locations_dtype,
                     self.mortality_hosp_col: bool,
                     self.mortality_icu_col: bool,
-                    self.mortality_after_col: float,
+                    self.mortality_after_col: int,
+                    self.mortality_after_cutoff_col: int,
                 }
             )
             # Define the order of the columns
@@ -207,6 +208,7 @@ class PatientInformationHarmonizer(GlobalVars):
                 self.mortality_hosp_col,
                 self.mortality_icu_col,
                 self.mortality_after_col,
+                self.mortality_after_cutoff_col,
             ).unique()
         )
 

@@ -251,6 +251,7 @@ class PatientInformationCleaner(GlobalVars):
                 self.mortality_hosp_col,
                 self.mortality_icu_col,
                 self.mortality_after_col,
+                self.mortality_after_cutoff_col,
             ]
             + self.data_availability_cols
         )
