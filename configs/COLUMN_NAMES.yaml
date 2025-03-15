@@ -8,7 +8,8 @@ global_hospital_stay_id_col: Global Hospital Stay ID # global_hospital_stay_id
 global_icu_stay_id_col: Global ICU Stay ID # global_icu_stay_id
 mortality_hosp_col: Mortality in Hospital # mortality_in_hospital
 mortality_icu_col: Mortality in ICU # mortality_in_icu
-mortality_after_col: Mortality after ICU discharge (days) # mortality_x_days_after_icu_discharge
+mortality_after_col: Mortality After ICU Discharge (days) # mortality_x_days_after_icu_discharge
+mortality_after_cutoff_col: Mortality After ICU Discharge Censor Cutoff (days)
 pre_icu_length_of_stay_col: Pre-ICU Length of Stay (days) # pre_icu_length_of_stay
 icu_length_of_stay_col: ICU Length of Stay (days) # icu_length_of_stay
 hospital_length_of_stay_col: Hospital Length of Stay (days) # hospital_length_of_stay

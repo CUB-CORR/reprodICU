@@ -200,6 +200,24 @@ class MIMIC3Extractor(MIMIC3Paths):
             .select(self.person_id_col, self.gender_col, "DOB", "DOD")
         )
 
+        # calculate mortality after discharge censor cutoff (150 days after last hospital admission)
+        MORTALITY_AFTER_CENSOR_CUTOFF = (
+            pl.scan_csv(self.admissions_path)
+            .select("SUBJECT_ID", "ADMITTIME")
+            .rename({"SUBJECT_ID": self.person_id_col})
+            .with_columns(
+                pl.col("ADMITTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
+            )
+            .group_by(self.person_id_col)
+            .agg(pl.col("ADMITTIME").max().alias("LAST_ADMITTIME"))
+            .with_columns(
+                pl.col("LAST_ADMITTIME")
+                .dt.offset_by("150d")
+                .alias("CENSORTIME")
+            )
+            .select(self.person_id_col, "CENSORTIME")
+        )
+
         return (
             icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
             .join(patients, on=self.person_id_col, how="left")
@@ -210,6 +228,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .join(
                 self._extract_specialties(), on=self.icu_stay_id_col, how="left"
+            )
+            .join(
+                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
             )
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -252,29 +273,20 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .cast(int)
                 .alias(self.age_col),
                 # Calculate pre ICU length of stay
-                (
-                    (pl.col("INTIME") - pl.col("ADMITTIME")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("INTIME") - pl.col("ADMITTIME"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate hospital length of stay
-                (
-                    (pl.col("DISCHTIME") - pl.col("ADMITTIME")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("DISCHTIME") - pl.col("ADMITTIME"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.hospital_length_of_stay_col),
                 # Calculate admission time
                 pl.col("INTIME").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (
-                    (pl.col("DEATHTIME") - pl.col("OUTTIME")).truediv(
-                        pl.duration(hours=1)
-                    )
-                )
+                (pl.col("DEATHTIME") - pl.col("OUTTIME"))
+                .truediv(pl.duration(hours=1))
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
                 # .fill_null(False)
@@ -282,13 +294,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
                 # Calculate mortality after discharge
-                (
-                    (pl.col("DOD") - pl.col("OUTTIME")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("DOD") - pl.col("OUTTIME"))
+                .truediv(pl.duration(days=1))
                 .cast(int)
                 .alias(self.mortality_after_col),
+                # Calculate mortality after discharge cutoff
+                (pl.col("CENSORTIME") - pl.col("OUTTIME"))
+                .truediv(pl.duration(days=1))
+                .cast(int)
+                .alias(self.mortality_after_cutoff_col),
                 # Convert categorical admission location to enum
                 pl.col(self.admission_loc_col)
                 .replace(self.ADMISSION_LOCATIONS_MAP)
@@ -349,6 +363,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.mortality_hosp_col,
                 self.mortality_icu_col,
                 self.mortality_after_col,
+                self.mortality_after_cutoff_col,
                 self.admission_type_col,
                 self.admission_urgency_col,
                 self.admission_time_col,
