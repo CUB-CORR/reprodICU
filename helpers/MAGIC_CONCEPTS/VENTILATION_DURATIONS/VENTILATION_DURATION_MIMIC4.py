@@ -64,6 +64,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         # oxygen_delivery.sql
         ##############################################################################
         CHARTEVENTS_OXYGEN_FLOW = (
+            # ce_stg1
             CHARTEVENTS.select(
                 "subject_id",
                 "stay_id",
@@ -84,13 +85,14 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .otherwise(pl.col("itemid"))
                 .alias("itemid"),
             )
+            # ce_stg2
             # retain only 1 row per charttime
             # prioritizing the last documented value
             # primarily used to subselect o2 flows
             .with_columns(
                 pl.col("storetime")
-                .rank("ordinal")
-                .over("subject_id", "charttime", "itemid")
+                .rank("ordinal", descending=True)
+                .over(partition_by=["subject_id", "charttime", "itemid"])
                 .alias("rn"),
             )
             .drop("storetime")
@@ -115,7 +117,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .with_columns(
                 pl.col("o2_device")
                 .rank("ordinal")
-                .over("subject_id", "charttime", "itemid")
+                .over(partition_by=["subject_id", "charttime", "itemid"])
                 .alias("rn"),
             )
             .drop("storetime")
@@ -126,7 +128,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .join(
                 CHARTEVENTS_OXYGEN_DELIVERY.select("subject_id", "charttime"),
                 on=["subject_id", "charttime"],
-                how="inner",
+                how="outer",
                 coalesce=True,
             )
             .unique()
@@ -152,7 +154,8 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 pl.when(pl.col("rn") == 1)
                 .then(pl.col("o2_device"))
                 .otherwise(None)
-                .max()
+                .drop_nulls()
+                .first()
                 .alias("o2_device"),
             )
             .collect(streaming=True)
@@ -244,15 +247,20 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         #  stay_id = 30000117 has explicit documentation of extubation
 
         # first we collect all times which have relevant documentation
-        VENT_IDS = pl.concat(
-            [
-                OXYGEN_DELIVERY.select("stay_id", "charttime"),
-                VENTILATOR_SETTINGS.select("stay_id", "charttime"),
-            ],
-            how="vertical",
-        ).unique()
+        VENT_IDS = (
+            pl.concat(
+                [
+                    OXYGEN_DELIVERY.select("stay_id", "charttime"),
+                    VENTILATOR_SETTINGS.select("stay_id", "charttime"),
+                ],
+                how="vertical",
+            )
+            .unique()
+            .sort("stay_id", "charttime")
+        )
 
         VENTILATION = (
+            # vs
             VENT_IDS.join(
                 OXYGEN_DELIVERY,
                 on=["stay_id", "charttime"],
@@ -281,7 +289,6 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .when(
                     (pl.col("o2_device") == "Endotracheal tube")
                     | pl.col("ventilator_mode").is_in(
-                        # fmt: off
                         [
                             "(S) CMV", "APRV", "APRV/Biphasic+ApnPress",
                             "APRV/Biphasic+ApnVol", "APV (cmv)", "Ambient",
@@ -295,16 +302,13 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                             "SIMV", "SIMV/AutoFlow", "SIMV/PRES", "SIMV/PSV",
                             "SIMV/PSV/AutoFlow", "SIMV/VOL", "SYNCHRON MASTER",
                             "SYNCHRON SLAVE", "VOL/AC", 
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                     | pl.col("ventilator_mode_hamilton").is_in(
-                        # fmt: off
                         [
                             "APRV", "APV (cmv)", "Ambient", "(S) CMV", "P-CMV",
                             "SIMV", "APV (simv)", "P-SIMV", "VS", "ASV"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(pl.lit("invasive ventilation"))
@@ -317,15 +321,13 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .then(pl.lit("non-invasive ventilation"))
                 .when(
                     pl.col("o2_device").is_in(
-                        # fmt: off
                         [
                             "High flow nasal cannula", # HFNC not extra
                             "Non-rebreather", "Face tent", "Aerosol-cool",
                             "Venti mask ", "Medium conc mask ",
                             "Ultrasonic neb", "Vapomist", "Oxymizer",
                             "High flow neb", "Nasal cannula",
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(pl.lit("supplemental oxygen"))
@@ -334,23 +336,29 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("ventilation_status"),
             )
+            # vd0
+            .filter(pl.col("ventilation_status").is_not_null())
             .with_columns(
                 # carry over the previous charttime which had the same state
                 pl.col("charttime")
                 .shift(1)
-                .over("stay_id", "ventilation_status", order_by="charttime")
+                .over(
+                    partition_by=["stay_id", "ventilation_status"],
+                    order_by=["charttime"],
+                )
                 .alias("charttime_lag"),
                 # bring back the next charttime, regardless of the state
                 # this will be used as the end time for state transitions
                 pl.col("charttime")
                 .shift(-1)
-                .over("stay_id", order_by="charttime")
+                .over(partition_by=["stay_id"], order_by=["charttime"])
                 .alias("charttime_lead"),
                 pl.col("ventilation_status")
                 .shift(1)
-                .over("stay_id", order_by="charttime")
+                .over(partition_by=["stay_id"], order_by=["charttime"])
                 .alias("ventilation_status_lag"),
             )
+            # vd1
             .with_columns(
                 # now we determine if the current ventilation status is "new",
                 # or continuing the previous event
@@ -374,13 +382,14 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .otherwise(0)
                 .alias("new_ventilation_event"),
             )
+            # vd2
             .with_columns(
                 # create a cumulative sum of the instances of new ventilation
                 # this results in a monotonically increasing integer assigned
                 # to each instance of ventilation
                 pl.col("new_ventilation_event")
                 .cum_sum()
-                .over("stay_id", order_by="charttime")
+                .over(partition_by=["stay_id"], order_by=["charttime"])
                 .alias("vent_seq")
             )
             # create the durations for each ventilation instance
@@ -406,7 +415,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 # all rows with the same vent_num will have the same ventilation_status
                 # for efficiency, we use an aggregate here,
                 # but we could equally well group by this column
-                pl.col("ventilation_status").first(),
+                pl.col("ventilation_status").drop_nulls().first(),
             )
             .filter(pl.col("starttime").ne(pl.col("endtime")))
             # Make datetime relative to admission in seconds
