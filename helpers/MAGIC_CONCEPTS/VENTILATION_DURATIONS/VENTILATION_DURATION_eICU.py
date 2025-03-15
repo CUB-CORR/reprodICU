@@ -173,34 +173,69 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         # based on linked SQL script
         ##############################
 
-        RESPIRATORY_CHARTING = (
+        PATIENT = pl.scan_csv(self.eicu_paths.patient_path).select(
+            "patientunitstayid", "unitdischargeoffset"
+        )
+
+        NURSECHARTING = pl.scan_csv(self.eicu_paths.nurseCharting_path).select(
+            pl.col("patientunitstayid"),
+            pl.col("nursingchartoffset").alias("charttime"),
+            pl.col("nursingchartvalue").str.to_lowercase().alias("string"),
+            pl.lit(None).alias("activeupondischarge"),
+        )
+        RESPIRATORYCHARTING = pl.scan_csv(
+            self.eicu_paths.respiratoryCharting_path
+        ).select(
+            pl.col("patientunitstayid"),
+            pl.col("respchartoffset").alias("charttime"),
+            pl.col("respchartvaluelabel").str.to_lowercase().alias("string"),
+            pl.col("respchartvalue"),
+            pl.lit(None).alias("activeupondischarge"),
+        )
+        RESPIRATORYCHARTING_OXYGEN_DEVICE = (
             pl.scan_csv(self.eicu_paths.respiratoryCharting_path)
             .select(
-                "patientunitstayid",
-                "respchartoffset",
-                "respcharttypecat",
-                "respchartvaluelabel",
-                "respchartvalue",
+                pl.col("patientunitstayid"),
+                pl.col("respchartoffset").alias("charttime"),
+                pl.col("respchartvalue").str.to_lowercase().alias("string"),
+                pl.lit(None).alias("activeupondischarge"),
             )
-            .with_columns(
-                # oxygen device from respchart
-                pl.when(
-                    pl.col("respchartvaluelabel")
-                    .str.to_lowercase()
-                    .is_in(
-                        [
-                            "o2 device",
-                            "respiratory device",
-                            "ventilator type",
-                            "oxygen delivery method",
-                        ]
-                    )
+            .filter(
+                pl.col("string").is_in(
+                    [
+                        "o2 device",
+                        "respiratory device",
+                        "ventilator type",
+                        "oxygen delivery method",
+                    ]
                 )
-                .then(pl.col("respchartvalue").str.to_lowercase())
-                .otherwise(pl.col("respchartvaluelabel").str.to_lowercase())
-                .alias("string")
             )
+        )
+        TREATMENT = pl.scan_csv(self.eicu_paths.treatment_path).select(
+            pl.col("patientunitstayid"),
+            pl.col("treatmentoffset").alias("charttime"),
+            pl.col("treatmentstring").str.to_lowercase().alias("string"),
+            pl.col("activeupondischarge"),
+        )
+
+        # Extract the type of oxygen therapy.
+        # The categories are invasive ventilation,
+        # noninvasive ventilation, and supplemental oxygen.
+        # `oxygen_therapy_type = -1` indicates oxygen therapy,
+        # i.e. more oxygen than in room air is administered.
+        OXYGEN_THERAPY_KNOWN_TYPE = (
+            pl.concat(
+                [
+                    NURSECHARTING,
+                    RESPIRATORYCHARTING,
+                    RESPIRATORYCHARTING_OXYGEN_DEVICE,
+                    TREATMENT,
+                ],
+                how="diagonal_relaxed",
+            )
+            .filter(pl.col("charttime") > -60)
             .with_columns(
+                # Invasive ventilation
                 pl.when(
                     pl.col("string").is_in(
                         [
@@ -211,34 +246,31 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                         ]
                     )
                     | pl.col("string").str.contains_any(
-                        # fmt: off
                         [
                             "set vt", "sputum", "rsbi", "tube", "ett",
                             "endotracheal", "tracheal suctioning",
                             "tracheostomy", "reintubation",
                             "assist controlled", "volume controlled",
                             "pressure controlled", "trach collar"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(4)
+                # Noninvasive ventilation
                 .when(
                     pl.col("string").is_in(["bi-pap", "ambubag"])
                     | pl.col("string").str.contains_any(
-                        # fmt: off
                         [
                             "ipap", "niv", "epap", "mask leak",
                             "volume assured", "non-invasive ventilation",
                             "cpap"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(3)
+                # Either invasive or noninvasive ventilation
                 .when(
                     pl.col("string").is_in(
-                        # fmt: off
                         [
                             "flowtrigger", "peep", "tv/kg ibw",
                             "mean airway pressure", "peak insp. pressure",
@@ -254,27 +286,24 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                             "spont tv", "pulse ox results vt",
                             "vt spontaneous (ml)", "peak pressure", "ltv1200",
                             "tc"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                     | (
                         pl.col("string").str.contains("vent")
                         & pl.col("string").str.contains("hyperventilat").not_()
                     )
                     | pl.col("string").str.contains_any(
-                        # fmt: off
                         [
                             "tidal", "flow rate", "minute volume",
                             "leak", "pressure support", "peep",
                             "tidal volume"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(2)
+                # Supplemental oxygen
                 .when(
                     pl.col("string").is_in(
-                        # fmt: off
                         [
                             "t-piece", "blow-by", "oxyhood", "nc",
                             "oxymizer", "hfnc", "oximizer", "high flow",
@@ -282,36 +311,35 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                             "nasal canula", "face tent", "high flow mask",
                             "aerosol mask", "venturi mask", "cool aerosol mask",
                             "simple mask", "face mask"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                     | pl.col("string").str.contains_any(
-                        # fmt: off
                         [
                             "nasal cannula", "non-rebreather",
                             "nasal mask", "face tent"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                 )
                 .then(1)
+                # Oxygen therapy but unknown what type
                 .when(
                     pl.col("string").is_in(
-                        # fmt: off
                         [
                             "pressure support", "rr spont", "ps",
                             "insp cycle off (%)", "trach mask/collar"
-                        ]
-                        # fmt: on
+                        ] # fmt: skip
                     )
                     | pl.col("string").str.contains_any(
                         ["spontaneous", "oxygen therapy"]
                     )
                 )
                 .then(0)
+                # Supplemental oxygen therapy
+                # i.e. more oxygen than in room air is administered.
                 .when(pl.col("string").is_in(["lpm o2"]))
                 .then(-1)
-                # fraction of inspired oxygen (fiO2) outside of [.2, .22] and [20, 22] indicates oxygen therapy
+                # fraction of inspired oxygen (fiO2) outside of [.2, .22] and [20, 22]
+                # indicates oxygen therapy
                 .when(pl.col("string").is_in(["fio2", "fio2 (%)"]))
                 .then(
                     pl.when(
@@ -331,17 +359,61 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("oxygen_therapy_type"),
             )
+            .select(
+                "patientunitstayid",
+                "charttime",
+                "oxygen_therapy_type",
+                "activeupondischarge",
+            )
+        )
+
+        OXYGEN_THERAPY_UNKNOWN_TYPE = (
+            pl.scan_csv(self.eicu_paths.nurseCharting_path)
+            .filter(
+                pl.col("nursingchartoffset") > -60,
+                pl.col("nursingchartcelltypevallabel").str.contains("O2 L/%"),
+                pl.col("nursingchartvalue")
+                .cast(int, strict=False)
+                .is_between(0, 100, closed="right"),
+            )
+            .select(
+                pl.col("patientunitstayid"),
+                pl.col("nursingchartoffset").alias("charttime"),
+                pl.lit(-1).alias("oxygen_therapy_type"),
+                pl.lit(None).alias("activeupondischarge"),
+            )
+        )
+
+        OXYGEN_THERAPY = (
+            pl.concat(
+                [
+                    OXYGEN_THERAPY_KNOWN_TYPE,
+                    OXYGEN_THERAPY_UNKNOWN_TYPE,
+                ],
+                how="vertical_relaxed",
+            )
             # if oxygen_therapy_type is NULL, then the record does not correspond with oxygen therapy
             .filter(pl.col("oxygen_therapy_type").is_not_null())
             # ensure charttime is unique
-            .group_by("patientunitstayid", "respchartoffset")
-            .agg(pl.col("oxygen_therapy_type").max())
+            .group_by("patientunitstayid", "charttime")
+            .agg(
+                pl.col("oxygen_therapy_type").max(),
+                pl.col("activeupondischarge").max(),
+                # pl.when(pl.col("oxygen_therapy_type") == -1)
+                # .then(1)
+                # .otherwise(0)
+                # .sum()
+                # .alias("supp_oxygen"),
+            )
             .with_columns(
                 # this carries over the previous charttime which had an oxygen therapy event
-                pl.col("respchartoffset")
+                pl.col("charttime")
                 .shift(1)
-                .over("patientunitstayid", order_by="respchartoffset")
-                .alias("respchartoffset_lag"),
+                .over(
+                    partition_by=["patientunitstayid"],
+                    order_by=["charttime"],
+                )
+                .alias("charttime_lag"),
             )
             # If the time since the last oxygen therapy event is more than MAX_VENTILATION_PAUSE_HOURS hours,
             # we consider that ventilation had ended in between.
@@ -349,12 +421,13 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             # MAX_VENTILATION_PAUSE_HOURS is set to 24 hours in the original code.
             .with_columns(
                 pl.when(
-                    pl.col("respchartoffset")
-                    .sub(pl.col("respchartoffset_lag"))
+                    pl.col("charttime")
+                    .sub(pl.col("charttime_lag"))
                     .gt(pl.duration(hours=self.MAX_VENTILATION_PAUSE_HOURS))
                 )
                 .then(1)
-                .when(pl.col("respchartoffset_lag").is_null())
+                # No lag can be computed for the very first record
+                .when(pl.col("charttime_lag").is_null())
                 .then(None)
                 .otherwise(0)
                 .alias("newvent"),
@@ -364,16 +437,33 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             .with_columns(
                 pl.col("newvent")
                 .cum_sum()
-                .over("patientunitstayid", order_by="respchartoffset")
+                .over(
+                    partition_by=["patientunitstayid"],
+                    order_by=["charttime"],
+                )
                 .alias("ventnum")
             )
             # now we convert CHARTTIME of ventilator settings into durations
             # create the durations for each oxygen therapy instance
             # we only keep the first oxygen therapy instance
+            .join(PATIENT, how="left", on="patientunitstayid", coalesce=True)
             .group_by("patientunitstayid", "ventnum")
             .agg(
-                pl.col("respchartoffset").min().alias("vent_start"),
-                pl.col("respchartoffset").max().alias("vent_end"),
+                pl.col("charttime").min().alias("vent_start"),
+                # If activeupondischarge, then the unit discharge time is vent_end
+                pl.when(
+                    pl.col("activeupondischarge").max().cast(bool),
+                    # vent_end cannot be later than the unit discharge time.
+                    # However, unitdischargeoffset often seems too low.
+                    # So, we only use it if it yields and extension of the
+                    # ventilation time from ventsettings.
+                    (pl.col("charttime").max() + 60)
+                    < pl.col("unitdischargeoffset").max(),
+                ).then(pl.col("unitdischargeoffset").max())
+                # End time is currently a charting time
+                # Since these are usually recorded hourly, ventilation is actually longer.
+                # We therefore add 60 minutes to the last time.
+                .otherwise(pl.col("charttime").max() + 60).alias("vent_end"),
                 pl.col("oxygen_therapy_type").max(),
             )
             .with_columns(
@@ -383,6 +473,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                         4: "invasive ventilation",
                         3: "non-invasive ventilation",
                         2: "unknown",
+                        1: "supplemental oxygen",
                     },
                     default=None,
                 )
@@ -410,7 +501,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 [
                     # RESPIRATORY_CARE,
                     # TREATMENT,
-                    RESPIRATORY_CHARTING,
+                    OXYGEN_THERAPY,
                 ],
                 how="vertical_relaxed",
             )

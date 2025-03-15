@@ -49,12 +49,14 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         :rtype: pl.DataFrame
         """
 
+        print("MAGIC_CONCEPTS: Ventilation Duration - approx. 40 min")
+
         MAX_VENTILATION_PAUSE_HOURS = 8
         SECONDS_IN_1H = 60 * 60
         SECONDS_IN_1D = 24 * 60 * 60
 
         eicu_VENTILATION_DURATION = VENTILATION_DURATION_eICU(
-            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS
+            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS=24
         ).VENTILATION_DURATION()
 
         hirid_VENTILATION_DURATION = VENTILATION_DURATION_HiRID(
@@ -62,11 +64,11 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         ).VENTILATION_DURATION()
 
         mimic3_VENTILATION_DURATION = VENTILATION_DURATION_MIMIC3(
-            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS
+            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS=8
         ).VENTILATION_DURATION()
 
         mimic4_VENTILATION_DURATION = VENTILATION_DURATION_MIMIC4(
-            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS
+            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS=14
         ).VENTILATION_DURATION()
 
         sicdb_VENTILATION_DURATION = VENTILATION_DURATION_SICdb(
@@ -80,17 +82,6 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         # region ALL
         print("MAGIC_CONCEPTS: Ventilation Duration")
 
-        VENTILATION_TYPE_ENUM = pl.Enum(
-            [
-                "tracheostomy",
-                "invasive ventilation",
-                "non-invasive ventilation",
-                "weaning",
-                "supplemental oxygen",
-                "unknown",
-                "other",
-            ]
-        )
         VENTILATION_DURATION = (
             pl.concat(
                 [
