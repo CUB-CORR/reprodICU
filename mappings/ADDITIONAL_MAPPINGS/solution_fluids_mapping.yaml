@@ -1,0 +1,18 @@
+# common solution fluids used in the ICU
+normal saline (0.9%):
+  # UMCdb
+  - NaCl 0,9% Medicatie
+  - NaCl 0,9% Pompen
+
+glucose 5%:
+  # UMCdb
+  - Glucose 5% Medicatie
+  - Glucose 5% Pompen
+
+sterile water:
+  # UMCdb
+  - Aquadest Medicatie
+  - Aquadest Pompen
+
+# half normal saline (0.45%):
+# hypertonic saline (3%):

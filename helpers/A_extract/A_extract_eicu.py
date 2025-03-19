@@ -1255,6 +1255,8 @@ class EICUExtractor(EICUPaths):
                 .alias(self.drug_ingredient_col),
                 # Set administration route
                 pl.lit("intravenous").alias(self.drug_admin_route_col),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(True).alias(self.drug_continous_col),
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
@@ -1424,6 +1426,9 @@ class EICUExtractor(EICUPaths):
                 .then(pl.col(self.drug_start_col))
                 .otherwise(pl.col(self.drug_end_col))
                 .alias(self.drug_end_col),
+                # Add a column to indicate if the drug is continuous
+                # False, since continuous drugs are already in the infusiondrug table
+                pl.lit(False).alias(self.drug_continous_col),
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())

@@ -801,11 +801,21 @@ class UMCdbExtractor(UMCdbPaths):
 
         print("UMCdb   - Extracting medications...")
 
-        umcdb_medication_mapping = (
-            self.helpers.load_many_to_many_to_one_mapping(
-                self.mapping_path + "MEDICATIONS.yaml", "amsterdam"
-            )
-        )
+        # Extract medication mappings by building a chain of references
+        # 1. Get drug name references from our mapping files
+        drug_references = self._extract_drug_references(return_ids=True)
+        concept_ids = drug_references.values()
+
+        # 2. Retrieve active ingredients for these concept IDs
+        ingredients = self.omop.get_ingredient(concept_ids)
+
+        # 3. Create a mapping from drug names to their active ingredients
+        drug_name_to_ingredient = {}
+        for drug_name, concept_id in drug_references.items():
+            if concept_id in ingredients:
+                drug_name_to_ingredient[drug_name] = ingredients[concept_id]
+
+        # Load additional mappings
         umcdb_drug_administration_route_mapping = self.helpers.load_mapping(
             self.drug_administration_route_mapping_path
         )
@@ -839,7 +849,9 @@ class UMCdbExtractor(UMCdbPaths):
                 "dose",
                 "doseunit",
                 "doserateunit",
-                "fluidin",
+                "solutionitem",
+                "solutionadministered",
+                "solutionadministeredunit",
             )
             .rename(
                 {
@@ -847,7 +859,7 @@ class UMCdbExtractor(UMCdbPaths):
                     "item": self.drug_name_col,
                     "start": self.drug_start_col,
                     "stop": self.drug_end_col,
-                    "fluidin": self.fluid_amount_col,
+                    "solutionadministered": self.fluid_amount_col,
                 }
             )
             .join(intimes, on=self.icu_stay_id_col)
@@ -883,7 +895,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.drug_end_col),
                 # Replace drug names with standardized ingredient names
                 pl.col(self.drug_name_col)
-                .replace(umcdb_medication_mapping, default=None)
+                .replace_strict(drug_name_to_ingredient, default=None)
                 .alias(self.drug_ingredient_col),
                 # Replace drug names with OMOP concepts
                 pl.col(self.drug_name_col)
@@ -906,6 +918,14 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("ordercategory")
                 .replace(umcdb_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
+                # Only use solution fluid amounts where available
+                pl.when(pl.col("solutionadministeredunit").is_not_null())
+                .then(pl.col(self.fluid_amount_col))
+                .otherwise(None)
+                .alias(self.fluid_amount_col),
+                pl.col("solutionitem")
+                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
+                .alias(self.fluid_name_col),
             )
             # assign to rate or amount column based on availability
             .with_columns(
@@ -1386,14 +1406,14 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
     # Extract the information from the drugitems_XXX.usagi.csv files
-    def _extract_drug_references(self) -> dict:
+    def _extract_drug_references(self, return_ids: bool = False) -> dict:
         """
         Extract and process drug references from CSV mapping files.
 
         Steps:
             1. Reads CSV files for drug administration routes, drug items, and drug classes.
             2. Concatenates the resulting dataframes.
-            3. Selects and drops nulls from "sourceName" and "conceptName".
+            3. Selects and drops nulls from "ADD_INFO:source_concept" and "conceptName".
             4. Returns a dictionary mapping source names to concept names.
 
         Returns:
@@ -1402,6 +1422,7 @@ class UMCdbExtractor(UMCdbPaths):
                 - Values: Standardized concept names (as strings).
         """
 
+        value_col = "conceptName" if not return_ids else "conceptId"
         references = (
             pl.concat(
                 [
@@ -1412,15 +1433,15 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select("sourceName", "conceptName")
-            .drop_nulls("sourceName")
+            .select("ADD_INFO:source_concept", value_col)
+            .drop_nulls("ADD_INFO:source_concept")
             .unique()
         )
 
         return dict(
             zip(
-                references["sourceName"].to_numpy(),
-                references["conceptName"].to_numpy(),
+                references["ADD_INFO:source_concept"].to_numpy(),
+                references[value_col].to_numpy(),
             )
         )
 

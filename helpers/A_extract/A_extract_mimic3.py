@@ -885,18 +885,34 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - LABEL: Output measurement name.
                 - VALUENUM: Measurement value.
         """
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
-        outputevents_to_loinc_data = (
-            pl.scan_csv(self.outputevents_to_loinc_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
-            .rename(
-                {
-                    "itemid (omop_source_code)": "ITEMID",
-                    "omop_concept_name": "LABEL",
-                }
+        cv_input_label_to_concept = pl.scan_csv(
+            self.cv_input_label_to_concept_path
+        )
+        cv_input_label_to_concept = (
+            cv_input_label_to_concept.rename({"item_id": "ITEMID"})
+            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .select("ITEMID", "LABEL")
+        )
+        mv_input_label_to_concept = pl.scan_csv(
+            self.mv_input_label_to_concept_path
+        )
+        mv_input_label_to_concept = (
+            mv_input_label_to_concept.rename({"item_id": "ITEMID"})
+            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .select("ITEMID", "LABEL")
+        )
+        output_label_to_concept = pl.scan_csv(self.output_label_to_concept_path)
+        output_label_to_concept = (
+            output_label_to_concept.rename({"itemid": "ITEMID"})
+            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .select("ITEMID", "LABEL")
+        )
+
+        label_to_concept = (
+            pl.concat(
+                [cv_input_label_to_concept, mv_input_label_to_concept],
+                how="vertical",
             )
-            .cast({"ITEMID": str})
             # Harmonize names of interest
             .with_columns(
                 pl.col("LABEL").replace_strict(
@@ -962,14 +978,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                 [inputevents_cv, inputevents_mv, outputevents],
                 how="diagonal_relaxed",
             )
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
-            .join(outputevents_to_loinc_data, on="ITEMID", how="left")
+            .join(label_to_concept, on="ITEMID", how="left")
             .with_columns(
                 pl.when(pl.col("LABEL").is_null())
                 .then(
@@ -1168,13 +1182,110 @@ class MIMIC3Extractor(MIMIC3Paths):
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
         )
+
+        # Load medication mappings from MIMIC-III OMOP files
+        # These mappings connect medication names to standard concepts and ingredients
+        print("MIMIC3  - Loading medication mapping files...")
+
+        # 1. Load route and administration mappings
+        route_to_concept = (
+            pl.read_csv(self.route_to_concept_path)
+            .with_columns(
+                # Map administration route concept IDs to human-readable names
+                pl.col("concept_id")
+                .replace_strict(
+                    self.omop.get_concept_names_from_ids(
+                        pl.read_csv(self.route_to_concept_path)[
+                            "concept_id"
+                        ].to_list()
+                    ),
+                    default=None,
+                )
+                .alias(self.drug_admin_route_col)
+            )
+            .select("ROUTE", self.drug_admin_route_col)
+            .lazy()
+        )
+
+        # Map order categories to administration routes
+        map_route_to_concept = (
+            pl.scan_csv(self.map_route_to_concept_path)
+            .select("ordercategoryname", "concept_name")
+            .rename({"concept_name": self.drug_admin_route_col})
+        )
+
+        # Load prescriptions mapping for entries without NDC codes
+        prescriptions_ndcisnullzero_to_concept = pl.read_csv(
+            self.prescriptions_ndcisnullzero_to_concept_path
+        )
+
+        # 2. Create NDC to RxNorm concept mappings
+        # Extract unique NDC codes from prescriptions
+        ndc_codes = (
+            pl.scan_csv(self.prescriptions_path)
+            .select("NDC")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
+        # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
+        ndc_to_rxnorm = self.omop.get_rxnorm_concept_id_from_ndc(
+            [str(x).zfill(11) for x in ndc_codes]
+        )
+
+        # 3. Create mappings for prescriptions without valid NDCs
+        # Map drug labels to concept IDs and names
+        prescriptions_ndcisnullzero_concept_ids = dict(
+            zip(
+                prescriptions_ndcisnullzero_to_concept["label"],
+                prescriptions_ndcisnullzero_to_concept["concept_id"],
+            )
+        )
+        prescriptions_ndcisnullzero_concept_names = dict(
+            zip(
+                prescriptions_ndcisnullzero_to_concept["label"],
+                prescriptions_ndcisnullzero_to_concept["concept_name"],
+            )
+        )
+
+        # 4. Get active ingredients for all medication concept IDs
+        all_concept_ids = list(ndc_to_rxnorm.values()) + list(
+            prescriptions_ndcisnullzero_concept_ids.values()
+        )
+        ingredients = self.omop.get_ingredient(all_concept_ids)
+        rxnorm_names = self.omop.get_concept_names_from_ids(
+            list(ndc_to_rxnorm.values())
+        )
+
+        # 5. Create final mappings from codes to ingredients and names
+        # Map NDC codes to active ingredients
+        ndc_to_ingredient = {
+            ndc: ingredients[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in ingredients
+        }
+
+        # Map NDC codes to standardized drug names
+        ndc_to_drugname = {
+            ndc: rxnorm_names[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in rxnorm_names
+        }
+
+        # Map prescription labels to active ingredients for entries without NDCs
+        prescriptions_ndcisnullzero_to_ingredient = {
+            label: ingredients[concept_id]
+            for label, concept_id in prescriptions_ndcisnullzero_concept_ids.items()
+            if concept_id in ingredients
+        }
+
+        # Load additional mappings
         mimic3_medication_mapping = (
             self.helpers.load_many_to_many_to_one_mapping(
                 self.mapping_path + "MEDICATIONS.yaml", "mimic3"
             )
-        )
-        mimic3_drug_administration_route_mapping = self.helpers.load_mapping(
-            self.drug_administration_route_mapping_path
         )
         mimic3_drug_class_mapping = self.helpers.load_mapping(
             self.drug_class_mapping_path
@@ -1209,10 +1320,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 "ORDERCATEGORYNAME",
                 "PATIENTWEIGHT",
             )
+            .join(
+                map_route_to_concept,
+                left_on="ORDERCATEGORYNAME",
+                right_on="ordercategoryname",
+                how="left",
+            )
             .with_columns(
-                pl.col("ORDERCATEGORYNAME")
-                .replace(mimic3_drug_administration_route_mapping, default=None)
-                .alias(self.drug_admin_route_col),
                 pl.col("ORDERCATEGORYNAME")
                 .replace(mimic3_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
@@ -1223,6 +1337,8 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .str.replace("mL", "ml")
                 .str.replace("mEq\.", "mEq")
                 .str.replace("units", "U"),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(True).alias(self.drug_continous_col),
             )
         )
         inputevents_cv = (
@@ -1240,21 +1356,26 @@ class MIMIC3Extractor(MIMIC3Paths):
                 "RATEUOM",
                 "ORIGINALROUTE",
             )
+            .join(
+                map_route_to_concept,
+                left_on="ORIGINALROUTE",
+                right_on="ordercategoryname",
+                how="left",
+            )
             # NOTE: dirty, but necessary to join with inputevents_mv
             .rename({"CHARTTIME": "STARTTIME"})
             .with_columns(
-                pl.col("ORIGINALROUTE")
-                .replace(mimic3_drug_administration_route_mapping, default=None)
-                .alias(self.drug_admin_route_col),
                 # Rename units
                 pl.col("RATEUOM")
                 .str.replace("hr", "/hr")
                 .str.replace("min", "/min")
                 .str.replace("kg", "/kg"),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(True).alias(self.drug_continous_col),
             )
         )
 
-        return (
+        inputevents = (
             pl.concat([inputevents_mv, inputevents_cv], how="diagonal_relaxed")
             .rename(
                 {
@@ -1270,7 +1391,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(d_items, on="ITEMID")
             .join(inputevents_to_rxnorm_data, on="ITEMID", how="left")
             .drop(self.hospital_stay_id_col, "ITEMID")
-            .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
             .rename(
                 {
@@ -1284,6 +1404,66 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .replace_strict(mimic3_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
             )
+        )
+
+        prescriptions = (
+            pl.scan_csv(self.prescriptions_path)
+            .select(
+                "HADM_ID",
+                "ICUSTAY_ID",
+                "STARTDATE",
+                "ENDDATE",
+                "DRUG",
+                "NDC",
+                "DOSE_VAL_RX",
+                "DOSE_UNIT_RX",
+                "ROUTE",
+            )
+            .rename(
+                {
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "ICUSTAY_ID": self.icu_stay_id_col,
+                    "DRUG": self.drug_name_col,
+                    "DOSE_VAL_RX": self.drug_amount_col,
+                    "DOSE_UNIT_RX": self.drug_amount_unit_col,
+                }
+            )
+            .join(route_to_concept, on="ROUTE", how="left")
+            # NOTE: dirty, but necessary to join with inputevents
+            .rename({"STARTDATE": "STARTTIME", "ENDDATE": "ENDTIME"})
+            .with_columns(
+                pl.when(pl.col("NDC") != 0)
+                .then(
+                    pl.col("NDC").replace_strict(
+                        ndc_to_ingredient, default=None
+                    )
+                )
+                .otherwise(
+                    pl.col(self.drug_name_col).replace_strict(
+                        prescriptions_ndcisnullzero_to_ingredient,
+                        default=None,
+                    )
+                )
+                .alias(self.drug_ingredient_col),
+                pl.when(pl.col("NDC") != 0)
+                .then(
+                    pl.col("NDC").replace_strict(ndc_to_drugname, default=None)
+                )
+                .otherwise(
+                    pl.col(self.drug_name_col).replace_strict(
+                        prescriptions_ndcisnullzero_concept_names,
+                        default=None,
+                    )
+                )
+                .alias(self.drug_name_OMOP_col),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(False).alias(self.drug_continous_col),
+            )
+        )
+
+        return (
+            pl.concat([inputevents, prescriptions], how="diagonal_relaxed")
+            .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -1564,3 +1744,34 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
     # endregion
+
+    # region helper functions
+    def _mapping_from_codes(
+        self, data: pl.LazyFrame, column_in: str, column_out: str
+    ) -> pl.LazyFrame:
+        return data.with_columns(
+            pl.col(column_in)
+            .replace_strict(
+                self.omop.get_concept_names_from_codes(
+                    data.select(column_in).collect().to_series().to_list()
+                ),
+                return_dtype=pl.String,
+                default=None,
+            )
+            .alias(column_out)
+        )
+
+    def _mapping_from_ids(
+        self, data: pl.LazyFrame, column_in: str, column_out: str
+    ) -> pl.LazyFrame:
+        return data.with_columns(
+            pl.col(column_in)
+            .replace_strict(
+                self.omop.get_concept_names_from_ids(
+                    data.select(column_in).collect().to_series().to_list()
+                ),
+                return_dtype=pl.String,
+                default=None,
+            )
+            .alias(column_out)
+        )

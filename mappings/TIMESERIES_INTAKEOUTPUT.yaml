@@ -22,7 +22,7 @@ Fluid output chest tube: # 1033550 # LOINC
   - ThoraxDrain5
   # UMCdb -> same name
 Fluid output emesis: [] # 1033551 # LOINC
-  # eICU-CRD / UMCdb -> same name
+  # eICU-CRD / MIMIC-III / UMCdb -> same name
 Fluid output gastric tube: [] # 1033553 # LOINC
   # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
 Fluid output gastrointestinal drain: # 1014372 # LOINC
@@ -33,6 +33,8 @@ Fluid output gastrointestinal ostomy: # 1014371 # LOINC
   - Fluid output gastrointestinal ostomy [Volume] Measured
 Fluid output miscellaneous: # 1033555 # LOINC
   # eICU-CRD -> same name
+  # MIMIC-III
+  - Fluid output miscellaneous route # imperfect source
   # SICdb
   - Drain1
   - Drain2
@@ -70,13 +72,16 @@ Fluid output wound drain: # 1027295 # LOINC
   - Fluid output from wound drain
   - Fluid output wound drain Estimated
 # Fluid output wound drain identifier: [] # 1033564 # LOINC
+Fluid output.nasogastric tube: # 1033565 # LOINC
+  # MIMIC-III
+  - Fluid output.nasogastric tube Measured
 Output.colostomy: [] # 1030877 # LOINC
   # eICU-CRD / UMCdb -> same name
 Output.ileostomy: [] # 1030879 # LOINC
   # eICU-CRD -> same name
 Output.stool: # 1030880 # LOINC
   # eICU-CRD -> same name
-  # MIMIC
+  # MIMIC-III / MIMIC-IV
   - Output.stool [Volume]
   # UMCdb -> same name
 Urine output: # 1033562 # LOINC
@@ -90,13 +95,16 @@ Urine output: # 1033562 # LOINC
 # INTAKE #
 ##########
 Fluid intake: [] # 1030543 # LOINC
-  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # eICU-CRD / MIMIC-IV -> same name
 # Fluid intake chest tube: [] # 1033597 # LOINC
 # Fluid intake enema: [] # 1033598 # LOINC
 Fluid intake enteral tube: [] # 1033599 # LOINC
-  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # eICU-CRD / MIMIC-IV -> same name
 Fluid intake intravascular: # 1033602 # LOINC
-  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # eICU-CRD / MIMIC-IV -> same name
+  # MIMIC-III
+  - Fluid intake intravascular Estimated
+  - Fluid intake intravascular Measured
   ### # HiRID
   ### - Infusion of saline solution
   ### - Intravenous fluid colloid administration
@@ -106,13 +114,17 @@ Fluid intake nasogastric tube: # 1033603 # LOINC
   - GastricTube
   # UMCdb
   - Fluid intake nasogastric tube Measured
-Fluid intake oral: [] # 1033604 # LOINC
-  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+Fluid intake oral: # 1033604 # LOINC
+  # eICU-CRD / MIMIC-IV -> same name
+  # MIMIC-III
+  - Fluid intake oral Estimated
 Fluid intake peritoneal: # 1033605 # LOINC
   # UMCdb
   - Fluid intake peritoneal Measured
 # Fluid intake total: [] # 1033607 # LOINC
 Fluid intake urinary bladder irrigation: # 1033546 # LOINC
+  # MIMIC-III
+  - Fluid intake urinary bladder irrigation Estimated
   # UMCdb
   - Fluid intake urinary bladder irrigation Measured
 ###########

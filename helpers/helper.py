@@ -199,6 +199,9 @@ class GlobalVars(GlobalHelpers):
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
         )
+        self.SOLUTION_FLUIDS_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_MAPPINGS/solution_fluids_mapping.yaml"
+        )
 
         # region DATA TYPES
         # Define custom data types
