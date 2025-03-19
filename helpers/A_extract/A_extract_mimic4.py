@@ -983,7 +983,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace(
                     self.omop.get_concept_names_from_ids(
                         data.select(column_in).collect().to_series().to_list()
-                    ), return_dtype=pl.String, default=None
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
                 )
                 .alias(column_out)
             )
@@ -1183,6 +1185,8 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .str.replace("mEq\.", "mEq")
                 .str.replace("units", "U")
                 .str.replace("µ", "mc"),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(True).alias(self.drug_continous_col),
             )
         )
 

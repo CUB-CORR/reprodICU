@@ -414,6 +414,14 @@ class MIMIC3Paths(GlobalVars):
             self.mimic3_omop_mapping_path + "unit_doseera_concept_id.csv"
         )
 
+        # MIMIC-III additional OMOP mapping paths
+        self.mimic_omop_mapping_additional_path = (
+            self.mimic3_mapping_path + "mimic-omop-additional/"
+        )
+        self.atb_to_concept_additional_path = (
+            self.mimic_omop_mapping_additional_path + "atb_to_concept.csv"
+        )
+
         # MIMIC-III LOINC mapping paths
         self.mimic3_loinc_mapping_path = (
             self.mimic3_mapping_path + "mimic-code_mapping/"

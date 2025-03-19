@@ -24,6 +24,7 @@ class Vocabulary(OMOPPaths):
         # self.RELATIONSHIP = pl.scan_parquet(self.RELATIONSHIP_path)
         self.VOCABULARY = pl.scan_parquet(self.VOCABULARY_path)
 
+    # region names / ids / codes
     def get_concept_names_from_ids(
         self, concept_ids: list[int], return_dict: bool = True
     ) -> dict:
@@ -124,10 +125,10 @@ class Vocabulary(OMOPPaths):
         Returns:
             dict: Dictionary with concept_code as key and concept_name as value.
         """
-        
+
         # ensure concept_codes are strings
         concept_codes = [str(concept_code) for concept_code in concept_codes]
-        
+
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
             .select("concept_code", "concept_name")
@@ -156,6 +157,59 @@ class Vocabulary(OMOPPaths):
         """
         return self.get_concept_names_from_codes([concept_code])[concept_code]
 
+    # region ndc
+    def get_rxnorm_concept_id_from_ndc(self, ndc: list[str]) -> dict:
+        """
+        Get RxNorm from NDC.
+
+        Args:
+            ndc (list[str]): List of NDC.
+
+        Returns:
+            dict: Dictionary with NDC as key and RxNorm concept ID as value.
+        """
+
+        ndc_concept_ids_lf = self.CONCEPT.filter(
+            pl.col("concept_class_id") == "11-digit NDC",
+            pl.col("concept_code").is_in(ndc),
+        ).select("concept_id", "concept_code")
+        
+        ndc_concept_ids = (
+            ndc_concept_ids_lf.select("concept_id")
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
+        rxnorm_concept_ids = (
+            self.RELATIONSHIP.filter(
+                pl.col("concept_id_1").is_in(ndc_concept_ids),
+                pl.col("relationship_id") == "Maps to",
+            )
+            .select("concept_id_1", "concept_id_2")
+            .join(
+                ndc_concept_ids_lf,
+                left_on="concept_id_1",
+                right_on="concept_id",
+                how="left",
+            )
+            .rename(
+                {
+                    "concept_code": "ndc",
+                    "concept_id_2": "rxnorm_concept_id",
+                }
+            )
+            .collect()
+        )
+
+        return dict(
+            zip(
+                rxnorm_concept_ids["ndc"].to_numpy(),
+                rxnorm_concept_ids["rxnorm_concept_id"].to_numpy(),
+            )
+        )
+
+    # region ingredient
     def get_ingredient(
         self, drug_concept_ids: list[int], return_dict: bool = True
     ) -> dict:
@@ -220,6 +274,7 @@ class Vocabulary(OMOPPaths):
             )
         )
 
+    # region lab
     def get_lab_relationship_from_name(
         self, lab_names: list[str], lab_relationship: str
     ) -> dict:

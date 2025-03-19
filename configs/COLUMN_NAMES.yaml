@@ -40,9 +40,10 @@ diagnosis_priority_col: Diagnosis Priority # diagnosis_priority
 diagnosis_discharge_col: Diagnosis Active on Discharge # diagnosis_active_on_discharge
 diagnosis_description_col: Diagnosis Description # diagnosis_description
 drug_name_col: Drug Name # drug_name
-drug_name_OMOP_col: Drug Name (OMOP) # drug_name_omop
+drug_name_OMOP_col: Drug Name (OMOP)
 drug_ingredient_col: Drug Ingredient # drug_ingredient
 drug_admin_route_col: Drug Administration Route # drug_administration_route
+drug_continous_col: Drug is Continuous Infusion
 drug_class_col: Drug Class # drug_class
 drug_start_col: Drug Start Relative to Admission (seconds) # drug_start_relative_to_admission
 drug_end_col: Drug End Relative to Admission (seconds) # drug_end_relative_to_admission
@@ -50,8 +51,9 @@ drug_amount_col: Drug Amount # drug_amount
 drug_amount_unit_col: Drug Amount Unit # drug_amount_unit
 drug_rate_col: Drug Rate # drug_rate
 drug_rate_unit_col: Drug Rate Unit # drug_rate_unit
-fluid_amount_col: Fluid Amount (ml)
-fluid_rate_col: Fluid Rate (ml/hr)
+fluid_name_col: Solution Fluid
+fluid_amount_col: Solution Fluid Amount (ml)
+fluid_rate_col: Solution Fluid Rate (ml/hr)
 drug_patient_weight_col: Patient Weight (kg) Used for Dose Calculations
 micro_specimen_col: Specimen
 micro_test_col: Test
