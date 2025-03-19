@@ -1037,21 +1037,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
         )
 
-        def _create_mapping(
-            data: pl.LazyFrame, column_in: str, column_out: str
-        ) -> pl.LazyFrame:
-            return data.with_columns(
-                pl.col(column_in)
-                .replace_strict(
-                    self.omop.get_concept_names_from_codes(
-                        data.select(column_in).collect().to_series().to_list()
-                    ),
-                    return_dtype=pl.String,
-                    default=None,
-                )
-                .alias(column_out)
-            )
-
         microbiology_specimen_to_concept_mapping = (
             pl.scan_csv(self.microbiology_specimen_to_concept_path)
             .rename(
@@ -1065,13 +1050,17 @@ class MIMIC3Extractor(MIMIC3Paths):
         org_name_to_concept_mapping = pl.scan_csv(self.org_name_to_concept_path)
         org_name_to_concept_mapping = (
             org_name_to_concept_mapping.rename({"org_name": "ORG_NAME"})
-            .pipe(_create_mapping, "snomed", self.micro_organism_col)
+            .pipe(self._mapping_from_codes, "snomed", self.micro_organism_col)
             .select("ORG_NAME", self.micro_organism_col)
         )
         atb_to_concept_mapping = pl.scan_csv(self.atb_to_concept_path)
         atb_to_concept_mapping = (
             atb_to_concept_mapping.rename({"ab_name": "AB_NAME"})
-            .pipe(_create_mapping, "concept_code", self.micro_antibiotic_col)
+            .pipe(
+                self._mapping_from_codes,
+                "concept_code",
+                self.micro_antibiotic_col,
+            )
             .select("AB_NAME", self.micro_antibiotic_col)
         )
 
