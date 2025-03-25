@@ -336,7 +336,7 @@ class EICUExtractor(EICUPaths):
             # Remove duplicate rows
             .unique()
         )
-        
+
     # endregion
 
     # region admitDX
@@ -1137,12 +1137,18 @@ class EICUExtractor(EICUPaths):
                 pl.col("antibiotic")
                 .replace(
                     {
-                        "amoxicillin/clavulonic acid": "amoxicillin / clavulanate",
+                        "amoxicillin/clavulonic acid": (
+                            "amoxicillin / clavulanate"
+                        ),
                         "ampicillin/sulbactam": "ampicillin / sulbactam",
                         "imipenem/cilastatin": "cilastatin / imipenem",
                         "piperacillin/tazobactam": "piperacillin / tazobactam",
-                        "ticarcillin/clavulonic acid": "clavulanate / ticarcillin",
-                        "trimethoprim/sulfamethoxazole": "sulfamethoxazole / trimethoprim",
+                        "ticarcillin/clavulonic acid": (
+                            "clavulanate / ticarcillin"
+                        ),
+                        "trimethoprim/sulfamethoxazole": (
+                            "sulfamethoxazole / trimethoprim"
+                        ),
                         "": None,
                     }
                 )

@@ -186,7 +186,9 @@ class MIMIC4Extractor(MIMIC4Paths):
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
-                    "race": self.ethnicity_col,  # "race" is the choice of the dataset creators
+                    "race": (
+                        self.ethnicity_col
+                    ),  # "race" is the choice of the dataset creators
                     "admission_location": self.admission_loc_col,
                     "discharge_location": self.discharge_loc_col,
                     "admission_type": self.admission_urgency_col,
@@ -1011,7 +1013,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         micro_antibiotic_mapping = pl.scan_csv(self.micro_antibiotic_path)
         micro_antibiotic_mapping = (
             micro_antibiotic_mapping.rename({"concept_name": "ab_name"})
-            .pipe(_create_mapping, "target_concept_id", self.micro_antibiotic_col)
+            .pipe(
+                _create_mapping, "target_concept_id", self.micro_antibiotic_col
+            )
             .select("ab_name", self.micro_antibiotic_col)
         )
 

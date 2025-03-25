@@ -28,16 +28,14 @@ class Overview:
 
         for table in tables:
             # print(f"Adding {table} to overview...")
-            overview = (
-                overview.join(
-                    pl.scan_parquet(self.save_path + table + ".parquet")
-                    .select("Global ICU Stay ID")
-                    .group_by("Global ICU Stay ID")
-                    .len()
-                    .rename({"len": table}),
-                    on="Global ICU Stay ID",
-                    how="left",
-                )
+            overview = overview.join(
+                pl.scan_parquet(self.save_path + table + ".parquet")
+                .select("Global ICU Stay ID")
+                .group_by("Global ICU Stay ID")
+                .len()
+                .rename({"len": table}),
+                on="Global ICU Stay ID",
+                how="left",
             )
 
         # Save the overview to a parquet file
@@ -61,7 +59,7 @@ class Overview:
         # Add columns for each table
         tables = [
             "timeseries_vitals",
-            "timeseries_labs_no_meta",
+            "timeseries_labs",
             "timeseries_respiratory",
             "timeseries_intakeoutput",
         ]

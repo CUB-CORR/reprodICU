@@ -96,9 +96,13 @@ class EICUProcessor(EICUExtractor):
 
         # NOTE: if process stops due to insufficient memory, use the following
         # lines instead within a terminal at the precalc_path:
-        # pl.scan_parquet("EICU_B_timeseries_unsorted.parquet").sort(
-        #     "icu_stay_id", "time_relative_to_admission"
-        # ).sink_parquet("EICU_B_timeseries_unsorted.parquet")
+        # (
+        #     pl.scan_parquet("EICU_B_timeseries_unsorted.parquet")
+        #     .group_by(self.icu_stay_id_col, self.timeseries_time_col)
+        #     .first()
+        #     .sort(self.index_cols)
+        #     .sink_parquet("EICU_B_timeseries.parquet")
+        # )
         print("eICU    - Sorting wide time series data...")
         (
             pl.scan_parquet(timeseries_path_unsorted)

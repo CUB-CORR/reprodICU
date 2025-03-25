@@ -321,18 +321,21 @@ class UMCdbExtractor(UMCdbPaths):
             .with_columns(
                 pl.when(pl.col("label") == "Heart rate rhythm")
                 .then(
-                    pl.col("value")
-                    .replace_strict(self.HEART_RHYTHM_MAP, default=None)
+                    pl.col("value").replace_strict(
+                        self.HEART_RHYTHM_MAP, default=None
+                    )
                 )
                 .when(pl.col("label") == "Oxygen delivery system")
                 .then(
-                    pl.col("value")
-                    .replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None)
+                    pl.col("value").replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
+                    )
                 )
                 .when(pl.col("label") == "Ventilation mode Ventilator")
                 .then(
-                    pl.col("value")
-                    .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
+                    pl.col("value").replace_strict(
+                        self.VENTILATOR_MODE_MAP, default=None
+                    )
                 )
                 .otherwise(pl.col("value"))
                 .alias("value"),
@@ -1349,7 +1352,9 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("conceptName")
                 .replace(
                     {
-                        "Tidal volume Ventilator --on ventilator": "Tidal volume.spontaneous+mechanical --on ventilator"
+                        "Tidal volume Ventilator --on ventilator": (
+                            "Tidal volume.spontaneous+mechanical --on ventilator"
+                        )
                     }
                 )
                 .replace(
