@@ -1387,6 +1387,7 @@ class EICUExtractor(EICUPaths):
 
         medication = (
             pl.scan_csv(self.medication_path)
+            .filter(pl.col("drugordercancelled").ne_missing("Yes"))
             .select(
                 "patientunitstayid",
                 "drugstartoffset",

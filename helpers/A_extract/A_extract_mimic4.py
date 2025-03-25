@@ -1101,8 +1101,9 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         Returns:
             pl.LazyFrame: A lazy frame containing:
-                - {hospital_stay_id_col}: Hospital stay identifier.
                 - {icu_stay_id_col}: ICU stay identifier.
+                - {drug_mixture_id_col}: Mixture identifier.
+                - {drug_mixture_admin_id_col}: Mixture administration identifier.
                 - {drug_name_col}: Original drug name.
                 - {drug_ingredient_col}: Mapped active drug ingredient.
                 - {drug_amount_col}: Drug amount.
@@ -1147,7 +1148,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                 schema_overrides={"amount": float, "patientweight": float},
             )
             .select(
-                "hadm_id",
                 "stay_id",
                 "starttime",
                 "endtime",
@@ -1156,17 +1156,23 @@ class MIMIC4Extractor(MIMIC4Paths):
                 "amountuom",
                 "rate",
                 "rateuom",
+                "orderid",
+                "linkorderid",
                 "ordercategoryname",
+                "secondaryordercategoryname",
+                "ordercomponenttypedescription",
+                "ordercategorydescription",
                 "patientweight",
             )
             .rename(
                 {
-                    "hadm_id": self.hospital_stay_id_col,
                     "stay_id": self.icu_stay_id_col,
                     "amount": self.drug_amount_col,
                     "amountuom": self.drug_amount_unit_col,
                     "rate": self.drug_rate_col,
                     "rateuom": self.drug_rate_unit_col,
+                    "linkorderid": self.drug_mixture_id_col,
+                    "orderid": self.drug_mixture_admin_id_col,
                     "patientweight": self.drug_patient_weight_col,
                 }
             )
@@ -1186,8 +1192,11 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .str.replace("units", "U")
                 .str.replace("µ", "mc"),
                 # Add a column to indicate if the drug is continuous
-                pl.lit(True).alias(self.drug_continous_col),
+                pl.col("ordercategorydescription")
+                .str.contains("Continuous")
+                .alias(self.drug_continous_col),
             )
+            .drop("ordercategorydescription")
         )
 
         # specifically handle certain medications differently
@@ -1215,16 +1224,123 @@ class MIMIC4Extractor(MIMIC4Paths):
             .alias(self.drug_rate_unit_col),
         )
 
+        # select all inputevents that have no secondary associated order
+        inputevents_no_secondary = inputevents.filter(
+            pl.col("secondaryordercategoryname").is_null()
+        ).drop(
+            "secondaryordercategoryname",
+            "ordercomponenttypedescription",
+        )
+
+        # select all input events that are drips (drugs in a continuous infusion)
+        inputevents_drips = (
+            inputevents.filter(
+                pl.col("secondaryordercategoryname").is_not_null(),
+                pl.col("secondaryordercategoryname")
+                .str.contains("Additive")
+                .not_(),
+                pl.col("ordercomponenttypedescription")
+                == "Main order parameter",
+            )
+            .join(
+                # with drips the main order parameter is the drug itself,
+                # the fluid is the mixture solution
+                inputevents.filter(
+                    pl.col("secondaryordercategoryname").is_not_null(),
+                    pl.col("secondaryordercategoryname")
+                    .str.contains("Additive")
+                    .not_(),
+                    pl.col("ordercomponenttypedescription") == "Mixed solution",
+                )
+                .rename(
+                    {
+                        "itemid": "itemid_fluid",
+                        self.drug_amount_col: self.fluid_amount_col,
+                        self.drug_rate_col: self.fluid_rate_col,
+                    }
+                )
+                .select(
+                    self.drug_mixture_admin_id_col,
+                    "itemid_fluid",
+                    self.fluid_amount_col,
+                    self.fluid_rate_col,
+                ),
+                on=self.drug_mixture_admin_id_col,
+                how="left",
+            )
+            .drop(
+                "secondaryordercategoryname",
+                "ordercomponenttypedescription",
+            )
+        )
+
+        # select all input events that are additives (drugs added to a continuous infusion)
+        inputevents_additives = (
+            inputevents.filter(
+                pl.col("secondaryordercategoryname").is_not_null(),
+                pl.col("secondaryordercategoryname").str.contains("Additive"),
+                pl.col("ordercomponenttypedescription").str.contains(
+                    "Additive"
+                ),
+            )
+            .join(
+                # with additives the main order parameter is the fluid
+                inputevents.filter(
+                    pl.col("secondaryordercategoryname").is_not_null(),
+                    pl.col("secondaryordercategoryname")
+                    .str.contains("Additive")
+                    .not_(),
+                    pl.col("ordercomponenttypedescription")
+                    == "Main order parameter",
+                )
+                .rename(
+                    {
+                        "itemid": "itemid_fluid",
+                        self.drug_amount_col: self.fluid_amount_col,
+                        self.drug_rate_col: self.fluid_rate_col,
+                    }
+                )
+                .select(
+                    self.drug_mixture_admin_id_col,
+                    "itemid_fluid",
+                    self.fluid_amount_col,
+                    self.fluid_rate_col,
+                ),
+                on=self.drug_mixture_admin_id_col,
+                how="left",
+            )
+            .drop(
+                "secondaryordercategoryname",
+                "ordercomponenttypedescription",
+            )
+        )
+
         return (
-            inputevents.join(d_items, on="itemid")
+            pl.concat(
+                [
+                    inputevents_no_secondary,
+                    inputevents_drips,
+                    inputevents_additives,
+                ],
+                how="diagonal_relaxed",
+            )
+            .join(d_items, on="itemid", how="left")
+            .join(
+                d_items,
+                left_on="itemid_fluid",
+                right_on="itemid",
+                how="left",
+                suffix="_fluid",
+            )
             .join(inputevents_to_rxnorm_data, on="itemid", how="left")
-            .drop(self.hospital_stay_id_col, "itemid")
+            .drop("itemid", "itemid_fluid")
             .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
             .rename(
                 {
                     "label": self.drug_name_col,
                     "label_OMOP": self.drug_name_OMOP_col,
+                    "label_fluid": self.fluid_name_col,
                 }
             )
             # Replace drug names with mapped names
@@ -1232,6 +1348,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col(self.drug_name_col)
                 .replace_strict(mimic4_medication_mapping, default=None)
                 .alias(self.drug_ingredient_col),
+                pl.col(self.fluid_name_col)
+                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
+                .alias(self.fluid_group_col),
             )
             # Change times to relative times
             .with_columns(

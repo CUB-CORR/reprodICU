@@ -611,6 +611,7 @@ class HiRIDExtractor(HiRIDPaths):
         Returns:
             pl.LazyFrame: DataFrame containing columns:
                 - {icu_stay_id_col} (Unique ICU identifier),
+                - {drug_mixture_id_col}: (Mixture identifier).
                 - {drug_name_col} (Medication name),
                 - {drug_ingredient_col} (Mapped medication ingredient),
                 - {drug_rate_col} (Calculated infusion rate),
@@ -669,6 +670,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "givendose": self.drug_amount_col,
                         "doseunit": self.drug_amount_unit_col,
                         "route": self.drug_admin_route_col,
+                        "infusionid": self.drug_mixture_id_col,
                         "subtypeid": self.drug_class_col,
                         "fluidamount_calc": self.fluid_amount_col,
                     }
@@ -728,17 +730,25 @@ class HiRIDExtractor(HiRIDPaths):
         # on next log entry (as determined by a different offset)
         # 1. Get list of log entry offsets for each patient
         pharma_offsets = (
-            pharma.select(self.icu_stay_id_col, self.drug_end_col, "infusionid")
+            pharma.select(
+                self.icu_stay_id_col,
+                self.drug_end_col,
+                self.drug_mixture_id_col,
+            )
             .unique()
-            .sort([self.icu_stay_id_col, "infusionid", self.drug_end_col])
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_mixture_id_col,
+                self.drug_end_col,
+            )
             .with_columns(
                 pl.col(self.drug_end_col)
                 .shift(1)
-                .over(self.icu_stay_id_col, "infusionid")
+                .over(self.icu_stay_id_col, self.drug_mixture_id_col)
                 .alias("prev_drug_end"),
                 pl.col(self.drug_end_col)
                 .shift(-1)
-                .over(self.icu_stay_id_col, "infusionid")
+                .over(self.icu_stay_id_col, self.drug_mixture_id_col)
                 .alias("next_drug_end"),
             )
         )
@@ -746,14 +756,18 @@ class HiRIDExtractor(HiRIDPaths):
         pharma = (
             pharma.join(
                 pharma_offsets,
-                on=[self.icu_stay_id_col, self.drug_end_col, "infusionid"],
+                on=[
+                    self.icu_stay_id_col,
+                    self.drug_end_col,
+                    self.drug_mixture_id_col,
+                ],
                 how="left",
             )
             # Sort by patient ID, drug name and drug start time
             .sort(
                 self.icu_stay_id_col,
                 self.drug_name_col,
-                "infusionid",
+                self.drug_mixture_id_col,
                 self.drug_end_col,
                 "prev_drug_end",  # sometimes, there is the same drug given twice at the same time
             )
@@ -866,7 +880,6 @@ class HiRIDExtractor(HiRIDPaths):
                 "next_drug_end",
                 "drug_status_prev",
                 "drug_status_next",
-                "infusionid",
             )
         )
 
