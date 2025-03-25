@@ -1,18 +1,59 @@
 # common solution fluids used in the ICU
 normal saline (0.9%):
+  # MIMIC-III
+  - .9% Normal Saline
+  # MIMIC-IV
+  - NaCl 0.9%
+  - Solution
   # UMCdb
   - NaCl 0,9% Medicatie
   - NaCl 0,9% Pompen
 
 glucose 5%:
+  # MIMIC-III
+  - D5W
+  # MIMIC-III / MIMIC-IV
+  - Dextrose 5%
   # UMCdb
   - Glucose 5% Medicatie
   - Glucose 5% Pompen
 
+glucose 10%:
+  # MIMIC-III
+  - D10W
+
+glucose 20%:
+  # MIMIC-IV
+  - Dextrose 20%
+
 sterile water:
+  # MIMIC-III / MIMIC-IV
+  - Sterile Water
   # UMCdb
   - Aquadest Medicatie
   - Aquadest Pompen
 
-# half normal saline (0.45%):
+half normal saline (0.45%):
+  # MIMIC-III / MIMIC-IV
+  - NaCl 0.45%
+
+# FOR POSSIBLE EXTENSION:
+#########################
+# lactated ringer's:
 # hypertonic saline (3%):
+
+# UNMAPPED SOLUTION FLUIDS:
+###########################
+# MIMIC-IV:
+# D5LR
+# D5NS # also in MIMIC-III
+# NaCl 23.4%
+
+# UMCdb:
+# Glycinebuffer Pompen
+# Onverdund Medicatie
+# Onverdund Pompen
+# Oplosvloeistof Medicatie
+# Oplosvloeistof Pompen
+# Piggyback
+# Propofol Pompen

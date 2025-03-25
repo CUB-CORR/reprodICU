@@ -16,7 +16,6 @@ from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
 from helpers.helper import GlobalVars
 from helpers.helper import GlobalHelpers
 
-
 SECONDS_IN_1MIN = 60
 SECONDS_IN_1H = 3600
 
@@ -112,6 +111,8 @@ class MedicationHarmonizer(GlobalVars):
         if "eICU" in self.datasets:
             medications_datasets.append(
                 self.eicu.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "eicu-")
                 .pipe(self._print_unique_cases, "eICU")
             )
@@ -119,6 +120,8 @@ class MedicationHarmonizer(GlobalVars):
         if "HiRID" in self.datasets:
             medications_datasets.append(
                 self.hirid.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "hirid-")
                 .pipe(self._print_unique_cases, "HiRID")
             )
@@ -126,6 +129,8 @@ class MedicationHarmonizer(GlobalVars):
         if "MIMIC3" in self.datasets:
             medications_datasets.append(
                 self.mimic3.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "mimic3-")
                 .pipe(self._print_unique_cases, "MIMIC3")
             )
@@ -133,6 +138,8 @@ class MedicationHarmonizer(GlobalVars):
         if "MIMIC4" in self.datasets:
             medications_datasets.append(
                 self.mimic4.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "mimic4-")
                 .pipe(self._print_unique_cases, "MIMIC4")
             )
@@ -140,6 +147,8 @@ class MedicationHarmonizer(GlobalVars):
         if "NWICU" in self.datasets:
             medications_datasets.append(
                 self.nwicu.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "nwicu-")
                 .pipe(self._print_unique_cases, "NWICU")
             )
@@ -147,6 +156,8 @@ class MedicationHarmonizer(GlobalVars):
         if "SICdb" in self.datasets:
             medications_datasets.append(
                 self.sicdb.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "sicdb-")
                 .pipe(self._print_unique_cases, "SICdb")
             )
@@ -154,6 +165,8 @@ class MedicationHarmonizer(GlobalVars):
         if "UMCdb" in self.datasets:
             medications_datasets.append(
                 self.umcdb.extract_medications()
+                .collect()
+                .lazy()
                 .pipe(self._concat_helper, "umcdb-")
                 .pipe(self._print_unique_cases, "UMCdb")
             )
@@ -269,17 +282,20 @@ class MedicationHarmonizer(GlobalVars):
             )
             .select(
                 self.global_icu_stay_id_col,
+                self.drug_mixture_id_col,
+                self.drug_mixture_admin_id_col,
                 self.drug_ingredient_col,
                 self.drug_name_col,
                 self.drug_name_OMOP_col,
                 self.drug_class_col,
-                self.fluid_name_col,
                 self.drug_continous_col,
                 self.drug_admin_route_col,
                 self.drug_amount_col,
                 self.drug_amount_unit_col,
                 self.drug_rate_col,
                 self.drug_rate_unit_col,
+                self.fluid_group_col,
+                self.fluid_name_col,
                 self.fluid_amount_col,
                 self.fluid_rate_col,
                 self.drug_start_col,
@@ -293,6 +309,32 @@ class MedicationHarmonizer(GlobalVars):
     # Helper functions
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
+        data_cols = data.columns
+
+        if self.drug_mixture_id_col in data_cols:
+            data = data.with_columns(
+                pl.when(pl.col(self.drug_mixture_id_col).is_not_null())
+                .then(
+                    pl.concat_str(
+                        [pl.lit(name), pl.col(self.drug_mixture_id_col)]
+                    )
+                )
+                .otherwise(None)
+                .alias(self.drug_mixture_id_col)
+            )
+
+        if self.drug_mixture_admin_id_col in data_cols:
+            data = data.with_columns(
+                pl.when(pl.col(self.drug_mixture_admin_id_col).is_not_null())
+                .then(
+                    pl.concat_str(
+                        [pl.lit(name), pl.col(self.drug_mixture_admin_id_col)]
+                    )
+                )
+                .otherwise(None)
+                .alias(self.drug_mixture_admin_id_col)
+            )
+
         return data.with_columns(
             pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
                 self.global_icu_stay_id_col

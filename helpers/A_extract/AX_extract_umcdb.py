@@ -788,6 +788,7 @@ class UMCdbExtractor(UMCdbPaths):
         Returns:
             pl.LazyFrame: A LazyFrame containing:
                 - {icu_stay_id_col}: ICU stay identifier.
+                - {drug_mixture_admin_id_col}: Mixture administration identifier.
                 - {drug_name_col}: Original drug name.
                 - {drug_ingredient_col}: Standardized active ingredient.
                 - {drug_amount_col}: Drug dose amount (if available).
@@ -842,6 +843,7 @@ class UMCdbExtractor(UMCdbPaths):
                 "item",
                 "start",
                 "stop",
+                "orderid",
                 "ordercategory",
                 # "administered",
                 # "administeredunit", -> actual doses, to be integrated
@@ -859,6 +861,7 @@ class UMCdbExtractor(UMCdbPaths):
                     "item": self.drug_name_col,
                     "start": self.drug_start_col,
                     "stop": self.drug_end_col,
+                    "orderid": self.drug_mixture_admin_id_col,
                     "solutionadministered": self.fluid_amount_col,
                 }
             )
@@ -924,8 +927,10 @@ class UMCdbExtractor(UMCdbPaths):
                 .otherwise(None)
                 .alias(self.fluid_amount_col),
                 pl.col("solutionitem")
-                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
                 .alias(self.fluid_name_col),
+                pl.col("solutionitem")
+                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
+                .alias(self.fluid_group_col),
             )
             # assign to rate or amount column based on availability
             .with_columns(
