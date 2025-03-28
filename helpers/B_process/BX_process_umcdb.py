@@ -613,7 +613,9 @@ class UMCdbConverter(UnitConverter):
                     method="method",
                     time="time",
                     LOINC="LOINC",
-                ).alias("Creatinine"),
+                )
+                .struct.json_encode()
+                .alias("Creatinine"),
             )
         )
 
