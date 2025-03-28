@@ -903,14 +903,18 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         output_label_to_concept = pl.scan_csv(self.output_label_to_concept_path)
         output_label_to_concept = (
-            output_label_to_concept.rename({"itemid": "ITEMID"})
+            output_label_to_concept.rename({"item_id": "ITEMID"})
             .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
             .select("ITEMID", "LABEL")
         )
 
         label_to_concept = (
             pl.concat(
-                [cv_input_label_to_concept, mv_input_label_to_concept],
+                [
+                    cv_input_label_to_concept,
+                    mv_input_label_to_concept,
+                    output_label_to_concept,
+                ],
                 how="vertical",
             )
             # Harmonize names of interest
@@ -929,14 +933,18 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.inputevents_cv_path, schema_overrides={"AMOUNT": float}
             )
             .select(
-                "HADM_ID", "CHARTTIME", "AMOUNT", "AMOUNTUOM", "ORIGINALROUTE"
+                "HADM_ID",
+                "ITEMID",
+                "CHARTTIME",
+                "AMOUNT",
+                "AMOUNTUOM",
+                "ORIGINALROUTE",
             )
             # Rename columns for consistency
             .rename(
                 {
                     "HADM_ID": self.hospital_stay_id_col,
                     "AMOUNT": "VALUENUM",
-                    "ORIGINALROUTE": "ITEMID",
                 }
             )
             .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
@@ -948,6 +956,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .select(
                 "HADM_ID",
+                "ITEMID",
                 "STORETIME",
                 "ORDERCATEGORYNAME",
                 "AMOUNT",
@@ -959,7 +968,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "HADM_ID": self.hospital_stay_id_col,
                     "STORETIME": "CHARTTIME",
                     "AMOUNT": "VALUENUM",
-                    "ORDERCATEGORYNAME": "ITEMID",
+                    "ORDERCATEGORYNAME": "ORIGINALROUTE",
                 }
             )
             .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
@@ -987,14 +996,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.when(pl.col("LABEL").is_null())
                 .then(
-                    pl.col("ITEMID").replace_strict(
+                    pl.col("ORIGINALROUTE").replace_strict(
                         input_mappings, default=None
                     )
                 )
                 .otherwise(pl.col("LABEL"))
                 .alias("LABEL")
             )
-            .drop("ITEMID")
+            .drop("ITEMID", "ORIGINALROUTE")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
             # Remove rows with empty values
