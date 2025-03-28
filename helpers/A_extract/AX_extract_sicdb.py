@@ -551,6 +551,7 @@ class SICdbExtractor(SICdbPaths):
                 .then(None)
                 .otherwise(pl.col(self.drug_rate_unit_col))
                 .alias(self.drug_rate_unit_col),
+                (pl.col("IsSingleDose") == 0).alias(self.drug_continous_col),
             )
             .with_columns(
                 # Map medication names to harmonized names
