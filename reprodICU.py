@@ -268,6 +268,10 @@ if __name__ == "__main__":
         timeseries_inout_improver = IntakeOutputImprover(paths=paths)
         (
             pl.scan_parquet(save_path + "timeseries_intakeoutput.parquet")
+            .pipe(
+                timeseries_inout_improver.add_infusion_volumes,
+                medications=pl.scan_parquet(save_path + "medications.parquet"),
+            )
             .pipe(timeseries_inout_improver.improve_intake_output)
             .collect()
             .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
