@@ -919,8 +919,6 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         return (
             pl.concat([inputevents, outputevents], how="diagonal_relaxed")
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),
@@ -1123,6 +1121,70 @@ class MIMIC4Extractor(MIMIC4Paths):
         intimes = self.extract_patient_IDs().select(
             self.icu_stay_id_col, "intime", self.icu_length_of_stay_col
         )
+
+        # Load medication mappings from MIMIC-IV OMOP files
+        # These mappings connect medication names to standard concepts and ingredients
+        print("MIMIC4  - Loading medication mapping files...")
+
+        # 1. Load route and administration mappings
+        route_to_concept = (
+            pl.read_csv(self.drug_route_path)
+            .rename({"concept_name": "route"})
+            .with_columns(
+                # Map administration route concept IDs to human-readable names
+                pl.col("target_concept_id")
+                .replace_strict(
+                    self.omop.get_concept_names_from_ids(
+                        pl.read_csv(self.drug_route_path)[
+                            "target_concept_id"
+                        ].to_list()
+                    ),
+                    default=None,
+                )
+                .alias(self.drug_admin_route_col)
+            )
+            .select("route", self.drug_admin_route_col)
+            .lazy()
+        )
+
+        # 2. Create NDC to RxNorm concept mappings
+        # Extract unique NDC codes from prescriptions
+        ndc_codes = (
+            pl.scan_csv(self.prescriptions_path)
+            .select("ndc")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
+        # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
+        ndc_to_rxnorm = self.omop.get_rxnorm_concept_id_from_ndc(
+            [str(x).zfill(11) for x in ndc_codes]
+        )
+
+        # 3. Get active ingredients for all medication concept IDs
+        ingredients = self.omop.get_ingredient(list(ndc_to_rxnorm.values()))
+        rxnorm_names = self.omop.get_concept_names_from_ids(
+            list(ndc_to_rxnorm.values())
+        )
+
+        # 5. Create final mappings from codes to ingredients and names
+        # Map NDC codes to active ingredients
+        ndc_to_ingredient = {
+            ndc: ingredients[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in ingredients
+        }
+
+        # Map NDC codes to standardized drug names
+        ndc_to_drugname = {
+            ndc: rxnorm_names[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in rxnorm_names
+        }
+
+        # Load additional mappings
         mimic4_medication_mapping = (
             self.helpers.load_many_to_many_to_one_mapping(
                 self.mapping_path + "MEDICATIONS.yaml", "mimic4"
@@ -1146,12 +1208,16 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
+
+        # INPUTEVENTS
+        #######################################################################
         inputevents = (
             pl.scan_csv(
                 self.inputevents_path,
                 schema_overrides={"amount": float, "patientweight": float},
             )
             .select(
+                "hadm_id",
                 "stay_id",
                 "starttime",
                 "endtime",
@@ -1170,6 +1236,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .rename(
                 {
+                    "hadm_id": self.hospital_stay_id_col,
                     "stay_id": self.icu_stay_id_col,
                     "amount": self.drug_amount_col,
                     "amountuom": self.drug_amount_unit_col,
@@ -1319,7 +1386,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
         )
 
-        return (
+        inputevents = (
             pl.concat(
                 [
                     inputevents_no_secondary,
@@ -1338,7 +1405,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(inputevents_to_rxnorm_data, on="itemid", how="left")
             .drop("itemid", "itemid_fluid")
-            .join(intimes, on=self.icu_stay_id_col)
             # Rename columns for consistency
             .rename(
                 {
@@ -1356,6 +1422,56 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
                 .alias(self.fluid_group_col),
             )
+        )
+
+        # PRESCRIPTIONS
+        #######################################################################
+        prescriptions = (
+            pl.scan_csv(
+                self.prescriptions_path, schema_overrides={"dose_val_rx": str}
+            )
+            .select(
+                "hadm_id",
+                "starttime",
+                "stoptime",
+                "drug",
+                "ndc",
+                "dose_val_rx",
+                "dose_unit_rx",
+                "route",
+            )
+            .rename(
+                {
+                    "hadm_id": self.hospital_stay_id_col,
+                    "drug": self.drug_name_col,
+                    "dose_val_rx": self.drug_amount_col,
+                    "dose_unit_rx": self.drug_amount_unit_col,
+                }
+            )
+            .join(route_to_concept, on="route", how="left")
+            .with_columns(
+                pl.col("ndc")
+                .replace_strict(ndc_to_ingredient, default=None)
+                .alias(self.drug_ingredient_col),
+                pl.col("ndc")
+                .replace_strict(ndc_to_drugname, default=None)
+                .alias(self.drug_name_OMOP_col),
+                # Add a column to indicate if the drug is continuous
+                pl.lit(False).alias(self.drug_continous_col),
+            )
+            .rename({"stoptime": "endtime"})
+            .join(
+                self.icu_stay_id.drop(self.person_id_col),
+                on=self.hospital_stay_id_col,
+                how="left",
+            )
+        )
+
+        # RETURN
+        #######################################################################
+        return (
+            pl.concat([inputevents, prescriptions], how="diagonal_relaxed")
+            .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -1385,7 +1501,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                     ).truediv(pl.duration(seconds=1))
                 )
             )
-            .drop("starttime", "endtime", "intime", self.icu_length_of_stay_col)
+            .drop(
+                self.hospital_stay_id_col,
+                "starttime",
+                "endtime",
+                "intime",
+                self.icu_length_of_stay_col,
+            )
         )
 
     # endregion
