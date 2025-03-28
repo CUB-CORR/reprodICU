@@ -839,7 +839,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        return (
+        drugitems = (
             pl.scan_parquet(self.drugitems_path)
             .select(
                 "admissionid",
@@ -848,8 +848,9 @@ class UMCdbExtractor(UMCdbPaths):
                 "stop",
                 "orderid",
                 "ordercategory",
-                # "administered",
-                # "administeredunit", -> actual doses, to be integrated
+                "isadditive",
+                "administered",
+                "administeredunit",
                 "doserateperkg",
                 "dose",
                 "doseunit",
@@ -867,6 +868,190 @@ class UMCdbExtractor(UMCdbPaths):
                     "orderid": self.drug_mixture_admin_id_col,
                     "solutionadministered": self.fluid_amount_col,
                 }
+            )
+            .with_columns(
+                # Replace drug rate units
+                pl.col("doseunit").replace({"µg": "mcg"}),
+                pl.col("doserateunit").replace(
+                    {"uur": "hr", "dag": "day", "min": "min"}
+                ),
+            )
+            # assign to rate or amount column based on availability
+            .with_columns(
+                # drug amounts
+                pl.col("administered").alias(self.drug_amount_col),
+                pl.col("administeredunit").alias(self.drug_amount_unit_col),
+                # drug rates
+                pl.when(pl.col("doserateunit").is_not_null())
+                .then(pl.col("dose"))
+                .otherwise(None)
+                .alias(self.drug_rate_col),
+                pl.when(pl.col("doserateunit").is_not_null())
+                .then(
+                    pl.concat_str(
+                        pl.col("doseunit"),
+                        pl.lit("/"),
+                        pl.when(pl.col("doserateperkg") == 1)
+                        .then(pl.lit("kg/"))
+                        .otherwise(pl.lit("")),
+                        pl.col("doserateunit"),
+                    )
+                )
+                .otherwise(None)
+                .alias(self.drug_rate_unit_col),
+            )
+            .cast({self.drug_amount_col: float, self.drug_rate_col: float})
+        )
+
+        # Separate drug items with and without solution items
+        drugitems_with_solutionitem = drugitems.filter(
+            pl.col("solutionitem").is_not_null()
+        ).rename({"solutionitem": self.fluid_name_col})
+
+        drugitems_without_solutionitem = drugitems.filter(
+            pl.col("solutionitem").is_null()
+        )
+
+        # Separate fluid infusions from drugs and mixture infusions
+        drugitems_without_solutionitem_only_fluid = (
+            drugitems_without_solutionitem.filter(
+                (pl.col("doseunit") == "ml")
+                .all()
+                .over(self.drug_mixture_admin_id_col),
+                pl.col("ordercategory").str.contains("Infuus"),
+            )
+            .with_columns(
+                # split additive and fluid items
+                *[
+                    pl.when(pl.col("isadditive") == 0)
+                    .then(pl.col(col))
+                    .otherwise(None)
+                    .alias(col_fluid)
+                    for col, col_fluid in zip(
+                        [self.drug_name_col, self.drug_amount_col],
+                        [self.fluid_name_col, self.fluid_amount_col],
+                    )
+                ],
+                pl.when(pl.col("isadditive") == 0)
+                .then(
+                    pl.when(pl.col("doserateunit") == "hr")
+                    .then(pl.col(self.drug_rate_col))
+                    .when(pl.col("doserateunit") == "min")
+                    .then(pl.col(self.drug_rate_col) * 60)
+                )
+                .otherwise(None)
+                .alias(self.fluid_rate_col),
+                *[
+                    pl.when(pl.col("isadditive") == 1)
+                    .then(pl.col(col))
+                    .otherwise(None)
+                    .alias(col)
+                    for col in [
+                        self.drug_name_col,
+                        self.drug_amount_col,
+                        self.drug_rate_col,
+                    ]
+                ],
+            )
+            .group_by(self.icu_stay_id_col, self.drug_mixture_admin_id_col)
+            .max()  # only 2 items (1 fluid, 1 additive) per mixture
+        )
+
+        # Handle single drug items without solution items
+        drugitems_without_solutionitem_single = (
+            drugitems_without_solutionitem.filter(
+                (pl.col("doseunit") == "ml")
+                .all()
+                .over(self.drug_mixture_admin_id_col)
+                .not_(),
+                pl.col("ordercategory").str.contains("Infuus").not_(),
+                pl.col(self.drug_mixture_admin_id_col).is_duplicated().not_(),
+            )
+        )
+
+        # Handle mixtures with and without fluid items
+        drugitems_without_solutionitem_mixtures = (
+            drugitems_without_solutionitem.filter(
+                (pl.col("doseunit") == "ml")
+                .all()
+                .over(self.drug_mixture_admin_id_col)
+                .not_(),
+                pl.col("ordercategory").str.contains("Infuus").not_(),
+                pl.col(self.drug_mixture_admin_id_col).is_duplicated(),
+            )
+            .with_columns(
+                # split additive and fluid items
+                *[
+                    pl.when(pl.col("doseunit") == "ml")
+                    .then(pl.col(col))
+                    .otherwise(None)
+                    .alias(col_fluid)
+                    for col, col_fluid in zip(
+                        [self.drug_name_col, self.drug_amount_col],
+                        [self.fluid_name_col, self.fluid_amount_col],
+                    )
+                ],
+                pl.when(pl.col("doseunit") == "ml")
+                .then(
+                    pl.when(pl.col("doserateunit") == "hr")
+                    .then(pl.col(self.drug_rate_col))
+                    .when(pl.col("doserateunit") == "min")
+                    .then(pl.col(self.drug_rate_col) * 60)
+                )
+                .otherwise(None)
+                .alias(self.fluid_rate_col),
+                *[
+                    pl.when(pl.col("doseunit") != "ml")
+                    .then(pl.col(col))
+                    .otherwise(None)
+                    .alias(col)
+                    for col in [
+                        self.drug_name_col,
+                        self.drug_amount_col,
+                        self.drug_rate_col,
+                    ]
+                ],
+            )
+            .group_by(self.icu_stay_id_col, self.drug_mixture_admin_id_col)
+            .agg(
+                pl.col(
+                    self.drug_start_col,
+                    self.drug_end_col,
+                    self.fluid_name_col,
+                    self.fluid_amount_col,
+                    self.fluid_rate_col,
+                    "ordercategory",
+                ).max(),
+                pl.col(
+                    self.drug_name_col,
+                    self.drug_amount_col,
+                    self.drug_amount_unit_col,
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
+                ).explode(),
+            )
+            .explode(
+                self.drug_name_col,
+                    self.drug_amount_col,
+                    self.drug_amount_unit_col,
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
+            )
+        )
+        
+        drugitems_without_solutionitem_only_fluid.collect().write_parquet("drugitems_without_solutionitem_only_fluid.parquet")
+        drugitems_without_solutionitem_single.collect().write_parquet("drugitems_without_solutionitem_single.parquet")
+        drugitems_without_solutionitem_mixtures.collect().write_parquet("drugitems_without_solutionitem_mixtures.parquet")
+
+        return (
+            pl.concat(
+                [
+                    drugitems_with_solutionitem,
+                    drugitems_without_solutionitem_only_fluid,
+                    drugitems_without_solutionitem_single,
+                    drugitems_without_solutionitem_mixtures,
+                ],
+                how="diagonal_relaxed",
             )
             .join(intimes, on=self.icu_stay_id_col)
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
@@ -907,15 +1092,6 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col)
                 .replace_strict(self._extract_drug_references(), default=None)
                 .alias(self.drug_name_OMOP_col),
-                # Convert administered unit to enum
-                # pl.col(self.drug_amount_unit_col)
-                # .replace(self.DRUG_UNIT_MAPPING)
-                # .cast(self.drug_unit_dtype),
-                # Replace drug rate units
-                pl.col("doseunit").replace({"µg": "mcg"}),
-                pl.col("doserateunit").replace(
-                    {"uur": "hr", "dag": "day", "min": "min"}
-                ),
                 # Replace drug administration routes
                 pl.col("ordercategory")
                 .replace(umcdb_drug_administration_route_mapping, default=None)
@@ -924,56 +1100,19 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("ordercategory")
                 .replace(umcdb_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
-                # Only use solution fluid amounts where available
-                pl.when(pl.col("solutionadministeredunit").is_not_null())
-                .then(pl.col(self.fluid_amount_col))
-                .otherwise(None)
-                .alias(self.fluid_amount_col),
-                pl.col("solutionitem")
-                .alias(self.fluid_name_col),
-                pl.col("solutionitem")
+                # Replace solution items with standardized names
+                pl.col(self.fluid_name_col)
                 .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
                 .alias(self.fluid_group_col),
             )
-            # assign to rate or amount column based on availability
-            .with_columns(
-                # drug amounts
-                pl.when(pl.col("doserateunit").is_null())
-                .then(pl.col("dose"))
-                .otherwise(None)
-                .alias(self.drug_amount_col),
-                pl.when(pl.col("doserateunit").is_null())
-                .then(pl.col("doseunit"))
-                .otherwise(None)
-                .alias(self.drug_amount_unit_col),
-                # drug rates
-                pl.when(pl.col("doserateunit").is_not_null())
-                .then(pl.col("dose"))
-                .otherwise(None)
-                .alias(self.drug_rate_col),
-                pl.when(pl.col("doserateunit").is_not_null())
-                .then(
-                    pl.concat_str(
-                        pl.col("doseunit"),
-                        pl.lit("/"),
-                        pl.when(pl.col("doserateperkg") == 1)
-                        .then(pl.lit("kg/"))
-                        .otherwise(pl.lit("")),
-                        pl.col("doserateunit"),
-                    )
-                )
-                .otherwise(None)
-                .alias(self.drug_rate_unit_col),
-            )
-            .cast({self.drug_amount_col: float, self.drug_rate_col: float})
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty lab names
+            # Remove rows with empty drug start times
             .filter(pl.col(self.drug_start_col).is_not_null())
-            # Remove rows with empty lab results
+            # Remove rows with empty drug names
             .filter(
                 pl.col(self.drug_name_col).is_not_null()
-                & (pl.col(self.drug_name_col) != "")
+                | pl.col(self.fluid_name_col).is_not_null()
             )
             .drop("intime", "outtime")
         )
