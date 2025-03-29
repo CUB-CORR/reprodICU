@@ -11,8 +11,8 @@
 
 # Importing necessary libraries
 import argparse
+import glob
 import os
-import sys
 
 import polars as pl
 import yaml
@@ -1087,7 +1087,118 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     )
 
 
+################################################################################
+# region VOCABULARIES
+################################################################################
+def VOCABULARIES(
+    outpath: str,
+    CONCEPT: pl.LazyFrame,
+    CONCEPT_RELATIONSHIP: pl.LazyFrame,
+    CONCEPT_ANCESTOR: pl.LazyFrame,
+    CONCEPT_CLASS: pl.LazyFrame,
+    CONCEPT_SYNONYM: pl.LazyFrame,
+    DOMAIN: pl.LazyFrame,
+    RELATIONSHIP: pl.LazyFrame,
+    VOCABULARY: pl.LazyFrame,
+) -> pl.LazyFrame:
+    """
+    Initializes the vocabulary tables for the OMOP CDM, including only the
+    concepts that are used in the reprodICU data.
+
+    Args:
+        CONCEPT (pl.LazyFrame): _description_
+        CONCEPT_RELATIONSHIP (pl.LazyFrame): _description_
+        CONCEPT_ANCESTOR (pl.LazyFrame): _description_
+        CONCEPT_CLASS (pl.LazyFrame): _description_
+        CONCEPT_SYNONYM (pl.LazyFrame): _description_
+        DOMAIN (pl.LazyFrame): _description_
+        RELATIONSHIP (pl.LazyFrame): _description_
+        VOCABULARY (pl.LazyFrame): _description_
+    """
+    
+    print("reprOMOPIZE - VOCABULARIES")
+
+    # Iterate over output directory, scan all files, select all columns
+    # containing "concept_id" and put the unique values in a list
+    concept_ids = []
+    for table_path in glob.glob(os.path.join(outpath, "*.parquet")):
+        table_df = pl.scan_parquet(table_path)
+        concept_id_cols = [
+            col for col in table_df.columns if "concept_id" in col
+        ]
+        for col in concept_id_cols:
+            concept_ids += (
+                table_df.select(pl.col(col))
+                .unique()
+                .collect()
+                .to_series()
+                .to_list()
+            )
+
+    concept_ids = list(set(concept_ids))
+    print(f"reprOMOPIZE - found {len(concept_ids)} unique concept_ids")
+
+    # Filter the vocabulary tables to only include the concept_ids that are in
+    # the reprodICU data.
+    CONCEPT = CONCEPT.filter(pl.col("concept_id").is_in(concept_ids))
+    CONCEPT_RELATIONSHIP = CONCEPT_RELATIONSHIP.filter(
+        pl.col("concept_id_1").is_in(concept_ids)
+        | pl.col("concept_id_2").is_in(concept_ids)
+    )
+    CONCEPT_ANCESTOR = CONCEPT_ANCESTOR.filter(
+        pl.col("ancestor_concept_id").is_in(concept_ids)
+        | pl.col("descendant_concept_id").is_in(concept_ids)
+    )
+    CONCEPT_SYNONYM = CONCEPT_SYNONYM.filter(
+        pl.col("concept_id").is_in(concept_ids)
+    )
+
+    # Get the relevant relating IDs from the other tables
+    # -> CONCEPT_CLASS: concept_class_id
+    # -> DOMAIN: domain_id
+    # -> RELATIONSHIP: relationship_id (from CONCEPT_RELATIONSHIP)
+    # -> VOCABULARY: vocabulary_id
+
+    CONCEPT_CLASS = CONCEPT_CLASS.filter(
+        pl.col("concept_class_id").is_in(
+            CONCEPT.select("concept_class_id").collect().to_series().to_list()
+        )
+    )
+    DOMAIN = DOMAIN.filter(
+        pl.col("domain_id").is_in(
+            CONCEPT.select("domain_id").collect().to_series().to_list()
+        )
+    )
+    RELATIONSHIP = RELATIONSHIP.filter(
+        pl.col("relationship_id").is_in(
+            CONCEPT_RELATIONSHIP.select("relationship_id")
+            .collect()
+            .to_series()
+            .to_list()
+        )
+    )
+    VOCABULARY = VOCABULARY.filter(
+        pl.col("vocabulary_id").is_in(
+            CONCEPT.select("vocabulary_id").collect().to_series().to_list()
+        )
+    )
+
+    # Write the filtered tables to parquet files
+    CONCEPT.sink_parquet(outpath + "CONCEPT.parquet")
+    CONCEPT_RELATIONSHIP.sink_parquet(outpath + "CONCEPT_RELATIONSHIP.parquet")
+    CONCEPT_ANCESTOR.sink_parquet(outpath + "CONCEPT_ANCESTOR.parquet")
+    CONCEPT_CLASS.sink_parquet(outpath + "CONCEPT_CLASS.parquet")
+    CONCEPT_SYNONYM.sink_parquet(outpath + "CONCEPT_SYNONYM.parquet")
+    DOMAIN.sink_parquet(outpath + "DOMAIN.parquet")
+    RELATIONSHIP.sink_parquet(outpath + "RELATIONSHIP.parquet")
+    VOCABULARY.sink_parquet(outpath + "VOCABULARY.parquet")
+
+    return
+
+
+################################################################################
 # region OTHER
+################################################################################
 def other():
     """
     add missing tables to the output directory
@@ -1112,6 +1223,9 @@ def other():
             )
 
 
+################################################################################
+# region MAIN
+################################################################################
 if __name__ == "__main__":
     # Parse command line arguments
     parser = argparse.ArgumentParser()
@@ -1218,6 +1332,20 @@ if __name__ == "__main__":
         )
         .collect(streaming=True)
         .write_parquet(OUTPATH + "measurement.parquet")
+    )
+    
+    ##################
+    # ADD VOCABULARIES
+    VOCABULARIES(
+        OUTPATH,
+        CONCEPT,
+        CONCEPT_RELATIONSHIP,
+        CONCEPT_ANCESTOR,
+        CONCEPT_CLASS,
+        CONCEPT_SYNONYM,
+        DOMAIN,
+        RELATIONSHIP,
+        VOCABULARY,
     )
 
     ####################
