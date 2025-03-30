@@ -656,7 +656,9 @@ def measurement(
     )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Measurement",
-        pl.col("concept_class_id") == "Clinical Observation",
+        pl.col("concept_class_id").is_in(
+            ["Clinical Observation", "Observable Entity"]
+        ),
     ).select("concept_id", "concept_name")
 
     def _make_datetime(data: pl.LazyFrame) -> pl.LazyFrame:
@@ -1115,7 +1117,7 @@ def VOCABULARIES(
         RELATIONSHIP (pl.LazyFrame): _description_
         VOCABULARY (pl.LazyFrame): _description_
     """
-    
+
     print("reprOMOPIZE - VOCABULARIES")
 
     # Iterate over output directory, scan all files, select all columns
@@ -1333,7 +1335,7 @@ if __name__ == "__main__":
         .collect(streaming=True)
         .write_parquet(OUTPATH + "measurement.parquet")
     )
-    
+
     ##################
     # ADD VOCABULARIES
     VOCABULARIES(
