@@ -65,7 +65,7 @@ class TimeseriesHarmonizer(GlobalVars):
                - Filters the schema to select the columns that match the pre-defined Series for each category.
             4. Concatenates the data for each category using a "diagonal_relaxed" join.
             5. For each category:
-               - Vitals: Cleans and casts to the appropriate data types, fixes temperature values (e.g., converting accidental Fahrenheit values), and sums subscores for Glasgow Coma Score.
+               - Vitals: Cleans and casts to the appropriate data types, fixes temperature values (e.g., converting accidental Fahrenheit values), and sums subscores for Glasgow coma score.
                - Labs, Respiratory, and Intake/Output: Cast and remove duplicate records while ensuring {global_icu_stay_id_col} and {timeseries_time_col} are maintained.
             6. If save_to_default is True, writes the processed data for each category to parquet files under {save_path}; otherwise, returns a tuple containing:
                - vitals: Contains {global_icu_stay_id_col}, {timeseries_time_col} plus sorted vital measurement columns.
@@ -319,7 +319,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
-                        col: (str if col in ["Heart rate rhythm"] else float)
+                        col: str if col in ["Heart rate rhythm"] else float
                         for col in vitals_cols_not_index
                     },
                 }
@@ -331,18 +331,18 @@ class TimeseriesHarmonizer(GlobalVars):
                 .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
                 .otherwise(pl.col("Temperature"))
                 .alias("Temperature"),
-                # Sum Glasgow Coma Score components if total is missing
-                pl.when(pl.col("Glasgow Coma Score total").is_null())
+                # Sum Glasgow coma score components if total is missing
+                pl.when(pl.col("Glasgow coma score total").is_null())
                 .then(
                     pl.sum_horizontal(
-                        "Glasgow Coma Score eye opening",
-                        "Glasgow Coma Score motor",
-                        "Glasgow Coma Score verbal",
+                        "Glasgow coma score eye opening",
+                        "Glasgow coma score motor",
+                        "Glasgow coma score verbal",
                         ignore_nulls=False,
                     )
                 )
-                .otherwise(pl.col("Glasgow Coma Score total"))
-                .alias("Glasgow Coma Score total"),
+                .otherwise(pl.col("Glasgow coma score total"))
+                .alias("Glasgow coma score total"),
             )
             # assume uniqueness (since we're just concatenating the data)
             .sort(self.index_cols)

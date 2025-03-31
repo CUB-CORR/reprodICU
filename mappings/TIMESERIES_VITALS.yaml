@@ -1,6 +1,6 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/MonitoringundVitaldatenObservation.html
-Temperature: # 45771331 prev. temperature
+Temperature: # 45771331
   # HiRID
   - Core body temperature
   # HiRID / UMCdb
@@ -11,7 +11,7 @@ Temperature: # 45771331 prev. temperature
   # NWICU / SICdb -> same name
   # UMCdb
   - Oral temperature
-Heart rate: # 4239408 prev. heart_rate
+Heart rate: # 4239408
   # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
   - HeartRateECG
@@ -23,19 +23,19 @@ Heart rate rhythm: # 3022318
   - Circadian rhythm
   # UMCdb
   - Cardiac rhythm type
-Peripheral oxygen saturation: # 4196147 prev. spO2
+Peripheral oxygen saturation: # 4196147
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Oxygen saturation in Arterial blood by Pulse oximetry
   # NWICU -> same name
   # SICdb
   - SPO2
-Respiratory rate: # 4313591 prev. respiratory_rate_measured
+Respiratory rate: # 4313591
   # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
   - RespRate
   # UMCdb -> same name
-Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pressure
+Invasive systolic arterial pressure: # 4353843
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Systolic blood pressure
@@ -44,7 +44,7 @@ Invasive systolic arterial pressure: # 4353843 prev. invasive_systolic_blood_pre
   - BloodPressureArterialSystolic
   # UMCdb
   - Invasive Systolic blood pressure
-Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_pressure
+Invasive diastolic arterial pressure: # 4354253
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Diastolic blood pressure
@@ -53,7 +53,7 @@ Invasive diastolic arterial pressure: # 4354253 prev. invasive_diastolic_blood_p
   - BloodPressureArterialDiastolic
   # UMCdb
   - Invasive Diastolic blood pressure
-Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
+Invasive mean arterial pressure: # 4108290
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Mean blood pressure
@@ -62,63 +62,62 @@ Invasive mean arterial pressure: # 4108290 prev. invasive_mean_blood_pressure
   - BloodPressureArterialMAP
   # UMCdb
   - Invasive Mean blood pressure
-Non-invasive systolic arterial pressure: # 4354252 prev. noninvasive_systolic_blood_pressure
+Non-invasive systolic arterial pressure: # 4354252
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Systolic blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNISystolic
-Non-invasive diastolic arterial pressure: # 4068414 prev. noninvasive_diastolic_blood_pressure
+Non-invasive diastolic arterial pressure: # 4068414
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Diastolic blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNIDiastolic
-Non-invasive mean arterial pressure: # 4108289 prev. noninvasive_mean_blood_pressure
+Non-invasive mean arterial pressure: # 4108289
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Mean blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNIMAP
-Central venous pressure: # 4323687 prev. central_venous_pressure
+Central venous pressure: # 4323687
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Central venous pressure (CVP)
   # SICdb
   - CentralVenousPressure
-Intracranial pressure: # 4353953 prev. intracranial_pressure
+Intracranial pressure: # 4353953
   # HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Intracranial pressure (ICP)
-Glasgow Coma Score total: [] # 44802289 prev. glasgow_coma_score
-Glasgow Coma Score eye opening: # prev. glasgow_coma_score_eye
+Glasgow coma score total: [] # 3007194
+  # MIMIC-III / MIMIC-IV -> same name
+  # calculated from the three subscores for other datasets
+Glasgow coma score eye opening: # 3016335
   # HiRID
   - Glasgow Coma Score eye opening subscore
-  # MIMIC-III / MIMIC-IV
-  - Glasgow coma score eye opening
+  # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
-Glasgow Coma Score verbal: # prev. glasgow_coma_score_verbal
+Glasgow coma score verbal: # 3009094
   # HiRID
   - Glasgow Coma Score verbal response subscore
-  # MIMIC-III / MIMIC-IV
-  - Glasgow coma score verbal
+  # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
-Glasgow Coma Score motor: # prev. glasgow_coma_score_motor
+Glasgow coma score motor: # 3008223
   # HiRID
   - Glasgow Coma Score motor response subscore
-  # MIMIC-III / MIMIC-IV
-  - Glasgow coma score motor
+  # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
-Richmond agitation-sedation scale: # 36684829 prev. richmond_agitation_sedation_scale
-  # HiRID / MIMIC-III / MIMIC-IV -> same name
+Richmond Agitation-Sedation Scale: # 36684829
+  # HiRID / MIMIC-III / MIMIC-IV
+  - Richmond agitation-sedation scale
   # SICdb
   - RASS - Richmond Agitation-Sedation Scale
-  # UMCdb
-  - Richmond Agitation-Sedation Scale
-Numeric Pain Rating Scale: # 37151627 prev. numeric_pain_rating_scale
+  # UMCdb -> same name
+Numeric Pain Rating Scale: # 37151627
   # MIMIC-III / MIMIC-IV
   - Pain severity - 0-10 verbal numeric rating [Score] - Reported
   # SICdb
@@ -126,9 +125,9 @@ Numeric Pain Rating Scale: # 37151627 prev. numeric_pain_rating_scale
   # UMCdb
   - Visual analog pain scale # not exactly the same, but similar enough
 
-####################################################################################################
+################################################################################
 # Harmonised but not included by default
-####################################################################################################
+################################################################################
 # Cardiac index: [] # 54993008
 #   # UMCdb -> same name
 # Cardiac output: [] # 82799009

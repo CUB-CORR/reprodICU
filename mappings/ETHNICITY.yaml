@@ -6,6 +6,17 @@
 # SICdb:      -
 # UMCdb:      -
 
+# mapped to OMOP Race / Ethnicity concepts
+# https://athena.ohdsi.org/search-terms/terms?domain=Ethnicity&domain=Race&standardConcept=Standard
+
+American Indian or Alaska Native:
+  # eICU
+  - Native American
+  # MIMIC-III / MIMIC-IV
+  - AMERICAN INDIAN/ALASKA NATIVE
+  - AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE
+  # NWICU
+  - AMERICAN INDIAN OR ALASKA NATIVE
 Asian:
   # eICU-CRD
   - Asian
@@ -23,7 +34,7 @@ Asian:
   - ASIAN
   # MIMIC-IV
   - ASIAN - SOUTH EAST ASIAN
-Black / African American:
+Black or African American:
   # eICU
   - African American
   # MIMIC-III / MIMIC-IV
@@ -49,17 +60,13 @@ Hispanic or Latino:
   - HISPANIC/LATINO - MEXICAN
   - HISPANIC/LATINO - PUERTO RICAN
   - HISPANIC/LATINO - SALVADORAN
+  - SOUTH AMERICAN
   # MIMIC-IV
   - HISPANIC/LATINO - CENTRAL AMERICAN
   - HISPANIC/LATINO - COLUMBIAN
-Native American:
-  # eICU
-  - Native American
-  # MIMIC-III / MIMIC-IV
-  - AMERICAN INDIAN/ALASKA NATIVE
-  - AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE
-  # NWICU
-  - AMERICAN INDIAN OR ALASKA NATIVE
+Native Hawaiian or Other Pacific Islander:
+  # MIMIC-III / MIMIC-IV / NWICU
+  - NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER
 White:
   # eICU
   - Caucasian
@@ -69,15 +76,12 @@ White:
   - WHITE - EASTERN EUROPEAN
   - WHITE - OTHER EUROPEAN
   - WHITE - RUSSIAN
+  - MIDDLE EASTERN
   # MIMIC-III / MIMIC-IV / NWICU
   - WHITE
 Other:
   # MIMIC-III / MIMIC-IV
-  - MIDDLE EASTERN
   - MULTI RACE ETHNICITY
-  - SOUTH AMERICAN
-  # MIMIC-III / MIMIC-IV / NWICU
-  - NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER
   - OTHER
   # MIMIC-IV / NWICU
   - MULTIPLE RACE/ETHNICITY

@@ -14,7 +14,7 @@ itemid (omop_source_code),Label,omop_concept_name,comment
 184,Eye Opening,Glasgow coma score eye opening,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 723,Verbal Response,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 454,Motor Response,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-198,GCS Total,Glasgow Coma Score total,
+198,GCS Total,Glasgow coma score total,
 677,Temperature C (calc),Temperature,
 3420,FIO2,Oxygen/Total gas setting [Volume Fraction] Ventilator,
 190,FiO2 Set,Oxygen/Total gas setting [Volume Fraction] Ventilator,

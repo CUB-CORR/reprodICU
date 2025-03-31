@@ -621,10 +621,10 @@ class UMCdbExtractor(UMCdbPaths):
         Returns:
             pl.LazyFrame: A LazyFrame containing:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - "Glasgow Coma Score eye opening": Numeric score for eye opening.
-                - "Glasgow Coma Score motor": Numeric score for motor response.
-                - "Glasgow Coma Score verbal": Numeric score for verbal response.
-                - "Glasgow Coma Score total": Total GCS score.
+                - "Glasgow coma score eye opening": Numeric score for eye opening.
+                - "Glasgow coma score motor": Numeric score for motor response.
+                - "Glasgow coma score verbal": Numeric score for verbal response.
+                - "Glasgow coma score total": Total GCS score.
                 - "registeredby": Prioritized identifier for the scorer.
         """
 
@@ -683,7 +683,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .when(pl.col("itemid") == 19638)
                 .then(pl.col("valueid") - 8)
                 .otherwise(None)
-                .alias("Glasgow Coma Score eye opening"),
+                .alias("Glasgow coma score eye opening"),
             )
             .drop("itemid", "valueid")
         )
@@ -702,7 +702,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .when(pl.col("itemid") == 19639)
                 .then(pl.col("valueid") - 12)
                 .otherwise(None)
-                .alias("Glasgow Coma Score motor"),
+                .alias("Glasgow coma score motor"),
             )
             .drop("itemid", "valueid")
         )
@@ -723,15 +723,15 @@ class UMCdbExtractor(UMCdbPaths):
                 .when(pl.col("itemid") == 19640)
                 .then(pl.col("valueid") - 15)
                 .otherwise(None)
-                .alias("Glasgow Coma Score verbal"),
+                .alias("Glasgow coma score verbal"),
             )
             # handle the special case where the value is <1, which corresponds
             # to intubated patients (assign score 1)
             .with_columns(
-                pl.when(pl.col("Glasgow Coma Score verbal") < 1)
+                pl.when(pl.col("Glasgow coma score verbal") < 1)
                 .then(1)
-                .otherwise(pl.col("Glasgow Coma Score verbal"))
-                .alias("Glasgow Coma Score verbal")
+                .otherwise(pl.col("Glasgow coma score verbal"))
+                .alias("Glasgow coma score verbal")
             )
             .drop("itemid", "valueid")
         )
@@ -746,11 +746,11 @@ class UMCdbExtractor(UMCdbPaths):
             data_gcs.with_columns(
                 (
                     data_gcs.select(
-                        "Glasgow Coma Score eye opening",
-                        "Glasgow Coma Score motor",
-                        "Glasgow Coma Score verbal",
+                        "Glasgow coma score eye opening",
+                        "Glasgow coma score motor",
+                        "Glasgow coma score verbal",
                     ).sum_horizontal(ignore_nulls=False)
-                ).alias("Glasgow Coma Score total"),
+                ).alias("Glasgow coma score total"),
                 # Replace registeredby with a prioritized order
                 pl.col("registeredby")
                 .replace_strict(REGISTEREDBY, default=8)
@@ -759,10 +759,10 @@ class UMCdbExtractor(UMCdbPaths):
             .group_by(self.index_cols)
             .agg(
                 pl.col(
-                    "Glasgow Coma Score eye opening",
-                    "Glasgow Coma Score motor",
-                    "Glasgow Coma Score verbal",
-                    "Glasgow Coma Score total",
+                    "Glasgow coma score eye opening",
+                    "Glasgow coma score motor",
+                    "Glasgow coma score verbal",
+                    "Glasgow coma score total",
                 )
                 .sort_by("registeredby")
                 .first()
