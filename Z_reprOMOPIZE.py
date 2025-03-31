@@ -273,18 +273,44 @@ def condition_occurrence(
         ],
     )
     CONCEPTS = CONCEPT.filter(
-        pl.col("domain_id") == "Condition",
-    ).select("concept_id", "concept_name")
+        pl.col("vocabulary_id").str.starts_with("ICD"),
+    ).select(
+        "concept_id",
+        pl.col("concept_code").str.replace_all(".", "", literal=True),
+    )
 
-    return (
-        diagnoses.join(ID, on="Global ICU Stay ID", how="left")
+    # prefer ICD-10 over ICD-9, except for MIMIC-III (which only has ICD-9)
+    diagnoses_ICD10 = (
+        diagnoses.filter(
+            pl.col("Global ICU Stay ID").str.starts_with("mimic3-").not_(),
+            pl.col("Diagnosis ICD-10 Code").is_not_null(),
+        )
+        .join(ID, on="Global ICU Stay ID", how="left")
         .join(
             CONCEPTS,
-            left_on="Diagnosis Description",
-            right_on="concept_name",
+            left_on="Diagnosis ICD-10 Code",
+            right_on="concept_code",
             how="left",
         )
         .rename({"concept_id": "condition_concept_id"})
+    )
+    diagnoses_ICD9 = (
+        diagnoses.filter(
+            pl.col("Global ICU Stay ID").str.starts_with("mimic3-")
+            | pl.col("Diagnosis ICD-10 Code").is_null()
+        )
+        .join(ID, on="Global ICU Stay ID", how="left")
+        .join(
+            CONCEPTS,
+            left_on="Diagnosis ICD-9 Code",
+            right_on="concept_code",
+            how="left",
+        )
+        .rename({"concept_id": "condition_concept_id"})
+    )
+
+    return (
+        pl.concat([diagnoses_ICD10, diagnoses_ICD9], how="vertical")
         .with_columns(
             ##########################
             # CONDITION_START_DATETIME
