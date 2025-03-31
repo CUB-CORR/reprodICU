@@ -357,6 +357,7 @@ def condition_occurrence(
             #####################
             # VISIT_OCCURRENCE_ID
             # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
+            # NOTE: same as in the VISIT_OCCURRENCE table
             pl.col("Global ICU Stay ID").hash().alias("visit_occurrence_id"),
             ########################
             # CONDITION_SOURCE_VALUE
@@ -654,12 +655,23 @@ def measurement(
         patient_information,
         ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
     )
-    CONCEPTS = CONCEPT.filter(
-        pl.col("domain_id") == "Measurement",
-        pl.col("concept_class_id").is_in(
-            ["Clinical Observation", "Observable Entity"]
-        ),
-    ).select("concept_id", "concept_name")
+    CONCEPTS = (
+        CONCEPT.filter(
+            pl.col("domain_id").is_in(["Measurement", "Observation"]),
+            pl.col("concept_class_id").is_in(
+                [
+                    "Clinical Observation",
+                    "Observable Entity",
+                    "Staging / Scales",
+                    "Lab Test",
+                ]
+            ),
+            pl.col("standard_concept") == "S",
+        )
+        .select("concept_id", "concept_name")
+        .group_by("concept_name")
+        .first()
+    )
 
     def _make_datetime(data: pl.LazyFrame) -> pl.LazyFrame:
         """
@@ -667,8 +679,14 @@ def measurement(
         """
         return (
             data.join(ID, on="Global ICU Stay ID", how="left")
-            .drop("Global ICU Stay ID")
             .with_columns(
+                #####################
+                # VISIT_OCCURRENCE_ID
+                # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
+                # NOTE: same as in the VISIT_OCCURRENCE table
+                pl.col("Global ICU Stay ID")
+                .hash()
+                .alias("visit_occurrence_id"),
                 ######################
                 # MEASUREMENT_DATETIME
                 # Create the measurement_datetime column with the datetime of the measurement
@@ -683,9 +701,10 @@ def measurement(
                         seconds=pl.col("Pre-ICU Length of Stay (days)")
                         * SECONDS_IN_DAY
                     )
-                ).alias("measurement_datetime")
+                ).alias("measurement_datetime"),
             )
             .drop(
+                "Global ICU Stay ID",
                 "Pre-ICU Length of Stay (days)",
                 "Admission Time (24h)",
                 "Time Relative to Admission (seconds)",
@@ -698,7 +717,7 @@ def measurement(
         """
 
         return data.unpivot(
-            index=["person_id", "measurement_datetime"],
+            index=["person_id", "visit_occurrence_id", "measurement_datetime"],
             variable_name="variable_name",
             value_name="value_as_number",
         )
@@ -734,6 +753,13 @@ def measurement(
             )
             .drop("variable_code")
             .rename({"concept_name": "variable_name"})
+            .select(
+                "person_id",
+                "visit_occurrence_id",
+                "measurement_datetime",
+                "variable_name",
+                "value_as_number",
+            )
         )
 
     def _conceptualize(data: pl.LazyFrame) -> pl.LazyFrame:
@@ -793,7 +819,9 @@ def measurement(
 # This table serves as the central identity management for all Persons in the
 # database. It contains records that uniquely identify each person or patient,
 # and some demographic information.
-def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
+def person(
+    CONCEPT: pl.LazyFrame, patient_information: pl.LazyFrame
+) -> pl.LazyFrame:
     print("reprOMOPIZE - person")
 
     # Dates of the databases
@@ -804,12 +832,19 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     # SICdb: 2013 to 2021
     # UMCdb: 2003 to 2016
 
+    RACE_CONCEPTS = CONCEPT.filter(pl.col("domain_id") == "Race").select(
+        "concept_id", "concept_name"
+    )
+    ETHNICITY_CONCEPTS = CONCEPT.filter(
+        pl.col("domain_id") == "Ethnicity"
+    ).select("concept_id", "concept_name")
+
     # Extract the person information
     return (
         patient_information.select(
             "Global Person ID",
             "Gender",
-            "Ethnicity",
+            pl.col("Ethnicity").cast(str),
             "Admission Age (years)",
             "Care Site",
             "Source Dataset",
@@ -849,15 +884,36 @@ def person(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # .when(pl.col("Source Dataset") == "UMCdb")
             # .then(pl.lit(2016) - pl.col("Admission Age (years)"))
             # .alias("year_of_birth"),
-            ###################
-            # RACE_CONCEPT_ID
-            # Create the race_concept_id column based on the Ethnicity column
-            # TODO: Edit Ethnicity mapping to OMOP CDM Concepts
             ##############
             # CARE_SITE_ID
             # Create the care_site_id column with a hash of the Care Site
             # NOTE: same as in the CARE_SITE table
             pl.col("Care Site").hash().alias("care_site_id"),
+        )
+        ###################
+        # RACE_CONCEPT_ID
+        # Create the race_concept_id column based on the Ethnicity column
+        .join(
+            RACE_CONCEPTS,
+            left_on="Ethnicity",
+            right_on="concept_name",
+            how="left",
+        )
+        .rename({"concept_id": "race_concept_id"})
+        ###################
+        # ETHNICITY_CONCEPT_ID
+        # Create the ethnicity_concept_id column based on the Ethnicity column
+        .join(
+            ETHNICITY_CONCEPTS,
+            left_on="Ethnicity",
+            right_on="concept_name",
+            how="left",
+        )
+        .rename({"concept_id": "ethnicity_concept_id"})
+        .with_columns(
+            pl.col("ethnicity_concept_id").fill_null(
+                pl.lit(38003564)
+            ),  # Not Hispanic or Latino
         )
         .pipe(_add_missing_fields, "person")
         .unique()
@@ -900,6 +956,7 @@ def procedure_occurrence(
             #####################
             # VISIT_OCCURRENCE_ID
             # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
+            # NOTE: same as in the VISIT_OCCURRENCE table
             pl.col("Global ICU Stay ID").hash().alias("visit_occurrence_id"),
             ################################
             # PROCEDURE_START_DATETIME
@@ -993,6 +1050,7 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             ###########
             # PERSON_ID
             # Create the person_id column with a hash of the Global Person ID
+            # NOTE: same as in the PERSON table
             pl.col("Global Person ID").hash().alias("person_id"),
             ##################
             # VISIT_CONCEPT_ID
@@ -1123,7 +1181,11 @@ def VOCABULARIES(
     # Iterate over output directory, scan all files, select all columns
     # containing "concept_id" and put the unique values in a list
     concept_ids = []
-    for table_path in glob.glob(os.path.join(outpath, "*.parquet")):
+    for table_path in [
+        f
+        for f in glob.glob(os.path.join(outpath, "*.parquet"))
+        if os.path.basename(f).islower()
+    ]:
         table_df = pl.scan_parquet(table_path)
         concept_id_cols = [
             col for col in table_df.columns if "concept_id" in col
@@ -1303,7 +1365,7 @@ if __name__ == "__main__":
     )
     location(patient_information).sink_parquet(OUTPATH + "location.parquet")
     (
-        person(patient_information)
+        person(CONCEPT, patient_information)
         .collect()
         .write_parquet(OUTPATH + "person.parquet")
     )
