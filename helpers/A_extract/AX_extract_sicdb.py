@@ -627,6 +627,7 @@ class SICdbExtractor(SICdbPaths):
                 pl.lit(10).alias(self.diagnosis_icd_version_col),
                 # Diagnosis descriptions are available, but only in German
             )
+            .drop_nulls(self.diagnosis_icd_code_col)
         )
 
     # region procedures

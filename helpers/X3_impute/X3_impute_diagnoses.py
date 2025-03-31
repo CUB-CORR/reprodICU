@@ -90,6 +90,7 @@ class DiagnosesImputer(GlobalVars):
                         ICD9_TO_ICD10_MAPPING
                     )
                 )
+                .replace("NoDx", None)
                 .alias(self.diagnosis_icd10_code_col),
             )
             .select(
