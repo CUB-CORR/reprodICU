@@ -17,6 +17,7 @@ import os
 import polars as pl
 import yaml
 from helpers.helper_OMOP import Vocabulary
+from helpers.helper import GlobalVars
 
 SECONDS_IN_DAY = 86400
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
@@ -698,6 +699,7 @@ def measurement(
         .group_by("concept_name")
         .first()
     )
+    UNITS = vars.MEASUREMENT_UNIT_CONCEPT_IDS
 
     def _make_datetime(data: pl.LazyFrame) -> pl.LazyFrame:
         """
@@ -803,8 +805,12 @@ def measurement(
                 right_on="concept_name",
                 how="left",
             )
-            .drop("variable_name")
-            .rename({"concept_id": "measurement_concept_id"})
+            .rename(
+                {
+                    "variable_name": "measurement_source_value",
+                    "concept_id": "measurement_concept_id",
+                }
+            )
             .drop_nulls("value_as_number")
         )
 
@@ -833,6 +839,14 @@ def measurement(
             .dt.date()
             .alias("measurement_date"),
         )
+        .join(
+            UNITS.lazy(),
+            left_on="measurement_source_value",
+            right_on="measurement",
+            how="left",
+            coalesce=True,
+        )
+        .rename({"unit": "unit_source_value"})
         .with_row_index("measurement_id")
         .pipe(_add_missing_fields, "measurement")
     )
@@ -867,7 +881,12 @@ def person(
 
     # Extract the person information
     return (
-        patient_information.select(
+        patient_information.filter(
+            pl.col("ICU Stay Sequential Number (per Person ID)").is_in(
+                [1, None]
+            )
+        )
+        .select(
             "Global Person ID",
             "Gender",
             pl.col("Ethnicity").cast(str),
@@ -1342,6 +1361,7 @@ if __name__ == "__main__":
     # Initialize paths
     paths = reprodICUPaths()
     omop = Vocabulary(paths)
+    vars = GlobalVars(paths)
 
     INPATH = args.input
     OUTPATH = args.output
@@ -1440,6 +1460,6 @@ if __name__ == "__main__":
 
     ####################
     # ADD MISSING TABLES
-    other()
+    # other()
 
     print("reprOMOPIZE - done")

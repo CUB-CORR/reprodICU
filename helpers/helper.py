@@ -229,6 +229,8 @@ class GlobalVars(GlobalHelpers):
             self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml")
         )
 
+        # region ENUM MAPS
+        # Define custom enum maps
         self.heart_rhythm_enum_map = {
             v: i
             for i, v in enumerate(
@@ -267,7 +269,7 @@ class GlobalVars(GlobalHelpers):
         }
 
         # region ICD
-        # Define global mappings (ICD diagnoses)
+        # Define global mappings (ICD diagnoses & procedures and more)
         self.ICD9_TO_ICD10_DIAGS = pl.read_csv(
             mapping_path + "_icd_codes/icd9_diagnoses.csv",
             infer_schema_length=25000,
@@ -308,6 +310,11 @@ class GlobalVars(GlobalHelpers):
                 self.ICD_TO_ICDSUBCHAPTER_DF["ICD Codes"],
                 self.ICD_TO_ICDSUBCHAPTER_DF["Title"],
             )
+        )
+        
+        self.MEASUREMENT_UNIT_CONCEPT_IDS = pl.read_csv(
+            mapping_path + "ADDITIONAL_MAPPINGS/measurement_unit_concept_ids.csv",
+            infer_schema_length=25000,
         )
 
         # region GLOBAL MAPPINGS
