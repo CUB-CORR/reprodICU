@@ -79,15 +79,175 @@ def _add_missing_fields(
     return data.select(fields)
 
 
+# Approximate the time relative to the first ICU admission in eICU-CRD.
+# i.e. distribute the hospital stays equally over the data collection time
+# period of two years.
+# ICU stays are kept relative to each other within the same hospital stay.
+def _approximate_time_relative_to_first_icu_admission(
+    patient_information: pl.LazyFrame,
+) -> pl.LazyFrame:
+    patient_information_eicu = patient_information.filter(
+        pl.col("Source Dataset") == "eICU-CRD"
+    )
+
+    eicu_avg_time_out_of_hospital_per_patient = (
+        patient_information_eicu.group_by("Global Hospital Stay ID")
+        .first()
+        .group_by("Global Person ID")
+        .agg(
+            # Calculate the average time out of hospital per patient
+            (730 - pl.col("Hospital Length of Stay (days)").sum())
+            .truediv(pl.col("Global Hospital Stay ID").unique().len())
+            .alias("Average Time Between Hospital Stays (days)"),
+        )
+    )
+
+    eicu_cum_time_in_hospital_per_patient = (
+        patient_information_eicu.group_by("Global Hospital Stay ID")
+        .first()
+        .with_columns(
+            pl.col("Hospital Length of Stay (days)")
+            .cum_sum()
+            .over(
+                "Global Person ID",
+                order_by="ICU Stay Sequential Number (per Person ID)",
+            )
+            .alias("Cumulative Time in Hospital (days)"),
+            pl.col("Global Hospital Stay ID")
+            .shift(-1)
+            .over(
+                "Global Person ID",
+                order_by="ICU Stay Sequential Number (per Person ID)",
+            ),
+        )
+        .select("Global Hospital Stay ID", "Cumulative Time in Hospital (days)")
+    )
+
+    # Calculate the time relative to the first ICU admission this hospital stay
+    eicu_time_since_previous_icu_during_hospital_stay = (
+        patient_information_eicu.with_columns(
+            (
+                pl.col("Pre-ICU Length of Stay (days)")
+                - pl.col("Pre-ICU Length of Stay (days)")
+                .min()
+                .over("Global Hospital Stay ID")
+            ).alias(
+                "Time Relative to First ICU Admission this Hospital Stay (days)"
+            ),
+        ).select(
+            "Global ICU Stay ID",
+            "Time Relative to First ICU Admission this Hospital Stay (days)",
+        )
+    )
+
+    patient_information_eicu = (
+        patient_information_eicu.with_columns(
+            # Number the Hospital Stays per Person ID
+            pl.col("Global Hospital Stay ID")
+            .shift(1)
+            .over(
+                "Global Person ID",
+                order_by="ICU Stay Sequential Number (per Person ID)",
+            )
+            .alias("shiftHID")
+        )
+        .with_columns(
+            pl.col("shiftHID")
+            .ne(pl.col("Global Hospital Stay ID"))
+            .cum_sum()
+            .over(
+                "Global Person ID",
+                order_by="ICU Stay Sequential Number (per Person ID)",
+            )
+            .fill_null(0)
+            .add(1)
+            .alias("Hospital Stay Sequential Number (per Person ID)"),
+        )
+        .drop("shiftHID")
+        .join(
+            eicu_avg_time_out_of_hospital_per_patient,
+            on="Global Person ID",
+            how="left",
+            coalesce=True,
+        )
+        .join(
+            eicu_cum_time_in_hospital_per_patient,
+            on="Global Hospital Stay ID",
+            how="left",
+            coalesce=True,
+        )
+        .join(
+            eicu_time_since_previous_icu_during_hospital_stay,
+            on="Global ICU Stay ID",
+            how="left",
+            coalesce=True,
+        )
+        .with_columns(
+            # If the ICU stay is the first ICU stay, the time relative to the
+            # first ICU admission is 0
+            pl.when(pl.col("ICU Stay Sequential Number (per Person ID)") == 1)
+            .then(pl.lit(0))
+            # If the ICU stay is not the first ICU stay,
+            # but if the ICU is during the same hospital stay, the time relative
+            # to the first ICU admission is the time relative to the first
+            # ICU admission this hospital stay
+            .when(
+                pl.col("Hospital Stay Sequential Number (per Person ID)") == 1
+            )
+            .then(
+                pl.col(
+                    "Time Relative to First ICU Admission this Hospital Stay (days)"
+                )
+                * SECONDS_IN_DAY
+            )
+            # Otherwise it is the time in hospital after the first ICU
+            # admission this hospital stay,
+            # plus the sum of all previous times in hospital,
+            # plus the average time out of hospital per patient times the
+            # number of hospital stays before this one
+            .otherwise(
+                (
+                    pl.col("Cumulative Time in Hospital (days)").fill_null(0)
+                    + pl.col(
+                        "Time Relative to First ICU Admission this Hospital Stay (days)"
+                    )
+                    + pl.col("Average Time Between Hospital Stays (days)")
+                    * pl.col(
+                        "Hospital Stay Sequential Number (per Person ID)"
+                    ).sub(1)
+                )
+                * SECONDS_IN_DAY
+            )
+            .cast(int)
+            .alias("Time Relative to First ICU Admission (seconds)"),
+        )
+    )
+
+    return pl.concat(
+        [
+            patient_information_eicu,
+            patient_information.filter(pl.col("Source Dataset") != "eICU-CRD"),
+        ],
+        how="diagonal",
+    )
+
+
 # The _ID function creates the person_id column by hashing the Global Person ID
 # to ensure that the person_id is unique
 def _ID(
     patient_information: pl.LazyFrame, additional_columns: list = []
 ) -> pl.LazyFrame:
+
+    if "Time Relative to First ICU Admission (seconds)" in additional_columns:
+        patient_information = _approximate_time_relative_to_first_icu_admission(
+            patient_information
+        )
+
     return patient_information.with_columns(
         ###########
         # PERSON_ID
         # Create the person_id column with a hash of the Global Person ID
+        # NOTE: same as in the PERSON table
         pl.col("Global Person ID")
         .hash()
         .alias("person_id"),
@@ -117,7 +277,10 @@ def drug_exposure(
 
     ID = _ID(
         patient_information,
-        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+        [
+            "Time Relative to First ICU Admission (seconds)",
+            "Admission Time (24h)",
+        ],
     )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Drug",
@@ -149,14 +312,11 @@ def drug_exposure(
                 + pl.duration(
                     seconds=pl.col("Drug Start Relative to Admission (seconds)")
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("drug_exposure_start_datetime"),
             ############################
             # DRUG_EXPOSURE_END_DATETIME
@@ -166,14 +326,11 @@ def drug_exposure(
                 + pl.duration(
                     seconds=pl.col("Drug End Relative to Admission (seconds)")
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("drug_exposure_end_datetime"),
         )
         .with_columns(
@@ -268,7 +425,7 @@ def condition_occurrence(
     ID = _ID(
         patient_information,
         [
-            "Pre-ICU Length of Stay (days)",
+            "Time Relative to First ICU Admission (seconds)",
             "Admission Time (24h)",
             "Source Dataset",
         ],
@@ -323,14 +480,11 @@ def condition_occurrence(
                         "Diagnosis Start Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("condition_start_datetime"),
             #######################
             # CONDITION_END_DATETIME
@@ -342,14 +496,11 @@ def condition_occurrence(
                         "Diagnosis End Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("condition_end_datetime"),
             ###########################
             # CONDITION_TYPE_CONCEPT_ID
@@ -451,11 +602,15 @@ def device_exposure(
 
     ID = _ID(
         patient_information,
-        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+        [
+            "Time Relative to First ICU Admission (seconds)",
+            "Admission Time (24h)",
+        ],
     )
     CONCEPTS = CONCEPT.filter(
         pl.col("domain_id") == "Device",
         pl.col("concept_class_id") == "Physical Object",
+        pl.col("standard_concept") == "S",
     ).select("concept_id", "concept_name")
 
     return (
@@ -482,14 +637,11 @@ def device_exposure(
                         "Procedure Start Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("device_exposure_start_datetime"),
             ##############################
             # DEVICE_EXPOSURE_END_DATETIME
@@ -501,20 +653,17 @@ def device_exposure(
                         "Procedure End Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("device_exposure_end_datetime"),
             ########################
             # DEVICE_TYPE_CONCEPT_ID
             # 32817 = EHR
             pl.lit(32817).alias("device_type_concept_id"),
-            ########################
+            #####################
             # DEVICE_SOURCE_VALUE
             # Create the device_source_value column with the Procedure for backreference
             pl.col("Procedure Description").alias("device_source_value"),
@@ -680,7 +829,10 @@ def measurement(
 
     ID = _ID(
         patient_information,
-        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+        [
+            "Time Relative to First ICU Admission (seconds)",
+            "Admission Time (24h)",
+        ],
     )
     CONCEPTS = (
         CONCEPT.filter(
@@ -719,21 +871,20 @@ def measurement(
                 # MEASUREMENT_DATETIME
                 # Create the measurement_datetime column with the datetime of the measurement
                 (
-                    pl.datetime(
-                        year=2000, month=1, day=1, hour=0, minute=0, second=0
-                    ).dt.combine(pl.col("Admission Time (24h)"))
+                    DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                     + pl.duration(
                         seconds=pl.col("Time Relative to Admission (seconds)")
                     )
                     + pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                        seconds=pl.col(
+                            "Time Relative to First ICU Admission (seconds)"
+                        )
                     )
                 ).alias("measurement_datetime"),
             )
             .drop(
                 "Global ICU Stay ID",
-                "Pre-ICU Length of Stay (days)",
+                "Time Relative to First ICU Admission (seconds)",
                 "Admission Time (24h)",
                 "Time Relative to Admission (seconds)",
             )
@@ -981,11 +1132,15 @@ def procedure_occurrence(
 
     ID = _ID(
         patient_information,
-        ["Pre-ICU Length of Stay (days)", "Admission Time (24h)"],
+        [
+            "Time Relative to First ICU Admission (seconds)",
+            "Admission Time (24h)",
+        ],
     )
     CONCEPTS = CONCEPT.filter(
-        pl.col("domain_id") == "Device",
-        pl.col("concept_class_id") == "Physical Object",
+        pl.col("domain_id") == "Procedure",
+        pl.col("concept_class_id") == "Procedure",
+        pl.col("standard_concept") == "S",
     ).select("concept_id", "concept_name")
 
     return (
@@ -1013,14 +1168,11 @@ def procedure_occurrence(
                         "Procedure Start Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("procedure_start_datetime"),
             ##############################
             # PROCEDURE_END_DATETIME
@@ -1032,16 +1184,13 @@ def procedure_occurrence(
                         "Procedure End Relative to Admission (seconds)"
                     )
                 )
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("procedure_end_datetime"),
-            ########################
+            ###########################
             # PROCEDURE_TYPE_CONCEPT_ID
             # 32817 = EHR
             pl.lit(32817).alias("procedure_type_concept_id"),
@@ -1051,13 +1200,13 @@ def procedure_occurrence(
             pl.col("Procedure Description").alias("procedure_source_value"),
         )
         .with_columns(
-            ############################
+            ######################
             # PROCEDURE_START_DATE
             # Create the procedure_start_date column with the date of the device exposure
             pl.col("procedure_start_datetime")
             .dt.date()
             .alias("procedure_start_date"),
-            ##########################
+            ####################
             # PROCEDURE_END_DATE
             # Create the procedure_end_date column with the date of the device exposure
             pl.col("procedure_end_datetime")
@@ -1085,6 +1234,10 @@ def procedure_occurrence(
 def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     print("reprOMOPIZE - visit_occurrence")
 
+    ID = _ID(
+        patient_information, ["Time Relative to First ICU Admission (seconds)"]
+    )
+
     # Extract the visit occurrence information
     return (
         patient_information.with_columns(
@@ -1110,28 +1263,22 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # Create the visit_start_datetime column with the start datetime of the ICU stay
             (
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
             ).alias("visit_start_datetime"),
             ####################
             # VISIT_END_DATETIME
             # Create the visit_end_datetime column with the end datetime of the ICU stay
             (
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                + pl.when(pl.col("Pre-ICU Length of Stay (days)").is_not_null())
-                .then(
-                    pl.duration(
-                        seconds=pl.col("Pre-ICU Length of Stay (days)")
-                        * SECONDS_IN_DAY
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                .otherwise(pl.duration(days=0))
                 + pl.duration(
                     seconds=pl.col("ICU Length of Stay (days)") * SECONDS_IN_DAY
                 )
