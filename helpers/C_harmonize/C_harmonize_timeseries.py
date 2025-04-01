@@ -358,6 +358,12 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                 }
             )
+            .select(
+                *self.index_cols,
+                pl.exclude(
+                    *self.index_cols, *self.conversion_lab_LOINC_components
+                ).sort(),
+            )
             .unique(self.index_cols)
             .sort(self.index_cols)
         )

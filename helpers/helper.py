@@ -31,7 +31,9 @@ class GlobalHelpers:
 
     def load_mapping_subkeys(self, path: str, key: str) -> dict:
         mapping = self.load_mapping(path)
-        return {k: v[key] for k, v in mapping.items()}
+        return {
+            k: v.get(key) for k, v in mapping.items() if v.get(key) is not None
+        }
 
     def load_many_to_one_mapping(self, path: str) -> dict:
         mapping = self.load_mapping(path)
@@ -194,7 +196,8 @@ class GlobalVars(GlobalHelpers):
             mapping_path + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
         )
         self.OXYGEN_DELIVERY_SYSTEM_MAP = self.load_many_to_one_mapping(
-            mapping_path + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+            mapping_path
+            + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
         )
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
@@ -311,9 +314,10 @@ class GlobalVars(GlobalHelpers):
                 self.ICD_TO_ICDSUBCHAPTER_DF["Title"],
             )
         )
-        
+
         self.MEASUREMENT_UNIT_CONCEPT_IDS = pl.read_csv(
-            mapping_path + "ADDITIONAL_MAPPINGS/measurement_unit_concept_ids.csv",
+            mapping_path
+            + "ADDITIONAL_MAPPINGS/measurement_unit_concept_ids.csv",
             infer_schema_length=25000,
         )
 
@@ -341,6 +345,10 @@ class GlobalVars(GlobalHelpers):
         )
         self.relevant_lab_LOINC_systems = self.load_mapping_subkeys(
             self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml", "systems"
+        )
+        self.conversion_lab_LOINC_components = self.load_mapping_subkeys(
+            self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml",
+            "for_conversion",
         )
 
         self.relevant_vital_values = list(
