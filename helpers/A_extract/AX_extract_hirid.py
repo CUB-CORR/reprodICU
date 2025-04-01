@@ -641,11 +641,148 @@ class HiRIDExtractor(HiRIDPaths):
         )
         length_of_stay = self._extract_length_of_stay()
 
+        ########################################################################
+        # OBSERVATION
+        # -> saline and colloid infusions are tracked as observations
+        ########################################################################
+        # Create an empty DataFrame to store the observation data
+        observation = pl.LazyFrame()
+
+        # Filter for the relevant observation variables
+        # Observation   30005075    Infusion of saline solution	cummulative
+        # Observation   30005080    Intravenous fluid colloid administration
+        # -> both are cumulative variables and reset at midnight
+        # to calculate the infusion rate, we need to calculate the difference
+        # between the current and the previous value
+        fluid_ids = [
+            30005075,  # Infusion of saline solution
+            30005080,  # Intravenous fluid colloid administration
+        ]
+
+        # Since each case has it's data in only one file, iterating over the
+        # files allows for a more efficient processing of the data.
+        for file in os.listdir(self.timeseries_path):
+            print(f"Processing file {file}...", end="\r")
+            data = (
+                pl.scan_parquet(self.timeseries_path + file)
+                .filter(pl.col("variableid").is_in(fluid_ids))
+                # Select the relevant columns
+                .select("patientid", "datetime", "variableid", "value")
+                # Rename the columns for consistency
+                .rename({"patientid": self.icu_stay_id_col})
+                .with_columns(
+                    pl.col("variableid")
+                    .replace_strict(
+                        {
+                            30005075: "normal saline (0.9%)",
+                            30005080: "colloid",
+                        },
+                        default=None,
+                        return_dtype=pl.String,
+                    )
+                    .alias(self.fluid_group_col)
+                )
+                .cast({self.icu_stay_id_col: str, "datetime": str})
+                # Join the data with the admission times
+                .join(admissiontime, on=self.icu_stay_id_col)
+                .join(length_of_stay, on=self.icu_stay_id_col)
+                .with_columns(
+                    pl.col("admissiontime").str.to_datetime(
+                        "%Y-%m-%d %H:%M:%S%.9f"
+                    ),
+                    pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                    pl.col("value").cast(float),
+                    pl.lit("intravenous").alias(self.drug_admin_route_col),
+                    pl.lit(True).alias(self.drug_continous_col),
+                )
+                # Calculate the difference between the current and the previous
+                # value, store each timestamp in a separate column
+                .with_columns(
+                    pl.col("datetime")
+                    .shift(1)
+                    .over(
+                        self.icu_stay_id_col,
+                        self.fluid_group_col,
+                        order_by="datetime",
+                    )
+                    .alias("prev_datetime"),
+                )
+                .with_columns(
+                    # Check if dates are different (midnight crossed)
+                    pl.when(
+                        pl.col("datetime").dt.date()
+                        != pl.col("prev_datetime").dt.date()
+                    )
+                    # If midnight crossed, use current value (assuming reset to 0)
+                    .then(pl.col("value"))
+                    # Otherwise calculate difference from previous value
+                    .otherwise(
+                        pl.col("value").sub(
+                            pl.col("value")
+                            .shift(1)
+                            .over(
+                                self.icu_stay_id_col,
+                                self.fluid_group_col,
+                                order_by="datetime",
+                            )
+                        )
+                    ).alias(self.fluid_amount_col),
+                )
+                # Calculate the rate
+                .with_columns(
+                    (
+                        (
+                            pl.col(self.fluid_amount_col)
+                            / pl.col("datetime")
+                            .sub(pl.col("prev_datetime"))
+                            .dt.total_seconds()
+                        )
+                        .round_sig_figs(2)
+                        .alias(self.fluid_rate_col)
+                    )
+                )
+                .with_columns(
+                    (
+                        (
+                            pl.col("prev_datetime") - pl.col("admissiontime")
+                        ).dt.total_seconds()
+                    ).alias(self.drug_start_col),
+                    (
+                        (
+                            pl.col("datetime") - pl.col("admissiontime")
+                        ).dt.total_seconds()
+                    ).alias(self.drug_end_col),
+                )
+                .drop("admissiontime", "datetime")
+                # Remove duplicate rows
+                .unique()
+                # Remove rows with empty values
+                .filter(pl.col(self.fluid_amount_col) > 0)
+                .select(
+                    self.icu_stay_id_col,
+                    self.drug_admin_route_col,
+                    self.drug_continous_col,
+                    self.fluid_group_col,
+                    self.fluid_amount_col,
+                    self.fluid_rate_col,
+                    self.drug_start_col,
+                    self.drug_end_col,
+                )
+            )
+
+            # Append the data to the DataFrame
+            observation = pl.concat(
+                [observation, data.lazy()], how="diagonal_relaxed"
+            )
+
+        ########################################################################
+        # PHARMA
+        ########################################################################
         # Create an empty DataFrame to store the pharma data
         pharma = pl.LazyFrame()
 
-        # Since each case has it's data in only one file, iterating over the files specifically allows
-        # for a more efficient processing of the data.
+        # Since each case has it's data in only one file, iterating over the
+        # files allows for a more efficient processing of the data.
         for file in os.listdir(self.pharma_path):
             print(f"Processing file {file}...", end="\r")
             data = (
@@ -883,7 +1020,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
         )
 
-        return pharma
+        return pl.concat([pharma, observation], how="diagonal_relaxed")
 
     # endregion
 

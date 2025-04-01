@@ -1,5 +1,6 @@
 # common solution fluids used in the ICU
 normal saline 0.9%:
+  # HiRID -> same name
   # MIMIC-III
   - .9% Normal Saline
   # MIMIC-IV
@@ -48,6 +49,9 @@ sterile water:
   # UMCdb
   - Aquadest Medicatie
   - Aquadest Pompen
+
+colloid: []
+  # HiRID -> same name
 
 # FOR POSSIBLE EXTENSION:
 #########################
