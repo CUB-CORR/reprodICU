@@ -225,6 +225,7 @@ class PatientInformationCleaner(GlobalVars):
                 self.global_hospital_stay_id_col,
                 self.global_icu_stay_id_col,
                 self.icu_stay_seq_num_col,
+                self.icu_time_rel_to_first_col,
                 self.flag_bad_data_col,
                 self.dataset_col,
                 self.person_id_col,

@@ -77,6 +77,7 @@ class UMCdbExtractor(UMCdbPaths):
                 - {person_id_col}: Patient ID.
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {icu_stay_seq_num_col}: ICU stay sequence number.
+                - {icu_time_rel_to_first_col}: Time relative to first ICU admission.
                 - {age_col}: Patient age.
                 - {weight_col}: Patient weight.
                 - {height_col}: Patient height.
@@ -150,6 +151,10 @@ class UMCdbExtractor(UMCdbPaths):
                 MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
             )
             .with_columns(
+                # calculate time since first admission
+                pl.col("admittedat")
+                .floordiv(1000)
+                .alias(self.icu_time_rel_to_first_col),
                 # for age, weight and height, assume average of the group
                 pl.col("agegroup")
                 .str.replace("-|\+", "–")
@@ -1032,16 +1037,22 @@ class UMCdbExtractor(UMCdbPaths):
             )
             .explode(
                 self.drug_name_col,
-                    self.drug_amount_col,
-                    self.drug_amount_unit_col,
-                    self.drug_rate_col,
-                    self.drug_rate_unit_col,
+                self.drug_amount_col,
+                self.drug_amount_unit_col,
+                self.drug_rate_col,
+                self.drug_rate_unit_col,
             )
         )
-        
-        drugitems_without_solutionitem_only_fluid.collect().write_parquet("drugitems_without_solutionitem_only_fluid.parquet")
-        drugitems_without_solutionitem_single.collect().write_parquet("drugitems_without_solutionitem_single.parquet")
-        drugitems_without_solutionitem_mixtures.collect().write_parquet("drugitems_without_solutionitem_mixtures.parquet")
+
+        drugitems_without_solutionitem_only_fluid.collect().write_parquet(
+            "drugitems_without_solutionitem_only_fluid.parquet"
+        )
+        drugitems_without_solutionitem_single.collect().write_parquet(
+            "drugitems_without_solutionitem_single.parquet"
+        )
+        drugitems_without_solutionitem_mixtures.collect().write_parquet(
+            "drugitems_without_solutionitem_mixtures.parquet"
+        )
 
         return (
             pl.concat(

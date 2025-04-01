@@ -128,6 +128,7 @@ class NWICUExtractor(NWICUPaths):
                 - {hospital_stay_id_col}: Hospital admission identifier.
                 - {person_id_col}: Patient identifier.
                 - {icu_stay_seq_num_col}: ICU stay sequence number.
+                - {icu_time_rel_to_first_col}: Time relative to first ICU admission.
                 - {gender_col}: Patient gender.
                 - {age_col}: Patient age in years.
                 - {height_col}: Patient height (cm).
@@ -161,7 +162,9 @@ class NWICUExtractor(NWICUPaths):
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
-                    "race": self.ethnicity_col,  # "race" is the choice of the dataset creators
+                    "race": (
+                        self.ethnicity_col
+                    ),  # "race" is the choice of the dataset creators
                     "admission_location": self.admission_loc_col,
                     "discharge_location": self.discharge_loc_col,
                     "admission_type": self.admission_urgency_col,
@@ -292,9 +295,15 @@ class NWICUExtractor(NWICUPaths):
             # Calculate ICU stay sequence number
             .sort(self.person_id_col, "intime")
             .with_columns(
-                (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
-                    self.icu_stay_seq_num_col
+                (pl.int_range(pl.len()).over(self.person_id_col) + 1)
+                .alias(self.icu_stay_seq_num_col),
+                # Calculate time relative to first ICU admission
+                (
+                    pl.col("intime")
+                    - pl.col("intime").min().over(self.person_id_col)
                 )
+                .dt.total_seconds()
+                .alias(self.icu_time_rel_to_first_col)
             )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
@@ -306,30 +315,6 @@ class NWICUExtractor(NWICUPaths):
                 .then(False)
                 .otherwise(pl.col(self.mortality_icu_col))
                 .alias(self.mortality_icu_col)
-            )
-            .select(
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-                self.icu_stay_seq_num_col,
-                self.gender_col,
-                self.age_col,
-                self.height_col,
-                self.weight_col,
-                self.ethnicity_col,
-                self.pre_icu_length_of_stay_col,
-                self.icu_length_of_stay_col,
-                self.hospital_length_of_stay_col,
-                self.mortality_hosp_col,
-                self.mortality_icu_col,
-                self.mortality_after_col,
-                # self.admission_type_col,
-                self.admission_urgency_col,
-                self.admission_time_col,
-                self.admission_loc_col,
-                # self.specialty_col,
-                self.unit_type_col,
-                self.discharge_loc_col,
             )
         )
 

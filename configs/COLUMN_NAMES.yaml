@@ -2,6 +2,7 @@ person_id_col: Person ID # person_id
 hospital_stay_id_col: Hospital Stay ID # hospital_stay_id
 icu_stay_id_col: ICU Stay ID # icu_stay_id
 icu_stay_seq_num_col: ICU Stay Sequential Number (per Person ID)
+icu_time_rel_to_first_col: Time Relative to First ICU Admission (seconds)
 flag_bad_data_col: "Flag: bad data (e.g. due to short stay)"
 global_person_id_col: Global Person ID # global_person_id
 global_hospital_stay_id_col: Global Hospital Stay ID # global_hospital_stay_id

@@ -132,7 +132,8 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {hospital_stay_id_col}: Hospital admission identifier.
                 - {person_id_col}: Patient identifier.
-                - {icu_stay_seq_num_col}: Sequence number of ICU stay for each patient.
+                - {icu_stay_seq_num_col}: ICU stay sequence number.
+                - {icu_time_rel_to_first_col}: Time relative to first ICU admission.
                 - {gender_col}: Patient gender.
                 - {age_col}: Patient age (years).
                 - {height_col}: Patient height (cm).
@@ -334,7 +335,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
                     self.icu_stay_seq_num_col
+                ),
+                # Calculate time relative to first ICU admission
+                (
+                    pl.col("INTIME")
+                    - pl.col("INTIME").min().over(self.person_id_col)
                 )
+                .dt.total_seconds()
+                .alias(self.icu_time_rel_to_first_col)
             )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
@@ -346,32 +354,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .then(False)
                 .otherwise(pl.col(self.mortality_icu_col))
                 .alias(self.mortality_icu_col)
-            )
-            .select(
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-                self.icu_stay_seq_num_col,
-                self.gender_col,
-                self.age_col,
-                self.height_col,
-                self.weight_col,
-                self.ethnicity_col,
-                self.pre_icu_length_of_stay_col,
-                self.icu_length_of_stay_col,
-                self.hospital_length_of_stay_col,
-                self.mortality_hosp_col,
-                self.mortality_icu_col,
-                self.mortality_after_col,
-                self.mortality_after_cutoff_col,
-                self.admission_type_col,
-                self.admission_urgency_col,
-                self.admission_time_col,
-                self.admission_loc_col,
-                self.specialty_col,
-                self.unit_type_col,
-                self.care_site_col,
-                self.discharge_loc_col,
             )
         )
 

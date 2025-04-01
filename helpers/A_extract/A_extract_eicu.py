@@ -231,10 +231,12 @@ class EICUExtractor(EICUPaths):
             # based on https://github.com/MIT-LCP/eicu-code/issues/145#issuecomment-680487192
             .sort(
                 [
+                    self.mortality_icu_col,  # mortality must be "increasing" (i.e. alive [= false / 0] first)
                     self.person_id_col,
                     "hospitaldischargeyear",
+                    self.age_col,  # age must be increasing
+                    self.hospital_stay_id_col,  # keep same hospital stays together
                     self.icu_stay_seq_num_col,
-                    self.mortality_icu_col,
                 ],
                 descending=False,
                 nulls_last=False,
@@ -264,32 +266,6 @@ class EICUExtractor(EICUPaths):
                 self.helpers._convert_time_to_days_float,
                 self.mortality_after_col,
                 base_unit="minutes",
-            )
-            .select(
-                self.icu_stay_id_col,
-                self.hospital_stay_id_col,
-                self.person_id_col,
-                self.icu_stay_seq_num_col,
-                self.gender_col,
-                self.age_col,
-                self.height_col,
-                self.weight_col,
-                self.ethnicity_col,
-                self.admission_urgency_col,
-                self.admission_type_col,
-                self.admission_time_col,
-                self.admission_diagnosis_col,
-                self.pre_icu_length_of_stay_col,
-                self.icu_length_of_stay_col,
-                self.hospital_length_of_stay_col,
-                self.mortality_hosp_col,
-                self.mortality_icu_col,
-                self.mortality_after_col,
-                self.admission_loc_col,
-                self.specialty_col,
-                self.unit_type_col,
-                self.care_site_col,
-                self.discharge_loc_col,
             )
         )
 
@@ -1218,7 +1194,7 @@ class EICUExtractor(EICUPaths):
 
         # NOTE: Extremely infrequently used.
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
-        admissiondrug = None
+        # admissiondrug = None
 
         # NOTE: a lot of calcalations can be done here
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/infusiondrug/
