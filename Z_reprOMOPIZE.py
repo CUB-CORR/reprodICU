@@ -643,6 +643,117 @@ def device_exposure(
         pl.col("standard_concept") == "S",
     ).select("concept_id", "concept_name")
 
+    procedures = procedures.with_columns(
+        pl.col("Procedure Description").replace(
+            {
+                "Insertion of catheter into peripheral vein": (
+                    "Peripheral venous cannula"
+                ),
+                "Peripheral venous cannula insertion": (
+                    "Peripheral venous cannula"
+                ),
+                "Insertion of catheter into artery": "Arterial catheter",
+                "Change of dressing": "Wound dressing",
+                "Open insertion of central venous catheter": (
+                    "Central venous catheter"
+                ),
+                "Insertion of peripherally inserted central catheter": (
+                    "Peripherally inserted central catheter"
+                ),
+                "Invasive ventilation": "Endotracheal tube",
+                "Central venous cannula insertion": "Central venous catheter",
+                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation": (
+                    "Endotracheal tube"
+                ),  # eICU
+                "Introduction of catheter into pulmonary artery": (
+                    "Pulmonary artery catheter"
+                ),
+                "Insertion of endotracheal tube": "Endotracheal tube",
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%) - Nasal Cannula": (
+                    "Oxygen nasal cannula"
+                ),  # eICU
+                "Insertion of hemodialysis catheter": "Hemodialysis catheter",
+                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation": (
+                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
+                ),  # eICU
+                "Pulmonary catheterization with Swan-Ganz catheter": (
+                    "Pulmonary artery catheter"
+                ),
+                "Bronchoscopy": "Bronchoscope",
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (40% to 60%)": (
+                    "Oxygen mask"
+                ),  # eICU
+                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Stockings": (
+                    "Compression stockings"
+                ),  # eICU
+                "Renal - Urinary Catheters - Foley Catheter": (
+                    "Foley catheter"
+                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%)": (
+                    "Oxygen nasal cannula"
+                ),  # eICU
+                "Continuous renal replacement therapy": "Hemodialysis catheter",
+                "Hemodialysis": "Hemodialysis catheter",
+                "Insertion of cannula for hemodialysis, vein to vein": (
+                    "Hemodialysis catheter"
+                ),
+                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Boots": (
+                    "Compression stockings"
+                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - CPAP/PEEP Therapy": (
+                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
+                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Ventilator Weaning": (
+                    "Endotracheal tube"
+                ),  # eICU
+                "Renal - Dialysis - Hemodialysis": (
+                    "Hemodialysis catheter"
+                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Tracheal Suctioning": (
+                    "Tracheal suction catheter"
+                ),  # eICU
+                "Noninvasive ventilation": (
+                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
+                ),
+                "Introduction of intracranial pressure catheter": (
+                    "Intracranial pressure catheter"
+                ),
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (> 60%)": (
+                    "Oxygen mask"
+                ),  # eICU
+                "Introduction of urinary catheter": "Foley catheter",
+                "Surgery - Tubes and Catheters - Foley Catheter": (
+                    "Foley catheter"
+                ),  # eICU
+                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube": (
+                    "Endotracheal tube"
+                ),  # eICU
+                "Endoscopy": "Endoscope",
+                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube - Insertion": (
+                    "Endotracheal tube"
+                ),  # eICU
+                "Ultrasonography guided insertion of midline intravenous catheter": (
+                    "Midline catheter"
+                ),
+                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation - Assist Controlled": (
+                    "Endotracheal tube"
+                ),  # eICU
+                "Surgery - Tubes and Catheters - Chest Tube": (
+                    "Chest drain"
+                ),  # eICU
+                "Percutaneous insertion of intra-aortic balloon catheter": (
+                    "Intra-aortic balloon catheter"
+                ),
+                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation - Face Mask": (
+                    "Oxygen mask"
+                ),  # eICU
+                "Pulmonary - Vascular Disorders - VTE Prophylaxis - Compression Boots": (
+                    "Compression stockings"
+                ),  # eICU
+            }
+        )
+    )
+
     return (
         procedures.join(ID, on="Global ICU Stay ID", how="left")
         .join(
