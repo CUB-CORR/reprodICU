@@ -75,6 +75,7 @@ class SICdbExtractor(SICdbPaths):
                 - {care_site_col}: Care site information.
                 - {hospital_stay_id_col}: Empty hospital stay identifier.
                 - {icu_stay_seq_num_col}: ICU stay sequence number.
+                - {icu_time_rel_to_first_col}: Time relative to first ICU admission.
         """
         diagnosis_mapping = (
             pl.read_csv(
@@ -238,7 +239,9 @@ class SICdbExtractor(SICdbPaths):
             .with_columns(
                 (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
                     self.icu_stay_seq_num_col
-                )
+                ),
+                # Calculate time since first admission
+                pl.col("OffsetAfterFirstAdmission").alias(self.icu_time_rel_to_first_col)
             )
         )
 
