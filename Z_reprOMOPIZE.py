@@ -16,8 +16,8 @@ import os
 
 import polars as pl
 import yaml
-from helpers.helper_OMOP import Vocabulary
 from helpers.helper import GlobalVars
+from helpers.helper_OMOP import Vocabulary
 
 SECONDS_IN_DAY = 86400
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
@@ -781,14 +781,20 @@ def measurement(
             )
             .drop("variable_code")
             .rename({"concept_name": "variable_name"})
-            .select(
-                "person_id",
-                "visit_occurrence_id",
-                "measurement_datetime",
-                "variable_name",
-                "value_as_number",
-            )
         )
+
+    def _add_units(data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        add the units to the data
+        """
+
+        return data.join(
+            UNITS.lazy(),
+            left_on="variable_name",
+            right_on="measurement",
+            how="left",
+            coalesce=True,
+        ).rename({"unit": "unit_source_value"})
 
     def _conceptualize(data: pl.LazyFrame) -> pl.LazyFrame:
         """
@@ -821,10 +827,12 @@ def measurement(
                 timeseries_vitals.drop("Heart rate rhythm")
                 .pipe(_make_datetime)
                 .pipe(_unpivot)
+                .pipe(_add_units)
                 .cast({"value_as_number": float}),
                 # timeseries_resp.pipe(_make_datetime).pipe(_unpivot),
                 timeseries_labs.pipe(_make_datetime)
                 .pipe(_unpivot)
+                .pipe(_add_units)
                 .pipe(_destruct_after_unpivot)
                 .cast({"value_as_number": float}),
             ],
@@ -839,14 +847,6 @@ def measurement(
             .dt.date()
             .alias("measurement_date"),
         )
-        .join(
-            UNITS.lazy(),
-            left_on="measurement_source_value",
-            right_on="measurement",
-            how="left",
-            coalesce=True,
-        )
-        .rename({"unit": "unit_source_value"})
         .with_row_index("measurement_id")
         .pipe(_add_missing_fields, "measurement")
     )

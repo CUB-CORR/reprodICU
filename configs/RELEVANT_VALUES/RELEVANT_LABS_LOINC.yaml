@@ -346,39 +346,48 @@ Urea nitrogen:
 # For conversion
 #################################################
 Fibrin D-dimer FEU: # for MIMIC-III / -IV
+  for_conversion: true
   property: "Mass Concentration"
   systems:
     - Blood
     - Platelet poor plasma
 Basophils:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Eosinophils:
+  for_conversion: true  
   property: "Number Concentration"
   systems:
     - Blood
 Lymphocytes:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Monocytes:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Neutrophils:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Band form neutrophils:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Segmented neutrophils:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
 Reticulocytes:
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood
