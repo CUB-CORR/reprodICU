@@ -572,15 +572,45 @@ def condition_occurrence(
 # enrollment into a health plan, or explicit record in EHR data.
 def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     print("reprOMOPIZE - death")
-
+    
     ID = _ID(patient_information)
-    return patient_information.select(
-        "Global ICU Stay ID",
-        "Global Person ID",
-        "Admission Time (24h)",
-    ).with_columns(
-        #####################
-        # VISIT_OCCURRENCE_ID
+
+    return (
+        patient_information.join(ID, on="Global ICU Stay ID", how="left")
+        .with_columns(
+            ############
+            # DEATH_DATE
+            # Create the death_date column with the date of the death
+            (
+                DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
+                + pl.duration(days=pl.col("ICU Length of Stay (days)"))
+                + pl.duration(
+                    seconds=pl.col(
+                        "Time Relative to First ICU Admission (seconds)"
+                    )
+                )
+                # add a day if the patient died in the ICU
+                + pl.when(pl.col("Mortality in ICU"))
+                .then(pl.duration(days=1))
+                .otherwise(
+                    pl.duration(
+                        days=pl.col("Mortality After ICU Discharge (days)")
+                    )
+                )
+            )
+            .dt.date()
+            .alias("death_date"),
+            #######################
+            # DEATH_TYPE_CONCEPT_ID
+            # 32817 = EHR
+            pl.lit(32817).alias("death_type_concept_id"),
+        )
+        # select latest death date per person
+        .group_by("person_id")
+        .max()
+        .drop_nulls("death_date")
+        .pipe(_add_missing_fields, "death")
+        .unique()
     )
 
 
@@ -1550,7 +1580,7 @@ if __name__ == "__main__":
         .collect()
         .write_parquet(OUTPATH + "condition_occurrence.parquet")
     )
-    # death(patient_information).sink_parquet(OUTPATH + "death.parquet")
+    death(patient_information).sink_parquet(OUTPATH + "death.parquet")
     (
         device_exposure(CONCEPT, patient_information, procedures)
         .collect()
