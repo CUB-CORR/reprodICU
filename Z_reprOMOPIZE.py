@@ -59,7 +59,7 @@ def _field_level(table_name: str, return_required: bool = False) -> list:
 # If the field is required and missing, the function raises a ValueError
 # If the field is missing and not required, the function adds the field with a NULL value
 def _add_missing_fields(
-    data: pl.LazyFrame, table_name: str, check_required: bool = False
+    data: pl.LazyFrame, table_name: str, check_required: bool = True
 ) -> pl.LazyFrame:
     """
     add missing fields to the data
@@ -68,13 +68,24 @@ def _add_missing_fields(
     columns = data.collect_schema().names()
 
     for field, req in zip(fields, required):
+        if req == "Yes" and check_required:
+            if not data.filter(pl.col(field).is_null()).collect().is_empty():
+                # count the number of nulls
+                count = data.collect().height
+                null_count = (
+                    data.filter(pl.col(field).is_null()).collect().height
+                )
+                print(
+                    f"Field {field} is required for the {table_name} table, dropping {null_count} nulls ({count} total)"
+                )
+            data = data.drop_nulls(field)
+
         if field not in columns:
             if req == "Yes" and check_required:
                 raise ValueError(
                     f"Field {field} is required for the {table_name} table"
                 )
-
-            data = data.with_columns(pl.lit(None).cast(pl.Int8).alias(field))
+            data = data.with_columns(pl.lit(None).alias(field))
 
     return data.select(fields)
 
@@ -332,6 +343,10 @@ def drug_exposure(
                     )
                 )
             ).alias("drug_exposure_end_datetime"),
+            ######################
+            # DRUG_TYPE_CONCEPT_ID
+            # 32817 = EHR
+            pl.lit(32817).alias("drug_type_concept_id"),
         )
         .with_columns(
             ############################
@@ -427,6 +442,8 @@ def condition_occurrence(
         [
             "Time Relative to First ICU Admission (seconds)",
             "Admission Time (24h)",
+            "Pre-ICU Length of Stay (days)",
+            "Hospital Length of Stay (days)",
             "Source Dataset",
         ],
     )
@@ -467,6 +484,12 @@ def condition_occurrence(
         .rename({"concept_id": "condition_concept_id"})
     )
 
+    # relevant ETL Conventions for discharge diagnoses in MIMIC:
+    # Most often data sources do not have the idea of a start date for a
+    # condition. Rather, if a source only has one date associated with a
+    # condition record it is acceptable to use that date for both the
+    # CONDITION_START_DATE and the CONDITION_END_DATE.
+
     return (
         pl.concat([diagnoses_ICD10, diagnoses_ICD9], how="vertical")
         .with_columns(
@@ -477,12 +500,21 @@ def condition_occurrence(
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
-                        "Diagnosis Start Relative to Admission (seconds)"
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                + pl.duration(
-                    seconds=pl.col(
-                        "Time Relative to First ICU Admission (seconds)"
+                + pl.when(pl.col("Source Dataset").str.starts_with("MIMIC"))
+                .then(
+                    pl.duration(
+                        days=pl.col("Hospital Length of Stay (days)")
+                        - pl.col("Pre-ICU Length of Stay (days)")
+                    )
+                )
+                .otherwise(
+                    pl.duration(
+                        seconds=pl.col(
+                            "Diagnosis Start Relative to Admission (seconds)"
+                        )
                     )
                 )
             ).alias("condition_start_datetime"),
@@ -493,12 +525,21 @@ def condition_occurrence(
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
                     seconds=pl.col(
-                        "Diagnosis End Relative to Admission (seconds)"
+                        "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-                + pl.duration(
-                    seconds=pl.col(
-                        "Time Relative to First ICU Admission (seconds)"
+                + pl.when(pl.col("Source Dataset").str.starts_with("MIMIC"))
+                .then(
+                    pl.duration(
+                        days=pl.col("Hospital Length of Stay (days)")
+                        - pl.col("Pre-ICU Length of Stay (days)")
+                    )
+                )
+                .otherwise(
+                    pl.duration(
+                        seconds=pl.col(
+                            "Diagnosis Start Relative to Admission (seconds)"
+                        )
                     )
                 )
             ).alias("condition_end_datetime"),
@@ -572,7 +613,7 @@ def condition_occurrence(
 # enrollment into a health plan, or explicit record in EHR data.
 def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     print("reprOMOPIZE - death")
-    
+
     ID = _ID(patient_information)
 
     return (
@@ -633,6 +674,7 @@ def device_exposure(
     ID = _ID(
         patient_information,
         [
+            "Global Person ID",
             "Time Relative to First ICU Admission (seconds)",
             "Admission Time (24h)",
         ],
@@ -755,7 +797,7 @@ def device_exposure(
     )
 
     return (
-        procedures.join(ID, on="Global ICU Stay ID", how="left")
+        procedures.join(ID, on="Global Person ID", how="left")
         .join(
             CONCEPTS,
             left_on="Procedure Description",
@@ -1071,8 +1113,8 @@ def measurement(
                 left_on="variable_code",
                 right_on="concept_code",
             )
-            .drop("variable_code")
-            .rename({"concept_name": "variable_name"})
+            .with_columns(pl.col("concept_name").alias("variable_name"))
+            .drop("variable_code", "concept_name")
         )
 
     def _add_units(data: pl.LazyFrame) -> pl.LazyFrame:
@@ -1135,9 +1177,11 @@ def measurement(
             ######################
             # MEASUREMENT_DATE
             # Create the measurement_date column with the date of the measurement
-            pl.col("measurement_datetime")
-            .dt.date()
-            .alias("measurement_date"),
+            pl.col("measurement_datetime").dt.date().alias("measurement_date"),
+            #############################
+            # MEASUREMENT_TYPE_CONCEPT_ID
+            # 32817 = EHR
+            pl.lit(32817).alias("measurement_type_concept_id"),
         )
         .with_row_index("measurement_id")
         .pipe(_add_missing_fields, "measurement")
@@ -1230,6 +1274,9 @@ def person(
         ###################
         # RACE_CONCEPT_ID
         # Create the race_concept_id column based on the Ethnicity column
+        # relevant ETL Conventions:
+        # Mixed races are not supported.
+        # If a clear race or ethnic background cannot be established, use Concept_Id 0.
         .join(
             RACE_CONCEPTS,
             left_on="Ethnicity",
@@ -1237,6 +1284,7 @@ def person(
             how="left",
         )
         .rename({"concept_id": "race_concept_id"})
+        .with_columns(pl.col("race_concept_id").fill_null(0))
         ###################
         # ETHNICITY_CONCEPT_ID
         # Create the ethnicity_concept_id column based on the Ethnicity column
@@ -1274,6 +1322,7 @@ def procedure_occurrence(
     ID = _ID(
         patient_information,
         [
+            "Global Person ID",
             "Time Relative to First ICU Admission (seconds)",
             "Admission Time (24h)",
         ],
@@ -1285,7 +1334,7 @@ def procedure_occurrence(
     ).select("concept_id", "concept_name")
 
     return (
-        procedures.join(ID, on="Global ICU Stay ID", how="left")
+        procedures.join(ID, on="Global Person ID", how="left")
         .join(
             CONCEPTS,
             left_on="Procedure Description",
@@ -1300,8 +1349,8 @@ def procedure_occurrence(
             # NOTE: same as in the VISIT_OCCURRENCE table
             pl.col("Global ICU Stay ID").hash().alias("visit_occurrence_id"),
             ################################
-            # PROCEDURE_START_DATETIME
-            # Create the procedure_start_datetime column with the datetime of the device exposure
+            # PROCEDURE_DATETIME
+            # Create the procedure_datetime column with the datetime of the device exposure
             (
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
                 + pl.duration(
@@ -1314,7 +1363,7 @@ def procedure_occurrence(
                         "Time Relative to First ICU Admission (seconds)"
                     )
                 )
-            ).alias("procedure_start_datetime"),
+            ).alias("procedure_datetime"),
             ##############################
             # PROCEDURE_END_DATETIME
             # Create the procedure_end_datetime column with the datetime of the device exposure
@@ -1342,11 +1391,9 @@ def procedure_occurrence(
         )
         .with_columns(
             ######################
-            # PROCEDURE_START_DATE
-            # Create the procedure_start_date column with the date of the device exposure
-            pl.col("procedure_start_datetime")
-            .dt.date()
-            .alias("procedure_start_date"),
+            # PROCEDURE_DATE
+            # Create the procedure_date column with the date of the device exposure
+            pl.col("procedure_datetime").dt.date().alias("procedure_date"),
             ####################
             # PROCEDURE_END_DATE
             # Create the procedure_end_date column with the date of the device exposure
@@ -1381,7 +1428,11 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 
     # Extract the visit occurrence information
     return (
-        patient_information.with_columns(
+        patient_information.drop(
+            "Time Relative to First ICU Admission (seconds)"
+        )
+        .join(ID, on="Global ICU Stay ID", how="left")
+        .with_columns(
             #####################
             # VISIT_OCCURRENCE_ID
             # Create the visit_occurrence_id column with a hash of the Global ICU Stay ID
