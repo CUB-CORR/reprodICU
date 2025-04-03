@@ -249,7 +249,12 @@ class NWICUExtractor(NWICUPaths):
                 pl.col("intime").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
                 (
-                    (pl.col("deathtime") - pl.col("outtime")).truediv(
+                    (  # no deathtime for deaths in hospital -> use discharge time
+                        pl.when(pl.col(self.mortality_hosp_col).cast(bool))
+                        .then(pl.col("dischtime"))
+                        .otherwise(pl.col("deathtime"))
+                        - pl.col("outtime")
+                    ).truediv(
                         pl.duration(hours=1)
                     )
                 )
@@ -295,15 +300,16 @@ class NWICUExtractor(NWICUPaths):
             # Calculate ICU stay sequence number
             .sort(self.person_id_col, "intime")
             .with_columns(
-                (pl.int_range(pl.len()).over(self.person_id_col) + 1)
-                .alias(self.icu_stay_seq_num_col),
+                (pl.int_range(pl.len()).over(self.person_id_col) + 1).alias(
+                    self.icu_stay_seq_num_col
+                ),
                 # Calculate time relative to first ICU admission
                 (
                     pl.col("intime")
                     - pl.col("intime").min().over(self.person_id_col)
                 )
                 .dt.total_seconds()
-                .alias(self.icu_time_rel_to_first_col)
+                .alias(self.icu_time_rel_to_first_col),
             )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
