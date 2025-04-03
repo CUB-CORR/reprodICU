@@ -136,44 +136,58 @@ class PatientInformationCleaner(GlobalVars):
         Adds information that can easily be derived from the existing data.
         """
 
-        return data.with_columns(
-            # Add missing values for the ICU mortality if the patient survived
-            pl.when(
-                pl.col(self.mortality_icu_col).is_null(),
-                pl.col(self.mortality_after_col) > 1,
+        return (
+            data.with_columns(
+                # Add missing values for the ICU mortality if the patient survived
+                pl.when(
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_after_col) > 1,
+                )
+                .then(False)
+                .otherwise(pl.col(self.mortality_icu_col))
+                .alias(self.mortality_icu_col),
+                # Add missing values for the Hospital mortality if the patient died in the ICU
+                pl.when(
+                    pl.col(self.mortality_hosp_col).is_null(),
+                    pl.col(self.mortality_icu_col).cast(bool),
+                )
+                .then(pl.col(self.mortality_icu_col))
+                .otherwise(pl.col(self.mortality_hosp_col))
+                .alias(self.mortality_hosp_col),
             )
-            .then(False)
-            .otherwise(pl.col(self.mortality_icu_col))
-            .alias(self.mortality_icu_col),
-            # Add missing values for the Hospital mortality if the patient died in the ICU
-            pl.when(
-                pl.col(self.mortality_hosp_col).is_null(),
-                pl.col(self.mortality_icu_col).cast(bool),
+            .with_columns(
+                # Add missing values for the ICU mortality if the patient survived
+                # to the hospital discharge
+                pl.when(
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_hosp_col).cast(bool).not_(),
+                )
+                .then(pl.col(self.mortality_hosp_col))
+                .otherwise(pl.col(self.mortality_icu_col))
+                .alias(self.mortality_icu_col),
             )
-            .then(pl.col(self.mortality_icu_col))
-            .otherwise(pl.col(self.mortality_hosp_col))
-            .alias(self.mortality_hosp_col),
-        ).with_columns(
-            # Add missing values for the Hospital and ICU mortality
-            # if the patient died long after the ICU discharge
-            pl.when(
-                pl.col(self.mortality_hosp_col).is_null(),
-                pl.col(self.mortality_after_col)
-                > (
-                    pl.col(self.hospital_length_of_stay_col)
-                    - pl.col(self.icu_length_of_stay_col)
-                ),
+            .with_columns(
+                # Add missing values for the Hospital and ICU mortality
+                # if the patient died long after the ICU discharge
+                pl.when(
+                    pl.col(self.mortality_hosp_col).is_null(),
+                    pl.col(self.mortality_after_col)
+                    > (
+                        pl.col(self.hospital_length_of_stay_col)
+                        - pl.col(self.icu_length_of_stay_col)
+                    ),
+                )
+                .then(False)
+                .otherwise(pl.col(self.mortality_hosp_col))
+                .alias(self.mortality_hosp_col),
+                pl.when(
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_after_col) > 1,
+                )
+                .then(False)
+                .otherwise(pl.col(self.mortality_icu_col))
+                .alias(self.mortality_icu_col),
             )
-            .then(False)
-            .otherwise(pl.col(self.mortality_hosp_col))
-            .alias(self.mortality_hosp_col),
-            pl.when(
-                pl.col(self.mortality_icu_col).is_null(),
-                pl.col(self.mortality_after_col) > 1,
-            )
-            .then(False)
-            .otherwise(pl.col(self.mortality_icu_col))
-            .alias(self.mortality_icu_col),
         )
 
     def add_data_availability_information(

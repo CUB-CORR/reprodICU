@@ -184,7 +184,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.height_col),
                 # Convert categorical mortality to binary
-                pl.when(pl.col("destination") != "")
+                pl.when(pl.col("destination").is_not_null())
                 .then(pl.col("destination") == "Overleden")
                 .otherwise(None)
                 .cast(bool)
