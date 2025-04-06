@@ -1158,6 +1158,16 @@ def measurement(
     return (
         pl.concat(
             [
+                patient_information.select(
+                    "Global ICU Stay ID",
+                    pl.lit(0).alias("Time Relative to Admission (seconds)"),
+                    pl.col("Admission Height (cm)").alias("Patient height"), # 37174447 # fmt: skip
+                    pl.col("Admission Weight (kg)").alias("Body weight"),  # 3025315 # fmt: skip
+                )
+                .pipe(_make_datetime)
+                .pipe(_unpivot)
+                .pipe(_add_units)
+                .cast({"value_as_number": float}),
                 timeseries_vitals.drop("Heart rate rhythm")
                 .pipe(_make_datetime)
                 .pipe(_unpivot)
@@ -1742,7 +1752,11 @@ if __name__ == "__main__":
         .collect()
         .write_parquet(OUTPATH + "condition_occurrence.parquet")
     )
-    death(patient_information).sink_parquet(OUTPATH + "death.parquet")
+    (
+        death(patient_information)
+        .collect()
+        .write_parquet(OUTPATH + "death.parquet")
+    )
     (
         device_exposure(CONCEPT, patient_information, procedures)
         .collect()

@@ -1,4 +1,7 @@
 measurement,unit,unit_concept_id
+PATIENT INFORMATION,,
+Patient height,kg,9529
+Body weight,cm,8582
 VITAL SIGNS,,
 Heart rate,/min,8541
 Peripheral oxygen saturation,%,8554
