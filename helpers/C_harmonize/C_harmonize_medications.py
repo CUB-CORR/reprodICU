@@ -171,12 +171,42 @@ class MedicationHarmonizer(GlobalVars):
                 .pipe(self._print_unique_cases, "UMCdb")
             )
 
+        medications = pl.concat(
+            medications_datasets,
+            how="diagonal_relaxed",
+        )
+        medications_cols_list = [
+            self.global_icu_stay_id_col,
+            self.drug_mixture_id_col,
+            self.drug_mixture_admin_id_col,
+            self.drug_ingredient_col,
+            self.drug_name_col,
+            self.drug_name_OMOP_col,
+            self.drug_class_col,
+            self.drug_continous_col,
+            self.drug_admin_route_col,
+            self.drug_amount_col,
+            self.drug_amount_unit_col,
+            self.drug_rate_col,
+            self.drug_rate_unit_col,
+            self.fluid_group_col,
+            self.fluid_name_col,
+            self.fluid_amount_col,
+            self.fluid_rate_col,
+            self.drug_start_col,
+            self.drug_end_col,
+            self.drug_patient_weight_col,
+        ]
+
+        # Add missing columns as null columns
+        medications = medications.with_columns(
+            pl.lit(None).alias(col)
+            for col in medications_cols_list
+            if col not in medications.columns
+        )
+
         return (
-            pl.concat(
-                medications_datasets,
-                how="diagonal_relaxed",
-            )
-            .cast(
+            medications.cast(
                 {
                     self.drug_amount_col: float,
                     self.drug_rate_col: float,
@@ -280,28 +310,18 @@ class MedicationHarmonizer(GlobalVars):
                 .str.replace("mEq\.", "mEq")
                 .alias(self.drug_amount_unit_col),
             )
-            .select(
-                self.global_icu_stay_id_col,
-                self.drug_mixture_id_col,
-                self.drug_mixture_admin_id_col,
-                self.drug_ingredient_col,
-                self.drug_name_col,
-                self.drug_name_OMOP_col,
-                self.drug_class_col,
-                self.drug_continous_col,
-                self.drug_admin_route_col,
-                self.drug_amount_col,
-                self.drug_amount_unit_col,
-                self.drug_rate_col,
-                self.drug_rate_unit_col,
-                self.fluid_group_col,
-                self.fluid_name_col,
-                self.fluid_amount_col,
-                self.fluid_rate_col,
-                self.drug_start_col,
-                self.drug_end_col,
-                self.drug_patient_weight_col,
+            # remove units if amount is null
+            .with_columns(
+                pl.when(pl.col(self.drug_amount_col).is_null())
+                .then(None)
+                .otherwise(pl.col(self.drug_amount_unit_col))
+                .alias(self.drug_amount_unit_col),
+                pl.when(pl.col(self.drug_rate_col).is_null())
+                .then(None)
+                .otherwise(pl.col(self.drug_rate_unit_col))
+                .alias(self.drug_rate_unit_col),
             )
+            .select(medications_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.drug_start_col)
         )

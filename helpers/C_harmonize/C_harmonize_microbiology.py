@@ -96,20 +96,23 @@ class MicrobiologyHarmonizer(GlobalVars):
         #         .pipe(self._print_unique_cases, "UMCdb")
         #     )
 
+        microbiology = pl.concat(microbiology_datasets, how="diagonal_relaxed")
+        microbiology_cols_list = [
+            self.global_icu_stay_id_col,
+            self.timeseries_time_col,
+            self.micro_specimen_col,
+            self.micro_test_col,
+            self.micro_organism_col,
+            self.micro_antibiotic_col,
+            self.micro_dilution_col,
+            self.micro_sensitivity_col,
+        ]
+
         return (
-            pl.concat(
-                microbiology_datasets,
-                how="diagonal_relaxed",
-            )
-            .select(
-                self.global_icu_stay_id_col,
-                self.timeseries_time_col,
-                self.micro_specimen_col,
-                self.micro_test_col,
-                self.micro_organism_col,
-                self.micro_antibiotic_col,
-                self.micro_dilution_col,
-                self.micro_sensitivity_col,
+            microbiology.select(
+                col
+                for col in microbiology_cols_list
+                if col in microbiology.columns
             )
             .unique()
             .sort(self.global_icu_stay_id_col, self.timeseries_time_col)

@@ -109,22 +109,25 @@ class DiagnosesHarmonizer(GlobalVars):
                 )
             )
 
+        diagnoses = pl.concat(diagnoses_datasets, how="diagonal_relaxed")
+        diagnoses_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.diagnosis_icd_code_col,
+            self.diagnosis_icd_version_col,
+            self.diagnosis_start_col,
+            self.diagnosis_end_col,
+            self.diagnosis_priority_col,
+            self.diagnosis_discharge_col,
+            self.diagnosis_description_col,
+        ]
+
         return (
-            pl.concat(
-                diagnoses_datasets,
-                how="diagonal_relaxed",
-            )
-            .select(
-                self.global_person_id_col,
-                self.global_hospital_stay_id_col,
-                self.global_icu_stay_id_col,
-                self.diagnosis_icd_code_col,
-                self.diagnosis_icd_version_col,
-                self.diagnosis_start_col,
-                self.diagnosis_end_col,
-                self.diagnosis_priority_col,
-                self.diagnosis_discharge_col,
-                self.diagnosis_description_col,
+            diagnoses.select(
+                col
+                for col in diagnoses_cols_list
+                if col in diagnoses.columns
             )
             .unique()
             .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)
