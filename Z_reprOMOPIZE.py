@@ -13,11 +13,16 @@
 import argparse
 import glob
 import os
+import warnings
 
 import polars as pl
 import yaml
 from helpers.helper import GlobalVars
 from helpers.helper_OMOP import Vocabulary
+import tempfile
+import atexit
+
+warnings.filterwarnings("ignore")
 
 SECONDS_IN_DAY = 86400
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
@@ -300,7 +305,7 @@ def drug_exposure(
 
     # Extract the drug exposure information
     return (
-        medications.join(ID, on="Global ICU Stay ID", how="left")
+        medications.join(ID, on="Global ICU Stay ID", how="right")
         # Create the drug_concept_id column with the concept_id of the Drug Ingredient
         .join(
             CONCEPTS,
@@ -460,7 +465,7 @@ def condition_occurrence(
             pl.col("Global ICU Stay ID").str.starts_with("mimic3-").not_(),
             pl.col("Diagnosis ICD-10 Code").is_not_null(),
         )
-        .join(ID, on="Global ICU Stay ID", how="left")
+        .join(ID, on="Global ICU Stay ID", how="right")
         .join(
             CONCEPTS,
             left_on="Diagnosis ICD-10 Code",
@@ -474,7 +479,7 @@ def condition_occurrence(
             pl.col("Global ICU Stay ID").str.starts_with("mimic3-")
             | pl.col("Diagnosis ICD-10 Code").is_null()
         )
-        .join(ID, on="Global ICU Stay ID", how="left")
+        .join(ID, on="Global ICU Stay ID", how="right")
         .join(
             CONCEPTS,
             left_on="Diagnosis ICD-9 Code",
@@ -617,7 +622,7 @@ def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     ID = _ID(patient_information)
 
     return (
-        patient_information.join(ID, on="Global ICU Stay ID", how="left")
+        patient_information.join(ID, on="Global ICU Stay ID", how="right")
         .with_columns(
             ############
             # DEATH_DATE
@@ -797,7 +802,7 @@ def device_exposure(
     )
 
     return (
-        procedures.join(ID, on="Global Person ID", how="left")
+        procedures.join(ID, on="Global Person ID", how="right")
         .join(
             CONCEPTS,
             left_on="Procedure Description",
@@ -1007,6 +1012,7 @@ def measurement(
     timeseries_vitals: pl.LazyFrame,
     timeseries_labs: pl.LazyFrame,
     timeseries_resp: pl.LazyFrame,
+    OUTPATH: str,
 ) -> pl.LazyFrame:
     print("reprOMOPIZE - measurement")
 
@@ -1040,8 +1046,9 @@ def measurement(
         """
         make time columns to datetime
         """
+        print("reprOMOPIZE - measurement - making datetime")
         return (
-            data.join(ID, on="Global ICU Stay ID", how="left")
+            data.join(ID, on="Global ICU Stay ID", how="right")
             .with_columns(
                 #####################
                 # VISIT_OCCURRENCE_ID
@@ -1077,7 +1084,7 @@ def measurement(
         """
         unpivot the data
         """
-
+        print("reprOMOPIZE - measurement - unpivoting")
         return data.unpivot(
             index=["person_id", "visit_occurrence_id", "measurement_datetime"],
             variable_name="variable_name",
@@ -1113,15 +1120,15 @@ def measurement(
                 left_on="variable_code",
                 right_on="concept_code",
             )
-            .with_columns(pl.col("concept_name").alias("variable_name"))
-            .drop("variable_code", "concept_name")
+            .rename({"concept_name": "variable_name"})
+            .drop("variable_code")
         )
 
     def _add_units(data: pl.LazyFrame) -> pl.LazyFrame:
         """
         add the units to the data
         """
-
+        print("reprOMOPIZE - measurement - adding units")
         return data.join(
             UNITS.lazy(),
             left_on="variable_name",
@@ -1155,42 +1162,81 @@ def measurement(
         )
 
     # Extract the measurement information
+    # Create a unique prefix for temp files
+    # Create a subdirectory in the temp directory for output files
+    output_subdir = os.path.join(OUTPATH, "reprOMOPIZE_output")
+    os.makedirs(output_subdir, exist_ok=True)
+
+    # Set up pattern for intermediate temp files
+    temp_prefix = "measurement_"
+    temp_pattern = os.path.join(output_subdir, f"{temp_prefix}*.parquet")
+
+    # Register cleanup function to run at script exit
+    def cleanup_temp_files():
+        for f in glob.glob(temp_pattern):
+            try:
+                os.remove(f)
+            except Exception:
+                pass  # If we can't delete, just continue
+
+    atexit.register(cleanup_temp_files)
+
+    # Save each dataset to temp file
+    temp_file1 = os.path.join(
+        output_subdir, f"{temp_prefix}heights_weights.parquet"
+    )
+    temp_file2 = os.path.join(output_subdir, f"{temp_prefix}vitals.parquet")
+    temp_file3 = os.path.join(output_subdir, f"{temp_prefix}labs.parquet")
+
+    # Process heights and weights
+    (
+        patient_information.select(
+            "Global ICU Stay ID",
+            pl.lit(0).alias("Time Relative to Admission (seconds)"),
+            pl.col("Admission Height (cm)").alias("Patient height"),
+            pl.col("Admission Weight (kg)").alias("Body weight"),
+        )
+        .pipe(_make_datetime)
+        .pipe(_unpivot)
+        .pipe(_add_units)
+        .cast({"value_as_number": float})
+        .sink_parquet(temp_file1)
+    )
+
+    # Process vitals data
+    (
+        timeseries_vitals.drop("Heart rate rhythm")
+        .pipe(_make_datetime)
+        .pipe(_unpivot)
+        .pipe(_add_units)
+        .cast({"value_as_number": float})
+        .sink_parquet(temp_file2)
+    )
+
+    # Process labs data
+    (
+        timeseries_labs
+        .pipe(_make_datetime)
+        .pipe(_unpivot)
+        .pipe(_add_units)
+        .pipe(_destruct_after_unpivot)
+        .cast({"value_as_number": float})
+        .sink_parquet(temp_file3)
+    )
+
+    # Now scan and concat the temporary files
     return (
         pl.concat(
             [
-                patient_information.select(
-                    "Global ICU Stay ID",
-                    pl.lit(0).alias("Time Relative to Admission (seconds)"),
-                    pl.col("Admission Height (cm)").alias("Patient height"), # 37174447 # fmt: skip
-                    pl.col("Admission Weight (kg)").alias("Body weight"),  # 3025315 # fmt: skip
-                )
-                .pipe(_make_datetime)
-                .pipe(_unpivot)
-                .pipe(_add_units)
-                .cast({"value_as_number": float}),
-                timeseries_vitals.drop("Heart rate rhythm")
-                .pipe(_make_datetime)
-                .pipe(_unpivot)
-                .pipe(_add_units)
-                .cast({"value_as_number": float}),
-                # timeseries_resp.pipe(_make_datetime).pipe(_unpivot),
-                timeseries_labs.pipe(_make_datetime)
-                .pipe(_unpivot)
-                .pipe(_add_units)
-                .pipe(_destruct_after_unpivot)
-                .cast({"value_as_number": float}),
+                pl.scan_parquet(temp_file1),
+                pl.scan_parquet(temp_file2),
+                pl.scan_parquet(temp_file3),
             ],
             how="vertical",
         )
         .pipe(_conceptualize)
         .with_columns(
-            ######################
-            # MEASUREMENT_DATE
-            # Create the measurement_date column with the date of the measurement
             pl.col("measurement_datetime").dt.date().alias("measurement_date"),
-            #############################
-            # MEASUREMENT_TYPE_CONCEPT_ID
-            # 32817 = EHR
             pl.lit(32817).alias("measurement_type_concept_id"),
         )
         .with_row_index("measurement_id")
@@ -1344,7 +1390,7 @@ def procedure_occurrence(
     ).select("concept_id", "concept_name")
 
     return (
-        procedures.join(ID, on="Global Person ID", how="left")
+        procedures.join(ID, on="Global Person ID", how="right")
         .join(
             CONCEPTS,
             left_on="Procedure Description",
@@ -1441,7 +1487,7 @@ def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
         patient_information.drop(
             "Time Relative to First ICU Admission (seconds)"
         )
-        .join(ID, on="Global ICU Stay ID", how="left")
+        .join(ID, on="Global ICU Stay ID", how="right")
         .with_columns(
             #####################
             # VISIT_OCCURRENCE_ID
@@ -1705,6 +1751,13 @@ if __name__ == "__main__":
         help="Path to the output directory",
         default="../reprodICU_files_OMOP/",
     )
+    parser.add_argument(
+        "--datasets",
+        type=str,
+        nargs="+",
+        help="List of specific datasets to convert, e.g. eICU, HiRID",
+        default=["eICU", "HiRID", "MIMIC-III", "MIMIC-IV", "SICdb", "UMCdb"],
+    )
     args = parser.parse_args()
 
     # Initialize paths
@@ -1727,6 +1780,14 @@ if __name__ == "__main__":
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
+
+    ########
+    # FILTER
+    # filter patient_information to only include the datasets specified in the
+    # command line arguments
+    patient_information = patient_information.filter(
+        pl.col("Source Dataset").str.contains_any(args.datasets)
+    )
 
     #########
     # LOADING
