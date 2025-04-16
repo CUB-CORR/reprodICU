@@ -483,16 +483,12 @@ class SICdbExtractor(SICdbPaths):
         """
         print("SICdb   - Extracting medications...")
 
-        sicdb_medication_mapping = (
-            self.helpers.load_many_to_many_to_one_mapping(
-                self.mapping_path + "MEDICATIONS.yaml", "sicdb"
-            )
-        )
         offsets = self._get_offsets()
 
         return (
             pl.scan_csv(self.medication_path)
             .select(
+                "id",
                 "CaseID",
                 "DrugID",
                 "Offset",
@@ -503,6 +499,7 @@ class SICdbExtractor(SICdbPaths):
             )
             .rename(
                 {
+                    "id": self.drug_mixture_admin_id_col,
                     "CaseID": self.icu_stay_id_col,
                     "Amount": self.drug_amount_col,
                     "AmountPerMinute": self.drug_rate_col,
@@ -556,11 +553,9 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.drug_rate_unit_col),
                 (pl.col("IsSingleDose") == 0).alias(self.drug_continous_col),
             )
-            .with_columns(
-                # Map medication names to harmonized names
-                pl.col(self.drug_name_col)
-                .replace_strict(sicdb_medication_mapping, default=None)
-                .alias(self.drug_ingredient_col),
+            # Replace drug names with standardized ingredient names
+            .join(
+                self._extract_drug_references().lazy(), on="DrugID", how="left"
             )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
@@ -757,6 +752,24 @@ class SICdbExtractor(SICdbPaths):
                 drug_units["ReferenceValue"].to_numpy(),
                 drug_units["ReferenceUnit"].to_numpy(),
             )
+        )
+
+    # Extract the information from the SICdb.usagi.csv file
+    def _extract_drug_references(self) -> dict:
+        """
+        Extract and process drug references from CSV mapping files.
+        """
+
+        return (
+            pl.read_csv(self.MEDICATION_MAPPING_PATH + "SICdb.usagi.csv")
+            .filter(pl.col("conceptName") != "Unmapped")
+            .select("sourceCode", "conceptName")
+            .drop_nulls("sourceCode")
+            .unique()
+            .rename({
+                "sourceCode": "DrugID",
+                "conceptName": self.drug_ingredient_col,
+            })
         )
 
     # endregion
