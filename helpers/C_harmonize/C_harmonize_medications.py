@@ -111,8 +111,6 @@ class MedicationHarmonizer(GlobalVars):
         if "eICU" in self.datasets:
             medications_datasets.append(
                 self.eicu.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "eicu-")
                 .pipe(self._print_unique_cases, "eICU")
             )
@@ -120,8 +118,6 @@ class MedicationHarmonizer(GlobalVars):
         if "HiRID" in self.datasets:
             medications_datasets.append(
                 self.hirid.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "hirid-")
                 .pipe(self._print_unique_cases, "HiRID")
             )
@@ -129,8 +125,6 @@ class MedicationHarmonizer(GlobalVars):
         if "MIMIC3" in self.datasets:
             medications_datasets.append(
                 self.mimic3.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "mimic3-")
                 .pipe(self._print_unique_cases, "MIMIC3")
             )
@@ -138,8 +132,6 @@ class MedicationHarmonizer(GlobalVars):
         if "MIMIC4" in self.datasets:
             medications_datasets.append(
                 self.mimic4.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "mimic4-")
                 .pipe(self._print_unique_cases, "MIMIC4")
             )
@@ -147,8 +139,6 @@ class MedicationHarmonizer(GlobalVars):
         if "NWICU" in self.datasets:
             medications_datasets.append(
                 self.nwicu.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "nwicu-")
                 .pipe(self._print_unique_cases, "NWICU")
             )
@@ -156,8 +146,6 @@ class MedicationHarmonizer(GlobalVars):
         if "SICdb" in self.datasets:
             medications_datasets.append(
                 self.sicdb.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "sicdb-")
                 .pipe(self._print_unique_cases, "SICdb")
             )
@@ -165,8 +153,6 @@ class MedicationHarmonizer(GlobalVars):
         if "UMCdb" in self.datasets:
             medications_datasets.append(
                 self.umcdb.extract_medications()
-                .collect()
-                .lazy()
                 .pipe(self._concat_helper, "umcdb-")
                 .pipe(self._print_unique_cases, "UMCdb")
             )
@@ -208,6 +194,8 @@ class MedicationHarmonizer(GlobalVars):
         return (
             medications.cast(
                 {
+                    self.drug_name_col: str,
+                    self.drug_ingredient_col: str,
                     self.drug_amount_col: float,
                     self.drug_rate_col: float,
                     self.fluid_amount_col: float,

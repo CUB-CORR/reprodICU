@@ -2,6 +2,7 @@
 # Last modified: 2024-09-05
 
 # Enables easily working with OMOP vocabularies.
+from typing import Union
 
 import polars as pl
 from helpers.helper_filepaths import OMOPPaths
@@ -173,7 +174,7 @@ class Vocabulary(OMOPPaths):
             pl.col("concept_class_id") == "11-digit NDC",
             pl.col("concept_code").is_in(ndc),
         ).select("concept_id", "concept_code")
-        
+
         ndc_concept_ids = (
             ndc_concept_ids_lf.select("concept_id")
             .collect()
@@ -212,7 +213,7 @@ class Vocabulary(OMOPPaths):
     # region ingredient
     def get_ingredient(
         self, drug_concept_ids: list[int], return_dict: bool = True
-    ) -> dict:
+    ) -> Union[dict, pl.DataFrame]:
         """
         Get ingredient_id from drug concept_ids.
         Based on OMOP-Queries/Drug/D03: Find ingredients of a drug
@@ -244,11 +245,7 @@ class Vocabulary(OMOPPaths):
                 suffix="_D",
                 how="left",
             )
-            .filter(
-                pl.col("concept_class_id").str.contains_any(
-                    ["ingredient"], ascii_case_insensitive=True
-                )
-            )
+            .filter(pl.col("concept_class_id") == "Ingredient")
             .select(
                 "descendant_concept_id",
                 "ancestor_concept_id",

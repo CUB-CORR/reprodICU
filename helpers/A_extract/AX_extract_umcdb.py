@@ -1044,16 +1044,6 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        drugitems_without_solutionitem_only_fluid.collect().write_parquet(
-            "drugitems_without_solutionitem_only_fluid.parquet"
-        )
-        drugitems_without_solutionitem_single.collect().write_parquet(
-            "drugitems_without_solutionitem_single.parquet"
-        )
-        drugitems_without_solutionitem_mixtures.collect().write_parquet(
-            "drugitems_without_solutionitem_mixtures.parquet"
-        )
-
         return (
             pl.concat(
                 [

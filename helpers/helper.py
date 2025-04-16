@@ -169,6 +169,8 @@ class GlobalVars(GlobalHelpers):
         self.OZ_TO_KG = 0.0283495  # 1 oz = 0.0283495 kg
 
         # region GLOBAL MAPS
+        self.MEDICATION_MAPPING_PATH = mapping_path + "MEDICATIONS/"
+
         # append globally configured mappings as class attributes
         self.ETHNICITY_MAP = self.load_many_to_one_mapping(
             mapping_path + "ETHNICITY.yaml"

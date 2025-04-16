@@ -622,11 +622,35 @@ class HiRIDExtractor(HiRIDPaths):
         """
         print("HiRID   - Extracting medications...")
 
-        hirid_medication_mapping = (
-            self.helpers.load_many_to_many_to_one_mapping(
-                self.mapping_path + "MEDICATIONS.yaml", "hirid"
-            )
+        # Extract medication mappings by building a chain of references
+        # 1. Get drug name references from our mapping files
+        drug_references = self._extract_drug_references(return_ids=True)
+        concept_ids = drug_references.values()
+
+        # 2. Retrieve active ingredients for these concept IDs
+        ingredients = self.omop.get_ingredient(concept_ids, return_dict=False)
+
+        # 3. Create a mapping from drug names to their active ingredients
+        # Convert drug_references dictionary to DataFrame
+        drug_references_df = pl.from_dict(
+            {
+                "pharmaid": list(drug_references.keys()),
+                "drug_concept_id": list(drug_references.values()),
+            }
         )
+
+        # Join drug references with ingredients to get all drug-ingredient mappings
+        # This preserves one-to-many relationships (one drug to multiple ingredients)
+        pharmaid_to_ingredient = (
+            drug_references_df.join(
+                ingredients, on="drug_concept_id", how="inner"
+            )
+            .rename({"ingredient_name": self.drug_ingredient_col})
+            .select("pharmaid", self.drug_ingredient_col)
+            .lazy()
+        )
+        
+        # Load additional mappings
         hirid_drug_class_mapping = self.load_mapping(
             self.drug_administration_route_mapping_path
         )
@@ -823,20 +847,14 @@ class HiRIDExtractor(HiRIDPaths):
                     ),
                     pl.col("givenat").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                     pl.col(self.drug_amount_col).cast(float),
-                    # Replace the pharmaid with the corresponding medication name
-                    pl.col("pharmaid")
-                    .cast(int)
-                    .replace_strict(self._get_pharma_variables(), default=None)
-                    .alias(self.drug_name_col),
                 )
+                # Replace the pharmaid with the corresponding medication name
+                .join(self._get_pharma_variables(), on="pharmaid", how="left")
+                .join(pharmaid_to_ingredient, on="pharmaid", how="left")
                 .with_columns(
                     (pl.col("givenat") - pl.col("admissiontime"))
                     .dt.total_seconds()
                     .alias(self.drug_end_col),
-                    # Map the medication names to the ingredients
-                    pl.col(self.drug_name_col)
-                    .replace_strict(hirid_medication_mapping, default=None)
-                    .alias(self.drug_ingredient_col),
                     # Map the medication classes
                     pl.col(self.drug_class_col)
                     .cast(str)
@@ -1057,7 +1075,7 @@ class HiRIDExtractor(HiRIDPaths):
           4. Replace legacy mappings using internal dictionaries.
 
         Returns:
-            pl.LazyFrame: DataFrame with columns:
+            pl.DataFrame: DataFrame with columns:
                 - "variableid" (Observation variable identifier),
                 - "variable" (Observation variable name).
         """
@@ -1085,23 +1103,50 @@ class HiRIDExtractor(HiRIDPaths):
             .lazy()
         )
 
-    def _get_pharma_variables(self) -> pl.DataFrame:
+    def _get_pharma_variables(self) -> pl.LazyFrame:
         """
         Retrieves pharmaceutical variable mappings from the variable reference CSV.
 
         Returns:
-            dict: A mapping where each key is an {ID} (pharma variable identifier) and
-                  the corresponding value is the "Variable Name" (medication name).
+            pl.LazyFrame: LazyFrame with columns:
+                - "pharmaid"
+                - self.drug_name_col
+                - self.drug_name_OMOP_col
         """
-        pharma_variables = (
-            self._get_variable_reference()
-            .filter(pl.col("Source Table") == "Pharma")
-            .drop("Source Table")
+        return (
+            pl.read_csv(self.MEDICATION_MAPPING_PATH + "HiRID.usagi.csv")
+            .filter(pl.col("conceptName") != "Unmapped")
+            .select("sourceCode", "sourceName", "conceptName")
+            .drop_nulls("sourceCode")
+            .unique()
+            .rename(
+                {
+                    "sourceCode": "pharmaid",
+                    "sourceName": self.drug_name_col,
+                    "conceptName": self.drug_name_OMOP_col,
+                }
+            )
+            .lazy()
+        )
+        
+    # Extract the information from the HiRID.usagi.csv files
+    def _extract_drug_references(self, return_ids: bool = False) -> dict:
+        """
+        Extract and process drug references from CSV mapping files.
+        """
+
+        value_col = "conceptName" if not return_ids else "conceptId"
+        references = (
+            pl.read_csv(self.MEDICATION_MAPPING_PATH + "HiRID.usagi.csv")
+            .filter(pl.col("conceptName") != "Unmapped")
+            .select("sourceCode", value_col)
+            .drop_nulls("sourceCode")
+            .unique()
         )
 
         return dict(
             zip(
-                pharma_variables["ID"].to_numpy(),
-                pharma_variables["Variable Name"].to_numpy(),
+                references["sourceCode"].to_numpy(),
+                references[value_col].to_numpy(),
             )
         )
