@@ -1,7 +1,5 @@
 abciximab:
   blended: 19047423
-  amsterdam:
-    - Abciximab (Reopro)
   eicu:
     - Abciximab (ml/hr)
     - Abciximab (mcg/kg/min)
@@ -19,8 +17,6 @@ abciximab:
     - REOPRO (mcg/min)
   hirid:
     - ReoPro
-  mimic:
-    - Abciximab (Reopro)
   mimic3:
     - Abciximab (Reopro)
   mimic4:
@@ -30,9 +26,6 @@ abciximab:
     - Abciximab
 acetaminophen:
   blended: 1125315
-  amsterdam:
-    - Paracetamol
-    - Paracetamol-codeïne
   eicu:
     - "ACETAMINOPHEN"
     - "ACETAMINOPHEN 325 MG PO TABS"
@@ -136,8 +129,6 @@ acetaminophen:
     - "BUTALBITAL/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                              "
     - acetaminophen (ml/hr)
   hirid: []
-  mimic:
-    - Acetaminophen-IV
   mimic3:
     - Acetaminophen-IV
   mimic4:
@@ -170,9 +161,6 @@ acetaminophen:
     - Paracetamol
 acyclovir:
   blended: 1703687
-  amsterdam:
-    - Aciclovir (Zovirax)
-    - Aciclovir oculair (Zovirax oogzalf)
   eicu:
     - "ACYCLOVIR                                                                                                                                                                                                                                                      "
     - "ACYCLOVIR SODIUM                                                                                                                                                                                                                                               "
@@ -180,8 +168,6 @@ acyclovir:
     - "ZOVIRAX                                                                                                                                                                                                                                                        "
   hirid:
     - Zovirax inf 250 mg
-  mimic:
-    - Acyclovir
   mimic3:
     - Acyclovir
   mimic4:
@@ -197,8 +183,6 @@ acyclovir:
     - Aciclovir
 albumin human (USP):
   blended: 1344143
-  amsterdam:
-    - Albumine 20%
   eicu:
     - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
     - 25% ALBUMIN (ml/hr)
@@ -248,7 +232,6 @@ albumin human (USP):
     - albumin5% (ml/hr)
     - albumine (ml/hr)
   hirid: []
-  mimic: []
   mimic3:
     - 25% Albumin
     - ALBUMIN
@@ -272,8 +255,6 @@ albumin human (USP):
     - Humanalbumin 5% (Albunorm)
 alteplase:
   blended: 1347450
-  amsterdam:
-    - Alteplase (Actilyse)
   eicu:
     - "1 EACH VIAL : ALTEPLASE 2 MG IJ SOLR"
     - ALTEPLASE 2 MG IJ SOLR
@@ -319,8 +300,6 @@ alteplase:
     - Actilyse
     - Actilyse Amp.50mg Lsg
     - Actilyse Amp.20mg Lsg.
-  mimic:
-    - Alteplase (TPA)
   mimic3:
     - Alteplase (TPA)
   mimic4:
@@ -333,12 +312,9 @@ alteplase:
     - Alteplase
 amikacin:
   blended: 1790868
-  amsterdam:
-    - Amikacine (Amukin)
   eicu:
     - Amikacin Inj 700 mg in Sodium Chloride 0.9% 250 ml (ml/hr)
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -347,9 +323,6 @@ amikacin:
   sicdb: []
 amiodarone:
   blended: 1309944
-  amsterdam:
-    - Amiodaron Onderhoudsdosis
-    - Amiodaron Oplaaddosis
   eicu:
     - Amiodarone (ml/hr)
     - AMIODARONE HCL 200 MG PO TABS
@@ -389,10 +362,6 @@ amiodarone:
     - Cordarone inj 50 mg/ml
     - Cordarone Tbl 200 mg
     - Cordarone Perfusor
-  mimic:
-    - Amiodarone
-    - Amiodarone 600/500
-    - Amiodarone 450/250 NS
   mimic3:
     - Amiodarone
     - Amiodarone 600/500
@@ -413,8 +382,6 @@ amiodarone:
     - AMIOdaron
 amlodipine:
   blended: 1332418
-  amsterdam:
-    - Amlodipine (Norvasc)
   eicu:
     - AMLODIPINE BESYLATE 5 MG PO TABS
     - "AMLODIPINE BESILATE                                                                                                                                                                                                                                            "
@@ -447,7 +414,6 @@ amlodipine:
   hirid:
     - Norvasc Tabl 10 mg
     - Norvasc Tabl 5 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -467,14 +433,10 @@ amlodipine:
     - Amlodipin besilat+Valsartan+HCT
 amoxicillin:
   blended: 1713332
-  amsterdam:
-    - PantoPac
-    - Amoxicilline (Clamoxyl/Flemoxin)
   eicu:
     - "AMOXICILLIN                                                                                                                                                                                                                                                    "
   hirid:
     - Clamoxyl Inj Lsg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -490,8 +452,6 @@ amoxicillin:
   sicdb: []
 amoxicillin / clavulanate:
   blended: 36029811
-  amsterdam:
-    - Amoxicilline/Clavulaanzuur (Augmentin)
   eicu:
     - "AMOXICILLIN-CLAVULANATE ER                                                                                                                                                                                                                                     "
     - "AMOXICILLIN/POTASSIUM CLAVULANATE                                                                                                                                                                                                                              "
@@ -503,7 +463,6 @@ amoxicillin / clavulanate:
     - Augmentin 2.2 Inf Lsg
     - Augmentin Tabl 625 mg
     - Augmentin AD Tbl 1 g
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -519,13 +478,10 @@ amoxicillin / clavulanate:
     - Amoxicillin/Clavulans
 ampicillin:
   blended: 1717327
-  amsterdam: []
   eicu:
     - "AMPICILLIN SODIUM                                                                                                                                                                                                                                              "
     - Ampicillin (ml/hr)
   hirid: []
-  mimic:
-    - Ampicillin
   mimic3:
     - Ampicillin
   mimic4:
@@ -539,12 +495,9 @@ ampicillin:
     - Ampicillin
 ampicillin / sulbactam:
   blended: 36029195
-  amsterdam: []
   eicu:
     - "UNASYN                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic:
-    - Ampicillin/Sulbactam (Unasyn)
   mimic3:
     - Ampicillin/Sulbactam (Unasyn)
   mimic4:
@@ -555,11 +508,8 @@ ampicillin / sulbactam:
     - Ampicillin/Sulbactam
 angiotensin II:
   blended: 963889
-  amsterdam: []
   eicu: []
   hirid: []
-  mimic:
-    - Angiotensin II (Giapreza)
   mimic3: []
   mimic4:
     - Angiotensin II (Giapreza)
@@ -567,8 +517,6 @@ angiotensin II:
   sicdb: []
 argatroban:
   blended: 1322207
-  amsterdam:
-    - Argatroban (Arganova)
   eicu:
     - Argatroban (mcg/kg/min)
     - Argatroban IVF Infused (ml/hr)
@@ -594,8 +542,6 @@ argatroban:
     - argatroban (mg/hr)
   hirid:
     - Argatra Inf Lsg
-  mimic:
-    - Argatroban
   mimic3:
     - Argatroban
   mimic4:
@@ -608,10 +554,6 @@ argatroban:
     - Argatroban
 aspirin:
   blended: 1112807
-  amsterdam:
-    - Acetylsalicylzuur (Aspegic)
-    - Paracetamol
-    - Paracetamol-codeïne
   eicu:
     - "ASPIRIN                                                                                                                                                                                                                                                        "
     - ASPIRIN 81 MG PO CHEW
@@ -692,7 +634,6 @@ aspirin:
     - Dafalgan Supp 600 mg
     - Dafalgan ODIS Schmelz Tabl 500 mg
     - Benuron supp 1000 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -712,8 +653,6 @@ aspirin:
     - Acetylsalicyls
 atorvastatin:
   blended: 1545958
-  amsterdam:
-    - Atorvastatine (Lipitor)
   eicu:
     - ATORVASTATIN
     - ATORVASTATIN CALCIUM 40 MG PO TABS
@@ -733,7 +672,6 @@ atorvastatin:
     - LIPITOR
     - Lipitor
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -746,8 +684,6 @@ atorvastatin:
     - Atorvastatin
 atracurium:
   blended: 19014341
-  amsterdam:
-    - Atracurium (Tracrium)
   eicu:
     - Atracurium (mcg/kg/min)
     - atracurium (mcg/kg/min)
@@ -757,7 +693,6 @@ atracurium:
   hirid:
     - Tracrium inj 10 mg/ml
     - Tracrium Perfusor
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -766,8 +701,6 @@ atracurium:
     - Atracurium
 azithromycin:
   blended: 1734104
-  amsterdam:
-    - Azitromycine (Zithromax)
   eicu:
     - AZITHROMYCIN 500 MG IV SOLR
     - AZITHromycin 500 mg in NS 250 mL IV
@@ -780,8 +713,6 @@ azithromycin:
     - ZITHROMAX (ml/hr)
     - "AZASITE                                                                                                                                                                                                                                                        "
   hirid: []
-  mimic:
-    - Azithromycin
   mimic3:
     - Azithromycin
   mimic4:
@@ -797,11 +728,8 @@ azithromycin:
     - Azithromycin
 aztreonam:
   blended: 1715117
-  amsterdam:
-    - Aztreonam (Azactam)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -810,8 +738,6 @@ aztreonam:
   sicdb: []
 bisacodyl:
   blended: 924939
-  amsterdam:
-    - Bisacodil (Dulcolax)
   eicu:
     - BISACODYL 10 MG RE SUPP
     - BISACODYL 10 MG RECT SUPP
@@ -839,7 +765,6 @@ bisacodyl:
     - "DULCOLAX                                                                                                                                                                                                                                                       "
     - "DULCOLAX STOOL SOFTENER                                                                                                                                                                                                                                        "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -850,8 +775,6 @@ bisacodyl:
     - Bisacodyl
 bivalirudin:
   blended: 19084670
-  amsterdam:
-    - Bivalirudine (Angiox)
   eicu:
     - Bivalirudin IVF Infused (ml/hr)
     - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
@@ -884,9 +807,6 @@ bivalirudin:
     - angiomax  (ml/hr)
     - ANGIOMAX (mg/kg/hr)
   hirid: []
-  mimic:
-    - Bivalirudin (Angiomax)
-    - Bivalirudin (Angiomax) (Impella)
   mimic3:
     - Bivalirudin (Angiomax)
   mimic4:
@@ -898,8 +818,6 @@ bivalirudin:
     - Bivalirudin
 bumetanide:
   blended: 932745
-  amsterdam:
-    - Bumetanide (Burinex)
   eicu:
     - BUMETANIDE
     - BUMETANIDE 0.25 MG/1ML 4ML SDV INJ
@@ -918,8 +836,6 @@ bumetanide:
     - Albumin w/ Bumex (ml/hr)
     - BUMEX/ALBUMIN (ml/hr)
   hirid: []
-  mimic:
-    - Bumetanide (Bumex)
   mimic3: []
   mimic4:
     - Bumetanide (Bumex)
@@ -931,14 +847,11 @@ bumetanide:
   sicdb: []
 captopril:
   blended: 1340128
-  amsterdam:
-    - Captopril (Capoten)
   eicu:
     - "CAPTOPRIL                                                                                                                                                                                                                                                      "
   hirid:
     - Captopril Tabl 25 mg
     - Lopirin Tabl 12.5 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -951,8 +864,6 @@ captopril:
     - Captopril
 carvedilol:
   blended: 1346823
-  amsterdam:
-    - Carvedilol (Eucardic)
   eicu:
     - CARVEDILOL
     - CARVEDILOL 3.125 MG PO TABS
@@ -971,7 +882,6 @@ carvedilol:
     - Carvedilol Tabl 12.5 mg
     - Dilatrend Tabl 12.5 mg
     - Dilatrend Tabl 6.25 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -988,8 +898,6 @@ carvedilol:
     - Carvedilol
 cefazolin:
   blended: 1771162
-  amsterdam:
-    - Cefazoline (Kefzol)
   eicu:
     - CEFAZOLIN 2 GM IN NS 100 ML IVPB (REPACKAGE)
     - ceFAZolin
@@ -1005,8 +913,6 @@ cefazolin:
     - Cefazolin Sod Inj 2 gm in Dextrose 5% 50 ml (ml/hr)
   hirid:
     - Kefzol Inj Lsg
-  mimic:
-    - Cefazolin
   mimic3:
     - Cefazolin
   mimic4:
@@ -1028,7 +934,6 @@ cefazolin:
     - Cefazolin
 cefepime:
   blended: 1748975
-  amsterdam: []
   eicu:
     - "1 EACH VIAL : CEFEPIME HCL 1 GM IJ SOLR"
     - cefepime
@@ -1040,8 +945,6 @@ cefepime:
     - "MAXIPIME                                                                                                                                                                                                                                                       "
   hirid:
     - Cefepime 2g Amp.
-  mimic:
-    - Cefepime
   mimic3:
     - Cefepime
   mimic4:
@@ -1054,22 +957,16 @@ cefepime:
     - Cefepim
 cefotaxime:
   blended: 1774470
-  amsterdam:
-    - Cefotaxim (Claforan)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 cefuroxime:
   blended: 1778162
-  amsterdam:
-    - Cefuroxim (Zinacef)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1079,14 +976,10 @@ cefuroxime:
     - Cefuroxim
 ceftazidime:
   blended: 1776684
-  amsterdam:
-    - Ceftazidim (Fortum)
   eicu:
     - "CEFTAZIDIME                                                                                                                                                                                                                                                    "
     - "FORTAZ                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic:
-    - Ceftazidime
   mimic3:
     - Ceftazidime
   mimic4:
@@ -1099,8 +992,6 @@ ceftazidime:
     - Ceftazidim
 ceftriaxone:
   blended: 1777806
-  amsterdam:
-    - Ceftriaxon (Rocephin)
   eicu:
     - cefTRIAXone
     - cefTRIAXone 1 GRAM in NS 50 mL IVPB
@@ -1115,8 +1006,6 @@ ceftriaxone:
   hirid:
     - Rocephin 1 g Inf Lsg
     - Rocephin 2 g Inf Lsg
-  mimic:
-    - Ceftriaxone
   mimic3:
     - Ceftriaxone
   mimic4:
@@ -1133,20 +1022,14 @@ ceftriaxone:
     - Ceftriaxon
 chloramphenicol:
   blended: 990069
-  amsterdam:
-    - Chlooramfenicol
-    - Chlooramfenicol (Globenicol)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 ciprofloxacin:
   blended: 1797513
-  amsterdam:
-    - Ciprofloxacine (Ciproxin)
   eicu:
     - CIPROFLOXACIN IN D5W 400 MG/200ML IV SOLN
     - "CIPROFLOXACIN                                                                                                                                                                                                                                                  "
@@ -1167,8 +1050,6 @@ ciprofloxacin:
     - Ciproxin Tbl 250 mg
     - Ciproxin Tbl 500 mg
     - Ciproxin Infusion 400 mg
-  mimic:
-    - Ciprofloxacin
   mimic3:
     - Ciprofloxacin
   mimic4:
@@ -1185,7 +1066,6 @@ ciprofloxacin:
     - Ciprofloxacin
 cisatracurium:
   blended: 19015726
-  amsterdam: []
   eicu:
     - cisatracurium
     - Cisatracurium IVF Infused (ml/hr)
@@ -1229,8 +1109,6 @@ cisatracurium:
     - Nimbex (40mg/80ml) (mg/hr)
     - NIMBEX (mcg/kg/hr)
   hirid: []
-  mimic:
-    - Cisatracurium
   mimic3:
     - Cisatracurium
   mimic4:
@@ -1245,11 +1123,8 @@ cisatracurium:
     - Cisatracurium besilat
 clarithromycin:
   blended: 1750500
-  amsterdam:
-    - Claritromycine (Klacid)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1259,8 +1134,6 @@ clarithromycin:
   sicdb: []
 clindamycin:
   blended: 997881
-  amsterdam:
-    - Clindamycine (Dalacin)
   eicu:
     - clindamycin
     - "CLINDAMYCIN HCL                                                                                                                                                                                                                                                "
@@ -1282,8 +1155,6 @@ clindamycin:
     - Dalacin C Phosphat Inj Lsg 300 mg
     - Dalacin C 600 Phosphat Amp.
     - Dalacin C Kps 300 mg
-  mimic:
-    - Clindamycin
   mimic3:
     - Clindamycin
   mimic4:
@@ -1304,8 +1175,6 @@ clindamycin:
     - Clindamycin
 clonazepam:
   blended: 798874
-  amsterdam:
-    - Clonazepam (Rivotril)
   eicu:
     - "CLONAZEPAM                                                                                                                                                                                                                                                     "
     - CLONAZEPAM 0.5 MG PO TABS
@@ -1315,7 +1184,6 @@ clonazepam:
     - KLONOPIN
   hirid:
     - Rivotril 0.5 mg/ml
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1332,8 +1200,6 @@ clonazepam:
     - ClonazePAM
 clonidine:
   blended: 1398937
-  amsterdam:
-    - Clonidine (Catapresan)
   eicu:
     - CLONIDINE HCL 0.1 MG PO TABS
     - "CLONIDINE                                                                                                                                                                                                                                                      "
@@ -1350,7 +1216,6 @@ clonidine:
   hirid:
     - Catapresan 25µg /ml Perfusor
     - Catapresan Tabl 150 mikrogr
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1370,25 +1235,16 @@ clonidine:
     - ClonidinePerHourrWeight
 colistin:
   blended: 901845
-  amsterdam:
-    - Belcomycine (Colistinesulfaat) 4 x dgs
-    - Belcomycine (Colistinesulfaat) 6 x dgs
-    - Colistine
-    - Colistine Inhalatie
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 daptomycin:
   blended: 1786617
-  amsterdam:
-    - Daptomycine (Cubicin)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1396,8 +1252,6 @@ daptomycin:
   sicdb: []
 desmopressin:
   blended: 1517070
-  amsterdam:
-    - Desmopressine (Minrin)
   eicu:
     - "DESMOPRESSIN ACETATE                                                                                                                                                                                                                                           "
     - "DESMOPRESSIN (NON-REFRIGERATED)                                                                                                                                                                                                                                "
@@ -1406,7 +1260,6 @@ desmopressin:
     - "DDAVP                                                                                                                                                                                                                                                          "
   hirid:
     - Minirin inj
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1420,10 +1273,6 @@ desmopressin:
     - DesmoPRESSINazetat
 dexamethasone:
   blended: 1518254
-  amsterdam:
-    - Dexamethason
-    - Dexamethason/framycetine/gramicidine oordruppels (Sofradex)
-    - Dexamethason/gentamicine oogzalf (Dexamytrex)
   eicu:
     - "1 ML VIAL : DEXAMETHASONE SODIUM PHOSPHATE 4 MG/ML IJ SOLN"
     - DEXAMETHASONE 4 MG/1ML INJECTION
@@ -1446,7 +1295,6 @@ dexamethasone:
     - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
   hirid:
     - Fortecortin Tbl 4 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1471,8 +1319,6 @@ dexamethasone:
     - DEXAmethason
 dexmedetomidine:
   blended: 19061088
-  amsterdam:
-    - Research Dexmedetomidine/Placebo
   eicu:
     - Dexmedetomidine (ml/hr)
     - Dexmedetomidine (mcg/kg/hr)
@@ -1519,8 +1365,6 @@ dexmedetomidine:
     - precedex  (mcg/kg/hr)
   hirid:
     - Dexdor Inf. Lsg
-  mimic:
-    - Dexmedetomidine (Precedex)
   mimic3:
     - Dexmedetomidine (Precedex)
   mimic4:
@@ -1537,8 +1381,6 @@ dexmedetomidine:
     - DexmedetomidinePerHourWeight
 diltiazem:
   blended: 1328165
-  amsterdam:
-    - Diltiazem (Tildiem)
   eicu:
     - Diltiazem (ml/hr)
     - Diltiazem (mg/hr)
@@ -1581,8 +1423,6 @@ diltiazem:
   hirid:
     - Diltiazem Tbl 60 mg
     - Dilzem retard Filmtbl 120 mg
-  mimic:
-    - Diltiazem
   mimic3:
     - Diltiazem
   mimic4:
@@ -1611,7 +1451,6 @@ diltiazem:
     - Diltiazem
 diphenhydramine:
   blended: 1129625
-  amsterdam: []
   eicu:
     - DIPHENHYDRAMINE HCL
     - DIPHENHYDRAMINE HCL 25 MG PO CAPS
@@ -1651,7 +1490,6 @@ diphenhydramine:
     - "ACETADRYL                                                                                                                                                                                                                                                      "
     - "ROBAFEN DM COUGH                                                                                                                                                                                                                                               "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1669,8 +1507,6 @@ diphenhydramine:
     - Diphenhydramin
 dobutamine:
   blended: 1337720
-  amsterdam:
-    - Dobutamine (Dobutrex)
   eicu:
     - Dobutamine (ml/hr)
     - Dobutamine (mcg/kg/min)
@@ -1687,8 +1523,6 @@ dobutamine:
     - dobutrex (mg/kg/min)
   hirid:
     - Dobutrex 250 mg/20ml
-  mimic:
-    - Dobutamine
   mimic3:
     - Dobutamine
   mimic4:
@@ -1705,8 +1539,6 @@ dobutamine:
     - DobutaminPerHourWeight
 dopamine:
   blended: 1337860
-  amsterdam:
-    - Dopamine (Inotropin)
   eicu:
     - Dopamine (ml/hr)
     - Dopamine (mcg/kg/min)
@@ -1726,8 +1558,6 @@ dopamine:
     - DOPamine STD 15 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
     - Dopamine (mcg/hr)
   hirid: []
-  mimic:
-    - Dopamine
   mimic3:
     - Dopamine
     - Dopamine Drip
@@ -1742,11 +1572,8 @@ dopamine:
     - DOPamin
 doxycycline:
   blended: 1738521
-  amsterdam:
-    - Doxycycline (Vibramycine)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1762,19 +1589,14 @@ doxycycline:
   sicdb: []
 enoximone:
   blended: 19063454
-  amsterdam:
-    - Enoximon (Perfan)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 epinephrine:
   blended: 1343916
-  amsterdam:
-    - Adrenaline (Epinefrine)
   eicu:
     - EPINEPHrine
     - Epinephrine (ml/hr)
@@ -1801,9 +1623,6 @@ epinephrine:
     - Adrenalin 100 µg/ml Perfusor
     - Adrenalin 1mg/ml
     - Adrenalin 100 µg/ml Bolus
-  mimic:
-    - Epinephrine
-    - Epinephrine.
   mimic3:
     - Epinephrine-k
     - Epinephrine
@@ -1824,8 +1643,6 @@ epinephrine:
     - EPINEPHrin
 epoprostenol:
   blended: 1354118
-  amsterdam:
-    - Flolan (Epoprostenol)
   eicu:
     - Epoprostenol (nanograms/kg/min)
     - Epoprostenol
@@ -1841,8 +1658,6 @@ epoprostenol:
     - Veletri (ml/hr)
     - Veletri (nanograms/kg/min)
   hirid: []
-  mimic:
-    - Epoprostenol (Veletri)
   mimic3: []
   mimic4:
     - Epoprostenol (Veletri)
@@ -1850,7 +1665,6 @@ epoprostenol:
   sicdb: []
 eptifibatide:
   blended: 1322199
-  amsterdam: []
   eicu:
     - Eptifibatide (ml/hr)
     - Eptifibatide (mcg/kg/min)
@@ -1870,8 +1684,6 @@ eptifibatide:
     - Integrilin (mcg/kg/hr)
     - Integrilin (ml/hr)
   hirid: []
-  mimic:
-    - Eptifibatide (Integrilin)
   mimic3:
     - Eptifibatide (Integrilin)
   mimic4:
@@ -1883,8 +1695,6 @@ eptifibatide:
   sicdb: []
 erythromycin:
   blended: 1746940
-  amsterdam:
-    - Erythromycine (Erythrocine)
   eicu:
     - "ERYTHROMYCIN                                                                                                                                                                                                                                                   "
     - "ERYTHROMYCIN BASE                                                                                                                                                                                                                                              "
@@ -1894,8 +1704,6 @@ erythromycin:
     - "ERY-TAB                                                                                                                                                                                                                                                        "
   hirid:
     - Erythrocin Inf Lsg
-  mimic:
-    - Erythromycin
   mimic3:
     - Erythromycin
   mimic4:
@@ -1914,8 +1722,6 @@ erythromycin:
     - Erythromycin
 esmolol:
   blended: 19063575
-  amsterdam:
-    - Esmolol (Brevibloc)
   eicu:
     - Esmolol (mcg/kg/min)
     - Esmolol (ml/hr)
@@ -1928,8 +1734,6 @@ esmolol:
     - BREVIBLOC (mcg/kg/min)
   hirid:
     - Esmolol Inj Lsg 100 mg /10 ml
-  mimic:
-    - Esmolol
   mimic3:
     - Esmolol
   mimic4:
@@ -1942,13 +1746,11 @@ esmolol:
     - Esmolol
 felodipine:
   blended: 1353776
-  amsterdam: []
   eicu:
     - "FELODIPINE                                                                                                                                                                                                                                                     "
     - "FELODIPINE ER                                                                                                                                                                                                                                                  "
     - "HYPER-SAL                                                                                                                                                                                                                                                      "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -1957,11 +1759,6 @@ felodipine:
   sicdb: []
 fentanyl:
   blended: 1154029
-  amsterdam:
-    - Fentanyl
-    - Fentanyl pleister
-    - Bupivacaïne/Fentanyl
-    - Thalamonal (Droperidol)
   eicu:
     - fentaNYL
     - fentaNYL (PF) 50 MCG/1 ML 2 ML INJ
@@ -2042,9 +1839,6 @@ fentanyl:
     - Durogesic TTS 50 ug
     - Durogesic Matrix 12 ug/h
     - Durogesic TTS Matrix 100 ug
-  mimic:
-    - Fentanyl
-    - Fentanyl (Concentrate)
   mimic3:
     - Fentanyl
     - Fentanyl (Concentrate)
@@ -2077,8 +1871,6 @@ fentanyl:
     - FentaNYL
 fluconazole:
   blended: 1754994
-  amsterdam:
-    - Fluconazol (Diflucan)
   eicu:
     - "FLUCONAZOLE                                                                                                                                                                                                                                                    "
     - Fluconazole/Ns 200Mg/100Ml 100 ml (ml/hr)
@@ -2124,8 +1916,6 @@ fluconazole:
     - Diflucan Kps 200 mg
     - Diflucan Kps 50 mg
     - Diflucan Susp Forte
-  mimic:
-    - Fluconazole
   mimic3:
     - Fluconazole
   mimic4:
@@ -2144,15 +1934,12 @@ fluconazole:
     - Fluconazol
 flumazenil:
   blended: 19055153
-  amsterdam:
-    - Flumazenil (Anexate)
   eicu:
     - flumazenil
     - "FLUMAZENIL                                                                                                                                                                                                                                                     "
     - "ROMAZICON                                                                                                                                                                                                                                                      "
   hirid:
     - Anexate 0.5mg/ 5 ml
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -2161,8 +1948,6 @@ flumazenil:
     - Flumazenil
 furosemide:
   blended: 956874
-  amsterdam:
-    - Furosemide (Lasix)
   eicu:
     - FUROSEMIDE
     - FUROSEMIDE 40 MG PO TABS
@@ -2213,9 +1998,6 @@ furosemide:
     - Lasix Bolus 20mg Amp.
     - Lasix Perfusor 250 mg Amp.
     - Lasix 40 mg tabl
-  mimic:
-    - Furosemide (Lasix)
-    - Furosemide (Lasix) 250/50
   mimic3:
     - Lasix
     - Furosemide (Lasix)
@@ -2235,11 +2017,6 @@ furosemide:
     - FUROsemid
 gentamicin:
   blended: 45892419
-  amsterdam:
-    - Gentamicine (Garamycin)
-    - Dexamethason/gentamicine oogzalf (Dexamytrex)
-    - Gentamycine  1% oogdruppels
-    - Gentamycine intrathecaal
   eicu:
     - "GENTAMICIN SULFATE                                                                                                                                                                                                                                             "
     - "GENTAMICIN SULFATE IN NS                                                                                                                                                                                                                                       "
@@ -2247,8 +2024,6 @@ gentamicin:
     - "GENTAK                                                                                                                                                                                                                                                         "
   hirid:
     - Garamycin
-  mimic:
-    - Gentamicin
   mimic3:
     - Gentamicin
   mimic4:
@@ -2273,13 +2048,9 @@ gentamicin:
     - Gentamycinsulfat
 glycopyrronium:
   blended: 45775571
-  amsterdam:
-    - Glycopyrronium drank
   eicu:
     - "ROBINUL                                                                                                                                                                                                                                                        "
   hirid: []
-  mimic:
-    - Glycopyrolate (Robinul)
   mimic3: []
   mimic4:
     - Glycopyrolate (Robinul)
@@ -2292,8 +2063,6 @@ glycopyrronium:
     - Glycopyrronium
 haloperidol:
   blended: 766529
-  amsterdam:
-    - Haloperidol (Haldol)
   eicu:
     - HALOPERIDOL 5 MG/1 ML 1 ML INJ
     - HALOPERIDOL LACTATE
@@ -2314,8 +2083,6 @@ haloperidol:
   hirid:
     - Haldol Inj Lsg 5 mg/ml
     - Haldol Trpf 2mg/ml
-  mimic:
-    - Haloperidol (Haldol)
   mimic3:
     - Haloperidol (Haldol)
   mimic4:
@@ -2334,10 +2101,6 @@ haloperidol:
     - Haloperidol
 heparin:
   blended: 1367571
-  amsterdam:
-    - Multivitamine Pro haemo
-    - Heparine
-    - Drukzak Heparine
   eicu:
     - Heparin (ml/hr)
     - HEPARIN 5000 UNIT/ML 1ML INJ
@@ -2420,10 +2183,6 @@ heparin:
     - Calciparine
     - Calciparine 12500 E/ 0.5ml
     - Liquemin 5000 U/ml
-  mimic:
-    - Heparin Sodium (Prophylaxis)
-    - Heparin Sodium
-    - Heparin Sodium (Impella)
   mimic3:
     - Heparin
     - Heparin Sodium (Prophylaxis)
@@ -2458,7 +2217,6 @@ heparin:
     - Heparin
 hydrocodone:
   blended: 1174888
-  amsterdam: []
   eicu:
     - HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS
     - HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET
@@ -2507,7 +2265,6 @@ hydrocodone:
     - "XODOL 5-300                                                                                                                                                                                                                                                    "
     - "HYCET                                                                                                                                                                                                                                                          "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -2526,12 +2283,8 @@ hydrocodone:
   sicdb: []
 hydrocortisone:
   blended: 975125
-  amsterdam:
-    - Hydrocortison (Solu Cortef)
-    - Hydrocortison acetaat (crème)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -2568,7 +2321,6 @@ hydrocortisone:
     - Hydrocortison
 hydromorphone:
   blended: 1126658
-  amsterdam: []
   eicu:
     - Hydromorephone PCA (ml/hr)
     - 1 ML  -  HYDROMORPHONE HCL 1 MG/ML IJ SOLN
@@ -2639,8 +2391,6 @@ hydromorphone:
     - Dilaudid PCA pump (mg/hr)
     - "EXALGO                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic:
-    - Hydromorphone (Dilaudid)
   mimic3:
     - Dilaudid
     - Hydromorphone (Dilaudid)
@@ -2682,9 +2432,6 @@ hydromorphone:
     - HYDROmorphon retard
 hypromellose:
   blended: 902251
-  amsterdam:
-    - Hypromellose
-    - Dextran/hypromellose (Duratears)
   eicu:
     - "HYPROMELLOSE                                                                                                                                                                                                                                                   "
     - "DEXTRAN 70/HYPROMELLOSE                                                                                                                                                                                                                                        "
@@ -2698,7 +2445,6 @@ hypromellose:
     - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
     - "ARTIFICIAL TEARS                                                                                                                                                                                                                                               "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -2706,14 +2452,6 @@ hypromellose:
   sicdb: []
 insulin:
   blended: 0
-  amsterdam:
-    - Actrapid (Insuline)
-    - Insuline aspart (Novorapid)
-    - Velosuline (Insuline)
-    - Insulatard (Insuline)
-    - Novomix (insuline)
-    - LANTUS (insuline glargine)
-    - Mixtard (Insuline) 30-70
   eicu:
     - LANTUS
     - INSULIN-LISPRO (rDNA) *UNIT* INJ
@@ -2837,15 +2575,6 @@ insulin:
     - Insulin Lantus
     - Insulin Insulatard HM
     - Insulin Mixtard 30 HM
-  mimic:
-    - Insulin - Regular
-    - Insulin - Humalog
-    - Insulin - Glargine
-    - Insulin - NPH
-    - Insulin - 70/30
-    - Insulin - Novolog
-    - Insulin - Humalog 75/25
-    - Insulin - U500
   mimic3:
     - Regular Insulin
     - Insulin
@@ -2909,8 +2638,6 @@ insulin:
     - Insulin-Isophan
 isoproterenol:
   blended: 19132933
-  amsterdam:
-    - isoprenaline
   eicu:
     - Isoproterenol
     - Isoproterenol ()
@@ -2920,7 +2647,6 @@ isoproterenol:
     - Isuprel  drip (mcg/min)
     - Isuprel (mcg/min)
   hirid: []
-  mimic: []
   mimic3:
     - Isoproterenol
     - isoproterenolmcg/min
@@ -2936,9 +2662,6 @@ isoproterenol:
     - Isoprenalin
 ketamine:
   blended: 785649
-  amsterdam:
-    - Ketamine (Ketalar)
-    - Esketamine (Ketanest-S)
   eicu:
     - Ketamine (mg/hr)
     - ketamine (mg/hr)
@@ -2962,8 +2685,6 @@ ketamine:
     - Ketalar Inj Lsg 500 mg/10 ml
     - Ketalar 5mg/ml Perfusor Schmerzdienst
     - Ketalar Perfusor
-  mimic:
-    - Ketamine
   mimic3:
     - Ketamine
   mimic4:
@@ -2981,7 +2702,6 @@ ketamine:
     - S-Ketamin # Esketamin?
 ketorolac:
   blended: 1136980
-  amsterdam: []
   eicu:
     - KETOROLAC INJ
     - KETOROLAC TROMETHAMINE
@@ -2991,8 +2711,6 @@ ketorolac:
     - "ACULAR                                                                                                                                                                                                                                                         "
     - TORADOL
   hirid: []
-  mimic:
-    - Ketorolac (Toradol)
   mimic3: []
   mimic4:
     - Ketorolac (Toradol)
@@ -3006,13 +2724,10 @@ ketorolac:
   sicdb: []
 labetalol:
   blended: 1386957
-  amsterdam:
-    - Labetalol (Trandate)
   eicu:
     - Labetalol (mg/min)
     - LABETALOL HCL
   hirid: []
-  mimic: []
   mimic3:
     - Labetolol
     - Labetalol
@@ -3029,14 +2744,11 @@ labetalol:
     - Labetalol
 lansoprazole:
   blended: 929887
-  amsterdam: []
   eicu:
     - "LANSOPRAZOLE                                                                                                                                                                                                                                                   "
     - "PREVACID                                                                                                                                                                                                                                                       "
     - "LANCET DEVICE                                                                                                                                                                                                                                                  "
   hirid: []
-  mimic:
-    - Lansoprazole (Prevacid)
   mimic3:
     - Lansoprazole (Prevacid)
   mimic4:
@@ -3049,13 +2761,10 @@ lansoprazole:
   sicdb: []
 lepirudin:
   blended: 19092139
-  amsterdam: []
   eicu:
     - "LEPIRUDIN,RECOMBINANT                                                                                                                                                                                                                                          "
   hirid:
     - Refludan Trockensubst 50 mg
-  mimic:
-    - Lepirudin
   mimic3:
     - Lepirudin
   mimic4:
@@ -3064,8 +2773,6 @@ lepirudin:
   sicdb: []
 levetiracetam:
   blended: 711584
-  amsterdam:
-    - Levetiracetam (Keppra)
   eicu:
     - LEVETIRACETAM 500 MG PO TABS
     - LEVETIRACETAM 500 MG/5ML IV SOLN
@@ -3085,8 +2792,6 @@ levetiracetam:
     - Levetiracetam Inf Lsg
     - Keppra
     - Keppra 500 mg Amp. i.v
-  mimic:
-    - Levetiracetam (Keppra)
   mimic3:
     - Keppra
   mimic4:
@@ -3108,8 +2813,6 @@ levetiracetam:
     - LevETIRAcetam
 levofloxacin:
   blended: 1742253
-  amsterdam:
-    - Levofloxacine (Tavanic)
   eicu:
     - LEVOFLOXACIN 750 mg in D5W 150mL
     - LEVOFLOXACIN IN D5W 750 MG/150ML IV SOLN
@@ -3132,8 +2835,6 @@ levofloxacin:
   hirid:
     - Tavanic Inf Lsg 500 mg 100 ml
     - Tavanic Tbl 500 mg
-  mimic:
-    - Levofloxacin
   mimic3:
     - Levofloxacin
   mimic4:
@@ -3151,10 +2852,6 @@ levofloxacin:
     - Levofloxacin
 lidocaine:
   blended: 989878
-  amsterdam:
-    - Lidocaïne zalf
-    - Lidocaïne (Xylocard)
-    - Multivitamine Pro haemo
   eicu:
     - 20 ML  -  LIDOCAINE HCL 1 % IJ SOLN
     - 5 G  -  LIDOCAINE-PRILOCAINE 2.5-2.5 % EX CREA
@@ -3232,8 +2929,6 @@ lidocaine:
     - "IRON ASP GLY&PS CMPLX/ASCORB.CAL/VIT B12/FA/CA-THR/SUCC.ACID                                                                                                                                                                                                   "
     - "LIDOPATCH                                                                                                                                                                                                                                                      "
   hirid: []
-  mimic:
-    - Lidocaine
   mimic3:
     - Lidocaine
   mimic4:
@@ -3285,14 +2980,10 @@ lidocaine:
     - Lidocain hydrochlorid
 linezolid:
   blended: 1736887
-  amsterdam:
-    - Linezolid (Zyvoxid)
   eicu:
     - "LINEZOLID                                                                                                                                                                                                                                                      "
     - "ZYVOX                                                                                                                                                                                                                                                          "
   hirid: []
-  mimic:
-    - Linezolid
   mimic3:
     - Linezolid
   mimic4:
@@ -3305,8 +2996,6 @@ linezolid:
     - Linezolid
 lorazepam:
   blended: 791967
-  amsterdam:
-    - Lorazepam (Temesta)
   eicu:
     - LORAZEPAM
     - LORazepam
@@ -3348,8 +3037,6 @@ lorazepam:
     - Temesta Expidet 1mg
     - Temesta inj Amp 4mg/ml
     - Temesta Expidet 2.5 mg
-  mimic:
-    - Lorazepam (Ativan)
   mimic3:
     - Ativan
     - Lorazepam (Ativan)
@@ -3369,8 +3056,6 @@ lorazepam:
     - LORazepam
 meropenem:
   blended: 1709170
-  amsterdam:
-    - Meropenem (Meronem)
   eicu:
     - MEROPENEM 1 G IV SOLR
     - MEROPENEM 500 MG IV SOLR
@@ -3386,8 +3071,6 @@ meropenem:
     - Meropenem 500 mg
     - Meronem 1g
     - Meronem 500 mg
-  mimic:
-    - Meropenem
   mimic3:
     - Meropenem
   mimic4:
@@ -3403,16 +3086,12 @@ meropenem:
     - Meropenem
 methadone:
   blended: 1103640
-  amsterdam:
-    - Methadon (Symoron)
   eicu:
     - "METHADONE HCL                                                                                                                                                                                                                                                  "
     - "METHADONE                                                                                                                                                                                                                                                      "
     - "METHADOSE                                                                                                                                                                                                                                                      "
     - "DOLOPHINE HCL                                                                                                                                                                                                                                                  "
   hirid: []
-  mimic:
-    - Methadone Hydrochloride
   mimic3:
     - Methadone Hydrochloride
   mimic4:
@@ -3428,8 +3107,6 @@ methadone:
     - Methadon
 methylprednisolone:
   blended: 1506270
-  amsterdam:
-    - Methylprednisolon (Solu-Medrol)
   eicu:
     - METHYLPREDNISOLONE SODIUM SUCC 125 MG IJ SOLR
     - METHYLPREDNISOLONE SODIUM SUCC 40 MG IJ SOLR
@@ -3462,7 +3139,6 @@ methylprednisolone:
     - Solu Medrol Stechampullen 2g
     - Solumedrol 40 mg
     - Solumedrol 500 mg
-  mimic: []
   mimic3:
     - METHYLPRED 450MG/HR
     - METHYLPREDNISOLONE
@@ -3503,14 +3179,9 @@ methylprednisolone:
     - MethylPREDNIsolon
 methylene blue:
   blended: 19092140
-  amsterdam:
-    - Methyleenblauw IV (Methylthionide cloride)
-    - Methyleenblauw IV (Methylthionide cloride)X
-    - Methyleenblauw NIET IV (Methylthionide cloride)
   eicu:
     - Methylene Blue (mg/kg/hr)
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -3520,8 +3191,6 @@ methylene blue:
     - Methylenblau
 metoclopramide:
   blended: 906780
-  amsterdam:
-    - Metoclopram (Primperan)
   eicu:
     - 2 ML  -  METOCLOPRAMIDE HCL 5 MG/ML IJ SOLN
     - "2 ML VIAL : METOCLOPRAMIDE HCL 5 MG/ML IJ SOLN"
@@ -3540,7 +3209,6 @@ metoclopramide:
     - Reglan (ml/hr)
     - reglan (mcg/hr)
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -3553,7 +3221,6 @@ metoclopramide:
     - Metoclopramid
 metoprolol:
   blended: 1307046
-  amsterdam: []
   eicu:
     - LOPRESSOR
     - meTOPROLOL tartrate
@@ -3582,8 +3249,6 @@ metoprolol:
     - METOPROLOL TARTRATE 50 MG TAB
   hirid:
     - Metoprolol Tartrat Tbl 10 mg
-  mimic:
-    - Metoprolol
   mimic3:
     - LOPRESSOR IV
     - Metoprolol
@@ -3606,9 +3271,6 @@ metoprolol:
     - Metoprolol
 metronidazole:
   blended: 1707164
-  amsterdam:
-    - Metronidazol (Flagyl)
-    - Metronidazol-Flagyl
   eicu:
     - metroNIDAZOLE 500 MG in 100ML RTU-PB
     - METRONIDAZOLE 500 MG PO TABS
@@ -3631,8 +3293,6 @@ metronidazole:
     - Metronidazole inf 500 mg/100ml
     - Metronidazole tabl 200 mg
     - Flagyl Tbl 500 mg
-  mimic:
-    - Metronidazole
   mimic3:
     - Metronidazole
   mimic4:
@@ -3651,14 +3311,11 @@ metronidazole:
     - Metronidazol
 micafungin:
   blended: 19018013
-  amsterdam: []
   eicu:
     - "MICAFUNGIN SODIUM                                                                                                                                                                                                                                              "
     - Micafungin/Ns  100 mg/ 100 ml 100 ml (ml/hr)
     - "MYCAMINE                                                                                                                                                                                                                                                       "
   hirid: []
-  mimic:
-    - Micafungin
   mimic3:
     - Micafungin
   mimic4:
@@ -3669,9 +3326,6 @@ micafungin:
     - Micafungin
 midazolam:
   blended: 708298
-  amsterdam:
-    - Midazolam (Dormicum)
-    - Research  Midazolam/Placebo
   eicu:
     - MIDAZOLAM
     - midazolam
@@ -3716,8 +3370,6 @@ midazolam:
     - Dormicum Bolus 1mg/ml
     - Dormicum Tbl 7.5 mg
     - Dormicum Perfusor 5mg/ml
-  mimic:
-    - Midazolam (Versed)
   mimic3:
     - Midazolam
     - Midazolam (Versed)
@@ -3736,7 +3388,6 @@ midazolam:
     - Midazolam
 milrinone:
   blended: 1368671
-  amsterdam: []
   eicu:
     - Milrinone (ml/hr)
     - Milrinone (mcg/kg/min)
@@ -3749,8 +3400,6 @@ milrinone:
     - Milrinone (mcg/kg/hr)
   hirid:
     - Corotrop Inj Lsg 1mg/ml 10 ml
-  mimic:
-    - Milrinone
   mimic3:
     - Milrinone
   mimic4:
@@ -3762,15 +3411,12 @@ milrinone:
     - Milrinon
 mirtazapine:
   blended: 725131
-  amsterdam:
-    - Mirtazapine (Remeron)
   eicu:
     - "MIRTAZAPINE                                                                                                                                                                                                                                                    "
     - "REMERON                                                                                                                                                                                                                                                        "
   hirid:
     - Remeron Tbl 30 mg
     - Remeron subligual 15 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -3783,10 +3429,6 @@ mirtazapine:
     - Mirtazepin
 morphine:
   blended: 1110410
-  amsterdam:
-    - Morfine drank (Oramorph)
-    - MS Contin
-    - Morfine
   eicu:
     - MORPHINE 2 MG/1 ML 1 ML SYR
     - morphine
@@ -3853,8 +3495,6 @@ morphine:
     - Morphin HCL Perfusor
     - Morphin HCl Lsg à 20mg/ml
     - PCA-Morphin
-  mimic:
-    - Morphine Sulfate
   mimic3:
     - Morphine Sulfate
   mimic4:
@@ -3897,11 +3537,8 @@ morphine:
     - Morphinsulfat
 moxifloxacin:
   blended: 1716903
-  amsterdam:
-    - Moxifloxacin (Avelox)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -3911,11 +3548,8 @@ moxifloxacin:
   sicdb: []
 neomycin:
   blended: 915981
-  amsterdam:
-    - Neomycine sulfaat
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -3933,14 +3567,10 @@ neomycin:
   sicdb: []
 neostigmine:
   blended: 717136
-  amsterdam:
-    - Neostigmine methylsulfaat
   eicu:
     - NEOSTIGMINE METHYLSULFATE
     - neostigmine
   hirid: []
-  mimic:
-    - Neostigmine (Prostigmin)
   mimic3: []
   mimic4:
     - Neostigmine (Prostigmin)
@@ -3951,14 +3581,11 @@ neostigmine:
     - Neostigmin
 nesiritide:
   blended: 1338985
-  amsterdam: []
   eicu:
     - Nesiritide (BNP) (ml/hr)
     - Nesiritide (BNP) (mcg/kg/min)
     - Nesiritide (BNP) ()
   hirid: []
-  mimic:
-    - Nesiritide
   mimic3:
     - Nesiritide
   mimic4:
@@ -3967,8 +3594,6 @@ nesiritide:
   sicdb: []
 nicardipine:
   blended: 1318137
-  amsterdam:
-    - Nicardipine (Cardene)
   eicu:
     - Nicardipine (ml/hr)
     - niCARdipine 40 MG in 200 mL NS RTU-
@@ -3998,9 +3623,6 @@ nicardipine:
     - CARDENE (mg/hr)
     - cardene (ml/hr)
   hirid: []
-  mimic:
-    - Nicardipine
-    - Nicardipine 40mg/200
   mimic3:
     - Nicardipine
   mimic4:
@@ -4015,15 +3637,11 @@ nicardipine:
   sicdb: []
 nimodipine:
   blended: 1319133
-  amsterdam:
-    - Nimodipine (Nimotop)
-    - Nimodipine - Studie
   eicu:
     - "NIMODIPINE                                                                                                                                                                                                                                                     "
   hirid:
     - Nimotop Tabl 30 mg
     - Nimotop inf 0.2 mg/ml
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4036,11 +3654,8 @@ nimodipine:
     - NiMODipin
 nitrofurantoin:
   blended: 920293
-  amsterdam:
-    - Nitrofurantoïne ( Furadantine)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4050,12 +3665,6 @@ nitrofurantoin:
   sicdb: []
 nitroglycerin:
   blended: 1361711
-  amsterdam:
-    - Deponit-5 (Nitro-glycerine pleister)
-    - Deponit-10 (Nitro-glycerine pleister)
-    - Nitroglycerine (Nitro-pohl)
-    - Nitrobaat (Nitroglycerine)
-    - Nitroglycerine Spray
   eicu:
     - NITROGLYCERIN 0.4 MG SL SUBL
     - Nitroglycerin (ml/hr)
@@ -4107,8 +3716,6 @@ nitroglycerin:
     - Nitroderm TTS 10
     - Nitroderm TTS 5
     - Sodium nitro
-  mimic:
-    - Nitroglycerin
   mimic3:
     - Nitroglycerin
     - Nitroglycerine
@@ -4136,8 +3743,6 @@ nitroglycerin:
     - Nitroglycerin
 nitroprusside:
   blended: 19020994
-  amsterdam:
-    - Nitroprusside (Nipride)
   eicu:
     - 2 ML  -  NITROPRUSSIDE SODIUM 25 MG/ML IV SOLN
     - Nitroprusside (ml/hr)
@@ -4158,8 +3763,6 @@ nitroprusside:
     - Nipruss 1mg/ml
     - Nitroprussiat Fides 0.5mg/ml
     - Nitroprussiat Fides 1mg/ml
-  mimic:
-    - Nitroprusside
   mimic3:
     - Nitroprusside
   mimic4:
@@ -4170,8 +3773,6 @@ nitroprusside:
     - Natriumnitroprussid
 norepinephrine:
   blended: 1321341
-  amsterdam:
-    - Noradrenaline (Norepinefrine)
   eicu:
     - Norepinephrine (ml/hr)
     - Norepinephrine (mcg/min)
@@ -4220,8 +3821,6 @@ norepinephrine:
     - Noradrenalin 10 µg/ml Bolus
     - Noradrenalin 100 µg/ml Perfusor
     - Noradrenalin 1mg/ml
-  mimic:
-    - Norepinephrine
   mimic3:
     - Norepinephrine
     - Levophed-k
@@ -4240,19 +3839,14 @@ norepinephrine:
     - NorepinephrinPerHourWeight
 norfloxacin:
   blended: 1721543
-  amsterdam:
-    - Norfloxacine (Noroxin)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 octreotide:
   blended: 1522957
-  amsterdam:
-    - Octreotide (Sandostatine)
   eicu:
     - Octreotide (ml/hr)
     - Octreotide (mcg/hr)
@@ -4276,8 +3870,6 @@ octreotide:
     - Sandostatin (mcg/min)
     - Sandostatin (mcg/hr)
   hirid: []
-  mimic:
-    - Octreotide
   mimic3:
     - Octreotide
   mimic4:
@@ -4296,21 +3888,15 @@ octreotide:
     - ocTREOtid
 pancuronium:
   blended: 19026674
-  amsterdam:
-    - Pancuronium (Pavulon)
   eicu: []
   hirid:
     - Pavulon inj 2 mg/ml
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 pantoprazole:
   blended: 948078
-  amsterdam:
-    - PantoPac
-    - Pantoprazol (Pantozol)
   eicu:
     - PANTOPRAZOLE
     - PANTOPRAZOLE 40 MG EC TAB
@@ -4340,7 +3926,6 @@ pantoprazole:
     - pantoprazole sodium 40 mg iv solr
   hirid:
     - Pavulon inj 2 mg/ml
-  mimic: []
   mimic3:
     - PANTOPRAZOLE
     - PANTOPRAZOLE GTT
@@ -4366,11 +3951,8 @@ pantoprazole:
     - Pantoprazol
 penicillin G:
   blended: 1728416
-  amsterdam:
-    - Benzylpenicilline (Penicilline)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4382,8 +3964,6 @@ penicillin G:
   sicdb: []
 pentobarbital:
   blended: 730729
-  amsterdam:
-    - Pentobarbital (Nembutal)
   eicu:
     - Pentobarbital (mg/kg/hr)
     - Pentobarbital (ml/hr)
@@ -4392,8 +3972,6 @@ pentobarbital:
     - Pentobarbital (mcg/kg/hr)
     - Nembutal (mg/kg/hr)
   hirid: []
-  mimic:
-    - Pentobarbital
   mimic3:
     - Pentobarbital
   mimic4:
@@ -4403,20 +3981,14 @@ pentobarbital:
   sicdb: []
 phenethicillin:
   blended: 19088795
-  amsterdam:
-    - Feneticilline (Broxil)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 phenylephrine:
   blended: 1135766
-  amsterdam:
-    - Fenylefrine (phenylephrine)
-    - Fenylefrine
   eicu:
     - Phenylephrine (ml/hr)
     - Phenylephrine (mcg/min)
@@ -4472,10 +4044,6 @@ phenylephrine:
     - "ROBAFEN DM COUGH                                                                                                                                                                                                                                               "
     - Neosynephrine (mcg/min)
   hirid: []
-  mimic:
-    - Phenylephrine
-    - Phenylephrine (50/250)
-    - Phenylephrine (200/250)
   mimic3:
     - Phenylephrine
     - Neosynephrine
@@ -4507,7 +4075,6 @@ phenylephrine:
     - Phenylephrin
 phenytoin:
   blended: 740910
-  amsterdam: []
   eicu:
     - "PHENYTOIN                                                                                                                                                                                                                                                      "
     - "PHENYTOIN SODIUM                                                                                                                                                                                                                                               "
@@ -4519,8 +4086,6 @@ phenytoin:
     - Phenhydan tabl 100 mg
     - Phenhydan Inf Lsg 750 mg
     - Phenhydan inj 50 mg/ml 5 ml
-  mimic:
-    - Dilantin
   mimic3:
     - Dilantin
   mimic4:
@@ -4537,8 +4102,6 @@ phenytoin:
     - Phenytoin
 piperacillin:
   blended: 1746114
-  amsterdam:
-    - Piperacilline (Pipcil)
   eicu:
     - PIPERACILLIN SOD-TAZOBACTAM SO 3-0.375 G IV SOLR
     - piperacillin-tazobactam
@@ -4561,9 +4124,6 @@ piperacillin:
   hirid:
     - Piperacillin-Tazobactam 2.25 Inj Lsg
     - Tazobac 2 g inf
-  mimic:
-    - Piperacillin/Tazobactam (Zosyn)
-    - Piperacillin
   mimic3:
     - Piperacillin/Tazobactam (Zosyn)
     - Piperacillin
@@ -4581,8 +4141,6 @@ piperacillin:
     - Piperacillin/Tazobactam
 procainamide:
   blended: 1351461
-  amsterdam:
-    - Procainamide (Pronestyl)
   eicu:
     - Procainamide (ml/hr)
     - Procainamide (mg/min)
@@ -4590,8 +4148,6 @@ procainamide:
     - Procainamide (mcg/kg/min)
     - "PROCAINAMIDE HCL                                                                                                                                                                                                                                               "
   hirid: []
-  mimic:
-    - Procainamide
   mimic3:
     - Procainamide
   mimic4:
@@ -4601,8 +4157,6 @@ procainamide:
   sicdb: []
 propofol:
   blended: 753626
-  amsterdam:
-    - Propofol (Diprivan)
   eicu:
     - Propofol (ml/hr)
     - Propofol (mcg/kg/min)
@@ -4647,8 +4201,6 @@ propofol:
     - Disoprivan 2%
     - Disoprivan 2% BOLUS
     - Disoprivan 1%
-  mimic:
-    - Propofol
   mimic3:
     - Propofol
   mimic4:
@@ -4662,8 +4214,6 @@ propofol:
     - PropofolPerHourWeight
 ranitidine:
   blended: 961047
-  amsterdam:
-    - Ranitidine (Zantac)
   eicu:
     - "RANITIDINE HCL                                                                                                                                                                                                                                                 "
     - "RANITIDINE                                                                                                                                                                                                                                                     "
@@ -4672,8 +4222,6 @@ ranitidine:
     - "MYLANTA GAS MAXIMUM STRENGTH                                                                                                                                                                                                                                   "
     - "ZANTAC                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic:
-    - Ranitidine (Prophylaxis)
   mimic3:
     - Ranitidine (Prophylaxis)
   mimic4:
@@ -4685,11 +4233,8 @@ ranitidine:
     - Ranitidin
 remifentanil:
   blended: 19016749
-  amsterdam:
-    - Remifentanyl
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4698,8 +4243,6 @@ remifentanil:
     - Remifentanil
 rocuronium:
   blended: 19003953
-  amsterdam:
-    - Rocuronium (Esmeron)
   eicu:
     - ROCURONIUM BROMIDE
     - ROCURONIUM
@@ -4720,8 +4263,6 @@ rocuronium:
     - Zemuron (mcg/kg/min)
   hirid:
     - Esmeron Inj Lsg 50 mg
-  mimic:
-    - Rocuronium
   mimic3: []
   mimic4:
     - Rocuronium
@@ -4733,11 +4274,8 @@ rocuronium:
     - ROCuronium
 silver sulfadiazine:
   blended: 966956
-  amsterdam:
-    - Zilversulfadiazine (Flammazine)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4745,8 +4283,6 @@ silver sulfadiazine:
   sicdb: []
 simvastatin:
   blended: 1539403
-  amsterdam:
-    - Simvastatine (Zocor)
   eicu:
     - "SIMVASTATIN                                                                                                                                                                                                                                                    "
     - SIMVASTATIN
@@ -4759,7 +4295,6 @@ simvastatin:
     - "VYTORIN                                                                                                                                                                                                                                                        "
     - "SIMCOR                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4772,8 +4307,6 @@ simvastatin:
     - Simvastatin
 spironolactone:
   blended: 970250
-  amsterdam:
-    - Spironolacton (Aldactone)
   eicu:
     - SPIRONOLACTONE 25 MG PO TABS
     - "SPIRONOLACTONE                                                                                                                                                                                                                                                 "
@@ -4786,7 +4319,6 @@ spironolactone:
     - Aldactone Filmtbl 25 mg
     - Aldactone Filmtbl 100 mg
     - Aldactone Filmtbl 50
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4800,13 +4332,10 @@ spironolactone:
     - Spironolacton
 succinylcholine:
   blended: 836208
-  amsterdam:
-    - Suxamethonium (Succinylcholine)
   eicu:
     - succinylcholine
     - "SUCCINYLCHOLINE CHLORIDE                                                                                                                                                                                                                                       "
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4817,12 +4346,8 @@ succinylcholine:
     - Succinylcholin
 sufentanil:
   blended: 19078219
-  amsterdam:
-    - Sufentanil (Sufenta)
-    - Bupivacaïne/Sufentanil
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4833,9 +4358,6 @@ sufentanil:
     - SufentanilePerHourWeight
 sulfamethoxazole / trimethoprim:
   blended: 36029301 # 1836430 / 1705674
-  amsterdam:
-    - Co-Trimoxazol (Bactrimel)
-    - Co-trimoxazol forte (Bactrimel)
   eicu:
     - "SULFAMETHOXAZOLE-TRIMETHOPRIM                                                                                                                                                                                                                                  "
     - "SULFAMETHOXAZOLE                                                                                                                                                                                                                                               "
@@ -4852,8 +4374,6 @@ sulfamethoxazole / trimethoprim:
     - Bactrim Inf Lsg
     - Bactrim Amp. 400/80 mg Inf Lsg
     - Bactrim Amp 400/80 mg Inf Lsg
-  mimic:
-    - Bactrim (SMX/TMP)
   mimic3:
     - Bactrim (SMX/TMP)
   mimic4:
@@ -4868,22 +4388,16 @@ sulfamethoxazole / trimethoprim:
     - Trimethoprim/Sulfametoxazol
 tigecycline:
   blended: 1786617
-  amsterdam:
-    - Tigecycline (Tygacil)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 tetracycline:
   blended: 1836948
-  amsterdam:
-    - Tetracycline
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4892,13 +4406,10 @@ tetracycline:
   sicdb: []
 terlipressin:
   blended: 19119253
-  amsterdam:
-    - Terlipressine (Glypressin)
   eicu: []
   hirid:
     - Glypressin Inj Lsg
     - Haemopressin TS Inj Lsg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
@@ -4906,13 +4417,10 @@ terlipressin:
     - Terlipressin
 thiopental:
   blended: 700253
-  amsterdam:
-    - Thiopental (Nesdonal)
   eicu: []
   hirid:
     - Pentothal inj 0.5g
     - Pentothal 1g Inf Lsg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
@@ -4920,7 +4428,6 @@ thiopental:
     - Thiopentalnatrium
 tirofiban:
   blended: 19017067
-  amsterdam: []
   eicu:
     - Tirofiban (ml/hr)
     - Tirofiban (mcg/kg/min)
@@ -4928,8 +4435,6 @@ tirofiban:
     - tirofiban (mcg/kg/min)
   hirid:
     - Aggrastat Inf Lsg
-  mimic:
-    - Tirofiban (Aggrastat)
   mimic3:
     - Tirofiban (Aggrastat)
   mimic4:
@@ -4940,12 +4445,8 @@ tirofiban:
     - Tirofiban
 tobramycin:
   blended: 902722
-  amsterdam:
-    - Tobramycine (Obracin)
-    - Tobramycine oogzalf (Tobrex)
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4960,8 +4461,6 @@ tobramycin:
   sicdb: []
 tramadol:
   blended: 1103314
-  amsterdam:
-    - Tramadol (Tramadolhydrochloride)
   eicu:
     - TRAMADOL HCL 50 MG PO TABS
     - "TRAMADOL HCL                                                                                                                                                                                                                                                   "
@@ -4982,7 +4481,6 @@ tramadol:
     - Tramal Trpf 100 mg/ml
     - Tramal Retard Tbl. 100 mg
     - Tramal Kps 50 mg
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -4994,7 +4492,6 @@ tramadol:
     - traMADol
 tranexamic acid:
   blended: 1303425
-  amsterdam: []
   eicu:
     - tranexamic acid (mg/hr)
     - Tranexamic Acid (mg/hr)
@@ -5005,7 +4502,6 @@ tranexamic acid:
   hirid:
     - Cyklokapron inj 100 mg/ml
     - Cyklokapron Infusion
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -5017,7 +4513,6 @@ tranexamic acid:
     - Tranexams
 treprostinil:
   blended: 1327256
-  amsterdam: []
   eicu:
     - "TREPROSTINIL                                                                                                                                                                                                                                                   "
     - Treprostinil (nanograms/kg/min)
@@ -5025,8 +4520,6 @@ treprostinil:
     - Remodulin (nanograms/kg/min)
     - "TYVASO                                                                                                                                                                                                                                                         "
   hirid: []
-  mimic:
-    - Treprostinil (Remodulin)
   mimic3: []
   mimic4:
     - Treprostinil (Remodulin)
@@ -5045,7 +4538,6 @@ treprostinil:
   sicdb: []
 triamterene:
   blended: 904542
-  amsterdam: []
   eicu:
     - "TRIAMTERENE-HCTZ                                                                                                                                                                                                                                               "
     - "TRIAMTERENE                                                                                                                                                                                                                                                    "
@@ -5058,7 +4550,6 @@ triamterene:
     - "DYAZIDE                                                                                                                                                                                                                                                        "
   hirid:
     - Dyrenium comp. Kps
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -5070,8 +4561,6 @@ triamterene:
     - Triamteren
 vancomycin:
   blended: 1707687
-  amsterdam:
-    - Vancomycine
   eicu:
     - VANCOMYCIN HCL 1000 MG IV SOLR
     - vancomycin
@@ -5116,8 +4605,6 @@ vancomycin:
   hirid:
     - Vancocin Amp 500 mg
     - Vancocin oral Kps 250 mg
-  mimic:
-    - Vancomycin
   mimic3:
     - Vancomycin
   mimic4:
@@ -5150,7 +4637,6 @@ vancomycin:
     - Vancomycin
 vasopressin (USP):
   blended: 1507835
-  amsterdam: []
   eicu:
     - Vasopressin
     - Vasopressin (units/min)
@@ -5168,7 +4654,6 @@ vasopressin (USP):
   hirid:
     - Vasopressin inj 20 U/ml
     - Vasopressin inf 0.4 U/ml
-  mimic: []
   mimic3:
     - Vasopressin
   mimic4:
@@ -5180,8 +4665,6 @@ vasopressin (USP):
     - Vasopressin
 vecuronium:
   blended: 19012598
-  amsterdam:
-    - Vecuronium (Norcuron)
   eicu:
     - Vecuronium (mcg/kg/min)
     - Vecuronium IVF Infused (ml/hr)
@@ -5202,8 +4685,6 @@ vecuronium:
     - norcuron (mcg/kg/min)
   hirid:
     - Norcuron inj 4mg/ml
-  mimic:
-    - Vecuronium
   mimic3:
     - Vecuronium
   mimic4:
@@ -5214,7 +4695,6 @@ vecuronium:
   sicdb: []
 warfarin:
   blended: 1310149
-  amsterdam: []
   eicu:
     - WARFARIN SODIUM 5 MG PO TABS
     - "WARFARIN SODIUM                                                                                                                                                                                                                                                "
@@ -5236,8 +4716,6 @@ warfarin:
     - Coumadin
     - "JANTOVEN                                                                                                                                                                                                                                                       "
   hirid: []
-  mimic:
-    - Coumadin (Warfarin)
   mimic3:
     - Coumadin (Warfarin)
   mimic4:
@@ -5257,26 +4735,14 @@ warfarin:
   sicdb: []
 xylometazoline:
   blended: 943852
-  amsterdam:
-    - Xylometazoline (Otrivin) neusspray
-    - Xylometazoline (Otrivin) neusdruppels
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 glucose:
   blended: 1560524
-  amsterdam:
-    - Glucose 10%
-    - Glucose 20%
-    - Glucose 30 %
-    - Glucose 40%
-    - Glucose 40% spuit
-    - Glucose 5 %
-    - Glucose 5% spuit
   eicu:
     - D10 (ml/hr)
     - D10W
@@ -5702,13 +5168,6 @@ glucose:
     - D5 1/2NS with 20meq Potassium (ml/hr)
     - D5 1/2nss (ml/hr)
   hirid: []
-  mimic:
-    - Dextrose 5%
-    - Dextrose 50%
-    - Dextrose 10%
-    - Dextrose 20%
-    - Dextrose 40%
-    - Dextrose 30%
   mimic3:
     - D5W
     - D10W
@@ -5799,11 +5258,8 @@ glucose:
   sicdb: []
 gelofusine:
   blended: 0
-  amsterdam:
-    - Gelofusine
   eicu: []
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
@@ -5811,10 +5267,6 @@ gelofusine:
     - Gelofusin
 thiamine:
   blended: 19137312
-  amsterdam:
-    - Thiamine (Vitamine B1)
-    - Vitamine B Complex
-    - Vitamine B  complex
   eicu:
     - THIAMINE HCL 100 MG PO TABS
     - THIAMINE 100 MG TAB
@@ -5901,8 +5353,6 @@ thiamine:
     - Benerva Inj Lsg 100mg/1 ml
     - Benerva Tbl 300 mg
     - Benerva Tbl 100 mg
-  mimic:
-    - Thiamine
   mimic3:
     - Thiamine
   mimic4:
@@ -5919,19 +5369,6 @@ thiamine:
     - Thiaminhydrochlorid
 sodium chloride:
   blended: 967823
-  amsterdam:
-    - NaCl 0,45%/Glucose 2,5%
-    - NaCL 0,9% spuit
-    - NaCl 0,9 %
-    - NaCl 0,9% injecties
-    - NaCL 2,9%
-    - NaCL zakje
-    - NaCL 0,9% CO-meting
-    - NaCl tabletten
-    - NaCl 0,9% druppels
-    - NaCl 0.65 %
-    - NaCl 0,9% Neusspray
-    - Research NaCL 0,9%
   eicu:
     - Normal Saline
     - 0.9% Normal Saline (ml/hr)
@@ -6326,11 +5763,6 @@ sodium chloride:
   hirid:
     - NaCl 2.5%
     - NaCl conc Amp 14.5%
-  mimic:
-    - NaCl 0.9%
-    - NaCl 0.45%
-    - NaCl 3% (Hypertonic Saline)
-    - NaCl 23.4%
   mimic3:
     - .45% Normal Saline
     - Sodium Chloride
@@ -6382,7 +5814,6 @@ sodium chloride:
     - ZzNatriumchlorid 0,9%
 sodium chloride / glucose:
   blended: 0
-  amsterdam: []
   eicu:
     - D5NSS (ml/hr)
     - D5 NS w 20K (ml/hr)
@@ -6504,20 +5935,15 @@ sodium chloride / glucose:
     - D51/2NS (ml/hr)
     - D51/2NS w/ 20meqK (ml/hr)
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu: []
   sicdb: []
 polyethylene glycols:
   blended: 948515
-  amsterdam:
-    - Macrogol (Movicolon)
-    - Macrogol (Movicolon)X
   eicu:
     - POLYETHYLENE GLYCOL 3350 PO PACK
   hirid: []
-  mimic: []
   mimic3: []
   mimic4: []
   nwicu:
@@ -6527,10 +5953,6 @@ polyethylene glycols:
     - Macrogol 3350
 potassium chloride:
   blended: 19049105
-  amsterdam:
-    - Kaliumchloride (KCL)
-    - Kaliumchloride drank
-    - KCL (SlowK / Kalium durettes)
   eicu:
     - DEXT 5%-NACL 0.45%-KCL 20MEQ LVP
     - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
@@ -6876,10 +6298,6 @@ potassium chloride:
     - Kalium Chlorid 15% 10 ml
     - Kalium-Chlorid Sirup
     - K-Cl conc
-  mimic:
-    - KCL (Bolus)
-    - KCl (CRRT)
-    - Potassium Chloride
   mimic3:
     - KCL
     - KCL (Bolus)
@@ -6910,7 +6328,6 @@ potassium chloride:
     - Kaliumchlorid
 potassium phosphate:
   blended: 19027362
-  amsterdam: []
   eicu:
     - potassium phosphate 3 mmol/mL15 mL Inj
     - POTASSIUM PHOSPHATE
@@ -6928,7 +6345,6 @@ potassium phosphate:
   hirid:
     - Kalium Phosphat
     - Kalium Phosphat für Perfusor
-  mimic: []
   mimic3:
     - Potassium Phosphate
   mimic4: []
@@ -6937,9 +6353,6 @@ potassium phosphate:
   sicdb: []
 magnesium sulfate:
   blended: 19093848
-  amsterdam:
-    - Magnesiumsulfaat (MgSO4)
-    - Magnesiumsulfaat
   eicu:
     - MAGNESIUM SULF 2 G/50 ML NS
     - MAGNESIUM SULFATE 2 GM/50 ML IVPB
@@ -6989,10 +6402,6 @@ magnesium sulfate:
       Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()
   hirid:
     - Magnesium Sulfat 50% 10 ml
-  mimic:
-    - Magnesium Sulfate
-    - Magnesium Sulfate (Bolus)
-    - Magnesium Sulfate (OB-GYN)
   mimic3:
     - Magnesium Sulfate
     - Magnesium Sulfate (Bolus)
@@ -7016,13 +6425,6 @@ magnesium sulfate:
     - ZzMagnesiumsulfat
 sodium bicarbonate:
   blended: 939506
-  amsterdam:
-    - Natrium bicarbonaat 1.4%
-    - Natrium bicarbonaat 4,2 %
-    - Natrium bicarbonaat 8,4 %
-    - Natriumbicarbonaat  4,2%
-    - Natriumbicarbonaat  8,4%
-    - Natriumbicarbonaat capsule
   eicu:
     - "D5+150meqNaHco3 "
     - D5 with150MEQ HC03 (ml/hr)
@@ -7491,11 +6893,6 @@ sodium bicarbonate:
     - Na-Bicarbonat Inf Lsg 8.4%
     - Na- Bicarbonat 8.4%
     - Na-Bicarbonat 1.4%
-  mimic:
-    - sodium bic
-    - sodium bicarb
-    - Sodium Bicarbo
-    - Sodium Bicarbonate
   mimic3:
     - sodium bic
     - sodium bicarb
@@ -7584,8 +6981,6 @@ sodium bicarbonate:
     - Natrium hydrogencarbonat
 Lactated Ringer's:
   blended: 0
-  amsterdam:
-    - Ri-Lac (Ringers lactaat)
   eicu:
     - "LR "
     - LR (ml/hr)
@@ -7627,7 +7022,6 @@ Lactated Ringer's:
     - lactated ringer's (ml/hr)
     - lactated ringers (ml/hr)
   hirid: []
-  mimic: []
   mimic3:
     - LR
     - Lactated Ringers
@@ -7644,14 +7038,8 @@ Lactated Ringer's:
   sicdb: []
 water:
   blended: 19010309
-  amsterdam:
-    - Thee 200ml
-    - Water 150ml
-    - Water 100ml
-    - Water 200ml
   eicu: []
   hirid: []
-  mimic: []
   mimic3:
     - Solution
     - Po Intake
@@ -7676,8 +7064,6 @@ water:
 # BLOOD PRODUCTS
 Packed Red Blood Cells:
   blended: 0
-  amsterdam:
-    - Gefiltreerde Ery's
   eicu:
     - RBCs (ml/hr)
     - pRBC
@@ -7698,7 +7084,6 @@ Packed Red Blood Cells:
     - Volume-Transfuse Unmatched O-Neg RBC (ml/hr)
   hirid:
     - Intravenous blood transfusion of packed cells
-  mimic: []
   mimic3:
     - Pre admit PRBC
     - PRBC's
@@ -7716,8 +7101,6 @@ Packed Red Blood Cells:
   sicdb: []
 Fresh Frozen Plasma:
   blended: 0
-  amsterdam:
-    - Fresh Frozen Plasma
   eicu:
     - FFP
     - FFP (ml/hr)
@@ -7729,7 +7112,6 @@ Fresh Frozen Plasma:
     - fresh frozen plasma (ml/hr)
   hirid:
     - Transfusion of plasma (FFP)
-  mimic: []
   mimic3:
     - Pre admit FFP
     - FFP
@@ -7742,8 +7124,6 @@ Fresh Frozen Plasma:
   sicdb: []
 Platelets:
   blended: 0
-  amsterdam:
-    - Thrombocyten suspensie
   eicu:
     - Volume-Transfuse Pheresed Platelets
     - Volume-Transfuse Pheresed Platelets (ml/hr)
@@ -7766,7 +7146,6 @@ Platelets:
     - Platlets (ml/hr)
   hirid:
     - Platelet transfusion
-  mimic: []
   mimic3:
     - OR Platelet Intake
     - OR Platelets
@@ -7778,16 +7157,11 @@ Platelets:
   sicdb: []
 Cryoprecipitate:
   blended: 0
-  amsterdam:
-    - Cryoprecipitate
-  hirid:
-    - Cryoprecipitate
   eicu:
     - cryo (ml/hr)
     - CRYO (ml/hr)
     - Cryo (ml/hr)
     - Cryoprecipitate (ml/hr)
-  mimic: []
   mimic3:
     - Cryoprecipitate
     - OR CRYO
@@ -7808,10 +7182,6 @@ Cryoprecipitate:
 # NUTRITION
 Parenteral Nutrition:
   blended: 0
-  amsterdam:
-    - Nutriflex  48/150
-    - Nutriflex Basal 32/125
-    - Nutriflex Lipid Plus
   eicu:
     - TPN
     - TPN (ml/hr)
@@ -7823,7 +7193,6 @@ Parenteral Nutrition:
     - Nutriflex lipid spez 1875ml
     - Nutriflex lipid spezial oE
     - Nutriflex spez 1000 ml; ohne Fett
-  mimic: []
   mimic3:
     - TPN
     - TPN D5.0
@@ -7842,25 +7211,6 @@ Parenteral Nutrition:
   sicdb: []
 Enteral Nutrition:
   blended: 0
-  amsterdam:
-    - Nutrison Protein Plus
-    - Nutrison Standaard
-    - Nutrison Concentrated
-    - Nutrison Concentrated 40 oud
-    - Nutrison Concentrated oud
-    - Nutrison Energy
-    - Nutrison Energy Multi Fibre
-    - Nutrison Energy oud
-    - Nutrison Multi Fibre
-    - Nutrison Multi Fibre oud
-    - Nutrison Peptisorb
-    - Nutrison Protein Plus
-    - Nutrison Protein Plus Multi Fibre
-    - Nutrison Proteïn Plus oud
-    - Nutrison Soya
-    - Nutrison Standaard
-    - Nutrison Standaard oud
-    - Nutrison Sterilized water
   eicu:
     - EN
     - EN (ml/hr)
@@ -7870,7 +7220,6 @@ Enteral Nutrition:
     - Isosource Standard
     - Isosource Protein
     - Novasource GI Forte + Fasern
-  mimic: []
   mimic3:
     - EN
     - Tube Feeding
