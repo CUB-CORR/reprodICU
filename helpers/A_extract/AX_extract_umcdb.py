@@ -784,7 +784,7 @@ class UMCdbExtractor(UMCdbPaths):
         Extract and process medication administration data from UMCdb.
 
         Steps:
-            1. Loads medication mapping files (e.g. MEDICATIONS.yaml) and mapping CSVs.
+            1. Loads medication mapping files and mapping CSVs.
             2. Reads medication data from a Parquet file specified by {drugitems_path}.
             3. Renames columns (e.g. {icu_stay_id_col}, {drug_name_col}, {drug_start_col}, {drug_end_col}).
             4. Joins with admission times to compute drug start and end times relative to ICU admission.
