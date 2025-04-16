@@ -143,11 +143,44 @@ class PatientInformationHarmonizer(GlobalVars):
                 .with_columns(pl.lit("AmsterdamUMCdb").alias(self.dataset_col))
             )
 
+        patient_information = pl.concat(
+            patient_information_datasets, how="diagonal_relaxed"
+        )
+        patient_information_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.icu_stay_seq_num_col,
+            self.icu_time_rel_to_first_col,
+            self.dataset_col,
+            self.person_id_col,
+            self.hospital_stay_id_col,
+            self.icu_stay_id_col,
+            self.age_col,
+            self.gender_col,
+            self.height_col,
+            self.weight_col,
+            self.ethnicity_col,
+            self.admission_diagnosis_col,
+            self.admission_type_col,
+            self.admission_urgency_col,
+            self.admission_time_col,
+            self.admission_loc_col,
+            self.specialty_col,
+            self.care_site_col,
+            self.unit_type_col,
+            self.pre_icu_length_of_stay_col,
+            self.icu_length_of_stay_col,
+            self.hospital_length_of_stay_col,
+            self.discharge_loc_col,
+            self.mortality_hosp_col,
+            self.mortality_icu_col,
+            self.mortality_after_col,
+            self.mortality_after_cutoff_col,
+        ]
+
         return (
-            pl.concat(
-                patient_information_datasets,
-                how="diagonal_relaxed",
-            )
+            patient_information
             # Define the data types of the columns
             .cast(
                 {
@@ -177,40 +210,14 @@ class PatientInformationHarmonizer(GlobalVars):
                     self.mortality_icu_col: bool,
                     self.mortality_after_col: int,
                     self.mortality_after_cutoff_col: int,
-                }
+                },
+                strict=False,
             )
             # Define the order of the columns
             .select(
-                self.global_person_id_col,
-                self.global_hospital_stay_id_col,
-                self.global_icu_stay_id_col,
-                self.icu_stay_seq_num_col,
-                self.icu_time_rel_to_first_col,
-                self.dataset_col,
-                self.person_id_col,
-                self.hospital_stay_id_col,
-                self.icu_stay_id_col,
-                self.age_col,
-                self.gender_col,
-                self.height_col,
-                self.weight_col,
-                self.ethnicity_col,
-                self.admission_diagnosis_col,
-                self.admission_type_col,
-                self.admission_urgency_col,
-                self.admission_time_col,
-                self.admission_loc_col,
-                self.specialty_col,
-                self.care_site_col,
-                self.unit_type_col,
-                self.pre_icu_length_of_stay_col,
-                self.icu_length_of_stay_col,
-                self.hospital_length_of_stay_col,
-                self.discharge_loc_col,
-                self.mortality_hosp_col,
-                self.mortality_icu_col,
-                self.mortality_after_col,
-                self.mortality_after_cutoff_col,
+                col
+                for col in patient_information_cols_list
+                if col in patient_information.columns
             ).unique()
         )
 

@@ -118,25 +118,29 @@ class ProceduresHarmonizer(GlobalVars):
                 )
             )
 
+        procedures = pl.concat(procedures_datasets, how="diagonal_relaxed")
+        procedures_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.procedure_icd_code_col,
+            self.procedure_icd_version_col,
+            self.procedure_category_col,
+            self.procedure_start_col,
+            self.procedure_end_col,
+            self.procedure_priority_col,
+            self.procedure_discharge_col,
+            self.procedure_description_col,
+        ]
+
         return (
-            pl.concat(
-                procedures_datasets,
-                how="diagonal_relaxed",
-            )
-            .select(
-                self.global_person_id_col,
-                self.global_hospital_stay_id_col,
-                self.global_icu_stay_id_col,
-                self.procedure_icd_code_col,
-                self.procedure_icd_version_col,
-                self.procedure_category_col,
-                self.procedure_start_col,
-                self.procedure_end_col,
-                self.procedure_priority_col,
-                self.procedure_discharge_col,
-                self.procedure_description_col,
+            procedures.select(
+                col
+                for col in procedures_cols_list
+                if col in procedures.columns
             )
             .unique()
+            .sort(self.global_icu_stay_id_col, self.procedure_start_col)
         )
 
     # Helper functions
