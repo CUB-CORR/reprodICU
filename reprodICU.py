@@ -121,6 +121,9 @@ if __name__ == "__main__":
         if not args.DEMO
         else paths.reprodICU_demo_files_path
     )
+    # check that the tempfiles path exists, if not create it
+    if not os.path.exists(save_path + "_tempfiles/"):
+        os.makedirs(save_path + "_tempfiles/")
 
     # Select datasets to extract
     if "all" in args.datasets:
