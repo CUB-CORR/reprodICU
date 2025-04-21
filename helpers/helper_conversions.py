@@ -7,6 +7,44 @@
 import polars as pl
 
 
+def _struct_with_all_null_to_null(
+    frame: pl.DataFrame, struct_col: str
+) -> pl.DataFrame:
+    """
+    Set any structs to null that have all null fields.
+
+    WARNING
+    -------
+    The function only checks for null in the current struct fields. It doesn't
+    do recursive checks on structs inside the struct that could also have all
+    null fields.
+
+    Parameters
+    ----------
+    frame: pl.DataFrame
+        The frame to modify.
+    struct_col: str
+        The name of the struct column to modify.
+
+    Returns
+    -------
+    pl.DataFrame
+        Modified DataFrame.
+    """
+
+    # If any struct field is non-null, then keep the struct, otherwise replace it by null.
+    return frame.with_columns(
+        pl.when(
+            pl.any_horizontal(
+                pl.col(struct_col).struct.field("*").is_not_null()
+            )
+        )
+        .then(pl.col(struct_col))
+        .otherwise(None)
+        .alias(struct_col)
+    )
+
+
 # Enables the easy combination of Glasgow Coma Scale (GCS) components.
 # ASSUMPTION: data is in wide format, after pivoting.
 class GCSCombiner:
@@ -56,6 +94,9 @@ class UnitConversions:
         Convert absolute counts to relative counts.
         """
 
+        if goal_itemcol is None:
+            goal_itemcol = itemcol
+
         labstructdtype = pl.Struct(
             [
                 pl.Field("value", pl.Float64),
@@ -71,25 +112,20 @@ class UnitConversions:
                 data = data.with_columns(
                     pl.col(itemcol)
                     .str.json_decode(labstructdtype)
-                    .alias(itemcol),
-                    pl.col(total_itemcol)
-                    .str.json_decode(labstructdtype)
-                    .alias(total_itemcol),
-                    pl.col(itemcol)
-                    .str.json_decode(labstructdtype)
                     .alias(goal_itemcol),
+                    pl.col(total_itemcol).str.json_decode(labstructdtype),
                 )
 
             data = (
                 data.with_columns(
                     # Rename the columns for the unnest
-                    pl.col(itemcol).struct.rename_fields(
+                    pl.col(goal_itemcol).struct.rename_fields(
                         [
-                            "itemcol_value",
-                            "itemcol_system",
-                            "itemcol_method",
-                            "itemcol_time",
-                            "itemcol_LOINC",
+                            "goal_itemcol_value",
+                            "goal_itemcol_system",
+                            "goal_itemcol_method",
+                            "goal_itemcol_time",
+                            "goal_itemcol_LOINC",
                         ]
                     ),
                     pl.col(total_itemcol).struct.rename_fields(
@@ -102,29 +138,29 @@ class UnitConversions:
                         ]
                     ),
                 )
-                .unnest(itemcol)
+                .unnest(goal_itemcol)
                 .unnest(total_itemcol)
                 .with_columns(
                     pl.when(
-                        pl.col("itemcol_value").is_not_null()
+                        pl.col("goal_itemcol_value").is_not_null()
                         & pl.col("total_itemcol_value").is_not_null()
                     )
                     .then(
-                        pl.col("itemcol_value").truediv(
+                        pl.col("goal_itemcol_value").truediv(
                             pl.col("total_itemcol_value")
                         )
                     )
                     .otherwise(None)
-                    .alias("itemcol_value")
+                    .alias("goal_itemcol_value")
                 )
                 # Combine the columns back into a struct again
                 .select(
                     pl.exclude(
-                        "itemcol_value",
-                        "itemcol_system",
-                        "itemcol_method",
-                        "itemcol_time",
-                        "itemcol_LOINC",
+                        "goal_itemcol_value",
+                        "goal_itemcol_system",
+                        "goal_itemcol_method",
+                        "goal_itemcol_time",
+                        "goal_itemcol_LOINC",
                         "total_itemcol_value",
                         "total_itemcol_system",
                         "total_itemcol_method",
@@ -132,12 +168,12 @@ class UnitConversions:
                         "total_itemcol_LOINC",
                     ),
                     pl.struct(
-                        value="itemcol_value",
-                        system="itemcol_system",
-                        method="itemcol_method",
-                        time="itemcol_time",
-                        LOINC="itemcol_LOINC",
-                    ).alias(itemcol),
+                        value="goal_itemcol_value",
+                        system="goal_itemcol_system",
+                        method="goal_itemcol_method",
+                        time="goal_itemcol_time",
+                        LOINC=pl.lit(None),
+                    ).alias(goal_itemcol),
                     pl.struct(
                         value="total_itemcol_value",
                         source="total_itemcol_system",
@@ -146,44 +182,32 @@ class UnitConversions:
                         LOINC="total_itemcol_LOINC",
                     ).alias(total_itemcol),
                 )
+                .pipe(_struct_with_all_null_to_null, struct_col=goal_itemcol)
+                .pipe(_struct_with_all_null_to_null, struct_col=total_itemcol)
             )
 
             if structstring:
                 data = data.with_columns(
-                    pl.col(itemcol).struct.json_encode().alias(itemcol),
+                    pl.col(goal_itemcol)
+                    .struct.json_encode()
+                    .replace("null", None),
                     pl.col(total_itemcol)
                     .struct.json_encode()
-                    .alias(total_itemcol),
-                    pl.col(itemcol).struct.json_encode().alias(goal_itemcol),
+                    .replace("null", None),
                 )
 
         else:
             data = data.with_columns(
                 pl.when(
-                    pl.col(itemcol).is_not_null()
+                    pl.col(goal_itemcol).is_not_null()
                     & pl.col(total_itemcol).is_not_null()
                 )
-                .then(pl.col(itemcol).truediv(pl.col(total_itemcol)))
+                .then(pl.col(goal_itemcol).truediv(pl.col(total_itemcol)))
                 .otherwise(None)
-                .alias(itemcol)
+                .alias(goal_itemcol)
             )
 
-        if goal_itemcol is None:
-            return data
-
-        # Check that the goal column exists, else create it.
-        if goal_itemcol not in data.collect_schema().names():
-            data = data.with_columns(pl.lit(None).alias(goal_itemcol))
-
-        # Replace the item column with the goal item column if it is null.
-        return data.with_columns(
-            pl.when(
-                pl.col(goal_itemcol).is_null() & pl.col(itemcol).is_not_null()
-            )
-            .then(pl.col(itemcol))
-            .otherwise(pl.col(goal_itemcol))
-            .alias(goal_itemcol)
-        )
+        return data
 
     def convert_temperature_F_to_C(
         self,

@@ -361,8 +361,9 @@ class TimeseriesHarmonizer(GlobalVars):
             .select(
                 *self.index_cols,
                 pl.exclude(
-                    *self.index_cols, *self.conversion_lab_LOINC_components
-                ).sort(),
+                    *self.index_cols,
+                    *self.conversion_lab_LOINC_components,
+                ),
             )
             .unique(self.index_cols)
             .sort(self.index_cols)
@@ -437,10 +438,11 @@ class TimeseriesHarmonizer(GlobalVars):
 
             if "labs" in timeseries:
                 print("reprodICU - Saving labs...")
-                labs.pipe(self._print_unique_cases, "labs").pipe(
-                    self.decode_lab_values
-                ).collect(streaming=True).write_parquet(
-                    self.save_path + "timeseries_labs.parquet"
+                (
+                    labs.pipe(self._print_unique_cases, "labs")
+                    .pipe(self.decode_lab_values)
+                    .collect(streaming=True)
+                    .write_parquet(self.save_path + "timeseries_labs.parquet")
                 )
 
             if "respiratory" in timeseries:
@@ -483,9 +485,6 @@ class TimeseriesHarmonizer(GlobalVars):
             pl.LazyFrame: The LazyFrame with decoded lab value columns.
         """
 
-        def decode_lab_value(lab_value):
-            return pl.col(lab_value).str.json_decode(labstructdtype)
-
         labstructdtype = pl.Struct(
             [
                 pl.Field("value", pl.Float64),
@@ -495,6 +494,10 @@ class TimeseriesHarmonizer(GlobalVars):
                 pl.Field("LOINC", pl.String),
             ]
         )
+
+        def decode_lab_value(lab_value):
+            return pl.col(lab_value).str.json_decode(labstructdtype)
+
         value_cols = [
             col
             for col in lf.collect_schema().names()
