@@ -23,7 +23,8 @@ half normal saline 0.45%:
 
 hypertonic saline:
   # MIMIC-IV
-  - NaCl 23.4%
+  - NaCl 3% (Hypertonic Saline) # only 243 entries
+  - NaCl 23.4% # only 7 entries
 
 glucose 2.5% in half normal saline 0.45%:
   # UMCdb
@@ -41,11 +42,11 @@ glucose 5%:
 
 glucose 5% in normal saline 0.9%:
   # MIMIC-III / MIMIC-IV
-  - D5NS
+  - D5NS # only 112 entries
 
 glucose 5% in Lactated Ringer's:
   # MIMIC-IV
-  - D5LR
+  - D5LR # only 20 entries
 
 glucose 10%:
   # MIMIC-III
@@ -55,7 +56,7 @@ glucose 10%:
 
 glucose 20%:
   # MIMIC-IV
-  - Dextrose 20%
+  - Dextrose 20% # only 43 entries
   # UMCdb
   - Glucose 20% # only 34 entries
 
@@ -70,6 +71,8 @@ colloid: []
   # HiRID -> same name
 
 Lactated Ringer's:
+  # MIMIC-IV
+  - LR
   # UMCdb
   - Ri-Lac (Ringers lactaat)
 
