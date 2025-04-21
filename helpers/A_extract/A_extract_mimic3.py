@@ -342,7 +342,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     - pl.col("INTIME").min().over(self.person_id_col)
                 )
                 .dt.total_seconds()
-                .alias(self.icu_time_rel_to_first_col)
+                .alias(self.icu_time_rel_to_first_col),
             )
             # Fill missing ICU mortality values with False if patient was
             # discharged from hospital alive
@@ -1162,103 +1162,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
         )
 
-        # Load medication mappings from MIMIC-III OMOP files
-        # These mappings connect medication names to standard concepts and ingredients
-        print("MIMIC3  - Loading medication mapping files...")
-
-        # 1. Load route and administration mappings
-        route_to_concept = (
-            pl.read_csv(self.route_to_concept_path)
-            .with_columns(
-                # Map administration route concept IDs to human-readable names
-                pl.col("concept_id")
-                .replace_strict(
-                    self.omop.get_concept_names_from_ids(
-                        pl.read_csv(self.route_to_concept_path)[
-                            "concept_id"
-                        ].to_list()
-                    ),
-                    default=None,
-                )
-                .alias(self.drug_admin_route_col)
-            )
-            .select("ROUTE", self.drug_admin_route_col)
-            .lazy()
-        )
-
         # Map order categories to administration routes
         map_route_to_concept = (
             pl.scan_csv(self.map_route_to_concept_path)
             .select("ordercategoryname", "concept_name")
             .rename({"concept_name": self.drug_admin_route_col})
         )
-
-        # Load prescriptions mapping for entries without NDC codes
-        prescriptions_ndcisnullzero_to_concept = pl.read_csv(
-            self.prescriptions_ndcisnullzero_to_concept_path
-        )
-
-        # 2. Create NDC to RxNorm concept mappings
-        # Extract unique NDC codes from prescriptions
-        ndc_codes = (
-            pl.scan_csv(self.prescriptions_path)
-            .select("NDC")
-            .unique()
-            .collect()
-            .to_series()
-            .to_list()
-        )
-
-        # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
-        ndc_to_rxnorm = self.omop.get_rxnorm_concept_id_from_ndc(
-            [str(x).zfill(11) for x in ndc_codes]
-        )
-
-        # 3. Create mappings for prescriptions without valid NDCs
-        # Map drug labels to concept IDs and names
-        prescriptions_ndcisnullzero_concept_ids = dict(
-            zip(
-                prescriptions_ndcisnullzero_to_concept["label"],
-                prescriptions_ndcisnullzero_to_concept["concept_id"],
-            )
-        )
-        prescriptions_ndcisnullzero_concept_names = dict(
-            zip(
-                prescriptions_ndcisnullzero_to_concept["label"],
-                prescriptions_ndcisnullzero_to_concept["concept_name"],
-            )
-        )
-
-        # 4. Get active ingredients for all medication concept IDs
-        all_concept_ids = list(ndc_to_rxnorm.values()) + list(
-            prescriptions_ndcisnullzero_concept_ids.values()
-        )
-        ingredients = self.omop.get_ingredient(all_concept_ids)
-        rxnorm_names = self.omop.get_concept_names_from_ids(
-            list(ndc_to_rxnorm.values())
-        )
-
-        # 5. Create final mappings from codes to ingredients and names
-        # Map NDC codes to active ingredients
-        ndc_to_ingredient = {
-            ndc: ingredients[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in ingredients
-        }
-
-        # Map NDC codes to standardized drug names
-        ndc_to_drugname = {
-            ndc: rxnorm_names[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in rxnorm_names
-        }
-
-        # Map prescription labels to active ingredients for entries without NDCs
-        prescriptions_ndcisnullzero_to_ingredient = {
-            label: ingredients[concept_id]
-            for label, concept_id in prescriptions_ndcisnullzero_concept_ids.items()
-            if concept_id in ingredients
-        }
 
         # Load additional mappings
         mimic3_medication_mapping = (
@@ -1269,20 +1178,10 @@ class MIMIC3Extractor(MIMIC3Paths):
         mimic3_drug_class_mapping = self.helpers.load_mapping(
             self.drug_class_mapping_path
         )
-        inputevents_to_rxnorm_data = (
-            pl.scan_csv(self.inputevents_to_rxnorm_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
-            .rename(
-                {
-                    "itemid (omop_source_code)": "ITEMID",
-                    "omop_concept_name": "LABEL_OMOP",
-                }
-            )
-        )
 
         d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL")
 
-        # INPUTEVENTS_MV
+        # region INPUTEVENTS_MV
         #######################################################################
         inputevents_mv = (
             pl.scan_csv(
@@ -1344,10 +1243,24 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # select all inputevents that have no secondary associated order
         inputevents_mv_no_secondary = inputevents_mv.filter(
-            pl.col("SECONDARYORDERCATEGORYNAME").is_null()
-        ).drop(
-            "SECONDARYORDERCATEGORYNAME",
-            "ORDERCOMPONENTTYPEDESCRIPTION",
+            pl.col("SECONDARYORDERCATEGORYNAME").is_null(),
+            pl.col("ORDERCATEGORYNAME") != "03-IV Fluid Bolus",
+        ).drop("SECONDARYORDERCATEGORYNAME", "ORDERCOMPONENTTYPEDESCRIPTION")
+
+        # select all inputevents that are fluids only
+        inputevents_mv_fluids_only = (
+            inputevents_mv.filter(
+                pl.col("SECONDARYORDERCATEGORYNAME").is_null(),
+                pl.col("ORDERCATEGORYNAME") == "03-IV Fluid Bolus",
+            )
+            .rename(
+                {
+                    "ITEMID": "ITEMID_FLUID",
+                    self.drug_amount_col: self.fluid_amount_col,
+                    self.drug_rate_col: self.fluid_rate_col,
+                }
+            )
+            .drop("SECONDARYORDERCATEGORYNAME", "ORDERCOMPONENTTYPEDESCRIPTION")
         )
 
         # select all input events that are drips (drugs in a continuous infusion)
@@ -1386,10 +1299,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 on=self.drug_mixture_admin_id_col,
                 how="left",
             )
-            .drop(
-                "SECONDARYORDERCATEGORYNAME",
-                "ORDERCOMPONENTTYPEDESCRIPTION",
-            )
+            .drop("SECONDARYORDERCATEGORYNAME", "ORDERCOMPONENTTYPEDESCRIPTION")
         )
 
         # select all input events that are additives (drugs added to a continuous infusion)
@@ -1427,13 +1337,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 on=self.drug_mixture_admin_id_col,
                 how="left",
             )
-            .drop(
-                "SECONDARYORDERCATEGORYNAME",
-                "ORDERCOMPONENTTYPEDESCRIPTION",
-            )
+            .drop("SECONDARYORDERCATEGORYNAME", "ORDERCOMPONENTTYPEDESCRIPTION")
         )
 
-        # INPUTEVENTS_CV
+        # region INPUTEVENTS_CV
         #######################################################################
         inputevents_cv = (
             pl.scan_csv(
@@ -1619,12 +1526,24 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        # INPUTEVENTS
+        # region INPUTEVENTS
         #######################################################################
+        inputevents_to_rxnorm_data = (
+            pl.scan_csv(self.inputevents_to_rxnorm_path)
+            .select("itemid (omop_source_code)", "omop_concept_name")
+            .rename(
+                {
+                    "itemid (omop_source_code)": "ITEMID",
+                    "omop_concept_name": "LABEL_OMOP",
+                }
+            )
+        )
+
         inputevents = (
             pl.concat(
                 [
                     inputevents_mv_no_secondary,
+                    inputevents_mv_fluids_only,
                     inputevents_mv_drips,
                     inputevents_mv_additives,
                     inputevents_cv_fluids_only,
@@ -1661,8 +1580,99 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        # PRESCRIPTIONS
+        # region PRESCRIPTIONS
         #######################################################################
+        # Load medication mappings from MIMIC-III OMOP files
+        # These mappings connect medication names to standard concepts and ingredients
+        print("MIMIC3  - Loading medication mapping files...")
+
+        # 1. Load route and administration mappings
+        route_to_concept = (
+            pl.read_csv(self.route_to_concept_path)
+            .with_columns(
+                # Map administration route concept IDs to human-readable names
+                pl.col("concept_id")
+                .replace_strict(
+                    self.omop.get_concept_names_from_ids(
+                        pl.read_csv(self.route_to_concept_path)[
+                            "concept_id"
+                        ].to_list()
+                    ),
+                    default=None,
+                )
+                .alias(self.drug_admin_route_col)
+            )
+            .select("ROUTE", self.drug_admin_route_col)
+            .lazy()
+        )
+
+        # Load prescriptions mapping for entries without NDC codes
+        prescriptions_ndcisnullzero_to_concept = pl.read_csv(
+            self.prescriptions_ndcisnullzero_to_concept_path
+        )
+
+        # 2. Create NDC to RxNorm concept mappings
+        # Extract unique NDC codes from prescriptions
+        ndc_codes = (
+            pl.scan_csv(self.prescriptions_path)
+            .select("NDC")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
+        # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
+        ndc_to_rxnorm = self.omop.get_rxnorm_concept_id_from_ndc(
+            [str(x).zfill(11) for x in ndc_codes]
+        )
+
+        # 3. Create mappings for prescriptions without valid NDCs
+        # Map drug labels to concept IDs and names
+        prescriptions_ndcisnullzero_concept_ids = dict(
+            zip(
+                prescriptions_ndcisnullzero_to_concept["label"],
+                prescriptions_ndcisnullzero_to_concept["concept_id"],
+            )
+        )
+        prescriptions_ndcisnullzero_concept_names = dict(
+            zip(
+                prescriptions_ndcisnullzero_to_concept["label"],
+                prescriptions_ndcisnullzero_to_concept["concept_name"],
+            )
+        )
+
+        # 4. Get active ingredients for all medication concept IDs
+        all_concept_ids = list(ndc_to_rxnorm.values()) + list(
+            prescriptions_ndcisnullzero_concept_ids.values()
+        )
+        ingredients = self.omop.get_ingredient(all_concept_ids)
+        rxnorm_names = self.omop.get_concept_names_from_ids(
+            list(ndc_to_rxnorm.values())
+        )
+
+        # 5. Create final mappings from codes to ingredients and names
+        # Map NDC codes to active ingredients
+        ndc_to_ingredient = {
+            ndc: ingredients[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in ingredients
+        }
+
+        # Map NDC codes to standardized drug names
+        ndc_to_drugname = {
+            ndc: rxnorm_names[rxnorm_id]
+            for ndc, rxnorm_id in ndc_to_rxnorm.items()
+            if rxnorm_id in rxnorm_names
+        }
+
+        # Map prescription labels to active ingredients for entries without NDCs
+        prescriptions_ndcisnullzero_to_ingredient = {
+            label: ingredients[concept_id]
+            for label, concept_id in prescriptions_ndcisnullzero_concept_ids.items()
+            if concept_id in ingredients
+        }
+
         prescriptions = (
             pl.scan_csv(self.prescriptions_path)
             .select(
@@ -1716,7 +1726,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        # RETURN
+        # region RETURN
         #######################################################################
         return (
             pl.concat([inputevents, prescriptions], how="diagonal_relaxed")
