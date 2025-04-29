@@ -1,0 +1,144 @@
+# age in years
+# NOTE: oldest person ever only became 121yrs old
+# NOTE: In MIMIC-III/-IV and eICU, dates of birth for patients aged over 89 were shifted to obscure
+# their true age and comply with HIPAA regulations: these patients appear in the database with ages
+# of over 300 years.
+age:
+  min: 0
+  max: 120
+
+# height in cm
+# NOTE: tallest living person is 251cm, shortest is 54.6cm
+height:
+  min: 50
+  max: 250
+
+#  weight in kg
+# heaviest person ever was 635kg, Wikipedia list of heaviest people starts at 440kg
+weight:
+  min: 25
+  max: 440
+
+# Body Mass Index in kg/m2
+# min is from https://doi.org/10.12740/PP/126233,
+# max is from https://en.wikipedia.org/wiki/List_of_heaviest_people
+BMI:
+  min: 6.7
+  max: 100
+
+Ccw:
+  min: 0
+  max: 500
+
+Clung:
+  min: 0
+  max: 150
+
+DP_TP:
+  min: 4
+  max: 40
+
+Crs:
+  min: 0
+  max: 150
+
+DP:
+  min: 4
+  max: 40
+
+# fraction of inspired oxygen
+# FiO2 must be between 0 and 1 by definition
+FiO2:
+  min: 0
+  max: 100
+
+MPplat:
+  min: 0
+  max: 100
+
+# mechanical power
+MP:
+  min: 0
+  max: 100
+
+# plateau pressure in cmH2O
+Pplat:
+  min: 5
+  max: 50
+
+# tidal volume in ml
+Vt:
+  min: 100
+  max: 1200
+
+# peak inspiratory pressure in cmH2O
+PIP:
+  min: 5
+  max: 60
+
+# positive end-expiratory pressure in cmH2O
+PEEP:
+  min: 0
+  max: 25
+
+# set ventilation rate
+# this refers to the ventilator rate, not the patient's spontaneous  breathing rate
+RR:
+  min: 5
+  max: 40
+
+## REFERENCE FOR THE FOLLOWING ABG VALUES:
+# https://newtechnologyba.com/wp-content/uploads/2020/04/ABL-800-specification-1.pdf
+# pH
+# pH range is 6.3–8.0
+pH:
+  min: 6.3
+  max: 8
+
+# partial pressure of carbon dioxide
+# paCO2 range is 5–250 mmHg
+paCO2:
+  min: 5
+  max: 250
+
+# partial pressure of oxygen
+# paO2 range is 0–800 mmHg
+paO2:
+  min: 0
+  max: 800
+
+# serum chloride in the blood gas analysis
+# Cl- range is 7–350 mmol/L
+chloride:
+  min: 7
+  max: 350
+
+# serum calcium in the blood gas analysis
+# Ca2+ range is 0.20–9.99 mmol/L
+calcium:
+  min: 0.2
+  max: 9.99
+
+# serum potassium in the blood gas analysis
+# K+ range is 0.5–25 mmol/L
+potassium:
+  min: 0.5
+  max: 25
+
+# serum sodium in the blood gas analysis
+# Na+ range is 7–350 mmol/L
+sodium:
+  min: 7
+  max: 350
+
+# serum glucose in the blood gas analysis
+# glucose range is 0–1081 mg/dL
+glucose:
+  min: 0
+  max: 1080
+
+# serum lactate in the blood gas analysis
+# lactate range is 0–270 mg/dL
+lactate:
+  min: 0
+  max: 270

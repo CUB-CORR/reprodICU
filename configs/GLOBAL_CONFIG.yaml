@@ -1,0 +1,20 @@
+# Length (in days) for which pre-admission timeseries should be included.
+# 13 days since the OASIS Score cuts off at 311.8 hours pre ICU admission.
+PRE_ICU_TIMESERIES_DAYS_CUTOFF: 13
+
+# Duration of drug exposure (in hours): Patients will be considered exposed to
+# a drug until "drug_exposure_time" after administration.
+DRUG_EXPOSURE_TIME: 2
+
+# Time since admission (in hours) at which admission heights and weights are
+# computed, if not readily available.
+# NOTE: Don't forget to delete precalculated files when changing this!
+ADMISSION_WEIGHT_HEIGHT_CUTOFF: 5
+
+# Time since ICU discharge (in hours) at which the death is counted towards ICU
+# mortality (set at 8 hours -> "death within the same shift")
+ICU_DISCHARGE_MORTALITY_CUTOFF: 8
+
+# Decimals to round to when calculating during extraction / processing
+# NOTE: Don't forget to delete precalculated files when changing this!
+ROUNDING_DECIMALS: 3

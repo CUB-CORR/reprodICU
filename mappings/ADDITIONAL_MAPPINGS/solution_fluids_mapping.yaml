@@ -1,0 +1,85 @@
+undiluted:
+  # UMCdb
+  - Onverdund Medicatie
+  - Onverdund Pompen
+  - Propofol Pompen
+
+# common solution fluids used in the ICU
+normal saline 0.9%:
+  # HiRID -> same name
+  # MIMIC-III
+  - .9% Normal Saline
+  # MIMIC-IV
+  - NaCl 0.9%
+  - Solution
+  # UMCdb
+  - NaCl 0,9 %
+  - NaCl 0,9% Medicatie
+  - NaCl 0,9% Pompen
+
+half normal saline 0.45%:
+  # MIMIC-III / MIMIC-IV
+  - NaCl 0.45%
+
+hypertonic saline:
+  # MIMIC-IV
+  - NaCl 3% (Hypertonic Saline) # only 243 entries
+  - NaCl 23.4% # only 7 entries
+
+glucose 2.5% in half normal saline 0.45%:
+  # UMCdb
+  - NaCl 0,45%/Glucose 2,5%
+
+glucose 5%:
+  # MIMIC-III
+  - D5W
+  # MIMIC-III / MIMIC-IV
+  - Dextrose 5%
+  # UMCdb
+  - Glucose 5 %
+  - Glucose 5% Medicatie
+  - Glucose 5% Pompen
+
+glucose 5% in normal saline 0.9%:
+  # MIMIC-III / MIMIC-IV
+  - D5NS # only 112 entries
+
+glucose 5% in Lactated Ringer's:
+  # MIMIC-IV
+  - D5LR # only 20 entries
+
+glucose 10%:
+  # MIMIC-III
+  - D10W
+  # UMCdb
+  - Glucose 10% # only 19 entries
+
+glucose 20%:
+  # MIMIC-IV
+  - Dextrose 20% # only 43 entries
+  # UMCdb
+  - Glucose 20% # only 34 entries
+
+sterile water:
+  # MIMIC-III / MIMIC-IV
+  - Sterile Water
+  # UMCdb
+  - Aquadest Medicatie
+  - Aquadest Pompen
+
+colloid: []
+  # HiRID -> same name
+
+Lactated Ringer's:
+  # MIMIC-IV
+  - LR
+  # UMCdb
+  - Ri-Lac (Ringers lactaat)
+
+# UNMAPPED SOLUTION FLUIDS:
+###########################
+# UMCdb:
+# Glycinebuffer Pompen
+# Oplosvloeistof Medicatie
+# Oplosvloeistof Pompen
+# Piggyback

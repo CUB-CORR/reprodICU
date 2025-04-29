@@ -1,0 +1,43 @@
+# mapping to Vocab: SNOMED, Class: Organism
+Acinetobacter baumanii: Acinetobacter baumannii
+Aspergillus fumigatus: Aspergillus fumigatus
+Bacteroides fragilis: Bacteroides fragilis
+Campylobacter fetus: Campylobacter fetus
+Candida albicans: Candida albicans
+Candida glabrata: Candida glabrata
+Candida parapsilosis: Candida parapsilosis
+Candida tropicalis: Candida tropicalis
+Clostridium difficile: Clostridioides difficile
+Corynebacterium sp.: Corynebacterium
+Enterobacter cloacae: Enterobacter cloacae
+Enterobacter sp.: Enterobacter
+Enterococcus faecalis: Enterococcus faecalis
+Enterococcus fecium: Enterococcus faecium
+Escherichia coli: Escherichia coli
+Haemophilus influenzae: Haemophilus influenzae
+Klebsiella oxytoca: Klebsiella oxytoca
+Klebsiella pneumoniae: Klebsiella pneumoniae
+Legionella: Legionella
+Neisseria meningitides: Neisseria meningitidis
+Other: Living organism not identified
+Proteus mirabilis (indole +): Proteus mirabilis
+Pseudomonas aeruginosa: Pseudomonas aeruginosa
+Serratia marcescens: Serratia marcescens
+Staphylococcus aureus: Staphylococcus aureus
+Staphylococcus epidermidis: Staphylococcus epidermidis
+Staphylococcus hominis: Staphylococcus hominis
+Stenotrophomonas maltophila: Stenotrophomonas maltophilia
+Streptococcus pneumoniae: Streptococcus pneumoniae
+Streptococcus pyogenes: Streptococcus pyogenes
+Streptococcus species, other: Streptococcus
+gram negative cocci: Gram-negative coccus
+gram negative diplococci: Gram-negative diplococcus
+gram negative rods: Gram-negative bacillus
+gram positive cocci: Gram-positive coccus
+gram positive cocci - in chains: Gram-positive coccus
+gram positive cocci - in clusters: Gram-positive coccus
+gram positive diplococci: Gram-positive diplococcus
+gram positive rods: Gram-positive bacillus
+mixed flora: 
+no growth: No living organism identified
+yeast: Yeast

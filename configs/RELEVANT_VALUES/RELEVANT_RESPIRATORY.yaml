@@ -1,0 +1,38 @@
+# Based on the ICU module of the German Medical Informatics Initiative (MII)
+# https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
+Airway pressure delta setting Ventilator: True
+Breath rate setting Ventilator: True
+Breath rate spontaneous --on ventilator: True
+Breath rate spontaneous and mechanical --on ventilator: True
+Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration: True
+Dynamic lung compliance: True
+# Expiratory gas flow Respiratory system airway --on ventilator: False
+Expiratory hold time setting Ventilator: True
+Expired minute Volume during Mechanical ventilation: True
+High pressure hold time setting Ventilator: True
+# Horowitz index in Arterial blood: False
+Inspiration/Expiration time Ratio: True
+Inspiratory flow setting Ventilator: True
+# Inspiratory gas flow Respiratory system airway --on ventilator: False
+Inspiratory time setting Ventilator: True
+Inspired minute Volume during Mechanical ventilation: True
+Low pressure hold time setting Ventilator: True
+Mean airway pressure: True
+Minute volume setting Ventilator: True
+# Oxygen [Partial pressure] in Exhaled gas: False
+Oxygen/Gas total [Pure volume fraction] Inhaled gas: True
+Oxygen/Total gas setting [Volume Fraction] Ventilator: True
+Oxygen delivery system: True
+Oxygen gas flow Oxygen delivery system: True
+PEEP Respiratory system: True
+Positive end expiratory pressure setting Ventilator: True
+Pressure support setting Ventilator: True
+Pressure.max Respiratory system airway --on ventilator: True
+Pressure.plateau Respiratory system airway --on ventilator: True
+Tidal volume.expired: True
+Tidal volume.inspired: True
+Tidal volume setting Ventilator: True
+Tidal volume.spontaneous --on ventilator: True
+Tidal volume.spontaneous+mechanical --on ventilator: True
+Ventilation mode Ventilator: True
+Ventilator type: True

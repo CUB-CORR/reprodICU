@@ -1,0 +1,37 @@
+# APACHE-II
+98: Non-operative - Cardiovascular
+99: Non-operative - Respiratory
+100: Non-operative - Gastrointestinal
+101: Non-operative - Neurology
+102: Non-operative - Cardiovascular - Sepsis
+103: Non-operative - Trauma
+104: Non-operative - Metabolic/Endocrine
+105: Non-operative - Hematology
+106: Non-operative - Other
+107: Operative - Cardiovascular
+108: Operative - Respiratory
+109: Operative - Gastrointestinal
+110: Operative - Neurology
+111: Operative - Trauma
+112: Operative - Renal
+113: # Operative - Gynecology
+114: # Operative - Orthopedic
+
+# APACHE-IV
+190: Non-operative - Cardiovascular
+191: Non-operative - Respiratory
+192: Non-operative - Gastrointestinal
+193: Non-operative - Neurology
+194: Non-operative - Trauma
+195: Non-operative - Metabolic/Endocrine
+196: Non-operative - Hematology
+197: Non-operative - Genitourinary
+198: Non-operative - Other
+199: Operative - Cardiovascular
+200: Operative - Gastrointestinal
+201: Operative - Respiratory
+202: Operative - Neurology
+203: Operative - Trauma
+204: Operative - Renal
+205: # Operative - Other
+206: Non-operative - Intoxication

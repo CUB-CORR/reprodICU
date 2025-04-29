@@ -1,0 +1,41 @@
+# Mapping of admission types in MIMIC-III/-IV:
+# https://github.com/MIT-LCP/mimic-code/discussions/1215
+
+# eICU-CRD:  admissionDx table -> created from admitdxpath column
+# HiRID:      –
+# MIMIC-III: admissions table -> ADMISSION_TYPE column
+# MIMIC-IV:  admissions table -> admission_type column
+# NWICU:     admissions table -> admission_type column
+# SICdb:     cases table -> AdmissionUrgency column
+# UMCdb:     admissions table -> urgency column
+
+Emergency:
+  # MIMIC-III / MIMIC-IV / NWICU
+  - EMERGENCY
+  # MIMIC-IV
+  - DIRECT EMER.
+  - EW EMER.
+  # NWICU
+  - TRAUMA
+Urgent:
+  # MIMIC-III / MIMIC-IV / NWICU
+  - URGENT
+  # MIMIC-IV
+  - DIRECT OBSERVATION
+  - EU OBSERVATION
+  - OBSERVATION ADMIT
+  - AMBULATORY OBSERVATION
+  # UMCdb
+  - "1"
+Elective:
+  # MIMIC-III / MIMIC-IV / NWICU
+  - ELECTIVE
+  # MIMIC-IV
+  - SURGICAL SAME DAY ADMISSION
+  # NWICU
+  - ELECTIVE-ROUTINE
+  # UMCdb
+  - "0"
+Unknown:
+  # MIMIC-III / MIMIC-IV
+  - ""

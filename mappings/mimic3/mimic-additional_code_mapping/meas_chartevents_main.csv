@@ -1,0 +1,37 @@
+itemid (omop_source_code),Label,omop_concept_name,comment
+211,Heart Rate,Heart rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+646,SpO2,Oxygen saturation in Arterial blood by Pulse oximetry,
+618,Respiratory Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+212,Heart Rhythm,Heart rate rhythm,
+51,Arterial BP [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+8368,Arterial BP [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+52,Arterial BP Mean,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+3603,Resp Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+455,NBP [Systolic],Systolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+8441,NBP [Diastolic],Diastolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+456,NBP Mean,Mean blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+113,CVP,Central venous pressure (CVP),same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+184,Eye Opening,Glasgow coma score eye opening,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+723,Verbal Response,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+454,Motor Response,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+198,GCS Total,Glasgow coma score total,
+677,Temperature C (calc),Temperature,
+3420,FIO2,Oxygen/Total gas setting [Volume Fraction] Ventilator,
+190,FiO2 Set,Oxygen/Total gas setting [Volume Fraction] Ventilator,
+720,Ventilator Mode,Ventilation mode Ventilator,
+470,O2 Flow (lpm),Oxygen gas flow Oxygen delivery system,
+444,Mean Airway Pressure,Mean airway pressure,
+615,Resp Rate (Total),Breath rate spontaneous and mechanical --on ventilator,
+676,Temperature C,Temperature,
+505,PEEP,PEEP Respiratory system --on ventilator,
+614,Resp Rate (Spont),Breath rate spontaneous --on ventilator,
+535,Peak Insp. Pressure,Pressure.max Respiratory system airway --on ventilator,
+683,Tidal Volume (Set),Tidal volume Ventilator --on ventilator,
+684,Tidal Volume (Spont),Tidal volume.spontaneous --on ventilator,
+543,Plateau Pressure,Pressure.plateau Respiratory system airway --on ventilator,
+619,Respiratory Rate Set,Breath rate mechanical --on ventilator,
+0,,Not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 500
+467,O2 Delivery Device,Oxygen delivery system,
+468,O2 Delivery Device#2,Oxygen delivery system,
+212,Heart Rhythm,Heart rate rhythm,
+3354,Cardiac Rhythm,Heart rate rhythm,

@@ -1,0 +1,773 @@
+flowsheet|Flowsheet Cell Labels|I&O|Dialysis (ml)|In: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Dialysis (ml)|Out: Fluid output miscellaneous
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Albumin Intake: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Blood Products: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Cell Saver: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|FFP: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Platelets: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Volume (ml)-Transfuse - Leukoreduced Packed RBCs: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Volume-Transfuse plasma: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Volume-Transfuse platelet pheresis: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|Volume-Transfuse red blood cells: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Blood Products (ml)|pRBCs: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|25% Albumin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|25% Albumin 100 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|25% Albumin 50 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|5% Albumin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|5% Albumin 500 ml: Fluid intake intravascular
+# flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Colloids (ml)|Colloids Total: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|0.45 NS : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|0.45 NS  w/20 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|0.45 NS  w/75 mEq NaHCO3: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|1/2 NS: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Banana Bag: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Bupivicaine epidural: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|CISATRACURIUM: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Cardizem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Continuous infusion meds: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Crystalloid: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Crystalloids: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D10: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS  w/20 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS  w/20 mEq KCL 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS  w/20 mEq KCL and 10 mmol (as PO4) KPO4: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS  w/40 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5 0.45 NS  w/40 mEq KCL 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5.45NS+KCl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5NS : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5NS  w/20 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5NS  w/20 mEq KCL 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5W : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5W  w/100 mEq NaHCO3 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5W  w/150 mEq NaHCO3: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5W  w/150 mEq NaHCO3 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|D5W  w/20 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|DOBUTAMINE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|DOBUTamine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|DOPAMINE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|DOPamine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Diltiazem-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Dobutamine (NS)-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Dobutamine-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|EPINEPHrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|FENTANYL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Fentanyl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Fentanyl : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Fentanyl-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Heparin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Heparin (NS 0.45%)-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Hypertonic saline 3% : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|I.V.: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|INSULIN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|INTAKE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IV Admix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IV Antibiotics: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IV Drips: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IV Other: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|KPhos: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|LEVOPHED: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|LR: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|LR : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Magnesium: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Meropenem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Midazolam-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NOREPINEPHRINE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS  w/20 mEq KCL 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS  w/40 mEq KCL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS  w/40 mEq KCL 1000 ml: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS BOLUS: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS Bolus: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|NS bolus: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Norepinephrine V3-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Other meds: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|PANTOPRAZOLE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|PROPOFOL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|PROTONIX: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Pantoprazole (NS)-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Phenylephrine (NS)-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Plasmalyte : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Potassium: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Precedex: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Propofol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Propofol v2-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Saline Flush (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|TOTAL IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|TPA: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Total In: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Total in: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|VASOPRESSIN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|VERSED: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Vancomycin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Variance : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Vasopressin (NS)-IN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Versed: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-0.45 % sodium chloride solution: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-0.45 % sodium chloride with KCl 20 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-0.9 % sodium chloride solution: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-0.9 % sodium chloride with potassium chloride 20 mEq/L infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-ALBUMIN HUMAN 5 % IV SOLN Pyxis Override: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-Dextran 40 in sodium chloride (DEXTRAN 40 IN NS) 10-0.9 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-SODIUM CHLORIDE 0.9 % IV SOLN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-SODIUM CHLORIDE 0.9 % IV SOLN Pyxis Override: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-albumin human (SPA) 25 % injection 12.5 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-albumin human (SPA) 25 % injection 25 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-albumin human 5 % injection: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-albumin human 5 % injection 12.5 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-albumin human 5 % injection 25 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-azithromycin (ZITHROMAX) 500 mg in sodium chloride 0.9 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-aztreonam (AZACTAM) 1,000 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-calcium gluconate 2 g in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-ceFAZolin (ANCEF) 1,000 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-ceFAZolin 2,000 mg in sodium chloride 0.9% 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-ceFEPIme (MAXIPIME) 1,000 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-cefTRIAXone (ROCEPHIN) 1,000 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-clindamycin 600 mg in sodium chloride 0.9% 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 10 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % / sodium chloride 0.45% 1,000 mL with potassium chloride 40 mEq, magnesium sulfate 5 g infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % / sodium chloride 0.45% infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % / sodium chloride 0.45% with KCl 20 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % / sodium chloride 0.9% infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % / sodium chloride 0.9% with KCl 20 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % 1,000 mL with sodium bicarbonate 100 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % 1,000 mL with sodium bicarbonate 50 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % and 0.45 % sodium chloride with KCl 20 mEq/L infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % and 0.45% NaCl infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % and 0.9 % sodium chloride with KCl 20 mEq/L: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % and 0.9% NaCl infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % in lactated ringers infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 % solution: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 %-0.45 % sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-dextrose 5 %-0.9 % sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-fat emulsion 20 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-lactated ringers bolus 1,000 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-lactated ringers bolus 500 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-lactated ringers infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-levETIRAcetam (KepPRA) 1,000 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-levETIRAcetam (KepPRA) 500 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-levofloxacin (LEVAQUIN) in dextrose 5% premix IVPB 500 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-levofloxacin (LEVAQUIN) in dextrose 5% premix IVPB 750 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-magnesium sulfate 1 g in dextrose 5% 100 mL IVPB premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-magnesium sulfate 2 g in sodium chloride 0.9% IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-magnesium sulfate in sterile water 2 g IVPB premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-metroNIDAZOLE (FLAGYL) IVPB 500 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-micafungin (MYCAMINE) 100 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) 3.375 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) 4.5 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) in dextrose 5% premix IVPB 3.375 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-potassium chloride 20 MEQ/50ML IVPB premix 20 mEq: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-potassium chloride 20 MEQ/50ML IVPB premix 40 mEq: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-potassium chloride 20 mEq/100mL IVPB premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-potassium phosphate 15 mmol in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium bicarbonate in D5W premix 150 mEq/1000 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride (NORMAL SALINE) 0.9 % bolus 1,000 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride (NORMAL SALINE) 0.9 % bolus 250 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride (NORMAL SALINE) 0.9 % bolus 500 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.45 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.45 % with KCl 20 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % 1,000 mL IV bolus: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % 250 mL IV bolus: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % 500 mL IV bolus: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % flush IVPB 250 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % flush IVPB 500 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9 % with KCl 20 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium chloride 0.9% infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-sodium phosphate 15 mmol in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-vancomycin (VANCOCIN) 1,000 mg in sodium chloride 0.9 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-vancomycin 1,250 mg in sodium chloride 0.9% 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Volume (mL)-vancomycin 1,500 mg in sodium chloride 0.9% 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|ZOSYN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|Zosyn: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|amiodarone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|bumetanide: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|dexmedetomidine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|diltiazem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|fentaNYL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|fentanyl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|furosemide: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|heparin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|insulin regular: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|levophed: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|lidocaine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|milrinone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|niCARdipine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|nitroglycerin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|norepinephrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|octreotide: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|pantoprazole: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|phenylephrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|precedex: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|propofol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Crystalloids (ml)|vasopressin: Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|#1:": Fluid intake
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|#2:": Fluid intake
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|#3:": Fluid intake
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|#4:": Fluid intake
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|#5:": Fluid intake
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|% Meal Eaten:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|% Nutrition Supplement Taken:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|% Snack Eaten:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|0.9 NS_c: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|0.9NS with 20mEq KCL_c: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|1/2 NS: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|1/2NS IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|24 HR TOTAL INTAKE  0700-0659: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Albumin 25%: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Albumin 5%: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Amicar: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Analgesic Other (Volume): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CARDENE: Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Chest R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter IJ ": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter IJ L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter IJ R 7F": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter, Pressure/power inj IJ L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Coated Catheter, Pressure/power inj IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: IJ L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Introducer sheath IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Introducer sheath IJ R 8 FR": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Introducer sheath Subclavian L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled IJ ": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled IJ R 8fr": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled IJ R 9fr": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled dialysis, Pressure/power in": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled, Coated Catheter IJ R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled, Coated Catheter IJ R 7F": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled, Coated Catheter IJ R 7Fr": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Non-Tunneled, Pressure/power inj IJ R 7f": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: PICC Basilic R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: PICC Brachial L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: PICC Brachial R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Pressure/Power inj Periph. Inserted Cent": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Pressure/power inj IJ ": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Flush: Pressure/power inj IJ L": Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL Hemo Total Flush: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL PICC Total Lumen Flushes: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|CL PICC Total Lumen Flushes 2: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Cardene: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Cardizem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Chemotherapy Other (Volume): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Contrast amount: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D10W: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5 1/2 NS Volume: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5 1/2 NS w/KCl 20mEq Volume: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D51/2NS IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D51/4NS IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5LR IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5NS IVF: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5NS Volume: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|D5W: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|EPTIFIBATIDE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Electrolyte Other (volume): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Formula Volume/Bolus Amt (mL): Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Gastrostomy tube Abdominal wa": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Nasoduodenal Nostril, L": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Nasoduodenal Nostril, R": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Nasogastric Nostril, R": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Orogastric Oral": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Orogastric Oral 16": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Orogastric Oral 16 fr": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Percutaneous endo gastrostomy": Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Enteral Tube Intake: Transgastric-Jejunal Abdomina": Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Epi: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Feeding Tube Flush/Water Bolus Amt (mL): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Fentanyl: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Flush Volume In               ml: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Formula Volume In         ml: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Free Water:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Gastric Tube Amount of Irrigant: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Gastric Tube Intake: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Generic:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Hemodialysis Intake (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Heparin: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|I.V.: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|INSULIN: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|IV Antibiotics_c: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|IV Intake Amount: Fluid intake nasogastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|IV/IVPB:": Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|IVPB: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|IVPB Volume (ml): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Insulin: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Insulin Drip: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Insulin Gtt: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake (mL)-NG/OG Tube Nasogastric: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake, GI Tube Flush: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake, IV Amount: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake, Oral Amount: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake, TPN/PPN Amount: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Intake, Tube Feeding Amount: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|KCL: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|LEVO: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|LEVOPHED: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|LR IVF: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Lactated Ringers Volume: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Levo: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Levophed: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Lipids: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Lorazepam Volume: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Magnesium: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Misc.: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Miscellaneous IV Other (volume): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NITROGLYCERIN: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS 0.9% Volume: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS IVF: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS b IVF: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS c IVF: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|NS for Blood Administration: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Nasogastric Tube - Intake: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|OGT: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|OGT Flush: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|OGT flush: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Oral Intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Oral Intake Amount: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Other:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Other In:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|OthrIntakeTotal:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|P.O.: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|P.O. Intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|PPN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|PRECEDEX: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|PROPOFOL: Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital L 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital L 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital R 16 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital R 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Antecubital R 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Basilic L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Basilic R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: EJ L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm L 16 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm L 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm L 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm R 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Forearm R 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand L": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand L 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand L 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand R 16 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand R 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Hand R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Midline Brachial R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Upper arm L 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Upper arm L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Upper arm L 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Upper arm R 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist L 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist L 20 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist L 22 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist R": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist R 18 gauge": Fluid intake intravascular
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Per IV Flush: Wrist R 20 gauge": Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Precedex:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Propofol:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Protonix:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Protonix gtt:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|SANDOSTATIN:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|SN IV Solution Volume (ml):
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Saline Flush (mL): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|TPN:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Total Amount (mcg)-fentaNYL PCA 50 mcg/mL:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Total Intake:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Total Intake :
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Total Lumen Flushes:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Tube Feeding Flush (mL): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Tube Feeding Flushes (mL): Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Tube Flush/Meds: Fluid intake nasogastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|VANCOMYCIN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vancomycin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular 2 Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular 3 Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular 4 Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular 5 Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular 6 Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Vascular Flush Amount (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Versed: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Amiodarone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Diltiazem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Dopamine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Fentanyl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Heparin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Insulin : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Labetalol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Magnesium : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Nicardipine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Nitroglycerin : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Norepinephrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Pantoprazole: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Phenylephrine : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Propofol : Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL) Vasopressin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-0.45 % sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-0.9 %  sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-0.9 % NaCl with KCl 20 mEq/ L  infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-0.9 % NaCl with KCl 40 mEq / L  infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-albumin human 5 % injection 12.5 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-albumin human 5 % injection 12.5-25 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-albumin human 5 % injection 25 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ampicillin (OMNIPEN) 2 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ampicillin-sulbactam (UNASYN) 3 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-azithromycin (ZITHROMAX) 500 mg in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-aztreonam (AZACTAM) 1 g in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-calcium gluconate 1 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ceFAZolin (ANCEF) IVPB 2 g/50 mL premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ceFAZolin (ANCEF) in sod chl 2 g IVPB premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ceFEPIme (MAXIPIME) 2 g in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefTRIAXone (ROCEPHIN) 1 g in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefTRIAXone (ROCEPHIN) 1 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefTRIAXone (ROCEPHIN) 2 g in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefTRIAXone (ROCEPHIN) 2 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefepime (MAXIPIME) 1 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-cefepime (MAXIPIME) 2 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-ciprofloxacin (CIPRO) IVPB 400 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-clindamycin (CLEOCIN) IVPB 600 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-clindamycin (CLEOCIN) IVPB 900 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-dextrose 10 % infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-dextrose 5 %-0.45 % sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-dextrose 5 %-0.9 % sodium chloride infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-doxycycline (VIBRAMYCIN) 100 mg in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-famotidine (PEPCID) IVPB 20 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-fluconazole (DIFLUCAN) IVPB 200 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-fluconazole (DIFLUCAN) IVPB 400 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-lactated ringers infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-lactated ringers infusion 500 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-levETIRAcetam (KEPPRA) 500 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-levofloxacin (LEVAQUIN) IVPB 500 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-levofloxacin (LEVAQUIN) IVPB 750 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-magnesium sulfate IVPB 2 g 50 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-magnesium sulfate in 5 % dextrose IVPB 1 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-magnesium sulfate in dextrose premix 2 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-meropenem (MERREM) 1 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-meropenem (MERREM) 500 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-metroNIDAZOLE (FLAGYL) IV 500 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-penicillin G potassium 2.5 Million Units in dextrose 5 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) 2.25 g in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) 3.375 g in sodium chloride 0.9 % 100 mL FOUR HOUR EXTENDED INFUSION IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) 3.375 g in sodium chloride 0.9 % 100 mL thirty minute IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) FOUR HOUR EXTENDED INFUSION IVPB 3.375 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) IVPB 2.25 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-piperacillin-tazobactam (ZOSYN) IVPB 3.375 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride 10 mEq in 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride 10 mEq in 50 mL *CENTRAL LINE* IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride 10 mEq in 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride IVPB 10 mEq 100 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride IVPB 20 mEq: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium chloride IVPB 20 mEq 100 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-potassium phosphate 10 mmol in dextrose 5 % 250 mL infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium bicarbonate 150 mEq in sterile water 1,000 mL infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium chloride 0.45 % 1,000 mL with potassium chloride 40 mEq infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium chloride 0.9 % bolus 250 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium chloride 0.9 % bolus 500 mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-sodium phosphate 20 mmol in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-valproate (DEPACON) 500 mg in dextrose 5 % 50 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 1,250 mg in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 1,500 mg in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 1,500 mg in sodium chloride 0.9 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 1,750 mg in dextrose 5 % 500 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 2,000 mg in sodium chloride 0.9 % 500 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 500 mg in sodium chloride 0.9 % 100 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) 750 mg in dextrose 5 % 250 mL IVPB: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) IVPB 1000 mg/200 mL premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin (VANCOCIN) IVPB 750 mg/150 ml premix: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin in dextrose premix 1 g: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (mL)-vancomycin in dextrose premix 1,000 mg: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml)  Aminocaproic Acid: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Abciximab: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Alteplase: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Amiodarone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Dexmedetomidine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Diltiazem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Dobutamine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Dopamine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) EPTIFIBATIDE: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Esmolol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Fentanyl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Furosemide: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Heparin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Heparin-heparin 25,000 units in dextrose 500 mL infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Insulin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Lipids: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Magnesium Sulfate: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Midazolam: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Milrinone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Morphine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Naloxone: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Nicardipine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Nitroglycerin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Nitroprusside: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Norepinephrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Pantoprazole: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Phenylephrine: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Propofol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume (ml) Vasopressin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Eptifibatide: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Expanders: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Given (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused  (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-HYDROmorphone (DILAUDID) 0.4 mg/mL in sodium chloride 0.9% 30 mL PCA infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-HYDROmorphone (DILAUDID) PCA 1 mg/mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-fentaNYL (SUBLIMAZE) 2 mcg/mL - bupivacaine (SENSORCAINE MPF) 0.125% premix epidural infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-fentaNYL PCA 50 mcg/mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-morphine (ASTRAMORPH PF) 100 mcg/mL, bupivacaine PF (SENSORCAINE-MPF) 0.125 % in sodium chloride 0.9 % 100 mL epidural infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-morphine 2 mg/mL in sodium chloride 0.9% 30 mL PCA infusion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Volume Infused (ml)-morphine PCA 5 mg/mL: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|ZOSYN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|Zosyn: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|ativan: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|cardene: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|fentanyl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|generic:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|heparin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|intake:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|kcl: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|levophed: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|merrem: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|po: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|propofol: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|vancomycin: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|versed: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Generic Intake (ml)|zosyn: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Fibersource HN: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Flush/meds: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Free water: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Glucerna: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral JEVITY 1.2: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral JEVITY 1.5: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Jevity 1.0: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Meds: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral NG/GT: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral NOVASOURCE RENAL: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Nutren: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Nutren 1.5: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral OGT flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral OTHER: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Osmolite 1.5: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Other: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Peptamen AF: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Pivot 1.5: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Replete: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral TF: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral TUBE FEEDING: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral TUBE FLUSH: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Tube Feeding: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Tube Flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Vital High Protein: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral WATER FLUSH: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral Water Flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral free water flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral free water flushes: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral isosource: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral meds: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral meds/flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral ng/gt: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral nutren 1.5: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral other: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral peptamen AF: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral tube feed: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral tube feeding: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral tube flush: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral water flush: Fluid intake enteral tube
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Enteral/Gastric Tube Intake #1": Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Fat emulsion:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Lipid Intake Amount:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Nourish/Supplemt:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Nutrition Total:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Oral: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Oral Intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Other Intake:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|P.O.: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO  : Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO -: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO .: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO ADA diet: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Diet: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO FLUIDS: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Fluid: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Fluid intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Fluids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO LIQUIDS: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Liquids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO ORAL: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Oral: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Oral Intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO PO: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO PO FLUID: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO Regular: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO cardiac: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO cl liq: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO clear liquids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO fluid: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO fluids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO ice chips: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO liqs: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO liquids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO meds: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO oral: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO oral intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO po: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO po fluids: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO po intake: Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO reg diet: Fluid intake oral
+"flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|PO:": Fluid intake oral
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|TPN: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|TPN w/fat emulsion: Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Tube Feeding: Fluid intake enteral tube
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Tube Feeding Amount:
+flowsheet|Flowsheet Cell Labels|I&O|Intake (ml)|Nutrition (ml)|Volume Infused (mL): Fluid intake intravascular
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|24 HR TOTAL OUTPUT  0700-0659:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Actual Patient Fluid Removal:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Blood (non-drain): Blood loss
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Blood Loss: Blood loss
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Bulb #1": Fluid output wound drain
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Bulb #2": Fluid output wound drain
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Bulb #3": Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|CT: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube: Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube #1": Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube A Amount: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube B Amount: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube C Amount: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Drainage Total: Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Output: Mediastinal Anterior": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Output: Mediastinal L Anterior": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Output: Mediastinal R Anterior": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Output: Pleural R Anterior, Lateral": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest Tube Output: Pleural R Lateral": Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Chest tube: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|ChestTube Total: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Colostomy: Fluid output miscellaneous
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Drain 1 Output mL: Fluid output miscellaneous
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Drain 2 Output mL: Fluid output miscellaneous
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Drain 3 Output mL: Fluid output miscellaneous
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Drainage Output Amount1:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Drainage Total:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|EBL:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|EVD: Fluid output cerebral ventricle drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis: Fluid output emesis
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis Count:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Emesis Output: Fluid output emesis
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Estimated Blood Loss: Blood loss
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley Cath: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Foley cath: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|GI Tube 1 Drainage Amount: Fluid output gastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric (NG): Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Nasogastric Nostril, L": Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Nasogastric Nostril, R": Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Orogastric Oral": Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Orogastric Oral 16": Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Gastric Tube Output: Percutaneous endo gastrostomy": Fluid output gastric tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Generic:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|HemodialysisOut:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Hemofiltration:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Ileostomy: Output.ileostomy
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Indwelling Catheter Output: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|JP Drain Total:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|JP drain: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|L Pleural CT: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Liquid Stool: Output.stool
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Liquid stool:": Output.stool
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Misc. Output:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Mixed Urine/Stool Volume: Output.stool
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|NG Tube: Fluid output gastric tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Neo Ostomy #1 Output":
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Nephrostomy: Fluid output urine nephrostomy
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Number of Bowel Movements Output:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|OTHER:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Other:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Other Output:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|OthrOutputTotal:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Closed/Suction Drain Right Abdomen Bulb 7 Fr.:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-External Urinary Catheter: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG Tube Nasogastric Left nostril:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG/Feeding Tube Nasogastric 16 Fr. Right nare:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-NG/OG/Feeding Tube Nasogastric Right nare:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Straight Catheter: Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Latex;Straight-tip 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 16 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex 18 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Non-latex;Temperature probe 16 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Straight-tip 14 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-Urethral Catheter Temperature probe 16 Fr.: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (mL)-[REMOVED] Straight Catheter: Fluid output urine in and out urethral catheter
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Left Mid": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Pleural Left Lower;Anterior": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Pleural Right Anterior;Lower": Fluid output chest tube
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Chest Tube #1 Right": Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output (ml)-Ostomy - GI Colostomy LLQ: Output.colostomy
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Amt-Blake Drain A: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Amt-Chest Tube A: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Amt-Chest Tube B: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Amt-Hemovac Drain: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Amt-Wound Vac: Fluid output wound drain
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output Y (ml)-Chest Tube Y - a #1 Left Mid b #1 Right Mid": Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output, Gastric Drainage Amount:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Output, Stool Amount: Output.stool
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Paracentesis Output:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|R Chest Tube: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|R JP: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Rectal Tube: Output.stool
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|SN Blood Loss(ml): Blood loss
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|SN Total Blood Product Volume(ml):
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|SN Urine Output(ml): Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|SN Wound Drainage Volume(ml):
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Stool: Output.stool
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Stool Occurrence:
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Surgical Drain, Tube Output: Bulb-closed system Ab":
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Surgical Drain, Tube Output: Bulb-closed system Ne":
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Surgical Drain, Tube Output: Closed system Abdomen":
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|TOTAL OUT:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Thoracentesis Output:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Total Out:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Total out:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Tube Feeding Residual Discarded (mL):
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|URINE CATHETER: Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Condom External": Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Sup": Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Indwelling/Continuous Ure": Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urinary Catheter Output: Straight/Intermittent Ure": Fluid output urine in and out urethral catheter
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Count: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Occurrence:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output (mL)-Urethral Catheter: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-FOLEY: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine Output-Foley: Urine output
+"flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Urine, void:": 
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Voided Amount:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|Wound Vac Total: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|chest tube: Fluid output chest tube
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|drainage total:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|emesis: Fluid output emesis
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|foley: Urine output
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|generic:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|jp: Fluid output wound drain
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|other:
+flowsheet|Flowsheet Cell Labels|I&O|Output (ml)|unmeasured voids:
+flowsheet|Flowsheet Cell Labels|I&O|Weight|Bodyweight (kg):
+flowsheet|Flowsheet Cell Labels|I&O|Weight|Bodyweight (lb):

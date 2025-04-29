@@ -1,0 +1,238 @@
+# eICU-CRD:  carePlanCareProvider table -> specialty
+# HiRID:     mapped from APACHE groups
+# MIMIC-III: services table -> CURR_SERVICE column
+# MIMIC-IV:  services table -> curr_service column
+# NWICU:      –
+# SICdb:     cases table -> ReferringUnit column
+# UMCdb:     admissions table -> specialty column
+
+# Mapped primarily as Medicare Physician Specialties
+
+#######################################
+# Internal Medicine
+#######################################
+# - Cardiology
+# - Endocrinology
+# - Gastroenterology
+# - Hematology
+# - Hematology / Oncology
+# - Medical Oncology
+# - Nephrology
+# - Pulmonary Disease
+# - Rheumatology
+Internal Medicine: # 38004456
+  # MIMIC-III / MIMIC-IV
+  - MED # Medical - general service for internal medicine
+  # UMCdb
+  - Inwendig # Internal Medicine
+Cardiology: # 38004451
+  # MIMIC-III / MIMIC-IV
+  - CMED # Cardiac Medical - for non-surgical cardiac related admissions
+  # SICdb
+  - 2. Medizin # Cardiology
+  - Intensivstation 2. Medizin # Intensive Care Cardiology
+  # UMCdb
+  - Cardiologie # Cardiology
+Endocrinology: # 38004485
+  # SICdb
+  - Endokrinologie # Endocrinology
+Gastroenterology: # 38004455
+  # SICdb
+  - 1. Medizin # Gastroenterology
+  # UMCdb
+  - Maag-,Darm-,Leverziekten # Gastroenterology
+Hematology: # 38004501
+  # UMCdb
+  - Hematologie # Hematology
+Hematology / Oncology: # 38004502 # subsumed under Medical Oncology AND Hematology
+  # SICdb
+  - 3. Medizin # Hematology / Oncology
+Medical Oncology: # 38004507
+  # UMCdb
+  - Oncologie Inwendig # Internal Oncology
+Nephrology: # 38004479
+  # UMCdb
+  - Nefrologie # Nephrology
+Pulmonary Disease: # 38004472
+  # SICdb
+  - Pneumologie # Pulmonology
+  # UMCdb
+  - Longziekte # Pulmonology
+Rheumatology: # 38004491
+  # UMCdb
+  - Reumatologie # Rheumatology
+
+#######################################
+# Surgery
+#######################################
+# - Cardiac Surgery
+# - General Surgery
+# - Maxillofacial Surgery
+# - Oral Surgery
+# - Orthopedic Surgery
+# - Plastic And Reconstructive Surgery
+# - Surgical Oncology
+# - Thoracic Surgery
+# - Trauma Surgery
+Cardiac Surgery: # 38004497
+  # MIMIC-III / MIMIC-IV
+  - CSURG # Cardiac Surgery - for surgical cardiac admissions
+  # SICdb
+  - Herzchirurgie # Cardiac Surgery
+  # UMCdb
+  - Cardiochirurgie # Cardiac Surgery
+General Surgery: # 38004447
+  # MIMIC-III / MIMIC-IV
+  - SURG # Surgical - general surgical service not classified elsewhere
+  # SICdb
+  - Allgemeinchirurgie # General Surgery
+  # UMCdb
+  - Heelkunde Gastro-enterologie # Gastroenterological Surgery
+Maxillofacial Surgery: # 38004504
+  # SICdb
+  - Kieferchirurgie # Oral and Maxillofacial Surgery
+Oral Surgery: # 38004464
+  # MIMIC-III / MIMIC-IV
+  - DENT # Dental - for dental/jaw related admissions
+  # UMCdb
+  - Mondheelkunde # Oral Surgery
+Orthopedic Surgery: # 38004465
+  # MIMIC-III / MIMIC-IV
+  - ORTHO # Orthopaedic - surgical, relating to the musculoskeletal system
+  - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
+  # SICdb
+  - Orthopädie # Orthopedics
+  # UMCdb
+  - Orthopedie # Orthopedics
+Plastic And Reconstructive Surgery: # 38004467
+  # MIMIC-III / MIMIC-IV
+  - PSURG # Plastic - restortation/reconstruction of the human body (including cosmetic or aesthetic)
+  # UMCdb
+  - Plastische chirurgie # Plastic Surgery
+Surgical Oncology: # 38004508
+  # UMCdb
+  - Heelkunde Oncologie # Oncological Surgery
+Thoracic Surgery: # 38004473
+  # MIMIC-III / MIMIC-IV
+  - TSURG # Thoracic Surgical - surgery on the thorax, located between the neck and the abdomen
+  # UMCdb
+  - Heelkunde Longen/Oncologie # Pulmo-oncological Surgery
+Trauma Surgery: # 38004016 # NUCC, not Medicare Specialty
+  # MIMIC-III / MIMIC-IV
+  - TRAUM # Trauma - injury or damage caused by physical harm from an external source
+  # SICdb
+  - Unfallchirurgie # Trauma Surgery
+  # UMCdb
+  - Traumatologie # Traumatology
+Vascular Surgery: # 38004496
+  # MIMIC-III / MIMIC-IV
+  - VSURG # Vascular Surgical - surgery relating to the circulatory system
+  # SICdb
+  - Angiologie # Angiology
+  - Gefäßchirurgie # Vascular Surgery
+  # UMCdb
+  - Vaatchirurgie # Vascular Surgery
+
+#######################################
+# Inside the Head
+#######################################
+Neurosurgery:
+  # MIMIC-III / MIMIC-IV
+  - NSURG # Neurologic Surgical - surgical, relating to the brain
+  # SICdb
+  - Neurochirurgie # Neurosurgery
+  # UMCdb
+  - Neurochirurgie # Neurosurgery
+Neurology:
+  # MIMIC-III / MIMIC-IV
+  - NMED # Neurologic Medical - non-surgical, relating to the brain
+  # SICdb
+  - Neurologie # Neurology
+  # UMCdb
+  - Neurologie # Neurology
+Psychiatry: # 38004469
+  # MIMIC-III / MIMIC-IV
+  - PSYCH # Psychiatric - mental disorders relating to mood, behaviour, cognition, or perceptions
+  # SICdb
+  - Psychiatrie # Psychiatry
+
+#######################################
+#  Women's and Children's Health
+#######################################
+Gynecology: # 38003902 # NUCC, not Medicare Specialty
+  # MIMIC-III / MIMIC-IV
+  - GYN # Gynecological - female reproductive systems and breasts
+  # SICdb
+  - Gynäkologie # Gynecology
+  # UMCdb
+  - Gynaecologie # Gynecology
+Obstetrics / Gynecology: # 38004461
+  # MIMIC-III / MIMIC-IV
+  - OBS # Obstetrics - conerned with childbirth and the care of women giving birth
+  # UMCdb
+  - Obstetrie # Obstetrics
+  - Verloskunde # Obstetrics
+Neonatal-Perinatal Medicine: # 45756786 # ABMS, not Medicare Specialty
+  # MIMIC-III / MIMIC-IV
+  - NB # Newborn - infants born at the hospital
+  - NBB # Newborn baby - infants born at the hospital
+Pediatric Medicine: # 38004477
+  # SICdb
+  - Pädiatrie # Pediatrics
+Pediatric Surgery: # 45756819 # ABMS, not Medicare Specialty
+  # SICdb
+  - Kinderchirurgie # Pediatric Surgery
+
+#######################################
+# Not Otherwise Classified
+#######################################
+Critical care (intensivist): # 38004500
+  # UMCdb
+  - Intensive Care Volwassenen # Adult Intensive Care
+Dermatology: # 38004452
+  # SICdb
+  - Dermatologie # Dermatology
+Opthalmology: # 38004463
+  # MIMIC-III / MIMIC-IV
+  - EYE # Eye diseases - including subspecialty services in glaucoma, cataract surgery, cornea and external diseases, and neuro-ophthalmology
+  # SICdb
+  - Augenheilkunde # Ophthalmology
+  # UMCdb
+  - Oogheelkunde # Ophthalmology
+Otolaryngology: # 38004449
+  # MIMIC-III / MIMIC-IV
+  - ENT # Ear, nose, and throat - conditions primarily affecting these areas
+  # SICdb
+  - HNO # Ear, Nose, and Throat
+  # UMCdb
+  - Keel, Neus & Oorarts # Ear, Nose & Throat
+Urology: # 38004474
+  # MIMIC-III / MIMIC-IV
+  - GU # Genitourinary - reproductive organs/urinary system
+  # SICdb
+  - Urologie # Urology
+  # UMCdb
+  - Urologie # Urology
+Emergency Medicine: # 38004454
+  # SICdb
+  - Zentralambulanz (ZANE) CDK # Emergency Department
+  - Zentrale Notaufnahme # Emergency Department
+Unknown:
+  # MIMIC-III / MIMIC-IV
+  - ""
+  # SICdb
+  - Externe Intensivstation # External Intensive Care
+  - Externes Krankenhaus # External Hospital
+  - Unknown
+  # UMCdb
+  - ders
+
+#######################################
+# Only in eICU
+#######################################
+Allergy / Immunology: [] # 38004448
+Anesthesiology: [] # 38004450
+Diagnostic Radiology: [] # 45756769 # ABMS, not Medicare Specialty
+General Practice: [] # 38004446
+Infectious Disease: [] # 38004484
+Transplant Surgery: [] # 38003827 # NUCC, not Medicare Specialty

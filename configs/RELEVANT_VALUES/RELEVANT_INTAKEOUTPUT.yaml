@@ -1,0 +1,43 @@
+##########
+# OUTPUT #
+##########
+Blood loss: True # 1014933
+Blood loss.total intraoperative: True # 1030226
+Fluid output biliary drain: True # 1033547
+Fluid output cerebral ventricle drain: True # 1033549
+Fluid output chest tube: True # 1033550
+Fluid output emesis: True # 1033551
+Fluid output gastric tube: True # 1033553
+Fluid output gastrointestinal drain: True # 1014372
+Fluid output gastrointestinal ostomy: True # 1014371
+Fluid output miscellaneous: True # 1033555
+# Fluid output miscellaneous route: False # 1033556
+Fluid output neurological drain: True # 1014374
+Fluid output pericardial drain: True # 1033557
+Fluid output peritoneal drain: True # 1033558
+Fluid output subarachnoid drain: True # 1033559
+Fluid output urine in and out urethral catheter: True # 1033563
+Fluid output urine nephrostomy: True # 1014370
+Fluid output wound drain: True # 1027295
+# Fluid output wound drain identifier: False # 1033564
+Output.colostomy: True # 1030877
+Output.ileostomy: True # 1030879
+Output.stool: True # 1030880
+Urine output: True
+##########
+# INTAKE #
+##########
+Fluid intake: True # 1030543
+# Fluid intake chest tube: True # 1033597
+# Fluid intake enema: True # 1033598
+Fluid intake enteral tube: True # 1033599
+Fluid intake intravascular: True # 1033602
+Fluid intake nasogastric tube: True # 1033603
+Fluid intake oral: True # 1033604
+Fluid intake peritoneal: True # 1033605
+# Fluid intake total: False # 1033607
+Fluid intake urinary bladder irrigation: True # 1033546
+###########
+# BALANCE #
+###########
+Fluid balance: True # 1030542

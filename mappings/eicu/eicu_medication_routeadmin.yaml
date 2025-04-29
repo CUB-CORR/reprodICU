@@ -1,0 +1,871 @@
+IV: intravenous # 2334091
+PO: oral # 1317743
+Oral: oral # 628128
+Intravenous: intravenous # 327195
+ORAL: oral # 246330
+IVPB: intravenous # 227390
+INTRAVENOU: intravenous # 163050
+IV Push: intravenous # 146072
+MISC: # 132825
+SC: subcutaneous # 110259
+DEVICE: # 98844
+SubQ: subcutaneous # 80020
+IM: intramuscular # 72013
+.ROUTE: # 71444
+IV PUSH: intravenous # 63596
+INTRAVEN: intravenous # 51562
+IntraVENOUS: intravenous # 50649
+Subcutaneous: subcutaneous # 44543
+subCUT: subcutaneous # 40351
+ZPYXVEND: # 39121
+NEBULIZATION: inhalational # 36255
+SUBCUTAN: subcutaneous # 34151
+SUBQ: subcutaneous # 32766
+IVP: intravenous # 32590
+SL: sublingual # 29153
+PER NG TUBE: nasogastric # 27934
+Inhalation: inhalational # 26653
+INH: inhalational # 26554
+PR: rectal # 26480
+Rectal: rectal # 26101
+RE: rectal # 23238
+Nebulization: # 21049
+TP: topical # 19824
+TD: transdermal # 18816
+SUBCUT: subcutaneous # 18256
+Topical: topical # 17927
+SVN: # 16815
+NEB: inhalational # 16440
+TOP: topical # 16017
+NGT: nasogastric # 15310
+CENTRAL IV: intravenous (central) # 15193
+IN: # 14692
+INHALATION: inhalational # 14596
+GASTRIC TU: nasogastric # 13980
+IK: # 13834
+Subcut: subcutaneous # 13593
+Rect: rectal # 13156
+SWISH: # 12214
+NG: nasogastric # 11059
+RECTAL: rectal # 9961
+NEBULIZER: inhalational # 8757
+Transdermal: transdermal # 8756
+NG Tube: nasogastric # 8406
+Tube: nasogastric # 8399
+Intradermal: # 8047
+TUBE: nasogastric # 7961
+Subcutan: subcutaneous # 7904
+Inhl: inhalational # 7605
+Both Eyes: # 6838
+INJ: intravenous # 6694
+Inhale: inhalational # 6677
+ORAL/TUBE: nasogastric # 6623
+Feeding Tube: nasogastric # 6614
+Sublingual: sublingual # 6324
+PER TUBE: nasogastric # 6263
+COSIG IV: # 5888
+PER G TUBE: nasogastric # 5815
+SUB-Q: subcutaneous # 5743
+ORAL MUCOSA: oral # 5473
+REC: rectal # 5339
+"PO (oral)                                                                                           ": oral # 5178
+Oral swab: oral # 5121
+RTL: rectal # 5089
+Intramuscular: intramuscular # 5011
+PERIPH IV: intravenous # 4941
+EACH NARE: # 4855
+TF: # 4815
+FT: # 4785
+TOPICAL: topical # 4682
+Nasal: # 4678
+Nasogastric Tube: nasogastric # 4613
+MT: # 4573
+INHL: inhalational # 4509
+See Instruct: # 4387
+FLUSH: # 4234
+BOTH EYES: # 4162
+Mouth/Throat: # 4088
+Mouth Rinse: # 3922
+Per NG tube: # 3411
+OTHER: # 3405
+IRR: # 3397
+IMV: # 3360
+PEG TUBE: # 3357
+IDrm: # 3344
+SQ: # 3315
+MUCOUS MEM: # 3154
+Catheter: # 2983
+Flush: # 2977
+Both Nostril: # 2930
+PEG: # 2750
+ID: # 2656
+ORAL GASTR: # 2650
+IR: # 2617
+NG- NasoGast: # 2411
+GTUBE: # 2377
+G Tube: # 2361
+TRANSDERMA: # 2349
+Top: # 2328
+Swish: # 2186
+SUBLINGUAL: # 2158
+Miscellaneou: # 2147
+IV Flush: # 2133
+MIS: # 2129
+CRRT: # 2099
+ORAL RINSE: # 2095
+INTRAVENOUS: # 2052
+PEGTUBE: # 2050
+INTRALUMIN: # 2016
+INFILTRATION: # 2005
+TOPL: # 1963
+Intercatheter: # 1951
+PROC IVP: # 1944
+Other: # 1939
+Injection: # 1932
+DIALYSIS: # 1899
+INH/NEB: # 1841
+IV Sedation: # 1832
+G-TUBE: # 1781
+IV CONT: # 1775
+PO or NG: # 1732
+Chewed: # 1726
+Dwell: # 1720
+NASAL: # 1673
+IntraMUSCULAR: # 1658
+"IV (intravenous)                                                                                    ": # 1580
+Per G Tube: # 1557
+PCA: # 1483
+TRANSDERM: # 1476
+Arterial: # 1448
+OPH: # 1438
+OPHTHALMIC: # 1431
+Irrigation: # 1383
+IA: # 1351
+Both eyes: # 1300
+Gastric Tube (PEG): # 1299
+IV Piggyback: # 1295
+ND: # 1287
+Miscellaneous: # 1278
+Dobhoff Tube: # 1277
+OU: # 1254
+INTRAMUSC: # 1202
+XX: # 1157
+INTRAMUSCU: # 1128
+Eyes (both): # 1101
+IJ: # 1068
+Mucous Membrane: # 1044
+IVDRIP: # 1042
+Intra-arterial: # 1036
+INTRA-CATHET: # 1034
+Intra-arTERi: # 984
+MTHW: # 971
+NAS: # 968
+INT: # 918
+INJECTION: # 883
+LEFT EYE: # 870
+BOTH NARES: # 856
+Nasl: # 843
+NGTUBE: # 843
+nebu: # 840
+Intracatheter: # 801
+JTUBE: # 784
+TU: # 774
+RIGHT EYE: # 767
+INTRADERMA: # 758
+VIA_TUBE: # 737
+OG: # 719
+IV Catheter: # 715
+EPIDURAL: # 706
+INTRAVENOUS CONTINUOUS: # 700
+RADIV: # 655
+PER J TUBE: # 653
+PegTube: # 647
+IP: # 637
+Each Nare: # 609
+NG-tube: # 608
+TRND: # 606
+NG-TUBE: # 582
+Epidural: # 576
+PO/NG: # 575
+GT: # 572
+Swish/Spit: # 568
+"IV (injection)                                                                                      ": # 564
+Dialysis: # 552
+Each Nostril: # 551
+EP: # 548
+RECT: # 534
+J-tube(Jeju): # 529
+Right Eye: # 515
+INTRAVENOUS PIGGY BACK: # 515
+Epid: # 514
+IDERMAL: # 514
+OG- OralGast: # 505
+Route: # 503
+EACH NOSTRIL: # 497
+Intracathete: # 491
+Left Eye: # 490
+NASL: # 473
+G-tube (Gast: # 472
+Infiltration: # 470
+SUBCUTANEOUS: # 462
+NB: # 462
+ACCESS SITE: # 450
+MM: # 449
+IC Dwell: # 441
+PB: # 435
+INHALED: # 433
+"Subcutaneous (Subcutane)                                                                            ": # 432
+LVF: # 430
+IntraArterial: # 423
+TLC: # 414
+Swab: # 408
+NASOGASTRI: # 407
+AEROSOL: # 406
+PICC: # 405
+ON TONGUE: # 405
+EACH EYE: # 402
+Oral Gastric Tube: # 378
+Per J Tube: # 376
+DIALYSIS CAT: # 376
+RC: # 360
+"Eye: #  Both": # 359
+PEG-tube: # 357
+Epidur: # 349
+Jejunostomy Tube: # 338
+per OG tube: # 315
+Peritoneal catheter: # 315
+NGtube: # 314
+NASOGASTRIC TUBE: # 314
+INF: # 312
+IRRIGATE: # 309
+Urth: # 306
+J TUBE: # 306
+Apply externally: # 305
+Gtub: # 304
+"Subcutaneous (injection)                                                                            ": # 301
+IV BOLUS: # 300
+J-tube: # 299
+Urethral: # 296
+IH: # 294
+Eyes (Each): # 291
+Intraperitoneal: # 290
+Local infiltration: # 287
+IM/IV: # 287
+NEBS: # 284
+FTUBE: # 275
+Hemodialysis: # 274
+Ifil: # 271
+NG or OG: # 263
+INTRAVEN.: # 262
+Central Line: # 261
+IRRG: # 256
+EPID: # 256
+IT: # 256
+OP: # 252
+"Inhaled (inhalation)                                                                                ": # 248
+IArt: # 242
+G-Tube: # 237
+OGT: # 233
+TDERMAL: # 231
+PER_TUBE: # 231
+VA: # 217
+NG tube: # 216
+Nostril (Each): # 209
+G/J tube: # 209
+INTRA-ARTERIAL: # 208
+INTRADERM: # 205
+Inj: # 200
+InPl: # 197
+NS: # 196
+PEG-TUBE: # 196
+INTRAPERIT: # 194
+Machine prim: # 192
+PO_NG: # 191
+J-Tube: # 181
+"IV - continuous infusion (intravenous)                                                              ": # 181
+Intratracheal: # 181
+OPHT: # 180
+Gtube: # 180
+Feeding: # 178
+"Nostrils: #  each": # 178
+EYE BOTH: # 177
+Intranasal: # 175
+LOK: # 174
+ED: # 174
+Right eye: # 170
+"Per enteric tube (oral)                                                                             ": # 166
+Left eye: # 163
+INTRACORONAR: # 162
+IM VACC: # 161
+OPTH: # 158
+SWISH/SPIT: # 157
+MUC_MEMB: # 156
+ENDO: # 153
+PMX: # 151
+FEEDING TUBE: # 150
+J Tube: # 148
+HEMODIALYSIS: # 148
+PL: # 146
+Intrapleural: # 146
+Endotracheal: # 144
+BOTH NOSTRIL: # 142
+ORATOP: # 139
+EX: # 138
+ORA: # 137
+misc: # 137
+CO: # 135
+Each affected nostril: # 135
+SWISH/SWALLO: # 135
+CVC: # 134
+Swish and Spit: # 130
+IRRIGATION: # 130
+DEEPSUBCUT: # 128
+URETHRAL: # 128
+EYES_BOTH: # 127
+Topical (Top): # 126
+Catheter lock: # 125
+RT EYE: # 124
+INTRACARDIAC: # 123
+PEJ: # 122
+EXT: # 119
+CHEWED: # 116
+IX: # 114
+Swish/Swllw: # 114
+RT: # 114
+NARE BOTH: # 113
+BUCCAL: # 110
+Regional: # 109
+PRIMARY IV: # 109
+"Subcutaneous                                                                                        ": # 108
+CHEST TUBE: # 108
+Intrathecal: # 108
+Nebulizer: # 106
+RADPO: # 106
+Vaginal: # 106
+SUBCUT/IM: # 105
+SC ABDOMEN: # 105
+JPEG: # 104
+Nasogastric: # 104
+UR: # 103
+RADINJ: # 102
+INLINE: # 100
+PO/SL: # 99
+VAG: # 99
+NAR_BOTH: # 96
+INTRAPLEUR: # 94
+NONE: # 93
+OPHTH: # 92
+Ophthalmic: # 92
+IntraLumenal: # 91
+SUB Q: # 90
+IRRIG: # 90
+GTT: # 89
+"IV - brief infusion (intravenous)                                                                   ": # 87
+ENDOTRACHEAL: # 86
+Each affected eye: # 83
+IV LOCK: # 82
+CHEW/SWALL: # 80
+PO or SL: # 76
+JTub: # 75
+INTRAVENOUS BOLUS: # 75
+"IV - continuous infusion (injection)                                                                ": # 73
+Both Ears: # 72
+EA NOSTRIL: # 71
+EPIDURAL Injection: # 71
+RADORAL: # 71
+TRANSDERMAL: # 70
+ICOR: # 70
+Eye (left): # 70
+EPIDURAL Infusion: # 69
+"Miscellaneous (medical supplies non-drugs) (Miscellaneous)                                          ": # 69
+LEFT EAR: # 68
+IC: # 65
+EYE AFFECT: # 65
+IntraDermal: # 64
+Chew: # 64
+IPL: # 63
+OG-TUBE: # 63
+G tube: # 63
+.SEE ORDER: # 63
+InTr: # 62
+BOTH EARS: # 60
+RIGHT EAR: # 60
+LInf: # 60
+INTRACATHETE: # 59
+IPERITNL: # 58
+OPTH BOTH: # 58
+INTRANASAL: # 57
+INHAL: # 56
+PO or G-tube: # 56
+Dophoff Tube: # 56
+Eye (right): # 56
+MISCELL: # 55
+RTA: # 54
+EPI: # 54
+IPPB: # 53
+X: # 53
+Transmucosal: # 52
+IF: # 52
+"IM (injection)                                                                                      ": # 51
+Right Ear: # 51
+IV FLUSH: # 51
+PGtube: # 51
+"Eye: #  Left": # 50
+PERITONEAL C: # 49
+HD FLUSH: # 49
+Instill: # 48
+VAGINAL: # 48
+STK: # 48
+"Topical (topical)                                                                                   ": # 47
+Tracheal Tube: # 47
+I-peritoneal: # 46
+Intracoronary: # 45
+"Eye: #  Right": # 45
+Intra-Catheter: # 45
+Intraperiton: # 45
+Buccal: # 44
+CATH: # 44
+OTIC: # 44
+PERFUSION: # 43
+Eye (Left): # 43
+OG-tube: # 43
+IV/IM: # 42
+Eye (Right): # 42
+Intra-articular: # 42
+OT: # 42
+Left Ear: # 41
+EYE: # 41
+DIALYSATE: # 41
+Misc: # 40
+PO or PEG: # 40
+ITD: # 40
+COSIG INH: # 40
+J-TUBE: # 39
+INTRATHECA: # 39
+"Transdermal (Transdermal)                                                                           ": # 37
+PG: # 37
+zz: # 36
+"IV - brief infusion (injection)                                                                     ": # 36
+Vagl: # 35
+INTRAMUSCULAR: # 35
+"Per rectum (rectal)                                                                                 ": # 34
+Device: # 34
+PO or OG: # 33
+SQ CONTINUOU: # 33
+Bucl: # 32
+IntraArticular: # 32
+SW_SPIT: # 32
+Alt Nares: # 32
+Both ears: # 31
+Opht: # 31
+CI: # 31
+Suck: # 31
+IAtc: # 31
+EZPAP: # 30
+SWISH+SPIT: # 30
+NOTE: # 30
+CATH LUMEN: # 30
+IM Deltoid: # 29
+Gastrostomy Tube: # 29
+IM-V: # 28
+BOTH NOSTR: # 28
+INFILTRATE: # 27
+LAVAGE: # 27
+LVP: # 27
+JT: # 27
+INTRATHECL: # 26
+TRANSDERM.: # 25
+INTRA-MUSCULAR: # 25
+SEE CHART: # 24
+"Opthalmic (opthalmic)                                                                               ": # 24
+EYE_RIGHT: # 24
+TPN: # 24
+I-dermal: # 24
+Perineural: # 24
+Chest Tube: # 24
+ET: # 23
+INJECT: # 23
+IU: # 23
+BU: # 23
+IVADD: # 23
+ETTUBE: # 22
+PERCUTANEOUS: # 22
+Face mask: # 22
+INTRALESION: # 21
+J tube: # 21
+J TUBE BOLUS: # 21
+BOTHEYES: # 21
+TRACHEAL TUB: # 20
+BRONCHIAL WA: # 20
+OS: # 20
+DEEP IM: # 20
+I-ocular: # 20
+IPERITONEAL: # 19
+IMP: # 18
+IV/IM/SC: # 18
+UROGEN: # 18
+GASTROSTOMY TUBE: # 18
+LUMENS: # 18
+SW_SWALL: # 18
+JEJUNOSTOMY TUBE: # 18
+DUODENAL: # 18
+INJECTABLE: # 18
+IntraTHEcal: # 18
+AUR: # 17
+Ear (Left): # 17
+PERINEURAL: # 17
+BC: # 17
+I-PERI: # 16
+PNB: # 16
+Soak: # 16
+NG_TUBE: # 16
+TRDRM: # 16
+OPTH RIGHT: # 16
+IDERM: # 16
+Otic: # 16
+MUCOUS MEMBRANE: # 16
+INTRAPERITONEAL: # 15
+PORT: # 15
+INFIL: # 15
+LEFT NARE: # 15
+Alt Nostril: # 15
+EYE_BOTH: # 15
+Peripheral Nerve: # 15
+CELLSAVER: # 15
+TL: # 15
+No route: # 14
+PEGT: # 14
+"IV                                                                                                  ": # 14
+EYE LEFT: # 14
+"Buccal/Sublingual (sublingual)                                                                      ": # 14
+Intra-urethral: # 14
+SUBCUTV: # 13
+KIDIV: # 13
+ARTERIAL: # 13
+UroGenital: # 13
+IV/SUBCUT: # 13
+Ears (Each): # 13
+BOTH NOSTRILS: # 13
+"Intranasal (nasal)                                                                                  ": # 13
+IS: # 13
+MUC_MEMBRANE: # 13
+ALT NARES: # 13
+I-thecal: # 13
+BLADDER INST: # 12
+PIC/PICC: # 12
+"Nostrils: #  alternating": # 12
+ZIM: # 12
+INFILTRATI: # 12
+CBI: # 12
+Left ear: # 12
+IntraThecal: # 12
+UD: # 12
+APHERESIS: # 12
+Percutaneous feeding tube: # 11
+O2 Aerosolization: # 11
+Intrabiliary: # 11
+PPN: # 11
+IV DRIP: # 11
+Mouthpiece: # 11
+ANTIBIO LCK: # 11
+PCA CONTINUOUS: # 11
+BN: # 11
+Nasogastric tube: # 10
+EYE_LEFT: # 10
+DIAL: # 10
+incision: # 10
+Intraarterial: # 10
+IVCOSIGN: # 10
+INTH: # 10
+SP: # 9
+PEG Tube: # 9
+MISCELL.: # 9
+COSIG IL: # 9
+Ostomy: # 9
+Left Nostril: # 9
+PEDIV: # 9
+Intrabladder: # 9
+IVB: # 9
+INTRAPLEURAL: # 9
+EYE RIGHT: # 9
+BUC: # 9
+Operative Ey: # 9
+CHEW: # 9
+SUBQ VACC: # 9
+NG/PO: # 8
+OPTH LEFT: # 8
+MOUTHWASH: # 8
+I-pleural: # 8
+Intraocular: # 8
+Tracheal Tub: # 8
+Ears (both): # 8
+Intraoperative: # 8
+Swish and Swallow: # 8
+Right ear: # 7
+Right Nostri: # 7
+po: # 7
+DT: # 7
+Ear (Right): # 7
+Intralesional: # 7
+Intraductal: # 7
+SWISH/SWAL: # 7
+NEBULIZAT: # 7
+"Mucous membrane (topical mouth and throat) (mucous membrane)                                        ": # 7
+NERVE BLOCK: # 7
+ARTICULAR: # 7
+OD: # 7
+IO: # 7
+IV INFUSE: # 7
+Alternating Nares: # 7
+COSIG PO: # 6
+A/LINE: # 6
+PICC FLUSH: # 6
+DENTAL: # 6
+Intravesical: # 6
+Nostril (Left): # 6
+Jtube: # 6
+SWISH+SWAL: # 6
+EACH EAR: # 6
+SUB: # 6
+PEDCBI: # 6
+Intraarticular: # 6
+PD FLUID: # 6
+Intrauterine: # 6
+AO: # 6
+Intracavitary: # 6
+COSIG EPID: # 6
+VE: # 6
+JOINT: # 6
+Transurethral: # 6
+VG: # 6
+INTRAVITREAL: # 6
+Intra-arTICu: # 5
+iv: # 5
+G TUBE: # 5
+INTRATRACHEA: # 5
+DE: # 5
+IRRIGATN: # 5
+CHEST: # 5
+Orogastric: # 5
+NERVE_BLOCK: # 5
+IntraPleural: # 5
+Oral Inhalation: # 5
+LOZENGE: # 5
+NG TUBE: # 5
+NG-Tube: # 4
+"Ear: #  Both": # 4
+"Ear: #  Left": # 4
+PO/IM: # 4
+IOSS: # 4
+RIGHT NARE: # 4
+EAR BOTH: # 4
+"PO                                                                                                  ": # 4
+G_TUBE: # 4
+MC: # 4
+Nasojejunum Tube: # 4
+INTRASPINAL: # 4
+OTI: # 4
+"Buccal/Sublingual (buccal)                                                                          ": # 4
+Ear (left): # 4
+SWAB MOUTH: # 4
+Cath: # 4
+Intraventricular: # 4
+RT EAR: # 4
+LEFTEYE: # 4
+In Vitro: # 4
+INTRAOCULA: # 4
+Each affected ear: # 4
+AU: # 4
+EndoTRACHeal: # 4
+COSIG SUBQ: # 4
+PEDPO: # 4
+INTRA-ARTE: # 4
+PEDINH: # 4
+I-DERMALLY: # 4
+BUCL: # 4
+1NOSTRIL: # 3
+per NJ tube: # 3
+Peripheral N: # 3
+Dental: # 3
+INTRAVESIC: # 3
+NERVEBLOCK: # 3
+Does not apply: # 3
+RIGHT FEMORA: # 3
+Peritoneal D: # 3
+I-ARTER: # 3
+NJ: # 3
+Intracardiac: # 3
+IntraTracheal: # 3
+"IM (intramuscular)                                                                                  ": # 3
+Oropharyngeal: # 3
+IntraOsseous: # 3
+INDUCED SPUT: # 3
+PD: # 3
+INHALE: # 3
+COSIG IM: # 3
+LEFT FEMORAL: # 3
+Shunt: # 3
+I-vesical: # 3
+KIDSUBQ: # 3
+AV graft/fis: # 3
+INTRADERMAL: # 3
+Submucosal: # 3
+PO/NGT: # 3
+"Intradermal (Intraderm)                                                                             ": # 3
+Operative eye: # 3
+TRANSLING.: # 3
+HICKMAN: # 3
+HHN: # 3
+Gargle: # 3
+I-ARTIC: # 3
+Gastric Tube: # 3
+ADM: # 2
+v sheath: # 2
+Bladder Irri: # 2
+TUBE FEED: # 2
+Caudal: # 2
+EAR: # 2
+Cervical: # 2
+EA EYE: # 2
+DOBHOFF: # 2
+SW: # 2
+Intratrachea: # 2
+IA-Sheath-L: # 2
+Gums: # 2
+I-articular: # 2
+I-mucosal: # 2
+Intraspinal: # 2
+PERI-ARTICUL: # 2
+I-tracheal: # 2
+I-uteral: # 2
+LT EYE: # 2
+IntraVesical: # 2
+IntraLesional: # 2
+PEDORATOP: # 2
+PEDOGT: # 2
+"Inhaled                                                                                             ": # 2
+IVS: # 2
+ILEOSTOMY: # 2
+IVDP: # 2
+OTIC BOTH: # 2
+INTRAOSSEO: # 2
+INTRAOSSEOUS: # 2
+ITHECAL: # 2
+I-DERMAL: # 2
+INTRAVENTRIC: # 2
+Ear (right): # 2
+Intraureteral: # 2
+Intracavernosal: # 2
+JTUB: # 2
+Perfusion: # 2
+Intrauteral: # 2
+change to PO: # 1
+per NGT: # 1
+Intraosseous: # 1
+IVPUSH: # 1
+Intravascula: # 1
+N/G tube: # 1
+Transpyloric: # 1
+NAR1: # 1
+BLAD: # 1
+NARE AFFEC: # 1
+BLOCK: # 1
+TransUrethral: # 1
+TransMucosal: # 1
+per JG tube: # 1
+IVD: # 1
+NARES_BOTH: # 1
+IV112: # 1
+post-pyloric: # 1
+IV or IM: # 1
+100 mg: # 1
+IPT: # 1
+IOCULAR: # 1
+Implant: # 1
+oirr: # 1
+Unknown: # 1
+IntraVitreal: # 1
+KIDOGT: # 1
+ALTNOSTRIL: # 1
+cv: # 1
+edtr: # 1
+Kit-Combo: # 1
+Via Sheath: # 1
+Intraocular right eye: # 1
+Intravitreal: # 1
+ng: # 1
+LOC: # 1
+INTRAVENOUS PUSH: # 1
+per G-tube: # 1
+VI: # 1
+ng tube: # 1
+IntraPeritoneal: # 1
+IntraOcular: # 1
+oinj: # 1
+MUCM: # 1
+Intra-catheter (arterial): # 1
+Insufflation: # 1
+Instillation: # 1
+KIDCBI: # 1
+ENDOSCOPY TU: # 1
+INTRALESIO: # 1
+INTRATRACH: # 1
+Nerve Cath: # 1
+SYR: # 1
+PER G-Tube: # 1
+I-osseus: # 1
+SWISH SPIT: # 1
+GTUB: # 1
+SUBTENONS: # 1
+PROC IM: # 1
+Pacemaker: # 1
+G-tube: # 1
+SUBL: # 1
+Per G-Tube: # 1
+FIC: # 1
+"Ear: #  Right": # 1
+RADREC: # 1
+SUBCONJUNCTI: # 1
+RECTALLY: # 1
+EYE_RT: # 1
+EYE_LT: # 1
+SS: # 1
+ETT: # 1
+Right Inters: # 1
+SPINAL: # 1
+ESOPHAGEAL: # 1
+EAR RIGHT: # 1
+EPIDURL: # 1
+SC/IV: # 1
+SC/IM: # 1
+SeeAdmin: # 1
+PER: # 1
+IA-Sheath-R: # 1
+OTIC LEFT: # 1
+Nostril (Alt): # 1
+BY MOUTH: # 1
+Nostril (Right): # 1
+TRACHEAL: # 1
+EAR_RIGHT: # 1
+INTRACAV: # 1
+INTRAARTER: # 1
+INTRA-LESION: # 1
+INTRA-ARTICULAR: # 1
+IMPLANT: # 1
+IM/SQ: # 1
+CATHETER FLU: # 1
+OTIC RIGHT: # 1
+IART: # 1
+IM or IV: # 1
+IM DELTOID: # 1
+Swish & Swallow: # 1
+IL: # 1
+IDRM: # 1
+PEDAUR: # 1
+PEDTOP: # 1
+ICI: # 1
+COSIG TD: # 1
+ICARDIAC: # 1
+ICAR: # 1
+Caudal Block: # 1
+"*IV/IM": # 1

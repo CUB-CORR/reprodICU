@@ -1,0 +1,194 @@
+"Inspiratory Pressure: Set":
+"Minute Volume: Spontaneous": minute_volume_patient
+"Set Vt (Servo:LTV)": Tidal volume setting Ventilator
+"Tidal Volume: Delivered":
+4. RSBI (RR/Vt):
+5. ARDS Eval (M or DNM):
+"A1: High Exhaled Vt":
+"Adult Con Alarms Backup I:E":
+Adult Con Alarms Backup PC:
+Adult Con Alarms Backup RR:
+Adult Con Alarms Circuit T (Celsius):
+Adult Con Alarms Hi Press Alarm:
+Adult Con Pt/Vent ETCO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+Adult Con Pt/Vent ETCO2_: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+Adult Con Pt/Vent IBW in Kg:
+Adult Con Pt/Vent InspiratorTV:
+Adult Con Pt/Vent MinuteVentil: Minute volume setting Ventilator
+Adult Con Pt/Vent SpO2:
+Adult Con Pt/Vent Spont Rate: Breath rate spontaneous --on ventilator
+Adult Con Setting Heliox_:
+Adult Con Setting INO:
+Adult Con Setting Set RR: Breath rate setting Ventilator
+Adult Con Setting Set Vt: Tidal volume setting Ventilator
+Adult Con Setting Spont Exp Vt:
+Airway Attachments:
+AIRWAY TEMPERATURE:
+Apnea Ventilation:
+Auto Release:
+Autoflow:
+Automatic Tube Compensation:
+"B1: IPAP":
+"B2: EPAP":
+"B3: Est Mask Leak":
+Backup IInsp Time (sec):
+Backup RR (Set):
+Backup Vent Active:
+Base Flow:
+Bipap Delivery Mode:
+Breath Sounds:
+Care:
+CCU Ventilator Weaning Protocol Started:
+Chest Tube Care:
+Chest Tube Description/Status:
+Chest Tube Drainage Color:
+Chest Tube Insertion Status:
+Chest Tube Label:
+Chest Tube Location:
+Chest Tube Position:
+Chest Tube Size:
+Chest Tube Suction Amount: Fluid output chest tube
+Chest Tube Suction Type:
+Compliance:
+Cough Description:
+CPAP:
+DABP:
+DVT Prophylaxis:
+End Tidal CO2 Status: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+Endotracheal Position at Lip:
+Endotracheal Tube Moved to:
+Endotracheal Tube Placement Checked:
+Endotracheal Tube Placement:
+EPAP:
+ET Tube Repositioned:
+ETCO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+EtCO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+ETT Peptic Ulcer Prophylaxis:
+ETT Sedation Vacation:
+Exhaled MV: Expired minute Volume during Mechanical ventilation
+Exhaled TV (machine): Tidal volume.expired
+Exhaled TV (patient): Tidal volume.expired
+Exhaled Vt: Tidal volume.expired
+f Total:
+FIO2 (%): Oxygen/Total gas setting [Volume Fraction] Ventilator
+FiO2: Oxygen/Total gas setting [Volume Fraction] Ventilator
+Flow Sensitivity: flow_sensitivitiy
+Flowtrigger:
+Head of Bed Elevated:
+Head of Bed Elevation:
+Heat Moisture Exchanger:
+HOB Elevated 30-45 Degrees at All Times:
+HR Post:
+HR:
+Humidifier Temp:
+Humidity:
+Insp Cycle Off (%):
+Insp Flow (l/min): Oxygen gas flow Oxygen delivery system
+Insp Time (%):
+Inspiratory Flow Rate: Inspiratory flow setting Ventilator
+IPAP:
+LPM O2: Oxygen gas flow Oxygen delivery system
+Lung Sound Location Modifier:
+Lung Sound Location:
+Lung Sound Respiratory Phase:
+Mean Airway Pressure: Mean pressure Respiratory system airway --on ventilator
+Measured Ve:
+Mechanical Ventilation Slope:
+Mechanical Ventilator Compliance:
+Mechanical Ventilator High Tidal Volume Alarm:
+Mechanical Ventilator Mode: Ventilation mode Ventilator
+Mechanical Ventilator Resistance:
+Minute Ventilation Set(L/min): Minute volume setting Ventilator
+Minute Volume Leak:
+MVe: Expired minute Volume during Mechanical ventilation
+NIV Alarms Hi Press Alarm_5:
+NIV Alarms Low Press Alarm:
+NIV Pt/Vent SpO2_5:
+NIV Pt/Vent Spont_Rate: Breath rate spontaneous --on ventilator
+NIV Pt/Vent Spont_TidalV: Tidal volume.spontaneous --on ventilator
+NIV Setting EPAP:
+NIV Setting Leak_:
+NIV Setting Set_RR: Breath rate setting Ventilator
+NIV Setting Spont Exp Vt_5:
+NIV Setting Total RR_5: Breath rate setting Ventilator
+Non-invasive Ventilation Mode: Ventilation mode Ventilator
+O2 Device: Oxygen delivery system
+O2 Percentage: Oxygen/Gas total [Pure volume fraction] Inhaled gas
+Oral Care Complete Every 2 Hours:
+Oxygen Delivery Method: Oxygen delivery system
+Oxygen Delivery Status:
+Oxygen Flow Rate: Oxygen gas flow Oxygen delivery system
+Patient Leak:
+Patient Position:
+"PD I:E RATIO": Inspiration/Expiration time Ratio
+Peak Flow: peak_flow
+Peak Insp. Pressure: Pressure.max Respiratory system airway --on ventilator
+Peak Pressure: Pressure.max Respiratory system airway --on ventilator # peak_pressure
+PEEP/CPAP: PEEP Respiratory system
+PEEP: PEEP Respiratory system
+Plateau Pressure: Pressure.plateau Respiratory system airway --on ventilator
+Position at lip:
+Postion at Lip:
+Pressure Control:
+Pressure Support: Pressure support setting Ventilator
+Pressure to Trigger PS:
+PS above PEEP: Pressure support setting Ventilator
+PS: Pressure support setting Ventilator
+PULSE OX RESULTS VT:
+Resp Rate Total: Breath rate spontaneous and mechanical --on ventilator
+Respiratory Device:
+Respiratory Phase:
+RETIRED O2 Device:
+Rise T:
+Rise:
+RR (patient): Breath rate spontaneous --on ventilator
+RR Spont: Breath rate spontaneous --on ventilator
+RSBI:
+RT Vent On/Off:
+SaO2: saO2
+SBT Method:
+Secured at-ETT:
+Secured by:
+Sedation outcome:
+Sedation Scoring Ventilation Depth:
+Sedation Wean:
+Set Fraction of Inspired Oxygen (FIO2): Oxygen/Total gas setting [Volume Fraction] Ventilator
+Set Vt (Drager): Tidal volume setting Ventilator
+Sigh:
+Skin Integrity:
+Spont TV: Tidal volume.spontaneous --on ventilator
+Spontaneous Respiratory Rate: Breath rate spontaneous --on ventilator
+Sputum Amount:
+Sputum Color:
+Sputum Consistency:
+Static Compliance: compliance_static
+Suctioned patient:
+Tidal Volume (set): Tidal volume setting Ventilator
+Tidal Volume Observed (VT): Tidal volume.spontaneous+mechanical --on ventilator
+Total RR: Breath rate spontaneous and mechanical --on ventilator
+Total RSBI:
+Tracheostomy Type: Ventilator type
+Trachestomy Tube Size:
+Trapped Volume:
+Trigger:
+Tube Feedings on Hold:
+Tube Size:
+TV/kg IBW: tidal_volume_per_ideal_body_weight
+Type of Treatment:
+Unable to Obtain PEEPi and Vtrap:
+Unit of Measure:
+V60 Mask Leak Value:
+Vent Rate: Breath rate setting Ventilator
+Ventilator Checks:
+Ventilator Heater Temperature:
+Ventilator Population:
+Ventilator Support Mode: Ventilation mode Ventilator
+Ventilator Type: Ventilator type 
+Volume Guarantee:
+VS RESP RATE: Breath rate setting Ventilator
+Vt Spontaneous (mL): Tidal volume.spontaneous --on ventilator
+Vti:
+Wake up assessment interventions:
+Wake up assessment performed:
+Weaning Assessment Criteria Collaboration:
+WUA Patient Response/RASS Score:

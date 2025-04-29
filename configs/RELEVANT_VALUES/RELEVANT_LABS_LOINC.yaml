@@ -1,0 +1,393 @@
+Alanine aminotransferase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Albumin:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Alkaline phosphatase:
+  property: "Catalytic Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Ammonia:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Plasma
+Amylase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+# Anion gap
+aPTT:
+  property: "Time (e.g. seconds)"
+  systems:
+    - Blood
+    - Platelet poor plasma
+Aspartate aminotransferase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Base excess:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+Basophils/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Bicarbonate:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Serum or Plasma
+Bilirubin:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Bilirubin.glucuronidated+Bilirubin.albumin bound: # Bilirubin.direct
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+# Bilirubin.non-glucuronidated # equals Bilirubin.indirect
+C reactive protein:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Calcium:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Calcium.ionized:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+Carbon dioxide:
+  property: "Partial pressure"
+  systems:
+    - Blood
+    - Blood arterial
+# Carboxyhemoglobin/Hemoglobin.total
+Chloride:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Serum or Plasma
+Cholesterol:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+# Cholesterol in HDL
+# Cholesterol in LDL
+Cobalamin:
+  property: "Substance Concentration"
+  systems:
+    - Serum or Plasma
+# Cortisol
+Creatine kinase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Creatine kinase.MB:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Creatinine:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+    - Urine
+Eosinophils/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+# Erythrocyte distribution width
+# Erythrocyte sedimentation rate
+Erythrocytes:
+  property: "Number Concentration"
+  systems:
+    - Blood
+Erythrocyte mean corpuscular hemoglobin: # MCH
+  property: "Entitic Mass"
+  systems:
+    - Red Blood Cells
+Erythrocyte mean corpuscular hemoglobin concentration: # MCHC
+  property: "Mass Concentration"
+  systems:
+    - Red Blood Cells
+Erythrocyte mean corpuscular volume: # MCV
+  property: "Entitic Volume"
+  systems:
+    - Red Blood Cells
+Ferritin:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Fibrin D-dimer DDU:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Platelet poor plasma
+Fibrinogen:
+  property: "Mass Concentration"
+  systems:
+    - Platelet poor plasma
+Folate:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Gamma glutamyl transferase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Glucose:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Serum or Plasma
+Haptoglobin:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Hematocrit:
+  property: "Volume Fraction"
+  systems:
+    - Blood
+    - Blood arterial
+Hemoglobin:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+INR:
+  property: "Relative time"
+  systems:
+    - Blood
+    - Platelet poor plasma
+Iron:
+  property: "Substance Concentration"
+  systems:
+    - Serum or Plasma
+# Iron binding capacity
+Ketones:
+  property: "Mass Concentration"
+  systems:
+    - Urine
+Lactate:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
+Lactate dehydrogenase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Leukocytes:
+  property: "Number Concentration"
+  systems:
+    - Blood
+    - Urine
+Lipase:
+  property: "Catalytic Concentration"
+  systems:
+    - Serum or Plasma
+Lymphocytes/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Magnesium:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Microalbumin:
+  property: "Mass Concentration"
+  systems:
+    - Urine
+# Methemoglobin/Hemoglobin.total
+Monocytes/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+# Myoglobin
+Natriuretic peptide.B prohormone N-Terminal:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Neutrophils/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Neutrophils.band form/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Neutrophils.segmented/100 leukocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Osmolality:
+  property: "Osmolality"
+  systems:
+    - Serum or Plasma
+    - Urine
+Oxygen:
+  property: "Partial pressure"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
+Oxygen saturation:
+  property: "Mass fraction"
+  systems:
+    - Blood
+    - Blood arterial
+# Oxyhemoglobin/Hemoglobin.total
+pH:
+  property: "Log molar concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
+    - Urine
+Phosphate:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Platelets:
+  property: "Number Concentration"
+  systems:
+    - Blood
+Potassium:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Serum or Plasma
+# Prealbumin
+Protein:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+    - Urine
+# Prothrombin time (PT)
+Reticulocytes/100 erythrocytes:
+  property: "Number Fraction"
+  systems:
+    - Blood
+Sodium:
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Serum or Plasma
+    - Urine
+Specific gravity:
+  property: "Relative Density"
+  systems:
+    - Urine
+Thyrotropin:
+  property: "Arbitrary Concentration"
+  systems:
+    - Serum or Plasma
+Thyroxine:
+  property: "Substance Concentration"
+  systems:
+    - Serum or Plasma
+Thyroxine free:
+  property: "Substance Concentration"
+  systems:
+    - Serum or Plasma
+Transferrin:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Triglyceride:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Triiodothyronine:
+  property: "Substance Concentration"
+  systems:
+    - Serum or Plasma
+Troponin I.cardiac:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Troponin T.cardiac:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+Urate:
+  property: "Mass Concentration"
+  systems:
+    - Serum or Plasma
+Urea nitrogen:
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Serum or Plasma
+    - Urine
+
+#################################################
+# For conversion
+#################################################
+Fibrin D-dimer FEU: # for MIMIC-III / -IV
+  for_conversion: true
+  property: "Mass Concentration"
+  systems:
+    - Blood
+    - Platelet poor plasma
+Basophils:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Eosinophils:
+  for_conversion: true  
+  property: "Number Concentration"
+  systems:
+    - Blood
+Lymphocytes:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Monocytes:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Neutrophils:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Band form neutrophils:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Segmented neutrophils:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood
+Reticulocytes:
+  for_conversion: true
+  property: "Number Concentration"
+  systems:
+    - Blood

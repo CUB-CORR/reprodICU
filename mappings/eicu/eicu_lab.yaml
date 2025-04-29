@@ -1,0 +1,159 @@
+# Format labname: mapped_name
+-bands: Band form neutrophils/100 leukocytes in Blood # banded_neutrophils
+-basos: Basophils/100 leukocytes in Blood # basophils
+-eos: Eosinophils/100 leukocytes in Blood # eosinophils
+-lymphs: Lymphocytes/100 leukocytes in Blood # lymphocytes
+-monos: Monocytes/100 leukocytes in Blood # monocytes
+-polys: Neutrophils/100 leukocytes in Blood # neutrophils
+24 h urine protein: Protein [Mass/volume] in 24 hour Urine # urine_protein_24h
+24 h urine urea nitrogen: # urine_nitrogen_24h
+Acetaminophen: # Medication levels in blood
+albumin: Albumin [Mass/volume] in Serum or Plasma # protein_albumin
+alkaline phos.: Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma # alkaline_phosphatase
+ALT (SGPT): Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma # ALT
+Amikacin - peak: # Medication levels in blood
+Amikacin - random: # Medication levels in blood
+Amikacin - trough: # Medication levels in blood
+ammonia: Ammonia [Moles/volume] in Blood # ammonia
+amylase: Amylase [Enzymatic activity/volume] in Serum or Plasma # amylase
+ANF/ANA:
+anion gap: Anion gap in Blood # anion_gap
+AST (SGOT): Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma # AST
+Base Deficit: Base deficit in Blood # NOTE: Later combined with base_excess into base_excess_deficit
+Base Excess: Base excess in Blood # NOTE: Later combined with base_deficit into base_excess_deficit
+bedside glucose: Glucose [Mass/volume] in Blood # glucose_bedside
+bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
+BNP: # BNP
+BUN: Urea nitrogen [Mass/volume] in Serum or Plasma # blood_urea_nitrogen
+calcium: Calcium [Mass/volume] in Blood # calcium # NEEDS UNIT CONVERSION !
+Carbamazepine: # Medication levels in blood
+Carboxyhemoglobin: Carboxyhemoglobin/Hemoglobin.total in Arterial blood # carboxyhemoglobin
+cd 4:
+chloride: Chloride [Moles/volume] in Blood # chloride
+Clostridium difficile toxin A+B:
+cortisol: Cortisol [Mass/volume] in Serum or Plasma # cortisol
+CPK-MB INDEX:
+CPK-MB: Creatine kinase.MB [Enzymatic activity/volume] in Serum or Plasma # CKMB # NEEDS UNIT CONVERSION !
+CPK: Creatine kinase [Enzymatic activity/volume] in Serum or Plasma # CK
+creatinine: Creatinine [Mass/volume] in Serum or Plasma # creatinine
+CRP-hs:
+CRP: C reactive protein [Mass/volume] in Serum or Plasma # CRP
+Cyclosporin: # Medication levels in blood
+Device: # Respiratory parameter
+Digoxin: # Medication levels in blood
+direct bilirubin: Bilirubin.direct [Mass/volume] in Serum or Plasma # bilirubin_direct
+ESR: Erythrocyte sedimentation rate by Westergren method # erythrocyte_sedimentation_rate
+ethanol:
+Fe/TIBC Ratio:
+Fe: Iron [Mass/volume] in Serum or Plasma # iron
+Ferritin: Ferritin [Mass/volume] in Blood # ferritin
+fibrinogen: Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay # fibrinogen
+FiO2: # Respiratory parameter
+folate: Folate [Mass/volume] in Serum or Plasma # folate
+free T4: Thyroxine (T4) free [Mass/volume] in Serum or Plasma # T4_free
+Gentamicin - peak: # Medication levels in blood
+Gentamicin - random: # Medication levels in blood
+Gentamicin - trough: # Medication levels in blood
+glucose - CSF: Glucose [Mass/volume] in Cerebral spinal fluid
+glucose: Glucose [Mass/volume] in Blood # glucose
+haptoglobin: Haptoglobin [Mass/volume] in Serum or Plasma # haptoglobin
+HCO3: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
+Hct: Hematocrit [Volume Fraction] of Blood # hematocrit
+HDL: Cholesterol in HDL [Mass/volume] in Serum or Plasma # cholesterol_HDL
+Hgb: Hemoglobin [Mass/volume] in Blood # hemoglobin
+HIV 1&2 AB:
+HSV 1&2 IgG AB:
+HSV 1&2 IgG AB titer:
+ionized calcium: Calcium.ionized [Mass/volume] in Blood # NEEDS UNIT CONVERSION !
+lactate: Lactate [Moles/volume] in Arterial blood # lactate
+LDH: Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma # lactate_dehydrogenase
+LDL: Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation # cholesterol_LDL
+lipase: Lipase [Enzymatic activity/volume] in Serum or Plasma # lipase
+Lithium: # Medication levels in blood
+LPM O2: # Respiratory parameter
+Legionella pneumophila Ab:
+Lidocaine: # Medication levels in blood
+magnesium: Magnesium [Mass/volume] in Serum or Plasma # magnesium # NEEDS UNIT CONVERSION !
+MCH: MCH [Entitic mass] # MCH
+MCHC: MCHC [Mass/volume] # MCHC
+MCV: MCV [Entitic volume] # MCV
+Methemoglobin: Methemoglobin/Hemoglobin.total in Arterial blood # methemoglobin
+Mode: # Respiratory parameter
+MPV: # MPV
+myoglobin: Myoglobin [Mass/volume] in Serum or Plasma # myoglobin
+NAPA:
+O2 Content: # Respiratory parameter
+O2 Sat (%): Oxygen saturation in Arterial blood # saO2
+Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total [Pure mass fraction] in Arterial blood # oxyhemoglobin
+paCO2: Carbon dioxide [Partial pressure] in Arterial blood # paCO2
+paO2: Oxygen [Partial pressure] in Arterial blood # paO2
+Peak Airway/Pressure: # Respiratory parameter
+PEEP: # Respiratory parameter
+pH: pH of Arterial blood # pH
+Phenobarbital: # Medication levels in blood
+Phenytoin: # Medication levels in blood
+phosphate: Phosphate [Mass/volume] in Serum or Plasma # phosphate # NEEDS UNIT CONVERSION !
+platelets x 1000: Platelets [#/volume] in Blood # thrombocytes
+potassium: Potassium [Moles/volume] in Blood # potassium
+prealbumin: Prealbumin [Mass/volume] in Serum or Plasma # protein_prealbumin
+Pressure Control: # Respiratory parameter
+Pressure Support: # Respiratory parameter
+Procainamide: # Medication levels in blood
+prolactin:
+protein - CSF: # Protein [Mass/volume] in Cerebral spinal fluid # is in mg/dL not g/dL -> needs conversion
+protein C:
+protein S:
+PT - INR: INR in Platelet poor plasma by Coagulation assay # INR
+PT: Prothrombin time (PT) # prothrombin_time
+PTT ratio:
+PTT: aPTT in Blood by Coagulation assay # partial_thromboplastin_time
+RBC: Erythrocytes [#/volume] in Blood # erythrocytes
+RDW: Erythrocyte distribution width [Ratio] # red_cell_distribution_width
+Respiratory Rate:
+reticulocyte count: Reticulocytes/100 erythrocytes in Blood # reticulocytes
+RPR titer:
+salicylate: # Medication levels in blood
+serum ketones: # serum_ketones
+serum osmolality: Osmolality of Serum or Plasma # serum_osmolality
+Site: # Respiratory parameter
+sodium: Sodium [Moles/volume] in Blood # sodium
+Spontaneous Rate: # Respiratory parameter
+T3: Triiodothyronine (T3) [Moles/volume] in Serum or Plasma # T3
+T3RU: # T3 resin uptake
+T4: Thyroxine (T4) [Mass/volume] in Serum or Plasma # T4_total
+Tacrolimus-FK506: # Medication levels in blood
+Temperature: # Vital sign
+Theophylline: # Medication levels in blood
+TIBC: Iron binding capacity [Mass/volume] in Serum or Plasma # total_iron_binding_capacity
+Tobramycin - peak:
+Tobramycin - random:
+Tobramycin - trough:
+total bilirubin: Bilirubin.total [Mass/volume] in Serum or Plasma # bilirubin_total
+total cholesterol: Cholesterol [Mass/volume] in Serum or Plasma # cholesterol_total
+Total CO2: # CO2_total
+total protein: Protein [Mass/volume] in Serum or Plasma # protein_total
+transferrin: Transferrin [Mass/volume] in Serum or Plasma # transferrin
+triglycerides: Triglyceride [Mass/volume] in Serum or Plasma # triglycerides
+troponin - I: Troponin I.cardiac [Mass/volume] in Serum or Plasma # troponin_I
+troponin - T: Troponin T.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method # troponin_T
+TSH: Thyrotropin [Units/volume] in Serum or Plasma # TSH
+TV: # Respiratory parameter
+uric acid: Urate [Mass/volume] in Serum or Plasma # uric_acid
+urinary creatinine: Creatinine [Mass/volume] in Urine # urine_creatinine
+urinary osmolality: Osmolality of Urine # urine_osmolality
+urinary sodium: Sodium [Moles/volume] in Urine # urine_sodium
+urinary specific gravity: Specific gravity of Urine by Test strip # urine_specific_gravity
+Vancomycin - peak:
+Vancomycin - random: # Medication levels in blood
+Vancomycin - trough: # Medication levels in blood
+Vent Other: # Respiratory parameter
+Vent Rate: # Respiratory parameter
+Vitamin B12: Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma # vitamin_B12
+WBC x 1000: Leukocytes [#/volume] in Blood # leukocytes
+WBC's in body fluid: Leukocytes [#/volume] in Body fluid
+WBC's in cerebrospinal fluid: Leukocytes [#/volume] in Cerebral spinal fluid
+WBC's in pericardial fluid: Leukocytes [#/volume] in Pericardial fluid
+WBC's in peritoneal fluid: Leukocytes [#/volume] in Peritoneal fluid
+WBC's in pleural fluid: Leukocytes [#/volume] in Pleural fluid
+WBC's in synovial fluid: Leukocytes [#/volume] in Synovial fluid
+WBC's in urine: Leukocytes [#/volume] in Urine by Test strip # urine_leukocytes

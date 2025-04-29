@@ -1,0 +1,134 @@
+##########
+# OUTPUT #
+##########
+Blood loss: # 1014933 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # UMCDb -> same name
+  - Blood loss [Volume] Measured
+Blood loss.total intraoperative: # 1030226 # LOINC
+  # MIMIC-III / MIMIC-IV
+  - Blood loss.total intraoperative [Volume] Estimated
+Fluid output biliary drain: [] # 1033547 # LOINC
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Fluid output cerebral ventricle drain: [] # 1033549 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV / UMCdb -> same name
+Fluid output chest tube: # 1033550 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # SICdb
+  - ThoraxDrain1
+  - ThoraxDrain2
+  - ThoraxDrain3
+  - ThoraxDrain4
+  - ThoraxDrain5
+  # UMCdb -> same name
+Fluid output emesis: [] # 1033551 # LOINC
+  # eICU-CRD / MIMIC-III / UMCdb -> same name
+Fluid output gastric tube: [] # 1033553 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+Fluid output gastrointestinal drain: # 1014372 # LOINC
+  # UMCdb
+  - Fluid output gastrointestinal drain [Volume] Measured
+Fluid output gastrointestinal ostomy: # 1014371 # LOINC
+  # UMCdb
+  - Fluid output gastrointestinal ostomy [Volume] Measured
+Fluid output miscellaneous: # 1033555 # LOINC
+  # eICU-CRD -> same name
+  # MIMIC-III
+  - Fluid output miscellaneous route # imperfect source
+  # SICdb
+  - Drain1
+  - Drain2
+  - Drain3
+  - Drain4
+  - Drain5
+  - Drain6
+  - Drain7
+  - Drain8
+  # UMCdb
+  - Fluid output miscellaneous Measured
+# Fluid output miscellaneous route: [] # 1033556 # LOINC
+Fluid output neurological drain: # 1014374 # LOINC
+  # HiRID
+  - Measurement of output from drain
+  # UMCdb
+  - Fluid output neurological drain [Volume] Measured
+Fluid output pericardial drain: [] # 1033557 # LOINC
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Fluid output peritoneal drain: [] # 1033558 # LOINC
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Fluid output subarachnoid drain: [] # 1033559 # LOINC
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Fluid output urine in and out urethral catheter: # 1033563 # LOINC
+  # eICU-CRD -> same name
+  # UMCdb
+  - Urine output by in and out urethral catheter
+Fluid output urine nephrostomy: # 1014370 # LOINC
+  # eICU-CRD -> same name
+  # UMCdb
+  - Urine output measured by nephrostomy
+Fluid output wound drain: # 1027295 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # UMCdb -> same name
+  - Fluid output from wound drain
+  - Fluid output wound drain Estimated
+# Fluid output wound drain identifier: [] # 1033564 # LOINC
+Fluid output.nasogastric tube: # 1033565 # LOINC
+  # MIMIC-III
+  - Fluid output.nasogastric tube Measured
+Output.colostomy: [] # 1030877 # LOINC
+  # eICU-CRD / UMCdb -> same name
+Output.ileostomy: [] # 1030879 # LOINC
+  # eICU-CRD -> same name
+Output.stool: # 1030880 # LOINC
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
+  - Output.stool [Volume]
+  # UMCdb -> same name
+Urine output: # 1033562 # LOINC
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # HiRID
+  - Hourly urine volume
+  # SICdb
+  - Urine (c)
+  # UMCdb -> same name
+##########
+# INTAKE #
+##########
+Fluid intake: [] # 1030543 # LOINC
+  # eICU-CRD / MIMIC-IV -> same name
+# Fluid intake chest tube: [] # 1033597 # LOINC
+# Fluid intake enema: [] # 1033598 # LOINC
+Fluid intake enteral tube: [] # 1033599 # LOINC
+  # eICU-CRD / MIMIC-IV -> same name
+Fluid intake intravascular: # 1033602 # LOINC
+  # eICU-CRD / MIMIC-IV -> same name
+  # MIMIC-III
+  - Fluid intake intravascular Estimated
+  - Fluid intake intravascular Measured
+  ### # HiRID
+  ### - Infusion of saline solution
+  ### - Intravenous fluid colloid administration
+Fluid intake nasogastric tube: # 1033603 # LOINC
+  # eICU-CRD / MIMIC-III -> same name
+  # SICdb
+  - GastricTube
+  # UMCdb
+  - Fluid intake nasogastric tube Measured
+Fluid intake oral: # 1033604 # LOINC
+  # eICU-CRD / MIMIC-IV -> same name
+  # MIMIC-III
+  - Fluid intake oral Estimated
+Fluid intake peritoneal: # 1033605 # LOINC
+  # UMCdb
+  - Fluid intake peritoneal Measured
+# Fluid intake total: [] # 1033607 # LOINC
+Fluid intake urinary bladder irrigation: # 1033546 # LOINC
+  # MIMIC-III
+  - Fluid intake urinary bladder irrigation Estimated
+  # UMCdb
+  - Fluid intake urinary bladder irrigation Measured
+###########
+# BALANCE #
+###########
+Fluid balance: [] # 1030542 # LOINC
+  # gets filled in by calculation

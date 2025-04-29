@@ -1,0 +1,29 @@
+# INPUTEVENTS_CV
+01-Drips: intravenous
+02-Fluids (Crystalloids): intravenous
+03-IV Fluid Bolus: intravenous
+04-Fluids (Colloids): intravenous
+05-Med Bolus: intravenous
+06-Insulin (Non IV): subcutaneous
+07-Blood Products: intravenous
+08-Antibiotics (IV): intravenous
+09-Antibiotics (Non IV): other
+10-Prophylaxis (IV): intravenous
+11-Prophylaxis (Non IV): other
+12-Parenteral Nutrition: intravenous
+13-Enteral Nutrition: enteral
+14-Oral/Gastric Intake: oral
+16-Pre Admission: other
+# INPUTEVENTS_MV
+By Mouth: oral
+Drip: intravenous
+Gastric/Feeding Tube: nasogastric
+GU: other
+Intravenous Infusion: intravenous
+Intravenous Push: intravenous
+Intravenous: intravenous
+IV Drip: intravenous
+IV Piggyback: intravenous
+Nasogastric: nasogastric
+Oral or Nasogastric: oral
+Oral: oral

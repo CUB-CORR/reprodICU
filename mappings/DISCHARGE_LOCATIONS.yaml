@@ -1,0 +1,213 @@
+# eICU-CRD:  patient table -> unitdischargelocation column
+# HiRID:      –
+# MIMIC-III: admissions table -> DISCHARGE_LOCATION column
+# MIMIC-IV:  admissions table -> discharge_location column
+# NWICU:     admissions table -> discharge_location column
+# SICdb:     cases table -> DischargeUnit column
+# UMCdb:     admissions table -> destination column
+
+Hospital:
+  # eICU-CRD
+  - Floor
+  - Other Hospital
+  - Other Internal
+  # MIMIC-III
+  - LONG TERM CARE HOSPITAL
+  - SHORT TERM HOSPITAL
+  # MIMIC-IV
+  - CHRONIC/LONG TERM ACUTE CARE
+  - HEALTHCARE FACILITY
+  # NWICU
+  - ADMITTED TO L&D
+  - CRITICAL ACCESS HOSPITAL
+  - LONG-TERM ACUTE CARE HOSPITAL (LTAC)
+  - PLANNED READMISSION - DC/TRANSFERRED TO LONG-TERM ACUTE CARE HOSPITAL (LTAC)
+  - SWING BED
+  - VA SYSTEM FACILITY
+  # SICdb
+  - 1. Medizin
+  - 2. Medizin
+  - 3. Medizin
+  - Allgemeinchirurgie
+  - Dermatologie
+  - Externes Krankenhaus
+  - Gefäßchirurgie
+  - Augenabteilung
+  - Gynäkologie
+  - HNO
+  - Herzchirurgie
+  - Kiefer
+  - Kinderchirurgie
+  - Neurochirurgie
+  - Neurologie
+  - Orthopädie
+  - Pneumologie
+  - Pädiatrie
+  - RCU
+  - Unfallchirurgie
+  - Urologie
+Home:
+  # eICU-CRD
+  - Home
+  # MIMIC-III
+  - HOME WITH HOME IV PROVIDR
+  # MIMIC-III / MIMIC-IV
+  - HOME
+  - HOME HEALTH CARE
+  # NWICU
+  - GROUP HOME
+  - HOME OR SELF CARE
+  - HOME WITH EQUIPMENT OR O2
+  - HOME WITH HOME HEALTH CARE
+  - HOME WITH OUTPATIENT SERVICES
+  - PLANNED READMISSION - DISCHARGED TO HOME/SELF-CARE
+  - SHELTER
+  # SICdb
+  - Nach Hause
+Death:
+  - death
+  # eICU-CRD
+  - Death
+  # MIMIC-III
+  - DEAD/EXPIRED
+  # MIMIC-IV
+  - DIED
+  # NWICU
+  - EXPIRED
+  - EXPIRED - HOSPICE
+  - GIFT OF HOPE / STILL A PATIENT
+  # SICdb
+  - Pathologie # ???
+Hospice:
+  # MIMIC-III
+  - HOSPICE-HOME
+  - HOSPICE-MEDICAL FACILITY
+  # MIMIC-IV
+  - HOSPICE
+  # NWICU
+  - HOME WITH HOSPICE
+  - INPATIENT HOSPICE
+  # SICdb
+  - Palliativstation
+Other ICU:
+  # eICU-CRD
+  - ICU
+  - Other ICU
+  - Other ICU (CABG)
+Operating Room:
+  # eICU-CRD
+  - Operating Room
+Rehabilitation:
+  # eICU-CRD
+  - Rehabilitation
+  # MIMIC-III
+  - REHAB/DISTINCT PART HOSP
+  # MIMIC-IV
+  - REHAB
+  # NWICU
+  - ACUTE INPATIENT REHABILITATION
+  - PLANNED READMISSION - DC/TRANSFERRED TO ACUTE INPATIENT REHAB
+  # SICdb
+  - Neurorehabilitation
+Nursing Facility:
+  # eICU-CRD
+  - Nursing Home
+  - Skilled Nursing Facility
+  # MIMIC-III
+  - ICF
+  - SNF
+  - SNF-MEDICAID ONLY CERTIF
+  # MIMIC-IV
+  - ASSISTED LIVING
+  - SKILLED NURSING FACILITY
+  # NWICU
+  - NURSING HOME (CUSTODIAL)
+  - SKILLED NURSING FACILITY OR SUBACUTE REHAB CARE
+  - PLANNED READMISSION - DC/TRANSFERRED TO NURSING HOME (CUSTODIAL)
+  - PLANNED READMISSION - DC/TRANSFERRED TO SKILLED NURSING FACILITY
+Psychiatric Facility:
+  # MIMIC-III
+  - DISCH-TRAN TO PSYCH HOSP
+  # MIMIC-IV
+  - PSYCH FACILITY
+  # SICdb
+  - Psychiatrie
+High-Dependency Unit:
+  # eICU-CRD
+  - Acute Care/Floor
+  - Step-Down Unit (SDU)
+  - Telemetry
+  # MIMIC-IV
+  - ACUTE HOSPITAL
+  # NWICU
+  - ACUTE CARE HOSPITAL
+Other:
+  # eICU-CRD
+  - Other
+  - Other External
+  # MIMIC-III
+  - DISC-TRAN CANCER/CHLDRN H
+  - DISC-TRAN TO FEDERAL HC
+  # MIMIC-III / MIMIC-IV
+  - OTHER FACILITY
+  # NWICU
+  - CANCER CENTER OR CHILDREN'S HOSPITAL
+  - PLANNED READMISSION - DC/TRANSFERRED TO OTHER TYPE OF HEALTHCARE INSTITUTION
+  - DESIGNATED DISASTER ALTERNATIVE CARE SITE
+  - ED DISMISSED-NEVER ARRIVED
+  # UMCdb specific ward numbers
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+  - "5"
+  - "8"
+  - "9"
+  - "10"
+  - "12"
+  - "13"
+  - "14"
+  - "15"
+  - "16"
+  - "17"
+  - "18"
+  - "19"
+  - "20"
+  - "21"
+  - "22"
+  - "23"
+  - "25"
+  - "26"
+  - "27"
+  - "29"
+  - "31"
+  - "32"
+  - "33"
+  - "35"
+  - "36"
+  - "37"
+  - "38"
+  - "40"
+  - "41"
+  - "42"
+  - "44"
+  - "45"
+  - "46"
+  - "47"
+  - "48"
+  - "49"
+  - "50"
+  - "51"
+Against Medical Advice:
+  # MIMIC-III
+  - LEFT AGAINST MEDICAL ADVI
+  # MIMIC-IV
+  - AGAINST ADVICE
+  # NWICU
+  - LEFT AGAINST MEDICAL ADVICE
+  - AGAINST MEDICAL ADVICE (AMA) OR ELOPEMENT
+Unknown:
+  - UNKNOWN
+  - Unknown
+  - unknown
+  - ""

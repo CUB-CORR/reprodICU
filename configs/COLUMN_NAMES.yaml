@@ -1,0 +1,85 @@
+person_id_col: Person ID # person_id
+hospital_stay_id_col: Hospital Stay ID # hospital_stay_id
+icu_stay_id_col: ICU Stay ID # icu_stay_id
+icu_stay_seq_num_col: ICU Stay Sequential Number (per Person ID)
+icu_time_rel_to_first_col: Time Relative to First ICU Admission (seconds)
+flag_bad_data_col: "Flag: bad data (e.g. due to short stay)"
+global_person_id_col: Global Person ID # global_person_id
+global_hospital_stay_id_col: Global Hospital Stay ID # global_hospital_stay_id
+global_icu_stay_id_col: Global ICU Stay ID # global_icu_stay_id
+mortality_hosp_col: Mortality in Hospital # mortality_in_hospital
+mortality_icu_col: Mortality in ICU # mortality_in_icu
+mortality_after_col: Mortality After ICU Discharge (days) # mortality_x_days_after_icu_discharge
+mortality_after_cutoff_col: Mortality After ICU Discharge Censor Cutoff (days)
+pre_icu_length_of_stay_col: Pre-ICU Length of Stay (days) # pre_icu_length_of_stay
+icu_length_of_stay_col: ICU Length of Stay (days) # icu_length_of_stay
+hospital_length_of_stay_col: Hospital Length of Stay (days) # hospital_length_of_stay
+admission_loc_col: Admission Origin # admission_location
+admission_type_col: Admission Type # admission_type
+admission_urgency_col: Admission Urgency
+admission_time_col: Admission Time (24h)
+admission_diagnosis_col: Admission Diagnosis (APACHE) # admission_diagnosis_apache
+admission_diagnosis_icd_col: Primary (Admission) Diagnosis (ICD)
+discharge_loc_col: Discharge Location # discharge_location
+care_site_col: Care Site # care_site
+unit_type_col: Unit Type # unit_type
+specialty_col: Specialty # specialty
+age_col: Admission Age (years) # age
+height_col: Admission Height (cm) # height_in_cm
+weight_col: Admission Weight (kg) # weight_in_kg
+gender_col: Gender # gender
+ethnicity_col: Ethnicity # ethnicity
+dataset_col: Source Dataset # source_database
+timeseries_time_col: Time Relative to Admission (seconds) # time_relative_to_admission
+diagnosis_icd_code_col: Diagnosis ICD Code # diagnosis_icd_code
+diagnosis_icd9_code_col: Diagnosis ICD-9 Code # diagnosis_icd9_code
+diagnosis_icd10_code_col: Diagnosis ICD-10 Code # diagnosis_icd10_code
+diagnosis_icd_version_col: Diagnosis ICD Code Version # diagnosis_icd_version
+diagnosis_start_col: Diagnosis Start Relative to Admission (seconds) # diagnosis_relative_to_admission
+diagnosis_end_col: Diagnosis End Relative to Admission (seconds) # diagnosis_end_relative_to_admission
+diagnosis_priority_col: Diagnosis Priority # diagnosis_priority
+diagnosis_discharge_col: Diagnosis Active on Discharge # diagnosis_active_on_discharge
+diagnosis_description_col: Diagnosis Description # diagnosis_description
+drug_mixture_id_col: Global Drug Mixture ID
+drug_mixture_admin_id_col: Global Drug Mixture Administration ID
+drug_name_col: Drug Name # drug_name
+drug_name_OMOP_col: Drug Name (OMOP)
+drug_ingredient_col: Drug Ingredient # drug_ingredient
+drug_admin_route_col: Drug Administration Route # drug_administration_route
+drug_continous_col: Drug is Continuous Infusion
+drug_class_col: Drug Class # drug_class
+drug_start_col: Drug Start Relative to Admission (seconds) # drug_start_relative_to_admission
+drug_end_col: Drug End Relative to Admission (seconds) # drug_end_relative_to_admission
+drug_amount_col: Drug Amount # drug_amount
+drug_amount_unit_col: Drug Amount Unit # drug_amount_unit
+drug_rate_col: Drug Rate # drug_rate
+drug_rate_unit_col: Drug Rate Unit # drug_rate_unit
+fluid_group_col: Solution Fluid Group
+fluid_name_col: Solution Fluid
+fluid_amount_col: Solution Fluid Amount (ml)
+fluid_rate_col: Solution Fluid Rate (ml/hr)
+drug_patient_weight_col: Patient Weight (kg) Used for Dose Calculations
+micro_specimen_col: Specimen
+micro_test_col: Test
+micro_organism_col: Organism
+micro_organism_number_col: Organism culture number
+micro_antibiotic_col: Antibiotic
+micro_dilution_col: Dilution
+micro_sensitivity_col: Sensitivity
+procedure_icd_code_col: Procedure ICD Code # procedure_icd_code
+procedure_icd9_code_col: Procedure ICD-9 Code # procedure_icd9_code
+procedure_icd10_code_col: Procedure ICD-10 Code # procedure_icd10_code
+procedure_icd_version_col: Procedure ICD Code Version # procedure_icd_version
+procedure_category_col: Procedure Category
+procedure_start_col: Procedure Start Relative to Admission (seconds) # procedure_start_relative_to_admission
+procedure_end_col: Procedure End Relative to Admission (seconds) # procedure_end_relative_to_admission
+procedure_priority_col: Procedure Priority # procedure_priority
+procedure_discharge_col: Procedure Active on Discharge # procedure_active_on_discharge
+procedure_description_col: Procedure Description # procedure_description
+data_avail_diag_col: Diagnosis Data available
+data_avail_med_col: Medication Data available
+data_avail_lab_col: Laboratory Data available
+data_avail_proc_col: Procedure Data available
+data_avail_vital_col: Vital Sign Data available
+data_avail_io_col: Intake/Output Data available
+data_avail_resp_col: Respiratory Data available

@@ -1,0 +1,103 @@
+# MAPPING SPECIALTIES TO ADMISSION TYPES LIKE RICU
+# Necessary since the SPECIALTIES.yaml file combines some specialties into categories,
+# where their relevant expression (i.e. medical, surgical, other) might differ between datasets.
+
+# eICU-CRD:  admissionDx table -> created from admitdxpath column
+# HiRID:      –
+# MIMIC-III: services table -> CURR_SERVICE column
+# MIMIC-IV:  services table -> curr_service column
+# NWICU:      –
+# SICdb:     cases table -> SurgicalAdmissionType column
+# UMCdb:     admissions table -> specialty column
+
+Medical:
+  # MIMIC
+  - CMED # Cardiac Medical - for non-surgical cardiac related admissions
+  - MED # Medical - general service for internal medicine
+  - NMED # Neurologic Medical - non-surgical, relating to the brain
+  - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
+  # SICdb
+  - 2. Medizin # Cardiology
+  - Intensivstation 2. Medizin # Intensive Care Cardiology
+  - 1. Medizin # Gastroenterology
+  - Endokrinologie # Endocrinology
+  - Pädiatrie # Pediatrics
+  - Pneumologie # Pulmonology
+  - Neurologie # Neurology
+  - 3. Medizin # Hematology / Oncology
+  - Angiologie # Angiology
+  # UMCdb
+  - Cardiologie # Cardiology
+  - Hematologie # Hematology
+  - Inwendig # Internal Medicine
+  - Longziekte # Pulmonology
+  - Maag-,Darm-,Leverziekten # Gastroenterology
+  - Nefrologie # Nephrology
+  - Neurologie # Neurology
+  - Oncologie Inwendig # Internal Oncology
+  - Reumatologie # Rheumatology
+Surgical:
+  # MIMIC
+  - CSURG # Cardiac Surgery - for surgical cardiac admissions
+  - DENT # Dental - for dental/jaw related admissions
+  - ENT # Ear, nose, and throat - conditions primarily affecting these areas
+  - NSURG # Neurologic Surgical - surgical, relating to the brain
+  - ORTHO # Orthopaedic - surgical, relating to the musculoskeletal system
+  - PSURG # Plastic - restortation/reconstruction of the human body (including cosmetic or aesthetic)
+  - SURG # Surgical - general surgical service not classified elsewhere
+  - TRAUM # Trauma - injury or damage caused by physical harm from an external source
+  - TSURG # Thoracic Surgical - surgery on the thorax, located between the neck and the abdomen
+  - VSURG # Vascular Surgical - surgery relating to the circulatory system
+  # SICdb
+  - Herzchirurgie # Cardiac Surgery
+  - Allgemeinchirurgie # General Surgery
+  - Kinderchirurgie # Pediatric Surgery
+  - Neurochirurgie # Neurosurgery
+  - Augenheilkunde # Ophthalmology
+  - Kieferchirurgie # Oral and Maxillofacial Surgery
+  - Orthopädie # Orthopedics
+  - Unfallchirurgie # Trauma Surgery
+  - HNO # Ear, Nose, and Throat
+  - Urologie # Urology
+  - Gefäßchirurgie # Vascular Surgery
+  # UMCdb
+  - Cardiochirurgie # Cardiac Surgery
+  - Heelkunde Gastro-enterologie # Gastroenterological Surgery
+  - Heelkunde Longen/Oncologie # Lung/Oncological Surgery
+  - Heelkunde Oncologie # Oncological Surgery
+  - Keel, Neus & Oorarts # Ear, Nose & Throat
+  - Mondheelkunde # Oral Surgery
+  - Neurochirurgie # Neurosurgery
+  - Oogheelkunde # Ophthalmology
+  - Orthopedie # Orthopedics
+  - Plastische chirurgie # Plastic Surgery
+  - Traumatologie # Traumatology
+  - Urologie # Urology
+  - Vaatchirurgie # Vascular Surgery
+Other:
+  # MIMIC
+  - GU # Genitourinary - reproductive organs/urinary system
+  - GYN # Gynecological - female reproductive systems and breasts
+  - NB # Newborn - infants born at the hospital
+  - NBB # Newborn baby - infants born at the hospital
+  - OBS # Obstetrics - conerned with childbirth and the care of women giving birth
+  - PSYCH # Psychiatric - mental disorders relating to mood, behaviour, cognition, or perceptions
+  # SICdb
+  - Dermatologie # Dermatology
+  - Gynäkologie # Gynecology
+  - Psychiatrie # Psychiatry
+  - Externe Intensivstation # External Intensive Care
+  - Externes Krankenhaus # External Hospital
+  - Zentralambulanz (ZANE) CDK # Emergency Department
+  - Zentrale Notaufnahme # Emergency Department
+  # UMCdb
+  - ders
+  - Gynaecologie # Gynecology
+  - Intensive Care Volwassenen # Adult Intensive Care
+  - Obstetrie # Obstetrics
+  - Verloskunde # Obstetrics
+Unknown:
+  # MIMIC
+  - ""
+  # SICdb
+  - Unknown

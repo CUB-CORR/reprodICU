@@ -1,0 +1,256 @@
+"ECG: idioventricular rhythm": # 4138336
+  # HiRID
+  - Kammerrhythm
+  - Kammerrhythmus
+  # MIMIC-III / MIMIC-IV
+  - Idioventricular
+  # UMCdb
+  - Ventricular escape rhythm
+
+"EKG: asystole ": # 4146418
+  # HiRID
+  - Asystolie
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Asystole
+
+"ECG: atrial fibrillation": # 4064452
+  # HiRID
+  - AF
+  - Atrial fibrillation
+  - Vhfli
+  # MIMIC-III
+  - Atrial Fib
+  # MIMIC-III / MIMIC-IV
+  - AF (Atrial Fibrillation)
+  # UMCdb
+  - Atrial fibrillation
+
+"EKG: atrial flutter": # 4065288
+  # HiRID
+  - Vhfla
+  # MIMIC-III
+  - Atrial Flutter
+  # MIMIC-III / MIMIC-IV
+  - "A Flut (Atrial Flutter) "
+  # UMCdb
+  - Atrial flutter
+
+"EKG: atrial tachycardia": # 37017190
+  # MIMIC-III
+  - MultFocalAtrTach
+  # MIMIC-III / MIMIC-IV
+  - MAT (Multifocal atrial tachycardia)
+  # UMCdb
+  - Atrial paroxysmal tachycardia
+  - Paroxysmal atrial tachycardia with block
+
+"ECG: paroxysmal atrial tachycardia": # 4064869
+  # MIMIC-III
+  - Parox Atr Tachy
+  # MIMIC-III / MIMIC-IV
+  - PAT (Paroxysmal Atrial Tachycardia)
+
+"ECG: partial atrioventricular block - long PR": # 45884784
+  # HiRID
+  - AV bl (I)
+  - AV Block Grad 1
+  # MIMIC-III
+  - 1st Deg AV Block
+  # MIMIC-III / MIMIC-IV
+  - "1st AV (First degree AV Block) "
+  # UMCdb
+  - First degree atrioventricular block
+
+"ECG: Mobitz type I incomplete atrioventricular block": # 4143691
+  # HiRID
+  - AV bl (II)
+  - AV Block Grad 2
+  # MIMIC-III
+  - 2nd AVB Mobitz 2
+  - Wenckebach
+  # MIMIC-III / MIMIC-IV
+  - "2nd AV W-M1 (Second degree AV Block Wenckebach - Mobitz1) "
+  # UMCdb
+  - Second degree atrioventricular block
+
+"ECG: partial atrioventricular block - 2:1": [] # 4065290 # UMCdb
+"ECG: partial atrioventricular block - 3:1": [] # 4064458 # UMCdb
+
+"ECG: Mobitz type II atrioventricular block": # 4064458
+  - High degree second degree atrioventricular block
+  # MIMIC-III
+  - 2nd AVB/Mobitz I
+  # MIMIC-III / MIMIC-IV
+  - "2nd AV M2 (Second degree AV Block - Mobitz 2) "
+
+"EKG: complete atrioventricular block": # 4064874
+  # HiRID
+  - AV bl (III)
+  - AV Block Grad 3
+  # MIMIC-III
+  - Comp Heart Block
+  # MMIIC-III / MIMIC-IV
+  - "3rd AV (Complete Heart Block) "
+  # UMCdb
+  - Complete atrioventricular block
+
+"EKG: left bundle branch block": # 4064614
+  # MIMIC-III / MIMIC-IV
+  - "LBBB (Left Bundle Branch Block) "
+
+"ECG: junctional rhythm": # 4140001
+  # HiRID
+  - Nodal
+  - AV-Rhythmus
+  # MIMIC-III / MIMIC-IV
+  - JR (Junctional Rhythm)
+  # MIMIC-III / UMCdb
+  - Junctional
+  # UMCdb
+  - AV junctional rhythm
+
+"ECG: junctional tachycardia": # 4142573
+  # MIMIC-III / MIMIC-IV
+  - "JT (Junctional Tachycardia) "
+  - "PJT (Paroxysmal Junctional Tachycardia) "
+
+"ECG: paced rhythm": # 4142412
+  # HiRID
+  - PM
+  # HiRID / MIMIC-III
+  - Paced
+  # MIMIC-III
+  - Zoll Paced
+  # MIMIC-III / MIMIC-IV
+  - A Paced
+  - AV Paced
+  - V Paced
+  # UMCdb
+  - Dual chamber asynchronous
+  - Dual chamber demand
+  - Rhythm from artificial pacing
+  - Ventricular asynchronous
+  - Ventricular demand
+
+"ECG: premature atrial contractions": # 4141030
+  # UMCdb
+  - Multiple atrial ectopics
+
+"ECG: premature ventricular contractions": # 4145998
+  # MIMIC-III
+  - PVC's # Cardiac Rhythm
+  # UMCdb
+  - Premature ventricular contractions
+  - Multifocal premature ventricular complexes
+  - Multiple premature ventricular complexes
+  - Ventricular bigeminy
+  - Ventricular trigeminy
+
+"EKG: right bundle branch block": # 4064460
+  # MIMIC-III / MIMIC-IV
+  - "RBBB (Right Bundle Branch Block) "
+
+"ECG: sinus rhythm": # 4145513
+  # HiRID
+  - SR
+  # MIMIC-III
+  - Normal Sinus
+  - Normal # Cardiac Rhythm
+  # MIMIC-III / MIMIC-IV
+  - SR (Sinus Rhythm)
+  # UMCdb
+  - NSR
+  - Normal sinus rhythm
+
+"ECG: sinus arrhythmia": # 4141820
+  # HiRID
+  - Sinusarrhyth
+  - Sinusarrhythmie
+  # MIMIC-III
+  - Sinus Arrhythmia
+  # MIMIC-III / MIMIC-IV
+  - SA (Sinus Arrhythmia)
+  # UMCdb
+  - Normal sinus arrhythmia
+
+"ECG: sinus bradycardia": # 4138456
+  # HiRID
+  - SB
+  - Sinusbradykardie
+  # MIMIC-III
+  - Sinus Brady
+  # MIMIC-III / MIMIC-IV
+  - SB (Sinus Bradycardia)
+  # UMCdb
+  - Sinus bradycardia
+
+"ECG: sinus tachycardia": # 4140598
+  # HiRID
+  - ST
+  - Sinustachykardie
+  # MIMIC-III
+  - Sinus Tachy
+  # MIMIC-III / MIMIC-IV
+  - "ST (Sinus Tachycardia) "
+  # UMCdb
+  - Sinus Tac
+  - Sinus tachycardia
+
+"ECG: partial sinoatrial block": # 4065289
+  # UMCdb
+  - Sinoatrial block
+
+"EKG: supraventricular tachycardia": # 4145510
+  # MIMIC-III
+  - Supravent Tachy
+  # MIMIC-III / MIMIC-IV
+  - SVT (Supra Ventricular Tachycardia)
+  # UMCdb
+  - Atrial tachycardia
+  - Supraventricular tachycardia
+
+"EKG: ventricular arrhythmia": # 4064453
+  # UMCdb
+  - Ventricular arrhythmia
+
+"EKG: ventricular fibrillation": # 4064455
+  # HiRID
+  - Kfli
+  - Kammerflimmern
+  # MIMIC-III
+  - Ventricular Fib
+  # MIMIC-III / MIMIC-IV
+  - "VF (Ventricular Fibrillation) "
+  # UMCdb
+  - Ventricular fibrillation
+
+"EKG: ventricular tachycardia": # 4064871
+  # MIMIC-III
+  - Vent. Tachy
+  # MIMIC-III / MIMIC-IV
+  - "VT (Ventricular Tachycardia) "
+  # UMCdb
+  - Ventricular tachycardia
+
+Other (not listed): # 45883627 # LOINC
+  # HiRID
+  - siehe PD Spez.Rhyth
+  # MIMIC-III
+  - Comment
+  - Other/Remarks
+
+
+
+# UMCdb
+# Prolonged QT interval
+# ST segment depression
+# ST segment elevation
+# Wide QRS complex
+
+# MIMIC-III
+# Wand.Atrial Pace
+# Comment # Cardiac Rhythm
+# Gallop # Cardiac Rhythm
+
+# MIMIC-III / MIMIC-IV
+# WAP (Wandering atrial pacemaker)

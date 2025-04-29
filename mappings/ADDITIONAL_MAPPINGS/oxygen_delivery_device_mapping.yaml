@@ -1,0 +1,117 @@
+# https://athena.ohdsi.org/search-terms/terms/4222966
+Oxygen mask: [] # 4222966 # SNOMED
+  # eICU -> same name
+Aerosol oxygen mask: # 4145694 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Aerosol-Cool
+  # MIMIC-III / MIMIC-IV
+  - Aerosol-cool
+Blow by oxygen mask: [] # 4137849 # SNOMED
+  # eICU -> same name
+Capnography oxygen mask: [] # 36714464 # SNOMED
+Continuous positive airway pressure/Bilevel positive airway pressure mask: # 45768222 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Bipap Mask
+  - CPAP Mask
+  # MIMIC-III / MIMIC-IV
+  - "Bipap mask "
+  - "CPAP mask "
+  # UMCdb
+  - CPAP
+High-altitude sleep mask: [] # 36676809 # SNOMED
+Nonrebreather oxygen mask: # 4145528 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Non-Rebreather
+  # MIMIC-III / MIMIC-IV
+  - Non-rebreather
+  # UMCdb
+  - Non-Rebreathing masker
+Partial rebreather oxygen mask: [] # 4138748 # SNOMED
+  # eICU -> same name
+Partial-rebreathing oxygen face mask: [] # 45759146 # SNOMED
+Rebreathing oxygen face mask: [] # 45772392 # SNOMED
+# Resuscitator face mask: # 605912 # SNOMED
+# Resuscitator face mask, reusable: # 45760053 # SNOMED
+# Resuscitator face mask, single-use: # 45760350 # SNOMED
+Sleep apnea mask: [] # 45768221 # SNOMED
+"Tracheostomy mask, oxygen": # 45760219 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Trach Mask
+  - T-Piece
+  # MIMIC-III / MIMIC-IV
+  - "Trach mask "
+  - T-piece
+  # UMCdb
+  - Trach.stoma
+  - Spreekcanule
+  - Spreekklepje
+Venturi mask: # 4322904 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Venti Mask
+  # MIMIC-III / MIMIC-IV
+  - "Venti mask "
+Venturi oxygen face mask: [] # 45759930 # SNOMED
+Vortex oxygen face mask: [] # 45773303 # SNOMED
+
+# https://athena.ohdsi.org/search-terms/terms/4224038 
+Basic nasal oxygen cannula: # 45760842 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Cannula
+  - Nasal Cannula
+  # MIMIC-III / MIMIC-IV
+  - Nasal cannula
+  - Oxymizer
+  # UMCdb
+  - Nasaal
+  - O2-bril
+High flow oxygen nasal cannula: # 4139525 # SNOMED
+  # eICU -> same name
+  # MIMIC-III / MIMIC-IV
+  - High flow nasal cannula
+  # UMCdb
+  - Diep Nasaal
+
+####
+Mechanical ventilator: # 40493026 # SNOMED
+  # eICU -> same name
+  # MIMIC-III
+  - Ventilator
+  # MIMIC-III / MIMIC-IV
+  - Endotracheal tube
+  - Tracheostomy tube
+  # UMCdb
+  - IV
+
+####
+Ambu bag: # 4160626 # SNOMED
+  # eICU -> same name
+  # UMCdb
+  - Ambu
+
+
+# MIMIC-III / MIMIC-IV
+# Other
+# Vapomist
+# High flow neb
+# Medium conc mask 
+# Ultrasonic neb
+# Face tent
+
+
+# MIMIC-III
+# Face Tent
+# Hi Flow Neb
+# Medium Conc Mask
+# Vapotherm
+# Other/Remarks
+# Hood
+# Hut
+# TranstrachealCat
+# Heated Neb
+# Ultrasonic Neb

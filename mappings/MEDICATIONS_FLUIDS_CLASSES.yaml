@@ -1,0 +1,860 @@
+fluid (crystalloid):
+  - OR INPUT CRYSTALLOID
+  - PACU Crystalloid Intake
+  - OR Crystalloid
+  - OR Crystalloid Intake
+fluid (crystalloid - normal saline):
+  - Normal Saline
+  - 0.9% Normal Saline (ml/hr)
+  - 0.9% Saline (ml/hr)
+  - 0.9 NaCl (ml/hr)
+  - 0.9 NS (ml/hr)
+  - 0.9 NSS (ml/hr)
+  - 0.9 Sodium Chloride (ml/hr)
+  - 0.9%  NaCl infusion
+  - 0.9% nacl
+  - 0.9% NaCl
+  - 0.9% nacl (ml/hr)
+  - 0.9% NaCl (ml/hr)
+  - 0.9% NACL (ml/hr)
+  - 0.9% NACL BOLUS (ml/hr)
+  - 0.9% NS
+  - 0.9% NS (ml/hr)
+  - 0.9% NSS (ml/hr)
+  - 0.9% NSS Main (ml/hr)
+  - 0.9% NSS Venous Sheath
+  - 0.9% NSS Venous Sheath (ml/hr)
+  - 0.9% sodium chloride (ml/hr)
+  - 0.9% Sodium Chloride NSS
+  - 0.9% Sodium Chloride NSS (ml/hr)
+  - 0.9%NS (ml/hr)
+  - 0.9NS (ml/hr)
+  - "100 ML BAG : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+  - "100 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+  - 1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+  - "1000 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+  - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
+  - "1000 ml flex cont : sodium chloride 0.9 % iv soln"
+  - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+  - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
+  - "1000 ML FLEX CONT: SODIUM CHLORIDE 0.9 % IV SOLN"
+  - "150 ml flex cont : sodium chloride 0.9 % iv soln"
+  - 250 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+  - "250 ml flex cont : sodium chloride 0.9 % iv soln"
+  - "250 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+  - 500 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
+  - "500 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
+  - "500 ml : sodium chloride 0.9 % iv soln"
+  - "500 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
+  - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
+  - Alteplase(tPA)ArteriClot 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+  - Aminocaproic acid MAX 25 g Sodium Chloride 0.9% 250 ml (Unknown)
+  - Aminocaproic acid STD 1 g Sodium Chloride 0.9% 50 ml (Unknown)
+  - Argatroban 250 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+  - Bivalirudin (Angiomax) 125 mg Sodium Chloride 0.9% 25 ml (mg/kg/hr)
+  - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
+  - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
+  - Bumetanide (Bumex) 10 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+  - Calcium CHLORIDE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Calcium CHLORIDE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
+  - Calcium Gluconate 2,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
+  - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 2600 ml (Unknown)
+  - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Calcium GLUCONATE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
+  - Cisatracurium (Nimbex)MAX 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
+  - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 1000 ml (mcg/kg/min)
+  - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
+  - D5 0.9% NaCl (ml/hr)
+  - D5 NaCl 0.9% (ml/hr)
+  - D5/0.9% NaCl (ml/hr)
+  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml ()
+  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
+  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (ml/hr)
+  - Dexmedetomidine(Precedex) 400 mcg Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
+  - DEXT 5%-NACL 0.9% 1000 ML LVP
+  - DEXTROSE 5%-NACL 0.9%
+  - Diltiazem (Cardizem) 125 mg Sodium Chloride 0.9% 125 ml (mg/hr)
+  - EPINEPHrine(Adrenalin)MAX 30 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+  - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+  - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 500 ml (mcg/min)
+  - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+  - Esmolol (Brevibloc) 2500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+  - Fenoldopam 10 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+  - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 250 ml  Premix (mcg/hr)
+  - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
+  - Furosemide (Lasix) MAX 500 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+  - Furosemide (Lasix) STD 250 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+  - HYDROmorphone (Dilaudid) 50 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
+  - Insulin 250 Units Sodium Chloride 0.9% 250 ml (units/hr)
+  - Labetalol STD 500 mg Sodium Chloride 0.9% 500 ml (mg/min)
+  - Levothyroxine gtt 200 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
+  - LORazepam (Ativan) 100 mg Sodium Chloride 0.9% 100 ml  Premix (mg/hr)
+  - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 100 ml (mg/hr)
+  - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
+  - Morphine 250 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
+  - Morphine 250 mg Sodium Chloride 0.9% 500 ml  Premix (mg/hr)
+  - NaCl 0,9 %
+  - NaCL 0,9% CO-meting
+  - NaCl 0,9% druppels
+  - NaCl 0,9% injecties
+  - NaCl 0,9% Neusspray
+  - NaCL 0,9% spuit
+  - NaCl 0.9%
+  - NACL 0.9% (1566)
+  - NaCl 0.9% (ml/hr)
+  - NaCl 0.9% ADV
+  - NaCl 0.9% Bolus
+  - NaCL 0.9% Calcium gluconate (ml/hr)
+  - NaCl 0.9% MBP
+  - NiCARDipine (max) 100 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+  - NiCARDipine (premix) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
+  - NiCARDipine (premix) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
+  - NiCARDipine (std) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
+  - Octreotide 500 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
+  - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
+  - Other Med 500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
+  - Other Med 500 mg Sodium Chloride 0.9% 250 ml Ketamine HCl (mcg/kg/min)
+  - Pantoprazole (Protonix) 80 mg Sodium Chloride 0.9% 250 ml (mg/hr)
+  - Phenylephrine  MAX 100 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+  - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 250 ml (mcg/min)
+  - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
+  - Research NaCL 0,9%
+  - SODIUM CHLORIDE 0.45%
+  - sodium chloride 0.9 %
+  - SODIUM CHLORIDE 0.9 % BOLUS
+  - sodium chloride 0.9 % flush 10 mL
+  - sodium chloride 0.9 % flush peripheral lok 3 mL
+  - SODIUM CHLORIDE 0.9 % IJ SOLN
+  - SODIUM CHLORIDE 0.9 % INJ SYRINGE
+  - SODIUM CHLORIDE 0.9 % IV 1000 ML BAG
+  - SODIUM CHLORIDE 0.9 % IV 250 ML BAG
+  - "SODIUM CHLORIDE 0.9 % IV : 1000 ML"
+  - "SODIUM CHLORIDE 0.9 % IV : 250 ML"
+  - "SODIUM CHLORIDE 0.9 % IV : 500 ML"
+  - SODIUM CHLORIDE 0.9 % IV BOLUS
+  - SODIUM CHLORIDE 0.9 % IV SOLN
+  - SODIUM CHLORIDE 0.9 % IV SOLN BOLUS
+  - SODIUM CHLORIDE 0.9 % IV SOLP
+  - SODIUM CHLORIDE 0.9 % SYRINGE 10 ML SYRINGE
+  - "SODIUM CHLORIDE 0.9 % SYRINGE : 10 ML SYRINGE"
+  - sodium chloride 0.9%
+  - SODIUM CHLORIDE 0.9%
+  - Sodium Chloride 0.9%
+  - Sodium Chloride 0.9%  SSO
+  - sodium chloride 0.9% (NS) bolus 1,000 mL
+  - sodium chloride 0.9% (NS) infusion
+  - Sodium Chloride 0.9% 1,000 mL
+  - Sodium Chloride 0.9% 1,000 ml (ml/hr)
+  - SODIUM CHLORIDE 0.9% 1,000 ML BAG
+  - Sodium Chloride 0.9% 1,000 ML BAG
+  - SODIUM CHLORIDE 0.9% 100 ML PB
+  - SODIUM CHLORIDE 0.9% 1000 ML
+  - SODIUM CHLORIDE 0.9% 1000 ML LVP
+  - SODIUM CHLORIDE 0.9% 1000 ML PB
+  - Sodium Chloride 0.9% 250 ml (ml/hr)
+  - SODIUM CHLORIDE 0.9% 250 ML LVP
+  - SODIUM CHLORIDE 0.9% 250 ML PB
+  - SODIUM CHLORIDE 0.9% 50 ML PB
+  - Sodium Chloride 0.9% 500 ml (ml/hr)
+  - SODIUM CHLORIDE 0.9% 500 ML BAG
+  - Sodium Chloride 0.9% 500 ML BAG
+  - SODIUM CHLORIDE 0.9% 500 ML LVP
+  - SODIUM CHLORIDE 0.9% 500 ML PB
+  - Sodium Chloride 0.9% FLUSH
+  - sodium chloride 0.9% flush 10 mL
+  - SODIUM CHLORIDE 0.9% P.F.
+  - Sodium Chloride 0.9% Syringe SSO
+  - SODIUM CHLORIDE 0.9%SOLP (1000 ML)
+  - SODIUM CHLORIDE BACTERIOSTATIC 0.9 % INJ SOLN
+  - SODIUM CHLORIDE FLUSH 0.9 % IV SOLN 10 ML PREFILL SYRINGE
+  - sodium chloride infusion 0.9%
+  - Vasopressin 20 Units Sodium Chloride 0.9% 250 ml (units/hr)
+  - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/hr)
+  - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/kg/hr)
+  - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/min)
+  - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (Unknown)
+  - Vasopressin 40 Units Sodium Chloride 0.9% 200 ml (units/min)
+  - Vecuronium (Norcuron) 100 mg Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+  - Vecuronium Inj 40 mg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
+  - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
+  - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE) (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL
+  - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL
+  - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 200 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 250 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 3,350 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 4,350 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 500 mL
+  - Volume (mL)-sodium chloride 0.9 % bolus 500 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.9 % bolus 750 mL
+  - Volume (mL)-sodium chloride 0.9 % bolus 750 mL (ml/hr)
+  - Normal Saline (ml/hr)
+  - normal saline (ml/hr)
+  - NS
+  - NS (ml/hr)
+  - NS maintance (ml/hr)
+  - NSS
+  - NSS (ml/hr)
+  - nss (ml/hr)
+  - NSS Bolus
+  - NSS Bolus (ml/hr)
+  - NSS control (ml/hr)
+  - NSS RFS (ml/hr)
+  - NSS w/ 7fr sheath (ml/hr)
+  - SODIUM CHLORIDE
+  - sodium chloride
+  - SODIUM CHLORIDE (ml/hr)
+  - 09% NS
+  - 0.9%NSS (ml/hr)
+  - 9 NS (ml/hr)
+  - 9 NSS (ml/hr)
+  - 9% Normal Saline
+  - NACL
+  - NACL (ml/hr)
+  - NaCl (ml/hr)
+fluid (crystalloid - half normal saline):
+  - .45% Normal Saline
+  - 0.45% NS (ml/hr)
+  - 0.45 NSS (ml/hr)
+  - 0.45 NaCL (ml/hr)
+  - 0.45% NACL
+  - 0.45% NaCl (ml/hr)
+  - 0.45% NACL (ml/hr)
+  - 0.45% NaCl + Sodium Bicarbonate (ml/hr)
+  - 0.45% Sodium Chloride
+  - 0.45% Sodium Chloride (ml/hr)
+  - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
+  - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
+  - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
+  - HEPARIN (PORCINE) IN NACL 100-0.45 UNIT/ML-% IJ SOLN
+  - IVF NaCl 0.45% (ml/hr)
+  - NaCl 0.45%
+  - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
+  - Sodium Chloride 0.45% 1,000 ml (ml/hr)
+  - SODIUM CHLORIDE 0.45% 1000 ML LVP
+  - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
+  - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion (ml/hr)
+  - Volume (mL)-sodium chloride 0.45 % bolus 1,000 mL (ml/hr)
+  - Volume (mL)-sodium chloride 0.45 % bolus 500 mL (ml/hr)
+  - 1/2 NSS
+  - 1/2 NS (ml/hr)
+  - 1/2 NSS (ml/hr)
+  - 1/2NSS (ml/hr)
+  - 45 NaCl (ml/hr)
+  - 45 NSS (ml/hr)
+  - 45NSS (ml/hr)
+  - NaCL ).45% with MVI (ml/hr)
+fluid (crystalloid - hypertonic saline):
+  - NaCl 3% (Hypertonic Saline)
+  - Hypertonic Saline 3% (ml/hr)
+  - Hypertonic Saline (ml/hr)
+  - NaCl 3% (ml/hr)
+  - NaCL 3% (ml/hr)
+  - NaCl 3% Hypertonic (ml/hr)
+  - 3 % NaCl (ml/hr)
+  - 3 NACL (ml/hr)
+  - 3 nacl (ml/hr)
+  - 3% Hypertonic NaCl (ml/hr)
+  - 3% NaCL  (ml/hr)
+  - 3% NaCL (ml/hr)
+  - 3% NACL (ml/hr)
+  - 3% NACL (ml/hr)
+  - 3% nacl (ml/hr)
+  - 3% Nacl (ml/hr)
+  - 3% NaCl (ml/hr)
+  - 3% Sodium Chloride (ml/hr)
+  - 3% SODIUM CHLORIDE (ml/hr)
+  - 3% Sodium Chloride IVF Infused (ml/hr)
+  - SODIUM CHLORIDE 3% (ml/hr)
+  - Sodium Chloride 3% (ml/hr)
+fluid (crystalloid - Lactated Ringer's):
+  - Ri-Lac (Ringers lactaat)
+  - "LR "
+  - LR (ml/hr)
+  - LR  (ml/hr)
+  - Lactated Ringers (ml/hr)
+  - 1000 ML  -  LACTATED RINGERS IV SOLN
+  - "1000 ML : LACTATED RINGERS IV SOLN"
+  - "1000 ML BAG : LACTATED RINGERS IV SOLP"
+  - LACTATE RINGERS (ml/hr)
+  - LACTATED RINGER  (ml/hr)
+  - "LACTATED RINGER'S 1,000 ML BAG"
+  - "LACTATED RINGER'S 1,000 ML BAG."
+  - LACTATED RINGERS
+  - LACTATED RINGERS (ml/hr)
+  - LACTATED RINGERS 1000 ML LVP
+  - "LACTATED RINGERS IV : 1000 ML BAG"
+  - LACTATED RINGERS IV SOLN
+  - LACTATED RINGERS IV SOLN BOLUS
+  - LACTATED RINGERS IV SOLP
+  - Lac Ringers (ml/hr)
+  - Lactated RIngers (ml/hr)
+  - Lactated Ringer (ml/hr)
+  - Lactated Ringer's (ml/hr)
+  - Lactated Ringers
+  - Lactated Ringers  (ml/hr)
+  - Lactated Ringers (ml/hr)
+  - Lactated Ringers Injection
+  - "Lactated Ringers Injection 1,000 mL"
+  - Lactated Ringers x1L (ml/hr)
+  - Lactated ringer (ml/hr)
+  - Lactated ringers
+  - Lactated ringers (ml/hr)
+  - "RINGERS SOLUTION,LACTATED"
+  - "Volume (mL)-lactated ringers bolus 1,000 mL"
+  - "Volume (mL)-lactated ringers bolus 1,000 mL (ml/hr)"
+  - Volume (mL)-lactated ringers bolus 300 mL (ml/hr)
+  - Volume (mL)-lactated ringers bolus 500 mL (ml/hr)
+  - Volume (mL)-lactated ringers bolus 750 mL (ml/hr)
+  - lactated ringer's (ml/hr)
+  - lactated ringers (ml/hr)
+  - LR
+  - Lactated Ringers
+  - LR BOLUS
+  - LR Bolus
+  - LR bolus
+  - lr bolus
+  - OR LR
+  - LR
+fluid (crystalloid - glucose in water):
+  - Glucose 10%
+  - Glucose 20%
+  - Glucose 30 %
+  - Glucose 40%
+  - Glucose 40% spuit
+  - Glucose 5 %
+  - Glucose 5% spuit
+  - D10W
+  - D10 (ml/hr)
+  - D5W
+  - D5W (ml/hr)
+  - "50 ML SYRINGE : DEXTROSE 50 % IV SOLN"
+  - DEXTROSE 50% 25 GRAM/50 ML SYR
+  - DEXTROSE 50%
+  - 1000 ML  -  DEXTROSE 5 % IV SOLN
+  - DEXTROSE 50%-WATER
+  - DEXTROSE 50 % IV SOLN
+  - "DEXTROSE 5% IN WATER (D5W) IV : 1000 ML BAG"
+  - Dextrose 50%
+  - VANCOMYCIN HCL IN DEXTROSE 1 GM/200ML IV SOLN
+  - "37.5 G TUBE : DEXTROSE (DIABETIC USE) 40 % PO GEL"
+  - DEXTROSE 50% ABBOJECT
+  - DEXTROSE 50 % IN WATER (D50W) IV SYRINGE
+  - DEXTROSE 50% VIAL
+  - dextrose 50 % inj
+  - DEXTROSE 50% INJ
+  - DEXTROSE 50% SYRINGE
+  - "50 ML SYRINGE: DEXTROSE 50 % IV SOLN"
+  - "50 ml syringe : dextrose 50 % iv soln"
+  - DEXTROSE 50% 25 GRAM/50 ML INJ
+  - DEXTROSE 40 % ORAL GEL
+  - DEXTROSE 5%/NACL 0.45%
+  - DEXTROSE 5 % IV SOLN
+  - Dextrose 50% in Water
+  - dextrose 50 % in water (D50W) injection 15 mL
+  - dextrose 50% in water
+  - dextrose 50 % injection 50 mL
+  - dextrose 50 % (D50W) syringe
+  - Dextrose 5% SSO
+  - DEXTROSE 50% ADULT
+  - dextrose
+  - DEXTROSE 10% (ml/hr)
+  - Dextrose 10% (ml/hr)
+  - 5% Dextrose (ml/hr)
+  - 10% Dextrose (ml/hr)
+  - " 10% Dextrose (ml/hr)"
+  - dextrose 10% in water
+  - dextrose 10% in water (ml/hr)
+  - 10% dextrose (ml/hr)
+  - dextrose 10% (ml/hr)
+  - D5
+  - D50 (ml/hr)
+  - D50  (ml/hr)
+  - D50
+  - D5/W (ml/hr)
+  - D5/W
+  - Dextrose 5%
+  - Dextrose 50%
+  - Dextrose 10%
+  - Dextrose 20%
+  - Dextrose 40%
+  - Dextrose 30%
+fluid (crystalloid - glucose in saline):
+  - D5/.45NS
+  - NaCl 0,45%/Glucose 2,5%
+  - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
+  - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
+  - D10% /NaCl 0.45% (ml/hr)
+  - D10W 0.45 NaCl (ml/hr)
+  - D5 0.45 NaCl (ml/hr)
+  - D5%./NaCl 0.45% (ml/hr)
+  - D5/0.45 NaCl (ml/hr)
+  - d5/0.45% nacl/10K (ml/hr)
+  - DEXT 5%-NACL 0.45% 1000 ML LVP
+  - DEXTROSE 5%/NACL 0.45%
+  - Dextrose 5%/NaCl 0.45%
+  - DEXTROSE-NACL 5-0.45 % IV SOLN
+  - NaCl 0,45%/Glucose 2,5%
+  - D5 1/2NS
+  - D5 1/4NS
+  - D5NS
+  - D5/NS (ml/hr)
+  - D5/NS  (ml/hr)
+  - D5/0.9NSS (ml/hr)
+  - D5/0.9NS w/40mEq K (ml/hr)
+  - D5/0.9NS (ml/hr)
+  - D5/0.9%NS (ml/hr)
+  - D5/0.9%NS
+  - D5/0.9% NS w/20KCl (ml/hr)
+  - D5/0.9 NS c 40 K+ (ml/hr)
+  - D5/0.5NS (ml/hr)
+  - D5/0.5NS
+  - D5/0.45NSS (ml/hr)
+  - D5/0.45NS/K+40meq (ml/hr)
+  - D5/0.45NS/K (ml/hr)
+  - D5/0.45NS w 20meq K (ml/hr)
+  - D5/0.45NS (ml/hr)
+  - D5/0.45NS
+  - D5/NS/20MEQKCL
+  - D5/NS/20MEQKCL (ml/hr)
+  - D5/NSS (ml/hr)
+  - D51/2 NSS (ml/hr)
+  - D51/2 NS/20KCL (ml/hr)
+  - D51/2 NS (ml/hr)
+  - D50.9%NS (ml/hr)
+  - D50.9%NS
+  - D50.45NS20K (ml/hr)
+  - D50.45NS (ml/hr)
+  - D50.45NS
+  - D50.45%ns 40KCL (ml/hr)
+  - D5/NSS 0.45% (ml/hr)
+  - D5/NS0.9%  (ml/hr)
+  - D5/0.45%NS + MVI (ml/hr)
+  - D5.9NSS
+  - D5.9NS (ml/hr)
+  - D5.45nss (ml/hr)
+  - D5.45NSw/40meqK (ml/hr)
+  - D5.45NSw/40Kcl (ml/hr)
+  - D5.45NSw/20KCl (ml/hr)
+  - D5.45NSS + MVI (ml/hr)
+  - D5.45NSS (ml/hr)
+  - D5.45NS/20KCL (ml/hr)
+  - D5.45NS w/MVI (ml/hr)
+  - D5.45NS (ml/hr)
+  - D5.45NS
+  - D5.45% NS (ml/hr)
+  - D5.45 NS (ml/hr)
+  - D5.45 NS  (ml/hr)
+  - D5.9NSS (ml/hr)
+  - D5/ 0.45 NS (ml/hr)
+  - D5/ 0.45%NS (ml/hr)
+  - D5/0.45%NS (ml/hr)
+  - D5/0.45% NS (ml/hr)
+  - D5/0.45 NSS (ml/hr)
+  - D5/0.45 NS (ml/hr)
+  - D5/.9NS w 20meq K (ml/hr)
+  - D5/.9NS (ml/hr)
+  - D5/.45Ns+20KCl (ml/hr)
+  - D5/.45NSS/40KCL (ml/hr)
+  - D5/.45NSS c MVI (ml/hr)
+  - D5/.45NSS (ml/hr)
+  - D5/.45NSS
+  - D5/.45NS + 20 K (ml/hr)
+  - D5/.45NS (ml/hr)
+  - D5/ NS (ml/hr)
+  - D5/ 0.9NSS (ml/hr)
+  - D5/ 0.9%NSS (ml/hr)
+  - D5/ 0.45%NS
+  - D51/2NS
+  - D51/2NS (ml/hr)
+  - D51/2NS w/ 20meqK (ml/hr)
+  - D5W 1/2NS (ml/hr)
+  - D5W 1/2NS
+  - D5W 0.9NSS (ml/hr)
+  - D5W 0.45NS (ml/hr)
+  - D5W / 0.45NS (ml/hr)
+  - D5W .45% NS (ml/hr)
+  - D5W.45NS (ml/hr)
+  - D5c  0.45NS (ml/hr)
+  - D5`1/2NS (ml/hr)
+  - D5\0.9 NSS (ml/hr)
+  - D5W1/2NS (ml/hr)
+  - D5W/0.45NS (ml/hr)
+  - D5W/0.45%NS+MVI (ml/hr)
+  - D5W/0.45%NS (ml/hr)
+  - D5W/.9%NS (ml/hr)
+  - D5W/.45%NS + 40 mEq K (ml/hr)
+  - D5W/.45%NS (ml/hr)
+  - D5W/.45% NS + 20 mEq K (ml/hr)
+  - D5W/ 0.45NS (ml/hr)
+  - D5W/ 0.45% NS/ 40 MEQ K (ml/hr)
+  - D5W/ 0.45% NS/ 20meqK (ml/hr)
+  - D51/2nss w 20kcl (ml/hr)
+  - D51/2ns with 20kcl/l (ml/hr)
+  - D51/2ns with 20kcl/l
+  - D51/2ns (ml/hr)
+  - D51/2NSS 20MEQKCL (ml/hr)
+  - D51/2NSS (ml/hr)
+  - D51/2NSKCL (ml/hr)
+  - D51/2NS20KCL (ml/hr)
+  - D51/2NS20K (ml/hr)
+  - D51/2NS with 20K (ml/hr)
+  - D5NSS.45 c 75 mEq (ml/hr)
+  - D5NSS w/ MVI (ml/hr)
+  - D5NSS (ml/hr)
+  - D5NS1/4 (ml/hr)
+  - D5NS/40KCL (ml/hr)
+  - D5NS+40mEq Potassiuum (ml/hr)
+  - D5NS with MVI (ml/hr)
+  - D5NS with MVI
+  - D5NS w/40KCL (ml/hr)
+  - D5NS w/40KCL
+  - D5NS w/ Multivits (ml/hr)
+  - D5NS w/ 20KCL (ml/hr)
+  - D5NS MVI  (ml/hr)
+  - "D5NS MVI "
+  - D5NS 40meqK+ (ml/hr)
+  - D5NS +20KCL (ml/hr)
+  - D5NS (ml/hr)
+  - D5NS  (ml/hr)
+  - D5NS
+  - D5NS w/20K (ml/hr)
+  - D5 1/2 NS w/ 40K
+  - D5 1/2 NS w/ 10 mEq K+ (ml/hr)
+  - D5 1/2 NS multi vit (ml/hr)
+  - D5 1/2 NS W 20KCL (ml/hr)
+  - D5 1/2 NS 20KCL (ml/hr)
+  - D5 1/2 NS +20KCL
+  - D5 1/2 NS (ml/hr)
+  - D5 1/2 NS
+  - D5 0.9NSS (ml/hr)
+  - D5 0.9NS (ml/hr)
+  - D5 0.9%NSS (ml/hr)
+  - D5 1/2 NS w/ 40K (ml/hr)
+  - D5 1/2 NS w/ 40meq K (ml/hr)
+  - D5 1/2 NS w/20meq K+ (ml/hr)
+  - D5 1/2 NS w/K (ml/hr)
+  - D5 1/2NS 40mEq (ml/hr)
+  - D5 1/2NS 20KCL (ml/hr)
+  - D5 1/2NS 20KCL
+  - D5 1/2NS +KCl 10 mEq (ml/hr)
+  - D5 1/2NS + 40 mEq K (ml/hr)
+  - D5 1/2NS (ml/hr)
+  - D5 1/2NS
+  - D5 1/2 nss (ml/hr)
+  - D5 1/2 Nss  (ml/hr)
+  - D5 1/2 NSS w/ 40KCL (ml/hr)
+  - D5 1/2 NSS w/ 40KCL
+  - D5.2NS (ml/hr)
+  - D5 1/2 NSS (ml/hr)
+  - D5 1/2 NSS  (ml/hr)
+  - D5 1/2 NS with 40KCL (ml/hr)
+  - D5 1/2 NS with 20meq K (ml/hr)
+  - D5 1/2 NS with 20meq K
+  - D5 1/2 NS with 10k+ (ml/hr)
+  - D5 0.9 NS (ml/hr)
+  - D5 .9 NSS
+  - D5 .45NSS (ml/hr)
+  - D5 .45NS w/ 20KCL (ml/hr)
+  - D5 .45NS (ml/hr)
+  - D5 .45%NS w/fol/thiam. (ml/hr)
+  - D5 .45%NS (ml/hr)
+  - D5 .45% NS (ml/hr)
+  - D5 .45 NS (ml/hr)
+  - D5 .45 % NS (ml/hr)
+  - D5 .9 NSS (ml/hr)
+  - D5 -1/2NS (ml/hr)
+  - D5 -1/2NS
+  - D5 & 1/2NS (ml/hr)
+  - D5 & 0.45NS w MVI (ml/hr)
+  - D5 & 0.45NS (ml/hr)
+  - D5  1/2 NS (ml/hr)
+  - D5  1/2 NS
+  - D5  0.45% NS (ml/hr)
+  - D5 .20 NS (ml/hr)
+  - D5 1/2NS KCL10 (ml/hr)
+  - D5 / 0.45% NSS (ml/hr)
+  - D5 0,9 NS  (ml/hr)
+  - D5 0.45NS w/10K+ (ml/hr)
+  - D5 0.45NS (ml/hr)
+  - D5 0.45%NSS (ml/hr)
+  - D5 0.45%NS w/ 40mEq K (ml/hr)
+  - D5 0.45%NS (ml/hr)
+  - D5 0.45%NS  (ml/hr)
+  - D5 0.45%NS
+  - D5 0.45% ns (ml/hr)
+  - D5 0.45% NSS (ml/hr)
+  - D5 0.45% NS (ml/hr)
+  - "D5 0,9 NS "
+  - D5 0.45% NS
+  - D5 0.45 NSS (ml/hr)
+  - D5 0.45 NS (ml/hr)
+  - D5 0.45 NS  (ml/hr)
+  - D5 0.45 NS
+  - D5 0.45 %NS (ml/hr)
+  - D5 0.2%NSS (ml/hr)
+  - D5 1/2NS W/20K  (ml/hr)
+  - D5 1/2 NSS 40kcl (ml/hr)
+  - D5 1/2NS w/ 10K+ (ml/hr)
+  - D5 ns + 20k (ml/hr)
+  - D5 in 0.9NS with vitamins (ml/hr)
+  - D5 in 0.9NS (ml/hr)
+  - D5 NSS w/ MVI (ml/hr)
+  - D5 NSS w/ 20KCL (ml/hr)
+  - D5 NSS
+  - D5 NS w 20K (ml/hr)
+  - D5 NS 40K (ml/hr)
+  - D5 NS 0.2% (ml/hr)
+  - D5 NS +20 K (ml/hr)
+  - D5 NS (ml/hr)
+  - D5 NS  (ml/hr)
+  - D5 NS
+  - D5 1/2NS w/  20KCL (ml/hr)
+  - D5 w/0.45% NS (ml/hr)
+  - D5-1/2NS + 20KCL (ml/hr)
+  - D5-1/2NS (ml/hr)
+  - D5+1/2NSS+MVI+Thiamine+Folic Acid (ml/hr)
+  - D5+1/2 NSS (ml/hr)
+  - D5+0.45NSS (ml/hr)
+  - D5+0.45%NSS40K (ml/hr)
+  - D5+0.45%NS+potphos (ml/hr)
+  - D5+0.45%NS+potphos
+  - D5+.45NS+MVI (ml/hr)
+  - D5+ 0.45% NS (ml/hr)
+  - D5& 0.9NS with MVI (ml/hr)
+  - D5%NS (ml/hr)
+  - D5%/0.9%NS (ml/hr)
+  - D5% 0.45%NS (ml/hr)
+  - D5 NSS (ml/hr)
+  - D5w0.45 NSS (ml/hr)
+  - D5 1/2NSS (ml/hr)
+  - D5 45NS (ml/hr)
+  - D5 1/2nss
+  - D5 45%NS (ml/hr)
+  - D5 1/2NSS MVI (ml/hr)
+  - D5 1/4NS (ml/hr)
+  - D5 1/2NSS w/ MVI (ml/hr)
+  - D5 1/4ns (ml/hr)
+  - D5 40K 1/2NS (ml/hr)
+  - D5 45NS
+  - D5 1/2NS with 40mEq K (ml/hr)
+  - D5 1/2NS w/ 20K  (ml/hr)
+  - D5 1/2NS w/ 40mEq K+ (ml/hr)
+  - D5 1/2NS w/MVI
+  - D5 1/2NS w/MVI (ml/hr)
+  - D5 1/2NS with 20meq Potassium (ml/hr)
+  - D5 1/2nss (ml/hr)
+  - D5 Normal Saline (ml/hr)
+  - D5 NORMAL SALINE (ml/hr)
+  - D5 NORMAL SALINE
+fluid (colloid):
+  - OR Colloid
+  - OR Colloid Intake
+  - PACU Colloid
+  - PACU Colloid Intake
+fluid (colloid - albumin):
+  - Albumine 20%
+  - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
+  - 25% ALBUMIN (ml/hr)
+  - 250 ML  -  ALBUMIN HUMAN 5 % IV SOLN
+  - 5% ALBUMIN (ml/hr)
+  - 5% Albumin (ml/hr)
+  - 5% albumin (ml/hr)
+  - 5%Albumin (ml/hr)
+  - 50 ML  -  ALBUMIN HUMAN 25 % IV SOLN
+  - ALBUMIN (ml/hr)
+  - ALBUMIN 25% (ml/hr)
+  - ALBUMIN 25% 100 ML INJ
+  - ALBUMIN 5% (ml/hr)
+  - ALBUMIN 5% 250 ML INJ
+  - ALBUMIN 5% 500 ML INJ
+  - ALBUMIN HUMAN 25 % IV SOLN
+  - ALBUMIN HUMAN 25%
+  - ALBUMIN HUMAN 5 % IV SOLN
+  - ALBUMIN HUMAN 5 % IV SOLP
+  - ALBUMIN HUMAN 5%
+  - ALbumin (ml/hr)
+  - Albumin
+  - Albumin  (ml/hr)
+  - Albumin (ml/hr)
+  - Albumin 25 G (ml/hr)
+  - Albumin 25%
+  - "Albumin 25% "
+  - Albumin 25%  (ml/hr)
+  - Albumin 25% (ml/hr)
+  - Albumin 25G (ml/hr)
+  - Albumin 25G/100ml (ml/hr)
+  - Albumin 5%
+  - Albumin 5% (ml/hr)
+  - Albumin 5% 25G (ml/hr)
+  - Albumin 5% 25gm/250ml  (ml/hr)
+  - Albumin Human 25% Inj 100 ml (ml/hr)
+  - Albumin25% (ml/hr)
+  - albumin
+  - albumin  (ml/hr)
+  - albumin (human) (PLASBUMIN-5) 5% infusion 25 g
+  - albumin (ml/hr)
+  - albumin 25%  (ml/hr)
+  - albumin 25% (ml/hr)
+  - albumin 5%
+  - albumin 5% (ml/hr)
+  - albumin human
+  - albumin5% (ml/hr)
+  - albumine (ml/hr)
+  - 25% Albumin
+  - ALBUMIN
+  - Albumin
+  - Albumin (human) 25%
+  - Albumin 12.5%
+  - Albumin 25%
+  - Albumin 5%
+  - OR Albumin
+  - Serum Albumin 5%
+  - albumin
+  - albumin 12.5%
+  - Albumin 25%
+  - Albumin 5%
+  - Humanalbumin 20%
+  - Humanalbumin 20% (Albunorm)
+  - Humanalbumin 5%
+  - Humanalbumin 5% (Albunorm)
+fluid (colloid - hydroxyethyl starch): []
+fluid (colloid - dextran): []
+fluid (colloid - other): []
+blood product (packed red blood cells):
+  - Gefiltreerde Ery's
+  - RBCs (ml/hr)
+  - pRBC's
+  - pRBC's (ml/hr)
+  - pRBC
+  - pRBC (ml/hr)
+  - PRBC
+  - PRBC (ml/hr)
+  - PRBCs
+  - PRBCs (ml/hr)
+  - PRBC's
+  - PRBC's (ml/hr)
+  - packed cells (ml/hr)
+  - packed red blood cells (ml/hr)
+  - Packed RBCs (ml/hr)
+  - Volume-Transfuse RBC
+  - Volume-Transfuse RBC (ml/hr)
+  - Volume-Transfuse Unmatched O-Neg RBC (ml/hr)
+  - Intravenous blood transfusion of packed cells
+  - Pre admit PRBC
+  - PRBC's
+  - Packed RBC's
+  - Packed Red Blood Cells
+  - OR Packed RBC's
+  - OR Packed RBC Intake
+  - PACU Packed RBC Intake
+  - packed cells pacu
+  - OR Packed RBC Intake
+  - PACU Packed RBC Intake
+  - Packed Red Blood Cells
+blood product (whole blood): []
+blood product (platelets):
+  - Thrombocyten suspensie
+  - Volume-Transfuse Pheresed Platelets
+  - Volume-Transfuse Pheresed Platelets (ml/hr)
+  - Volume-Transfuse pheresed platelets
+  - Volume-Transfuse pheresed platelets (ml/hr)
+  - Volume-Transfuse platelet pheresis (ml/hr)
+  - plat (ml/hr)
+  - platelets (ml/hr)
+  - plt (ml/hr)
+  - plts (ml/hr)
+  - PLATELETS (ml/hr)
+  - PLT (ml/hr)
+  - PLTS (ml/hr)
+  - PLTs (ml/hr)
+  - Platelet (ml/hr)
+  - Platelets
+  - Platelets
+  - Platelets  (ml/hr)
+  - Platelets (ml/hr)
+  - Platlets (ml/hr)
+  - Platelet transfusion
+  - OR Platelet Intake
+  - OR Platelets
+  - PACU Platelet Intake
+  - Platelets
+  - Platelets
+blood product (plasma):
+  - Fresh Frozen Plasma
+  - FFP
+  - FFP (ml/hr)
+  - plasma (ml/hr)
+  - Fresh Frozen Plasma (ml/hr)
+  - Plasma (ml/hr)
+  - Volume-Transfuse fresh frozen plasma
+  - Volume-Transfuse fresh frozen plasma (ml/hr)
+  - fresh frozen plasma (ml/hr)
+  - Transfusion of plasma (FFP)
+  - Pre admit FFP
+  - FFP
+  - Fresh Frozen Plasma
+  - OR FFP
+  - OR FFP Intake
+  - Fresh Frozen Plasma
+blood product (cryoprecipitate):
+  - Cryoprecipitate
+  - Cryoprecipitate
+  - cryo (ml/hr)
+  - CRYO (ml/hr)
+  - Cryo (ml/hr)
+  - Cryoprecipitate (ml/hr)
+  - Cryoprecipitate
+  - OR CRYO
+  - OR Cryo
+  - OR Cryocipretate
+  - OR Cryoprecipitate
+  - OR Cryoprecipitate Intake
+  - OR cryo
+  - cryo
+  - cryo or
+  - or cryo
+  - or cryoprecipate
+blood product (other):
+  - Blood Products (ml/hr)
+############
+# UNSORTED #
+############
+# 0.225% sodium chloride (ml/hr)
+# 0.3% Sodium Chloride
+# 1.8 % NaCl (ml/hr)
+# 1.8 nacl (ml/hr)
+# 1.8 NaCl (ml/hr)
+# 1.8 NaCL (ml/hr)
+# 1.8 NACL (ml/hr)
+# 1.8%  NaCl (ml/hr)
+# 1.8% NaCl (ml/hr)
+# 1.8% NaCL (ml/hr)
+# 100 ML  -  METRONIDAZOLE IN NACL 5-0.79 MG/ML-% IV SOLN
+# 100 ML NDC : DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN
+# 2% NaCl (ml/hr)
+# 23.4% nacl (ml/hr)
+# D5W/.45 NaCL (ml/hr)
+# DEXMEDETOMIDINE HCL IN NACL 200 MCG/50ML IV SOLN
+# DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN
+# NaCL 0.2% (ml/hr)
+# NaCl 0.65 %
+# NACL 1.8% (ml/hr)
+# NaCL 2,9%
+# NaCl 2.5%
+# NaCl 23.4%
+# NACL c 10%dextrose (ml/hr)
+# NaCl conc Amp 14.5%
+# NaCl tabletten
+# NaCL zakje
+# Natriumchlorid 5%
+# Natriumchlorid Pulverkps
+# Natriumchlorid Sachet
+# SODIUM CHLORIDE FLUSH
+# sterile water with 38.5meq NaCl (ml/hr)

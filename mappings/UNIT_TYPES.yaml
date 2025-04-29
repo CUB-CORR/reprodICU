@@ -1,0 +1,98 @@
+# eICU-CRD:  patient table -> unittype column
+# HiRID:     "Medical-Surgical" by definition (only one ICU in the hospital)
+# MIMIC-III: icustays table -> FIRST_CAREUNIT column
+# MIMIC-IV:  icustays table -> first_careunit column
+# NWICU:     icustays table -> first_careunit column
+# SICdb:     cases table -> HospitalUnit column
+# UMCdb:     admissions table -> location column
+
+# Mapped to SNOMED locations
+# HiRID is Medical-Surgical by definition, so it is not included in the list.
+Cardiac intensive care unit: # 4149943
+  # eICU-CRD
+  - Cardiac ICU
+  - CCU-CTICU
+  # MIMIC-III / NWICU
+  - CCU
+  # MIMIC-IV
+  - Cardiac Vascular Intensive Care Unit (CVICU)
+  - Coronary Care Unit (CCU)
+  # NWICU
+  - CICU
+Neurological intensive care unit: # 4148496
+  # eICU-CRD
+  - Neuro ICU
+  # MIMIC-IV
+  - Neuro Intermediate
+  - Neuro Stepdown
+  - Neuro Surgical Intensive Care Unit (Neuro SICU)
+  - Neurology
+Neonatal intensive care unit: # 4231410
+  # MIMIC-III / NWICU
+  - NICU
+Medical intensive care unit: # 40481392
+  # eICU-CRD / MIMIC-III / NWICU
+  - MICU
+  # MIMIC-IV
+  - Medical Intensive Care Unit (MICU)
+  - Medicine
+  - Medicine/Cardiology Intermediate
+Intensive care unit: # 4148981 # formerly Medical-Surgical
+  # eICU-CRD
+  - Med-Surg ICU
+  # MIMIC-IV 3.0
+  - Intensive Care Unit (ICU)
+  - Med/Surg
+  - Medical/Surgical Intensive Care Unit (MICU/SICU)
+  # NWICU
+  - ICU
+  - ICU OVERFLOW
+  - IMCU
+  # SICdb
+  - INID # Interdisziplinäre Intensivstation INID
+  # UMCdb
+  - IC
+  - IC&MC
+  - MC
+  - MC&IC
+Pediatric intensive care unit: # 4148497
+  # NWICU
+  - PICU
+Surgical intensive care unit: # 4305366
+  # eICU-CRD
+  - CSICU
+  - CTICU
+  # eICU-CRD / MIMIC-III / NWICU
+  - SICU
+  # MIMIC-III
+  - CSRU
+  # MIMIC-IV
+  - PACU
+  - Surgery/Vascular/Intermediate
+  - Surgical Intensive Care Unit (SICU)
+  # NWICU
+  - NSICU
+  # SICdb
+  - CWIN # Chirurgie West-Intensivstation - CWIN
+  - INBD # Intensivstation INBD
+  - INIC # Intermediate Care Station - INIC
+Trauma intensive care unit: # 763903
+  # MIMIC-III
+  - TSICU
+  # MIMIC-IV
+  - Surgery/Trauma
+  - Trauma SICU (TSICU)
+Other:
+  - Other
+  # NWICU
+  - BOARDERS
+  - CTU
+  - INPATIENT
+  - MTU
+  - NEUROSCIENCE INPATIENT
+  - ORTHOPEDICS
+  - RADIOLOGY
+Unknown:
+  - Unknown
+  - unknown
+  - ""

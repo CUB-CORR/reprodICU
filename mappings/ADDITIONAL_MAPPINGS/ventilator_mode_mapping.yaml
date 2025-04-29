@@ -1,0 +1,108 @@
+# Based on
+# Robert L Chatburn, Mohamad El-Khatib and Eduardo Mireles-Cabodevila
+# A Taxonomy for Mechanical Ventilation: 10 Fundamental Maxims
+# 10.4187/respcare.03057
+# https://emcrit.org/wp-content/uploads/2016/10/Chatburn-A-Taxonomy-for-Mechanical-Ventilation.pdf
+
+PC-CMVa:
+  - CMV/AutoFlow # MIMIC4
+  - CMV/ASSIST/AutoFlow
+  - DGV # HiRID # DruckGesteuerte Ventilation
+  - Druckreg. Vol.Kontr. # HiRID
+PC-CMVar: []
+PC-CMVs:
+  - PCV+ # MIMIC4
+  - PCV+Assist # MIMIC4
+PC-CMVsr: []
+PC-CSVa:
+  - Volumenunterstützung # HiRID
+PC-CSVi: []
+PC-CSVr:
+  - NIV neur adj # HiRID # neurally adjusted ventilator assist
+  - NAVA # HiRID # neurally adjusted ventilator assist
+PC-CSVs:
+  - CPAP # MIMIC3
+  - CPAP+PS # MIMIC3
+  - CPAP/PSV # MIMIC4
+  - DU/ST # HiRID # DruckUnterstützung
+PC-CSVsr: []
+PC-IMVa,a: []
+PC-IMVa,r: []
+PC-IMVa,s:
+  - MMV/AutoFlow # MIMIC4
+  - SIMV/AutoFlow # MIMIC4
+  - SIMV-PregVctrl+Psupp # HiRID
+PC-IMVar,sr: []
+PC-IMVoi,oi: []
+PC-IMVoir,oir: []
+PC-IMVs,r: []
+PC-IMVs,s:
+  - APRV # MIMIC4
+  - Bi-Vent # HiRID
+  - SIMV(DGV.)+DU # HiRID # DruckGesteuerte Ventilation + DruckUnterstützung
+  - PCV+/PSV # MIMIC4
+PC-IMVsr,sr: []
+VC-CMVd: []
+VC-CMVs:
+  - CMV # MIMIC3 / MIMIC4
+  - CMV/ASSIST # MIMIC4
+VC-IMVa,s:
+  - MMV # MIMIC4
+VC-IMVa,sr: []
+VC-IMVd,a: []
+VC-IMVd,d:
+  # - CMV # HiRID
+  - SIMV(CMV)+DU # HiRID
+  - SIMV/VOL # MIMIC4
+VC-IMVd,s: []
+VC-IMVd,sr: []
+VC-IMVda,s: []
+VC-IMVda,sr: []
+VC-IMVs,r: []
+VC-IMVs,s:
+  - SIMV # MIMIC3 / MIMIC4
+VC-IMVs,sr: []
+
+
+# HiRID
+# Stand By
+# Optional
+# NIV DGV # DruckGesteuerte Ventilation
+# NIV DU # DruckUnterstützung
+# Nasal CPAP
+
+# MIMIC3
+# SIMV+PS
+# Other/Remarks
+# Assist Control
+# Pressure Control
+# TCPCV
+# Pressure Support
+
+# MIMIC4
+# (S) CMV
+# APRV/Biphasic+ApnPress
+# APRV/Biphasic+ApnVol
+# APV (cmv)
+# Ambient
+# Apnea Ventilation
+# CPAP/PPS
+# CPAP/PSV+Apn TCPL
+# CPAP/PSV+ApnPres
+# CPAP/PSV+ApnVol
+# MMV/PSV
+# MMV/PSV/AutoFlow
+# P-CMV
+# PRES/AC
+# PRVC/AC
+# PRVC/SIMV
+# PSV/SBT
+# SIMV/PRES
+# SIMV/PSV
+# SIMV/PSV/AutoFlow
+# SYNCHRON MASTER
+# SYNCHRON SLAVE
+# VOL/AC
+
+# UMCdb
+# see ventilator_mode_mapping.xlsx

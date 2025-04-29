@@ -1,0 +1,159 @@
+# eICU-CRD:  patient table -> unitadmitsource column
+# HiRID:      –
+# MIMIC-III: admissions table -> ADMISSION_LOCATION column
+# MIMIC-IV:  admissions table -> admission_location column
+# NWICU:     admissions table -> admission_location column
+# SICdb:     cases table -> ReferringUnit column
+# UMCdb:     admissions table -> origin column
+
+Other ICU:
+  # eICU-CRD
+  - Chest Pain Center
+  - ICU
+  - ICU to SDU
+  - Other ICU
+  # NWICU
+  - INTENSIVE CARE
+  - NEUROLOGICAL INTENSIVE CARE
+  - PEDIATRIC INTENSIVE CARE
+  # SICdb
+  - Externe Intensivstation # External Intensive Care Unit
+  - Intensivstation 2. Medizin # Intensive Care Unit 2. Medizin
+  # UMCdb
+  - CCU/IC zelfde ziekenhuis # CCU/IC of the same hospital
+  - CCU/IC ander ziekenhuis # CCU/IC of another hospital
+Emergency:
+  # eICU-CRD
+  - Emergency Department
+  # MIMIC-III
+  - EMERGENCY ROOM ADMIT
+  # MIMIC-IV
+  - EMERGENCY ROOM
+  # NWICU
+  - EMERGENCY MEDICINE
+  # SICdb
+  - Zentralambulanz (ZANE) CDK
+  - Zentrale Notaufnahme
+  # UMCdb
+  - Eerste Hulp afdeling zelfde ziekenhuis # First Aid Department of the same hospital
+  - Eerste Hulp afdeling ander ziekenhuis # First Aid Department of another hospital
+Direct Admit:
+  - Home
+  # eICU-CRD
+  - Direct Admit
+  # MIMIC-IV
+  - WALK-IN/SELF REFERRAL
+  # UMCdb
+  - Huis # Home
+Operating Room:
+  # eICU-CRD
+  - Operating Room
+  # MIMIC-IV
+  - AMBULATORY SURGERY TRANSFER
+  - PROCEDURE SITE
+  # UMCdb
+  - Operatiekamer vanaf verpleegafdeling zelfde ziekenhuis # Operating room from ward of same hospital
+  - operating room from emergency department of the same hospital # Operating room from the Emergency Department of the same hospital
+Recovery Room:
+  # eICU-CRD
+  - Recovery Room
+  # eICU-CRD / MIMIC-IV
+  - PACU
+  # UMCdb
+  - Recovery zelfde ziekenhuis (alleen bij niet geplande IC-opname) # Recovery same hospital (only in case of unplanned ICU admission)
+  - Recovery ander ziekenhuis # Recovery from another hospital
+Hospital Ward:
+  - Floor
+  # MIMIC-III
+  - TRANSFER FROM OTHER HEALT
+  - TRSF WITHIN THIS FACILITY
+  # MIMIC-IV
+  - TRANSFER FROM HOSPITAL
+  # NWICU
+  - CARDIOLOGY
+  - GASTROENTEROLOGY
+  - MEDICINE
+  - NEUROLOGY
+  - OBSTETRICS
+  - OBSTETRICS AND GYNECOLOGY
+  - ORTHOPAEDIC SURGERY
+  - PEDIATRICS
+  - RADIOLOGY
+  - SURGERY
+  # SICdb
+  - 1. Medizin
+  - 2. Medizin
+  - 3. Medizin
+  - Allgemeinchirurgie
+  - Angiologie
+  - Augenheilkunde
+  - Dermatologie
+  - Endokrinologie
+  - Externes Krankenhaus
+  - Gefäßchirurgie
+  - Gynäkologie
+  - HNO
+  - Herzchirurgie
+  - Kieferchirurgie
+  - Kinderchirurgie
+  - Neurochirurgie
+  - Neurologie
+  - Orthopädie
+  - Pneumologie
+  - Psychiatrie
+  - Pädiatrie
+  - Unfallchirurgie
+  - Urologie
+  # UMCdb
+  - Verpleegafdeling zelfde ziekenhuis # Nursing ward of the same hospital
+  - Andere locatie zelfde ziekenhuis, transport per ambulance # Different location of the same hospital, transport by ambulance
+Other Hospital:
+  # eICU-CRD
+  - Other Hospital
+  # MIMIC-III
+  - TRANSFER FROM HOSP/EXTRAM
+  # UMCdb
+  - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
+Nursing Facility:
+  - Nursing Home
+  # MIMIC-III
+  - TRANSFER FROM SKILLED NUR
+  # MIMIC-IV
+  - TRANSFER FROM SKILLED NURSING FACILITY
+Psychiatric Facility:
+  # MIMIC-IV
+  - INTERNAL TRANSFER TO OR FROM PSYCH
+  # SICdb
+  - Psychiatrie
+High-Dependency Unit:
+  # eICU-CRD
+  - Acute Care/Floor
+  - Observation
+  - Step-Down Unit (SDU)
+  # UMCdb
+  - Special/Medium care zelfde ziekenhuis # Special/Medium care from the same hospital
+  - Special/Medium care ander ziekenhuis # Special/Medium care from another hospital
+Other:
+  # eICU-CRD
+  - Other
+  # MIMIC-III
+  - CLINIC REFERRAL/PREMATURE
+  - HMO REFERRAL/SICK
+  - PHYS REFERRAL/NORMAL DELI
+  # MIMIC-IV
+  - CLINIC REFERRAL
+  - PHYSICIAN REFERRAL
+  # NWICU
+  - RESEARCH
+  # UMCdb
+  - Anders # Other
+Unknown:
+  - Unknown
+  - unknown
+  - ""
+  # MIMIC-III
+  - "** INFO NOT AVAILABLE **"
+  # MIMIC-IV
+  - INFORMATION NOT AVAILABLE
+  # NWICU
+  - UNKNOWN

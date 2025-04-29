@@ -1,0 +1,109 @@
+measurement,unit,unit_concept_id
+PATIENT INFORMATION,,
+Patient height,kg,9529
+Body weight,cm,8582
+VITAL SIGNS,,
+Heart rate,/min,8541
+Peripheral oxygen saturation,%,8554
+Temperature,°C,586323
+Respiratory rate,/min,8541
+Invasive systolic arterial pressure,mmHg,8876
+Invasive mean arterial pressure,mmHg,8876
+Invasive diastolic arterial pressure,mmHg,8876
+Non-invasive systolic arterial pressure,mmHg,8876
+Non-invasive mean arterial pressure,mmHg,8876
+Non-invasive diastolic arterial pressure,mmHg,8876
+Central venous pressure,mmHg,8876
+Intracranial pressure,mmHg,8876
+Glasgow coma score total,,44777566
+Glasgow coma score eye opening,,44777566
+Glasgow coma score verbal,,44777566
+Glasgow coma score motor,,44777566
+Richmond Agitation-Sedation Scale,,44777566
+Numeric Pain Rating Scale,,44777566
+LABORATORY VALUES,,
+Alanine aminotransferase,U/L,8645
+Albumin,g/L,8636
+Alkaline phosphatase,U/L,8645
+Ammonia,µmol/L,8749
+Amylase,U/L,8645
+Anion gap,mmol/L,8753
+aPTT,sec,8555
+Aspartate aminotransferase,U/L,8645
+Base excess,mmol/L,8753
+Basophils/100 leukocytes,%,8554
+Bicarbonate,mmol/L,8753
+Bilirubin,mg/dL,8840
+Bilirubin.glucuronidated+Bilirubin.albumin bound,mg/dL,8840
+Bilirubin.non-glucuronidated,mg/dL,8840
+C reactive protein,mg/L,8751
+Calcium,mmol/L,8753
+Calcium.ionized,mmol/L,8753
+Carbon dioxide,mmHg,8876
+Carboxyhemoglobin/Hemoglobin.total,%,8554
+Chloride,mmol/L,8753
+Cholesterol,mg/dL,8840
+Cholesterol in HDL,mg/dL,8840
+Cholesterol in LDL,mg/dL,8840
+Cobalamin,pmol/L,8729
+Cortisol,µg/dL,8837
+Creatine kinase,U/L,8645
+Creatine kinase.MB,U/L,8645
+Creatinine,mg/dL,8840
+Eosinophils/100 leukocytes,%,8554
+Erythrocytes,10^3/µL,8848
+Erythrocyte distribution width,%,8554
+Erythrocyte sedimentation rate,mm/hr,8752
+Erythrocyte mean corpuscular hemoglobin,pg,8564
+Erythrocyte mean corpuscular hemoglobin concentration,g/dL,8713
+Erythrocyte mean corpuscular volume,fL,8583
+Ferritin,ng/mL,8842
+Fibrin D-dimer DDU,ng/mL,8842
+Fibrinogen,mg/dL,8840
+Folate,ng/mL,8842
+Gamma glutamyl transferase,U/L,8645
+Glucose,mg/dL,8840
+Haptoglobin,mg/dL,8840
+Hematocrit,%,8554
+Hemoglobin,g/dL,8713
+INR,,8523
+Iron,µmol/L,8749
+Iron binding capacity,µmol/L,8749
+Ketones,mg/dL,8840
+Lactate,mmol/L,8753
+Lactate dehydrogenase,U/L,8645
+Leukocytes,10^3/µL,8848
+Lipase,U/L,8645
+Lymphocytes/100 leukocytes,%,8554
+Magnesium,mmol/L,8753
+Microalbumin,mg/dL,8840
+Methemoglobin/Hemoglobin.total,%,8554
+Monocytes/100 leukocytes,%,8554
+Myoglobin,µg/dL,8837
+Natriuretic peptide.B prohormone N-Terminal,ng/L,8725
+Neutrophils/100 leukocytes,%,8554
+Neutrophils.band form/100 leukocytes,%,8554
+Neutrophils.segmented/100 leukocytes,%,8554
+Osmolality,mOsm/kg H2O,8991
+Oxygen,mmHg,8876
+Oxygen saturation,%,8554
+Oxyhemoglobin/Hemoglobin.total,%,8554
+pH,pH,8482
+Phosphate,mmol/L,8753
+Platelets,10^3/µL,8848
+Potassium,mmol/L,8753
+Prealbumin,mg/L,8751
+Protein,g/L,8636
+Reticulocytes/100 erythrocytes,%,8554
+Sodium,mmol/L,8753
+Specific gravity,,8523
+Thyrotropin,mU/L,9040
+Thyroxine,nmol/L,8736
+Thyroxine free,pmol/L,8729
+Transferrin,mg/dL,8840
+Triglyceride,mg/dL,8840
+Triiodothyronine,nmol/L,8736
+Troponin I.cardiac,ng/L,8725
+Troponin T.cardiac,ng/L,8725
+Urate,mg/dL,8840
+Urea nitrogen,mg/dL,8840

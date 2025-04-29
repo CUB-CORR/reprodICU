@@ -1,0 +1,152 @@
+# Based on the ICU module of the German Medical Informatics Initiative (MII)
+# https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/MonitoringundVitaldatenObservation.html
+Temperature: # 45771331
+  # HiRID
+  - Core body temperature
+  # HiRID / UMCdb
+  - Axillary temperature
+  - Rectal temperature
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Body temperature
+  # NWICU / SICdb -> same name
+  # UMCdb
+  - Oral temperature
+Heart rate: # 4239408
+  # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
+  # SICdb
+  - HeartRateECG
+  # UMCdb -> same name
+  - Heart rate.beat-to-beat by EKG
+Heart rate rhythm: # 3022318
+  # MIMIC-III / MIMIC-IV -> same name
+  # HiRID
+  - Circadian rhythm
+  # UMCdb
+  - Cardiac rhythm type
+Peripheral oxygen saturation: # 4196147
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Oxygen saturation in Arterial blood by Pulse oximetry
+  # NWICU -> same name
+  # SICdb
+  - SPO2
+Respiratory rate: # 4313591
+  # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
+  # SICdb
+  - RespRate
+  # UMCdb -> same name
+Invasive systolic arterial pressure: # 4353843
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV
+  - Systolic blood pressure
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureArterialSystolic
+  # UMCdb
+  - Invasive Systolic blood pressure
+Invasive diastolic arterial pressure: # 4354253
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV
+  - Diastolic blood pressure
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureArterialDiastolic
+  # UMCdb
+  - Invasive Diastolic blood pressure
+Invasive mean arterial pressure: # 4108290
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV
+  - Mean blood pressure
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureArterialMAP
+  # UMCdb
+  - Invasive Mean blood pressure
+Non-invasive systolic arterial pressure: # 4354252
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Systolic blood pressure by Noninvasive
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureNISystolic
+Non-invasive diastolic arterial pressure: # 4068414
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Diastolic blood pressure by Noninvasive
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureNIDiastolic
+Non-invasive mean arterial pressure: # 4108289
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Mean blood pressure by Noninvasive
+  # NWICU -> same name
+  # SICdb
+  - BloodPressureNIMAP
+Central venous pressure: # 4323687
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Central venous pressure (CVP)
+  # SICdb
+  - CentralVenousPressure
+Intracranial pressure: # 4353953
+  # HiRID -> same name
+  # MIMIC-III / MIMIC-IV / UMCdb
+  - Intracranial pressure (ICP)
+Glasgow coma score total: [] # 3007194
+  # MIMIC-III / MIMIC-IV -> same name
+  # calculated from the three subscores for other datasets
+Glasgow coma score eye opening: # 3016335
+  # HiRID
+  - Glasgow Coma Score eye opening subscore
+  # MIMIC-III / MIMIC-IV -> same name
+  # UMCdb -> manually extracted and calculated from different variables
+Glasgow coma score verbal: # 3009094
+  # HiRID
+  - Glasgow Coma Score verbal response subscore
+  # MIMIC-III / MIMIC-IV -> same name
+  # UMCdb -> manually extracted and calculated from different variables
+Glasgow coma score motor: # 3008223
+  # HiRID
+  - Glasgow Coma Score motor response subscore
+  # MIMIC-III / MIMIC-IV -> same name
+  # UMCdb -> manually extracted and calculated from different variables
+Richmond Agitation-Sedation Scale: # 36684829
+  # HiRID / MIMIC-III / MIMIC-IV
+  - Richmond agitation-sedation scale
+  # SICdb
+  - RASS - Richmond Agitation-Sedation Scale
+  # UMCdb -> same name
+Numeric Pain Rating Scale: # 37151627
+  # MIMIC-III / MIMIC-IV
+  - Pain severity - 0-10 verbal numeric rating [Score] - Reported
+  # SICdb
+  - NRS - Numeric Rating Scale
+  # UMCdb
+  - Visual analog pain scale # not exactly the same, but similar enough
+
+################################################################################
+# Harmonised but not included by default
+################################################################################
+# Cardiac index: [] # 54993008
+#   # UMCdb -> same name
+# Cardiac output: [] # 82799009
+#   # HiRID -> same name
+#   # UMCdb -> same name
+# Pulmonary artery systolic pressure: [] # 250768007
+#   # HiRID -> same name
+#   # UMCdb
+#   - Pulmonary artery Systolic blood pressure
+# Pulmonary artery diastolic pressure: [] # 250769004
+#   # HiRID -> same name
+#   # UMCdb
+#   - Pulmonary artery Diastolic blood pressure
+# Pulmonary artery mean pressure: [] # 250770003
+#   # HiRID -> same name
+#   # UMCdb
+#   - Pulmonary artery Mean blood pressure
+# Pulmonary artery wedge pressure: [] # 118433006
+#   # HiRID -> same name
+#   # UMCdb -> same name
+# Right atrial pressure: [] # 276755008
+# Right ventricular pressure: [] # 276756009

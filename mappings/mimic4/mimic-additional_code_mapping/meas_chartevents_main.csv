@@ -1,0 +1,21 @@
+itemid (omop_source_code),Label,omop_concept_name,comment
+228640,EtCO2,Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration,
+0,,NOT MAPPED,mimic4_chartevents_labels_counts.csv NOT EXISTING
+227290,CRRT Mode,Continuous renal replacement therapy mode Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224149,Access Pressure,Access pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224144,Blood Flow (ml/min),Blood flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+228004,Citrate (ACD-A),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+225183,Current Goal,Continuous renal replacement therapy fluid removal goal [Volume] 1 hour,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+225977,Dialysate Fluid,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224154,Dialysate Rate,Dialysate flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224151,Effluent Pressure,Effluent pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224150,Filter Pressure,Filter pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+225958,Heparin Concentration (units/mL),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224145,Heparin Dose (per hour),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224191,Hourly Patient Fluid Removal,Continuous renal replacement therapy fluid removal goal [Volume] 1 hour,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+228005,PBP (Prefilter) Replacement Rate,Pre-filter replacement fluid rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+228006,Post Filter Replacement Rate,Post-filter replacement fluid rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+225976,Replacement Fluid,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224153,Replacement Rate,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+224152,Return Pressure,Return pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+226457,Ultrafiltrate Output,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql

@@ -1,0 +1,56 @@
+SOURCE_CODE,SOURCE_CONCEPT_ID,SOURCE_VOCABULARY_ID,SOURCE_CODE_DESCRIPTION,VALUE,ROW
+13169-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (8 x dgs),10,1
+13169-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (8 x dgs),10,2
+13169-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (8 x dgs),10,3
+13170-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (6 x dgs),10,1
+13170-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (6 x dgs),10,2
+13170-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (6 x dgs),10,3
+13171-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (4 x dgs),10,1
+13171-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (4 x dgs),10,2
+13171-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (4 x dgs),10,3
+13457-21,0,AUMC Drug Quantity,SDD Suppositorium,40,1
+13457-21,0,AUMC Drug Quantity,SDD Suppositorium,100,2
+13457-21,0,AUMC Drug Quantity,SDD Suppositorium,200,3
+8268-21,0,AUMC Drug Quantity,SDD drank (4 x dgs),80,1
+8268-21,0,AUMC Drug Quantity,SDD drank (4 x dgs),100,2
+8268-21,0,AUMC Drug Quantity,SDD drank (4 x dgs),500,3
+20535-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (2 x dgs),10,1
+20535-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (2 x dgs),10,2
+20535-21,0,AUMC Drug Quantity,SDD pasta Tracheostoma (2 x dgs),10,3
+12407-21,0,AUMC Drug Quantity,SDD pasta (8 x dgs),10,1
+12407-21,0,AUMC Drug Quantity,SDD pasta (8 x dgs),10,2
+12407-21,0,AUMC Drug Quantity,SDD pasta (8 x dgs),10,3
+12408-21,0,AUMC Drug Quantity,SDD drank (8 x dgs),80,1
+12408-21,0,AUMC Drug Quantity,SDD drank (8 x dgs),100,2
+12408-21,0,AUMC Drug Quantity,SDD drank (8 x dgs),500,3
+9475-67,0,AUMC Drug Quantity,Vit B/C (vlgs CVVH-protocol),100,1
+9475-67,0,AUMC Drug Quantity,Vit B/C (vlgs CVVH-protocol),1000,2
+9539-21,0,AUMC Drug Quantity,SDD-drank/pasta/belcomycinex,80,1
+9539-21,0,AUMC Drug Quantity,SDD-drank/pasta/belcomycinex,100,2
+9539-21,0,AUMC Drug Quantity,SDD-drank/pasta/belcomycinex,500,3
+9549-21,0,AUMC Drug Quantity,SDD-Pasta/Drank/Belcomycine,80,1
+9549-21,0,AUMC Drug Quantity,SDD-Pasta/Drank/Belcomycine,100,2
+9549-21,0,AUMC Drug Quantity,SDD-Pasta/Drank/Belcomycine,500,3
+10585-21,0,AUMC Drug Quantity,SDD pasta (6 x dgs),10,1
+10585-21,0,AUMC Drug Quantity,SDD pasta (6 x dgs),10,2
+10585-21,0,AUMC Drug Quantity,SDD pasta (6 x dgs),10,3
+10586-21,0,AUMC Drug Quantity,SDD drank (6 x dgs),80,1
+10586-21,0,AUMC Drug Quantity,SDD drank (6 x dgs),100,2
+10586-21,0,AUMC Drug Quantity,SDD drank (6 x dgs),500,3
+9138-21,0,AUMC Drug Quantity,SDD pasta (4 x dgs),10,1
+9138-21,0,AUMC Drug Quantity,SDD pasta (4 x dgs),10,2
+9138-21,0,AUMC Drug Quantity,SDD pasta (4 x dgs),10,3
+9167,0,AUMC Quantity,Trilumen Subclavia,3,1
+9166,0,AUMC Quantity,Trilumen Jugularis,3,1
+21188,0,AUMC Quantity,Duo-Lumen Perifeer centrale catheter (PICC),2,1
+9170,0,AUMC Quantity,Quad lumen Jugularis,4,1
+9169,0,AUMC Quantity,Quad lumen Subclavia,4,1
+9595,0,AUMC Quantity,Enkel lumen Jugularis,1,1
+9596,0,AUMC Quantity,Enkel lumen Subclavia,1,1
+12399,0,AUMC Quantity,Duo lumen Femoralis,2,1
+9165,0,AUMC Quantity,Trilumen Femoralis,3,1
+12401,0,AUMC Quantity,Duo lumen Subclavia,2,1
+9594,0,AUMC Quantity,Enkel lumen Femoralis,1,1
+21187,0,AUMC Quantity,Enkel-Lumen Perifeer centrale catheter (PICC),1,1
+12400,0,AUMC Quantity,Duo lumen Jugularis,2,1
+9168,0,AUMC Quantity,Quad lumen Femoralis,4,1

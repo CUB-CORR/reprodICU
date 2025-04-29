@@ -1,0 +1,590 @@
+# NICE APACHEII diagnoses
+Non-operatief Cardiovasculair - Cardiogene shock: Non-operative - Cardiovascular - Cardiogenic shock
+Non-operatief Cardiovasculair - Cardiovasculair: Non-operative - Cardiovascular # - Cardiovascular
+Non-operatief Cardiovasculair - Cardiovasculair multiple trauma: Non-operative - Trauma - Multiple trauma
+Non-operatief Cardiovasculair - Congestief hart falen: Non-operative - Cardiovascular - CHF, congestive heart failure
+Non-operatief Cardiovasculair - Haemorragische shock: Non-operative - Cardiovascular - Hemorrhagic shock
+Non-operatief Cardiovasculair - Hypertensie: Non-operative - Cardiovascular - Hypertension
+Non-operatief Cardiovasculair - Na cardiac arrest: Non-operative - Cardiovascular - Post cardiac arrest
+Non-operatief Cardiovasculair - Ritmestoornissen: Non-operative - Cardiovascular - Rhythm disturbance
+Non-operatief Cardiovasculair - Sepsis: Non-operative - Cardiovascular - Sepsis
+Non-operatief Cardiovasculair - Thoracaal of abdominaal aneurysma: Non-operative - Cardiovascular - Dissecting thoracic or abdominal aneurysm
+Non-operatief Cardiovasculair -Coronair lijden: Non-operative - Cardiovascular - Coronary artery disease
+Non-operatief Gastro-Intestinaal - Gastro-intestinaal: Non-operative - Gastrointestinal
+Non-operatief Gastro-Intestinaal - Gastro-intestinale bloeding: Non-operative - Gastrointestinal - Gastrointestinal bleeding
+Non-operatief Hematologisch - Hematologisch: Non-operative - Hematology
+Non-operatief Metabolisme - Diabetische keto-acidose: Non-operative - Metabolic/Endocrine - Diabetic ketoacidosis
+Non-operatief Metabolisme - Metabolisme: Non-operative - Metabolic/Endocrine
+Non-operatief Neurologisch - Drug overdosis: Non-operative - Neurology - Drug overdose
+Non-operatief Neurologisch - Epiletisch insult: Non-operative - Neurology - Seizure disorder
+Non-operatief Neurologisch - Hoofdtrauma: Non-operative - Trauma - Head trauma
+Non-operatief Neurologisch - Intracerebr, subduraal, subarachnoidaal haematoom: Non-operative - Neurology - Intracerebral, subdural, subarachnoid hemorrhage
+Non-operatief Neurologisch - Neurologisch: Non-operative - Neurology
+Non-operatief Renaal - Renaal: Non-operative - Renal
+Non-operatief Respiratoir - Aspiratie en vergiftiging: Non-operative - Respiratory - Aspiration / Poisoning
+Non-operatief Respiratoir - Asthma of allergie: Non-operative - Respiratory - Asthma / Allergy
+Non-operatief Respiratoir - Chronisch obstructieve longziekte: Non-operative - Respiratory - Chronic obstructive pulmonary disease
+Non-operatief Respiratoir - Na respiratoir arrest: Non-operative - Respiratory - Post respiratory arrest
+Non-operatief Respiratoir - Niet-cardiogene long oedeem: Non-operative - Respiratory - Non-cardiogenic pulmonary edema
+Non-operatief Respiratoir - Pulmonaire embolus: Non-operative - Respiratory - Pulmonary embolism
+Non-operatief Respiratoir - Respiratoir: Non-operative - Respiratory
+Non-operatief Respiratoir - Respiratoir neoplasma: Non-operative - Respiratory - Neoplasm
+Non-operatief Respiratoir - Respiratoire infectie: Non-operative - Respiratory - Infection
+Operatief Cardiovasculair - Cardiovasculair: Operative - Cardiovascular
+Operatief Cardiovasculair - Cardiovasculair multiple trauma: Operative - Multiple trauma
+Operatief Cardiovasculair - Chron. cardiovasculaire ziekte: Operative - Chronic cardiovascular disease
+Operatief Cardiovasculair - Haemorragische shock: Operative - Hemorrhagic shock
+Operatief Cardiovasculair - Hartkleppen: Operative - Heart valve surgery
+Operatief Cardiovasculair - Na cardiac arrest: Operative - Post cardiac arrest
+Operatief Cardiovasculair - Perifeer vasculair: Operative - Peripheral vascular surgery
+Operatief Cardiovasculair - Sepsis: Operative - Sepsis
+Operatief Gastro-Intestinaal - Gastro-intestinaal: Operative - Gastrointestinal
+Operatief Gastro-Intestinaal - Gastro-intestinaal voor neoplasma: Operative - Gastrointestinal surgery for neoplasm
+Operatief Gastro-Intestinaal - Gastro-intestinale bloeding: Operative - Gastrointestinal bleeding
+Operatief Gastro-Intestinaal - Gastro-intestinale perforatie of obstructie: Operative - Gastrointestinal perforation or obstruction
+Operatief Hematologisch - Hematologisch: Operative - Hematology
+Operatief Metabolisme - Metabolisme: Operative - Metabolic/Endocrine
+Operatief Neurologisch - Craniotomie voor haematoom: Operative - Craniotomy for intracerebral, subdural, subarachnoid hemorrhage
+Operatief Neurologisch - Craniotomie voor neoplasma: Operative - Craniotomy for neoplasm
+Operatief Neurologisch - Hoofd trauma: Operative - Head trauma
+Operatief Neurologisch - Laminectomy and other spinal cord surgery: Operative - Laminectomy and other spinal cord surgery
+Operatief Neurologisch - Neurologisch: Operative - Neurology
+Operatief Renaal - Renaal: Operative - Renal
+Operatief Renaal - Renaal neoplasma: Operative - Renal surgery for neoplasm
+Operatief Renaal - Renaal transplantatie: Operative - Renal transplant
+Operatief Respiratoir - Na respiratoir arrest: Operative - Post respiratory arrest
+Operatief Respiratoir - Respiratoir: Operative - Respiratory
+Operatief Respiratoir - Respiratoire insufficientie na OK: Operative - Respiratory insufficiency after surgery
+Operatief Respiratoir - Thoraxchirurgie voor respiratoir neoplasm: Operative - Thoracic surgery for respiratory neoplasm
+
+# NICE APACHEIV diagnoses
+Non-operative cardiovascular - Anaphylaxis: Non-operative - Cardiovascular - Anaphylaxis
+Non-operative cardiovascular - Aneurysm, dissecting aortic: Non-operative - Cardiovascular - Aneurysm, dissecting aortic
+Non-operative cardiovascular - Aneurysm/pseudoaneurysm, other: Non-operative - Cardiovascular - Aneurysm/pseudoaneurysm, other
+Non-operative cardiovascular - Angina, stable (asymp or stable pattern of symptoms w/meds): Non-operative - Cardiovascular - Angina, stable (asymp or stable pattern of symptoms w/meds)
+Non-operative cardiovascular - Angina, unstable (angina interferes w/quality of life or meds are tolerated poorly): Non-operative - Cardiovascular - Angina, unstable (angina interferes w/quality of life or meds are tolerated poorly)
+Non-operative cardiovascular - Cardiac arrest (with or without respiratory arrest;: Non-operative - Cardiovascular - Cardiac arrest (with or without respiratory arrest)
+Non-operative cardiovascular - Cardiomyopathy: Non-operative - Cardiovascular - Cardiomyopathy
+Non-operative cardiovascular - Cardiovascular medical, other: Non-operative - Cardiovascular - Cardiovascular medical, other
+Non-operative cardiovascular - Chest pain, atypical (noncardiac chest pain): Non-operative - Cardiovascular - Chest pain, atypical (noncardiac chest pain)
+Non-operative cardiovascular - Chest pain, unknown origin: Non-operative - Cardiovascular - Chest pain, unknown origin
+Non-operative cardiovascular - CHF, congestive heart failure: Non-operative - Cardiovascular - CHF, congestive heart failure
+Non-operative cardiovascular - Complications of previous open heart surgery (i.e. bleeding, infection etc.): Non-operative - Cardiovascular - Complications of previous open heart surgery (i.e. bleeding, infection etc.)
+Non-operative cardiovascular - Contusion, myocardial (include R/O): Non-operative - Cardiovascular - Contusion, myocardial (include R/O)
+Non-operative cardiovascular - Efffusion, pericardial: Non-operative - Cardiovascular - Efffusion, pericardial
+Non-operative cardiovascular - Endocarditis: Non-operative - Cardiovascular - Endocarditis
+Non-operative cardiovascular - Hematomas: Non-operative - Cardiovascular - Hematomas
+"Non-operative cardiovascular - Hemorrhage (for gastrointestinal bleeding -see GI system) (trauma: see Trauma)": Non-operative - Cardiovascular - Hemorrhage
+Non-operative cardiovascular - Hypertension, uncontrolled (for cerebrovascular accident-see Neurological System): Non-operative - Cardiovascular - Hypertension, uncontrolled
+Non-operative cardiovascular - Hypovolemia (including dehydration. Do NOT include shock: Non-operative - Cardiovascular - Hypovolemia (including dehydration)
+Non-operative cardiovascular - Infarction, acute myocardial (MI), ANTERIOR: Non-operative - Cardiovascular - Infarction, acute myocardial (MI), ANTERIOR
+Non-operative cardiovascular - Infarction, acute myocardial (MI), INFEROLATERAL: Non-operative - Cardiovascular - Infarction, acute myocardial (MI), INFEROLATERAL
+Non-operative cardiovascular - Infarction, acute myocardial (MI), NON Q Wave: Non-operative - Cardiovascular - Infarction, acute myocardial (MI), NON Q Wave
+Non-operative cardiovascular - Infarction, acute myocardial (MI), none of the above: Non-operative - Cardiovascular - Infarction, acute myocardial (MI), none of the above
+Non-operative cardiovascular - MI admitted > 24hrs after onset of ischemia: Non-operative - Cardiovascular - MI admitted > 24 hrs after onset of ischemia
+Non-operative cardiovascular - Monitoring, hemodynamic (pre-operative evaluation): Non-operative - Cardiovascular - Monitoring, hemodynamic (pre-operative evaluation)
+Non-operative cardiovascular - Papillary muscle rupture: Non-operative - Cardiovascular - Papillary muscle rupture
+Non-operative cardiovascular - Rhythm disturbance (atrial, supraventricular): Non-operative - Cardiovascular - Rhythm disturbance (atrial, supraventricular)
+Non-operative cardiovascular - Rhythm disturbance (conduction defect): Non-operative - Cardiovascular - Rhythm disturbance (conduction defect)
+Non-operative cardiovascular - Rhythm disturbance (ventricular): Non-operative - Cardiovascular - Rhythm disturbance (ventricular)
+Non-operative cardiovascular - Sepsis, cutaneous/soft tissue: Non-operative - Cardiovascular - Sepsis, cutaneous/soft tissue
+Non-operative cardiovascular - Sepsis, GI: Non-operative - Cardiovascular - Sepsis, GI
+Non-operative cardiovascular - Sepsis, gynecologic: Non-operative - Cardiovascular - Sepsis, gynecologic
+Non-operative cardiovascular - Sepsis, other: Non-operative - Cardiovascular - Sepsis, other
+Non-operative cardiovascular - Sepsis, pulmonary: Non-operative - Cardiovascular - Sepsis, pulmonary
+Non-operative cardiovascular - Sepsis, renal/UTI (including bladder): Non-operative - Cardiovascular - Sepsis, renal/UTI (including bladder)
+Non-operative cardiovascular - Sepsis, unknown: Non-operative - Cardiovascular - Sepsis, unknown
+Non-operative cardiovascular - Shock, cardiogenic: Non-operative - Cardiovascular - Shock, cardiogenic
+Non-operative cardiovascular - Tamponade, pericardial: Non-operative - Cardiovascular - Tamponade, pericardial
+Non-operative cardiovascular - Thrombosis, vascular (deep vein): Non-operative - Cardiovascular - Thrombosis, vascular (deep vein)
+Non-operative cardiovascular - Thrombus,arterial: Non-operative - Cardiovascular - Thrombus, arterial
+Non-operative cardiovascular - Toxicity, drug (i.e., beta blockers, calcium channel blockers, etc): Non-operative - Cardiovascular - Toxicity, drug (i.e., beta blockers, calcium channel blockers, etc.)
+Non-operative cardiovascular - Vascular medical, other: Non-operative - Cardiovascular - Vascular medical, other
+Non-operative Gastro-intestinal - Alcohol withdrawal: Non-operative - Gastrointestinal - Alcohol withdrawal
+Non-operative Gastro-intestinal - Bleeding, GI from esophageal varices/portal hypertension: Non-operative - Gastrointestinal - Bleeding, GI from esophageal varices/portal hypertension
+Non-operative Gastro-intestinal - Bleeding, GI-location unknown: Non-operative - Gastrointestinal - Bleeding, GI-location unknown
+Non-operative Gastro-intestinal - Bleeding, lower GI: Non-operative - Gastrointestinal - Bleeding, lower GI
+Non-operative Gastro-intestinal - Bleeding, upper GI: Non-operative - Gastrointestinal - Bleeding, upper GI
+Non-operative Gastro-intestinal - Cancer, colon/rectal: Non-operative - Gastrointestinal - Cancer, colon/rectal
+Non-operative Gastro-intestinal - Cancer, esophageal: Non-operative - Gastrointestinal - Cancer, esophageal
+Non-operative Gastro-intestinal - Cancer, other GI: Non-operative - Gastrointestinal - Cancer, other GI
+Non-operative Gastro-intestinal - Cancer, stomach: Non-operative - Gastrointestinal - Cancer, stomach
+Non-operative Gastro-intestinal - Cholangitis: Non-operative - Gastrointestinal - Cholangitis
+Non-operative Gastro-intestinal - Encephalopathy, hepatic: Non-operative - Gastrointestinal - Encephalopathy, hepatic
+Non-operative Gastro-intestinal - GI Abscess/cyst: Non-operative - Gastrointestinal - GI abscess/cyst
+Non-operative Gastro-intestinal - GI medical, other: Non-operative - Gastrointestinal - GI medical, other
+Non-operative Gastro-intestinal - GI Obstruction: Non-operative - Gastrointestinal - GI obstruction
+Non-operative Gastro-intestinal - GI Perforation/rupture: Non-operative - Gastrointestinal - GI perforation/rupture
+Non-operative Gastro-intestinal - GI Vascular insufficiency: Non-operative - Gastrointestinal - GI vascular insufficiency
+Non-operative Gastro-intestinal - Hemorrhage, intra/retroperitoneal: Non-operative - Gastrointestinal - Hemorrhage, intra/retroperitoneal
+Non-operative Gastro-intestinal - Hepatic failure, acute: Non-operative - Gastrointestinal - Hepatic failure, acute
+Non-operative Gastro-intestinal - Inflammatory bowel disease: Non-operative - Gastrointestinal - Inflammatory bowel disease
+Non-operative Gastro-intestinal - Pancreatitis: Non-operative - Gastrointestinal - Pancreatitis
+Non-operative Gastro-intestinal - Peritonitis: Non-operative - Gastrointestinal - Peritonitis
+Non-operative Gastro-intestinal - Ulcer disease, peptic: Non-operative - Gastrointestinal - Ulcer disease, peptic
+Non-operative genitourinary - Genitourinary medical, other: Non-operative - Genitourinary - Genitourinary medical, other
+Non-operative genitourinary - Hemorrhage, postpartum (female): Non-operative - Genitourinary - Hemorrhage, postpartum
+Non-operative genitourinary - Pre-eclampsia/eclampsia (female): Non-operative - Genitourinary - Pre-eclampsia/eclampsia
+Non-operative genitourinary - Renal bleeding: Non-operative - Genitourinary - Renal bleeding
+Non-operative genitourinary - Renal failure, acute: Non-operative - Genitourinary - Renal failure, acute
+Non-operative genitourinary - Renal infection/abscess: Non-operative - Genitourinary - Renal infection/abscess
+Non-operative genitourinary - Renal neoplasm, cancer: Non-operative - Genitourinary - Renal neoplasm, cancer
+Non-operative genitourinary - Renal obstruction: Non-operative - Genitourinary - Renal obstruction
+Non-operative hematological - Anemia: Non-operative - Hematology - Anemia
+Non-operative hematological - Coagulopathy: Non-operative - Hematology - Coagulopathy
+Non-operative hematological - Hematologic medical, other: Non-operative - Hematology - Hematologic medical, other
+Non-operative hematological - Leukemia, acute lymphocytic: Non-operative - Hematology - Leukemia, acute lymphocytic
+Non-operative hematological - Leukemia, acute myelocytic: Non-operative - Hematology - Leukemia, acute myelocytic
+Non-operative hematological - Leukemia, chronic lymphocytic: Non-operative - Hematology - Leukemia, chronic lymphocytic
+Non-operative hematological - Leukemia, chronic myelocytic: Non-operative - Hematology - Leukemia, chronic myelocytic
+Non-operative hematological - Leukemia, other: Non-operative - Hematology - Leukemia, other
+Non-operative hematological - Lymphoma, Hodgkins: Non-operative - Hematology - Lymphoma, Hodgkins
+Non-operative hematological - Lymphoma, non-Hodgkins: Non-operative - Hematology - Lymphoma, non-Hodgkins
+Non-operative hematological - Neutropenia: Non-operative - Hematology - Neutropenia
+Non-operative hematological - Pancytopenia: Non-operative - Hematology - Pancytopenia
+Non-operative hematological - Sickle cell crisis: Non-operative - Hematology - Sickle cell crisis
+Non-operative metabolic - Acid-base electrolyte disturbance: Non-operative - Metabolic/Endocrine - Acid-base/electrolyte disturbance
+Non-operative metabolic - Diabetic hyperglycemic hyperosmolar nonketotic coma (HHNC): Non-operative - Metabolic/Endocrine - Diabetic hyperglycemic hyperosmolar nonketotic coma (HHNC)
+Non-operative metabolic - Diabetic ketoacidosis: Non-operative - Metabolic/Endocrine - Diabetic ketoacidosis
+Non-operative metabolic - Hyperthermia: Non-operative - Metabolic/Endocrine - Hyperthermia
+Non-operative metabolic - Hyperthyroid storm/crisis: Non-operative - Metabolic/Endocrine - Hyperthyroid storm/crisis
+Non-operative metabolic - Hypoglycemia: Non-operative - Metabolic/Endocrine - Hypoglycemia
+Non-operative metabolic - Hypothermia: Non-operative - Metabolic/Endocrine - Hypothermia
+Non-operative metabolic - Metabolic/endocrine medical, other: Non-operative - Metabolic/Endocrine - Metabolic/endocrine medical, other
+Non-operative musculo-skeletal - Arthritis, septic: Non-operative - Musculoskeletal/Skin - Arthritis, septic
+Non-operative musculo-skeletal - Cellulitis and localized soft tissue infections: Non-operative - Musculoskeletal/Skin - Cellulitis and localized soft tissue infections
+Non-operative musculo-skeletal - Musculoskeletal medical, other: Non-operative - Musculoskeletal/Skin - Musculoskeletal medical, other
+Non-operative neurologic - Abscess, neurologic: Non-operative - Neurology - Abscess, neurologic
+Non-operative neurologic - Coma/change in level of consciousness (for hepatic see GI, for diabetic see: Non-operative - Neurology - Coma/change in level of consciousness
+Non-operative neurologic - CVA, cerebrovascular accident/stroke: Non-operative - Neurology - CVA, cerebrovascular accident/stroke
+Non-operative neurologic - Drug withdrawal: Non-operative - Neurology - Drug withdrawal
+Non-operative neurologic - Encephalitis: Non-operative - Neurology - Encephalitis
+Non-operative neurologic - Encephalopathies (excluding hepatic): Non-operative - Neurology - Encephalopathies (excluding hepatic)
+Non-operative neurologic - Guillian-Barre syndrome: Non-operative - Neurology - Guillian-Barre syndrome
+Non-operative neurologic - Hematoma, epidural: Non-operative - Neurology - Hematoma, epidural
+Non-operative neurologic - Hematoma, subdural: Non-operative - Neurology - Hematoma, subdural
+Non-operative neurologic - Hemorrhage/hematoma, intracranial: Non-operative - Neurology - Hemorrhage/hematoma, intracranial
+Non-operative neurologic - Hydrocephalus, obstructive: Non-operative - Neurology - Hydrocephalus, obstructive
+Non-operative neurologic - Meningitis: Non-operative - Neurology - Meningitis
+Non-operative neurologic - Myasthenia gravis: Non-operative - Neurology - Myasthenia gravis
+Non-operative neurologic - Neoplasm, neurologic: Non-operative - Neurology - Neoplasm, neurologic
+Non-operative neurologic - Neurologic medical, other: Non-operative - Neurology - Neurologic medical, other
+Non-operative neurologic - Neuromuscular medical, other: Non-operative - Neurology - Neuromuscular medical, other
+Non-operative neurologic - Nontraumatic coma due to anoxia/ischemia: Non-operative - Neurology - Nontraumatic coma due to anoxia/ischemia
+Non-operative neurologic - Overdose, alcohols (bethanol, methanol, ethylene glycol): Non-operative - Neurology - Overdose, alcohols (bethanol, methanol, ethylene glycol)
+Non-operative neurologic - Overdose, analgesic (aspirin, cetaminophen): Non-operative - Neurology - Overdose, analgesic (aspirin, acetaminophen)
+Non-operative neurologic - Overdose, antidepressants (cyclic, lithium): Non-operative - Neurology - Overdose, antidepressants (cyclic, lithium)
+Non-operative neurologic - Overdose, other toxin, poison or drug: Non-operative - Neurology - Overdose, other toxin, poison or drug
+Non-operative neurologic - Overdose, sedatives, hypnotics, antipsychotics, benzodiazepines: Non-operative - Neurology - Overdose, sedatives, hypnotics, antipsychotics, benzodiazepines
+Non-operative neurologic - Overdose, street drugs (opiates, cocaine, amphetamine): Non-operative - Neurology - Overdose, street drugs (opiates, cocaine, amphetamine)
+Non-operative neurologic - Poisoning, carbon monoxide, arsenic, cyanide: Non-operative - Neurology - Poisoning, carbon monoxide, arsenic, cyanide
+Non-operative neurologic - Seizures (primary-no structural brain disease): Non-operative - Neurology - Seizures (primary-no structural brain disease)
+Non-operative neurologic - Subarachnoid hemorrhage/arteriovenous malformation: Non-operative - Neurology - Subarachnoid hemorrhage/arteriovenous malformation
+Non-operative neurologic - Subarachnoid hemorrhage/intracranial aneurysm: Non-operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm
+Non-operative respiratory - Apnea, sleep: Non-operative - Respiratory - Apnea, sleep
+Non-operative respiratory - ARDS-adult respiratory distress syndrome, non-cardiogenic pulmonary edema: Non-operative - Respiratory - ARDS-adult respiratory distress syndrome, non-cardiogenic pulmonary edema
+Non-operative respiratory - Arrest, respiratory (without cardiac arrest): Non-operative - Respiratory - Arrest, respiratory (without cardiac arrest)
+Non-operative respiratory - Asthma: Non-operative - Respiratory - Asthma
+Non-operative respiratory - Atelectasis: Non-operative - Respiratory - Atelectasis
+Non-operative respiratory - Cancer, laryngeal: Non-operative - Respiratory - Cancer, laryngeal
+Non-operative respiratory - Cancer, lung: Non-operative - Respiratory - Cancer, lung
+Non-operative respiratory - Cancer, oral: Non-operative - Respiratory - Cancer, oral
+Non-operative respiratory - Effusions, pleural: Non-operative - Respiratory - Effusions, pleural
+Non-operative respiratory - Embolus, pulmonary: Non-operative - Respiratory - Embolus, pulmonary
+Non-operative respiratory - Emphysema/bronchitis: Non-operative - Respiratory - Emphysema/bronchitis
+Non-operative respiratory - Hemorrhage/hemoptysis, pulmonary: Non-operative - Respiratory - Hemorrhage/hemoptysis, pulmonary
+Non-operative respiratory - Hemothorax: Non-operative - Respiratory - Hemothorax
+Non-operative respiratory - Hypertension-pulmonary, primary/idiopathic: Non-operative - Respiratory - Hypertension-pulmonary, primary/idiopathic
+Non-operative respiratory - Near drowning accident: Non-operative - Respiratory - Near drowning accident
+Non-operative respiratory - Obstruction-airway (acute epiglottitis, post-extubation edema, foreign body, etc.): Non-operative - Respiratory - Obstruction-airway (i.e., acute epiglottitis, post-extubation edema, foreign body, etc)
+Non-operative respiratory - Pneumonia, aspiration: Non-operative - Respiratory - Pneumonia, aspiration
+Non-operative respiratory - Pneumonia, bacterial: Non-operative - Respiratory - Pneumonia, bacterial
+Non-operative respiratory - Pneumonia, fungal: Non-operative - Respiratory - Pneumonia, fungal
+Non-operative respiratory - Pneumonia, other: Non-operative - Respiratory - Pneumonia, other
+Non-operative respiratory - Pneumonia, parasitic (i.e. Pneumocystis pneumonia): Non-operative - Respiratory - Pneumonia, parasitic (i.e. Pneumocystis pneumonia)
+Non-operative respiratory - Pneumonia, viral: Non-operative - Respiratory - Pneumonia, viral
+Non-operative respiratory - Pneumothorax: Non-operative - Respiratory - Pneumothorax
+Non-operative respiratory - Respiratory- medical, other: Non-operative - Respiratory - Respiratory - medical, other
+Non-operative respiratory - Restrictive lung disease (i.e. sarcoidosis, pulmonary fibrosis): Non-operative - Respiratory - Restrictive lung disease (i.e., Sarcoidosis, pulmonary fibrosis)
+Non-operative respiratory - Smoke inhalation: Non-operative - Respiratory - Smoke inhalation
+Non-operative respiratory - Weaning from mechanical ventilation (transfer from other unit or hospital only): Non-operative - Respiratory - Weaning from mechanical ventilation (transfer from other unit or hospital only)
+Non-operative transplant - Bone marrow transplant, non operative admission: Non-operative - Transplant - Bone marrow transplant, non operative admission
+Non-operative transplant - Kidney transplant, non operative admission: Non-operative - Transplant - Kidney transplant, non operative admission
+Non-operative trauma - Abdomen only trauma: Non-operative - Trauma - Abdomen only trauma
+Non-operative trauma - Abdomen/extremity trauma: Non-operative - Trauma - Abdomen/extremity trauma
+Non-operative trauma - Abdomen/face trauma: Non-operative - Trauma - Abdomen/face trauma
+Non-operative trauma - Abdomen/multiple trauma: Non-operative - Trauma - Abdomen/multiple trauma
+Non-operative trauma - Abdomen/pelvis trauma: Non-operative - Trauma - Abdomen/pelvis trauma
+Non-operative trauma - Abdomen/spinal trauma: Non-operative - Trauma - Abdomen/spinal trauma
+Non-operative trauma - Chest/abdomen trauma: Non-operative - Trauma - Chest/abdomen trauma
+Non-operative trauma - Chest/extremity trauma: Non-operative - Trauma - Chest/extremity trauma
+Non-operative trauma - Chest/face trauma: Non-operative - Trauma - Chest/face trauma
+Non-operative trauma - Chest/multiple trauma: Non-operative - Trauma - Chest/multiple trauma
+Non-operative trauma - Chest/pelvis trauma: Non-operative - Trauma - Chest/pelvis trauma
+Non-operative trauma - Chest/spinal trauma: Non-operative - Trauma - Chest/spinal trauma
+Non-operative trauma - Chest/thorax only trauma: Non-operative - Trauma - Chest/thorax only trauma
+Non-operative trauma - Extremity only trauma: Non-operative - Trauma - Extremity only trauma
+Non-operative trauma - Extremity/face trauma: Non-operative - Trauma - Extremity/face trauma
+Non-operative trauma - Extremity/multiple trauma: Non-operative - Trauma - Extremity/multiple trauma
+Non-operative trauma - Face only trauma: Non-operative - Trauma - Face only trauma
+Non-operative trauma - Face/multiple trauma: Non-operative - Trauma - Face/multiple trauma
+Non-operative trauma - Head (CNS) only trauma: Non-operative - Trauma - Head only trauma
+Non-operative trauma - Head/abdomen trauma: Non-operative - Trauma - Head/abdomen trauma
+Non-operative trauma - Head/chest trauma: Non-operative - Trauma - Head/chest trauma
+Non-operative trauma - Head/extremity trauma: Non-operative - Trauma - Head/extremity trauma
+Non-operative trauma - Head/face trauma: Non-operative - Trauma - Head/face trauma
+Non-operative trauma - Head/multiple trauma: Non-operative - Trauma - Head/multiple trauma
+Non-operative trauma - Head/pelvis trauma: Non-operative - Trauma - Head/pelvis trauma
+Non-operative trauma - Head/spinal trauma: Non-operative - Trauma - Head/spinal trauma
+Non-operative trauma - Pelvis/extremity trauma: Non-operative - Trauma - Pelvis/extremity trauma
+Non-operative trauma - Pelvis/face trauma: Non-operative - Trauma - Pelvis/face trauma
+Non-operative trauma - Pelvis/hip only trauma: Non-operative - Trauma - Pelvis/hip trauma
+Non-operative trauma - Pelvis/multiple trauma: Non-operative - Trauma - Pelvis/multiple trauma
+Non-operative trauma - Spinal cord only trauma: Non-operative - Trauma - Spinal cord only trauma
+Non-operative trauma - Spinal/extremity trauma: Non-operative - Trauma - Spinal/extremity trauma
+Non-operative trauma - Spinal/face trauma: Non-operative - Trauma - Spinal/face trauma
+Non-operative trauma - Spinal/multiple trauma: Non-operative - Trauma - Spinal/multiple trauma
+Non-operative trauma - Trauma medical, other: Non-operative - Trauma - Trauma medical, other
+Post-operative cardiovascular - Aneurysm repair, ventricular: Operative - Cardiovascular - Aneurysm repair, ventricular
+Post-operative cardiovascular - Aneurysm, abdominal aortic: Operative - Cardiovascular - Aneurysm, abdominal aortic
+Post-operative cardiovascular - Aneurysm, abdominal aortic; with dissection: Operative - Cardiovascular - Aneurysm, abdominal aortic; with dissection
+Post-operative cardiovascular - Aneurysm, abdominal aortic; with rupture: Operative - Cardiovascular - Aneurysm, abdominal aortic; with rupture
+Post-operative cardiovascular - Aneurysm, thoracic aortic: Operative - Cardiovascular - Aneurysm, thoracic aortic
+Post-operative cardiovascular - Aneurysm, thoracic aortic; with dissection: Operative - Cardiovascular - Aneurysm, thoracic aortic; with dissection
+Post-operative cardiovascular - Aneurysm, thoracic aortic; with rupture: Operative - Cardiovascular - Aneurysm, thoracic aortic; with rupture
+Post-operative cardiovascular - Aneurysms, repair of other (except ventricular): Operative - Cardiovascular - Aneurysms, repair of other (except ventricular)
+Post-operative cardiovascular - Aortic and Mitral valve replacement: Operative - Cardiovascular - Aortic and Mitral valve replacement
+Post-operative cardiovascular - Aortic valve replacement (isolated): Operative - Cardiovascular - Aortic valve replacement (isolated)
+Post-operative cardiovascular - Atrial Septal Defect (ASD) Repair: Operative - Cardiovascular - Atrial Septal Defect (ASD) Repair
+Post-operative cardiovascular - CABG alone, coronary artery bypass grafting: Operative - Cardiovascular - CABG alone, coronary artery bypass grafting
+Post-operative cardiovascular - CABG alone, redo: Operative - Cardiovascular - CABG alone, redo
+Post-operative cardiovascular - CABG redo with valve repair/replacement: Operative - Cardiovascular - CABG redo with valve repair/replacement
+Post-operative cardiovascular - CABG with aortic valve replacement: Operative - Cardiovascular - CABG with aortic valve replacement
+Post-operative cardiovascular - CABG with double valve repair/replacement: Operative - Cardiovascular - CABG with double valve repair/replacement
+Post-operative cardiovascular - CABG with mitral valve repair: Operative - Cardiovascular - CABG with mitral valve repair
+Post-operative cardiovascular - CABG with mitral valve replacement: Operative - Cardiovascular - CABG with mitral valve replacement
+Post-operative cardiovascular - CABG with other operation: Operative - Cardiovascular - CABG with other operation
+Post-operative cardiovascular - CABG with pulmonic or tricuspid valve repair or replacement ONLY. For mitral: Operative - Cardiovascular - CABG with pulmonic or tricuspid valve repair or replacement
+Post-operative cardiovascular - Cardiac arrest (with or without respiratory arrest; for respiratory arrest see: Operative - Cardiovascular - Cardiac arrest (with or without respiratory arrest)
+Post-operative cardiovascular - Cardiovascular surgery, other: Operative - Cardiovascular - Cardiovascular surgery, other
+Post-operative cardiovascular - Complications of prev. peripheral vasc. surgery, (i.e.ligation of bleeder, exploration: Operative - Cardiovascular - Complications of prev. peripheral vasc. surgery,surgery for (i.e.ligation of bleeder, exploration and evacuation of hematoma, debridement, pseudoaneurysms, clots, fistula, etc.)
+Post-operative cardiovascular - Complications of previous open-heart surgery, surgery for (i.e. bleeding, infection,: Operative - Cardiovascular - Complications of previous open-heart surgery, surgery for (i.e. bleeding, infection, mediastinal rewiring,leaking aortic graft etc.)
+Post-operative cardiovascular - Congenital Defect Repair (Other): Operative - Cardiovascular - Congenital Defect Repair (Other)
+Post-operative cardiovascular - Dilatation (with general anesthesia): Operative - Cardiovascular - Dilatation (with general anesthesia)
+Post-operative cardiovascular - Embolectomy (with general anesthesia): Operative - Cardiovascular - Embolectomy (with general anesthesia)
+Post-operative cardiovascular - Embolectomy (without general anesthesia): Operative - Cardiovascular - Embolectomy (without general anesthesia)
+Post-operative cardiovascular - Endarterectomy (other vessels): Operative - Cardiovascular - Endarterectomy (other vessels)
+Post-operative cardiovascular - Endarterectomy, carotid: Operative - Cardiovascular - Endarterectomy, carotid
+Post-operative cardiovascular - Graft for dialysis, insertion of: Operative - Cardiovascular - Graft for dialysis, insertion of
+Post-operative cardiovascular - Graft, aorto-femoral bypass: Operative - Cardiovascular - Graft, aorto-femoral bypass
+Post-operative cardiovascular - Graft, aorto-iliac bypass: Operative - Cardiovascular - Graft, aorto-iliac bypass
+Post-operative cardiovascular - Graft, femoral-femoral bypass: Operative - Cardiovascular - Graft, femoral-femoral bypass
+Post-operative cardiovascular - Graft, femoral-popliteal bypass: Operative - Cardiovascular - Graft, femoral-popliteal bypass
+Post-operative cardiovascular - Grafts, all other bypass (except renal): Operative - Cardiovascular - Graft, all other bypass (except renal)
+Post-operative cardiovascular - Grafts, removal of infected vascular: Operative - Cardiovascular - Graft, removal of infected vascular
+Post-operative cardiovascular - Mitral valve repair: Operative - Cardiovascular - Mitral valve repair
+Post-operative cardiovascular - Mitral valve replacement: Operative - Cardiovascular - Mitral valve replacement
+Post-operative cardiovascular - Pericardial effusion/tamponade: Operative - Cardiovascular - Pericardial effusion/tamponade
+Post-operative cardiovascular - Pericardiectomy (total/subtotal): Operative - Cardiovascular - Pericardiectomy (total/subtotal)
+Post-operative cardiovascular - Sepsis, cutaneous/soft tissue: Operative - Cardiovascular - Sepsis, cutaneous/soft tissue
+Post-operative cardiovascular - Sepsis, GI: Operative - Cardiovascular - Sepsis, GI
+Post-operative cardiovascular - Sepsis, other: Operative - Cardiovascular - Sepsis, other
+Post-operative cardiovascular - Sepsis, renal/UTI (including bladder): Operative - Cardiovascular - Sepsis, renal/UTI (including bladder)
+Post-operative cardiovascular - Thrombectomy (with general anesthesia): Operative - Cardiovascular - Thrombectomy (with general anesthesia)
+Post-operative cardiovascular - Tricuspid valve surgery: Operative - Cardiovascular - Tricuspid valve surgery
+Post-operative cardiovascular - Tumor removal, intracardiac: Operative - Cardiovascular - Tumor removal, intracardiac
+Post-operative cardiovascular - Vascular surgery, other: Operative - Cardiovascular - Vascular surgery, other
+Post-operative cardiovascular - Ventricular Septal Defect (VSD) Repair: Operative - Cardiovascular - Ventricular Septal Defect (VSD) Repair
+Post-operative gastro-intestinal - Appendectomy: Operative - Gastrointestinal - Appendectomy
+Post-operative gastro-intestinal - Bleeding-lower GI, surgery for: Operative - Gastrointestinal - Bleeding-lower GI, surgery for
+Post-operative gastro-intestinal - Bleeding-other GI, surgery for: Operative - Gastrointestinal - Bleeding-other GI, surgery for
+Post-operative gastro-intestinal - Bleeding-upper GI, surgery for: Operative - Gastrointestinal - Bleeding-upper GI, surgery for
+Post-operative gastro-intestinal - Bleeding-variceal, surgery for (excluding vascular shuntingsee surgery for: Operative - Gastrointestinal - Bleeding-variceal, surgery for (excluding vascular shunting)
+Post-operative gastro-intestinal - Cancer-colon/rectal, surgery for (including abdominoperineal resections): Operative - Gastrointestinal - Cancer-colon/rectal, surgery for (including abdominoperineal resections)
+Post-operative gastro-intestinal - Cancer-esophageal, surgery for (abdominal approach): Operative - Gastrointestinal - Cancer-esophageal, surgery for (abdominal approach)
+Post-operative gastro-intestinal - Cancer-other GI tract, surgery for (i.e. hepatoma, gallbladder etc.): Operative - Gastrointestinal - Cancer-other GI tract, surgery for (i.e., hepatoma, gallbladder etc.)
+Post-operative gastro-intestinal - Cancer-small intestinal, surgery for: Operative - Gastrointestinal - Cancer-small intestinal, surgery for
+Post-operative gastro-intestinal - Cancer-stomach, surgery for: Operative - Gastrointestinal - Cancer-stomach, surgery for
+Post-operative gastro-intestinal - Cholecystectomy/cholangitis, surgery for (gallbladder removal): Operative - Gastrointestinal - Cholecystectomy/cholangitis, surgery for (gallbladder removal)
+Post-operative gastro-intestinal - Complications of previous GI surgery; surgery for (anastomotic leak, bleeding,: Operative - Gastrointestinal - Complications of previous GI surgery; surgery for (anastomotic leak, bleeding, abscess, infection, dehiscence, etc.)
+Post-operative gastro-intestinal - Diverticular disease, surgery for: Operative - Gastrointestinal - Diverticular disease, surgery for
+Post-operative gastro-intestinal - Esophageal surgery, other: Operative - Gastrointestinal - Esophageal surgery, other
+Post-operative gastro-intestinal - Fistula/abscess, surgery for (not inflammatory bowel disease): Operative - Gastrointestinal - Fistula/abscess, surgery for (not inflammatory bowel disease)
+Post-operative gastro-intestinal - Gastrostomy: Operative - Gastrointestinal - Gastrostomy
+Post-operative gastro-intestinal - GI Abscess/cyst-primary, surgery for (for complications of GI surgery see below): Operative - Gastrointestinal - GI abscess/cyst-primary, surgery for
+Post-operative gastro-intestinal - GI Obstruction, surgery for (including lysis of adhesions): Operative - Gastrointestinal - GI obstruction, surgery for (including lysis of adhesions)
+Post-operative gastro-intestinal - GI Perforation/rupture, surgery for: Operative - Gastrointestinal - GI perforation/rupture, surgery for
+Post-operative gastro-intestinal - GI surgery, other: Operative - Gastrointestinal - GI surgery, other
+Post-operative gastro-intestinal - GI Vascular ischemia, surgery for (resection): Operative - Gastrointestinal - GI vascular ischemia, surgery for (resection)
+Post-operative gastro-intestinal - Hernia-hiatal, esophageal surgery for: Operative - Gastrointestinal - Hernia-hiatal, esophageal surgery for
+Post-operative gastro-intestinal - Herniorrhaphy: Operative - Gastrointestinal - Herniorrhaphy
+Post-operative gastro-intestinal - Inflammatory bowel disease, surgery for: Operative - Gastrointestinal - Inflammatory bowel disease, surgery for
+Post-operative gastro-intestinal - Pancreatitis, surgery for: Operative - Gastrointestinal - Pancreatitis, surgery for
+Post-operative gastro-intestinal - Peritoneal lavage: Operative - Gastrointestinal - Peritoneal lavage
+Post-operative gastro-intestinal - Peritonitis, surgery for: Operative - Gastrointestinal - Peritonitis, surgery for
+Post-operative gastro-intestinal - Splenectomy: Operative - Gastrointestinal - Splenectomy
+Post-operative gastro-intestinal - Whipple-surgery for pancreatic cancer: Operative - Gastrointestinal - Whipple-surgery for pancreatic cancer
+Post-operative genitourinary - Bladder repair for perforation/rupture: Operative - Genitourinary - Bladder repair for perforation/rupture
+Post-operative genitourinary - Cesarean section: Operative - Genitourinary - Cesarean section
+Post-operative genitourinary - Cystectomy (other reasons): Operative - Genitourinary - Cystectomy (other reasons)
+Post-operative genitourinary - Cystectomy for neoplasm: Operative - Genitourinary - Cystectomy for neoplasm
+Post-operative genitourinary - Ectopic pregnancy (all): Operative - Genitourinary - Ectopic pregnancy (all)
+Post-operative genitourinary - Exenteration, pelvic-female: Operative - Genitourinary - Exenteration, pelvic-female
+Post-operative genitourinary - Exenteration, pelvic-male: Operative - Genitourinary - Exenteration, pelvic-male
+Post-operative genitourinary - Genitourinary surgery, other: Operative - Genitourinary - Genitourinary surgery, other
+Post-operative genitourinary - Hysterectomy for cancer with or without lymph node dissection: Operative - Genitourinary - Hysterectomy for cancer with or without lymph node dissection
+Post-operative genitourinary - Hysterectomy for other benign neoplasm/fibroids: Operative - Genitourinary - Hysterectomy for other benign neoplasm/fibroids
+Post-operative genitourinary - Lymph node dissection, pelvic or retroperitoneal(male): Operative - Genitourinary - Lymph node dissection, pelvic or retroperitoneal(male)
+Post-operative genitourinary - Mastectomy (all): Operative - Genitourinary - Mastectomy (all)
+Post-operative genitourinary - Nephrectomy (other reasons): Operative - Genitourinary - Nephrectomy (other reasons)
+Post-operative genitourinary - Nephrectomy for neoplasm: Operative - Genitourinary - Nephrectomy for neoplasm
+Post-operative genitourinary - Obstruction due to neoplasm ,surgery for; (with or without ilealconduit): Operative - Genitourinary - Obstruction due to neoplasm, surgery for (with or without ileal conduit)
+Post-operative genitourinary - Obstruction/other, surgery for (with or without ileal-conduit): Operative - Genitourinary - Obstruction/other, surgery for (with or without ileal conduit)
+Post-operative genitourinary - Orchiectomy with/without pelvic lymph node dissection: Operative - Genitourinary - Orchiectomy with/without pelvic lymph node dissection
+Post-operative genitourinary - Prostatectomy, suprapubic; for benign prostatic hypertrophy: Operative - Genitourinary - Prostatectomy, suprapubic; for benign prostatic hypertrophy
+Post-operative genitourinary - Prostatectomy, suprapubic; for cancer: Operative - Genitourinary - Prostatectomy, suprapubic; for cancer
+Post-operative hematology - Hematologic surgery, other: Operative - Hematology - Hematologic surgery, other
+Post-operative metabolic - Adrenalectomy: Operative - Metabolic/Endocrine - Adrenalectomy
+Post-operative metabolic - Metabolic/endocrine surgery, other: Operative - Metabolic/Endocrine - Metabolic/endocrine surgery, other
+Post-operative metabolic - Thyroidectomy: Operative - Metabolic/Endocrine - Thyroidectomy
+Post-operative musculoskeletal /skin - Amputation (non-traumatic): Operative - Musculoskeletal/Skin - Amputation (non-traumatic)
+Post-operative musculoskeletal /skin - Cellulitis and localized soft tissue infections, surgery for: Operative - Musculoskeletal/Skin - Cellulitis and localized soft tissue infections, surgery for
+Post-operative musculoskeletal /skin - Cosmetic surgery (all): Operative - Musculoskeletal/Skin - Cosmetic surgery (all)
+Post-operative musculoskeletal /skin - Fracture-pathological, non-union, non-traumatic, for fractures due to trauma see: Operative - Musculoskeletal/Skin - Fracture-pathological, non-union, non-traumatic
+Post-operative musculoskeletal /skin - Grafting, skin (all): Operative - Musculoskeletal/Skin - Grafting, skin (all)
+Post-operative musculoskeletal /skin - Hip replacement, total (non-traumatic): Operative - Musculoskeletal/Skin - Hip replacement, total (non-traumatic)
+Post-operative musculoskeletal /skin - Knee replacement, total (non-traumatic): Operative - Musculoskeletal/Skin - Knee replacement, total (non-traumatic)
+Post-operative musculoskeletal /skin - Orthopedic surgery, other: Operative - Musculoskeletal/Skin - Orthopedic surgery, other
+Post-operative musculoskeletal /skin - Skin surgery, other: Operative - Musculoskeletal/Skin - Skin surgery, other
+Post-operative neurologic - Abscess/infection-cranial, surgery for: Operative - Neurology - Abscess/infection-cranial, surgery for
+Post-operative neurologic - Arteriovenous malformation, surgery for: Operative - Neurology - Arteriovenous malformation, surgery for
+Post-operative neurologic - Biopsy, brain: Operative - Neurology - Biopsy, brain
+Post-operative neurologic - Burr hole placement: Operative - Neurology - Burr hole placement
+Post-operative neurologic - Cerebrospinal fluid leak, surgery for: Operative - Neurology - Cerebrospinal fluid leak, surgery for
+Post-operative neurologic - Complications of previous spinal cord surgery, surgery for: Operative - Neurology - Complications of previous spinal cord surgery, surgery for
+Post-operative neurologic - Cranial nerve, decompression/ligation: Operative - Neurology - Cranial nerve, decompression/ligation
+Post-operative neurologic - Cranioplasty and complications from previous craniotomies: Operative - Neurology - Cranioplasty and complications from previous craniotomies
+Post-operative neurologic - Devices for spine fracture/dislocation: Operative - Neurology - Devices for spine fracture/dislocation
+Post-operative neurologic - Fusion-spinal/Harrington rods: Operative - Neurology - Fusion-spinal/Harrington rods
+Post-operative neurologic - Hematoma, epidural, surgery for: Operative - Neurology - Hematoma, epidural, surgery for
+Post-operative neurologic - Hematoma, subdural, surgery for: Operative - Neurology - Hematoma, subdural, surgery for
+Post-operative neurologic - Hemorrhage/hematoma-intracranial, surgery for: Operative - Neurology - Hemorrhage/hematoma-intracranial, surgery for
+Post-operative neurologic - Laminectomy/spinal cord decompression (excluding malignancies): Operative - Neurology - Laminectomy/spinal cord decompression (excluding malignancies)
+Post-operative neurologic - Neoplasm-cranial, surgery for (excluding transphenoidal): Operative - Neurology - Neoplasm-cranial, surgery for (excluding transphenoidal)
+Post-operative neurologic - Neoplasm-spinal cord surgery or other related procedures: Operative - Neurology - Neoplasm-spinal cord surgery or other related procedures
+Post-operative neurologic - Neurologic surgery, other: Operative - Neurology - Neurologic surgery, other
+Post-operative neurologic - Seizures-intractable, surgery for: Operative - Neurology - Seizures-intractable, surgery for
+Post-operative neurologic - Shunts and revisions: Operative - Neurology - Shunts and revisions
+Post-operative neurologic - Spinal cord sugery, other: Operative - Neurology - Spinal cord surgery, other
+Post-operative neurologic - Stereotactic procedure: Operative - Neurology - Stereotactic procedure
+Post-operative neurologic - Subarachnoid hemorrhage/intracranial aneurysm, surgery for: Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Post-operative neurologic - Transphenoidal surgery: Operative - Neurology - Transphenoidal surgery
+Post-operative neurologic - Ventriculostomy: Operative - Neurology - Ventriculostomy
+Post-operative respiratory - Apnea-sleep; surgery for (i.e. UPPP-uvulopalatopharyngoplasty): Operative - Respiratory - Apnea-sleep; surgery for (i.e. UPPP-uvulopalatopharyngoplasty)
+Post-operative respiratory - Arrest, respiratory (without cardiac arrest): Operative - Respiratory - Arrest, respiratory (without cardiac arrest)
+Post-operative respiratory - Biopsy, open lung: Operative - Respiratory - Biopsy, open lung
+Post-operative respiratory - Bullectomy: Operative - Respiratory - Bullectomy
+Post-operative respiratory - Cancer oral/sinus, surgery for: Operative - Respiratory - Cancer, oral/sinus, surgery for
+Post-operative respiratory - Cancer-laryngeal/tracheal, surgery for: Operative - Respiratory - Cancer-laryngeal/tracheal, surgery for
+Post-operative respiratory - Facial surgery (if related to trauma, see Trauma): Operative - Respiratory - Facial surgery (if related to trauma, see Trauma)
+Post-operative respiratory - Infection/abscess, other surgery for: Operative - Respiratory - Infection/abscess, other surgery for
+Post-operative respiratory - Respiratory surgery, other: Operative - Respiratory - Respiratory surgery, other
+Post-operative respiratory - Thoracotomy for benign tumor (i.e. mediastinal chest wall mass, thymectomy): Operative - Respiratory - Thoracotomy for benign tumor (i.e. mediastinal chest wall mass, thymectomy)
+Post-operative respiratory - Thoracotomy for bronchopleural fistula: Operative - Respiratory - Thoracotomy for bronchopleural fistula
+Post-operative respiratory - Thoracotomy for esophageal cancer: Operative - Respiratory - Thoracotomy for esophageal cancer
+Post-operative respiratory - Thoracotomy for lung cancer: Operative - Respiratory - Thoracotomy for lung cancer
+Post-operative respiratory - Thoracotomy for lung reduction: Operative - Respiratory - Thoracotomy for lung reduction
+Post-operative respiratory - Thoracotomy for other malignancy in chest: Operative - Respiratory - Thoracotomy for other malignancy in chest
+Post-operative respiratory - Thoracotomy for other reasons: Operative - Respiratory - Thoracotomy for other reasons
+Post-operative respiratory - Thoracotomy for pleural disease: Operative - Respiratory - Thoracotomy for pleural disease
+Post-operative respiratory - Thoracotomy for thoracic/respiratory infection: Operative - Respiratory - Thoracotomy for thoracic/respiratory infection
+Post-operative respiratory - Tracheostomy: Operative - Respiratory - Tracheostomy
+Post-operative transplant - Kidney transplant: Operative - Transplant - Kidney transplant
+Post-operative transplant - Liver transplant: Operative - Transplant - Liver transplant
+Post-operative transplant - Transplant, other: Operative - Transplant - Transplant, other
+Post-operative trauma - Abdomen only trauma, surgery for: Operative - Trauma - Abdomen only trauma, surgery for
+Post-operative trauma - Abdomen/extremity trauma, surgery for: Operative - Trauma - Abdomen/extremity trauma, surgery for
+Post-operative trauma - Abdomen/face trauma, surgery for: Operative - Trauma - Abdomen/face trauma, surgery for
+Post-operative trauma - Abdomen/multiple trauma, surgery for: Operative - Trauma - Abdomen/multiple trauma, surgery for
+Post-operative trauma - Abdomen/pelvis trauma, surgery for: Operative - Trauma - Abdomen/pelvis trauma, surgery for
+Post-operative trauma - Abdomen/spinal trauma, surgery for: Operative - Trauma - Abdomen/spinal trauma, surgery for
+Post-operative trauma - Chest/abdomen trauma, surgery for: Operative - Trauma - Chest/abdomen trauma, surgery for
+Post-operative trauma - Chest/extremity trauma, surgery for: Operative - Trauma - Chest/extremity trauma, surgery for
+Post-operative trauma - Chest/face trauma, surgery for: Operative - Trauma - Chest/face trauma, surgery for
+Post-operative trauma - Chest/multiple trauma, surgery for: Operative - Trauma - Chest/multiple trauma, surgery for
+Post-operative trauma - Chest/spinal trauma, surgery for: Operative - Trauma - Chest/spinal trauma, surgery for
+Post-operative trauma - Chest/thorax only trauma, surgery for: Operative - Trauma - Chest/thorax only trauma, surgery for
+Post-operative trauma - Extremity only trauma, surgery for: Operative - Trauma - Extremity only trauma, surgery for
+Post-operative trauma - Extremity/face trauma, surgery for: Operative - Trauma - Extremity/face trauma, surgery for
+Post-operative trauma - Extremity/multiple trauma, surgery for: Operative - Trauma - Extremity/multiple trauma, surgery for
+Post-operative trauma - Face only trauma, surgery for: Operative - Trauma - Face only trauma, surgery for
+Post-operative trauma - Face/multiple trauma, surgery for: Operative - Trauma - Face/multiple trauma, surgery for
+Post-operative trauma - Head (CNS) only trauma, surgery for: Operative - Trauma - Head only trauma, surgery for
+Post-operative trauma - Head/abdomen trauma, surgery for: Operative - Trauma - Head/abdomen trauma, surgery for
+Post-operative trauma - Head/chest trauma, surgery for: Operative - Trauma - Head/chest trauma, surgery for
+Post-operative trauma - Head/extremity trauma, surgery for: Operative - Trauma - Head/extremity trauma, surgery for
+Post-operative trauma - Head/face trauma, surgery for: Operative - Trauma - Head/face trauma, surgery for
+Post-operative trauma - Head/multiple trauma, surgery for: Operative - Trauma - Head/multiple trauma, surgery for
+Post-operative trauma - Head/spinal trauma, surgery for: Operative - Trauma - Head/spinal trauma, surgery for
+Post-operative trauma - Pelvis/extremity trauma, surgery for: Operative - Trauma - Pelvis/extremity trauma, surgery for
+Post-operative trauma - Pelvis/hip only trauma,surgery for: Operative - Trauma - Pelvis/hip only trauma,surgery for
+Post-operative trauma - Pelvis/multiple trauma, surgery for: Operative - Trauma - Pelvis/multiple trauma, surgery for
+Post-operative trauma - Pelvis/spinal trauma, surgery for: Operative - Trauma - Pelvis/spinal trauma, surgery for
+Post-operative trauma - Spinal cord only trauma, surgery for: Operative - Trauma - Spinal cord only trauma, surgery for
+Post-operative trauma - Spinal/extremity trauma, surgery for: Operative - Trauma - Spinal/extremity trauma, surgery for
+Post-operative trauma - Spinal/multiple trauma, surgery for: Operative - Trauma - Spinal/multiple trauma, surgery for
+Post-operative trauma - Trauma surgery, other: Operative - Trauma - Trauma surgery, other
+
+
+# Legacy ICU / MCU
+(bi)Lobectomie: 
+A.V.M./A.V.A.: Operative - Neurology - Arteriovenous malformation, surgery for
+Acute tubulus necrose:
+AF ablatie:
+ALI/ARDS: Non-operative - Respiratory - ARDS-adult respiratory distress syndrome, non-cardiogenic pulmonary edema
+Aneurysma chir. bij S.A.H.  : Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Aneurysma chir. bij SAB: Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Aneurysma chir. zonder SAB: Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Aneurysma Coiling bij SAB: Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Aneurysmectomie: Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for
+Angina pectoris/myocardinfarct: Non-operative - Cardiovascular - Angina, unstable (angina interferes w/quality of life or meds are tolerated poorly)
+Aorta-ascendens vervanging: Operative - Cardiovascular - Vascular surgery, other
+Aorta-boog vervanging: Operative - Cardiovascular - Vascular surgery, other
+Aorta-descendens vervanging: Operative - Cardiovascular - Vascular surgery, other
+Aorta-wortel vervanging: Operative - Cardiovascular - Vascular surgery, other
+ASD: Operative - Cardiovascular - Atrial Septal Defect (ASD) Repair
+Aspiratie en vergiftiging: Non-operative - Respiratory - Aspiration / Poisoning
+Assist Device:
+Asthma of allergie: Non-operative - Respiratory - Asthma / Allergy
+AVR: Operative - Cardiovascular - Aortic valve replacement (isolated)
+AVR re: Operative - Cardiovascular - Aortic valve replacement (isolated)
+Bentall:
+Bloeding tractus digestivus: Non-operative - Gastrointestinal - Gastrointestinal bleeding
+Bloeding/ stollingsstornissen:
+Brughoektumor: Operative - Neurology - Neurologic surgery, other
+Buiktrauma (niet operatief): Non-operative - Trauma - Abdomen only trauma
+Buiktrauma (operatief): Operative - Trauma - Abdomen only trauma, surgery for
+CABG: Operative - Cardiovascular - CABG alone, coronary artery bypass grafting
+CABG (Off pump): Operative - Cardiovascular - CABG alone, coronary artery bypass grafting
+CABG re: Operative - Cardiovascular - CABG alone, redo
+CABG re (Off pump): Operative - Cardiovascular - CABG alone, redo
+Cardiogene shock: Non-operative - Cardiovascular - Cardiogenic shock
+Cholangitis/Pancratitis: Non-operative - Gastrointestinal - Cholangitis
+Chronisch obstructieve longziekte: Non-operative - Respiratory - Chronic obstructive pulmonary disease
+Coma: Non-operative - Neurology - Coma/change in level of consciousness
+Cranioplastiek: Operative - Neurology - Cranioplasty and complications from previous craniotomies
+Darm ischaemie: Non-operative - Gastrointestinal - GI vascular insufficiency
+Decompensatio cordis: Non-operative - Cardiovascular - CHF, congestive heart failure
+Diabetische keto-acidose: Non-operative - Metabolic/Endocrine - Diabetic ketoacidosis
+Diagnose anders:
+Diffuse intravasale stolling:
+Dissectie: Operative - Cardiovascular - Aneurysm, abdominal aortic; with dissection
+Dunne/dikkedarm chirurgie (perforatie of obstructie): Operative - Gastrointestinal - GI perforation/rupture, surgery for
+Embolectomie/trombolyse: Operative - Cardiovascular - Embolectomy (with general anesthesia)
+Endocarditis: Non-operative - Cardiovascular - Endocarditis
+Endocrinologische chirurgie: Operative - Metabolic/Endocrine - Metabolic/endocrine surgery, other
+Endovasculaire stent plaatsing: Operative - Cardiovascular - Vascular surgery, other
+Epiduraal haematoom: Operative - Neurology - Hematoma, epidural, surgery for
+Epileptisch insult: Non-operative - Neurology - Seizure disorder
+EVAR: Operative - Cardiovascular - Aneurysms, repair of other (except ventricular)
+Extremiteitentrauma (niet operatief): Non-operative - Trauma - Extremity only trauma
+Extremiteitentrauma (operatief): Operative - Trauma - Extremity only trauma, surgery for
+Fasciitis necroticans: Non-operative - Musculoskeletal/Skin - Cellulitis and localized soft tissue infections
+Galblaas/ galwegen chirurgie: Operative - Gastrointestinal - Cholecystectomy/cholangitis, surgery for (gallbladder removal)
+Gastro-intestinaal overig: Operative - Gastrointestinal
+Gastro-intestinaal voor bloeding: Operative - Gastrointestinal bleeding
+Gastro-intestinaal voor neoplasma: Operative - Gastrointestinal surgery for neoplasm
+Gecombineerde hartchirurgie: Operative - Cardiovascular - CABG with other operation
+Gynacologische chirurgie (hemodynamische bewaking): Operative - Gynecology
+Gynacologische chirurgie (respiratoire bewaking): Operative - Gynecology
+Haematologisch: Non-operative - Hematology
+Haemorragische shock: Non-operative - Cardiovascular - Hemorrhagic shock
+Hematologische maligniteit: Non-operative - Hematology
+Hepatorenaal syndroom: Non-operative - Metabolic/Endocrine - Metabolic/endocrine medical, other
+Hogere luchtwegobstructie: Non-operative - Respiratory - Obstruction-airway (i.e., acute epiglottitis, post-extubation edema, foreign body, etc)
+Hoofdtrauma (niet operatief): Non-operative - Trauma - Head only trauma
+Hoofdtrauma (operatief): Operative - Trauma - Head only trauma, surgery for
+Hypertensie: Non-operative - Cardiovascular - Hypertension
+Hypovolemische shock: Non-operative - Cardiovascular - Hypovolemic shock
+Ileus: Non-operative - Gastrointestinal - GI obstruction
+Infectieuze aandoening overig: Non-operative - Respiratory - Infection
+Infectieuze aandoeningen CZS: Non-operative - Neurology
+Intercorporele spondylodese: Operative - Neurology - Spinal cord surgery, other
+Intoxicatie: Non-operative - Neurology - Drug overdose
+Intracerebraal haematoom: Non-operative - Neurology - Hemorrhage/hematoma, intracranial
+Lever resectie/perfusie: 
+Leverinsufficientie: 
+Longembolie: Non-operative - Respiratory - Pulmonary embolism
+Mediastinitis: Non-operative - Respiratory - Infection
+Meningioom infra tentorieel: Operative - Neurology - Neoplasm-cranial, surgery for (excluding transphenoidal)
+Meningioom supra tentorieel: Operative - Neurology - Neoplasm-cranial, surgery for (excluding transphenoidal)
+Mond/keelholte/kaak chirurgie (hemodynamische bewaking): Operative - Respiratory - Facial surgery (if related to trauma, see Trauma)
+Mond/keelholte/kaak chirurgie (respiratoire bewaking): Operative - Respiratory - Facial surgery (if related to trauma, see Trauma)
+Multi trauma (niet operatief): Non-operative - Trauma - Multiple trauma
+Multi trauma (operatief): Operative - Multiple trauma
+MVP: Operative - Cardiovascular - Mitral valve repair
+MVR: Operative - Cardiovascular - Mitral valve repair
+MVR re: Operative - Cardiovascular - Mitral valve repair
+Na reanimatie: Non-operative - Cardiovascular - Cardiac arrest (with or without respiratory arrest)
+Na respiratoir arrest: Non-operative - Respiratory - Arrest, respiratory (without cardiac arrest)
+Nefrectomie (neoplasma): Operative - Genitourinary - Nephrectomy for neoplasm
+Nefrectomie (overige): Operative - Genitourinary - Nephrectomy (other reasons)
+Neuro musculaire ziekten: Non-operative - Neurology - Neuromuscular medical, other
+Neurochirurgisch Trauma: 
+Nier en pancreastransplantatie: Operative - Transplant - Transplant, other
+Niertransplantatie: Operative - Transplant - Kidney transplant
+Observatie aneurysma: Non-operative - Cardiovascular - Aneurysm/pseudoaneurysm, other
+Observatie neurologische status: Non-operative - Neurology - Neurologic medical, other
+Obstetrie/ HELLP: Non-operative - Genitourinary - Pre-eclampsia/eclampsia
+Oesophagus/maag chirurgie: Operative - Gastrointestinal - Cancer-esophageal, surgery for (abdominal approach)
+Ontlasting pericardeffusie: Operative - Cardiovascular - Pericardial effusion/tamponade
+Orthopedische chirurgie (hemodynamische bewaking):
+Orthopedische chirurgie (respiratoire bewaking):
+Overige (niet operatief):
+Overige chirurgie (hemodynamische bewaking):
+Overige chirurgie (respiratoire bewaking):
+Overige neurologie: Non-operative - Neurology - Neurologic medical, other
+Overige neurologie/neurochirurgie: Operative - Neurology - Neurologic surgery, other
+Overige thoraxchirurgie: Operative - Respiratory - Respiratory surgery, other
+Pancreastransplantatie :
+Pancreatitis/pancreatectomie: Operative - Gastrointestinal - Pancreatitis, surgery for
+PCP infectie: Non-operative - Respiratory - Pneumonia, parasitic (i.e. Pneumocystis pneumonia)
+Pericardectomie: Operative - Cardiovascular - Pericardiectomy (total/subtotal)
+Pleurectomie: Operative - Respiratory - Thoracotomy for pleural disease
+Pneumectomie: Operative - Respiratory - Thoracotomy for lung reduction
+Pneumonie: Non-operative - Respiratory - Pneumonia, other
+Portale hypertensie (TIPS): Operative - Gastrointestinal - GI surgery, other
+Proeflaparotomie: Operative - Gastrointestinal - GI surgery, other
+PTCA (perifere vaten): Operative - Cardiovascular - Vascular surgery, other
+Respiratoir neoplasma: Non-operative - Respiratory - Cancer, lung
+Respiratoire insufficientie na ok: Operative - Respiratory insufficiency after surgery
+Respiratoire insufficiëntie: 
+Ritme stoornissen: Non-operative - Cardiovascular - Rhythm disturbance
+S.A.B.: Non-operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm
+Segment/Sleeve resectie: Operative - Gastrointestinal - GI surgery, other
+Sepsis: Non-operative - Cardiovascular - Sepsis
+Subduraal haematoom: Operative - Neurology - Hematoma, subdural, surgery for
+Subduraal haematoom _OLD_1: Operative - Neurology - Hematoma, subdural, surgery for
+TC infra tentorieel: Operative - Neurology - Neoplasm-cranial, surgery for (excluding transphenoidal)
+TC supra tentorieel: Operative - Neurology - Neoplasm-cranial, surgery for (excluding transphenoidal)
+Tentame suicide/Overdosis: Non-operative - Neurology - Overdose, other toxin, poison or drug
+Thoracaal of abdominaal aneurysma: Non-operative - Cardiovascular - Aneurysm, dissecting aortic
+Thoraco-abdominale aorta vervanging: Operative - Cardiovascular - Vascular surgery, other
+Thoraxtrauma (niet operatief): Non-operative - Trauma - Chest/thorax only trauma
+Thoraxtrauma (operatief): Operative - Trauma - Chest/thorax only trauma, surgery for
+Transplantectomie (renaal): Operative - Transplant - Kidney transplant
+Trauma wervelfr/dwarslaesie (niet operatief): Non-operative - Trauma - Spinal cord only trauma
+Trauma wervelfr/dwarslaesie (operatief): Operative - Trauma - Spinal cord only trauma, surgery for
+Tricuspidalis chirurgie: Operative - Cardiovascular - Tricuspid valve surgery
+TTP/HUS: 
+Tubulo interstitiele nefritis: Non-operative - Genitourinary - Genitourinary medical, other
+Urologie (overige): Non-operative - Genitourinary - Genitourinary medical, other
+Urosepsis: Non-operative - Cardiovascular - Sepsis, renal/UTI (including bladder)
+Vaatchirurgie abdominaal: Operative - Cardiovascular - Vascular surgery, other
+Vaatchirurgie perifeer: Operative - Cardiovascular - Vascular surgery, other
+Vaatspasme protocol: Non-operative - Neurology - Neurologic medical, other
+Verdrinking: Non-operative - Respiratory - Near drowning accident
+Video Assist Thoracoscopie: Operative - Respiratory - Thoracotomy for other reasons
+Vrije wand ruptuur: Non-operative - Cardiovascular - Cardiovascular medical, other
+VSD: Operative - Cardiovascular - Ventricular Septal Defect (VSD) Repair
+VSR na infarct: Operative - Cardiovascular - Ventricular Septal Defect (VSD) Repair

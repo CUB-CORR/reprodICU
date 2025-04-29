@@ -1,0 +1,16 @@
+cv-inf: intravenous (central)
+cv-inj: intravenous (central)
+ep-inj: peridural
+inhal: inhalational
+iv-inf: intravenous
+iv-inj: intravenous
+ms: nasogastric
+p os: oral
+p rect: rectal
+p rectal: rectal
+p.ms: nasogastric
+p.o: oral
+paravert.: paravertebral
+sc-inj: subcutaneous
+subling: sublingual
+transcutan: transdermal

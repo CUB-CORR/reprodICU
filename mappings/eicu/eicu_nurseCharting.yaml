@@ -1,0 +1,22 @@
+Temperature (C): Temperature
+# Temperature (F): Temperature # always charted both
+Heart Rate: Heart rate
+Invasive BP Systolic: Invasive systolic arterial pressure
+Invasive BP Diastolic: Invasive diastolic arterial pressure
+Invasive BP Mean: Invasive mean arterial pressure
+Non-Invasive BP Systolic: Non-invasive systolic arterial pressure
+Non-Invasive BP Diastolic: Non-invasive diastolic arterial pressure
+Non-Invasive BP Mean: Non-invasive mean arterial pressure
+CVP: Central venous pressure
+ICP: Intracranial pressure
+Respiratory Rate: Respiratory rate
+O2 Saturation: Peripheral oxygen saturation
+O2 Admin Device: Oxygen delivery system
+O2 L/%: oxygen_flow / FiO2 # make sure to convert to FiO2 / oxygen_flow (L/min) where applicable (e.g. nasal cannula)
+End Tidal CO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+GCS Total: Glasgow coma score total
+Eyes: Glasgow coma score eye opening
+Motor: Glasgow coma score motor
+Verbal: Glasgow coma score verbal
+Pain Score: Numeric Pain Rating Scale
+Sedation Score: Richmond Agitation-Sedation Scale # requires sub-selection for only RASS sedation scale values

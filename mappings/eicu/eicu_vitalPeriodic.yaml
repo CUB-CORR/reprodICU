@@ -1,0 +1,13 @@
+temperature: Temperature
+heartrate: Heart rate
+sao2: Peripheral oxygen saturation # measured by pulse oximetry
+etco2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
+respiration: Respiratory rate
+systemicsystolic: Invasive systolic arterial pressure
+systemicdiastolic: Invasive diastolic arterial pressure
+systemicmean: Invasive mean arterial pressure
+noninvasivesystolic: Non-invasive systolic arterial pressure
+noninvasivediastolic: Non-invasive diastolic arterial pressure
+noninvasivemean: Non-invasive mean arterial pressure
+cvp: Central venous pressure
+icp: Intracranial pressure

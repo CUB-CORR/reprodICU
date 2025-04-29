@@ -1,0 +1,32 @@
+Temperature: True # 45771331
+Heart rate: True # 4239408
+Heart rate rhythm: True # 3022318
+Peripheral oxygen saturation: True # 4196147
+Respiratory rate: True # 4313591
+Invasive systolic arterial pressure: True # 4353843
+Invasive diastolic arterial pressure: True # 4354253
+Invasive mean arterial pressure: True # 4108290
+Non-invasive systolic arterial pressure: True # 4354252
+Non-invasive diastolic arterial pressure: True # 4068414
+Non-invasive mean arterial pressure: True # 4108289
+Central venous pressure: True # 4323687
+Intracranial pressure: True # 4353953
+Glasgow coma score total: True # 3007194
+Glasgow coma score eye opening: True # 3016335
+Glasgow coma score verbal: True # 3009094
+Glasgow coma score motor: True # 3008223
+Richmond Agitation-Sedation Scale: True # 36684829
+Numeric Pain Rating Scale: True # 37151627
+
+
+####################################################################################################
+# not yet harmonised and not included by default
+####################################################################################################
+# Right atrial pressure: False # 276755008
+# Right ventricular pressure: False # 276756009
+# Pulmonary artery systolic pressure: False # 250768007
+# Pulmonary artery diastolic pressure: False # 250769004
+# Pulmonary artery mean pressure: False # 250770003
+# Pulmonary artery wedge pressure: False # 118433006
+# Cardiac output: False # 82799009
+# Cardiac index: False # 54993008

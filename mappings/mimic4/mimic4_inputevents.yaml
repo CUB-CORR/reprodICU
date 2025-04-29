@@ -1,0 +1,16 @@
+# inputevents
+01-Drips: Fluid intake intravascular
+02-Fluids (Crystalloids): Fluid intake intravascular
+03-IV Fluid Bolus: Fluid intake intravascular
+04-Fluids (Colloids): Fluid intake intravascular
+05-Med Bolus: Fluid intake intravascular
+06-Insulin (Non IV): Fluid intake
+07-Blood Products: Fluid intake intravascular
+08-Antibiotics (IV): Fluid intake intravascular
+09-Antibiotics (Non IV): Fluid intake
+10-Prophylaxis (IV): Fluid intake intravascular
+11-Prophylaxis (Non IV): Fluid intake
+12-Parenteral Nutrition: Fluid intake intravascular
+13-Enteral Nutrition: Fluid intake enteral tube
+14-Oral/Gastric Intake: Fluid intake oral
+16-Pre Admission: Fluid intake

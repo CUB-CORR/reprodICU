@@ -1,0 +1,15 @@
+720: Endotracheal tube # EndotrachealTube
+3041: Tracheostomy tube # TrachealCannula
+3042: Wound drain # Redon
+3043: Chest drain # ThoracicDrainage
+3044: Drain # Drain
+3045: Arterial catheter # ArterialLine
+3046: Central venous catheter # CentralLine
+3047: Peripheral catheter # PeripheralLine
+3048: Spinal catheter # PeriduralCatheter
+3049: VAC system # VacSystem
+3050: Feeding tube # GastricTube
+3051: Gastrostomy tube # PEG
+3052: Jejunostomy tube # JejunalTube
+3053: Urinary catheter # UrinaryCatheter
+3054: Urostomy bag # Urostoma

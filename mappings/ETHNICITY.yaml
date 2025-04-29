@@ -1,0 +1,97 @@
+# eICU-CRD:  patient table -> ethnicity column
+# HiRID:      –
+# MIMIC-III: admissions table -> ETHNICITY column
+# MIMIC-IV:  admissions table -> race column
+# NWICU:     admissions table -> race column
+# SICdb:      -
+# UMCdb:      -
+
+# mapped to OMOP Race / Ethnicity concepts
+# https://athena.ohdsi.org/search-terms/terms?domain=Ethnicity&domain=Race&standardConcept=Standard
+
+American Indian or Alaska Native:
+  # eICU
+  - Native American
+  # MIMIC-III / MIMIC-IV
+  - AMERICAN INDIAN/ALASKA NATIVE
+  - AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE
+  # NWICU
+  - AMERICAN INDIAN OR ALASKA NATIVE
+Asian:
+  # eICU-CRD
+  - Asian
+  # MIMIC-III / MIMIC-IV
+  - ASIAN - ASIAN INDIAN
+  - ASIAN - CAMBODIAN
+  - ASIAN - CHINESE
+  - ASIAN - FILIPINO
+  - ASIAN - JAPANESE
+  - ASIAN - KOREAN
+  - ASIAN - OTHER
+  - ASIAN - THAI
+  - ASIAN - VIETNAMESE
+  # MIMIC-III / MIMIC-IV / NWICU
+  - ASIAN
+  # MIMIC-IV
+  - ASIAN - SOUTH EAST ASIAN
+Black or African American:
+  # eICU
+  - African American
+  # MIMIC-III / MIMIC-IV
+  - BLACK/AFRICAN AMERICAN
+  - BLACK/CAPE VERDEAN
+  - BLACK/HAITIAN
+  - CARIBBEAN ISLAND
+  # MIMIC-III / MIMIC-IV / NWICU
+  - BLACK/AFRICAN
+  # MIMIC-IV
+  - BLACK/CARIBBEAN ISLAND
+Hispanic or Latino:
+  # eICU
+  - Hispanic
+  # MIMIC-III / MIMIC-IV
+  - HISPANIC OR LATINO
+  - HISPANIC/LATINO - CENTRAL AMERICAN (OTHER)
+  - HISPANIC/LATINO - COLOMBIAN
+  - HISPANIC/LATINO - CUBAN
+  - HISPANIC/LATINO - DOMINICAN
+  - HISPANIC/LATINO - GUATEMALAN
+  - HISPANIC/LATINO - HONDURAN
+  - HISPANIC/LATINO - MEXICAN
+  - HISPANIC/LATINO - PUERTO RICAN
+  - HISPANIC/LATINO - SALVADORAN
+  - SOUTH AMERICAN
+  # MIMIC-IV
+  - HISPANIC/LATINO - CENTRAL AMERICAN
+  - HISPANIC/LATINO - COLUMBIAN
+Native Hawaiian or Other Pacific Islander:
+  # MIMIC-III / MIMIC-IV / NWICU
+  - NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER
+White:
+  # eICU
+  - Caucasian
+  # MIMIC-III / MIMIC-IV
+  - PORTUGUESE # weird, but it's in the data of the MIMIC-III dataset
+  - WHITE - BRAZILIAN
+  - WHITE - EASTERN EUROPEAN
+  - WHITE - OTHER EUROPEAN
+  - WHITE - RUSSIAN
+  - MIDDLE EASTERN
+  # MIMIC-III / MIMIC-IV / NWICU
+  - WHITE
+Other:
+  # MIMIC-III / MIMIC-IV
+  - MULTI RACE ETHNICITY
+  - OTHER
+  # MIMIC-IV / NWICU
+  - MULTIPLE RACE/ETHNICITY
+Unknown:
+  # eICU
+  - Other/Unknown
+  # MIMIC-III / MIMIC-IV
+  - PATIENT DECLINED TO ANSWER
+  - UNABLE TO OBTAIN
+  - UNKNOWN/NOT SPECIFIED
+  - ""
+  # MIMIC-IV / NWICU
+  - UNKNOWN
