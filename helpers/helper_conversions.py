@@ -294,7 +294,7 @@ class UnitConversions:
         """
         Convert bilirubin total values from µmol/L to mg/dL.
         """
-        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.0585, **kwargs)
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / 17.1, **kwargs)
 
     def convert_blood_urea_nitrogen_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
