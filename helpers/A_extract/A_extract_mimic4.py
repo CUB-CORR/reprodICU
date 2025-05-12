@@ -398,11 +398,19 @@ class MIMIC4Extractor(MIMIC4Paths):
                 self.hospital_stay_id_col, "transfertime", self.specialty_col
             )
             .join(IDs, on=self.hospital_stay_id_col)
+            .with_columns(
+                pl.col("transfertime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
             # Get the most recent specialty
-            .filter(pl.col("transfertime") < pl.col("intime"))
+            .filter(
+                pl.col("transfertime")
+                < (pl.col("intime") + pl.duration(hours=2))
+            )
             # Get the most recent specialty on ICU admission
+            .sort("transfertime")
             .group_by(self.icu_stay_id_col)
-            .first()
+            .last()
             .select(self.icu_stay_id_col, self.specialty_col)
         )
 
@@ -420,19 +428,21 @@ class MIMIC4Extractor(MIMIC4Paths):
     ) -> pl.DataFrame:
         """
         Extract patient height and weight from the chartevents CSV file, using cached data if available.
+        
+        Height IDs taken from:
+        https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/height.sql
+        Weight IDs taken from:
+        https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/demographics/weight_durations.sql
 
         Steps:
-            1. Check for existence of a precalculated parquet file at {precalc_path} + "MIMIC4_height_weight.parquet".
-            2. If available and force is False, load and return the cached data.
-            3. If not available or force=True, then:
-               a. Scan chartevents CSV and select columns: {icu_stay_id_col}, ITEMID, VALUENUM, CHARTTIME.
-               b. Filter for ITEMIDs of interest.
-               c. Join with {intime} from ICU stays.
-               d. Convert date columns to datetime.
-               e. Apply unit conversions: inches to cm for height, lbs to kg for weight.
-               f. Pivot data so each {icu_stay_id_col} has separate columns for {weight_col} and {height_col}.
-               g. Cast resulting columns to float.
-               h. Save the resulting DataFrame to a parquet file.
+            1. Check if pre-calculated parquet file exists; if so, load unless force=True.
+            2. Read chartevents CSV and filter rows based on ITEMID values corresponding to height and weight.
+            3. Join with ICU stays data to constrain measurements within a given time cutoff.
+            4. Convert CHARTTIME and INTIME to datetime and perform unit conversions:
+               - Convert height from inches to centimeters.
+               - Convert weight from pounds to kilograms.
+            5. Pivot the data so each ICU stay has separate columns for weight and height.
+            6. Save the resulting DataFrame as a parquet file for caching.
 
         Returns:
             pl.LazyFrame: A lazy frame containing:
@@ -452,16 +462,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         print("MIMIC4  - Extracting patient height and weight...")
 
         ITEMIDS = {
-            762: self.weight_col,  # Admit Wt [carevue]
-            763: self.weight_col,  # Daily Weight [carevue]
-            3580: self.weight_col,  # Present Weight  (kg) [carevue]
-            3693: self.weight_col,  # Weight Kg [carevue]
             224639: self.weight_col,  # Daily Weight [metavision]
             226512: self.weight_col,  # Admission Weight (Kg) [metavision]
-            3581: "weight_lbs",  # Present Weight  (lb) [carevue]
             226531: "weight_lbs",  # Admission Weight (lbs.) [metavision]
-            920: "height_inch",  # Admit Ht [carevue]
-            1394: "height_inch",  # Height Inches [carevue]
             226707: "height_inch",  # Height [metavision]
             226730: self.height_col,  # Height (cm) [metavision]
         }
