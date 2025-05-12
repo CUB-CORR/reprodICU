@@ -392,11 +392,19 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.hospital_stay_id_col, "TRANSFERTIME", self.specialty_col
             )
             .join(IDs, on=self.hospital_stay_id_col, how="outer")
+            .with_columns(
+                pl.col("TRANSFERTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
             # Get the most recent specialty
-            .filter(pl.col("TRANSFERTIME") < pl.col("INTIME"))
+            .filter(
+                pl.col("TRANSFERTIME")
+                < (pl.col("INTIME") + pl.duration(hours=2))
+            )
             # Get the most recent specialty on ICU admission
+            .sort("TRANSFERTIME")
             .group_by(self.icu_stay_id_col)
-            .first()
+            .last()
             .select(self.icu_stay_id_col, self.specialty_col)
         )
 
@@ -414,6 +422,11 @@ class MIMIC3Extractor(MIMIC3Paths):
     ) -> pl.DataFrame:
         """
         Extract and compute patient height and weight from chartevents.csv.
+
+        Height IDs taken from:
+        https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/demographics/heightweight.sql
+        Weight IDs taken from:
+        https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/weight_durations.sql
 
         Steps:
             1. Check if pre-calculated parquet file exists; if so, load unless force=True.
@@ -447,12 +460,18 @@ class MIMIC3Extractor(MIMIC3Paths):
             763: self.weight_col,  # Daily Weight [carevue]
             3580: self.weight_col,  # Present Weight  (kg) [carevue]
             3693: self.weight_col,  # Weight Kg [carevue]
+            3723: self.weight_col,  # Birth Weight    (kg) [carevue]
+            4183: self.weight_col,  # Birthweight (kg) [carevue]
             224639: self.weight_col,  # Daily Weight [metavision]
             226512: self.weight_col,  # Admission Weight (Kg) [metavision]
             3581: "weight_lbs",  # Present Weight  (lb) [carevue]
             226531: "weight_lbs",  # Admission Weight (lbs.) [metavision]
             920: "height_inch",  # Admit Ht [carevue]
             1394: "height_inch",  # Height Inches [carevue]
+            3485: self.height_col,  # Length   Calc   (cm) [carevue]
+            3486: "height_inch",  # Length in Inches [carevue]
+            4187: "height_inch",  # Length Calc Inches [carevue]
+            4188: self.height_col,  # Length in cm [carevue]
             226707: "height_inch",  # Height [metavision]
             226730: self.height_col,  # Height (cm) [metavision]
         }
