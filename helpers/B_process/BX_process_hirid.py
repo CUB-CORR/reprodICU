@@ -222,7 +222,7 @@ class HiRIDConverter(UnitConverter):
         Applies a series of conversion functions sequentially to the input lab values. The conversion is performed
         for the following lab tests:
           - {Bilirubin.direct}
-          - {Bilirubin.total}
+          - {Bilirubin}
           - {Creatinine}
           - {Cortisol}
           - {Fibrinogen}
@@ -253,7 +253,7 @@ class HiRIDConverter(UnitConverter):
             )
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.total",
+                itemid="Bilirubin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,

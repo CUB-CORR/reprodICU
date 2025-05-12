@@ -376,7 +376,7 @@ class UMCdbConverter(UnitConverter):
 
         Applies a series of conversion operations (chain of .pipe() calls) targeting specific lab tests:
             • {Hematocrit} and {Oxygen saturation}: convert_ratio_to_percentage.
-            • {Bilirubin.conjugated} and {Bilirubin.total}: convert_bilirubin_umol_L_to_mg_dL.
+            • {Bilirubin.conjugated} and {Bilirubin}: convert_bilirubin_umol_L_to_mg_dL.
             • {Creatinine}: convert_creatinine_mmol_L_to_mg_dL.
             • {Cholesterol in HDL} and {Cholesterol}: convert_cholesterol_mmol_L_to_mg_dL.
             • {Cortisol}: convert_cortisol_nmol_L_to_ug_dL.
@@ -440,7 +440,7 @@ class UMCdbConverter(UnitConverter):
             )
             .pipe(
                 self.convert_bilirubin_umol_L_to_mg_dL,
-                itemid="Bilirubin.total",
+                itemid="Bilirubin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
