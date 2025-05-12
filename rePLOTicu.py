@@ -74,10 +74,10 @@ BLENDEDICU_PLOT_VARIABLES = {
     "Platelets": ["labs", "10^3/µL"],
     "Urine output": ["intakeoutput", "mL"],
     # "Ventilation mode Ventilator": "respiratory",
-    "Glasgow Coma Score total": ["vitals", "points"],
-    "Glasgow Coma Score eye opening": ["vitals", "points"],
-    "Glasgow Coma Score motor": ["vitals", "points"],
-    "Glasgow Coma Score verbal": ["vitals", "points"],
+    "Glasgow coma score total": ["vitals", "points"],
+    "Glasgow coma score eye opening": ["vitals", "points"],
+    "Glasgow coma score motor": ["vitals", "points"],
+    "Glasgow coma score verbal": ["vitals", "points"],
 }
 COLORS = {
     "AmsterdamUMCdb": "blue",
@@ -146,7 +146,28 @@ def _collect_data(
         .filter(pl.col(variable).is_not_null())
     )
 
-    # Filter source if specified
+    # combine urine output
+    if variable == "Urine output":
+        URINE_COLS = [
+            "Fluid output urine in and out urethral catheter",
+            "Fluid output urine nephrostomy",
+            "Urine output",
+        ]
+        data = (
+            pl.scan_parquet(
+                f"{path}timeseries_{_table}.parquet",
+                parallel="prefiltered",
+            )
+            .join(ID_TO_DB, on=cols.global_icu_stay_id_col, how="left")
+            .select(
+                cols.global_icu_stay_id_col,
+                cols.dataset_col,
+                pl.sum_horizontal(URINE_COLS).alias("Urine output"),
+            )
+            .filter(pl.col(variable).is_not_null())
+        )
+
+    # filter source if specified
     if table == "labs":
         data = (
             data.unnest(variable)
@@ -155,13 +176,14 @@ def _collect_data(
                 pl.col("system").str.contains_any(
                     systems, ascii_case_insensitive=True
                 )
+                | pl.col("system").is_null()
             )
             .drop("system", "method")
         )
 
     # aggregate means for vitals
     if table == "vitals" or table == "respiratory":
-        if variable.startswith("Glasgow Coma Score"):
+        if variable.startswith("Glasgow coma score"):
             data = data.group_by(
                 cols.global_icu_stay_id_col, cols.dataset_col
             ).agg(pl.col(variable).last().alias(variable))
