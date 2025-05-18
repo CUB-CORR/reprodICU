@@ -1182,9 +1182,7 @@ def measurement(
     atexit.register(cleanup_temp_files)
 
     # Save each dataset to temp file
-    temp_file1 = os.path.join(
-        output_subdir, f"{temp_prefix}heights_weights.parquet"
-    )
+    temp_file1 = os.path.join(output_subdir, f"{temp_prefix}heights_weights.parquet") # fmt: skip
     temp_file2 = os.path.join(output_subdir, f"{temp_prefix}vitals.parquet")
     temp_file3 = os.path.join(output_subdir, f"{temp_prefix}labs.parquet")
 
@@ -1340,7 +1338,11 @@ def person(
             how="left",
         )
         .rename({"concept_id": "race_concept_id"})
-        .with_columns(pl.col("race_concept_id").fill_null(0))
+        .with_columns(
+            pl.col("race_concept_id").fill_null(0),
+            # Create race_source_value column with the Ethnicity column for backreference
+            pl.col("Ethnicity").alias("race_source_value"),
+        )
         ###################
         # ETHNICITY_CONCEPT_ID
         # Create the ethnicity_concept_id column based on the Ethnicity column
@@ -1352,9 +1354,10 @@ def person(
         )
         .rename({"concept_id": "ethnicity_concept_id"})
         .with_columns(
-            pl.col("ethnicity_concept_id").fill_null(
-                pl.lit(38003564)
-            ),  # Not Hispanic or Latino
+            # Not Hispanic or Latino
+            pl.col("ethnicity_concept_id").fill_null(pl.lit(38003564)),
+            # Create ethnicity_source_value column with the Ethnicity column for backreference
+            pl.col("Ethnicity").alias("ethnicity_source_value")
         )
         .pipe(_add_missing_fields, "person")
         .unique()
@@ -1853,6 +1856,7 @@ if __name__ == "__main__":
             timeseries_vitals,
             timeseries_labs,
             timeseries_resp,
+            OUTPATH,
         )
         .collect(streaming=True)
         .write_parquet(OUTPATH + "measurement.parquet")
