@@ -162,9 +162,7 @@ class NWICUExtractor(NWICUPaths):
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
-                    "race": (
-                        self.ethnicity_col
-                    ),  # "race" is the choice of the dataset creators
+                    "race": self.ethnicity_col,  # "race" is the choice of the dataset creators # fmt: skip
                     "admission_location": self.admission_loc_col,
                     "discharge_location": self.discharge_loc_col,
                     "admission_type": self.admission_urgency_col,
@@ -210,9 +208,7 @@ class NWICUExtractor(NWICUPaths):
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("dod").str.to_datetime(
-                    "%Y-%m-%d"
-                ),  # hour and minute are not provided
+                pl.col("dod").str.to_datetime("%Y-%m-%d"),
                 pl.col("admittime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("dischtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("deathtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -230,46 +226,50 @@ class NWICUExtractor(NWICUPaths):
                 .replace(self.ETHNICITY_MAP)
                 .cast(self.ethnicity_dtype),
                 # Calculate pre ICU length of stay
-                (
-                    (pl.col("intime") - pl.col("admittime")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("intime") - pl.col("admittime"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.pre_icu_length_of_stay_col),
                 # Calculate hospital length of stay
-                (
-                    (pl.col("dischtime") - pl.col("admittime")).truediv(
-                        pl.duration(days=1)
-                    )
-                )
+                (pl.col("dischtime") - pl.col("admittime"))
+                .truediv(pl.duration(days=1))
                 .cast(float)
                 .alias(self.hospital_length_of_stay_col),
                 # Calculate admission time
                 pl.col("intime").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
+                # NOTE: no deathtime for deaths in hospital -> use discharge time
                 (
-                    (  # no deathtime for deaths in hospital -> use discharge time
-                        pl.when(pl.col(self.mortality_hosp_col).cast(bool))
-                        .then(pl.col("dischtime"))
-                        .otherwise(pl.col("deathtime"))
-                        - pl.col("outtime")
-                    ).truediv(
-                        pl.duration(hours=1)
-                    )
+                    pl.when(pl.col(self.mortality_hosp_col).cast(bool))
+                    .then(pl.col("dischtime"))
+                    .otherwise(pl.col("deathtime"))
+                    - pl.col("outtime")
                 )
+                .truediv(pl.duration(hours=1))
                 .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
-                # .fill_null(False)
+                .fill_null(False)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
-                pl.col(self.mortality_hosp_col).cast(bool),
-                # Calculate mortality after discharge
-                (
-                    (pl.col("dod") - pl.col("outtime")).truediv(
-                        pl.duration(days=1)
-                    )
+                # NOTE: hospital_expire_flag is not reliable
+                pl.when(pl.col(self.mortality_hosp_col).cast(bool))
+                .then(pl.lit(True))
+                .otherwise(
+                    (pl.col("deathtime") - pl.col("dischtime"))
+                    .truediv(pl.duration(hours=1))
+                    .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 )
+                .cast(bool)
+                .fill_null(False)
+                .alias(self.mortality_hosp_col),
+                # Calculate mortality after discharge
+                (  # Prefer deathtime over dod if available
+                    pl.when(pl.col("deathtime").is_not_null())
+                    .then(pl.col("deathtime"))
+                    .otherwise(pl.col("dod"))
+                    - pl.col("outtime")
+                )
+                .truediv(pl.duration(days=1))
                 .cast(int)
                 .alias(self.mortality_after_col),
                 # Convert categorical admission location to enum
