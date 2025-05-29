@@ -155,7 +155,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.col("Extubated").max(),
                 pl.col("SelfExtubated").max(),
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         # add in the extubation flags from procedureevents_mv
@@ -178,7 +178,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .alias("SelfExtubated"),
             )
             .drop("ITEMID")
-            .collect(streaming=True)
+            .collect()
         )
 
         ##############################################################################

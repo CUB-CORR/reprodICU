@@ -64,7 +64,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
                     "RRT End": "Renal Replacement Therapy End Relative to Admission (seconds)",
                 }
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         return (

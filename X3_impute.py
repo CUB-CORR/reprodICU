@@ -117,7 +117,7 @@ if __name__ == "__main__":
             X2_Winsorizer.winsorize_clip_lower_0_quantiles,
             columns=columns_to_winsorize,
             alpha=0.9995,
-        ).collect(streaming=True).write_parquet(
+        ).collect().write_parquet(
             paths.reprodICU_files_path
             + "patient_information_winsorized.parquet"
         )
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         )
         diagnoses_harmonizer.harmonize_diagnoses().pipe(
             diagnoses_imputer.impute_diagnoses
-        ).collect(streaming=True).write_parquet(
+        ).collect().write_parquet(
             paths.reprodICU_files_path + "diagnoses_imputed.parquet"
         )
         # diagnoses_harmonizer.harmonize_diagnoses().sink_parquet(paths.reprodICU_files_path +"diagnoses.parquet")
@@ -195,7 +195,7 @@ if __name__ == "__main__":
                 columns=["base_excess_deficit"],
                 alpha=0.99,
             )
-            .collect(streaming=True)
+            .collect()
             .write_parquet(
                 paths.reprodICU_files_path
                 + "timeseries_labs_winsorized.parquet"

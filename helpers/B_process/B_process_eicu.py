@@ -177,7 +177,7 @@ class EICUProcessor(EICUExtractor):
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab values to wide format
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="labname",
                 index=self.index_cols,
@@ -234,7 +234,7 @@ class EICUProcessor(EICUExtractor):
         ts_resp = (
             self.extract_time_series_resp()
             # Pivot the respiratory values to wide format
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="respchartvaluelabel",
                 index=self.index_cols,
                 values="respchartvalue",
@@ -307,7 +307,7 @@ class EICUProcessor(EICUExtractor):
         ts_nurse = (
             self.extract_time_series_nurse()
             # Pivot the nurse values to wide format
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="nursingchartcelltypevalname",
                 index=self.index_cols,
                 values="nursingchartvalue",
@@ -372,7 +372,7 @@ class EICUProcessor(EICUExtractor):
         ts_inout = (
             self.extract_time_series_intake_output()
             # Pivot the intake/output values to wide format
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="celllabel",
                 index=self.index_cols,
                 values="cellvaluenumeric",

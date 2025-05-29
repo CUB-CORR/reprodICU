@@ -63,7 +63,7 @@ class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
                 }
             )
             .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
-            .collect(streaming=True)
+            .collect()
         )
 
     # region helpers

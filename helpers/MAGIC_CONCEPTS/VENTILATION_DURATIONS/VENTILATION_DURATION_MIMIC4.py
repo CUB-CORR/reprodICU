@@ -158,7 +158,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .first()
                 .alias("o2_device"),
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         ##############################################################################
@@ -218,7 +218,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .first()
                 .alias("ventilator_mode_hamilton"),
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         ##############################################################################

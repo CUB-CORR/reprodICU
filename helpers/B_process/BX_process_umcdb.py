@@ -151,7 +151,7 @@ class UMCdbProcessor(UMCdbExtractor):
         ts_numeric = (
             pl.scan_parquet(ts_numeric_path_cache)
             # Pivot the numeric data
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="item",
                 index=self.index_cols,
@@ -219,7 +219,7 @@ class UMCdbProcessor(UMCdbExtractor):
         if not os.path.isfile(ts_labs_path_cache):
             (
                 self.extract_timeseries_labs()
-                .collect(streaming=True)
+                .collect()
                 .write_parquet(ts_labs_path_cache)
             )
 
@@ -257,7 +257,7 @@ class UMCdbProcessor(UMCdbExtractor):
 
         # Save the preprocessed data
         # ts_labs.sink_parquet(ts_labs_path_unsorted)
-        ts_labs.collect(streaming=True).write_parquet(ts_labs_path_unsorted)
+        ts_labs.collect().write_parquet(ts_labs_path_unsorted)
 
         # Sort the data
         (

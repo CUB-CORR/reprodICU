@@ -516,7 +516,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(pl.col("ITEMID"))
                 .alias("ITEMID"),
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 index=self.icu_stay_id_col,
                 on="ITEMID",
@@ -710,24 +710,6 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
     # endregion
-
-    # region helpers
-    # Print the number of unique cases in the timeseries data
-    def _print_unique_cases(
-        self, data: pl.LazyFrame, name: str
-    ) -> pl.LazyFrame:
-        unique_count = (
-            data.select(self.icu_stay_id_col)
-            .unique()
-            .count()
-            .collect()
-            .to_numpy()[0][0]
-        )
-        print(
-            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
-        )
-
-        return data
 
     # region lab TS
     # Extract lab measurements from the labevents.csv file

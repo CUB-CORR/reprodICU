@@ -135,9 +135,7 @@ class ProceduresHarmonizer(GlobalVars):
 
         return (
             procedures.select(
-                col
-                for col in procedures_cols_list
-                if col in procedures.columns
+                col for col in procedures_cols_list if col in procedures.columns
             )
             .unique()
             .sort(self.global_icu_stay_id_col, self.procedure_start_col)

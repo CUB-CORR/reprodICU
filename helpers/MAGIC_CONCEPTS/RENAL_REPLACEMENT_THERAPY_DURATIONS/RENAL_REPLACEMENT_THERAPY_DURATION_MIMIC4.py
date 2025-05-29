@@ -298,7 +298,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 ).alias("Renal Replacement Therapy Type"),
             )
             .drop("intime", "starttime", "endtime")
-            .collect(streaming=True)
+            .collect()
         )
 
         return (

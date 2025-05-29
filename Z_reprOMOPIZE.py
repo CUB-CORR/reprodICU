@@ -1103,7 +1103,7 @@ def measurement(
             .select("LOINC")
             .unique()
             .drop_nulls()
-            .collect(streaming=True)
+            .collect()
             .to_series()
             .to_list()
         )
@@ -1213,8 +1213,7 @@ def measurement(
 
     # Process labs data
     (
-        timeseries_labs
-        .pipe(_make_datetime)
+        timeseries_labs.pipe(_make_datetime)
         .pipe(_unpivot)
         .pipe(_add_units)
         .pipe(_destruct_after_unpivot)
@@ -1357,7 +1356,7 @@ def person(
             # Not Hispanic or Latino
             pl.col("ethnicity_concept_id").fill_null(pl.lit(38003564)),
             # Create ethnicity_source_value column with the Ethnicity column for backreference
-            pl.col("Ethnicity").alias("ethnicity_source_value")
+            pl.col("Ethnicity").alias("ethnicity_source_value"),
         )
         .pipe(_add_missing_fields, "person")
         .unique()
@@ -1846,7 +1845,7 @@ if __name__ == "__main__":
     # Tables with row indices
     (
         drug_exposure(CONCEPT, medications, patient_information)
-        .collect(streaming=True)
+        .collect()
         .write_parquet(OUTPATH + "drug_exposure.parquet")
     )
     (
@@ -1858,7 +1857,7 @@ if __name__ == "__main__":
             timeseries_resp,
             OUTPATH,
         )
-        .collect(streaming=True)
+        .collect()
         .write_parquet(OUTPATH + "measurement.parquet")
     )
 

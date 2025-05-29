@@ -90,7 +90,7 @@ class NWICUProcessor(NWICUExtractor):
                 valuecol="valuenum",
             )
             # Pivot the vitals data
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="label",
                 index=self.index_cols,
                 values="valuenum",
@@ -225,7 +225,7 @@ class NWICUProcessor(NWICUExtractor):
     #     ts_inout = (
     #         self.extract_output_measurements()
     #         # Pivot the inout data
-    #         .collect(streaming=True).pivot(
+    #         .collect().pivot(
     #             on="label",
     #             index=self.index_cols,
     #             values="valuenum",
@@ -260,36 +260,6 @@ class NWICUProcessor(NWICUExtractor):
     #     )
 
     # # endregion
-
-    # region helpers
-    # Print the number of unique cases in the timeseries data
-    def _print_unique_cases(
-        self, data: pl.LazyFrame, name: str
-    ) -> pl.LazyFrame:
-        """
-        Print the count of unique ICU cases in the timeseries data.
-
-        Args:
-            data (pl.LazyFrame): Timeseries data that must include the {icu_stay_id_col} column.
-            name (str): Name or description of the dataset (e.g. 'vitals', 'labs').
-
-        Returns:
-            pl.LazyFrame: The unchanged input data.
-
-        The function counts unique cases based on the column {icu_stay_id_col} and logs the count.
-        """
-        unique_count = (
-            data.select(self.icu_stay_id_col)
-            .unique()
-            .count()
-            .collect(streaming=True)
-            .to_numpy()[0][0]
-        )
-        print(
-            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
-        )
-
-        return data
 
 
 # region convert

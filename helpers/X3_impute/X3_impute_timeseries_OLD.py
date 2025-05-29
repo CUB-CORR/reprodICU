@@ -256,16 +256,14 @@ class TimeseriesImputer(GlobalVars):
         #     self.global_icu_stay_id_col
         # )
         timegrid = self.get_timegrid(data, resolution_in_seconds)
-        grouped_data = data.collect(streaming=True).group_by(
-            self.global_icu_stay_id_col
-        )
+        grouped_data = data.collect().group_by(self.global_icu_stay_id_col)
 
         # Impute the data
         counter = 0
         num_cases = (
             data.select(pl.col(self.global_icu_stay_id_col).approx_n_unique())
-            .collect(streaming=True)
-            .to_numpy()[0][0]
+            .collect()
+            .item()
         )
 
         # iterate over the ICU stays
@@ -282,7 +280,7 @@ class TimeseriesImputer(GlobalVars):
             # Select the timegrid for the current ICU stay
             _timegrid = timegrid.filter(
                 pl.col(self.global_icu_stay_id_col) == global_icu_stay_id
-            ).collect(streaming=True)
+            ).collect()
             # Impute the data for the current ICU stay
             data = (
                 data.sort(self.timeseries_time_col)

@@ -443,7 +443,7 @@ class NWICUExtractor(NWICUPaths):
                 .otherwise(pl.col("itemid"))
                 .alias("itemid"),
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 index=self.icu_stay_id_col,
                 on="itemid",

@@ -441,7 +441,7 @@ class TimeseriesHarmonizer(GlobalVars):
                 (
                     labs.pipe(self._print_unique_cases, "labs")
                     .pipe(self.decode_lab_values)
-                    .collect(streaming=True)
+                    .collect()
                     .write_parquet(self.save_path + "timeseries_labs.parquet")
                 )
 
@@ -580,8 +580,8 @@ class TimeseriesHarmonizer(GlobalVars):
             data.select(self.global_icu_stay_id_col)
             .unique()
             .count()
-            .collect(streaming=True)
-            .to_numpy()[0][0]
+            .collect()
+            .item()
         )
         print(
             f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."

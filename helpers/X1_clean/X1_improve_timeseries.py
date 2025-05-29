@@ -37,7 +37,9 @@ class IntakeOutputImprover(GlobalVars):
         infused_volumes = medications.filter(
             (pl.col("Drug Amount Unit") == "ml")
             | (pl.col("Solution Fluid Amount (ml)").is_not_null()),
-            pl.col(self.drug_class_col).str.contains_any(["fluid", "drug", None]),
+            pl.col(self.drug_class_col).str.contains_any(
+                ["fluid", "drug", None]
+            ),
         )
 
         infused_volumes = (

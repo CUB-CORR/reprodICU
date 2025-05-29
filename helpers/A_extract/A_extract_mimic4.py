@@ -428,7 +428,7 @@ class MIMIC4Extractor(MIMIC4Paths):
     ) -> pl.DataFrame:
         """
         Extract patient height and weight from the chartevents CSV file, using cached data if available.
-        
+
         Height IDs taken from:
         https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/height.sql
         Weight IDs taken from:
@@ -510,7 +510,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .otherwise(pl.col("itemid"))
                 .alias("itemid"),
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 index=self.icu_stay_id_col,
                 on="itemid",
