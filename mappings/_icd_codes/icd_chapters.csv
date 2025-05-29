@@ -1,0 +1,23 @@
+Chapter,ICD10 Codes,Title
+I,A|B,Certain infectious and parasitic diseases
+II,C|D0|D1|D2|D3|D4,Neoplasms
+III,D5|D6|D7|D8,Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism
+IV,E,"Endocrine, nutritional and metabolic diseases"
+V,F,Mental and behavioural disorders
+VI,G,Diseases of the nervous system
+VII,H1|H2|H3|H4|H5,Diseases of the eye and adnexa
+VIII,H6|H7|H8|H9,Diseases of the ear and mastoid process
+IX,I,Diseases of the circulatory system
+X,J,Diseases of the respiratory system
+XI,K,Diseases of the digestive system
+XII,L,Diseases of the skin and subcutaneous tissue
+XIII,M,Diseases of the musculoskeletal system and connective tissue
+XIV,N,Diseases of the genitourinary system
+XV,O,"Pregnancy, childbirth and the puerperium"
+XVI,P,Certain conditions originating in the perinatal period
+XVII,Q,Congenital malformations, deformations and chromosomal abnormalities
+XVIII,R,"Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified"
+XIX,S|T,"Injury, poisoning and certain other consequences of external causes"
+XX,V|W|X|Y,External causes of morbidity and mortality
+XXI,Z,Factors influencing health status and contact with health services
+XXII,U,Codes for special purposes
