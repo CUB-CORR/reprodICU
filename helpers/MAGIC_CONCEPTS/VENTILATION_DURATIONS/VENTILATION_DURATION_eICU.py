@@ -89,7 +89,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         #         "Ventilation Start Relative to Admission (seconds)",
         #         "Ventilation End Relative to Admission (seconds)",
         #     )
-        #     .collect(streaming=True)
+        #     .collect()
         # )
 
         # # region treatment
@@ -164,7 +164,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         #         "Ventilation Start Relative to Admission (seconds)",
         #         "Ventilation End Relative to Admission (seconds)",
         #     )
-        #     .collect(streaming=True)
+        #     .collect()
         # )
 
         # region NUS Mornin Lab
@@ -493,7 +493,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         return (

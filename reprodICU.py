@@ -312,7 +312,7 @@ if __name__ == "__main__":
             (
                 pl.scan_parquet(save_path + "timeseries_vitals.parquet")
                 .pipe(timeseries_imputer.impute_timeseries_vitals)
-                .collect(streaming=True)
+                .collect()
                 .write_parquet(save_path + "timeseries_vitals_imputed.parquet")
             )
 
@@ -325,7 +325,7 @@ if __name__ == "__main__":
                     timeseries_resampler.resample_timeseries_vitals,
                     resolution_in_seconds=args.RESAMPLE,
                 )
-                .collect(streaming=True)
+                .collect()
                 .write_parquet(
                     save_path + "timeseries_vitals_resampled.parquet"
                 )
@@ -372,7 +372,7 @@ if __name__ == "__main__":
                     patient_info_imputer.impute_patient_anthropometrics,
                     n_neighbors=5,
                 )
-                .collect(streaming=True)
+                .collect()
                 .write_parquet(
                     save_path + "patient_information_imputed.parquet"
                 )

@@ -299,7 +299,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 "Renal Replacement Therapy Start Relative to Admission (seconds)",
                 "Renal Replacement Therapy End Relative to Admission (seconds)",
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         return (
@@ -308,7 +308,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 "Renal Replacement Therapy Type",
                 "Renal Replacement Therapy Start Relative to Admission (seconds)",
                 "Renal Replacement Therapy End Relative to Admission (seconds)",
-            ).unique()
+            )
+            .unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
             .lazy()
         )

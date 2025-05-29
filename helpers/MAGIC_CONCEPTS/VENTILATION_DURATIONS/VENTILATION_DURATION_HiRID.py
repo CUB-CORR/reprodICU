@@ -140,7 +140,7 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
 
         return VENTILATION_DURATION.pipe(
             self._add_global_id_stay_id, "hirid-", "patientid"
-        ).collect(streaming=True)
+        ).collect()
 
     # region helpers
     def _add_global_id_stay_id(

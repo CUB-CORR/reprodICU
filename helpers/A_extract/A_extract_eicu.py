@@ -1478,7 +1478,7 @@ class EICUExtractor(EICUPaths):
                 }
             )
             .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
-            # Convert columns to appropriate data types    
+            # Convert columns to appropriate data types
             .with_columns(
                 # Split diagnosis codes by comma and rename column
                 pl.col("icd9code")

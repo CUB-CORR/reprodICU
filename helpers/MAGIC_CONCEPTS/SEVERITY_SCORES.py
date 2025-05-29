@@ -98,7 +98,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 .dt.total_seconds()
                 .alias("Time Relative to Admission (seconds)")
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="ITEMID",
                 index=["ICUSTAY_ID", "Time Relative to Admission (seconds)"],
@@ -138,7 +138,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 .dt.total_seconds()
                 .alias("Time Relative to Admission (seconds)")
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="itemid",
                 index=["stay_id", "Time Relative to Admission (seconds)"],
@@ -196,7 +196,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 .alias("Time Relative to Admission (seconds)"),
                 pl.col("itemid").replace_strict(umcdb_SCORES, default=None),
             )
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="itemid",
                 index=["admissionid", "Time Relative to Admission (seconds)"],

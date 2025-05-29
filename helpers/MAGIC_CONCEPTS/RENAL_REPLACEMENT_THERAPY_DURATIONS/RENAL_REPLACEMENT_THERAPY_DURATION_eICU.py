@@ -48,14 +48,18 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("Renal Replacement Therapy Type"),
             )
-            .collect(streaming=True)
+            .collect()
         )
-        
-        return RENAL_REPLACEMENT_THERAPY_DURATION.unique().pipe(
+
+        return (
+            RENAL_REPLACEMENT_THERAPY_DURATION.unique()
+            .pipe(
                 self._add_global_id_stay_id,
                 "eicu-",
                 self.column_names["icu_stay_id_col"],
-            ).lazy()
+            )
+            .lazy()
+        )
 
     # region helpers
     def _add_global_id_stay_id(

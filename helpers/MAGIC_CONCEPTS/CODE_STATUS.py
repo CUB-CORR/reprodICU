@@ -142,7 +142,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .drop("VALUE")
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
-            .collect(streaming=True)
+            .collect()
         )
 
         # endregion
@@ -200,7 +200,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .drop("value")
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
-            .collect(streaming=True)
+            .collect()
         )
 
         # endregion
@@ -237,7 +237,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             )
             .drop_nulls("CODE_STATUS")
             .pipe(self._add_global_id_stay_id, "umcdb-", "admissionid")
-            .collect(streaming=True)
+            .collect()
         )
 
         # endregion

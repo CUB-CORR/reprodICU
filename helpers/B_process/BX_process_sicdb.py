@@ -176,7 +176,7 @@ class SICdbProcessor(SICdbExtractor):
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
-            .collect(streaming=True)
+            .collect()
             .pivot(
                 on="LaboratoryName",
                 index=self.index_cols,

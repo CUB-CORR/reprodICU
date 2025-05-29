@@ -98,7 +98,7 @@ class MIMIC3Processor(MIMIC3Extractor):
                 valuecol="VALUENUM",
             )
             # Pivot the vitals data
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="LABEL",
                 index=self.index_cols,
                 values="VALUENUM",
@@ -266,7 +266,7 @@ class MIMIC3Processor(MIMIC3Extractor):
         ts_inout = (
             self.extract_output_measurements()
             # Pivot the inout data
-            .collect(streaming=True).pivot(
+            .collect().pivot(
                 on="LABEL",
                 index=self.index_cols,
                 values="VALUENUM",
@@ -301,36 +301,6 @@ class MIMIC3Processor(MIMIC3Extractor):
         )
 
     # endregion
-
-    # region helpers
-    def _print_unique_cases(
-        self, data: pl.LazyFrame, name: str
-    ) -> pl.LazyFrame:
-        """
-        Prints the number of unique ICU cases in the given timeseries data.
-
-        Args:
-            data (LazyFrame): The input timeseries data containing at least the column {icu_stay_id_col}.
-            name (str): Descriptor for the timeseries data type (e.g., "vitals", "labs").
-
-        Returns:
-            LazyFrame: The unmodified input data.
-
-        Columns:
-            - {icu_stay_id_col}: ICU stay identifier used for uniqueness count.
-        """
-        unique_count = (
-            data.select(self.icu_stay_id_col)
-            .unique()
-            .count()
-            .collect(streaming=True)
-            .to_numpy()[0][0]
-        )
-        print(
-            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
-        )
-
-        return data
 
 
 # region convert

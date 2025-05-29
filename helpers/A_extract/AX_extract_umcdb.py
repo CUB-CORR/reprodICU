@@ -744,7 +744,7 @@ class UMCdbExtractor(UMCdbPaths):
         data_gcs = (
             data_eye.join(data_motor, on=[*self.index_cols + ["registeredby"]])
             .join(data_verbal, on=[*self.index_cols + ["registeredby"]])
-            .collect(streaming=True)
+            .collect()
         )
 
         return (

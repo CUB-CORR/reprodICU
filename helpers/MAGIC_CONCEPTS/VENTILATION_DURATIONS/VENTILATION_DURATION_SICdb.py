@@ -37,7 +37,7 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
             )
             .drop("DataID", "ICUOffset", "Offset", "OffsetEnd", "TimeOfStay")
             .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
-            .collect(streaming=True)
+            .collect()
         )
 
     # region helpers

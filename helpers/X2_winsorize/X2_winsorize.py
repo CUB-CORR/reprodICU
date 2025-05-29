@@ -175,7 +175,7 @@ class X2_Winsorizer:
                 data = getattr(
                     X2_Winsorizer, f"winsorize_{winsorization_method}"
                 )(
-                    self, # needs explicit self reference
+                    self,  # needs explicit self reference
                     data,
                     [f"{code}" for code in LOINC_codes],
                     **kwargs,

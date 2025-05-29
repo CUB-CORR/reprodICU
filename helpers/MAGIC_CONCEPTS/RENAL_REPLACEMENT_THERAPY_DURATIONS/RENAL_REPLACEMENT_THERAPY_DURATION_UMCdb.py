@@ -50,7 +50,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb(MAGIC_CONCEPTS):
                     "stop": "Renal Replacement Therapy End Relative to Admission (seconds)",
                 }
             )
-            .collect(streaming=True)
+            .collect()
         )
 
         return (

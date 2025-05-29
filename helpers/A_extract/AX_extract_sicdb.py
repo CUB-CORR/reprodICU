@@ -241,7 +241,9 @@ class SICdbExtractor(SICdbPaths):
                     self.icu_stay_seq_num_col
                 ),
                 # Calculate time since first admission
-                pl.col("OffsetAfterFirstAdmission").alias(self.icu_time_rel_to_first_col)
+                pl.col("OffsetAfterFirstAdmission").alias(
+                    self.icu_time_rel_to_first_col
+                ),
             )
         )
 
@@ -715,7 +717,9 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LOINC_long").replace(
                     {  # NOTE: fixing wrong unit
                         "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                        "Thyroxine (T4) free [Mass/volume]": (
+                            "Thyroxine (T4) free [Moles/volume]"
+                        ),
                     }
                 )
             )
@@ -766,10 +770,12 @@ class SICdbExtractor(SICdbPaths):
             .select("sourceCode", "conceptName")
             .drop_nulls("sourceCode")
             .unique()
-            .rename({
-                "sourceCode": "DrugID",
-                "conceptName": self.drug_ingredient_col,
-            })
+            .rename(
+                {
+                    "sourceCode": "DrugID",
+                    "conceptName": self.drug_ingredient_col,
+                }
+            )
         )
 
     # endregion

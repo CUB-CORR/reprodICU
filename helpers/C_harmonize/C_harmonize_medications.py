@@ -357,8 +357,8 @@ class MedicationHarmonizer(GlobalVars):
             data.select(self.global_icu_stay_id_col)
             .unique()
             .count()
-            .collect(streaming=True)
-            .to_numpy()[0][0]
+            .collect()
+            .item()
         )
         print(
             f"reprodICU - {unique_count:6.0f} unique cases with medication data in {name}."

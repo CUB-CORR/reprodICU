@@ -233,9 +233,9 @@ def vitals_resp_inout_to_MEDS(
     return (
         pl.concat(
             [
-                timeseries_vitals.collect(streaming=True),
-                timeseries_resp.collect(streaming=True),
-                timeseries_inout.collect(streaming=True),
+                timeseries_vitals.collect(),
+                timeseries_resp.collect(),
+                timeseries_inout.collect(),
             ],
             how="diagonal_relaxed",
         )
@@ -378,7 +378,7 @@ def to_MEDS(
                 timeseries_vitals,
                 timeseries_resp,
                 timeseries_inout,
-            ).collect(streaming=True),
+            ).collect(),
             labs_to_MEDS(patient_information, timeseries_labs).collect(),
         ],
         how="vertical_relaxed",
@@ -507,7 +507,7 @@ def MEDS(
                     "numeric_value": pl.Float32,
                 }
             )
-            .collect(streaming=True)
+            .collect()
             .sort("subject_id", "time")
             .select("subject_id", "time", "code", "numeric_value")
             .write_parquet(f"{OUTPATH}data/shard_{i}.parquet")

@@ -125,9 +125,7 @@ class DiagnosesHarmonizer(GlobalVars):
 
         return (
             diagnoses.select(
-                col
-                for col in diagnoses_cols_list
-                if col in diagnoses.columns
+                col for col in diagnoses_cols_list if col in diagnoses.columns
             )
             .unique()
             .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)

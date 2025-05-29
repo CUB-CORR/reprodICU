@@ -318,7 +318,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
 
         height_weight = (
-            height_weight.collect(streaming=True)
+            height_weight.collect()
             .pivot(
                 on="variableid",
                 index=self.icu_stay_id_col,
@@ -406,7 +406,7 @@ class HiRIDExtractor(HiRIDPaths):
         )
 
         # admitDX.sink_parquet(self.precalc_path + "HiRID_admitDX.parquet")
-        admitDX.collect(streaming=True).write_parquet(
+        admitDX.collect().write_parquet(
             self.precalc_path + "HiRID_admitDX.parquet"
         )
 
@@ -649,7 +649,7 @@ class HiRIDExtractor(HiRIDPaths):
             .select("pharmaid", self.drug_ingredient_col)
             .lazy()
         )
-        
+
         # Load additional mappings
         hirid_drug_class_mapping = self.load_mapping(
             self.drug_administration_route_mapping_path
@@ -1128,7 +1128,7 @@ class HiRIDExtractor(HiRIDPaths):
             )
             .lazy()
         )
-        
+
     # Extract the information from the HiRID.usagi.csv files
     def _extract_drug_references(self, return_ids: bool = False) -> dict:
         """
