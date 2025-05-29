@@ -517,38 +517,34 @@ class EICUProcessor(EICUExtractor):
             .with_columns(
                 pl.when(
                     pl.col(self.diagnosis_icd_code_col).is_in(
+                        ICD10_descriptions.keys()
+                    )
+                )
+                .then(pl.lit(10))
+                .when(
+                    pl.col(self.diagnosis_icd_code_col).is_in(
                         ICD9_descriptions.keys()
-                    ),
+                    )
                 )
                 .then(pl.lit(9))
-                .otherwise(
-                    pl.when(
-                        pl.col(self.diagnosis_icd_code_col).is_in(
-                            ICD10_descriptions.keys()
-                        ),
-                    )
-                    .then(pl.lit(10))
-                    .otherwise(pl.lit(None))
-                )
+                .otherwise(pl.lit(None))
                 .alias(self.diagnosis_icd_version_col)
             )
             # Add the description of the diagnoses, depending on the ICD version.
             .with_columns(
-                pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
+                pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
+                .then(
+                    pl.col(self.diagnosis_icd_code_col).replace_strict(
+                        ICD10_descriptions, default=None
+                    )
+                )
+                .when(pl.col(self.diagnosis_icd_version_col) == 9)
                 .then(
                     pl.col(self.diagnosis_icd_code_col).replace_strict(
                         ICD9_descriptions, default=None
                     )
                 )
-                .otherwise(
-                    pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
-                    .then(
-                        pl.col(self.diagnosis_icd_code_col).replace_strict(
-                            ICD10_descriptions, default=None
-                        )
-                    )
-                    .otherwise(pl.lit(None))
-                )
+                .otherwise(pl.lit(None))
                 .alias(self.diagnosis_description_col)
             )
         )
