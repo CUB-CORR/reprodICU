@@ -35,6 +35,7 @@ diagnosis_icd_code_col: Diagnosis ICD Code # diagnosis_icd_code
 diagnosis_icd9_code_col: Diagnosis ICD-9 Code # diagnosis_icd9_code
 diagnosis_icd10_code_col: Diagnosis ICD-10 Code # diagnosis_icd10_code
 diagnosis_icd_version_col: Diagnosis ICD Code Version # diagnosis_icd_version
+diagnosis_icd_source_version_col: Diagnosis ICD Code Version (source)
 diagnosis_start_col: Diagnosis Start Relative to Admission (seconds) # diagnosis_relative_to_admission
 diagnosis_end_col: Diagnosis End Relative to Admission (seconds) # diagnosis_end_relative_to_admission
 diagnosis_priority_col: Diagnosis Priority # diagnosis_priority
