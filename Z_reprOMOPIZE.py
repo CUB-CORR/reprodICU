@@ -11,16 +11,16 @@
 
 # Importing necessary libraries
 import argparse
+import atexit
 import glob
 import os
+import shutil
 import warnings
 
 import polars as pl
 import yaml
 from helpers.helper import GlobalVars
 from helpers.helper_OMOP import Vocabulary
-import tempfile
-import atexit
 
 warnings.filterwarnings("ignore")
 
@@ -74,14 +74,13 @@ def _add_missing_fields(
 
     for field, req in zip(fields, required):
         if req == "Yes" and check_required:
+            # count the number of nulls
             if not data.filter(pl.col(field).is_null()).collect().is_empty():
-                # count the number of nulls
                 count = data.collect().height
-                null_count = (
-                    data.filter(pl.col(field).is_null()).collect().height
-                )
+                nulls = data.filter(pl.col(field).is_null()).collect().height
                 print(
-                    f"Field {field} is required for the {table_name} table, dropping {null_count} nulls ({count} total)"
+                    f"Field {field} is required for the {table_name} table, "
+                    f"dropping {nulls} nulls ({count} total)"
                 )
             data = data.drop_nulls(field)
 
@@ -460,31 +459,27 @@ def condition_occurrence(
     )
 
     # prefer ICD-10 over ICD-9, except for MIMIC-III (which only has ICD-9)
-    diagnoses_ICD10 = (
-        diagnoses.filter(
-            pl.col("Global ICU Stay ID").str.starts_with("mimic3-").not_(),
-            pl.col("Diagnosis ICD-10 Code").is_not_null(),
+    diagnoses = (
+        diagnoses.with_columns(
+            pl.when(
+                pl.col("Diagnosis ICD Code Version (source)")
+                == "ICD-9 / ICD-10"
+            )
+            .then(pl.col("Diagnosis ICD-10 Code"))
+            .when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-10")
+            .then(pl.col("Diagnosis ICD-10 Code"))
+            .when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
+            .then(pl.col("Diagnosis ICD-9 Code"))
+            .otherwise(pl.lit(None))
+            .alias("Preferred Diagnosis Code"),
         )
-        .join(ID, on="Global ICU Stay ID", how="right")
+        .join(ID, on="Global ICU Stay ID", how="right", coalesce=True)
         .join(
             CONCEPTS,
-            left_on="Diagnosis ICD-10 Code",
+            left_on="Preferred Diagnosis Code",
             right_on="concept_code",
             how="left",
-        )
-        .rename({"concept_id": "condition_concept_id"})
-    )
-    diagnoses_ICD9 = (
-        diagnoses.filter(
-            pl.col("Global ICU Stay ID").str.starts_with("mimic3-")
-            | pl.col("Diagnosis ICD-10 Code").is_null()
-        )
-        .join(ID, on="Global ICU Stay ID", how="right")
-        .join(
-            CONCEPTS,
-            left_on="Diagnosis ICD-9 Code",
-            right_on="concept_code",
-            how="left",
+            coalesce=True,
         )
         .rename({"concept_id": "condition_concept_id"})
     )
@@ -496,8 +491,7 @@ def condition_occurrence(
     # CONDITION_START_DATE and the CONDITION_END_DATE.
 
     return (
-        pl.concat([diagnoses_ICD10, diagnoses_ICD9], how="vertical")
-        .with_columns(
+        diagnoses.with_columns(
             ##########################
             # CONDITION_START_DATETIME
             # Create the condition_start_datetime column with the datetime of the diagnosis
@@ -586,7 +580,7 @@ def condition_occurrence(
             ########################
             # CONDITION_SOURCE_VALUE
             # Create the condition_source_value column with the Diagnosis for backreference
-            pl.col("Diagnosis Description").alias("condition_source_value"),
+            pl.col("Preferred Diagnosis Code").alias("condition_source_value"),
         )
         .with_columns(
             ######################
@@ -1167,21 +1161,14 @@ def measurement(
     output_subdir = os.path.join(OUTPATH, "reprOMOPIZE_output")
     os.makedirs(output_subdir, exist_ok=True)
 
-    # Set up pattern for intermediate temp files
-    temp_prefix = "measurement_"
-    temp_pattern = os.path.join(output_subdir, f"{temp_prefix}*.parquet")
-
     # Register cleanup function to run at script exit
     def cleanup_temp_files():
-        for f in glob.glob(temp_pattern):
-            try:
-                os.remove(f)
-            except Exception:
-                pass  # If we can't delete, just continue
+        shutil.rmtree(output_subdir, ignore_errors=True)
 
     atexit.register(cleanup_temp_files)
 
     # Save each dataset to temp file
+    temp_prefix = "measurement_"
     temp_file1 = os.path.join(output_subdir, f"{temp_prefix}heights_weights.parquet") # fmt: skip
     temp_file2 = os.path.join(output_subdir, f"{temp_prefix}vitals.parquet")
     temp_file3 = os.path.join(output_subdir, f"{temp_prefix}labs.parquet")
