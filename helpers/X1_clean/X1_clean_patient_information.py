@@ -255,6 +255,7 @@ class PatientInformationCleaner(GlobalVars):
                 self.admission_type_col,
                 self.admission_urgency_col,
                 self.admission_time_col,
+                self.admission_year_col,
                 self.admission_loc_col,
                 self.specialty_col,
                 self.care_site_col,

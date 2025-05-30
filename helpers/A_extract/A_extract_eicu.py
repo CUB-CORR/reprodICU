@@ -82,6 +82,8 @@ class EICUExtractor(EICUPaths):
                 - {weight_col}: Patient weight.
                 - {ethnicity_col}: Patient ethnicity.
                 - {admission_loc_col}: Admission location.
+                - {admission_time_col}: Admission time.
+                - {admission_year_col}: Admission year.
                 - {pre_icu_length_of_stay_col}: Pre-ICU length of stay.
                 - {icu_length_of_stay_col}: ICU length of stay.
                 - {hospital_length_of_stay_col}: Hospital length of stay.
@@ -94,7 +96,8 @@ class EICUExtractor(EICUPaths):
         """
         return (
             pl.scan_csv(self.patient_path)
-            .select(  # Select columns of interest
+            # Select columns of interest
+            .select(
                 "uniquepid",
                 "patienthealthsystemstayid",
                 "patientunitstayid",
@@ -129,12 +132,14 @@ class EICUExtractor(EICUPaths):
                     "admissionweight": self.weight_col,
                     "unittype": self.unit_type_col,
                     "unitadmitsource": self.admission_loc_col,
+                    "unitadmittime24": self.admission_time_col,
                     "unitvisitnumber": self.icu_stay_seq_num_col,
                     "unitdischargelocation": self.discharge_loc_col,
                     "unitdischargestatus": self.mortality_icu_col,
                     "unitdischargeoffset": self.icu_length_of_stay_col,
                     "hospitalid": self.care_site_col,
                     "hospitaldischargestatus": self.mortality_hosp_col,
+                    "hospitaldischargeyear": self.admission_year_col,
                 }
             )
             .sort(self.icu_stay_id_col)
@@ -212,9 +217,8 @@ class EICUExtractor(EICUPaths):
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
                 # Convert admssiontime string to datetime
-                pl.col("unitadmittime24")
-                .str.to_time("%H:%M:%S")
-                .alias(self.admission_time_col),
+                pl.col(self.admission_time_col)
+                .str.to_time("%H:%M:%S"),
             )
             # Handle zero values for height and weight
             .with_columns(
@@ -233,7 +237,7 @@ class EICUExtractor(EICUPaths):
                 [
                     self.mortality_icu_col,  # mortality must be "increasing" (i.e. alive [= false / 0] first)
                     self.person_id_col,
-                    "hospitaldischargeyear",
+                    self.admission_year_col, # admission year must be increasing
                     self.age_col,  # age must be increasing
                     self.hospital_stay_id_col,  # keep same hospital stays together
                     self.icu_stay_seq_num_col,
@@ -1463,7 +1467,8 @@ class EICUExtractor(EICUPaths):
         """
         diagnosis = (
             pl.scan_csv(self.path + "diagnosis.csv.gz")
-            .select(  # Select columns of interest
+            # Select columns of interest
+            .select(
                 "patientunitstayid",
                 "diagnosisoffset",
                 "icd9code",

@@ -6,6 +6,7 @@
 
 import os.path
 
+import numpy as np
 import polars as pl
 from helpers.helper import GlobalHelpers
 from helpers.helper_filepaths import MIMIC4Paths
@@ -165,6 +166,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 - {admission_type_col}: Admission type based on specialty.
                 - {admission_urgency_col}: Admission urgency.
                 - {admission_time_col}: ICU admission time.
+                - {admission_year_col}: Admission year.
                 - {admission_loc_col}: Admission location.
                 - {specialty_col}: Treating specialty.
                 - {unit_type_col}: ICU unit type.
@@ -187,9 +189,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .rename(
                 {
                     "hadm_id": self.hospital_stay_id_col,
-                    "race": (
-                        self.ethnicity_col
-                    ),  # "race" is the choice of the dataset creators
+                    "race": self.ethnicity_col,  # "race" is the choice of the dataset creators # fmt: skip
                     "admission_location": self.admission_loc_col,
                     "discharge_location": self.discharge_loc_col,
                     "admission_type": self.admission_urgency_col,
@@ -215,10 +215,16 @@ class MIMIC4Extractor(MIMIC4Paths):
                 {
                     "subject_id": self.person_id_col,
                     "gender": self.gender_col,
-                    "anchor_age": self.age_col,
                 }
             )
-            .select(self.person_id_col, self.gender_col, self.age_col, "dod")
+            .select(
+                self.person_id_col,
+                self.gender_col,
+                "anchor_age",
+                "anchor_year",
+                "anchor_year_group",
+                "dod",
+            )
         )
 
         # calculate mortality after discharge censor cutoff (1 year after last hospital discharge)
@@ -240,25 +246,35 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         return (
-            icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
-            .join(patients, on=self.person_id_col, how="left")
+            icustays.join(
+                admissions,
+                on=self.hospital_stay_id_col,
+                how="left",
+                coalesce=True,
+            )
+            .join(patients, on=self.person_id_col, how="left", coalesce=True)
             .join(
                 self._extract_patient_height_weight(icustays),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .join(
-                self._extract_specialties(), on=self.icu_stay_id_col, how="left"
+                self._extract_specialties(),
+                on=self.icu_stay_id_col,
+                how="left",
+                coalesce=True,
             )
             .join(
-                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
+                MORTALITY_AFTER_CENSOR_CUTOFF,
+                on=self.person_id_col,
+                how="left",
+                coalesce=True,
             )
             .with_columns(
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("dod").str.to_datetime(
-                    "%Y-%m-%d"
-                ),  # hour and minute are not provided
+                pl.col("dod").str.to_datetime("%Y-%m-%d"),
                 pl.col("admittime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("dischtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("deathtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
@@ -268,8 +284,31 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.lit("Beth Israel Deaconess Medical Center").alias(
                     self.care_site_col
                 ),
+                # create dummy date of birth from anchor year and age
+                pl.datetime(
+                    year=pl.col("anchor_year") - pl.col("anchor_age"),
+                    month=6,
+                    day=1,
+                ).alias("dob"),
             )
             .with_columns(
+                # Calculate age in years at ICU admission
+                (pl.col("intime") - pl.col("dob"))
+                .dt.total_days()
+                .floordiv(365.25)
+                .cast(int)
+                .alias(self.age_col),
+                # For admission year, assume average of the group
+                (
+                    pl.col("anchor_year_group")
+                    .str.split(" - ")
+                    .map_elements(
+                        lambda s: np.mean([int(i) for i in s if i]),
+                        return_dtype=float,
+                    )
+                    .cast(int)
+                    + (pl.col("intime").dt.year() - pl.col("anchor_year"))
+                ).alias(self.admission_year_col),
                 # Convert categorical gender to enum
                 pl.col(self.gender_col)
                 .replace({"M": "Male", "F": "Female"})

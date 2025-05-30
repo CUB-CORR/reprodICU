@@ -68,16 +68,19 @@ class HiRIDExtractor(HiRIDPaths):
                 self._extract_length_of_stay(),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .join(
                 self._extract_patient_height_weight(),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .join(
                 self.extract_admit_diagnoses(),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .with_columns(
                 # Set care site
