@@ -18,6 +18,7 @@ admission_loc_col: Admission Origin # admission_location
 admission_type_col: Admission Type # admission_type
 admission_urgency_col: Admission Urgency
 admission_time_col: Admission Time (24h)
+admission_year_col: Admission Year
 admission_diagnosis_col: Admission Diagnosis (APACHE) # admission_diagnosis_apache
 admission_diagnosis_icd_col: Primary (Admission) Diagnosis (ICD)
 discharge_loc_col: Discharge Location # discharge_location

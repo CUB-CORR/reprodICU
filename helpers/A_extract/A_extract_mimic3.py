@@ -220,18 +220,30 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
         return (
-            icustays.join(admissions, on=self.hospital_stay_id_col, how="left")
-            .join(patients, on=self.person_id_col, how="left")
+            icustays.join(
+                admissions,
+                on=self.hospital_stay_id_col,
+                how="left",
+                coalesce=True,
+            )
+            .join(patients, on=self.person_id_col, how="left", coalesce=True)
             .join(
                 self._extract_patient_height_weight(icustays),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .join(
-                self._extract_specialties(), on=self.icu_stay_id_col, how="left"
+                self._extract_specialties(),
+                on=self.icu_stay_id_col,
+                how="left",
+                coalesce=True,
             )
             .join(
-                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
+                MORTALITY_AFTER_CENSOR_CUTOFF,
+                on=self.person_id_col,
+                how="left",
+                coalesce=True,
             )
             .with_columns(
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),

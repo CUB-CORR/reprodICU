@@ -69,6 +69,7 @@ class PatientInformationHarmonizer(GlobalVars):
             - {admission_type_col}: Type of admission.
             - {admission_urgency_col}: Urgency level of the admission.
             - {admission_time_col}: Time of admission.
+            - {admission_year_col}: Year of admission.
             - {admission_loc_col}: Admission location.
             - {specialty_col}: Medical specialty relevant to the admission.
             - {care_site_col}: Hospital care site.
@@ -165,6 +166,7 @@ class PatientInformationHarmonizer(GlobalVars):
             self.admission_type_col,
             self.admission_urgency_col,
             self.admission_time_col,
+            self.admission_year_col,
             self.admission_loc_col,
             self.specialty_col,
             self.care_site_col,
@@ -199,6 +201,7 @@ class PatientInformationHarmonizer(GlobalVars):
                     self.ethnicity_col: self.ethnicity_dtype,
                     self.admission_type_col: self.admission_types_dtype,
                     self.admission_urgency_col: self.admission_urgency_dtype,
+                    self.admission_year_col: int,
                     self.admission_loc_col: self.admission_locations_dtype,
                     self.care_site_col: str,
                     self.unit_type_col: self.unit_types_dtype,
@@ -208,7 +211,7 @@ class PatientInformationHarmonizer(GlobalVars):
                     self.discharge_loc_col: self.discharge_locations_dtype,
                     self.mortality_hosp_col: bool,
                     self.mortality_icu_col: bool,
-                    self.mortality_after_col: int,
+                    self.mortality_after_col: float,
                     self.mortality_after_cutoff_col: int,
                 },
                 strict=False,

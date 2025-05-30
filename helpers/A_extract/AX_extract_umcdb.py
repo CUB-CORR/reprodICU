@@ -91,6 +91,7 @@ class UMCdbExtractor(UMCdbPaths):
                 - {unit_type_col}: ICU unit type.
                 - {specialty_col}: Specialty information.
                 - {admission_type_col}: Admission type.
+                - {admission_year_col}: Admission year.
                 - {admission_urgency_col}: Admission urgency.
                 - {hospital_stay_id_col}: Hospital stay identifier.
                 - {care_site_col}: Hospital name.
@@ -131,6 +132,7 @@ class UMCdbExtractor(UMCdbPaths):
                 "specialty",
                 "admittedat",
                 "lengthofstay",
+                "admissionyeargroup",
                 "dischargedat",
                 "dateofdeath",
             )
@@ -146,16 +148,20 @@ class UMCdbExtractor(UMCdbPaths):
                 self.extract_APACHE_admission(),
                 on=self.icu_stay_id_col,
                 how="left",
+                coalesce=True,
             )
             .join(
-                MORTALITY_AFTER_CENSOR_CUTOFF, on=self.person_id_col, how="left"
+                MORTALITY_AFTER_CENSOR_CUTOFF,
+                on=self.person_id_col,
+                how="left",
+                coalesce=True,
             )
             .with_columns(
                 # calculate time since first admission
                 pl.col("admittedat")
                 .floordiv(1000)
                 .alias(self.icu_time_rel_to_first_col),
-                # for age, weight and height, assume average of the group
+                # for age, weight, height and year, assume average of the group
                 pl.col("agegroup")
                 .str.replace("-|\+", "–")
                 .str.split("–")
@@ -183,6 +189,15 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .cast(int)
                 .alias(self.height_col),
+                pl.col("admissionyeargroup")
+                .str.replace("-|\+", "–")
+                .str.split("–")
+                .map_elements(
+                    lambda s: np.mean([int(i) for i in s if i]),
+                    return_dtype=float,
+                )
+                .cast(int)
+                .alias(self.admission_year_col),
                 # Convert categorical mortality to binary
                 pl.when(pl.col("destination").is_not_null())
                 .then(pl.col("destination") == "Overleden")

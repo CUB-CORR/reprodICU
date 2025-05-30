@@ -64,6 +64,7 @@ class SICdbExtractor(SICdbPaths):
                 - {hospital_length_of_stay_col}: Hospital length of stay in days.
                 - {gender_col}: Patient gender.
                 - {admission_type_col}: Admission type.
+                - {admission_year_col}: Admission year.
                 - {admission_urgency_col}: Admission urgency.
                 - {admission_loc_col}: Admission location.
                 - {specialty_col}: Treating specialty.
@@ -95,6 +96,7 @@ class SICdbExtractor(SICdbPaths):
                 {
                     "CaseID": self.icu_stay_id_col,
                     "PatientID": self.person_id_col,
+                    "AdmissionYear": self.admission_year_col,
                     "AgeOnAdmission": self.age_col,
                     "HeightOnAdmission": self.height_col,
                     "WeightOnAdmission": self.weight_col,
