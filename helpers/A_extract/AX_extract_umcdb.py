@@ -261,11 +261,13 @@ class UMCdbExtractor(UMCdbPaths):
                 .replace_strict(self.SPECIALTIES_MAP, default="Unknown")
                 .cast(self.specialties_dtype)
                 .alias(self.specialty_col),
-                # Determine Admission Type based on treating specialty
-                pl.col("specialty")
-                .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
-                .cast(self.admission_types_dtype)
-                .alias(self.admission_type_col),
+                # Determine Admission Type
+                pl.coalesce(
+                    pl.col(self.admission_type_col),
+                    pl.col("specialty").replace_strict(
+                        self.ADMISSION_TYPES_MAP, default=None
+                    ),
+                ).cast(self.admission_types_dtype),
                 # Convert categorical admission urgency to enum
                 pl.col("urgency")
                 .cast(str)
@@ -1255,6 +1257,8 @@ class UMCdbExtractor(UMCdbPaths):
             16997,  # APACHE IV Groepen
             18669,  # NICE APACHEII diagnosen
             18671,  # NICE APACHEIV diagnosen
+            18603,  # SEC_Apache II Hoofdgroep
+            17018,  # SEC_APACHE IV Groepen
         ]
         LEVEL1_ITEMIDS = [
             13111,  # D_Subgroep_Thoraxchirurgie
@@ -1316,6 +1320,23 @@ class UMCdbExtractor(UMCdbPaths):
             17015,  # APACHEIV Post-operative respiratory
             17016,  # APACHEIV Post-operative transplant
             17017,  # APACHEIV Post-operative trauma
+            18611,  # SEC_Apache II Operatief  Gastr-intenstinaal
+            18612,  # SEC_Apache II Operatief Cardiovasculair
+            18613,  # SEC_Apache II Operatief Hematologisch
+            18614,  # SEC_Apache II Operatief Metabolisme
+            18615,  # SEC_Apache II Operatief Neurologisch
+            18616,  # SEC_Apache II Operatief Renaal
+            18617,  # SEC_Apache II Operatief Respiratoir
+            17029,  # SEC_APACHEIV Post-operative cardiovascular
+            17030,  # SEC_APACHEIV Post-operative gastro-intestinal
+            17031,  # SEC_APACHEIV Post-operative genitourinary
+            17032,  # SEC_APACHEIV Post-operative hematology
+            17033,  # SEC_APACHEIV Post-operative metabolic
+            17034,  # SEC_APACHEIV Post-operative musculoskeletal /skin
+            17035,  # SEC_APACHEIV Post-operative neurologic
+            17036,  # SEC_APACHEIV Post-operative respiratory
+            17037,  # SEC_APACHEIV Post-operative transplant
+            17038,  # SEC_APACHEIV Post-operative trauma
         ]
         LEVEL2_ITEMIDS = SURGICAL_ITEMIDS + [
             13141,  # D_Algemene chirurgie_Algemeen
@@ -1358,6 +1379,23 @@ class UMCdbExtractor(UMCdbPaths):
             17005,  # APACHEIV Non-operative respiratory
             17006,  # APACHEIV Non-operative transplant
             17007,  # APACHEIV Non-operative trauma
+            18604,  # SEC_Apache II Non-Operatief Cardiovasculair
+            18605,  # SEC_Apache II Non-Operatief Gastro-intestinaal
+            18606,  # SEC_Apache II Non-Operatief Hematologisch
+            18607,  # SEC_Apache II Non-Operatief Metabolisme
+            18608,  # SEC_Apache II Non-Operatief Neurologisch
+            18609,  # SEC_Apache II Non-Operatief Renaal
+            18610,  # SEC_Apache II Non-Operatief Respiratoir
+            17019,  # SEC_APACHE IV Non-operative cardiovascular
+            17020,  # SEC_APACHE IV Non-operative Gastro-intestinal
+            17021,  # SEC_APACHE IV Non-operative genitourinary
+            17022,  # SEC_APACHEIV  Non-operative haematological
+            17023,  # SEC_APACHEIV  Non-operative metabolic
+            17024,  # SEC_APACHEIV Non-operative musculo-skeletal
+            17025,  # SEC_APACHEIV Non-operative neurologic
+            17026,  # SEC_APACHEIV Non-operative respiratory
+            17027,  # SEC_APACHEIV Non-operative transplant
+            17028,  # SEC_APACHEIV Non-operative trauma
             # # Both NICE APACHEII/IV also count towards surgical if valueid in correct range
             18669,  # NICE APACHEII diagnosen
             18671,  # NICE APACHEIV diagnosen
@@ -1368,46 +1406,34 @@ class UMCdbExtractor(UMCdbPaths):
             .rename({"admissionid": self.icu_stay_id_col})
             .with_columns(
                 pl.when(pl.col("itemid") == 18671)  # NICE APACHEIV diagnosen
-                .then(6)
+                .then(8)
                 .when(pl.col("itemid") == 18669)  # NICE APACHEII diagnosen
-                .then(5)
+                .then(7)
                 .when(pl.col("itemid").is_between(16998, 17017))  # APACHE IV
-                .then(4)
+                .then(6)
                 .when(pl.col("itemid").is_between(18589, 18602))  # Apache II
+                .then(5)
+                .when(pl.col("itemid").is_between(17019, 17038))  # SEC_APACHE IV
+                .then(4)
+                .when(pl.col("itemid").is_between(18603, 18617))  # SEC_Apache II
                 .then(3)
                 .when(pl.col("itemid").is_between(13116, 13145))  # D_Hoofdgroep
                 .then(2)
-                .when(
-                    pl.col("itemid").is_between(16642, 16673)
-                )  # DMC_Hoofdgroep
+                .when(pl.col("itemid").is_between(16642, 16673))  # DMC_Hoofdgroep
                 .then(1)
                 .otherwise(None)
                 .cast(int, strict=False)
                 .alias("typeid"),
-            )
+            ) # fmt: skip
         )
 
-        diagnoses = (
+        return (
             listitems.filter(pl.col("itemid").is_in(LEVEL2_ITEMIDS))
-            .rename(
-                {
-                    "value": "diagnosis",
-                    "valueid": "diagnosis_id",
-                }
-            )
+            .rename({"value": "diagnosis", "valueid": "diagnosis_id"})
             .sort(self.icu_stay_id_col, "updatedat", descending=True)
             .with_columns(
-                pl.when(pl.col("itemid").is_in(NICE))
-                .then(
-                    pl.col("diagnosis")
-                    .str.replace(" -Coronair", " - Coronair")
-                    .str.split(" - ")
-                    .list.get(0)
-                )
-                .otherwise(pl.col("diagnosis"))
-                .alias("diagnosis"),
                 pl.int_range(pl.len())
-                .over(self.icu_stay_id_col)
+                .over(self.icu_stay_id_col, order_by="updatedat")
                 .alias("rownum"),
                 pl.when(pl.col("itemid").is_in(SURGICAL_ITEMIDS))
                 .then(True)
@@ -1432,40 +1458,24 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("surgical").first(),
             )
             .explode("diagnosis", "diagnosis_id")
-            .with_columns(
-                pl.col("typeid")
-                .cast(str)
-                .replace(
-                    {
-                        "6": "NICE APACHE IV",
-                        "5": "NICE APACHE II",
-                        "4": "APACHE IV",
-                        "3": "APACHE II",
-                        "2": "Legacy ICU",
-                        "1": "Legacy MCU",
-                    }
-                )
-                .alias("diagnosis_type"),
-            )
             .unique()
-            .sort(self.icu_stay_id_col, "typeid", "updatedat", descending=True)
-            .with_columns(
-                pl.int_range(pl.len())
-                .over(self.icu_stay_id_col)
-                .alias("rownum")
+            .sort(
+                self.icu_stay_id_col,
+                "typeid",
+                "updatedat",
+                descending=[False, True, False],
             )
-            .drop("typeid")
-        )
-
-        return (
-            diagnoses.group_by(self.icu_stay_id_col)
+            .group_by(self.icu_stay_id_col)
             .first()
-            .select(self.icu_stay_id_col, "diagnosis")
-            .rename({"diagnosis": self.admission_diagnosis_col})
+            .select(self.icu_stay_id_col, "diagnosis", "surgical")
             .with_columns(
-                pl.col(self.admission_diagnosis_col).replace(
-                    APACHE_mapping, default=None
-                )
+                pl.col("diagnosis")
+                .replace(APACHE_mapping, default=None)
+                .alias(self.admission_diagnosis_col),
+                pl.when(pl.col("surgical").cast(bool, strict=False))
+                .then(pl.lit("Surgical"))
+                .otherwise(pl.lit("Medical"))
+                .alias(self.admission_type_col),
             )
         )
 
