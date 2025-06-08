@@ -6,6 +6,8 @@
 
 
 import os
+import shutil
+import sys
 
 import polars as pl
 from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
@@ -66,8 +68,7 @@ class SICdbProcessor(SICdbExtractor):
             pl.LazyFrame: A sorted wide-format LazyFrame with numerical data.
         """
         ts_float_path = self.precalc_path + "SICdb_timeseries.parquet"
-        ts_float_path_unsorted = self.precalc_path + "SICdb_ts.parquet"
-        ts_float_path_cache = self.precalc_path + "SICdb_ts_cache.parquet"
+        ts_float_path_cache = self.precalc_path + "SICdb_ts_cache/"
 
         if os.path.isfile(ts_float_path):
             # Load the preprocessed data
@@ -79,49 +80,66 @@ class SICdbProcessor(SICdbExtractor):
         print("SICdb   - Collecting time series data...")
 
         # "Cache" the data before pivoting
-        if not os.path.isfile(ts_float_path_cache):
-            (
-                self.extract_timeseries()
-                .collect()
-                .write_parquet(ts_float_path_cache)
-            )
+        if not os.path.isdir(ts_float_path_cache):
+            self.partition_timeseries(ts_float_path_cache)
 
         print("SICdb   - Processing numeric time series data...")
 
-        # Process timeseries data
-        timeseries = (
-            pl.scan_parquet(ts_float_path_cache)
+        # Create an empty DataFrame to store the timeseries data
+        timeseries_processed = pl.LazyFrame()
+
+        # Since each case has it's data in only one file, iterating over the files specifically allows
+        # for a more efficient processing of the data.
+        os_listdir_files = os.listdir(ts_float_path_cache)
+        counter, counter_max, cases = 0, len(os_listdir_files), 0
+
+        for file in os.listdir(ts_float_path_cache):
+            # Update the counter
+            counter += 1
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            print(
+                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)",
+                end="\r",
+            )
+
+            # Process timeseries data
+            timeseries = pl.scan_parquet(ts_float_path_cache + file).pipe(
+                self._extract_timeseries_helper
+            )
+            cases += (
+                timeseries.select(self.icu_stay_id_col)
+                .unique()
+                .collect()
+                .shape[0]
+            )
+
             # Pivot the timeseries data
-            .collect().pivot(
+            timeseries = timeseries.collect().pivot(
                 on="DataID",
                 index=self.index_cols,
                 values="Val",
                 aggregate_function="first",  # NOTE: first is used here to allow for string values
             )
-        )
 
-        # Drop empty rows
-        droplist = list(
-            set(timeseries.collect_schema().names()) - set(self.index_cols)
-        )
-        timeseries = (
-            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
-            .lazy()
-            .sort(self.index_cols)
-            .unique()
-        )
+            # Drop empty rows
+            droplist = list(
+                set(timeseries.collect_schema().names()) - set(self.index_cols)
+            )
+            timeseries = (
+                timeseries.pipe(self.helpers.dropna, "all", droplist, False)
+                .lazy()
+                .sort(self.index_cols)
+                .unique()
+            )
+
+            # Append the processed timeseries data
+            timeseries_processed = pl.concat(
+                [timeseries_processed, timeseries], how="diagonal_relaxed"
+            )
 
         # Save the preprocessed data
-        timeseries.sink_parquet(ts_float_path_unsorted)
-
-        # Sort the data
-        (
-            pl.scan_parquet(ts_float_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_float_path)
-        )
-        os.remove(ts_float_path_unsorted)
-        os.remove(ts_float_path_cache)
+        timeseries_processed.sink_parquet(ts_float_path)
+        shutil.rmtree(ts_float_path_cache, ignore_errors=True)
 
         return pl.scan_parquet(ts_float_path).select(
             pl.col(self.index_cols).set_sorted(),

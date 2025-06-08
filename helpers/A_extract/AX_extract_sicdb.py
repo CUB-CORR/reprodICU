@@ -252,10 +252,46 @@ class SICdbExtractor(SICdbPaths):
     # endregion
 
     # region timeseries
-    # Extract timeseries information from the data_float_h.csv file
-    def extract_timeseries(self) -> pl.LazyFrame:
+    # Partition timeseries information from the data_float_m.csv file
+    def partition_timeseries(self, path) -> None:
         """
-        Extract timeseries data from the data source file.
+        Partition the timeseries data from the data_float_m.csv file into smaller files to
+        optimize the processing of large timeseries datasets by breaking them into manageable
+        chunks. The partitioned files are stored in the specified directory.
+
+        This function performs the following steps:
+            1. Reads the timeseries data from the data_float_m.parquet file.
+            2. Computes a PartitionID based on CaseID to group data into partitions.
+            3. Saves the partitioned data into Parquet files in the precalculated path.
+
+        Returns:
+            None: The function does not return any value but saves the partitioned data to disk.
+        """
+
+        print("SICdb   - Partitioning timeseries...")
+        (
+            pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
+            .select("CaseID", "Offset", "DataID", "Val")
+            .with_columns(
+                pl.col("CaseID").floordiv(5000).alias("PartitionID"),
+                # Round values to 2 decimal places due to precision issues of IEEE 754 floats
+                pl.col("Val").cast(float).round(2),
+            )
+            .rename({"CaseID": self.icu_stay_id_col})
+            .sink_parquet(
+                pl.PartitionByKey(
+                    base_path=path,
+                    file_path=lambda ctx: f"{ctx.keys[0].str_value}.parquet",
+                    by=["PartitionID"],
+                    include_key=False,
+                ),
+                mkdir=True,
+            )
+        )
+
+    def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Processes timeseries data from the data source file.
 
         The function executes these steps:
             1. Loads raw timeseries data from CSV.
@@ -273,41 +309,22 @@ class SICdbExtractor(SICdbPaths):
                 - "DataID": Mapped parameter name/identifier.
                 - "Val": Measurement value.
         """
-        print("SICdb   - Extracting timeseries...")
-        extracted_references = self._extract_references("RespiratorSetting")
-        extracted_references.update(
-            self._extract_references("VentilatorConfiguration")
-        )
-        extracted_references.update(self._extract_references("SignalFloat"))
-        extracted_references.update(self._extract_references("Scores"))
-        # fix duplicate names (e.g. RespRate both in SignalFloat and RespiratorSetting)
-        extracted_references.update({2282: "RespRateVentilator"})
-
-        offsets = self._get_offsets()
-        timeseries = (
-            pl.scan_csv(self.data_float_h_path)
-            .select("CaseID", "Offset", "DataID", "Val")
-            .rename({"CaseID": self.icu_stay_id_col})
-        )
-
         return (
-            timeseries.join(offsets, on=self.icu_stay_id_col).with_columns(
+            data.join(self._get_offsets(), on=self.icu_stay_id_col)
+            .with_columns(
                 # Fix time offset
                 (pl.col("Offset") - pl.col("CaseOffset"))
                 .cast(float)
                 .alias(self.timeseries_time_col),
-                # Convert parameter IDs to names, then map them
-                pl.col("DataID")
-                .replace_strict(extracted_references, default=None)
-                .replace(
-                    {
-                        **self.timeseries_vitals_mapping,
-                        **self.timeseries_intakeoutput_mapping,
-                        **self.timeseries_respiratory_mapping,
-                    }
-                )
-                .alias("DataID"),
             )
+            .join(
+                self._get_timeseries_mapping(),
+                on="DataID",
+                how="left",
+                coalesce=True,
+            )
+            .drop("DataID")
+            .rename({"DataName": "DataID"})
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col(self.timeseries_time_col)
@@ -811,6 +828,47 @@ class SICdbExtractor(SICdbPaths):
                 .alias("CaseOffset")
             )
             .drop("ICUOffset", "OffsetAfterFirstAdmission")
+        )
+
+    def _get_timeseries_mapping(self) -> pl.LazyFrame:
+        """
+        Extract and map timeseries data identifiers to descriptive names.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing the mapping of timeseries data identifiers
+            to their descriptive names, with the following columns:
+                - "DataID": The original identifier for the timeseries data.
+                - "DataName": The mapped descriptive name for the timeseries data.
+        """
+
+        extracted_references = {
+            **self._extract_references("RespiratorSetting"),
+            **self._extract_references("VentilatorConfiguration"),
+            **self._extract_references("SignalFloat"),
+            **self._extract_references("Scores"),
+        }
+        # fix duplicate names (e.g. RespRate both in SignalFloat and RespiratorSetting)
+        extracted_references.update({2282: "RespRateVentilator"})
+
+        # Convert parameter IDs to names, then map them
+        return (
+            pl.read_csv(self.d_references_path)
+            .select("ReferenceGlobalID")
+            .with_columns(
+                pl.col("ReferenceGlobalID")
+                .replace_strict(extracted_references, default=None)
+                .replace(
+                    {
+                        **self.timeseries_vitals_mapping,
+                        **self.timeseries_intakeoutput_mapping,
+                        **self.timeseries_respiratory_mapping,
+                    }
+                )
+                .alias("DataName")
+            )
+            .drop_nulls()
+            .rename({"ReferenceGlobalID": "DataID"})
+            .lazy()
         )
 
     # endregion

@@ -307,31 +307,45 @@ class TimeseriesHarmonizer(GlobalVars):
 
         # Concatenate the timeseries data for each category
         # region vitals
-        vitals = pl.concat(timeseries_vitals, how="diagonal_relaxed")
-        vitals_cols = vitals.collect_schema().names()
-        vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols))
-        vitals = (
-            vitals.pipe(
-                self.helpers.dropna, "all", vitals_cols_not_index, False
+        timeseries_vitals_processed = pl.LazyFrame()
+        for i, ts_vitals in enumerate(timeseries_vitals):
+            vitals_cols = ts_vitals.collect_schema().names()
+            vitals_cols_not_index = list(
+                set(vitals_cols) - set(self.index_cols)
             )
-            .cast(
-                {  # Convert columns to appropriate types
-                    self.global_icu_stay_id_col: str,
-                    self.timeseries_time_col: float,
-                    **{
-                        col: str if col in ["Heart rate rhythm"] else float
-                        for col in vitals_cols_not_index
-                    },
-                }
+            ts_vitals = (
+                # Drop rows with all NaN values in vitals columns
+                ts_vitals.pipe(
+                    self.helpers.dropna, "all", vitals_cols_not_index, False,
+                )
+                .cast(
+                    {  # Convert columns to appropriate types
+                        self.global_icu_stay_id_col: str,
+                        self.timeseries_time_col: float,
+                        **{
+                            col: str if col in ["Heart rate rhythm"] else float
+                            for col in vitals_cols_not_index
+                        },
+                    }
+                )
+                .select([*self.index_cols, *sorted(vitals_cols_not_index)])
+                # assume uniqueness (since we're just concatenating the data)
+                .sort(self.index_cols)
             )
-            .select([*self.index_cols, *sorted(vitals_cols_not_index)])
-            .with_columns(
-                # Fix Temperature if value appears to be in Fahrenheit
-                pl.when(pl.col("Temperature").gt(60))
-                .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
-                .otherwise(pl.col("Temperature"))
-                .alias("Temperature"),
-                # Sum Glasgow coma score components if total is missing
+
+            timeseries_vitals_processed = pl.concat(
+                [timeseries_vitals_processed, ts_vitals],
+                how="diagonal_relaxed",
+            )
+
+        vitals = timeseries_vitals_processed.with_columns(
+            # Fix Temperature if value appears to be in Fahrenheit
+            pl.when(pl.col("Temperature").gt(60))
+            .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
+            .otherwise(pl.col("Temperature"))
+            .alias("Temperature"),
+            # Sum Glasgow coma score components if total is missing
+            (
                 pl.when(pl.col("Glasgow coma score total").is_null())
                 .then(
                     pl.sum_horizontal(
@@ -342,11 +356,10 @@ class TimeseriesHarmonizer(GlobalVars):
                     )
                 )
                 .otherwise(pl.col("Glasgow coma score total"))
-                .alias("Glasgow coma score total"),
-            )
-            # assume uniqueness (since we're just concatenating the data)
-            .sort(self.index_cols)
+                .alias("Glasgow coma score total")
+            ),
         )
+
         # endregion
 
         # region labs
