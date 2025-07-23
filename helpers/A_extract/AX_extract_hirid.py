@@ -720,7 +720,7 @@ class HiRIDExtractor(HiRIDPaths):
                     pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                     pl.col("value").cast(float),
                     pl.lit("intravenous").alias(self.drug_admin_route_col),
-                    pl.lit(True).alias(self.drug_continous_col),
+                    pl.lit(True).alias(self.drug_continuous_col),
                 )
                 # Calculate the difference between the current and the previous
                 # value, store each timestamp in a separate column
@@ -788,7 +788,7 @@ class HiRIDExtractor(HiRIDPaths):
                 .select(
                     self.icu_stay_id_col,
                     self.drug_admin_route_col,
-                    self.drug_continous_col,
+                    self.drug_continuous_col,
                     self.fluid_group_col,
                     self.fluid_amount_col,
                     self.fluid_rate_col,

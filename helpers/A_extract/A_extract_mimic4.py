@@ -1272,7 +1272,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Add a column to indicate if the drug is continuous
                 pl.col("ordercategorydescription")
                 .str.contains("Continuous")
-                .alias(self.drug_continous_col),
+                .alias(self.drug_continuous_col),
             )
             .drop("ordercategorydescription")
         )
@@ -1533,7 +1533,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .replace_strict(ndc_to_drugname, default=None)
                 .alias(self.drug_name_OMOP_col),
                 # Add a column to indicate if the drug is continuous
-                pl.lit(False).alias(self.drug_continous_col),
+                pl.lit(False).alias(self.drug_continuous_col),
             )
             .rename({"stoptime": "endtime"})
             .join(
