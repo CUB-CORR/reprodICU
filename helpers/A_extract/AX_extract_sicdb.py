@@ -572,7 +572,7 @@ class SICdbExtractor(SICdbPaths):
                 .then(None)
                 .otherwise(pl.col(self.drug_rate_unit_col))
                 .alias(self.drug_rate_unit_col),
-                (pl.col("IsSingleDose") == 0).alias(self.drug_continous_col),
+                (pl.col("IsSingleDose") == 0).alias(self.drug_continuous_col),
             )
             # Replace drug names with standardized ingredient names
             .join(

@@ -169,7 +169,7 @@ class MedicationHarmonizer(GlobalVars):
             self.drug_name_col,
             self.drug_name_OMOP_col,
             self.drug_class_col,
-            self.drug_continous_col,
+            self.drug_continuous_col,
             self.drug_admin_route_col,
             self.drug_amount_col,
             self.drug_amount_unit_col,
@@ -218,7 +218,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
-                        pl.col(self.drug_continous_col),
+                        pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()
                 )
@@ -243,7 +243,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
-                        pl.col(self.drug_continous_col),
+                        pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()
                 )

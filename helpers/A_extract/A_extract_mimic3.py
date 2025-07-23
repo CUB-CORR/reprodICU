@@ -1250,7 +1250,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Add a column to indicate if the drug is continuous
                 pl.col("ORDERCATEGORYDESCRIPTION")
                 .str.contains("Continuous")
-                .alias(self.drug_continous_col),
+                .alias(self.drug_continuous_col),
             )
         )
 
@@ -1395,7 +1395,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .str.replace("min", "/min")
                 .str.replace("kg", "/kg"),
                 # Add a column to indicate if the drug is continuous
-                pl.lit(True).alias(self.drug_continous_col),
+                pl.lit(True).alias(self.drug_continuous_col),
             )
         )
 
@@ -1735,7 +1735,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .alias(self.drug_name_OMOP_col),
                 # Add a column to indicate if the drug is continuous
-                pl.lit(False).alias(self.drug_continous_col),
+                pl.lit(False).alias(self.drug_continuous_col),
             )
         )
 
