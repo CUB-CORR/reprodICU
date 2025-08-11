@@ -840,6 +840,9 @@ class NWICUExtractor(NWICUPaths):
                 }
             )
             .with_columns(
+                pl.lit("prescribed")
+                .cast(self.drug_admin_type_dtype)
+                .alias(self.drug_admin_type_col),
                 pl.col("route")
                 .replace(nwicu_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),

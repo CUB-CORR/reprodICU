@@ -1243,6 +1243,8 @@ class EICUExtractor(EICUPaths):
                 pl.lit("intravenous").alias(self.drug_admin_route_col),
                 # Add a column to indicate if the drug is continuous
                 pl.lit(True).alias(self.drug_continuous_col),
+                # Add a column to indicate the administration type
+                pl.lit("given").alias(self.drug_admin_type_col),
             )
             # Remove rows with empty drug names
             .filter(pl.col(self.drug_name_col).is_not_null())
@@ -1373,10 +1375,10 @@ class EICUExtractor(EICUPaths):
 
         medication = (
             pl.scan_csv(self.medication_path)
-            .filter(pl.col("drugordercancelled").ne_missing("Yes"))
             .select(
                 "patientunitstayid",
                 "drugstartoffset",
+                "drugordercancelled",
                 "drugname",
                 "dosage",
                 "drugstopoffset",
@@ -1387,6 +1389,7 @@ class EICUExtractor(EICUPaths):
                 {
                     "patientunitstayid": self.icu_stay_id_col,
                     "drugstartoffset": self.drug_start_col,
+                    "drugordercancelled": self.drug_admin_type_col,
                     "drugname": self.drug_name_col,
                     "dosage": self.drug_amount_col,
                     "drugstopoffset": self.drug_end_col,
@@ -1396,6 +1399,11 @@ class EICUExtractor(EICUPaths):
             # # Dropping drug dosages due to bad data quality
             # .drop(self.drug_amount_col)
             .with_columns(
+                # Add a column to indicate the administration type
+                pl.when(pl.col(self.drug_admin_type_col) == "Yes")
+                .then(pl.lit("cancelled"))
+                .otherwise(pl.lit("given"))
+                .alias(self.drug_admin_type_col),
                 # Replace drug names with mapped names
                 pl.col(self.drug_name_col)
                 .replace_strict(eicu_medication_mapping, default=None)

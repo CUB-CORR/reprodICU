@@ -1217,6 +1217,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 "ORDERCOMPONENTTYPEDESCRIPTION",
                 "ORDERCATEGORYDESCRIPTION",
                 "PATIENTWEIGHT",
+                "CANCELREASON"
             )
             .rename(
                 {
@@ -1228,6 +1229,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "LINKORDERID": self.drug_mixture_id_col,
                     "ORDERID": self.drug_mixture_admin_id_col,
                     "PATIENTWEIGHT": self.drug_patient_weight_col,
+                    "CANCELREASON": self.drug_admin_type_col,
                 }
             )
             .join(
@@ -1251,6 +1253,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("ORDERCATEGORYDESCRIPTION")
                 .str.contains("Continuous")
                 .alias(self.drug_continuous_col),
+                # Add a column to indicate the administration type
+                pl.when(pl.col(self.drug_admin_type_col) == 1)
+                .then(pl.lit("cancelled"))
+                .when(pl.col(self.drug_admin_type_col) == 2)
+                .then(pl.lit("rewritten"))
+                .otherwise(pl.lit("given"))
+                .alias(self.drug_admin_type_col),
             )
         )
 
@@ -1710,6 +1719,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             # NOTE: dirty, but necessary to join with inputevents
             .rename({"STARTDATE": "STARTTIME", "ENDDATE": "ENDTIME"})
             .with_columns(
+                pl.lit("prescribed")
+                .cast(self.drug_admin_type_dtype)
+                .alias(self.drug_admin_type_col),
                 pl.when(pl.col("NDC") != 0)
                 .then(
                     pl.col("NDC").replace_strict(

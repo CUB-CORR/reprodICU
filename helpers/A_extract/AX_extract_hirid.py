@@ -814,8 +814,6 @@ class HiRIDExtractor(HiRIDPaths):
             print(f"Processing file {file}...", end="\r")
             data = (
                 pl.scan_parquet(self.pharma_path + file)
-                # Filter out invalidated records
-                .filter((pl.col("recordstatus") & 2) == 0)
                 .select(
                     "patientid",
                     "pharmaid",
@@ -825,6 +823,7 @@ class HiRIDExtractor(HiRIDPaths):
                     "route",
                     "infusionid",
                     "subtypeid",
+                    "recordstatus",
                     "fluidamount_calc",
                 )
                 # Rename columns for consistency
@@ -836,6 +835,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "route": self.drug_admin_route_col,
                         "infusionid": self.drug_mixture_id_col,
                         "subtypeid": self.drug_class_col,
+                        "recordstatus": self.drug_admin_type_col,
                         "fluidamount_calc": self.fluid_amount_col,
                     }
                 )
@@ -845,6 +845,13 @@ class HiRIDExtractor(HiRIDPaths):
                 .join(admissiontime, on=self.icu_stay_id_col)
                 .join(length_of_stay, on=self.icu_stay_id_col)
                 .with_columns(
+                    # Add a column to indicate the administration type
+                    # 2 = invalidated, 32 = notified, not administered
+                    pl.when((pl.col(self.drug_admin_type_col) & 2) == 0)
+                    .then(pl.lit("cancelled"))
+                    .when((pl.col(self.drug_admin_type_col) & 32) == 0)
+                    .then(pl.lit("ordered"))
+                    .otherwise(pl.lit("given")),
                     pl.col("admissiontime").str.to_datetime(
                         "%Y-%m-%d %H:%M:%S%.9f"
                     ),
