@@ -49,6 +49,7 @@ drug_name_OMOP_col: Drug Name (OMOP)
 drug_ingredient_col: Drug Ingredient # drug_ingredient
 drug_admin_route_col: Drug Administration Route # drug_administration_route
 drug_continuous_col: Drug is Continuous Infusion
+drug_admin_type_col: Drug Administration Type
 drug_class_col: Drug Class # drug_class
 drug_start_col: Drug Start Relative to Admission (seconds) # drug_start_relative_to_admission
 drug_end_col: Drug End Relative to Admission (seconds) # drug_end_relative_to_admission

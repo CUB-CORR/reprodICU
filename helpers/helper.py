@@ -233,6 +233,9 @@ class GlobalVars(GlobalHelpers):
         self.unit_types_dtype = pl.Enum(
             self.load_mapping_keys(mapping_path + "UNIT_TYPES.yaml")
         )
+        self.drug_admin_type_dtype = pl.Enum(
+            ["prescribed", "given", "cancelled", "rewritten"]
+        )
 
         # region ENUM MAPS
         # Define custom enum maps

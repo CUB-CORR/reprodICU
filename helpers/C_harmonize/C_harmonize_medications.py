@@ -165,6 +165,7 @@ class MedicationHarmonizer(GlobalVars):
             self.global_icu_stay_id_col,
             self.drug_mixture_id_col,
             self.drug_mixture_admin_id_col,
+            self.drug_admin_type_col,
             self.drug_ingredient_col,
             self.drug_name_col,
             self.drug_name_OMOP_col,

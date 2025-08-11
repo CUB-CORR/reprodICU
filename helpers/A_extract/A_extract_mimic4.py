@@ -1273,6 +1273,8 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col("ordercategorydescription")
                 .str.contains("Continuous")
                 .alias(self.drug_continuous_col),
+                # Add a column to indicate the administration type
+                pl.lit("given").alias(self.drug_admin_type_col),
             )
             .drop("ordercategorydescription")
         )
@@ -1526,6 +1528,9 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(route_to_concept, on="route", how="left")
             .with_columns(
+                pl.lit("prescribed")
+                .cast(self.drug_admin_type_dtype)
+                .alias(self.drug_admin_type_col),
                 pl.col("ndc")
                 .replace_strict(ndc_to_ingredient, default=None)
                 .alias(self.drug_ingredient_col),
