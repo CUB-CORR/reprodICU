@@ -64,7 +64,7 @@ class HiRIDProcessor(HiRIDExtractor):
         if os.path.isfile(ts_path) and os.path.isfile(ts_labs_path):
             # Load the preprocessed data
             return (
-                pl.scan_parquet(ts_path).select(
+                pl.scan_parquet(ts_path, parallel="prefiltered").select(
                     pl.col(self.index_cols).set_sorted(),
                     pl.exclude(self.index_cols),
                 ),

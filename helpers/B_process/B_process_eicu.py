@@ -72,7 +72,9 @@ class EICUProcessor(EICUExtractor):
 
         # Load preexisting data if available
         if os.path.isfile(timeseries_path):
-            return pl.scan_parquet(timeseries_path).select(
+            return pl.scan_parquet(
+                timeseries_path, parallel="prefiltered"
+            ).select(
                 pl.col(self.index_cols).set_sorted(),
                 pl.exclude(self.index_cols),
             )

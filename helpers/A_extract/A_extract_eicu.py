@@ -507,8 +507,13 @@ class EICUExtractor(EICUPaths):
         """
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
+        if "parquet" in self.lab_path:
+            lab = pl.scan_parquet(self.lab_path, parallel="prefiltered")
+        else:
+            lab = pl.scan_csv(self.lab_path)
+
         labs = (
-            pl.scan_csv(self.lab_path).select(
+            lab.select(
                 "patientunitstayid", "labname", "labresultoffset", "labresult"
             )
             # Rename columns for consistency
@@ -749,16 +754,23 @@ class EICUExtractor(EICUPaths):
             self.nurse_oxygen_delivery_device_mapping_path
         )
 
+        if "parquet" in self.nurseCharting_path:
+            nurseCharting = pl.scan_parquet(
+                self.nurseCharting_path, parallel="prefiltered"
+            )
+        else:
+            nurseCharting = pl.scan_csv(self.nurseCharting_path)
+
         nurseCharting = (
-            pl.scan_csv(self.nurseCharting_path)
+            nurseCharting
+            # Select relevant columns
             .select(
                 "patientunitstayid",
                 "nursingchartoffset",
                 "nursingchartcelltypevallabel",
                 "nursingchartcelltypevalname",
                 "nursingchartvalue",
-            )
-            .rename(
+            ).rename(
                 {
                     "patientunitstayid": self.icu_stay_id_col,
                     "nursingchartoffset": self.timeseries_time_col,
@@ -950,8 +962,16 @@ class EICUExtractor(EICUPaths):
                 - {timeseries_time_col}: Time of observation (in seconds).
                 - Plus any additional vital sign columns present in the CSV.
         """
+
+        if "parquet" in self.vitalPeriodic_path:
+            vitalPeriodic = pl.scan_parquet(
+                self.vitalPeriodic_path, parallel="prefiltered"
+            )
+        else:
+            vitalPeriodic = pl.scan_csv(self.vitalPeriodic_path)
+
         return (
-            pl.scan_csv(self.vitalPeriodic_path)
+            vitalPeriodic
             # Rename columns for consistency
             .rename(
                 {
@@ -993,8 +1013,16 @@ class EICUExtractor(EICUPaths):
                 - "noninvasivediastolic": Non-invasive diastolic blood pressure.
                 - "noninvasivemean": Non-invasive mean blood pressure.
         """
+
+        if "parquet" in self.vitalAperiodic_path:
+            vitalAperiodic = pl.scan_parquet(
+                self.vitalAperiodic_path, parallel="prefiltered"
+            )
+        else:
+            vitalAperiodic = pl.scan_csv(self.vitalAperiodic_path)
+
         return (
-            pl.scan_csv(self.vitalAperiodic_path).select(
+            vitalAperiodic.select(
                 "patientunitstayid",
                 "observationoffset",
                 "noninvasivesystolic",

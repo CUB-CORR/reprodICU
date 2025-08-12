@@ -467,6 +467,16 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         print("MIMIC3  - Extracting patient height and weight...")
 
+        if "parquet" in self.chartevents_path:
+            chartevents = pl.scan_parquet(
+                self.chartevents_path, parallel="prefiltered"
+            )
+        else:
+            chartevents = pl.scan_csv(
+                self.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+
         ITEMIDS = {
             762: self.weight_col,  # Admit Wt [carevue]
             763: self.weight_col,  # Daily Weight [carevue]
@@ -491,8 +501,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         KEEPIDS = [*ITEMIDS.keys()]
 
         height_weight = (
-            pl.scan_csv(self.chartevents_path)
-            .select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
+            chartevents.select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
             # Rename columns for consistency
             .rename({"ICUSTAY_ID": self.icu_stay_id_col})
             .filter(pl.col("ITEMID").is_in(KEEPIDS))
@@ -673,11 +682,19 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        return (
-            pl.scan_csv(
+        if "parquet" in self.chartevents_path:
+            chartevents = pl.scan_parquet(
+                self.chartevents_path, parallel="prefiltered"
+            )
+        else:
+            chartevents = pl.scan_csv(
                 self.chartevents_path,
                 schema_overrides={"VALUE": str, "VALUENUM": float},
             )
+
+        return (
+            chartevents
+            # Select relevant columns
             .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUENUM")
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col})
@@ -816,9 +833,15 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        if "parquet" in self.labevents_path:
+            labevents = pl.scan_parquet(
+                self.labevents_path, parallel="prefiltered"
+            )
+        else:
+            labevents = pl.scan_csv(self.labevents_path)
+
         return (
-            pl.scan_csv(self.labevents_path)
-            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
+            labevents.select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col})
             # BUG: .drop_nulls() drops all rows with any(!) null values
