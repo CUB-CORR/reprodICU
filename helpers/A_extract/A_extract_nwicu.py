@@ -431,12 +431,14 @@ class NWICUExtractor(NWICUPaths):
 
         print("NWICU   - Extracting patient height and weight...")
 
-        ITEMIDS = {
+        WEIGHT_ITEMID = {
             326531: "weight_oz",  # WEIGHT/SCALE (Admission Weight) [in oz]
+        }
+        HEIGHT_ITEMID = {
             326707: "height_in",  # HEIGHT (Height) [in inches]
         }
 
-        KEEPIDS = [*ITEMIDS.keys()]
+        KEEPIDS = [*(WEIGHT_ITEMID | HEIGHT_ITEMID).keys()]
 
         height_weight = (
             pl.scan_csv(self.chartevents_path)
@@ -452,40 +454,71 @@ class NWICUExtractor(NWICUPaths):
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("itemid").replace_strict(ITEMIDS, default=None),
+                pl.col("itemid")
+                .replace_strict(
+                    WEIGHT_ITEMID | HEIGHT_ITEMID,  # "|" merges dictionaries
+                    default=None,
+                )
+                .alias("label"),
             )
             .drop_nulls("itemid")
-            .filter(
-                (pl.col("charttime") - pl.col("intime")).le(
-                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
-                )
-            )
-            .drop("intime", "charttime")
             .with_columns(
                 # Convert height in in to cm, weight in oz to kg
-                pl.when(pl.col("itemid") == "height_in")
+                pl.when(pl.col("label") == "height_in")
                 .then(pl.col("valuenum").mul(self.INCH_TO_CM))
-                .when(pl.col("itemid") == "weight_oz")
+                .when(pl.col("label") == "weight_oz")
                 .then(pl.col("valuenum").mul(self.OZ_TO_KG))
                 .otherwise(pl.col("valuenum"))
                 .alias("valuenum"),
                 # Rename ITEMID to height_cm / weight_kg
-                pl.when(pl.col("itemid") == "height_in")
+                pl.when(pl.col("label") == "height_in")
                 .then(pl.lit(self.height_col))
-                .when(pl.col("itemid") == "weight_oz")
+                .when(pl.col("label") == "weight_oz")
                 .then(pl.lit(self.weight_col))
-                .otherwise(pl.col("itemid"))
-                .alias("itemid"),
+                .otherwise(pl.col("label"))
+                .alias("label"),
             )
-            .collect()
+        )
+
+        # Backfill weights similar to:
+        # https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/weight_durations.sql
+        # https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/demographics/weight_durations.sql
+        # Select the first admission weight
+        weight = (
+            height_weight.filter(pl.col("itemid").is_in(WEIGHT_ITEMID.keys()))
+            .collect(engine="streaming")
+            .with_columns(
+                pl.col("valuenum")
+                .first()
+                .over(partition_by=self.icu_stay_id_col, order_by="charttime")
+                .alias("valuenum")
+            )
+        )
+
+        height = (
+            height_weight.filter(pl.col("itemid").is_in(HEIGHT_ITEMID.keys()))
+            .collect(engine="streaming")
+            .filter(
+                (pl.col("charttime") - pl.col("intime")).le(
+                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                ),
+            )
+        )
+
+        height_weight = (
+            pl.concat([weight, height], how="diagonal")
+            .drop("itemid", "intime", "charttime")
             .pivot(
                 index=self.icu_stay_id_col,
-                on="itemid",
+                on="label",
                 values="valuenum",
-                aggregate_function="mean",  # NOTE: -> or mean?
+                aggregate_function="median",
             )
             .select(self.icu_stay_id_col, self.weight_col, self.height_col)
-            .cast({self.weight_col: float, self.height_col: float})
+            .with_columns(
+                pl.col(self.weight_col).cast(float).round(1),
+                pl.col(self.height_col).cast(float).round(0),
+            )
         )
 
         # Save precalculated data

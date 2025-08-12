@@ -510,15 +510,19 @@ class MIMIC4Extractor(MIMIC4Paths):
                 schema_overrides={"VALUE": str, "VALUENUM": float},
             )
 
-        ITEMIDS = {
+        WEIGHT_ITEMIDS = {
             224639: self.weight_col,  # Daily Weight [metavision]
             226512: self.weight_col,  # Admission Weight (Kg) [metavision]
             226531: "weight_lbs",  # Admission Weight (lbs.) [metavision]
+        }
+        HEIGHT_ITEMIDS = {
             226707: "height_inch",  # Height [metavision]
             226730: self.height_col,  # Height (cm) [metavision]
         }
 
-        KEEPIDS = [*ITEMIDS.keys()]
+        KEEPIDS = [*(WEIGHT_ITEMIDS | HEIGHT_ITEMIDS).keys()]
+        ADMIT_WEIGHT_IDS = [226512, 226531]
+        DAILY_WEIGHT_IDS = [224639]
 
         height_weight = (
             chartevents.select("stay_id", "itemid", "valuenum", "charttime")
@@ -533,40 +537,92 @@ class MIMIC4Extractor(MIMIC4Paths):
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("itemid").replace_strict(ITEMIDS, default=None),
-            )
-            .drop_nulls("itemid")
-            .filter(
-                (pl.col("charttime") - pl.col("intime")).le(
-                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                pl.col("itemid")
+                .replace_strict(
+                    WEIGHT_ITEMIDS | HEIGHT_ITEMIDS,  # "|" merges dictionaries
+                    default=None,
                 )
+                .alias("label"),
             )
-            .drop("intime", "charttime")
+            .drop_nulls("label")
             .with_columns(
                 # Convert height in in to cm, weight in lbs to kg
-                pl.when(pl.col("itemid") == "height_inch")
+                pl.when(pl.col("label") == "height_inch")
                 .then(pl.col("valuenum").mul(self.INCH_TO_CM))
-                .when(pl.col("itemid") == "weight_lbs")
+                .when(pl.col("label") == "weight_lbs")
                 .then(pl.col("valuenum").mul(self.LBS_TO_KG))
                 .otherwise(pl.col("valuenum"))
                 .alias("valuenum"),
                 # Rename ITEMID to height_cm / weight_kg
-                pl.when(pl.col("itemid") == "height_inch")
+                pl.when(pl.col("label") == "height_inch")
                 .then(pl.lit(self.height_col))
-                .when(pl.col("itemid") == "weight_lbs")
+                .when(pl.col("label") == "weight_lbs")
                 .then(pl.lit(self.weight_col))
-                .otherwise(pl.col("itemid"))
-                .alias("itemid"),
+                .otherwise(pl.col("label"))
+                .alias("label"),
             )
-            .collect()
+        )
+
+        # Backfill weights as in:
+        # https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/demographics/weight_durations.sql
+        # Select the first admission weight
+        first_admit_weight = (
+            height_weight.filter(pl.col("itemid").is_in(ADMIT_WEIGHT_IDS))
+            .collect(engine="streaming")
+            .with_columns(
+                pl.col("valuenum")
+                .first()
+                .over(partition_by=self.icu_stay_id_col, order_by="charttime")
+                .alias("first_admit_weight")
+            )
+        )
+        # Select the first daily weight measurement
+        first_daily_weight = (
+            height_weight.filter(pl.col("itemid").is_in(DAILY_WEIGHT_IDS))
+            .collect(engine="streaming")
+            .with_columns(
+                pl.col("valuenum")
+                .first()
+                .over(partition_by=self.icu_stay_id_col, order_by="charttime")
+                .alias("first_daily_weight")
+            )
+        )
+        # Combine the first admit and first daily weight measurements
+        weight = (
+            pl.concat([first_admit_weight, first_daily_weight], how="diagonal")
+            .drop("valuenum")
+            .with_columns(
+                pl.coalesce(
+                    pl.col("first_admit_weight"), pl.col("first_daily_weight")
+                ).alias("valuenum")
+            )
+            .drop("first_admit_weight", "first_daily_weight")
+        )
+
+        height = (
+            height_weight.filter(pl.col("itemid").is_in(HEIGHT_ITEMIDS.keys()))
+            .collect(engine="streaming")
+            .filter(
+                (pl.col("charttime") - pl.col("intime")).le(
+                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                ),
+            )
+        )
+
+        height_weight = (
+            pl.concat([weight, height], how="diagonal")
+            .drop("itemid", "intime", "charttime")
             .pivot(
                 index=self.icu_stay_id_col,
-                on="itemid",
+                on="label",
                 values="valuenum",
-                aggregate_function="mean",  # NOTE: -> or mean?
+                aggregate_function="median",
             )
             .select(self.icu_stay_id_col, self.weight_col, self.height_col)
-            .cast({self.weight_col: float, self.height_col: float})
+            .with_columns(
+                pl.col(self.weight_col).cast(float).round(1),
+                pl.col(self.height_col).cast(float).round(0),
+            )
         )
 
         # Save precalculated data
@@ -710,9 +766,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             chartevents
             # Select relevant columns
-            .select(
-                "hadm_id", "itemid", "charttime", "value", "valuenum"
-            )
+            .select("hadm_id", "itemid", "charttime", "value", "valuenum")
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col})
             .with_columns(
