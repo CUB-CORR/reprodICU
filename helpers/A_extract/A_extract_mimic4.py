@@ -500,6 +500,16 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         print("MIMIC4  - Extracting patient height and weight...")
 
+        if "parquet" in self.chartevents_path:
+            chartevents = pl.scan_parquet(
+                self.chartevents_path, parallel="prefiltered"
+            )
+        else:
+            chartevents = pl.scan_csv(
+                self.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+
         ITEMIDS = {
             224639: self.weight_col,  # Daily Weight [metavision]
             226512: self.weight_col,  # Admission Weight (Kg) [metavision]
@@ -511,8 +521,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         KEEPIDS = [*ITEMIDS.keys()]
 
         height_weight = (
-            pl.scan_csv(self.chartevents_path)
-            .select("stay_id", "itemid", "valuenum", "charttime")
+            chartevents.select("stay_id", "itemid", "valuenum", "charttime")
             # Rename columns for consistency
             .rename({"stay_id": self.icu_stay_id_col})
             .filter(pl.col("itemid").is_in(KEEPIDS))
@@ -688,12 +697,22 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
         )
 
-        return (
-            pl.scan_csv(
-                self.chartevents_path,
-                schema_overrides={"value": str, "valuenum": float},
+        if "parquet" in self.chartevents_path:
+            chartevents = pl.scan_parquet(
+                self.chartevents_path, parallel="prefiltered"
             )
-            .select("hadm_id", "itemid", "charttime", "value", "valuenum")
+        else:
+            chartevents = pl.scan_csv(
+                self.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+
+        return (
+            chartevents
+            # Select relevant columns
+            .select(
+                "hadm_id", "itemid", "charttime", "value", "valuenum"
+            )
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col})
             .with_columns(
@@ -829,9 +848,15 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
         )
 
+        if "parquet" in self.labevents_path:
+            labevents = pl.scan_parquet(
+                self.labevents_path, parallel="prefiltered"
+            )
+        else:
+            labevents = pl.scan_csv(self.labevents_path)
+
         return (
-            pl.scan_csv(self.labevents_path)
-            .select("hadm_id", "itemid", "charttime", "valuenum")
+            labevents.select("hadm_id", "itemid", "charttime", "valuenum")
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col})
             # BUG: .drop_nulls() drops all rows with any(!) null values

@@ -142,6 +142,25 @@ class EICUPaths(GlobalVars):
             self.vitalAperiodic_path = eicu_path + "vitalAperiodic.csv"
             self.vitalPeriodic_path = eicu_path + "vitalPeriodic.csv"
 
+        # PARQUETIZE selected large tables for eICU (non-DEMO only)
+        if not DEMO:
+            for path in [
+                self.nurseCharting_path,
+                self.vitalPeriodic_path,
+                self.vitalAperiodic_path,
+                self.lab_path,
+            ]:
+                parquet_path = path.replace(".csv", ".parquet").replace(
+                    ".gz", ""
+                )
+                if not os.path.isfile(parquet_path):
+                    _parquetize(path, "eICU")
+
+            self.nurseCharting_path = eicu_path + "nurseCharting.parquet"
+            self.vitalPeriodic_path = eicu_path + "vitalPeriodic.parquet"
+            self.vitalAperiodic_path = eicu_path + "vitalAperiodic.parquet"
+            self.lab_path = eicu_path + "lab.parquet"
+
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
         self.careprovider_mapping_path = (
@@ -276,6 +295,18 @@ class MIMIC3Paths(GlobalVars):
             )
             self.procedures_icd_path = mimic3_path + "PROCEDURES_ICD.csv"
             self.services_path = mimic3_path + "SERVICES.csv"
+
+        # PARQUETIZE chartevents/labevents for MIMIC-III (non-DEMO only)
+        if not DEMO:
+            for path in [self.chartevents_path, self.labevents_path]:
+                parquet_path = path.replace(".csv", ".parquet").replace(
+                    ".gz", ""
+                )
+                if not os.path.isfile(parquet_path):
+                    _parquetize(path, "MIMIC-III")
+
+            self.chartevents_path = mimic3_path + "CHARTEVENTS.parquet"
+            self.labevents_path = mimic3_path + "LABEVENTS.parquet"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
@@ -528,6 +559,18 @@ class MIMIC4Paths(GlobalVars):
             self.procedureevents_path = mimic4_path + "icu/procedureevents.csv"
             self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv"
             self.services_path = mimic4_path + "hosp/services.csv"
+
+        # PARQUETIZE chartevents/labevents for MIMIC-IV (non-DEMO only)
+        if not DEMO:
+            for path in [self.chartevents_path, self.labevents_path]:
+                parquet_path = path.replace(".csv", ".parquet").replace(
+                    ".gz", ""
+                )
+                if not os.path.isfile(parquet_path):
+                    _parquetize(path, "MIMIC-IV")
+
+            self.chartevents_path = mimic4_path + "icu/chartevents.parquet"
+            self.labevents_path = mimic4_path + "hosp/labevents.parquet"
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"
@@ -857,7 +900,7 @@ def _parquetize(path, db: str):
     print(f"{db}   - parquetizing {path}")
     pl.scan_csv(
         path,
-        schema_overrides={"value": str},
+        schema_overrides={"value": str, "VALUE": str},
     ).sink_parquet(path.replace(".csv", ".parquet").replace(".gz", ""))
 
 

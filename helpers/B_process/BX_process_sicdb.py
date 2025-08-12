@@ -72,7 +72,9 @@ class SICdbProcessor(SICdbExtractor):
 
         if os.path.isfile(ts_float_path):
             # Load the preprocessed data
-            return pl.scan_parquet(ts_float_path).select(
+            return pl.scan_parquet(
+                ts_float_path, parallel="prefiltered"
+            ).select(
                 pl.col(self.index_cols).set_sorted(),
                 pl.exclude(self.index_cols),
             )
