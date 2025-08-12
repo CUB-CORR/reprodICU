@@ -583,21 +583,13 @@ class UMCdbConverter(UnitConverter):
 
         print("UMCdb   - Aligning lab value units...")
 
-        labstructdtype = pl.Struct(
-            [
-                pl.Field("value", pl.Float64),
-                pl.Field("system", pl.String),
-                pl.Field("method", pl.String),
-                pl.Field("time", pl.String),
-                pl.Field("LOINC", pl.String),
-            ]
-        )
-
         return (
             data
             # Creatinine in Serum or Plasma is in umol/L,
             # convert to mmol/L for consistency
-            .with_columns(pl.col("Creatinine").str.json_decode(labstructdtype))
+            .with_columns(
+                pl.col("Creatinine").str.json_decode(self.labstructdtype)
+            )
             .unnest("Creatinine")
             .with_columns(
                 pl.when(pl.col("system") == "Serum or Plasma")

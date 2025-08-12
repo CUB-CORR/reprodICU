@@ -498,18 +498,8 @@ class TimeseriesHarmonizer(GlobalVars):
             pl.LazyFrame: The LazyFrame with decoded lab value columns.
         """
 
-        labstructdtype = pl.Struct(
-            [
-                pl.Field("value", pl.Float64),
-                pl.Field("system", pl.String),
-                pl.Field("method", pl.String),
-                pl.Field("time", pl.String),
-                pl.Field("LOINC", pl.String),
-            ]
-        )
-
         def decode_lab_value(lab_value):
-            return pl.col(lab_value).str.json_decode(labstructdtype)
+            return pl.col(lab_value).str.json_decode(self.labstructdtype)
 
         value_cols = [
             col
