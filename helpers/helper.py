@@ -133,13 +133,17 @@ class GlobalHelpers:
 
 # region GlobalVars
 class GlobalVars(GlobalHelpers):
-    def __init__(self, paths, DEMO=False) -> None:
+    def __init__(self, paths=None, DEMO=False) -> None:
         config_path = "configs/"
         mapping_path = "mappings/"
         reprodICU_files_path = (
-            paths.reprodICU_files_path
-            if not DEMO
-            else paths.reprodICU_demo_files_path
+            (
+                paths.reprodICU_files_path
+                if not DEMO
+                else paths.reprodICU_demo_files_path
+            )
+            if paths
+            else ""
         )
         tempfiles_path = reprodICU_files_path + "_tempfiles/"
 
@@ -159,7 +163,7 @@ class GlobalVars(GlobalHelpers):
         self.config_path = config_path
         self.relevant_values_path = config_path + "RELEVANT_VALUES/"
         self.mapping_path = mapping_path
-        self.precalc_path = tempfiles_path
+        self.precalc_path = tempfiles_path if paths else ""
 
         # region CONSTANTS
         # Define constants
@@ -235,6 +239,15 @@ class GlobalVars(GlobalHelpers):
         )
         self.drug_admin_type_dtype = pl.Enum(
             ["prescribed", "given", "cancelled", "rewritten"]
+        )
+        self.labstructdtype = pl.Struct(
+            [
+                pl.Field("value", pl.Float64),
+                pl.Field("system", pl.String),
+                pl.Field("method", pl.String),
+                pl.Field("time", pl.String),
+                pl.Field("LOINC", pl.String),
+            ]
         )
 
         # region ENUM MAPS

@@ -5,6 +5,7 @@
 # Conversion constants were taken from: https://www.labcorp.com/resource/si-unit-conversion-table
 
 import polars as pl
+from helper import GlobalVars
 
 
 def _struct_with_all_null_to_null(
@@ -76,9 +77,9 @@ class GCSCombiner:
 
 # Enables the easy conversion of the data.
 # ASSUMPTION: data is in long format, before pivoting.
-class UnitConversions:
+class UnitConversions(GlobalVars):
     def __init__(self):
-        pass
+        super().__init__()
 
     # CAVE: THIS ASSUMES WIDE FORMAT
     def convert_absolute_count_to_relative(
@@ -97,23 +98,13 @@ class UnitConversions:
         if goal_itemcol is None:
             goal_itemcol = itemcol
 
-        labstructdtype = pl.Struct(
-            [
-                pl.Field("value", pl.Float64),
-                pl.Field("system", pl.String),
-                pl.Field("method", pl.String),
-                pl.Field("time", pl.String),
-                pl.Field("LOINC", pl.String),
-            ]
-        )
-
         if structfield is not None:
             if structstring:
                 data = data.with_columns(
                     pl.col(itemcol)
-                    .str.json_decode(labstructdtype)
+                    .str.json_decode(self.labstructdtype)
                     .alias(goal_itemcol),
-                    pl.col(total_itemcol).str.json_decode(labstructdtype),
+                    pl.col(total_itemcol).str.json_decode(self.labstructdtype),
                 )
 
             data = (
