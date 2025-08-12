@@ -231,10 +231,20 @@ if __name__ == "__main__":
             paths=paths,
             patient_info_location=save_path + "patient_information.parquet",
         )
+        # (
+        #     medication_harmonizer.harmonize_medications()
+        #     .collect()
+        #     .write_parquet(save_path + "medications.parquet")
+        # )
         (
-            medication_harmonizer.harmonize_medications()
-            .collect()
-            .write_parquet(save_path + "medications.parquet")
+            medication_harmonizer.harmonize_split_medications(
+                "administered"
+            ).sink_parquet(save_path + "medications.parquet")
+        )
+        (
+            medication_harmonizer.harmonize_split_medications(
+                "prescribed"
+            ).sink_parquet(save_path + "medications_prescribed.parquet")
         )
 
     # region micro

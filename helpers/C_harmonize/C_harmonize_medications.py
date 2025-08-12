@@ -41,6 +41,30 @@ class MedicationHarmonizer(GlobalVars):
         self.helpers = GlobalHelpers()
         self.datasets = datasets
 
+        self.medications_cols_list = [
+            self.global_icu_stay_id_col,
+            self.drug_mixture_id_col,
+            self.drug_mixture_admin_id_col,
+            self.drug_admin_type_col,
+            self.drug_ingredient_col,
+            self.drug_name_col,
+            self.drug_name_OMOP_col,
+            self.drug_class_col,
+            self.drug_continuous_col,
+            self.drug_admin_route_col,
+            self.drug_amount_col,
+            self.drug_amount_unit_col,
+            self.drug_rate_col,
+            self.drug_rate_unit_col,
+            self.fluid_group_col,
+            self.fluid_name_col,
+            self.fluid_amount_col,
+            self.fluid_rate_col,
+            self.drug_start_col,
+            self.drug_end_col,
+            self.drug_patient_weight_col,
+        ]
+
     def harmonize_medications(self) -> pl.LazyFrame:
         """
         Harmonizes medication data from multiple databases into a single table.
@@ -161,34 +185,11 @@ class MedicationHarmonizer(GlobalVars):
             medications_datasets,
             how="diagonal_relaxed",
         )
-        medications_cols_list = [
-            self.global_icu_stay_id_col,
-            self.drug_mixture_id_col,
-            self.drug_mixture_admin_id_col,
-            self.drug_admin_type_col,
-            self.drug_ingredient_col,
-            self.drug_name_col,
-            self.drug_name_OMOP_col,
-            self.drug_class_col,
-            self.drug_continuous_col,
-            self.drug_admin_route_col,
-            self.drug_amount_col,
-            self.drug_amount_unit_col,
-            self.drug_rate_col,
-            self.drug_rate_unit_col,
-            self.fluid_group_col,
-            self.fluid_name_col,
-            self.fluid_amount_col,
-            self.fluid_rate_col,
-            self.drug_start_col,
-            self.drug_end_col,
-            self.drug_patient_weight_col,
-        ]
 
         # Add missing columns as null columns
         medications = medications.with_columns(
             pl.lit(None).alias(col)
-            for col in medications_cols_list
+            for col in self.medications_cols_list
             if col not in medications.columns
         )
 
@@ -310,10 +311,45 @@ class MedicationHarmonizer(GlobalVars):
                 .otherwise(pl.col(self.drug_rate_unit_col))
                 .alias(self.drug_rate_unit_col),
             )
-            .select(medications_cols_list)
+            .select(self.medications_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.drug_start_col)
         )
+
+    def harmonize_split_medications(self, table: str) -> pl.LazyFrame:
+        """
+        Splits medication data into two separate tables:
+        - One for administered medications.
+        - One for prescribed medications.
+
+        Returns:
+            pl.LazyFrame: A lazy frame containing the split medication data.
+            - For "administered": Contains medications that were given.
+            - For "prescribed": Contains medications that were prescribed.
+        """
+        assert table in [
+            "administered",
+            "prescribed",
+        ], "Table must be either 'administered' or 'prescribed'."
+
+        _medications_cols_list = self.medications_cols_list.copy()
+        _medications_cols_list.remove(self.drug_admin_type_col)
+
+        medications = self.harmonize_medications()
+        if table == "administered":
+            return (
+                medications.filter(pl.col(self.drug_admin_type_col) == "given")
+                .select(_medications_cols_list)
+                .sort(self.global_icu_stay_id_col, self.drug_start_col)
+            )
+        elif table == "prescribed":
+            return (
+                medications.filter(
+                    pl.col(self.drug_admin_type_col) == "prescribed"
+                )
+                .select(_medications_cols_list)
+                .sort(self.global_icu_stay_id_col, self.drug_start_col)
+            )
 
     # Helper functions
     # Concatenate the IDs with the database name to create a global ID
