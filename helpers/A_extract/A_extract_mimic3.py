@@ -477,17 +477,19 @@ class MIMIC3Extractor(MIMIC3Paths):
                 schema_overrides={"VALUE": str, "VALUENUM": float},
             )
 
-        ITEMIDS = {
+        WEIGHT_ITEMIDS = {
             762: self.weight_col,  # Admit Wt [carevue]
             763: self.weight_col,  # Daily Weight [carevue]
             3580: self.weight_col,  # Present Weight  (kg) [carevue]
+            3581: "weight_lbs",  # Present Weight  (lb) [carevue]
             3693: self.weight_col,  # Weight Kg [carevue]
             3723: self.weight_col,  # Birth Weight    (kg) [carevue]
             4183: self.weight_col,  # Birthweight (kg) [carevue]
             224639: self.weight_col,  # Daily Weight [metavision]
             226512: self.weight_col,  # Admission Weight (Kg) [metavision]
-            3581: "weight_lbs",  # Present Weight  (lb) [carevue]
             226531: "weight_lbs",  # Admission Weight (lbs.) [metavision]
+        }
+        HEIGHT_ITEMIDS = {
             920: "height_inch",  # Admit Ht [carevue]
             1394: "height_inch",  # Height Inches [carevue]
             3485: self.height_col,  # Length   Calc   (cm) [carevue]
@@ -498,7 +500,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             226730: self.height_col,  # Height (cm) [metavision]
         }
 
-        KEEPIDS = [*ITEMIDS.keys()]
+        KEEPIDS = [*(WEIGHT_ITEMIDS | HEIGHT_ITEMIDS).keys()]
+        ADMIT_WEIGHT_IDS = [762, 3723, 4183, 226512, 226531]
+        DAILY_WEIGHT_IDS = [763, 3580, 3581, 3693, 224639]
 
         height_weight = (
             chartevents.select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
@@ -513,39 +517,91 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("ITEMID").replace_strict(ITEMIDS, default=None),
-            )
-            .filter(
-                (pl.col("CHARTTIME") - pl.col("INTIME")).le(
-                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                pl.col("ITEMID")
+                .replace_strict(
+                    WEIGHT_ITEMIDS | HEIGHT_ITEMIDS,  # "|" merges dictionaries
+                    default=None,
                 )
+                .alias("LABEL"),
             )
-            .drop("INTIME", "CHARTTIME")
             .with_columns(
                 # Convert height in in to cm, weight in lbs to kg
-                pl.when(pl.col("ITEMID") == "height_inch")
+                pl.when(pl.col("LABEL") == "height_inch")
                 .then(pl.col("VALUENUM").mul(self.INCH_TO_CM))
-                .when(pl.col("ITEMID") == "weight_lbs")
+                .when(pl.col("LABEL") == "weight_lbs")
                 .then(pl.col("VALUENUM").mul(self.LBS_TO_KG))
                 .otherwise(pl.col("VALUENUM"))
                 .alias("VALUENUM"),
-                # Rename ITEMID to height_cm / weight_kg
-                pl.when(pl.col("ITEMID") == "height_inch")
+                # Rename LABEL to height_cm / weight_kg
+                pl.when(pl.col("LABEL") == "height_inch")
                 .then(pl.lit(self.height_col))
-                .when(pl.col("ITEMID") == "weight_lbs")
+                .when(pl.col("LABEL") == "weight_lbs")
                 .then(pl.lit(self.weight_col))
-                .otherwise(pl.col("ITEMID"))
-                .alias("ITEMID"),
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL"),
             )
-            .collect()
+        )
+
+        # Backfill weights as in:
+        # https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/weight_durations.sql
+        # Select the first admission weight
+        first_admit_weight = (
+            height_weight.filter(pl.col("ITEMID").is_in(ADMIT_WEIGHT_IDS))
+            .collect(engine="streaming")
+            .with_columns(
+                pl.col("VALUENUM")
+                .first()
+                .over(partition_by=self.icu_stay_id_col, order_by="CHARTTIME")
+                .alias("FIRST_ADMIT_WEIGHT")
+            )
+        )
+        # Select the first daily weight measurement
+        first_daily_weight = (
+            height_weight.filter(pl.col("ITEMID").is_in(DAILY_WEIGHT_IDS))
+            .collect(engine="streaming")
+            .with_columns(
+                pl.col("VALUENUM")
+                .first()
+                .over(partition_by=self.icu_stay_id_col, order_by="CHARTTIME")
+                .alias("FIRST_DAILY_WEIGHT")
+            )
+        )
+        # Combine the first admit and first daily weight measurements
+        weight = (
+            pl.concat([first_admit_weight, first_daily_weight], how="diagonal")
+            .drop("VALUENUM")
+            .with_columns(
+                pl.coalesce(
+                    pl.col("FIRST_ADMIT_WEIGHT"), pl.col("FIRST_DAILY_WEIGHT")
+                ).alias("VALUENUM")
+            )
+            .drop("FIRST_ADMIT_WEIGHT", "FIRST_DAILY_WEIGHT")
+        )
+
+        height = (
+            height_weight.filter(pl.col("ITEMID").is_in(HEIGHT_ITEMIDS.keys()))
+            .collect(engine="streaming")
+            .filter(
+                (pl.col("CHARTTIME") - pl.col("INTIME")).le(
+                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                ),
+            )
+        )
+
+        height_weight = (
+            pl.concat([weight, height], how="diagonal")
+            .drop("ITEMID", "INTIME", "CHARTTIME")
             .pivot(
                 index=self.icu_stay_id_col,
-                on="ITEMID",
+                on="LABEL",
                 values="VALUENUM",
-                aggregate_function="mean",  # NOTE: -> or mean?
+                aggregate_function="median",
             )
             .select(self.icu_stay_id_col, self.weight_col, self.height_col)
-            .cast({self.weight_col: float, self.height_col: float})
+            .with_columns(
+                pl.col(self.weight_col).cast(float).round(1),
+                pl.col(self.height_col).cast(float).round(0),
+            )
         )
 
         # Save precalculated data
