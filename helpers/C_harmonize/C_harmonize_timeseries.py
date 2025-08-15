@@ -134,9 +134,10 @@ class TimeseriesHarmonizer(GlobalVars):
 
         # region HiRID
         if "HiRID" in self.datasets:
-            hirid_ts, hirid_ts_labs = self.hirid.process_timeseries()
-            hirid_timeseries = hirid_ts.pipe(self._concat_helper, "hirid-")
-            hirid_timeseries_labs = hirid_ts_labs.pipe(
+            hirid_timeseries = self.hirid.process_timeseries().pipe(
+                self._concat_helper, "hirid-"
+            )
+            hirid_timeseries_labs = self.hirid.process_timeseries_labs().pipe(
                 self._concat_helper, "hirid-"
             )
 
