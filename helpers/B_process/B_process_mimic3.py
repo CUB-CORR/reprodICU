@@ -7,6 +7,7 @@
 import os
 
 import polars as pl
+
 from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
 from helpers.helper import GlobalHelpers
 from helpers.helper_conversions import UnitConverter
@@ -196,6 +197,14 @@ class MIMIC3Processor(MIMIC3Extractor):
                 valuecol="labstruct",
                 structfield="value",
             )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="LABEL"
+            )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .collect()
@@ -207,6 +216,17 @@ class MIMIC3Processor(MIMIC3Extractor):
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=[
+                    "Eosinophils/100 leukocytes",
+                    "Lymphocytes/100 leukocytes",
+                    "Reticulocytes/100 erythrocytes",
+                ],
+            )
             .lazy()
         )
 

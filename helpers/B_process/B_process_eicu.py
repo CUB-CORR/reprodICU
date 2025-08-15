@@ -177,6 +177,14 @@ class EICUProcessor(EICUExtractor):
                 valuecol="labstruct",
                 structfield="value",
             )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="labname",
+            )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab values to wide format
             .collect()

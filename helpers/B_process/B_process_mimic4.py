@@ -186,6 +186,14 @@ class MIMIC4Processor(MIMIC4Extractor):
                 valuecol="labstruct",
                 structfield="value",
             )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="label",
+            )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .collect()
@@ -197,6 +205,20 @@ class MIMIC4Processor(MIMIC4Extractor):
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=[
+                    "Basophils/100 leukocytes",
+                    "Eosinophils/100 leukocytes",
+                    "Lymphocytes/100 leukocytes",
+                    "Monocytes/100 leukocytes",
+                    "Neutrophils/100 leukocytes",
+                    "Reticulocytes/100 erythrocytes",
+                ],
+            )
             .lazy()
         )
 

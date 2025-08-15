@@ -577,8 +577,6 @@ class NWICUExtractor(NWICUPaths):
                 .alias(self.timeseries_time_col)
             )
             .drop(self.icu_length_of_stay_col)
-            .cast({"valuenum": float})
-            .drop_nulls("valuenum")
         )
 
     # region vitals
@@ -651,8 +649,6 @@ class NWICUExtractor(NWICUPaths):
                     • time: LOINC time aspect.
                     • LOINC: LOINC code.
         """
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
             .select("itemid", "mapped_concept_name")
@@ -722,8 +718,6 @@ class NWICUExtractor(NWICUPaths):
             .select("hadm_id", "itemid", "charttime", "valuenum")
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col})
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),

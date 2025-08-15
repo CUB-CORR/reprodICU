@@ -14,6 +14,7 @@ from helpers.B_process.B_process_nwicu import NWICUProcessor
 from helpers.B_process.BX_process_sicdb import SICdbProcessor
 from helpers.B_process.BX_process_umcdb import UMCdbProcessor
 from helpers.helper import GlobalHelpers, GlobalVars
+from helpers.helper_conversions import UnitConverter
 
 
 class TimeseriesHarmonizer(GlobalVars):
@@ -37,6 +38,7 @@ class TimeseriesHarmonizer(GlobalVars):
         self.paths = paths
         self.datasets = datasets
         self.helpers = GlobalHelpers()
+        self.convert = UnitConverter()
         self.index_cols = [
             self.global_icu_stay_id_col,
             self.timeseries_time_col,
@@ -316,7 +318,10 @@ class TimeseriesHarmonizer(GlobalVars):
             ts_vitals = (
                 # Drop rows with all NaN values in vitals columns
                 ts_vitals.pipe(
-                    self.helpers.dropna, "all", vitals_cols_not_index, False,
+                    self.helpers.dropna,
+                    "all",
+                    vitals_cols_not_index,
+                    False,
                 )
                 .cast(
                     {  # Convert columns to appropriate types
@@ -453,7 +458,10 @@ class TimeseriesHarmonizer(GlobalVars):
                 print("reprodICU - Saving labs...")
                 (
                     labs.pipe(self._print_unique_cases, "labs")
-                    .pipe(self.decode_lab_values)
+                    .pipe(
+                        self.convert._decode_lab_structs,
+                        cols_to_exclude=self.index_cols,
+                    )
                     .collect()
                     .write_parquet(self.save_path + "timeseries_labs.parquet")
                 )
@@ -475,39 +483,6 @@ class TimeseriesHarmonizer(GlobalVars):
         return vitals, labs, resp, inout
 
     # endregion
-
-    # region decode
-    # Decode the lab values
-    def decode_lab_values(self, lf: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        Decodes lab values stored as JSON strings in columns to a structured format.
-
-        For each non-index column in the input LazyFrame, this function:
-            - Treats the column value as a JSON string.
-            - Decodes it into a struct with fields:
-                 "value": Numeric lab value.
-                 "system": Coding system.
-                 "method": Measurement method.
-                 "time": Time of measurement.
-                 "LOINC": LOINC code.
-
-        Args:
-            lf (pl.LazyFrame): Input LazyFrame with lab value columns.
-
-        Returns:
-            pl.LazyFrame: The LazyFrame with decoded lab value columns.
-        """
-
-        def decode_lab_value(lab_value):
-            return pl.col(lab_value).str.json_decode(self.labstructdtype)
-
-        value_cols = [
-            col
-            for col in lf.collect_schema().names()
-            if col not in self.index_cols
-        ]
-
-        return lf.with_columns(*map(decode_lab_value, value_cols))
 
     # region metadata
     # Remove the metadata columns from the timeseries data

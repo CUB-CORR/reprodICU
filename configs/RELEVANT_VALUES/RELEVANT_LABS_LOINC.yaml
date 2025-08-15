@@ -116,7 +116,7 @@ Erythrocytes:
   systems:
     - Blood
 Erythrocyte mean corpuscular hemoglobin: # MCH
-  property: "Entitic Mass"
+  property: "Entitic mass"
   systems:
     - Red Blood Cells
 Erythrocyte mean corpuscular hemoglobin concentration: # MCHC
@@ -124,7 +124,7 @@ Erythrocyte mean corpuscular hemoglobin concentration: # MCHC
   systems:
     - Red Blood Cells
 Erythrocyte mean corpuscular volume: # MCV
-  property: "Entitic Volume"
+  property: "Entitic volume"
   systems:
     - Red Blood Cells
 Ferritin:

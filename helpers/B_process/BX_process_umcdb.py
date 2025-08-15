@@ -235,6 +235,14 @@ class UMCdbProcessor(UMCdbExtractor):
                 valuecol="labstruct",
                 structfield="value",
             )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="item"
+            )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the labs data
             .collect()
@@ -244,15 +252,27 @@ class UMCdbProcessor(UMCdbExtractor):
                 values="labstruct",
                 aggregate_function="first",
             )
-            .lazy()
-        )
-
-        ts_labs = (
-            ts_labs
             # Align the units of the lab values
             .pipe(self.convert._align_units)
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=[
+                    "Basophils/100 leukocytes",
+                    "Eosinophils/100 leukocytes",
+                    "Lymphocytes/100 leukocytes",
+                    "Monocytes/100 leukocytes",
+                    "Neutrophils/100 leukocytes",
+                    "Neutrophils.band form/100 leukocytes",
+                    "Neutrophils.segmented/100 leukocytes",
+                    "Reticulocytes/100 erythrocytes",
+                ],
+            )
+            .lazy()
         )
 
         # Save the preprocessed data

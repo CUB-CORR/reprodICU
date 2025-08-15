@@ -51,6 +51,12 @@ class MIMIC4Extractor(MIMIC4Paths):
             "Neutrophils [#/volume]",
             "Reticulocytes [#/volume]",
         ]
+        self.lab_specimen_map = {
+            "ART.": "Blood arterial",
+            "CENTRAL VENOUS.": "Blood central venous",
+            "MIX.": "Blood mixed venous",
+            "VEN.": "Blood venous",
+        }
 
     # region ID mapping table
     def extract_patient_IDs(self) -> pl.LazyFrame:
@@ -677,7 +683,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .alias(self.timeseries_time_col)
             )
             .drop(self.icu_length_of_stay_col)
-            .cast({"valuenum": float})
         )
 
     # region vitals
@@ -831,11 +836,11 @@ class MIMIC4Extractor(MIMIC4Paths):
                     • time: LOINC time aspect.
                     • LOINC: LOINC code.
         """
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
+            .select(
+                "itemid (omop_source_code)", "omop_concept_name", "category"
+            )
             .rename(
                 {
                     "itemid (omop_source_code)": "itemid",
@@ -909,19 +914,27 @@ class MIMIC4Extractor(MIMIC4Paths):
         else:
             labevents = pl.scan_csv(self.labevents_path)
 
+        SPECIMEN_ID = 52033
+        SPECIMENS = (
+            labevents.filter(pl.col("itemid") == SPECIMEN_ID)
+            .select("specimen_id", "value")
+            .with_columns(
+                pl.col("value").replace(self.lab_specimen_map, default=None)
+            )
+        )
+
         return (
-            labevents.select("hadm_id", "itemid", "charttime", "valuenum")
+            labevents.select(
+                "hadm_id", "specimen_id", "itemid", "charttime", "valuenum"
+            )
             # Rename columns for consistency
             .rename({"hadm_id": self.hospital_stay_id_col})
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(d_labitems_to_loinc_data, on="itemid", how="left")
-            .drop("itemid")
             # Remove rows with empty lab names
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))
             # Remove rows with empty lab results
@@ -930,8 +943,16 @@ class MIMIC4Extractor(MIMIC4Paths):
             .unique()
             # Cast valuenum to float
             .cast({"valuenum": float})
+            # Replace the systems as determined by the specimen
+            .join(SPECIMENS, on="specimen_id", how="left", coalesce=True)
+            .with_columns(
+                pl.col("LOINC_component").alias("label"),
+                pl.coalesce(
+                    pl.col("value"),
+                    pl.col("LOINC_system"),
+                ).alias("LOINC_system"),
+            )
             # MAKE STRUCT
-            .with_columns(pl.col("LOINC_component").alias("label"))
             .with_columns(
                 pl.struct(
                     value=pl.col("valuenum"),

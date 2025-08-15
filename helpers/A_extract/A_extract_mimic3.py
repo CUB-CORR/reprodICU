@@ -49,6 +49,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             # "Neutrophils [#/volume]",
             "Reticulocytes [#/volume]",
         ]
+        self.lab_specimen_map = {
+            "ART": "Blood arterial",
+            "CENTRAL VENOUS": "Blood central venous",
+            "MIX": "Blood mixed venous",
+            "VEN": "Blood venous",
+        }
 
     # region IDs
     # Extract the patient IDs that are used in the MIMIC-III dataset
@@ -657,7 +663,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.timeseries_time_col)
             )
             .drop(self.icu_length_of_stay_col)
-            .cast({"VALUENUM": float})
         )
 
     # region vitals TS
@@ -823,11 +828,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                     • time: LOINC time aspect.
                     • LOINC: LOINC code.
         """
-        # NOTE: ASSUMPTION: These are the lab values of interest
-        # TODO: Confer with medical experts to confirm these are the correct values
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select("ITEMID", "COALESCED_CONCEPT_NAME")
+            .select("ITEMID", "COALESCED_CONCEPT_NAME", "CATEGORY")
             .rename({"COALESCED_CONCEPT_NAME": "LABEL"})
         )
         labnames = (
@@ -896,19 +899,36 @@ class MIMIC3Extractor(MIMIC3Paths):
         else:
             labevents = pl.scan_csv(self.labevents_path)
 
+        SPECIMEN_ID = 50800
+        SPECIMENS = (
+            labevents.filter(pl.col("ITEMID") == SPECIMEN_ID)
+            .select("HADM_ID", "CHARTTIME", "VALUE")
+            .rename({"HADM_ID": self.hospital_stay_id_col})
+            .with_columns(
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("VALUE").replace(self.lab_specimen_map, default=None),
+            )
+            .pipe(self.extract_timeseries_helper)
+        )
+        BLOOD_GAS_ITEMIDS = (
+            d_labitems_to_loinc_data.filter(pl.col("CATEGORY") == "Blood Gas")
+            .select("ITEMID")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
+
         return (
             labevents.select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col})
-            # BUG: .drop_nulls() drops all rows with any(!) null values
-            # .drop_nulls()  # NOTE: CLEARLY THINK ABOUT THIS (-> are these baselines?)
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(d_labitems_to_loinc_data, on="ITEMID", how="left")
-            .drop("ITEMID")
             # Remove rows with empty lab names
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
             # Remove rows with empty lab results
@@ -917,8 +937,27 @@ class MIMIC3Extractor(MIMIC3Paths):
             .unique()
             # Cast valuenum to float
             .cast({"VALUENUM": float})
+            # Replace the systems as determined by the specimen
+            .join(
+                SPECIMENS,
+                on=[self.hospital_stay_id_col, self.timeseries_time_col],
+                how="left",
+                coalesce=True,
+            )
+            .with_columns(
+                pl.col("LOINC_component").alias("LABEL"),
+                # Replace only Blood Gas systems with the specimen system
+                pl.when(pl.col("ITEMID").is_in(BLOOD_GAS_ITEMIDS))
+                .then(
+                    pl.coalesce(
+                        pl.col("VALUE"),
+                        pl.col("LOINC_system"),
+                    ).alias("LOINC_system")
+                )
+                .otherwise(pl.col("LOINC_system"))
+                .alias("LOINC_system"),
+            )
             # MAKE STRUCT
-            .with_columns(pl.col("LOINC_component").alias("LABEL"))
             .with_columns(
                 pl.struct(
                     value=pl.col("VALUENUM"),
