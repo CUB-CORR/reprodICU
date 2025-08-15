@@ -7,6 +7,7 @@
 
 import os
 import sys
+import time
 
 import polars as pl
 from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
@@ -33,150 +34,96 @@ class HiRIDProcessor(HiRIDExtractor):
         self.helpers = GlobalHelpers()
         self.convert = HiRIDConverter()
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
-
-    # region time series
-    def process_timeseries(self) -> pl.LazyFrame:
-        """
-        Processes and combines time series data for HiRID.
-
-        Steps:
-          1. Check if preprocessed main and lab parquet files exist in {precalc_path}.
-          2. If available, load both LazyFrames (main and lab data) with sorted index columns {icu_stay_id_col} and {timeseries_time_col}.
-          3. If not, for each raw timeseries file:
-             a. Extract admissions and length of stay data.
-             b. Process timeseries data with _extract_timeseries_helper.
-             c. Separate lab measurements by mapping "variable" to "LOINC_component".
-             d. Pivot main and lab datasets separately.
-             e. Concatenate results into two LazyFrames.
-          4. Save and return a tuple of (main timeseries, lab timeseries) sorted by the index.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time (as string) after conversion.
-          - Additional columns: Pivoted measurement variables from raw files.
-
-        Returns:
-            tuple: Two LazyFrames (main, lab) sorted by [{icu_stay_id_col}, {timeseries_time_col}].
-        """
-        ts_path = self.precalc_path + "HiRID_timeseries.parquet"
-        ts_labs_path = self.precalc_path + "HiRID_timeseries_labs.parquet"
-
-        if os.path.isfile(ts_path) and os.path.isfile(ts_labs_path):
-            # Load the preprocessed data
-            return (
-                pl.scan_parquet(ts_path, parallel="prefiltered").select(
-                    pl.col(self.index_cols).set_sorted(),
-                    pl.exclude(self.index_cols),
-                ),
-                pl.scan_parquet(ts_labs_path).select(
-                    pl.col(self.index_cols).set_sorted(),
-                    pl.exclude(self.index_cols),
-                ),
-            )
-
-        print("HiRID   - Processing time series data...")
-
-        admissiontime = (
+        self.admissiontime = (
             self._extract_admissions()
             .select(self.icu_stay_id_col, "admissiontime")
             .cast({"admissiontime": str})
         )
-        length_of_stay = self._extract_length_of_stay()
+        self.length_of_stay = self._extract_length_of_stay()
+
+    def _get_labname_components(self) -> pl.LazyFrame:
+        """
+        Retrieves the lab names from the HiRID dataset.
+
+        Returns:
+            pl.LazyFrame: LazyFrame containing the LOINC data.
+        """
+        data = (
+            pl.scan_parquet(self.timeseries_path, parallel="prefiltered")
+            .select("variableid")
+            .unique()
+            .join(self._get_observation_variables(), on="variableid")
+            .select("variable")
+        )
+
+        # Remove duplicates and sort the LOINC data
+        labnames = data.collect().to_series().to_list()
+        return data.with_columns(
+            pl.col("variable")
+            .replace_strict(
+                self.omop.get_lab_component_from_name(labnames),
+                default=None,
+            )
+            .alias("LOINC_component")
+        )
+
+    # region time series
+    def process_timeseries(self) -> pl.LazyFrame:
+        """
+        Processes and combines non-laboratory time series data for HiRID.
+
+        Steps:
+          1. Check if the preprocessed non-lab parquet file exists in {precalc_path}.
+          2. If available, load the LazyFrame with sorted index columns {icu_stay_id_col} and {timeseries_time_col}.
+          3. If not, for each raw timeseries file:
+             a. Use pre-extracted admissions and length of stay data ({admissiontime}, {length_of_stay}).
+             b. Process timeseries data with _extract_timeseries_helper.
+             c. Separate lab measurements by mapping "variable" to "LOINC_component" and DROP rows where "LOINC_component" is not null (keep non-lab only).
+             d. Pivot the remaining (non-lab) data to wide format (on "variable").
+             e. Concatenate results into a single LazyFrame.
+          4. Save and return the non-lab timeseries sorted by the index.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time (as string) after conversion.
+          - Additional columns: Pivoted non-lab measurement variables from raw files.
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame with non-lab measurements.
+        """
+        ts_path = self.precalc_path + "HiRID_timeseries.parquet"
+
+        if os.path.isfile(ts_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_path, parallel="prefiltered").select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
+
+        print("HiRID   - Processing timeseries data...")
 
         # Create an empty DataFrame to store the timeseries data
         timeseries_processed = pl.LazyFrame()
-        timeseries_labs_processed = pl.LazyFrame()
+        labname_components = self._get_labname_components()
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
         os_listdir_files = os.listdir(self.timeseries_path)
-        counter, counter_max, cases = 0, len(os_listdir_files), 0
+        counter, counter_max, cases, times = 0, len(os_listdir_files), 0, []
         for file in os.listdir(self.timeseries_path):
-            # Update the counter
-            counter += 1
-            sys.stdout.write("\033[K")  # Clear to the end of line
-            print(
-                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)",
-                end="\r",
-            )
-
+            start = time.time()
             # Process timeseries data
-            timeseries = pl.scan_parquet(self.timeseries_path + file).pipe(
-                self._extract_timeseries_helper, admissiontime, length_of_stay
-            )
-            cases += (
-                timeseries.select(self.icu_stay_id_col)
-                .unique()
-                .collect()
-                .shape[0]
-            )
-
-            # Separate the lab values from the rest
-            LOINC_data = timeseries.select("variable").unique()
-            labnames = LOINC_data.collect().to_series().to_list()
-            LOINC_data = LOINC_data.with_columns(
-                pl.col("variable")
-                .replace_strict(
-                    self.omop.get_lab_component_from_name(labnames),
-                    default=None,
-                )
-                .alias("LOINC_component")
-            )
-            timeseries_labs = (
-                timeseries.join(LOINC_data, on="variable")
-                .filter(
-                    pl.col("LOINC_component").is_in(
-                        self.relevant_lab_LOINC_components
-                    )
-                )
-                .pipe(self._extract_timeseries_labs_helper)
-                # Convert the lab values to the correct units
-                .pipe(
-                    self.convert._convert_lab_values,
-                    labelcol="variable",
-                    valuecol="labstruct",
-                )
-                # Replace the LOINC codes
-                .pipe(
-                    self.convert._assign_LOINC_codes,
-                    self.omop,
-                    self.index_cols,
-                    struct_cols=["labstruct"],
-                    component_col="variable",
-                )
-                .with_columns(pl.col("labstruct").struct.json_encode())
-                # Pivot the timeseries data
-                .collect()
-                .pivot(
-                    on="variable",
-                    index=self.index_cols,
-                    values="labstruct",
-                    aggregate_function="first",
-                )
-            )
-
-            timeseries_labs_columns = timeseries_labs.collect_schema().names()
-            if ("Lymphocytes" in timeseries_labs_columns) and (
-                "Leukocytes" in timeseries_labs_columns
-            ):
-                timeseries_labs = (
-                    timeseries_labs
-                    # Convert the wide lab values to the correct units
-                    .pipe(self.convert._convert_wide_lab_values)
-                    # Replace the LOINC codes
-                    .pipe(
-                        self.convert._assign_LOINC_codes,
-                        self.omop,
-                        self.index_cols,
-                        struct_cols=["Lymphocytes/100 leukocytes"],
-                    )
-                )
-
-            timeseries_labs = timeseries_labs.sort(self.index_cols).lazy()
-
-            # Drop the lab values from the timeseries data
             timeseries = (
-                timeseries.join(LOINC_data, on="variable")
+                pl.scan_parquet(
+                    self.timeseries_path + file, parallel="prefiltered"
+                )
+                .pipe(
+                    self._extract_timeseries_helper,
+                    self.admissiontime,
+                    self.length_of_stay,
+                )
+                # Drop the lab values from the timeseries data
+                .join(labname_components, on="variable")
                 .filter(pl.col("LOINC_component").is_null())
                 # Pivot the timeseries data
                 .collect()
@@ -187,33 +134,170 @@ class HiRIDProcessor(HiRIDExtractor):
                     aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
                 )
                 .sort(self.index_cols)
-                .lazy()
             )
 
             # Append the data to the DataFrame
             timeseries_processed = pl.concat(
-                [timeseries_processed, timeseries],
+                [timeseries_processed, timeseries.lazy()],
                 how="diagonal_relaxed",
             )
-            timeseries_labs_processed = pl.concat(
-                [timeseries_labs_processed, timeseries_labs],
-                how="diagonal_relaxed",
+
+            # Update the counter and timings
+            elapsed = time.time() - start
+            times.append(elapsed)
+            avg = sum(times) / len(times)
+            eta_min = int(avg * (counter_max - counter) / 60 + 0.5)
+            counter += 1
+
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            cases += timeseries.select(self.icu_stay_id_col).unique().shape[0]
+            print(
+                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)"
+                f" (last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
+                end="\r",
             )
 
         # Save the preprocessed data
         timeseries_processed.sink_parquet(ts_path)
+
+        # Load the preprocessed data
+        return pl.scan_parquet(ts_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
+        )
+
+    # endregion
+
+    # region timeseries labs
+    def process_timeseries_labs(self) -> pl.LazyFrame:
+        """
+        Processes laboratory time series data for HiRID.
+
+        Steps:
+          1. Check if a preprocessed lab parquet file exists in {precalc_path}; load it if available.
+          2. Otherwise, for each raw timeseries file:
+             a. Use pre-extracted admissions and length of stay data ({admissiontime}, {length_of_stay}).
+             b. Process timeseries data with _extract_timeseries_helper.
+             c. Identify lab measurements by mapping "variable" to "LOINC_component" and KEEP rows where "LOINC_component" is not null.
+             d. Convert to structured lab rows via _extract_timeseries_labs_helper and concatenate across files.
+          3. Convert lab values to canonical units via _convert_lab_values.
+          4. Assign LOINC codes pre-pivot using _assign_LOINC_codes (component_col="variable"); JSON-encode "labstruct".
+          5. Pivot on "variable" to create a wide-format dataset (values="labstruct").
+          6. Apply wide-format adjustments via _convert_wide_lab_values.
+          7. (Optional) Assign LOINC codes again to derived columns (e.g., "Lymphocytes/100 leukocytes").
+          8. Save and return the lab timeseries sorted by {icu_stay_id_col} and {timeseries_time_col}.
+
+        Columns:
+          - {icu_stay_id_col}: ICU stay identifier.
+          - {timeseries_time_col}: Time (as string) after conversion.
+          - Additional columns: JSON-encoded "labstruct" per lab variable.
+
+        Returns:
+            pl.LazyFrame: A sorted wide-format LazyFrame of lab measurements.
+        """
+        ts_labs_path = self.precalc_path + "HiRID_timeseries_labs.parquet"
+
+        if os.path.isfile(ts_labs_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_labs_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
+
+        print("HiRID   - Processing lab data...")
+
+        # Create an empty DataFrame to store the timeseries data
+        timeseries_labs_filtered = pl.LazyFrame()
+        labname_components = self._get_labname_components()
+
+        # Since each case has it's data in only one file, iterating over the files specifically allows
+        # for a more efficient processing of the data.
+        os_listdir_files = os.listdir(self.timeseries_path)
+        counter, counter_max, cases, times = 0, len(os_listdir_files), 0, []
+        for file in os.listdir(self.timeseries_path):
+            start = time.time()
+            # Process timeseries data
+            timeseries = (
+                pl.scan_parquet(
+                    self.timeseries_path + file, parallel="prefiltered"
+                )
+                .pipe(
+                    self._extract_timeseries_helper,
+                    self.admissiontime,
+                    self.length_of_stay,
+                )
+                # Drop the non-lab values from the timeseries data
+                .join(labname_components, on="variable")
+                .filter(pl.col("LOINC_component").is_not_null())
+                .collect()
+            )
+
+            timeseries_labs_filtered = pl.concat(
+                [timeseries_labs_filtered, timeseries.lazy()],
+                how="diagonal_relaxed",
+            )
+
+            # Update the counter and timings
+            elapsed = time.time() - start
+            times.append(elapsed)
+            avg = sum(times) / len(times)
+            eta_min = int(avg * (counter_max - counter) / 60 + 0.5)
+            counter += 1
+
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            cases += timeseries.select(self.icu_stay_id_col).unique().shape[0]
+            print(
+                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)"
+                f" (last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
+                end="\r",
+            )
+
+        # Process the timeseries labs data all at once
+        timeseries_labs_processed = (
+            timeseries_labs_filtered.pipe(self._extract_timeseries_labs_helper)
+            # Convert the lab values to the correct units
+            .pipe(
+                self.convert._convert_lab_values,
+                labelcol="variable",
+                valuecol="labstruct",
+            )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="variable",
+            )
+            .with_columns(pl.col("labstruct").struct.json_encode())
+            # Pivot the timeseries data
+            .collect()
+            .pivot(
+                on="variable",
+                index=self.index_cols,
+                values="labstruct",
+                aggregate_function="first",
+            )
+            # Convert the wide lab values to the correct units
+            .pipe(self.convert._convert_wide_lab_values)
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["Lymphocytes/100 leukocytes"],
+            )
+            .sort(self.index_cols)
+            .lazy()
+        )
+
+        # Save the preprocessed data
         timeseries_labs_processed.sink_parquet(ts_labs_path)
 
         # Load the preprocessed data
-        return (
-            pl.scan_parquet(ts_path).select(
-                pl.col(self.index_cols).set_sorted(),
-                pl.exclude(self.index_cols),
-            ),
-            pl.scan_parquet(ts_labs_path).select(
-                pl.col(self.index_cols).set_sorted(),
-                pl.exclude(self.index_cols),
-            ),
+        return pl.scan_parquet(ts_labs_path).select(
+            pl.col(self.index_cols).set_sorted(),
+            pl.exclude(self.index_cols),
         )
 
     # endregion
