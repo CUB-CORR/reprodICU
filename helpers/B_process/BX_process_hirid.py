@@ -136,6 +136,14 @@ class HiRIDProcessor(HiRIDExtractor):
                     labelcol="variable",
                     valuecol="labstruct",
                 )
+                # Replace the LOINC codes
+                .pipe(
+                    self.convert._assign_LOINC_codes,
+                    self.omop,
+                    self.index_cols,
+                    struct_cols=["labstruct"],
+                    component_col="variable",
+                )
                 .with_columns(pl.col("labstruct").struct.json_encode())
                 # Pivot the timeseries data
                 .collect()
@@ -155,6 +163,13 @@ class HiRIDProcessor(HiRIDExtractor):
                     timeseries_labs
                     # Convert the wide lab values to the correct units
                     .pipe(self.convert._convert_wide_lab_values)
+                    # Replace the LOINC codes
+                    .pipe(
+                        self.convert._assign_LOINC_codes,
+                        self.omop,
+                        self.index_cols,
+                        struct_cols=["Lymphocytes/100 leukocytes"],
+                    )
                 )
 
             timeseries_labs = timeseries_labs.sort(self.index_cols).lazy()

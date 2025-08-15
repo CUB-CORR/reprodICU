@@ -427,7 +427,7 @@ class SICdbExtractor(SICdbPaths):
             pl.scan_csv(self.laboratory_path)
             .rename({"CaseID": self.icu_stay_id_col})
             .join(offsets, on=self.icu_stay_id_col)
-            .join(LOINC_data, on="LaboratoryID")
+            .join(LOINC_data, on="LaboratoryID", how="left")
             # Fix lab time offset
             .with_columns(
                 (pl.col("Offset") - pl.col("CaseOffset"))
@@ -446,7 +446,10 @@ class SICdbExtractor(SICdbPaths):
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
-            .filter(pl.col("LaboratoryName").is_not_null())
+            .filter(
+                pl.col("LaboratoryName").is_not_null(),
+                pl.col("LOINC_component").is_not_null(),
+            )
             # Remove rows with empty lab results
             .filter(
                 pl.col("LaboratoryValue").is_not_null()
@@ -732,6 +735,7 @@ class SICdbExtractor(SICdbPaths):
             pl.read_csv(self.d_references_path)
             .filter(pl.col("ReferenceName") == "Laboratory")
             .select("ReferenceGlobalID", "LOINC_long")
+            .drop_nulls("LOINC_long")
             .with_columns(
                 pl.col("LOINC_long").replace(
                     {  # NOTE: fixing wrong unit

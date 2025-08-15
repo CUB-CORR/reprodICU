@@ -217,8 +217,7 @@ class EICUExtractor(EICUPaths):
                 .replace(self.DISCHARGE_LOCATIONS_MAP)
                 .cast(self.discharge_locations_dtype),
                 # Convert admssiontime string to datetime
-                pl.col(self.admission_time_col)
-                .str.to_time("%H:%M:%S"),
+                pl.col(self.admission_time_col).str.to_time("%H:%M:%S"),
             )
             # Handle zero values for height and weight
             .with_columns(
@@ -236,8 +235,7 @@ class EICUExtractor(EICUPaths):
             .sort(
                 [
                     self.mortality_icu_col,  # mortality must be "increasing" (i.e. alive [= false / 0] first)
-                    self.person_id_col,
-                    self.admission_year_col, # admission year must be increasing
+                    self.admission_year_col,  # admission year must be increasing
                     self.age_col,  # age must be increasing
                     self.hospital_stay_id_col,  # keep same hospital stays together
                     self.icu_stay_seq_num_col,

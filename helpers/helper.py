@@ -288,6 +288,20 @@ class GlobalVars(GlobalHelpers):
         self.ventilator_mode_enum_map_inverted = {
             i: v for v, i in self.ventilator_mode_enum_map.items()
         }
+        self.blood_gas_source_enum_map = {
+            v: i
+            for i, v in enumerate(
+                [
+                    "Blood arterial",
+                    "Blood mixed venous",
+                    "Blood central venous",
+                    "Blood venous",
+                ]
+            )
+        }
+        self.blood_gas_source_enum_map_inverted = {
+            i: v for v, i in self.blood_gas_source_enum_map.items()
+        }
 
         # region ICD
         # Define global mappings (ICD diagnoses & procedures and more)
@@ -367,6 +381,9 @@ class GlobalVars(GlobalHelpers):
         self.conversion_lab_LOINC_components = self.load_mapping_subkeys(
             self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml",
             "for_conversion",
+        )
+        self.relevant_lab_LOINC_properties = self.load_mapping_subkeys(
+            self.relevant_values_path + "RELEVANT_LABS_LOINC.yaml", "property"
         )
 
         self.relevant_vital_values = list(

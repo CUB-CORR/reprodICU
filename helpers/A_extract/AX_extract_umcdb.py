@@ -424,11 +424,13 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return self._extract_timeseries_labs_helper(
-            self._extract_timeseries_numericitems()
+            self._extract_timeseries_numericitems(labs=True)
         )
 
     # Extract timeseries information from the numericitems.csv file
-    def _extract_timeseries_numericitems(self) -> pl.LazyFrame:
+    def _extract_timeseries_numericitems(
+        self, labs: bool = False
+    ) -> pl.LazyFrame:
         """
         Internal helper to extract and process numeric timeseries data from a Parquet file.
 
@@ -447,7 +449,9 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return (
-            pl.scan_parquet(self.numericitems_path)
+            pl.scan_parquet(self.numericitems_path, parallel="prefiltered")
+            # If labs is True, filter for lab items only
+            .filter(pl.col("islabresult").cast(bool) == labs)
             .select("admissionid", "itemid", "value", "measuredat")
             .rename({"admissionid": self.icu_stay_id_col})
             .join(self._extract_numeric_references(), on="itemid", how="left")
@@ -493,16 +497,14 @@ class UMCdbExtractor(UMCdbPaths):
             data.join(intimes, on=self.icu_stay_id_col)
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (pl.col("measuredat") < pl.col("outtime"))
-                & (
-                    pl.col("measuredat")
-                    > (
-                        pl.col("intime")
-                        - pl.duration(
-                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).dt.total_milliseconds()
-                    )
-                )
+                pl.col("measuredat") < pl.col("outtime"),
+                pl.col("measuredat")
+                > (
+                    pl.col("intime")
+                    - pl.duration(
+                        days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                    ).dt.total_milliseconds()
+                ),
             )
             .with_columns(
                 pl.duration(

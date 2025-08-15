@@ -194,6 +194,14 @@ class SICdbProcessor(SICdbExtractor):
                 labelcol="LaboratoryName",
                 valuecol="labstruct",
             )
+            # Replace the LOINC codes
+            .pipe(
+                self.convert._assign_LOINC_codes,
+                self.omop,
+                self.index_cols,
+                struct_cols=["labstruct"],
+                component_col="LaboratoryName"
+            )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
             .collect()
@@ -201,7 +209,7 @@ class SICdbProcessor(SICdbExtractor):
                 on="LaboratoryName",
                 index=self.index_cols,
                 values="labstruct",
-                aggregate_function="first",  # NOTE: mean is used here -> check if this is sensible
+                aggregate_function="first",
             )
             .lazy()
         )
