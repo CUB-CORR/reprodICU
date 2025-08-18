@@ -177,7 +177,11 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             "patientunitstayid", "unitdischargeoffset"
         )
 
-        NURSECHARTING = pl.scan_csv(self.eicu_paths.nurseCharting_path).select(
+        if "parquet" in self.eicu_paths.nurseCharting_path:
+            nurseCharting = pl.scan_parquet(self.eicu_paths.nurseCharting_path)
+        else:
+            nurseCharting = pl.scan_csv(self.eicu_paths.nurseCharting_path)
+        NURSECHARTING = nurseCharting.select(
             pl.col("patientunitstayid"),
             pl.col("nursingchartoffset").alias("charttime"),
             pl.col("nursingchartvalue").str.to_lowercase().alias("string"),
@@ -368,7 +372,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         )
 
         OXYGEN_THERAPY_UNKNOWN_TYPE = (
-            pl.scan_csv(self.eicu_paths.nurseCharting_path)
+            nurseCharting
             .filter(
                 pl.col("nursingchartoffset") > -60,
                 pl.col("nursingchartcelltypevallabel").str.contains("O2 L/%"),
