@@ -2031,6 +2031,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(
                 d_diagnoses.select("ICD9_CODE", "LONG_TITLE"),
                 on="ICD9_CODE",
+                how="left",
             )
             .rename(
                 {

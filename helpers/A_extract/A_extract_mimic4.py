@@ -1747,6 +1747,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .join(
                 d_diagnoses.select("icd_code", "icd_version", "long_title"),
                 on="icd_code",
+                how="left",
             )
             .rename(
                 {
