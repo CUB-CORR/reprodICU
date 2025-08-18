@@ -1317,7 +1317,11 @@ class MIMIC3Extractor(MIMIC3Paths):
         inputevents_mv = (
             pl.scan_csv(
                 self.inputevents_mv_path,
-                schema_overrides={"AMOUNT": float, "PATIENTWEIGHT": float},
+                schema_overrides={
+                    "AMOUNT": float,
+                    "TOTALAMOUNT": float,
+                    "PATIENTWEIGHT": float,
+                },
             )
             .select(
                 "ICUSTAY_ID",
@@ -1335,7 +1339,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 "ORDERCOMPONENTTYPEDESCRIPTION",
                 "ORDERCATEGORYDESCRIPTION",
                 "PATIENTWEIGHT",
-                "CANCELREASON"
+                "CANCELREASON",
             )
             .rename(
                 {
@@ -1484,7 +1488,12 @@ class MIMIC3Extractor(MIMIC3Paths):
         #######################################################################
         inputevents_cv = (
             pl.scan_csv(
-                self.inputevents_cv_path, schema_overrides={"AMOUNT": float}
+                self.inputevents_cv_path,
+                schema_overrides={
+                    "AMOUNT": float,
+                    "RATE": float,
+                    "TOTALAMOUNT": float,
+                },
             )
             .select(
                 "ICUSTAY_ID",
@@ -1523,6 +1532,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .str.replace("kg", "/kg"),
                 # Add a column to indicate if the drug is continuous
                 pl.lit(True).alias(self.drug_continuous_col),
+                # Add a column to indicate the administration type
+                pl.lit("given")
+                .cast(self.drug_admin_type_dtype)
+                .alias(self.drug_admin_type_col),
             )
         )
 
@@ -1537,7 +1550,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .filter(pl.col("is_fluid_only"))
             .drop("is_fluid_only")
-            .with_columns(pl.col("CHARTTIME").shift(1).alias("PREV_CHARTTIME"))
+            .with_columns(
+                pl.col("CHARTTIME")
+                .shift(1)
+                .over(self.drug_mixture_id_col, order_by="CHARTTIME")
+                .alias("PREV_CHARTTIME")
+            )
             # recalculate the rate for fluids in ml/hr
             .with_columns(
                 pl.col(self.drug_amount_col)
@@ -1554,30 +1572,17 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .alias(self.fluid_rate_col)
             )
-            # mark all continous rows with the same rate
-            .with_columns(
-                pl.col(self.fluid_rate_col)
-                .ne(
-                    pl.col(self.fluid_rate_col)
-                    .shift(1)
-                    .over(self.drug_mixture_id_col, order_by="CHARTTIME")
-                )
-                .cast(int)
-                .alias("has_same_rate")
-            )
-            .with_columns(
-                pl.col("has_same_rate")
-                .cum_sum()
-                .over(self.drug_mixture_id_col, order_by="CHARTTIME")
-            )
-            .group_by(self.drug_mixture_id_col, "has_same_rate")
+            .group_by(self.drug_mixture_id_col, self.drug_mixture_admin_id_col)
             .agg(
                 pl.col(
                     self.icu_stay_id_col,
-                    self.drug_mixture_admin_id_col,
                     self.fluid_rate_col,
+                    self.drug_continuous_col,
+                    self.drug_admin_type_col,
                     "ITEMID_FLUID",
-                ).first(),
+                )
+                .sort_by("CHARTTIME")
+                .first(),
                 pl.col(self.drug_amount_col).sum().alias(self.fluid_amount_col),
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
@@ -1586,47 +1591,31 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # select all other inputevents
         # Split into two dataframes for drug and fluid components
-        inputevents_cv_mixtures = (
-            inputevents_cv.with_columns(
-                (pl.col(self.drug_amount_unit_col) == "ml")
-                .all()
-                .over(self.drug_mixture_id_col)
-                .alias("is_fluid_only"),
-                pl.col(self.drug_rate_col, self.drug_rate_unit_col)
-                .forward_fill()
-                .backward_fill()
-                .over(self.drug_mixture_admin_id_col),
-            )
-            .filter(pl.col("is_fluid_only").not_())
-            .drop("is_fluid_only")
-            # mark all continous rows with the same rate
-            .with_columns(
-                pl.col(self.drug_rate_col)
-                .ne(
-                    pl.col(self.drug_rate_col)
-                    .shift(1)
-                    .over(self.drug_mixture_id_col, order_by="CHARTTIME")
-                )
-                .cast(int)
-                .alias("has_same_rate")
-            )
-            .with_columns(
-                pl.col("has_same_rate")
-                .cum_sum()
-                .over(self.drug_mixture_id_col, order_by="CHARTTIME")
-            )
+        inputevents_cv_mixtures = inputevents_cv.with_columns(
+            pl.col(self.drug_rate_col, self.drug_rate_unit_col)
+            .forward_fill()
+            .backward_fill()
+            .over(self.drug_mixture_admin_id_col),
+        ).filter(
+            (pl.col(self.drug_amount_unit_col) == "ml")
+            .all()
+            .over(self.drug_mixture_id_col)
+            .not_()
         )
 
         # Group by mixture ID and rate continuity
         inputevents_cv_mixtures = (
             inputevents_cv_mixtures.group_by(
-                self.drug_mixture_id_col, "has_same_rate"
+                self.drug_mixture_id_col, self.drug_mixture_admin_id_col
             )
             .agg(
                 pl.col(
                     self.icu_stay_id_col,
-                    self.drug_mixture_admin_id_col,
-                ).first(),
+                    self.drug_continuous_col,
+                    self.drug_admin_type_col,
+                )
+                .sort_by("CHARTTIME")
+                .first(),
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
             )
@@ -1635,15 +1624,19 @@ class MIMIC3Extractor(MIMIC3Paths):
                 inputevents_cv_mixtures.filter(
                     pl.col(self.drug_amount_unit_col) != "ml"
                 )
-                .group_by(self.drug_mixture_id_col, "has_same_rate")
+                .group_by(
+                    self.drug_mixture_id_col, self.drug_mixture_admin_id_col
+                )
                 .agg(
-                    pl.col("ITEMID").first().alias("ITEMID"),
-                    pl.col(self.drug_rate_col).first(),
-                    pl.col(self.drug_rate_unit_col).first(),
+                    pl.col(
+                        "ITEMID",
+                        self.drug_rate_col,
+                        self.drug_rate_unit_col,
+                        self.drug_amount_unit_col,
+                    ).first(),
                     pl.col(self.drug_amount_col).sum(),
-                    pl.col(self.drug_amount_unit_col).first(),
                 ),
-                on=[self.drug_mixture_id_col, "has_same_rate"],
+                on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
             )
             .join(
@@ -1651,7 +1644,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                 inputevents_cv_mixtures.filter(
                     pl.col(self.drug_amount_unit_col) == "ml"
                 )
-                .group_by(self.drug_mixture_id_col, "has_same_rate")
+                .group_by(
+                    self.drug_mixture_id_col, self.drug_mixture_admin_id_col
+                )
                 .agg(
                     pl.col("ITEMID").first().alias("ITEMID_FLUID"),
                     pl.col(self.drug_rate_col)
@@ -1661,10 +1656,86 @@ class MIMIC3Extractor(MIMIC3Paths):
                     .sum()
                     .alias(self.fluid_amount_col),
                 ),
-                on=[self.drug_mixture_id_col, "has_same_rate"],
+                on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
             )
         )
+
+        inputevents_cv_combined = (
+            pl.concat(
+                [inputevents_cv_fluids_only, inputevents_cv_mixtures],
+                how="diagonal_relaxed",
+            )
+            # Drop the lines with 0 drug amount and a non-zero rate -> rate should not be non-zero for zero amounts
+            .filter(
+                (
+                    pl.col(self.drug_amount_col).ne(0)
+                    & pl.col(self.drug_rate_col).ne(0)
+                )
+                | (
+                    pl.col(self.drug_amount_col).eq(0)
+                    & pl.col(self.drug_rate_col).eq(0)
+                )
+            )
+            # Group by rate continuity and mixture ID
+            .with_columns(
+                # NOTE: Sometimes there is a singular hour for which only a volume, but no rate is given.
+                # Visual inspection of the data shows that these are continuous infusions with the constant rate as before and after.
+                # -> forward fill and backward fill the drug rate
+                pl.col(self.drug_rate_col)
+                .forward_fill()
+                .backward_fill()
+                .over(self.drug_mixture_id_col, order_by="STARTTIME"),
+            )
+            .with_columns(
+                pl.col(self.drug_rate_col)
+                .ne(
+                    pl.col(self.drug_rate_col)
+                    .shift(1)
+                    .backward_fill()
+                    .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                )
+                .alias("has_same_rate")
+            )
+            .with_columns(
+                pl.col("has_same_rate")
+                .cum_sum()
+                .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                .alias("has_same_rate"),
+            )
+            .group_by(self.drug_mixture_id_col, "has_same_rate")
+            .agg(
+                pl.col(
+                    self.icu_stay_id_col,
+                    self.drug_mixture_admin_id_col,
+                    self.drug_continuous_col,
+                    self.drug_admin_type_col,
+                    self.drug_amount_unit_col,
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
+                    self.fluid_rate_col,
+                    "ITEMID",
+                    "ITEMID_FLUID",
+                )
+                .sort_by("STARTTIME")
+                .first(),
+                pl.col(self.drug_amount_col).sum(),
+                pl.col(self.fluid_amount_col).sum(),
+                pl.col("STARTTIME").min().alias("STARTTIME"),
+                pl.col("ENDTIME").max().alias("ENDTIME"),
+            )
+        )
+
+        # pl.Config.set_tbl_rows(1000)
+        # pl.Config.set_tbl_cols(50)
+        # print(
+        #     inputevents_cv.filter(
+        #         pl.col(self.icu_stay_id_col) == 200091,
+        #         # pl.col("ITEMID") == 30131,
+        #     )
+        #     .sort("Global Drug Mixture ID", "CHARTTIME")
+        #     .collect()
+        # )
 
         # region INPUTEVENTS
         #######################################################################
@@ -1686,8 +1757,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     inputevents_mv_fluids_only,
                     inputevents_mv_drips,
                     inputevents_mv_additives,
-                    inputevents_cv_fluids_only,
-                    inputevents_cv_mixtures,
+                    inputevents_cv_combined,
                 ],
                 how="diagonal_relaxed",
             )
