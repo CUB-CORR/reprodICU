@@ -192,7 +192,7 @@ Critical care (intensivist): # 38004500
 Dermatology: # 38004452
   # SICdb
   - Dermatologie # Dermatology
-Opthalmology: # 38004463
+Ophthalmology: # 38004463
   # MIMIC-III / MIMIC-IV
   - EYE # Eye diseases - including subspecialty services in glaucoma, cataract surgery, cornea and external diseases, and neuro-ophthalmology
   # SICdb

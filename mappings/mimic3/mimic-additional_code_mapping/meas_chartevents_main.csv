@@ -35,3 +35,6 @@ itemid (omop_source_code),Label,omop_concept_name,comment
 468,O2 Delivery Device#2,Oxygen delivery system,
 212,Heart Rhythm,Heart rate rhythm,
 3354,Cardiac Rhythm,Heart rate rhythm,
+6701,Arterial BP #2 [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+6702,Arterial BP Mean #2,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+8555,Arterial BP #2 [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
