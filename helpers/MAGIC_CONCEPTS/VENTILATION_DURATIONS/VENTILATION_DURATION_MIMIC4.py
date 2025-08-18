@@ -49,10 +49,14 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         )
 
         # common chartevents scan
-        CHARTEVENTS = pl.scan_csv(
-            self.mimic4_paths.chartevents_path,
-            schema_overrides={"value": str},
-        ).filter(
+        if "parquet" in self.mimic4_paths.chartevents_path:
+            chartevents = pl.scan_parquet(self.mimic4_paths.chartevents_path)
+        else:
+            chartevents = pl.scan_csv(
+                self.mimic4_paths.chartevents_path,
+                schema_overrides={"value": str},
+            )
+        CHARTEVENTS = chartevents.filter(
             pl.col("itemid").is_in(
                 vent_setting_chartevents_ids
                 + o2_flow_chartevents_ids

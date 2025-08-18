@@ -88,12 +88,15 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         ]
 
         # Identify the presence of a mechanical ventilation using settings
-        CHARTEVENTS_VENTILATION_CLASSIFICATION = (
-            pl.scan_csv(
+        if "parquet" in self.mimic3_paths.chartevents_path:
+            chartevents = pl.scan_parquet(self.mimic3_paths.chartevents_path)
+        else:
+            chartevents = pl.scan_csv(
                 self.mimic3_paths.chartevents_path,
                 schema_overrides={"VALUE": str},
             )
-            .filter(
+        CHARTEVENTS_VENTILATION_CLASSIFICATION = (
+            chartevents.filter(
                 pl.col("ITEMID").is_in(chartevents_all_ids),
                 pl.col("ERROR").ne_missing(1),
                 pl.col("VALUE").is_not_null(),
