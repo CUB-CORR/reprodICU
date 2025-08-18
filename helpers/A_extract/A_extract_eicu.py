@@ -1551,9 +1551,7 @@ class EICUExtractor(EICUPaths):
                 self.diagnosis_icd_code_col,
                 self.diagnosis_start_col,
             )
-            .agg(
-                pl.all().sort_by(self.diagnosis_priority_col).first(),
-            )
+            .agg(pl.all().sort_by(self.diagnosis_priority_col).first())
         )
 
         # Get continued diagnoses where possible, by checking whether the diagnosis reappears
