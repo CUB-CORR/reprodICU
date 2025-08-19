@@ -704,9 +704,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             pl.scan_csv(self.meas_chartevents_main_path)
             .select("itemid (omop_source_code)", "label", "omop_concept_name")
             .with_columns(
-                pl.when(pl.col("label") == "Temperature Fahrenheit")
-                .then(pl.lit("Temperature Fahrenheit"))
-                .when(pl.col("label") == "Temperature Celsius")
+                pl.when(pl.col("label") == "Temperature Celsius")
                 .then(pl.lit("Temperature"))
                 .otherwise(pl.col("omop_concept_name"))
                 .alias("omop_concept_name")

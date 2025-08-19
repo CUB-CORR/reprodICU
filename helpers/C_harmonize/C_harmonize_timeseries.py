@@ -311,7 +311,7 @@ class TimeseriesHarmonizer(GlobalVars):
         # Concatenate the timeseries data for each category
         # region vitals
         timeseries_vitals_processed = pl.LazyFrame()
-        for i, ts_vitals in enumerate(timeseries_vitals):
+        for ts_vitals in timeseries_vitals:
             vitals_cols = ts_vitals.collect_schema().names()
             vitals_cols_not_index = list(
                 set(vitals_cols) - set(self.index_cols)
@@ -345,7 +345,7 @@ class TimeseriesHarmonizer(GlobalVars):
             )
 
         vitals = timeseries_vitals_processed.with_columns(
-            # Fix Temperature if value appears to be in Fahrenheit
+            # Fix Temperature once more if value appears to be in Fahrenheit
             pl.when(pl.col("Temperature").gt(60))
             .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
             .otherwise(pl.col("Temperature"))
@@ -451,9 +451,9 @@ class TimeseriesHarmonizer(GlobalVars):
 
             if "vitals" in timeseries:
                 print("reprodICU - Saving vitals...")
-                vitals.pipe(self._print_unique_cases, "vitals").pipe(
-                    self._fix_temperature_values
-                ).sink_parquet(self.save_path + "timeseries_vitals.parquet")
+                vitals.pipe(self._print_unique_cases, "vitals").sink_parquet(
+                    self.save_path + "timeseries_vitals.parquet"
+                )
 
             if "labs" in timeseries:
                 print("reprodICU - Saving labs...")
@@ -567,12 +567,3 @@ class TimeseriesHarmonizer(GlobalVars):
         )
 
         return data
-
-    # Fix Temperature values for accidental Fahrenheit values
-    def _fix_temperature_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.when(pl.col("Temperature").gt(60))
-            .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
-            .otherwise(pl.col("Temperature"))
-            .alias("Temperature")
-        )
