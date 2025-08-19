@@ -298,7 +298,12 @@ class MIMIC3Paths(GlobalVars):
 
         # PARQUETIZE chartevents/labevents for MIMIC-III (non-DEMO only)
         if not DEMO:
-            for path in [self.chartevents_path, self.labevents_path]:
+            for path in [
+                self.chartevents_path,
+                self.labevents_path,
+                self.inputevents_cv_path,
+                self.inputevents_mv_path,
+            ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
                 )
@@ -307,6 +312,8 @@ class MIMIC3Paths(GlobalVars):
 
             self.chartevents_path = mimic3_path + "CHARTEVENTS.parquet"
             self.labevents_path = mimic3_path + "LABEVENTS.parquet"
+            self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.parquet"
+            self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.parquet"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
@@ -562,7 +569,11 @@ class MIMIC4Paths(GlobalVars):
 
         # PARQUETIZE chartevents/labevents for MIMIC-IV (non-DEMO only)
         if not DEMO:
-            for path in [self.chartevents_path, self.labevents_path]:
+            for path in [
+                self.chartevents_path,
+                self.labevents_path,
+                self.inputevents_path,
+            ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
                 )
@@ -571,6 +582,7 @@ class MIMIC4Paths(GlobalVars):
 
             self.chartevents_path = mimic4_path + "icu/chartevents.parquet"
             self.labevents_path = mimic4_path + "hosp/labevents.parquet"
+            self.inputevents_path = mimic4_path + "icu/inputevents.parquet"
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"
@@ -900,7 +912,17 @@ def _parquetize(path, db: str):
     print(f"{db}   - parquetizing {path}")
     pl.scan_csv(
         path,
-        schema_overrides={"value": str, "VALUE": str},
+        schema_overrides={
+            "value": str,
+            "amount": float,
+            "totalamount": float,
+            "patientweight": float,
+            "VALUE": str,
+            "AMOUNT": float,
+            "TOTALAMOUNT": float,
+            "RATE": float,
+            "PATIENTWEIGHT": float,
+        },
     ).sink_parquet(path.replace(".csv", ".parquet").replace(".gz", ""))
 
 

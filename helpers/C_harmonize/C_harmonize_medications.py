@@ -40,6 +40,7 @@ class MedicationHarmonizer(GlobalVars):
         self.umcdb = UMCdbExtractor(paths)
         self.helpers = GlobalHelpers()
         self.datasets = datasets
+        self.medications = None
 
         self.medications_cols_list = [
             self.global_icu_stay_id_col,
@@ -120,6 +121,12 @@ class MedicationHarmonizer(GlobalVars):
         Raises:
             ValueError: If no datasets are provided.
         """
+        if self.medications is not None:
+            print(
+                "reprodICU - Medication harmonization already performed. "
+                "Skipping harmonization."
+            )
+            return
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the medications from.")
 
@@ -181,7 +188,7 @@ class MedicationHarmonizer(GlobalVars):
                 .pipe(self._print_unique_cases, "UMCdb")
             )
 
-        medications = pl.concat(
+        medications: pl.LazyFrame = pl.concat(
             medications_datasets,
             how="diagonal_relaxed",
         )
@@ -193,7 +200,7 @@ class MedicationHarmonizer(GlobalVars):
             if col not in medications.columns
         )
 
-        return (
+        self.medications = (
             medications.cast(
                 {
                     self.drug_name_col: str,
@@ -315,6 +322,8 @@ class MedicationHarmonizer(GlobalVars):
             .unique()
             .sort(self.global_icu_stay_id_col, self.drug_start_col)
         )
+        
+        return self.medications
 
     def harmonize_split_medications(self, table: str) -> pl.LazyFrame:
         """
@@ -335,16 +344,16 @@ class MedicationHarmonizer(GlobalVars):
         _medications_cols_list = self.medications_cols_list.copy()
         _medications_cols_list.remove(self.drug_admin_type_col)
 
-        medications = self.harmonize_medications()
+        self.harmonize_medications()
         if table == "administered":
             return (
-                medications.filter(pl.col(self.drug_admin_type_col) == "given")
+                self.medications.filter(pl.col(self.drug_admin_type_col) == "given")
                 .select(_medications_cols_list)
                 .sort(self.global_icu_stay_id_col, self.drug_start_col)
             )
         elif table == "prescribed":
             return (
-                medications.filter(
+                self.medications.filter(
                     pl.col(self.drug_admin_type_col) == "prescribed"
                 )
                 .select(_medications_cols_list)
