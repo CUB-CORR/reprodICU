@@ -15,6 +15,7 @@ itemid (omop_source_code),Label,omop_concept_name,comment
 723,Verbal Response,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 454,Motor Response,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
 198,GCS Total,Glasgow coma score total,
+678,Temperature F,Temperature Fahrenheit,
 677,Temperature C (calc),Temperature,
 3420,FIO2,Oxygen/Total gas setting [Volume Fraction] Ventilator,
 190,FiO2 Set,Oxygen/Total gas setting [Volume Fraction] Ventilator,
@@ -23,6 +24,7 @@ itemid (omop_source_code),Label,omop_concept_name,comment
 444,Mean Airway Pressure,Mean airway pressure,
 615,Resp Rate (Total),Breath rate spontaneous and mechanical --on ventilator,
 676,Temperature C,Temperature,
+679,Temperature F (calc),Temperature Fahrenheit,
 505,PEEP,PEEP Respiratory system --on ventilator,
 614,Resp Rate (Spont),Breath rate spontaneous --on ventilator,
 535,Peak Insp. Pressure,Pressure.max Respiratory system airway --on ventilator,
