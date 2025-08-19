@@ -732,20 +732,20 @@ class EICUExtractor(EICUPaths):
         """
         # NOTE: keep only the nurse charting values not covered by the other TS
         keep_nurse_names = [
-            # "Non-Invasive BP",
-            # "Invasive BP",
-            # "Heart Rate",
-            # # "Pain Score/Goal",
-            # "Respiratory Rate",
-            # "O2 Saturation",
-            # "Temperature",
+            "Non-Invasive BP",
+            "Invasive BP",
+            "Heart Rate",
+            "Pain Score/Goal",
+            "Respiratory Rate",
+            "O2 Saturation",
+            "Temperature",
             "Glasgow coma score",
-            # "Invasive BP",
+            "Invasive BP",
             "Bedside Glucose",
             "O2 L/%",
             "O2 Admin Device",
             "Sedation Scale/Score/Goal",
-            # # "Delirium Scale/Score",
+            # "Delirium Scale/Score",
         ]
         nurse_names_mapping = self.load_mapping(self.nurse_mapping_path)
         nurse_oxygen_delivery_device_mapping = self.load_mapping(
