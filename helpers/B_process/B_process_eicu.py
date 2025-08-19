@@ -87,33 +87,87 @@ class EICUProcessor(EICUExtractor):
             ts_periodics = self._process_periodics()
             ts_resp = self._process_timeseries_resp()
 
+            # Common columns for each pairwise combination, excluding the index columns.
+            tsn_cols = set(ts_nurse.collect_schema().names())
+            tsp_cols = set(ts_periodics.collect_schema().names())
+            tsr_cols = set(ts_resp.collect_schema().names())
+
+            common_np = tsn_cols.intersection(tsp_cols).difference(self.index_cols) # fmt: skip
+            common_nr = tsn_cols.intersection(tsr_cols).difference(self.index_cols) # fmt: skip
+            common_pr = tsp_cols.intersection(tsr_cols).difference(self.index_cols) # fmt: skip
+            common_npr = common_nr.union(common_pr)
+
             # Join the time series data on the patient unit stay ID.
             print("eICU    - Joining wide time series data...")
-            timeseries = pl.concat(
-                [ts_nurse, ts_periodics, ts_resp], how="diagonal_relaxed"
+            (
+                ts_periodics.join(
+                    ts_nurse,
+                    on=self.index_cols,
+                    how="full",
+                    suffix="_nurse",
+                    coalesce=True,
+                )
+                # prefer periodic values over nurse values
+                .with_columns(
+                    pl.coalesce(col, col + "_nurse").alias(col)
+                    for col in common_np
+                )
+                .drop([col + "_nurse" for col in common_np])
+                .join(
+                    ts_resp,
+                    on=self.index_cols,
+                    how="full",
+                    suffix="_resp",
+                    coalesce=True,
+                )
+                # prefer respiratory values over periodic and nurse values
+                .with_columns(
+                    pl.coalesce(col + "_resp", col).alias(col)
+                    for col in common_npr
+                )
+                .drop(col + "_resp" for col in common_npr)
+                .sink_parquet(timeseries_path_unsorted)
             )
 
-            # Save the preprocessed data
-            timeseries.sink_parquet(timeseries_path_unsorted)
-
-        # NOTE: if process stops due to insufficient memory, use the following
-        # lines instead within a terminal at the precalc_path:
-        # (
-        #     pl.scan_parquet("EICU_B_timeseries_unsorted.parquet")
-        #     .group_by(self.icu_stay_id_col, self.timeseries_time_col)
-        #     .first()
-        #     .sort(self.index_cols)
-        #     .sink_parquet("EICU_B_timeseries.parquet")
-        # )
-        print("eICU    - Sorting wide time series data...")
-        (
-            pl.scan_parquet(timeseries_path_unsorted)
-            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
-            .first()
-            .sort(self.index_cols)
-            .sink_parquet(timeseries_path)
+        # Check sortedness of index columns
+        # 1. Check if the ID column is sorted
+        # 2. Check for each ID if the time column is sorted
+        print("eICU    - Checking sortedness of index columns...")
+        timeseries_is_sorted = (
+            pl.scan_parquet(timeseries_path_unsorted, parallel="prefiltered")
+            .group_by(self.icu_stay_id_col)
+            .agg(
+                pl.col(self.timeseries_time_col)
+                .eq(pl.col(self.timeseries_time_col).sort())
+                .all()
+                .alias("is_sorted")
+            )
+            .filter(pl.col("is_sorted") == False)
+            .collect()
+            .height
+            == 0
         )
-        os.remove(timeseries_path_unsorted)
+
+        if not timeseries_is_sorted:
+            # NOTE: if process stops due to insufficient memory, use the following
+            # lines instead within a terminal at the precalc_path:
+            # (
+            #     pl.scan_parquet("EICU_timeseries_grouped.parquet")
+            #     .group_by("ICU Stay ID", "Time Relative to Admission (seconds)")
+            #     .first()
+            #     .sort("ICU Stay ID", "Time Relative to Admission (seconds)")
+            #     .sink_parquet("EICU_timeseries.parquet")
+            # )
+            print("eICU    - Sorting wide time series data...")
+            (
+                pl.scan_parquet(timeseries_path_unsorted)
+                .sort(self.index_cols)
+                .sink_parquet(timeseries_path)
+            )
+            os.remove(timeseries_path_unsorted)
+        else:
+            print("eICU    - Time series data is already sorted.")
+            os.rename(timeseries_path_unsorted, timeseries_path)
 
         return pl.scan_parquet(timeseries_path).select(
             pl.col(self.index_cols).set_sorted(),
