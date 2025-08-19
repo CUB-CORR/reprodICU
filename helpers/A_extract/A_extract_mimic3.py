@@ -1041,11 +1041,19 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
-        inputevents_cv = (
-            pl.scan_csv(
-                self.inputevents_cv_path, schema_overrides={"AMOUNT": float}
+        # Load correct inputevents_cv file
+        if "parquet" in self.inputevents_cv_path:
+            inputevents_cv = pl.scan_parquet(
+                self.inputevents_cv_path, parallel="prefiltered"
             )
-            .select(
+        else:
+            inputevents_cv = pl.scan_csv(
+                self.inputevents_cv_path,
+                schema_overrides={"AMOUNT": float},
+            )
+
+        inputevents_cv = (
+            inputevents_cv.select(
                 "HADM_ID",
                 "ITEMID",
                 "CHARTTIME",
@@ -1063,11 +1071,20 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
             .drop("AMOUNTUOM")
         )
-        inputevents_mv = (
-            pl.scan_csv(
-                self.inputevents_mv_path, schema_overrides={"AMOUNT": float}
+
+        # Load correct inputevents_mv file
+        if "parquet" in self.inputevents_mv_path:
+            inputevents_cv = pl.scan_parquet(
+                self.inputevents_mv_path, parallel="prefiltered"
             )
-            .select(
+        else:
+            inputevents_cv = pl.scan_csv(
+                self.inputevents_mv_path,
+                schema_overrides={"AMOUNT": float},
+            )
+
+        inputevents_mv = (
+            inputevents_mv.select(
                 "HADM_ID",
                 "ITEMID",
                 "STORETIME",
@@ -1087,6 +1104,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col("AMOUNTUOM").is_in(["ml", "cc"]))
             .drop("AMOUNTUOM")
         )
+
         outputevents = (
             pl.scan_csv(
                 self.outputevents_path, infer_schema_length=100000
@@ -1314,8 +1332,13 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # region INPUTEVENTS_MV
         #######################################################################
-        inputevents_mv = (
-            pl.scan_csv(
+        # Load correct inputevents_mv file
+        if "parquet" in self.inputevents_mv_path:
+            inputevents_mv = pl.scan_parquet(
+                self.inputevents_mv_path, parallel="prefiltered"
+            )
+        else:
+            inputevents_mv = pl.scan_csv(
                 self.inputevents_mv_path,
                 schema_overrides={
                     "AMOUNT": float,
@@ -1323,7 +1346,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "PATIENTWEIGHT": float,
                 },
             )
-            .select(
+
+        inputevents_mv = (
+            inputevents_mv.select(
                 "ICUSTAY_ID",
                 "STARTTIME",
                 "ENDTIME",
@@ -1486,8 +1511,13 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # region INPUTEVENTS_CV
         #######################################################################
-        inputevents_cv = (
-            pl.scan_csv(
+        # Load correct inputevents_cv file
+        if "parquet" in self.inputevents_cv_path:
+            inputevents_cv = pl.scan_parquet(
+                self.inputevents_cv_path, parallel="prefiltered"
+            )
+        else:
+            inputevents_cv = pl.scan_csv(
                 self.inputevents_cv_path,
                 schema_overrides={
                     "AMOUNT": float,
@@ -1495,7 +1525,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "TOTALAMOUNT": float,
                 },
             )
-            .select(
+
+        inputevents_cv = (
+            inputevents_cv.select(
                 "ICUSTAY_ID",
                 "CHARTTIME",
                 "ITEMID",
@@ -1547,6 +1579,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .over(self.drug_mixture_id_col)
                 .alias("is_fluid_only"),
                 pl.col("ITEMID").alias("ITEMID_FLUID"),
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
             .filter(pl.col("is_fluid_only"))
             .drop("is_fluid_only")
@@ -1554,6 +1587,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("CHARTTIME")
                 .shift(1)
                 .over(self.drug_mixture_id_col, order_by="CHARTTIME")
+                # fill empty first with nearest previous full hour
+                # -> "For volumes, the CHARTTIME will correspond to an end time."
+                .fill_null(
+                    pl.col("CHARTTIME")
+                    .min()
+                    .over(self.drug_mixture_id_col)
+                    .sub(pl.duration(minutes=1))
+                    .dt.truncate("1h")
+                )
                 .alias("PREV_CHARTTIME")
             )
             # recalculate the rate for fluids in ml/hr
@@ -1561,12 +1603,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.drug_amount_col)
                 .truediv(
                     pl.col("CHARTTIME")
-                    .str.to_datetime("%Y-%m-%d %H:%M:%S")
-                    .sub(
-                        pl.col("PREV_CHARTTIME").str.to_datetime(
-                            "%Y-%m-%d %H:%M:%S"
-                        )
-                    )
+                    .sub(pl.col("PREV_CHARTTIME"))
                     .dt.total_seconds()
                     .truediv(3600)
                 )
@@ -1584,7 +1621,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .sort_by("CHARTTIME")
                 .first(),
                 pl.col(self.drug_amount_col).sum().alias(self.fluid_amount_col),
-                pl.col("CHARTTIME").min().alias("STARTTIME"),
+                pl.col("PREV_CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
             )
         )
@@ -1676,6 +1713,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                     pl.col(self.drug_amount_col).eq(0)
                     & pl.col(self.drug_rate_col).eq(0)
                 )
+                | (
+                    pl.col(self.fluid_amount_col).ne(0)
+                    & pl.col(self.fluid_rate_col).ne(0)
+                )
             )
             # Group by rate continuity and mixture ID
             .with_columns(
@@ -1688,14 +1729,20 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .over(self.drug_mixture_id_col, order_by="STARTTIME"),
             )
             .with_columns(
-                pl.col(self.drug_rate_col)
-                .ne(
-                    pl.col(self.drug_rate_col)
-                    .shift(1)
-                    .backward_fill()
-                    .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                )
-                .alias("has_same_rate")
+                pl.coalesce(
+                    pl.col(self.drug_rate_col).ne(
+                        pl.col(self.drug_rate_col)
+                        .shift(1)
+                        .backward_fill()
+                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                    ),
+                    pl.col(self.fluid_rate_col).ne(
+                        pl.col(self.fluid_rate_col)
+                        .shift(1)
+                        .backward_fill()
+                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                    ),
+                ).alias("has_same_rate")
             )
             .with_columns(
                 pl.col("has_same_rate")
@@ -1719,23 +1766,17 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .sort_by("STARTTIME")
                 .first(),
-                pl.col(self.drug_amount_col).sum(),
-                pl.col(self.fluid_amount_col).sum(),
                 pl.col("STARTTIME").min().alias("STARTTIME"),
                 pl.col("ENDTIME").max().alias("ENDTIME"),
+                # return None if sum is empty
+                pl.when(pl.col(self.drug_amount_col).count() > 0).then(
+                    pl.col(self.drug_amount_col).sum()
+                ),
+                pl.when(pl.col(self.fluid_amount_col).count() > 0).then(
+                    pl.col(self.fluid_amount_col).sum()
+                ),
             )
         )
-
-        # pl.Config.set_tbl_rows(1000)
-        # pl.Config.set_tbl_cols(50)
-        # print(
-        #     inputevents_cv.filter(
-        #         pl.col(self.icu_stay_id_col) == 200091,
-        #         # pl.col("ITEMID") == 30131,
-        #     )
-        #     .sort("Global Drug Mixture ID", "CHARTTIME")
-        #     .collect()
-        # )
 
         # region INPUTEVENTS
         #######################################################################

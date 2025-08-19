@@ -1010,11 +1010,19 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
         input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
-        inputevents = (
-            pl.scan_csv(
-                self.inputevents_path, schema_overrides={"amount": float}
+        # Load correct inputevents file
+        if "parquet" in self.inputevents_path:
+            inputevents = pl.scan_parquet(
+                self.inputevents_path, parallel="prefiltered"
             )
-            .select(
+        else:
+            inputevents = pl.scan_csv(
+                self.inputevents_path,
+                schema_overrides={"amount": float},
+            )
+
+        inputevents = (
+            inputevents.select(
                 "hadm_id",
                 "storetime",
                 "ordercategoryname",
@@ -1033,6 +1041,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .filter(pl.col("amountuom") == "mL")
             .drop("amountuom")
         )
+
         outputevents = (
             pl.scan_csv(
                 self.outputevents_path, infer_schema_length=100000
@@ -1314,8 +1323,13 @@ class MIMIC4Extractor(MIMIC4Paths):
             .lazy()
         )
 
-        inputevents = (
-            pl.scan_csv(
+        # Load correct inputevents file
+        if "parquet" in self.inputevents_path:
+            inputevents = pl.scan_parquet(
+                self.inputevents_path, parallel="prefiltered"
+            )
+        else:
+            inputevents = pl.scan_csv(
                 self.inputevents_path,
                 schema_overrides={
                     "amount": float,
@@ -1323,7 +1337,9 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "patientweight": float,
                 },
             )
-            .select(
+
+        inputevents = (
+            inputevents.select(
                 "hadm_id",
                 "stay_id",
                 "starttime",
