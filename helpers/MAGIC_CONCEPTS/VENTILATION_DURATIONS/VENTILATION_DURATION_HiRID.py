@@ -23,6 +23,8 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
 
         # Scan all files in the timeseries folder
         VENTILATION_DURATION = pl.LazyFrame()
+        vent_start_col = "Ventilation Start Relative to Admission (seconds)"
+        vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
         for file in os.listdir(self.hirid_paths.timeseries_path):
             timeseries_AIRWAYTYPE = (
@@ -60,10 +62,9 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                 .with_columns(
                     (pl.col("datetime") - pl.col("admissiontime"))
                     .dt.total_seconds()
-                    .alias("Ventilation Start Relative to Admission (seconds)")
+                    .alias(vent_start_col)
                 )
                 .drop("admissiontime", "datetime", "value")
-                # Rename columns
             )
 
             timeseries_VENTMODE = (
@@ -86,10 +87,9 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                 .with_columns(
                     (pl.col("datetime") - pl.col("admissiontime"))
                     .dt.total_seconds()
-                    .alias("Ventilation Start Relative to Admission (seconds)")
+                    .alias(vent_start_col)
                 )
                 .drop("admissiontime", "datetime", "value")
-                # Rename columns
             )
 
             timeseries = (
@@ -100,7 +100,7 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                 .select(pl.all().forward_fill())
                 .sort(
                     "patientid",
-                    "Ventilation Start Relative to Admission (seconds)",
+                    vent_start_col,
                 )
                 # drop rows where both columns are staying the same
                 .filter(
@@ -124,13 +124,42 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                     .is_null()
                 )
                 .with_columns(
-                    pl.col("Ventilation Start Relative to Admission (seconds)")
+                    pl.col(vent_start_col)
                     .shift(-1)
                     .over("patientid")
-                    .alias("Ventilation End Relative to Admission (seconds)")
+                    .alias(vent_end_col)
                 )
-                .drop_nulls("Ventilation End Relative to Admission (seconds)")
+                .drop_nulls(vent_end_col)
                 .filter(pl.col("Ventilator Mode") == "active")
+                # Combine consecutive rows where end time equals next start time
+                .with_columns(
+                    (
+                        pl.col(vent_start_col).ne_missing(
+                            pl.col(vent_end_col)
+                            .shift(1)
+                            .backward_fill()
+                            .over("patientid", order_by=vent_start_col)
+                        )
+                        & pl.col("Ventilation Type").ne_missing(
+                            pl.col("Ventilation Type")
+                            .shift(1)
+                            .backward_fill()
+                            .over("patientid", order_by=vent_start_col)
+                        )
+                    ).alias("is_consecutive")
+                )
+                .with_columns(
+                    pl.col("is_consecutive")
+                    .cum_sum()
+                    .over("patientid", order_by=vent_start_col)
+                    .alias("is_consecutive")
+                )
+                .group_by("patientid", "is_consecutive")
+                .agg(
+                    pl.col("Ventilation Type").first(),
+                    pl.col(vent_start_col).min(),
+                    pl.col(vent_end_col).max(),
+                )
             )
 
             VENTILATION_DURATION = pl.concat(
