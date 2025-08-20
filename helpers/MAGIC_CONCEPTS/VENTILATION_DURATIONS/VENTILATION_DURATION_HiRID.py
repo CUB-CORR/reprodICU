@@ -131,35 +131,6 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                 )
                 .drop_nulls(vent_end_col)
                 .filter(pl.col("Ventilator Mode") == "active")
-                # Combine consecutive rows where end time equals next start time
-                .with_columns(
-                    (
-                        pl.col(vent_start_col).ne_missing(
-                            pl.col(vent_end_col)
-                            .shift(1)
-                            .backward_fill()
-                            .over("patientid", order_by=vent_start_col)
-                        )
-                        & pl.col("Ventilation Type").ne_missing(
-                            pl.col("Ventilation Type")
-                            .shift(1)
-                            .backward_fill()
-                            .over("patientid", order_by=vent_start_col)
-                        )
-                    ).alias("is_consecutive")
-                )
-                .with_columns(
-                    pl.col("is_consecutive")
-                    .cum_sum()
-                    .over("patientid", order_by=vent_start_col)
-                    .alias("is_consecutive")
-                )
-                .group_by("patientid", "is_consecutive")
-                .agg(
-                    pl.col("Ventilation Type").first(),
-                    pl.col(vent_start_col).min(),
-                    pl.col(vent_end_col).max(),
-                )
             )
 
             VENTILATION_DURATION = pl.concat(

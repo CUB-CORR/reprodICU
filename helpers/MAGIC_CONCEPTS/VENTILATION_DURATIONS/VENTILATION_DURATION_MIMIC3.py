@@ -73,11 +73,17 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             "High flow neb", "Non-rebreather", "Venti mask ", "Medium conc mask ",
             "T-piece", "High flow nasal cannula", "Ultrasonic neb", "Vapomist",
         ]
+        id226732_mechanical_ventilation = [
+            "Endotracheal tube", "Tracheostomy tube",
+        ]
         id467_oxygen_therapy = [
             "Cannula", "Nasal Cannula", "Face Tent", "Aerosol-Cool",
             "Trach Mask", "Hi Flow Neb", "Non-Rebreather", "Venti Mask",
             "Medium Conc Mask", "Vapotherm", "T-Piece", "Hood", "Hut",
             "TranstrachealCat", "Heated Neb", "Ultrasonic Neb",
+        ]
+        id467_mechanical_ventilation = [
+            "Ventilator"
         ]
         # fmt: on
 
@@ -108,20 +114,38 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 # vent type recorded
                 pl.when(
                     pl.col("ITEMID") == 720,
-                    pl.col("VALUE") != ("Other/Remarks"),
+                    pl.col("VALUE") != "Other/Remarks",
                 )
                 .then(1)
-                .when(pl.col("ITEMID") == 223848, pl.col("VALUE") != "Other")
+                .when(
+                    pl.col("ITEMID") == 223848,
+                    pl.col("VALUE") != "Other",
+                )
                 .then(1)
                 # ventilator mode
-                .when(pl.col("ITEMID") == 223849).then(1)
+                .when(
+                    pl.col("ITEMID") == 223849,
+                    pl.col("VALUE") != "Standby",
+                ).then(1)
                 # O2 delivery device == ventilator
-                .when(pl.col("ITEMID") == 467, pl.col("VALUE") == "Ventilator")
-                .then(1)
-                .when(pl.col("ITEMID").is_in(chartevents_ventilation_ids))
-                .then(1)
-                .otherwise(0)
-                .alias("MechVent"),
+                .when(
+                    pl.col("ITEMID") == 467,
+                    pl.col("VALUE").is_in(id467_mechanical_ventilation),
+                ).then(1)
+                # NOTE: different from ventilation_classification.sql
+                # O2 delivery device == endotracheal tube / tracheostomy tube
+                .when(
+                    pl.col("ITEMID") == 226732,
+                    pl.col("VALUE").is_in(id226732_mechanical_ventilation),
+                ).then(1)
+                # NOTE: different from ventilation_classification.sql
+                # IDs with additional conditions that are already handled
+                .when(
+                    pl.col("ITEMID").is_in(chartevents_ventilation_ids),
+                    ~pl.col("ITEMID").is_in([720, 223848, 223849, 467]),
+                ).then(1)
+                # END NOTE
+                .otherwise(0).alias("MechVent"),
                 # initiation of oxygen therapy indicates the ventilation has ended
                 pl.when(
                     pl.col("ITEMID") == 226732,
@@ -211,9 +235,13 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 ],
                 how="vertical",
             )
-            .unique()
-            # this carries over the previous charttime which had a mechanical ventilation event
+            # NOTE: different from ventilation_classification.sql
+            # ensure each charttime is only counted once
+            .group_by("ICUSTAY_ID", "CHARTTIME")
+            .max()
+            # END NOTE
             .with_columns(
+                # this carries over the previous charttime which had a mechanical ventilation event
                 pl.when(pl.col("MechVent") == 1)
                 .then(
                     pl.col("CHARTTIME")
@@ -225,6 +253,13 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 )
                 .otherwise(None)
                 .alias("CHARTTIME_LAG"),
+                # NOTE: different from ventilation_classification.sql
+                # this gets the next charttime (if at the end of a vent event, it's the first time not on a vent)
+                pl.col("CHARTTIME")
+                .shift(-1)
+                .over(partition_by="ICUSTAY_ID", order_by="CHARTTIME")
+                .alias("CHARTTIME_NEXT"),
+                # END NOTE
             )
             .with_columns(
                 pl.col("Extubated")
@@ -273,15 +308,14 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                     .cum_sum()
                     .over(partition_by=["ICUSTAY_ID"], order_by=["CHARTTIME"])
                 )
-                .otherwise(None)
                 .alias("VentNum")
             )
             .group_by("ICUSTAY_ID", "VentNum")
             .agg(
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
-                pl.col("CHARTTIME").max().alias("ENDTIME"),
-                pl.col("MechVent").max().alias("MechVent"),
-                pl.col("OxygenTherapy").max().alias("OxygenTherapy"),
+                pl.col("CHARTTIME_NEXT").max().alias("ENDTIME"),
+                pl.col("MechVent").max(),
+                pl.col("OxygenTherapy").max(),
             )
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")

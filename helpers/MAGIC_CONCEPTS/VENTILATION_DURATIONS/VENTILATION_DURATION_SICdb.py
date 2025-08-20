@@ -28,14 +28,54 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
                     {"720": "invasive ventilation", "3043": "tracheostomy"}
                 )
                 .alias("Ventilation Type"),
-                pl.col("Offset").alias(
-                    "Ventilation Start Relative to Admission (seconds)"
-                ),
-                pl.col("OffsetEnd").alias(
-                    "Ventilation End Relative to Admission (seconds)"
-                ),
             )
-            .drop("DataID", "ICUOffset", "Offset", "OffsetEnd", "TimeOfStay")
+            # Remove duplicates with slighty different offsets
+            .group_by("CaseID", "Offset", "Ventilation Type")
+            .agg(pl.col("OffsetEnd").max())
+            .group_by("CaseID", "Ventilation Type", "OffsetEnd")
+            .agg(pl.col("Offset").min())
+            # Fix overlapping periods
+            .with_columns(
+                pl.col("OffsetEnd")
+                .shift(1)
+                .over(
+                    partition_by=["CaseID", "Ventilation Type"],
+                    order_by="Offset",
+                )
+                .alias("PrevOffsetEnd"),
+            )
+            .with_columns(
+                pl.when(pl.col("PrevOffsetEnd") < pl.col("Offset"))
+                .then(True)
+                .otherwise(False)
+                .fill_null(True)
+                .alias("IsNewVentilationPeriod"),
+            )
+            .with_columns(
+                pl.col("IsNewVentilationPeriod")
+                .cum_sum()
+                .over(
+                    partition_by=["CaseID", "Ventilation Type"],
+                    order_by="Offset",
+                )
+                .alias("VentilationPeriodID"),
+            )
+            .group_by("CaseID", "Ventilation Type", "VentilationPeriodID")
+            .agg(
+                pl.col("Offset").min().alias("Offset"),
+                pl.col("OffsetEnd").max().alias("OffsetEnd"),
+            )
+            # Rename columns for clarity
+            .rename(
+                {
+                    "Offset": (
+                        "Ventilation Start Relative to Admission (seconds)"
+                    ),
+                    "OffsetEnd": (
+                        "Ventilation End Relative to Admission (seconds)"
+                    ),
+                }
+            )
             .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
             .collect()
         )

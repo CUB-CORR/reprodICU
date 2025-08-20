@@ -336,7 +336,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 )
                 .then(pl.lit("supplemental oxygen"))
                 .when(pl.col("o2_device") == "None")
-                .then(pl.lit("None"))
+                .then(pl.lit("none"))
                 .otherwise(None)
                 .alias("ventilation_status"),
             )
@@ -437,7 +437,12 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         )
 
         return (
-            VENTILATION.unique()
+            VENTILATION
+            # filter out rows where the ventilation type is "none"
+            .filter(
+                pl.col("Ventilation Type").ne_missing(pl.lit("none"))
+            )
+            .unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
             .lazy()
         )
