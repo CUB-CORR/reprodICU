@@ -199,7 +199,7 @@ if __name__ == "__main__":
         )
         diagnoses_imputer = DiagnosesImputer(
             paths=paths,
-            patient_info_location=save_path + "patient_information.parquet",
+            patient_info_path=save_path + "patient_information.parquet",
         )
 
         (

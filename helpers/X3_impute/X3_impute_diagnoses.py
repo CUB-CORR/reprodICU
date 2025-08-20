@@ -5,16 +5,15 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
-import argparse
 import polars as pl
 
 from helpers.helper import GlobalVars
 
 
 class DiagnosesImputer(GlobalVars):
-    def __init__(self, paths, patient_info_location: str) -> None:
+    def __init__(self, paths, patient_info_path: str) -> None:
         super().__init__(paths)
-        self.patient_info_location = patient_info_location
+        self.patient_info_path = patient_info_path
 
     def impute_diagnoses(self, data) -> pl.LazyFrame:
         """
@@ -22,19 +21,9 @@ class DiagnosesImputer(GlobalVars):
         -> maps ICD9 codes to ICD10 codes and vice versa (for inclusion / exclusion criteria down the line)
         """
 
-        IDs = (
-            pl.scan_parquet(self.patient_info_location)
-            .select(
-                self.global_hospital_stay_id_col,
-                self.global_icu_stay_id_col,
-            )
-            .filter(
-                pl.col(self.global_hospital_stay_id_col).str.contains_any(
-                    ["mimic", "nwicu"]
-                )
-            )
-            .group_by(self.global_hospital_stay_id_col)
-            .all()
+        IDs = pl.scan_parquet(self.patient_info_path).select(
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
         )
 
         ICD9_TO_ICD10_MAPPING = dict(
@@ -53,23 +42,16 @@ class DiagnosesImputer(GlobalVars):
         return (
             pl.concat(
                 [
-                    data.filter(
-                        pl.col(self.global_person_id_col).str.contains_any(
-                            ["mimic", "nwicu"]
-                        )
-                    )
+                    data.filter(pl.col(self.global_icu_stay_id_col).is_null())
                     .drop(self.global_icu_stay_id_col)
                     .join(
                         IDs,
                         on=self.global_hospital_stay_id_col,
                         how="left",
                         coalesce=True,
-                    )
-                    .explode(self.global_icu_stay_id_col),
+                    ),
                     data.filter(
-                        ~pl.col(self.global_person_id_col).str.contains_any(
-                            ["mimic", "nwicu"]
-                        )
+                        pl.col(self.global_icu_stay_id_col).is_not_null()
                     ),
                 ],
                 how="diagonal_relaxed",
