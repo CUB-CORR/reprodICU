@@ -81,6 +81,8 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
 
         # region ALL
         print("MAGIC_CONCEPTS: Ventilation Duration")
+        vent_start_col = "Ventilation Start Relative to Admission (seconds)"
+        vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
         VENTILATION_DURATION = (
             pl.concat(
@@ -94,11 +96,42 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 ],
                 how="diagonal_relaxed",
             )
+            # Combine consecutive rows where end time equals next start time
+            .with_columns(
+                pl.col(vent_start_col)
+                .ne_missing(
+                    pl.col(vent_end_col)
+                    .shift(1)
+                    .fill_null(pl.col(vent_start_col).min())
+                    .over(
+                        partition_by=["Global ICU Stay ID", "Ventilation Type"],
+                        order_by=vent_start_col,
+                    )
+                )
+                .alias("is_consecutive"),
+            )
+            .with_columns(
+                pl.col("is_consecutive")
+                .cum_sum()
+                .over(
+                    partition_by=["Global ICU Stay ID", "Ventilation Type"],
+                    order_by=vent_start_col,
+                )
+                .alias("is_consecutive")
+            )
+            .group_by(
+                "Global ICU Stay ID",
+                "Ventilation Type",
+                "is_consecutive",
+            )
+            .agg(
+                pl.col(vent_start_col).min(),
+                pl.col(vent_end_col).max(),
+            )
+            # Filter out rows where start time is after end time
             .filter(
-                pl.col("Ventilation Start Relative to Admission (seconds)").lt(
-                    pl.col("Ventilation End Relative to Admission (seconds)")
-                ),
-                pl.col("Ventilation End Relative to Admission (seconds)").gt(
+                pl.col(vent_start_col).lt(pl.col(vent_end_col)),
+                pl.col(vent_end_col).gt(
                     -self.global_vars.PRE_ICU_TIMESERIES_DAYS_CUTOFF
                     * (SECONDS_IN_1D)
                 ),
@@ -107,23 +140,18 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             .select(
                 "Global ICU Stay ID",
                 "Ventilation Type",
-                "Ventilation Start Relative to Admission (seconds)",
-                "Ventilation End Relative to Admission (seconds)",
+                vent_start_col,
+                vent_end_col,
             )
             # .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
             .group_by(
                 "Global ICU Stay ID",
-                "Ventilation Start Relative to Admission (seconds)",
-                "Ventilation End Relative to Admission (seconds)",
+                vent_start_col,
+                vent_end_col,
             )
             .agg(pl.col("Ventilation Type").max())
             .with_columns(
-                (
-                    pl.col("Ventilation End Relative to Admission (seconds)")
-                    - pl.col(
-                        "Ventilation Start Relative to Admission (seconds)"
-                    )
-                )
+                (pl.col(vent_end_col) - pl.col(vent_start_col))
                 .truediv(SECONDS_IN_1H)
                 .round(2)
                 .alias("Ventilation Duration (hours)")

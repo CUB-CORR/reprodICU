@@ -371,21 +371,17 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             )
         )
 
-        OXYGEN_THERAPY_UNKNOWN_TYPE = (
-            nurseCharting
-            .filter(
-                pl.col("nursingchartoffset") > -60,
-                pl.col("nursingchartcelltypevallabel").str.contains("O2 L/%"),
-                pl.col("nursingchartvalue")
-                .cast(int, strict=False)
-                .is_between(0, 100, closed="right"),
-            )
-            .select(
-                pl.col("patientunitstayid"),
-                pl.col("nursingchartoffset").alias("charttime"),
-                pl.lit(-1).alias("oxygen_therapy_type"),
-                pl.lit(None).alias("activeupondischarge"),
-            )
+        OXYGEN_THERAPY_UNKNOWN_TYPE = nurseCharting.filter(
+            pl.col("nursingchartoffset") > -60,
+            pl.col("nursingchartcelltypevallabel").str.contains("O2 L/%"),
+            pl.col("nursingchartvalue")
+            .cast(int, strict=False)
+            .is_between(0, 100, closed="right"),
+        ).select(
+            pl.col("patientunitstayid"),
+            pl.col("nursingchartoffset").alias("charttime"),
+            pl.lit(-1).alias("oxygen_therapy_type"),
+            pl.lit(None).alias("activeupondischarge"),
         )
 
         OXYGEN_THERAPY = (
@@ -414,8 +410,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 pl.col("charttime")
                 .shift(1)
                 .over(
-                    partition_by=["patientunitstayid"],
-                    order_by=["charttime"],
+                    partition_by="patientunitstayid",
+                    order_by="charttime",
                 )
                 .alias("charttime_lag"),
             )
@@ -432,7 +428,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 .then(1)
                 # No lag can be computed for the very first record
                 .when(pl.col("charttime_lag").is_null())
-                .then(None)
+                .then(1)
                 .otherwise(0)
                 .alias("newvent"),
             )
@@ -442,8 +438,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 pl.col("newvent")
                 .cum_sum()
                 .over(
-                    partition_by=["patientunitstayid"],
-                    order_by=["charttime"],
+                    partition_by="patientunitstayid",
+                    order_by="charttime",
                 )
                 .alias("ventnum")
             )
