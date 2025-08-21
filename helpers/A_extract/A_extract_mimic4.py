@@ -669,7 +669,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .filter(
                 (
                     pl.col("offset")
-                    < pl.duration(days=pl.col(self.icu_length_of_stay_col))
+                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
                 )
                 & (
                     pl.col("offset")
@@ -1201,7 +1201,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # keep only microbiology within timeframe of icu stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("offset")
-                < pl.duration(days=pl.col(self.icu_length_of_stay_col)),
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
                 pl.col("offset")
                 > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
@@ -1685,15 +1685,14 @@ class MIMIC4Extractor(MIMIC4Paths):
             .filter(
                 (
                     pl.col(self.drug_start_col)
-                    < pl.duration(
-                        days=pl.col(self.icu_length_of_stay_col)
-                    ).truediv(pl.duration(seconds=1))
+                    < pl.duration(days=1).dt.total_seconds()
+                    * pl.col(self.icu_length_of_stay_col)
                 )
                 & (
                     pl.col(self.drug_start_col)
                     > pl.duration(
                         days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).truediv(pl.duration(seconds=1))
+                    ).dt.total_seconds()
                 )
             )
             .drop(

@@ -1840,9 +1840,8 @@ class EICUExtractor(EICUPaths):
                 pl.when(pl.col(self.procedure_discharge_col))
                 .then(
                     pl.col(self.procedure_start_col)
-                    + pl.duration(
-                        days=pl.col(self.icu_length_of_stay_col)
-                    ).dt.total_seconds()
+                    + pl.duration(days=1).dt.total_seconds()
+                    * pl.col(self.icu_length_of_stay_col)
                 )
                 .otherwise(pl.col("next_proc_start"))
                 .alias(self.procedure_end_col)

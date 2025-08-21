@@ -504,8 +504,9 @@ def condition_occurrence(
                 )
                 + pl.when(pl.col("Source Dataset").str.starts_with("MIMIC"))
                 .then(
-                    pl.duration(
-                        days=pl.col("Hospital Length of Stay (days)")
+                    pl.duration(days=1)
+                    * (
+                        pl.col("Hospital Length of Stay (days)")
                         - pl.col("Pre-ICU Length of Stay (days)")
                     )
                 )
@@ -529,8 +530,9 @@ def condition_occurrence(
                 )
                 + pl.when(pl.col("Source Dataset").str.starts_with("MIMIC"))
                 .then(
-                    pl.duration(
-                        days=pl.col("Hospital Length of Stay (days)")
+                    pl.duration(days=1)
+                    * (
+                        pl.col("Hospital Length of Stay (days)")
                         - pl.col("Pre-ICU Length of Stay (days)")
                     )
                 )
@@ -623,7 +625,7 @@ def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             # Create the death_date column with the date of the death
             (
                 DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                + pl.duration(days=pl.col("ICU Length of Stay (days)"))
+                + pl.duration(days=1) * pl.col("ICU Length of Stay (days)")
                 + pl.duration(
                     seconds=pl.col(
                         "Time Relative to First ICU Admission (seconds)"

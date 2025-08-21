@@ -107,12 +107,11 @@ def _ID_ICUOFFSET(patient_information: pl.LazyFrame) -> pl.LazyFrame:
                     # get hospital admission time
                     (
                         DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                        - pl.duration(
-                            days=pl.col("Pre-ICU Length of Stay (days)")
-                        )
+                        - pl.duration(days=1)
+                        * pl.col("Pre-ICU Length of Stay (days)")
                     ).dt.time()
                 )
-                + pl.duration(days=pl.col("Pre-ICU Length of Stay (days)"))
+                + pl.duration(days=1) * pl.col("Pre-ICU Length of Stay (days)")
             ).alias("icu_admission_dttm"),
         )
         .select(
@@ -246,9 +245,8 @@ def Hospitalization(patient_information: pl.LazyFrame) -> pl.LazyFrame:
                     # get hospital admission time
                     (
                         DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                        - pl.duration(
-                            days=pl.col("Pre-ICU Length of Stay (days)")
-                        )
+                        - pl.duration(days=1)
+                        * pl.col("Pre-ICU Length of Stay (days)")
                     ).dt.time()
                 )
             ).alias("admission_dttm"),
@@ -259,12 +257,11 @@ def Hospitalization(patient_information: pl.LazyFrame) -> pl.LazyFrame:
                     # get hospital admission time
                     (
                         DAY_ZERO.dt.combine(pl.col("Admission Time (24h)"))
-                        - pl.duration(
-                            days=pl.col("Pre-ICU Length of Stay (days)")
-                        )
+                        - pl.duration(days=1)
+                        * pl.col("Pre-ICU Length of Stay (days)")
                     ).dt.time()
                 )
-                + pl.duration(days=pl.col("Hospital Length of Stay (days)"))
+                + pl.duration(days=1) * pl.col("Hospital Length of Stay (days)")
             ).alias("discharge_dttm"),
             # age_at_admission
             # Age of the patient at the time of admission, in years.
