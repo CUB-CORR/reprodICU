@@ -1003,7 +1003,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         cv_input_label_to_concept = (
             cv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         mv_input_label_to_concept = pl.scan_csv(
@@ -1011,13 +1011,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         mv_input_label_to_concept = (
             mv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         output_label_to_concept = pl.scan_csv(self.output_label_to_concept_path)
         output_label_to_concept = (
             output_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "ITEMID", "LABEL")
+            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
 
@@ -1074,11 +1074,11 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # Load correct inputevents_mv file
         if "parquet" in self.inputevents_mv_path:
-            inputevents_cv = pl.scan_parquet(
+            inputevents_mv = pl.scan_parquet(
                 self.inputevents_mv_path, parallel="prefiltered"
             )
         else:
-            inputevents_cv = pl.scan_csv(
+            inputevents_mv = pl.scan_csv(
                 self.inputevents_mv_path,
                 schema_overrides={"AMOUNT": float},
             )
@@ -1634,10 +1634,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             .backward_fill()
             .over(self.drug_mixture_admin_id_col),
         ).filter(
-            (pl.col(self.drug_amount_unit_col) == "ml")
-            .all()
+            pl.col(self.drug_amount_unit_col)
+            .ne_missing("ml")
+            .any()
             .over(self.drug_mixture_id_col)
-            .not_()
         )
 
         # Group by mixture ID and rate continuity
@@ -1659,7 +1659,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(
                 # Process drug components (not ml)
                 inputevents_cv_mixtures.filter(
-                    pl.col(self.drug_amount_unit_col) != "ml"
+                    pl.col(self.drug_amount_unit_col).ne_missing("ml")
                 )
                 .group_by(
                     self.drug_mixture_id_col, self.drug_mixture_admin_id_col
@@ -1671,7 +1671,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.drug_rate_unit_col,
                         self.drug_amount_unit_col,
                     ).first(),
-                    pl.col(self.drug_amount_col).sum(),
+                    # sum but return None if empty
+                    pl.when(pl.col(self.drug_amount_col).count() > 0).then(
+                        pl.col(self.drug_amount_col).sum()
+                    ),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1679,7 +1682,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(
                 # process fluid components (ml)
                 inputevents_cv_mixtures.filter(
-                    pl.col(self.drug_amount_unit_col) == "ml"
+                    pl.col(self.drug_amount_unit_col).eq_missing("ml")
                 )
                 .group_by(
                     self.drug_mixture_id_col, self.drug_mixture_admin_id_col
@@ -1689,9 +1692,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                     pl.col(self.drug_rate_col)
                     .first()
                     .alias(self.fluid_rate_col),
-                    pl.col(self.drug_amount_col)
-                    .sum()
-                    .alias(self.fluid_amount_col),
+                    # sum but return None if empty
+                    pl.when(pl.col(self.drug_amount_col).count() > 0).then(
+                        pl.col(self.drug_amount_col).sum()
+                    ),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1703,20 +1707,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                 [inputevents_cv_fluids_only, inputevents_cv_mixtures],
                 how="diagonal_relaxed",
             )
-            # Drop the lines with 0 drug amount and a non-zero rate -> rate should not be non-zero for zero amounts
-            .filter(
-                (
-                    pl.col(self.drug_amount_col).ne(0)
-                    & pl.col(self.drug_rate_col).ne(0)
+            # Drop the 0 drug amount with a non-zero rate -> non-zero rates trump zero amounts
+            .with_columns(
+                pl.when(
+                    pl.col(self.drug_amount_col).eq(0),
+                    pl.col(self.drug_rate_col).gt(0),
                 )
-                | (
-                    pl.col(self.drug_amount_col).eq(0)
-                    & pl.col(self.drug_rate_col).eq(0)
-                )
-                | (
-                    pl.col(self.fluid_amount_col).ne(0)
-                    & pl.col(self.fluid_rate_col).ne(0)
-                )
+                .then(None)
+                .otherwise(pl.col(self.drug_amount_col))
+                .alias(self.drug_amount_col),
             )
             # Group by rate continuity and mixture ID
             .with_columns(
@@ -1987,9 +1986,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
