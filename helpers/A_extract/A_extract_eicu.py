@@ -837,6 +837,41 @@ class EICUExtractor(EICUPaths):
                 .alias("nursingchartvalue"),
             )
             .with_columns(
+                pl.col("nursingchartvalue")
+                .cast(float, strict=False)
+                .alias("nursingchartvaluefloat")
+            )
+            .with_columns(
+                # Split "O2 L/%" into two separate columns:
+                # 1. "FiO2" -> Oxygen/Total gas setting [Volume Fraction] Ventilator
+                # 2. "O2 L" -> Oxygen gas flow Oxygen delivery system
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
+                    pl.col("nursingchartvaluefloat").is_between(21, 100)
+                    | pl.col("nursingchartvaluefloat").is_between(
+                        0.21, 1.0, closed="left"
+                    ),
+                )
+                .then(pl.lit("FiO2"))
+                .when(
+                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
+                    pl.col("nursingchartvaluefloat").is_between(
+                        1, 21, closed="left"
+                    ),
+                )
+                .then(pl.lit("O2 L"))
+                .alias("nursingchartcelltypevalname"),
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
+                    pl.col("nursingchartvaluefloat").is_between(
+                        0.21, 1.0, closed="left"
+                    ),
+                )
+                .then(pl.col("nursingchartvaluefloat").mul(100).cast(str))
+                .otherwise(pl.col("nursingchartvalue"))
+                .alias("nursingchartvalue"),
+            )
+            .with_columns(
                 # Replace nurse names with mapped names
                 pl.col("nursingchartcelltypevalname")
                 .replace_strict(nurse_names_mapping, default=None)
