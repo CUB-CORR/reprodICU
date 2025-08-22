@@ -104,7 +104,6 @@ class HiRIDProcessor(HiRIDExtractor):
 
         # Create an empty DataFrame to store the timeseries data
         timeseries_processed = pl.LazyFrame()
-        labname_components = self._get_labname_components()
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
@@ -117,14 +116,13 @@ class HiRIDProcessor(HiRIDExtractor):
                 pl.scan_parquet(
                     self.timeseries_path + file, parallel="prefiltered"
                 )
+                # Drop the lab values from the timeseries data
+                .filter(~pl.col("variableid").is_between(20000000,25000000))
                 .pipe(
                     self._extract_timeseries_helper,
                     self.admissiontime,
                     self.length_of_stay,
                 )
-                # Drop the lab values from the timeseries data
-                .join(labname_components, on="variable")
-                .filter(pl.col("LOINC_component").is_null())
                 # Pivot the timeseries data
                 .collect()
                 .pivot(
@@ -221,6 +219,8 @@ class HiRIDProcessor(HiRIDExtractor):
                 pl.scan_parquet(
                     self.timeseries_path + file, parallel="prefiltered"
                 )
+                # Keep the lab values from the timeseries data
+                .filter(pl.col("variableid").is_between(20000000,25000000))
                 .pipe(
                     self._extract_timeseries_helper,
                     self.admissiontime,
