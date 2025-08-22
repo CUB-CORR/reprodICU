@@ -310,7 +310,7 @@ class TimeseriesHarmonizer(GlobalVars):
 
         # Concatenate the timeseries data for each category
         # region vitals
-        timeseries_vitals_processed = pl.LazyFrame()
+        vitals = pl.LazyFrame()
         for ts_vitals in timeseries_vitals:
             vitals_cols = ts_vitals.collect_schema().names()
             vitals_cols_not_index = list(
@@ -334,38 +334,35 @@ class TimeseriesHarmonizer(GlobalVars):
                         },
                     }
                 )
-                .select([*self.index_cols, *sorted(vitals_cols_not_index)])
-                # assume uniqueness (since we're just concatenating the data)
-                .sort(self.index_cols)
-            )
-
-            timeseries_vitals_processed = pl.concat(
-                [timeseries_vitals_processed, ts_vitals],
-                how="diagonal_relaxed",
-            )
-
-        vitals = timeseries_vitals_processed.with_columns(
-            # Fix Temperature once more if value appears to be in Fahrenheit
-            pl.when(pl.col("Temperature").gt(60))
-            .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
-            .otherwise(pl.col("Temperature"))
-            .alias("Temperature"),
-            # Sum Glasgow coma score components if total is missing
-            (
-                pl.when(pl.col("Glasgow coma score total").is_null())
-                .then(
-                    pl.sum_horizontal(
-                        "Glasgow coma score eye opening",
-                        "Glasgow coma score motor",
-                        "Glasgow coma score verbal",
-                        ignore_nulls=False,
-                    )
+                .with_columns(
+                    # Fix Temperature once more if value appears to be in Fahrenheit
+                    pl.when(pl.col("Temperature").gt(60))
+                    .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
+                    .otherwise(pl.col("Temperature"))
+                    .alias("Temperature"),
                 )
-                .otherwise(pl.col("Glasgow coma score total"))
-                .alias("Glasgow coma score total")
-            ),
-        )
+                .select([*self.index_cols, *sorted(vitals_cols_not_index)])
+                # assume uniqueness & sortedness (since we're just concatenating the data)
+                # .unique(self.index_cols)
+                # .sort(self.index_cols)
+            )
 
+            vitals = pl.concat([vitals, ts_vitals], how="diagonal_relaxed")
+
+        # Sum Glasgow coma score components if total is missing
+        vitals = vitals.with_columns(
+            pl.when(pl.col("Glasgow coma score total").is_null())
+            .then(
+                pl.sum_horizontal(
+                    "Glasgow coma score eye opening",
+                    "Glasgow coma score motor",
+                    "Glasgow coma score verbal",
+                    ignore_nulls=False,
+                )
+            )
+            .otherwise(pl.col("Glasgow coma score total"))
+            .alias("Glasgow coma score total")
+        )
         # endregion
 
         # region labs
@@ -384,45 +381,52 @@ class TimeseriesHarmonizer(GlobalVars):
                     *self.conversion_lab_LOINC_components,
                 ),
             )
-            .unique(self.index_cols)
-            .sort(self.index_cols)
+            # assume uniqueness & sortedness (since we're just concatenating the data)
+            # .unique(self.index_cols)
+            # .sort(self.index_cols)
         )
         # endregion
 
         # region respiratory
-        resp = pl.concat(timeseries_resp, how="diagonal_relaxed")
-        resp_cols = resp.collect_schema().names()
-        resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
-        resp = (
-            resp.pipe(self.helpers.dropna, "all", resp_cols_not_index, False)
-            .cast(
-                {  # Convert all columns to float, except for
-                    # - Oxygen delivery system
-                    # - Ventilation mode Ventilator
-                    # - Ventilator type
-                    self.global_icu_stay_id_col: str,
-                    self.timeseries_time_col: float,
-                    **{
-                        col: (
-                            str
-                            if col
-                            in [
-                                "Oxygen delivery system",
-                                "Ventilation mode Ventilator",
-                                "Ventilator type",
-                            ]
-                            else float
-                        )
-                        for col in resp_cols_not_index
+        resp = pl.LazyFrame()
+        for ts_resp in timeseries_resp:
+            resp_cols = ts_resp.collect_schema().names()
+            resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
+            ts_resp = (
+                ts_resp.pipe(
+                    self.helpers.dropna, "all", resp_cols_not_index, False
+                )
+                .cast(
+                    {  # Convert all columns to float, except for
+                        # - Oxygen delivery system
+                        # - Ventilation mode Ventilator
+                        # - Ventilator type
+                        self.global_icu_stay_id_col: str,
+                        self.timeseries_time_col: float,
+                        **{
+                            col: (
+                                str
+                                if col
+                                in [
+                                    "Oxygen delivery system",
+                                    "Ventilation mode Ventilator",
+                                    "Ventilator type",
+                                ]
+                                else float
+                            )
+                            for col in resp_cols_not_index
+                        },
                     },
-                },
-                # silently fail on invalid values (i.e. don't raise an error)
-                strict=False,
+                    # silently fail on invalid values (i.e. don't raise an error)
+                    strict=False,
+                )
+                .select([*self.index_cols, *sorted(resp_cols_not_index)])
+                # assume uniqueness & sortedness (since we're just concatenating the data)
+                # .unique(self.index_cols)
+                # .sort(self.index_cols)
             )
-            .select([*self.index_cols, *sorted(resp_cols_not_index)])
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-        )
+
+            resp = pl.concat([resp, ts_resp], how="diagonal_relaxed")
         # endregion
 
         # region intakeoutput
@@ -439,9 +443,9 @@ class TimeseriesHarmonizer(GlobalVars):
                 }
             )
             .select([*self.index_cols, *sorted(inout_cols_not_index)])
-            .sort(self.index_cols)
-            .unique(self.index_cols)
-            .sort(self.index_cols)
+            # assume uniqueness & sortedness (since we're just concatenating the data)
+            # .unique(self.index_cols)
+            # .sort(self.index_cols)
         )
         # endregion
 

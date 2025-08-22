@@ -154,6 +154,7 @@ Sedation Scoring Ventilation Depth:
 Sedation Wean:
 Set Fraction of Inspired Oxygen (FIO2): Oxygen/Total gas setting [Volume Fraction] Ventilator
 Set Vt (Drager): Tidal volume setting Ventilator
+Set Vt (Servo,LTV): Tidal volume setting Ventilator
 Sigh:
 Skin Integrity:
 Spont TV: Tidal volume.spontaneous --on ventilator
@@ -187,7 +188,7 @@ Ventilator Type: Ventilator type
 Volume Guarantee:
 VS RESP RATE: Breath rate setting Ventilator
 Vt Spontaneous (mL): Tidal volume.spontaneous --on ventilator
-Vti:
+Vti: Tidal volume.inspired
 Wake up assessment interventions:
 Wake up assessment performed:
 Weaning Assessment Criteria Collaboration:

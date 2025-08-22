@@ -12,7 +12,9 @@ ICP: Intracranial pressure
 Respiratory Rate: Respiratory rate
 O2 Saturation: Peripheral oxygen saturation
 O2 Admin Device: Oxygen delivery system
-O2 L/%: oxygen_flow / FiO2 # make sure to convert to FiO2 / oxygen_flow (L/min) where applicable (e.g. nasal cannula)
+O2 L/%: # oxygen_flow / FiO2 # make sure to convert to FiO2 / oxygen_flow (L/min) where applicable (e.g. nasal cannula)
+O2 L: Oxygen gas flow Oxygen delivery system # for replacement, not in original dataset
+FiO2: Oxygen/Total gas setting [Volume Fraction] Ventilator # for replacement, not in original dataset
 End Tidal CO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
 GCS Total: Glasgow coma score total
 Eyes: Glasgow coma score eye opening
