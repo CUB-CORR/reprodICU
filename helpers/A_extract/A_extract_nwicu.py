@@ -495,12 +495,13 @@ class NWICUExtractor(NWICUPaths):
             )
         )
 
+        # Height measurements from the first 24 hours of the ICU stay since it's unlikely to change
         height = (
             height_weight.filter(pl.col("itemid").is_in(HEIGHT_ITEMID.keys()))
             .collect(engine="streaming")
             .filter(
                 (pl.col("charttime") - pl.col("intime")).le(
-                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                    pl.duration(hours=24)
                 ),
             )
         )

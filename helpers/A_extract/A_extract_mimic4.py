@@ -574,7 +574,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         # Select the first admission weight
         first_admit_weight = (
             height_weight.filter(pl.col("itemid").is_in(ADMIT_WEIGHT_IDS))
-            .collect(engine="streaming")
+            .collect()
             .with_columns(
                 pl.col("valuenum")
                 .first()
@@ -585,7 +585,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         # Select the first daily weight measurement
         first_daily_weight = (
             height_weight.filter(pl.col("itemid").is_in(DAILY_WEIGHT_IDS))
-            .collect(engine="streaming")
+            .collect()
             .with_columns(
                 pl.col("valuenum")
                 .first()
@@ -605,12 +605,13 @@ class MIMIC4Extractor(MIMIC4Paths):
             .drop("first_admit_weight", "first_daily_weight")
         )
 
+        # Height measurements from the first 24 hours of the ICU stay since it's unlikely to change
         height = (
             height_weight.filter(pl.col("itemid").is_in(HEIGHT_ITEMIDS.keys()))
-            .collect(engine="streaming")
+            .collect()
             .filter(
                 (pl.col("charttime") - pl.col("intime")).le(
-                    pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF)
+                    pl.duration(hours=24)
                 ),
             )
         )
