@@ -83,7 +83,8 @@ class Vocabulary(OMOPPaths):
                 pl.col("concept_name").is_in(concept_names),
                 pl.col("vocabulary_id") == vocabulary,
                 (
-                    pl.col("concept_class_id") == "Lab Test"
+                    # pl.col("concept_class_id") == "Lab Test"
+                    pl.col("domain_id") == "Measurement"
                     if is_lab_test
                     else pl.lit(True)
                 ),
