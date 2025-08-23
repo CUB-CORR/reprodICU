@@ -1,42 +1,73 @@
-itemid (omop_source_code),Label,omop_concept_name,comment
-211,Heart Rate,Heart rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-646,SpO2,Oxygen saturation in Arterial blood by Pulse oximetry,
-618,Respiratory Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-212,Heart Rhythm,Heart rate rhythm,
-51,Arterial BP [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-8368,Arterial BP [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-52,Arterial BP Mean,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-3603,Resp Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-455,NBP [Systolic],Systolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-8441,NBP [Diastolic],Diastolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-456,NBP Mean,Mean blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-113,CVP,Central venous pressure (CVP),same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-184,Eye Opening,Glasgow coma score eye opening,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-723,Verbal Response,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-454,Motor Response,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-198,GCS Total,Glasgow coma score total,
-678,Temperature F,Temperature Fahrenheit,
-677,Temperature C (calc),Temperature,
-3420,FIO2,Oxygen/Total gas setting [Volume Fraction] Ventilator,
-190,FiO2 Set,Oxygen/Total gas setting [Volume Fraction] Ventilator,
-720,Ventilator Mode,Ventilation mode Ventilator,
-470,O2 Flow (lpm),Oxygen gas flow Oxygen delivery system,
-444,Mean Airway Pressure,Mean airway pressure,
-615,Resp Rate (Total),Breath rate spontaneous and mechanical --on ventilator,
-676,Temperature C,Temperature,
-679,Temperature F (calc),Temperature Fahrenheit,
-505,PEEP,PEEP Respiratory system --on ventilator,
-614,Resp Rate (Spont),Breath rate spontaneous --on ventilator,
-535,Peak Insp. Pressure,Pressure.max Respiratory system airway --on ventilator,
-683,Tidal Volume (Set),Tidal volume Ventilator --on ventilator,
-684,Tidal Volume (Spont),Tidal volume.spontaneous --on ventilator,
-543,Plateau Pressure,Pressure.plateau Respiratory system airway --on ventilator,
-619,Respiratory Rate Set,Breath rate mechanical --on ventilator,
-0,,Not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 500
-467,O2 Delivery Device,Oxygen delivery system,
-468,O2 Delivery Device#2,Oxygen delivery system,
-212,Heart Rhythm,Heart rate rhythm,
-3354,Cardiac Rhythm,Heart rate rhythm,
-6701,Arterial BP #2 [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-6702,Arterial BP Mean #2,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
-8555,Arterial BP #2 [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+index,itemid (omop_source_code),Label,omop_concept_name,comment
+0,211,Heart Rate,Heart rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+2,646,SpO2,Oxygen saturation in Arterial blood by Pulse oximetry,
+3,618,Respiratory Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+4,212,Heart Rhythm,Heart rate rhythm,
+14,51,Arterial BP [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+15,8368,Arterial BP [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+16,52,Arterial BP Mean,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+29,3603,Resp Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+33,455,NBP [Systolic],Systolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+34,8441,NBP [Diastolic],Diastolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+35,456,NBP Mean,Mean blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+42,113,CVP,Central venous pressure (CVP),same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+45,467,O2 Delivery Device,Oxygen delivery system,
+57,184,Eye Opening,Glasgow coma score eye opening,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+58,723,Verbal Response,Glasgow coma score verbal,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+59,454,Motor Response,Glasgow coma score motor,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+60,198,GCS Total,Glasgow coma score total,
+79,678,Temperature F,Temperature Fahrenheit,
+80,677,Temperature C (calc),Temperature,
+92,3420,FIO2,Oxygen/Total gas setting [Volume Fraction] Ventilator,
+103,190,FiO2 Set,Oxygen/Total gas setting [Volume Fraction] Ventilator,
+126,40,Airway Type,Oxygen delivery system,
+133,722,Ventilator Type,Ventilator type,
+204,506,PEEP Set,Positive end expiratory pressure setting Ventilator,
+210,720,Ventilator Mode,Ventilation mode Ventilator,
+214,615,Resp Rate (Total),Breath rate spontaneous and mechanical --on ventilator,
+233,450,Minute Volume(Obser),,-> not mapped
+240,218,High Insp. Pressure,,-> not mapped (seems to be the upper limit of inspiratory pressure since multiples of 5)
+241,3509,Mode,Ventilation mode Ventilator,
+242,470,O2 Flow (lpm),Oxygen gas flow Oxygen delivery system,
+243,444,Mean Airway Pressure,Mean airway pressure,
+244,219,High Resp. Rate,,-> not mapped (seems to be the upper limit of respiratory rate since multiples of 5)
+246,38,Airway,Oxygen delivery system,
+247,676,Temperature C,Temperature,
+250,679,Temperature F (calc),Temperature Fahrenheit,
+278,505,PEEP,PEEP Respiratory system --on ventilator,
+292,3437,Flowrate (l/m),,Oxygen gas flow Oxygen delivery system -> is in "cmH20"?
+299,8474,Responds to Stimuli [Value],,Glasgow coma score motor -> needs processsing since values are No Response - Extension - Flexion - Withdraws - Localizes - Other/Remarks
+320,578,Pressure Support,Pressure support setting Ventilator,
+338,3436,Flowrate (cc/min),,Flowrate (cc/min) -> most common values are 13 25 50 75 100 200 300 400 500
+362,619,Respiratory Rate Set,Breath rate mechanical --on ventilator,
+363,682,Tidal Volume (Obser),Tidal volume.spontaneous+mechanical --on ventilator,
+373,3422,FIO2 [Meas],Oxygen/Total gas setting [Volume Fraction] Ventilator,
+379,614,Resp Rate (Spont),Breath rate spontaneous --on ventilator,
+380,535,Peak Insp. Pressure,Pressure.max Respiratory system airway --on ventilator,
+384,683,Tidal Volume (Set),Tidal volume Ventilator --on ventilator,
+386,3503,Mean PAW [Meas],Mean airway pressure,
+441,684,Tidal Volume (Spont),Tidal volume.spontaneous --on ventilator,
+480,543,Plateau Pressure,Pressure.plateau Respiratory system airway --on ventilator,
+539,3337,Breath Rate,Respiratory rate,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+541,507,PIP,Pressure.max Respiratory system airway --on ventilator,
+551,3313,BP Cuff [Systolic],Systolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+552,3312,BP Cuff [Mean],Mean blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+553,8502,BP Cuff [Diastolic],Diastolic blood pressure by Noninvasive,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+558,221,I:E Ratio,Inspiration/Expiration time Ratio,
+570,2000,Inspiratory Time,Inspiratory time setting Ventilator,
+575,1044,Pain Level,,Numeric Pain Rating Scale -> needs processing since values are e.g. "4-Mild to Mod" "9-Severe-Worst"
+680,226,ICP,Intracranial pressure,
+702,436,Low Insp. Pressure,,-> not mapped (seems to be the lower limit of inspiratory pressure since usually 10 or 12)
+718,92,CPP,,Cerebral perfusion pressure -> not mapped since it can be calculated from MAP and ICP
+857,468,O2 Delivery Device#2,Oxygen delivery system,
+875,471,O2 Flow (lpm) #2,Oxygen gas flow Oxygen delivery system,
+1070,652,Spon. Vt (L) (Mech.),,Tidal volume.spontaneous --on ventilator -> needs processing since values are in Liters
+1071,651,Spon RR (Mech.),Breath rate spontaneous --on ventilator,
+1073,3689,Vt [Ventilator],,Tidal volume Ventilator --on ventilator -> is in "in"?
+1263,6701,Arterial BP #2 [Systolic],Systolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+1268,6702,Arterial BP Mean #2,Mean blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+1272,8555,Arterial BP #2 [Diastolic],Diastolic blood pressure,same as in original MIMIC mapping (LOINC -> SNOMED happens in code)
+0,0,,Dialysis from LINE 822 to 858,-> not mapped
+0,0,,additional cardiological parameters such as LVSWI SVRI etc also available,-> not mapped
+0,0,,not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 1500
+3138,3354,Cardiac Rhythm,Heart rate rhythm,
