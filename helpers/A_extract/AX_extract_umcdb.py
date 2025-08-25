@@ -51,6 +51,10 @@ class UMCdbExtractor(UMCdbPaths):
             "Reticulocytes [#/volume]",
         ]
 
+        self.MILLISECONDS_IN_1H = 60 * 60 * 1000
+        self.MILLISECONDS_IN_1D = 24 * self.MILLISECONDS_IN_1H
+        self.MILLISECONDS_IN_1Y = 365 * self.MILLISECONDS_IN_1D
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -105,10 +109,7 @@ class UMCdbExtractor(UMCdbPaths):
             .group_by(self.person_id_col)
             .agg(pl.col("dischargedat").max().alias("last_discharge"))
             .with_columns(
-                (
-                    pl.col("last_discharge")
-                    + pl.duration(days=365).dt.total_milliseconds()
-                )
+                (pl.col("last_discharge") + self.MILLISECONDS_IN_1Y)
                 .cast(int)
                 .alias("dateofdeathcutoff")
             )
@@ -212,26 +213,18 @@ class UMCdbExtractor(UMCdbPaths):
                 # NOTE: pre-ICU length of stay is not available in the UMCdb dataset,
                 # as there is no known hospital admission / discharge data
                 # Calculate ICU length of stay in days
-                pl.duration(hours=pl.col("lengthofstay"))
-                .truediv(pl.duration(days=1))
+                (pl.col("dischargedat") - pl.col("admittedat"))
+                .truediv(self.MILLISECONDS_IN_1D)
                 .cast(float)
                 .alias(self.icu_length_of_stay_col),
                 # Calculate mortality after discharge
-                pl.duration(
-                    milliseconds=(
-                        pl.col("dateofdeath") - pl.col("dischargedat")
-                    )
-                )
-                .truediv(pl.duration(days=1))
+                (pl.col("dateofdeath") - pl.col("dischargedat"))
+                .truediv(self.MILLISECONDS_IN_1D)
                 .cast(int)
                 .alias(self.mortality_after_col),
                 # Calculate mortality after discharge censor cutoff
-                pl.duration(
-                    milliseconds=(
-                        pl.col("dateofdeathcutoff") - pl.col("dischargedat")
-                    )
-                )
-                .truediv(pl.duration(days=1))
+                (pl.col("dateofdeathcutoff") - pl.col("dischargedat"))
+                .truediv(self.MILLISECONDS_IN_1D)
                 .cast(int)
                 .alias(self.mortality_after_cutoff_col),
                 # Convert categorical gender to enum
