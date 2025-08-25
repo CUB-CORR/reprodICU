@@ -10,7 +10,14 @@ Temperature: # 45771331
   - Body temperature
   # NWICU / SICdb -> same name
   # UMCdb
+  - Bladder temperature via Foley
+  - Blood temperature
+  - Esophageal temperature
+  - Groin temperature
   - Oral temperature
+  - Temperature of Extremity
+  - Temperature of Skin
+  - Tympanic membrane temperature
 Heart rate: # 4239408
   # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
