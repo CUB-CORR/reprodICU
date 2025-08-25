@@ -11,6 +11,7 @@ import polars as pl
 from helpers.helper import GlobalHelpers
 from helpers.helper_filepaths import MIMIC4Paths
 from helpers.helper_OMOP import Vocabulary
+import re
 
 
 class MIMIC4Extractor(MIMIC4Paths):
@@ -272,6 +273,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 coalesce=True,
             )
             .join(
+                self._extract_mimic4_version(),
+                on=self.icu_stay_id_col,
+                how="left",
+                coalesce=True,
+            )
+            .join(
                 MORTALITY_AFTER_CENSOR_CUTOFF,
                 on=self.person_id_col,
                 how="left",
@@ -460,6 +467,41 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
     # endregion
+
+    # region versions
+    def _extract_mimic4_version(self) -> pl.LazyFrame:
+        """
+        Extracts the MIMIC-IV version when a patient was first introduced.
+        """
+
+        versions = pl.scan_csv(self.icustays_path).with_columns(
+            pl.lit(None).alias(self.dataset_version_col)
+        )
+        for version, path in self.icustays_version_paths.items():
+            if path is None or not os.path.isfile(path):
+                continue
+
+            if version == "current":
+                # mimic4_source_path: ".../mimiciv/3.1/"
+                m = re.search(r"(\d+\.\d+)[\/\\]*$", self.path)
+                version = m.group(1) if m else None
+
+            versions = versions.join(
+                pl.scan_csv(path)
+                .select("stay_id", "hadm_id", "subject_id")
+                .with_columns(pl.lit(version).alias("version")),
+                on=["stay_id", "hadm_id", "subject_id"],
+                how="left",
+                coalesce=True,
+            ).with_columns(
+                pl.coalesce(self.dataset_version_col,"version").alias(
+                    self.dataset_version_col
+                )
+            ).drop("version")
+
+        return versions.rename({"stay_id": self.icu_stay_id_col}).select(
+            self.icu_stay_id_col, self.dataset_version_col
+        )
 
     # region (h/w)eight
     # Extract patient height and weight from the chartevents.csv file
