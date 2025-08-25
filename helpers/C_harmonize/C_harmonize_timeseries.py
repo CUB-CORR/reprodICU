@@ -351,17 +351,15 @@ class TimeseriesHarmonizer(GlobalVars):
 
         # Sum Glasgow coma score components if total is missing
         vitals = vitals.with_columns(
-            pl.when(pl.col("Glasgow coma score total").is_null())
-            .then(
+            pl.coalesce(
+                pl.col("Glasgow coma score total"),
                 pl.sum_horizontal(
                     "Glasgow coma score eye opening",
                     "Glasgow coma score motor",
                     "Glasgow coma score verbal",
                     ignore_nulls=False,
                 )
-            )
-            .otherwise(pl.col("Glasgow coma score total"))
-            .alias("Glasgow coma score total")
+            ).alias("Glasgow coma score total")
         )
         # endregion
 

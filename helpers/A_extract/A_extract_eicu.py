@@ -860,6 +860,7 @@ class EICUExtractor(EICUPaths):
                     ),
                 )
                 .then(pl.lit("O2 L"))
+                .otherwise(pl.col("nursingchartcelltypevalname"))
                 .alias("nursingchartcelltypevalname"),
                 pl.when(
                     pl.col("nursingchartcelltypevalname") == "O2 L/%",
