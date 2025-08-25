@@ -1619,18 +1619,23 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .group_by(self.drug_mixture_id_col, self.drug_mixture_admin_id_col)
             .agg(
-                pl.col(
-                    self.icu_stay_id_col,
-                    self.fluid_rate_col,
-                    self.drug_continuous_col,
-                    self.drug_admin_type_col,
-                    "ITEMID_FLUID",
-                )
-                .sort_by("CHARTTIME")
-                .first(),
-                pl.col(self.drug_amount_col).sum().alias(self.fluid_amount_col),
+                *[
+                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    for column in [
+                        self.icu_stay_id_col,
+                        self.fluid_rate_col,
+                        self.drug_continuous_col,
+                        self.drug_admin_type_col,
+                        self.drug_admin_route_col,
+                        "ITEMID_FLUID",
+                    ]
+                ],
                 pl.col("PREV_CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
+                # sum but return None if empty
+                pl.when(pl.col(self.drug_amount_col).count() > 0).then(
+                    pl.col(self.drug_amount_col).sum()
+                ).alias(self.fluid_amount_col),
             )
         )
 
@@ -1654,13 +1659,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.drug_mixture_id_col, self.drug_mixture_admin_id_col
             )
             .agg(
-                pl.col(
-                    self.icu_stay_id_col,
-                    self.drug_continuous_col,
-                    self.drug_admin_type_col,
-                )
-                .sort_by("CHARTTIME")
-                .first(),
+                *[
+                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    for column in [
+                        self.icu_stay_id_col,
+                        self.drug_continuous_col,
+                        self.drug_admin_type_col,
+                        self.drug_admin_route_col,
+                    ]
+                ],
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
             )
@@ -1673,16 +1680,19 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.drug_mixture_id_col, self.drug_mixture_admin_id_col
                 )
                 .agg(
-                    pl.col(
-                        "ITEMID",
-                        self.drug_rate_col,
-                        self.drug_rate_unit_col,
-                        self.drug_amount_unit_col,
-                    ).first(),
+                    *[
+                        pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                        for column in [
+                            "ITEMID",
+                            self.drug_rate_col,
+                            self.drug_rate_unit_col,
+                            self.drug_amount_unit_col,
+                        ]
+                    ],
                     # sum but return None if empty
                     pl.when(pl.col(self.drug_amount_col).count() > 0).then(
                         pl.col(self.drug_amount_col).sum()
-                    ),
+                    ).alias(self.drug_amount_col),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1696,14 +1706,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.drug_mixture_id_col, self.drug_mixture_admin_id_col
                 )
                 .agg(
-                    pl.col("ITEMID").first().alias("ITEMID_FLUID"),
+                    pl.col("ITEMID").drop_nulls().first().alias("ITEMID_FLUID"),
                     pl.col(self.drug_rate_col)
+                    .drop_nulls()
                     .first()
                     .alias(self.fluid_rate_col),
                     # sum but return None if empty
                     pl.when(pl.col(self.drug_amount_col).count() > 0).then(
                         pl.col(self.drug_amount_col).sum()
-                    ),
+                    ).alias(self.fluid_amount_col),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1759,29 +1770,31 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .group_by(self.drug_mixture_id_col, "has_same_rate")
             .agg(
-                pl.col(
-                    self.icu_stay_id_col,
-                    self.drug_mixture_admin_id_col,
-                    self.drug_continuous_col,
-                    self.drug_admin_type_col,
-                    self.drug_amount_unit_col,
-                    self.drug_rate_col,
-                    self.drug_rate_unit_col,
-                    self.fluid_rate_col,
-                    "ITEMID",
-                    "ITEMID_FLUID",
-                )
-                .sort_by("STARTTIME")
-                .first(),
+                *[
+                    pl.col(column).sort_by("STARTTIME").drop_nulls().first()
+                    for column in [
+                        self.icu_stay_id_col,
+                        self.drug_mixture_admin_id_col,
+                        self.drug_continuous_col,
+                        self.drug_admin_type_col,
+                        self.drug_admin_route_col,
+                        self.drug_amount_unit_col,
+                        self.drug_rate_col,
+                        self.drug_rate_unit_col,
+                        self.fluid_rate_col,
+                        "ITEMID",
+                        "ITEMID_FLUID",
+                    ]
+                ],
                 pl.col("STARTTIME").min().alias("STARTTIME"),
                 pl.col("ENDTIME").max().alias("ENDTIME"),
-                # return None if sum is empty
+                # sum but return None if empty
                 pl.when(pl.col(self.drug_amount_col).count() > 0).then(
                     pl.col(self.drug_amount_col).sum()
-                ),
+                ).alias(self.drug_amount_col),
                 pl.when(pl.col(self.fluid_amount_col).count() > 0).then(
                     pl.col(self.fluid_amount_col).sum()
-                ),
+                ).alias(self.fluid_amount_col),
             )
         )
 
@@ -1809,7 +1822,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 ],
                 how="diagonal_relaxed",
             )
-            .join(d_items, on="ITEMID")
+            .join(d_items, on="ITEMID", how="left")
             .join(
                 d_items,
                 left_on="ITEMID_FLUID",
