@@ -73,11 +73,23 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             "High flow neb", "Non-rebreather", "Venti mask ", "Medium conc mask ",
             "T-piece", "High flow nasal cannula", "Ultrasonic neb", "Vapomist",
         ]
+        id226732_noninvasive_ventilation = [
+            "Bipap mask ", "CPAP mask "
+        ]
+        id226732_mechanical_ventilation = [
+            "Endotracheal tube", "Tracheostomy tube",
+        ]
         id467_oxygen_therapy = [
             "Cannula", "Nasal Cannula", "Face Tent", "Aerosol-Cool",
             "Trach Mask", "Hi Flow Neb", "Non-Rebreather", "Venti Mask",
             "Medium Conc Mask", "Vapotherm", "T-Piece", "Hood", "Hut",
             "TranstrachealCat", "Heated Neb", "Ultrasonic Neb",
+        ]
+        id467_noninvasive_ventilation = [
+            "Bipap Mask", "CPAP Mask",
+        ]
+        id467_mechanical_ventilation = [
+            "Ventilator"
         ]
         # fmt: on
 
@@ -89,9 +101,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
 
         # Identify the presence of a mechanical ventilation using settings
         if "parquet" in self.mimic3_paths.chartevents_path:
-            chartevents = pl.scan_parquet(
-                self.mimic3_paths.chartevents_path, parallel="prefiltered"
-            )
+            chartevents = pl.scan_parquet(self.mimic3_paths.chartevents_path)
         else:
             chartevents = pl.scan_csv(
                 self.mimic3_paths.chartevents_path,
@@ -110,16 +120,31 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 # vent type recorded
                 pl.when(
                     pl.col("ITEMID") == 720,
-                    pl.col("VALUE") != ("Other/Remarks"),
+                    pl.col("VALUE") != "Other/Remarks",
                 )
                 .then(1)
-                .when(pl.col("ITEMID") == 223848, pl.col("VALUE") != "Other")
+                .when(
+                    pl.col("ITEMID") == 223848,
+                    pl.col("VALUE") != "Other",
+                )
                 .then(1)
+                # NOTE: Ventilator on Standby, does not indicate no invasive ventilation
+                #       -> check previous airway devices to determine if no invasive ventilation is taking place
                 # ventilator mode
-                .when(pl.col("ITEMID") == 223849).then(1)
+                .when(
+                    pl.col("ITEMID") == 223849,
+                 pl.col("VALUE") != "Standby",
+                ).then(1)
                 # O2 delivery device == ventilator
                 .when(
-                    pl.col("ITEMID") == 467, pl.col("VALUE") == "Ventilator"
+                    pl.col("ITEMID") == 467,
+                    pl.col("VALUE").is_in(id467_mechanical_ventilation),
+                ).then(1)
+                # NOTE: different from ventilation_classification.sql
+                # O2 delivery device == endotracheal tube / tracheostomy tube
+                .when(
+                    pl.col("ITEMID") == 226732,
+                    pl.col("VALUE").is_in(id226732_mechanical_ventilation),
                 ).then(1)
                 # IDs with additional conditions that are already handled
                 .when(
@@ -129,6 +154,21 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .then(1)
                 .otherwise(0)
                 .alias("MechVent"),
+                # NOTE: different from ventilation_classification.sql
+                # initiation of non-invasive indicates the ventilation has ended
+                pl.when(
+                    pl.col("ITEMID") == 226732,
+                    pl.col("VALUE").is_in(id226732_noninvasive_ventilation),
+                )
+                .then(1)
+                .when(
+                    pl.col("ITEMID") == 467,
+                    pl.col("VALUE").is_in(id467_noninvasive_ventilation),
+                )
+                .then(1)
+                .otherwise(0)
+                .alias("NonInvasive"),
+                # END NOTE
                 # initiation of oxygen therapy indicates the ventilation has ended
                 pl.when(
                     pl.col("ITEMID") == 226732,
@@ -158,15 +198,18 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .otherwise(0)
                 .alias("SelfExtubated"),
             )
-            .collect()
-            .group_by("ICUSTAY_ID", "CHARTTIME", maintain_order=True)
+            .group_by("ICUSTAY_ID", "CHARTTIME")
             .agg(
                 pl.col("MechVent").max(),
+                # pl.col("NonInvasive").max(),
                 pl.col("OxygenTherapy").max(),
                 pl.col("Extubated").max(),
                 pl.col("SelfExtubated").max(),
             )
+            .collect()
         )
+        
+        CHARTEVENTS_VENTILATION_CLASSIFICATION.write_parquet("debug_chartevents_ventilation_classification.parquet")
 
         # add in the extubation flags from procedureevents_mv
         # note that we only need the start time for the extubation
@@ -180,6 +223,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.lit(0).alias("MechVent"),
+                # pl.lit(0).alias("NonInvasive"),
                 pl.lit(0).alias("OxygenTherapy"),
                 pl.lit(1).alias("Extubated"),
                 pl.when(pl.col("ITEMID") == 225468)
@@ -210,16 +254,6 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         # See the ventilation_classification.sql query for step 1 of the above.
         # This query has the logic for converting events into durations.
 
-        pl.concat(
-            [
-                CHARTEVENTS_VENTILATION_CLASSIFICATION,
-                PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION,
-            ],
-            how="vertical",
-        ).unique(maintain_order=True).write_parquet(
-            "debug_chartevents_ventilation_classification.parquet"
-        )
-
         VENTILATION_DURATIONS = (
             pl.concat(
                 [
@@ -228,9 +262,13 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 ],
                 how="vertical",
             )
-            .unique(maintain_order=True)
-            # this carries over the previous charttime which had a mechanical ventilation event
+            # NOTE: different from ventilation_classification.sql
+            # ensure each charttime is only counted once
+            .group_by("ICUSTAY_ID", "CHARTTIME")
+            .max()
+            # END NOTE
             .with_columns(
+                # this carries over the previous charttime which had a mechanical ventilation event
                 pl.when(pl.col("MechVent") == 1)
                 .then(
                     pl.col("CHARTTIME")
@@ -242,6 +280,13 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 )
                 .otherwise(None)
                 .alias("CHARTTIME_LAG"),
+                # NOTE: different from ventilation_classification.sql
+                # this gets the next charttime (if at the end of a vent event, it's the first time not on a vent)
+                pl.col("CHARTTIME")
+                .shift(-1)
+                .over(partition_by="ICUSTAY_ID", order_by="CHARTTIME")
+                .alias("CHARTTIME_NEXT"),
+                # END NOTE
             )
             .with_columns(
                 pl.col("Extubated")
@@ -266,15 +311,20 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 # when Extubated = 1 then 0 -- extubation is *not* a new ventilation event, the *subsequent* row is
                 pl.when(pl.col("ExtubatedLag") == 1)
                 .then(1)
+                # # NOTE: different from ventilation_classification.sql
+                # # if patient has initiated non-invasive ventilation, and is not currently vented, start a newvent
+                # .when(pl.col("MechVent") == 0, pl.col("NonInvasive") == 1)
+                # .then(1)
+                # # END NOTE
                 # if patient has initiated oxygen therapy, and is not currently vented, start a newvent
                 .when(pl.col("MechVent") == 0, pl.col("OxygenTherapy") == 1)
                 .then(1)
-                # if there is less than 8 hours between vent settings, we do not treat this as a new ventilation event
+                # if there is less than MAX_VENTILATION_PAUSE_HOURS hours between vent settings, we do not treat this as a new ventilation event
                 .when(
                     pl.col("CHARTTIME")
                     > pl.col("CHARTTIME_LAG").add(
                         # is 8 hours in original code
-                        pl.duration(hours=8)
+                        pl.duration(hours=self.MAX_VENTILATION_PAUSE_HOURS)
                     )
                 )
                 .then(1)
@@ -290,15 +340,16 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                     .cum_sum()
                     .over(partition_by=["ICUSTAY_ID"], order_by=["CHARTTIME"])
                 )
-                .otherwise(None)
                 .alias("VentNum")
             )
             .group_by("ICUSTAY_ID", "VentNum")
             .agg(
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
-                pl.col("MechVent").max().alias("MechVent"),
-                pl.col("OxygenTherapy").max().alias("OxygenTherapy"),
+                # pl.col("CHARTTIME_NEXT").max().alias("ENDTIME"),
+                pl.col("MechVent").max(),
+                # pl.col("NonInvasive").max(),
+                pl.col("OxygenTherapy").max(),
             )
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
@@ -309,8 +360,14 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 (pl.col("ENDTIME") - pl.col("INTIME"))
                 .dt.total_seconds()
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                pl.when(pl.col("MechVent") == 1)
-                .then(pl.lit("invasive ventilation"))
+                pl.when(pl.col("MechVent") == 1).then(
+                    pl.lit("invasive ventilation")
+                )
+                # NOTE: different from ventilation_classification.sql
+                .when(pl.col("NonInvasive") == 1).then(
+                    pl.lit("non-invasive ventilation")
+                )
+                # END NOTE
                 .when(pl.col("OxygenTherapy") == 1)
                 .then(pl.lit("supplemental oxygen"))
                 .alias("Ventilation Type"),

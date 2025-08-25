@@ -214,11 +214,13 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 pl.when(pl.col("itemid") == 223849)
                 .then(pl.col("value"))
                 .otherwise(None)
+                .drop_nulls()
                 .first()
                 .alias("ventilator_mode"),
                 pl.when(pl.col("itemid") == 229314)
                 .then(pl.col("value"))
                 .otherwise(None)
+                .drop_nulls()
                 .first()
                 .alias("ventilator_mode_hamilton"),
             )
@@ -286,7 +288,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 # done in order of priority: trach > mech vent > NIV > hiflow / o2
                 pl.when(
                     pl.col("o2_device").is_in(
-                        ["Tracheostomy tube", "Trach mask"]
+                        ["Tracheostomy tube", "Trach mask "]
                     )
                 )
                 .then(pl.lit("tracheostomy"))
@@ -298,14 +300,13 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                             "APRV/Biphasic+ApnVol", "APV (cmv)", "Ambient",
                             "Apnea Ventilation", "CMV", "CMV/ASSIST",
                             "CMV/ASSIST/AutoFlow", "CMV/AutoFlow", "CPAP/PPS",
-                            "CPAP/PSV", "CPAP/PSV+Apn TCPL",
-                            "CPAP/PSV+ApnPres", "CPAP/PSV+ApnVol", "MMV",
-                            "MMV/AutoFlow", "MMV/PSV", "MMV/PSV/AutoFlow",
-                            "P-CMV", "PCV+", "PCV+/PSV", "PCV+Assist",
-                            "PRES/AC", "PRVC/AC", "PRVC/SIMV", "PSV/SBT",
-                            "SIMV", "SIMV/AutoFlow", "SIMV/PRES", "SIMV/PSV",
-                            "SIMV/PSV/AutoFlow", "SIMV/VOL", "SYNCHRON MASTER",
-                            "SYNCHRON SLAVE", "VOL/AC", 
+                            "CPAP/PSV", "CPAP/PSV+Apn TCPL", "CPAP/PSV+ApnPres",
+                            "CPAP/PSV+ApnVol", "MMV", "MMV/AutoFlow", "MMV/PSV",
+                            "MMV/PSV/AutoFlow", "P-CMV", "PCV+", "PCV+/PSV",
+                            "PCV+Assist", "PRES/AC", "PRVC/AC", "PRVC/SIMV",
+                            "PSV/SBT", "SIMV", "SIMV/AutoFlow", "SIMV/PRES",
+                            "SIMV/PSV", "SIMV/PSV/AutoFlow", "SIMV/VOL",
+                            "SYNCHRON MASTER", "SYNCHRON SLAVE", "VOL/AC"
                         ] # fmt: skip
                     )
                     | pl.col("ventilator_mode_hamilton").is_in(
@@ -317,7 +318,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 )
                 .then(pl.lit("invasive ventilation"))
                 .when(
-                    pl.col("o2_device").is_in(["Bipap mask", "CPAP mask"])
+                    pl.col("o2_device").is_in(["Bipap mask ", "CPAP mask "])
                     | pl.col("ventilator_mode_hamilton").is_in(
                         ["DuoPaP", "NIV", "NIV-ST"]
                     )
@@ -373,7 +374,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .when(
                     (pl.col("charttime") - pl.col("charttime_lag")).gt(
                         # is 14 hours in original code
-                        pl.duration(hours=self.MAX_VENTILATION_PAUSE_HOURS)
+                        pl.duration(hours=14)
                     )
                 )
                 .then(1)
@@ -409,7 +410,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                     pl.col("charttime_lead").is_null()
                     | (pl.col("charttime") - pl.col("charttime_lag")).gt(
                         # is 14 hours in original code
-                        pl.duration(hours=self.MAX_VENTILATION_PAUSE_HOURS)
+                        pl.duration(hours=14)
                     )
                 )
                 .then(pl.col("charttime"))
