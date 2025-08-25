@@ -154,6 +154,7 @@ class PatientInformationHarmonizer(GlobalVars):
             self.icu_stay_seq_num_col,
             self.icu_time_rel_to_first_col,
             self.dataset_col,
+            self.dataset_version_col,
             self.person_id_col,
             self.hospital_stay_id_col,
             self.icu_stay_id_col,

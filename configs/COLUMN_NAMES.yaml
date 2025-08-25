@@ -31,6 +31,7 @@ weight_col: Admission Weight (kg) # weight_in_kg
 gender_col: Gender # gender
 ethnicity_col: Ethnicity # ethnicity
 dataset_col: Source Dataset # source_database
+dataset_version_col: Source Dataset Version
 timeseries_time_col: Time Relative to Admission (seconds) # time_relative_to_admission
 diagnosis_icd_code_col: Diagnosis ICD Code # diagnosis_icd_code
 diagnosis_icd9_code_col: Diagnosis ICD-9 Code # diagnosis_icd9_code

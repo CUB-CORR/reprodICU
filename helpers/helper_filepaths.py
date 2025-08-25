@@ -708,6 +708,37 @@ class MIMIC4Paths(GlobalVars):
             + "meas_chartevents_main.csv"
         )
 
+        # MIMIC-IV additional version paths
+        # assumes that
+        self.icustays_version_paths = {
+            "v1.0": (
+                paths.mimic4_1_0_path + "icu/icustays.csv.gz"
+                if paths.mimic4_1_0_path
+                else None
+            ),
+            "v2.0": (
+                paths.mimic4_2_0_path + "icu/icustays.csv.gz"
+                if paths.mimic4_2_0_path
+                else None
+            ),
+            "v2.1": (
+                paths.mimic4_2_1_path + "icu/icustays.csv.gz"
+                if paths.mimic4_2_1_path
+                else None
+            ),
+            "v2.2": (
+                paths.mimic4_2_2_path + "icu/icustays.csv.gz"
+                if paths.mimic4_2_2_path
+                else None
+            ),
+            "v3.0": (
+                paths.mimic4_3_0_path + "icu/icustays.csv.gz"
+                if paths.mimic4_3_0_path
+                else None
+            ),
+            "current": paths.mimic4_source_path + "icu/icustays.csv.gz",
+        }
+
 
 # endregion
 

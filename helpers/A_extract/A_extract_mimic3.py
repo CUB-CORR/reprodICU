@@ -347,6 +347,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.specialty_col)
                 .replace(self.SPECIALTIES_MAP)
                 .cast(self.specialties_dtype),
+                # Add dataset source
+                pl.when(pl.col("DBSOURCE") == "carevue")
+                .then(pl.lit("v1.4 (CareVue)"))
+                .when(pl.col("DBSOURCE") == "metavision")
+                .then(pl.lit("v1.4 (MetaVision)"))
+                .otherwise(pl.lit("v1.4 (Mixed)"))
+                .alias(self.dataset_version_col),
             )
             # Calculate ICU stay sequence number
             .sort(self.person_id_col, "INTIME")
