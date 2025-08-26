@@ -13,6 +13,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
     def VENTILATION_DURATION(self) -> pl.DataFrame:
         print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
 
+        MINUTES_IN_24H = 24 * 60
+
         # # region ricu
         # ##############################
         # # Respiratory Care
@@ -198,14 +200,10 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         )
         RESPIRATORYCHARTING_OXYGEN_DEVICE = (
             pl.scan_csv(self.eicu_paths.respiratoryCharting_path)
-            .select(
-                pl.col("patientunitstayid"),
-                pl.col("respchartoffset").alias("charttime"),
-                pl.col("respchartvalue").str.to_lowercase().alias("string"),
-                pl.lit(None).alias("activeupondischarge"),
-            )
             .filter(
-                pl.col("string").is_in(
+                pl.col("respchartvaluelabel")
+                .str.to_lowercase()
+                .is_in(
                     [
                         "o2 device",
                         "respiratory device",
@@ -213,6 +211,12 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                         "oxygen delivery method",
                     ]
                 )
+            )
+            .select(
+                pl.col("patientunitstayid"),
+                pl.col("respchartoffset").alias("charttime"),
+                pl.col("respchartvalue").str.to_lowercase().alias("string"),
+                pl.lit(None).alias("activeupondischarge"),
             )
         )
         TREATMENT = pl.scan_csv(self.eicu_paths.treatment_path).select(
@@ -237,7 +241,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 ],
                 how="diagonal_relaxed",
             )
-            .filter(pl.col("charttime") > -60)
+            .filter(pl.col("charttime") >= -60)
             .with_columns(
                 # Invasive ventilation
                 pl.when(
@@ -372,8 +376,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
         )
 
         OXYGEN_THERAPY_UNKNOWN_TYPE = nurseCharting.filter(
-            pl.col("nursingchartoffset") > -60,
-            pl.col("nursingchartcelltypevallabel").str.contains("O2 L/%"),
+            pl.col("nursingchartoffset") >= -60,
+            pl.col("nursingchartcelltypevallabel") == "O2 L/%",
             pl.col("nursingchartvalue")
             .cast(int, strict=False)
             .is_between(0, 100, closed="right"),
@@ -383,6 +387,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             pl.lit(-1).alias("oxygen_therapy_type"),
             pl.lit(None).alias("activeupondischarge"),
         )
+        
+        OXYGEN_THERAPY_KNOWN_TYPE.collect().write_parquet("eicu_oxygen_therapy_known.parquet")
 
         OXYGEN_THERAPY = (
             pl.concat(
@@ -399,11 +405,11 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             .agg(
                 pl.col("oxygen_therapy_type").max(),
                 pl.col("activeupondischarge").max(),
-                # pl.when(pl.col("oxygen_therapy_type") == -1)
-                # .then(1)
-                # .otherwise(0)
-                # .sum()
-                # .alias("supp_oxygen"),
+                pl.when(pl.col("oxygen_therapy_type") == -1)
+                .then(1)
+                .otherwise(0)
+                .sum()
+                .alias("supp_oxygen"),
             )
             .with_columns(
                 # this carries over the previous charttime which had an oxygen therapy event
@@ -423,7 +429,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                 pl.when(
                     pl.col("charttime")
                     .sub(pl.col("charttime_lag"))
-                    .gt(pl.duration(hours=self.MAX_VENTILATION_PAUSE_HOURS))
+                    .gt(MINUTES_IN_24H)
                 )
                 .then(1)
                 # No lag can be computed for the very first record
@@ -442,7 +448,14 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                     order_by="charttime",
                 )
                 .alias("ventnum")
-            )
+            )   
+        )
+        
+        OXYGEN_THERAPY.collect().write_parquet(
+            "eicu_oxygen_therapy_intermediate.parquet",
+        )
+        
+        OXYGEN_THERAPY = (OXYGEN_THERAPY
             # now we convert CHARTTIME of ventilator settings into durations
             # create the durations for each oxygen therapy instance
             # we only keep the first oxygen therapy instance
@@ -474,6 +487,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                         3: "non-invasive ventilation",
                         2: "unknown",
                         1: "supplemental oxygen",
+                        # 0: "supplemental oxygen",
+                        -1: "supplemental oxygen",
                     },
                     default=None,
                 )
@@ -495,6 +510,8 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             )
             .collect()
         )
+        
+        OXYGEN_THERAPY.write_parquet("eicu_oxygen_therapy.parquet")
 
         return (
             pl.concat(
