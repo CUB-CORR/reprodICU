@@ -20,7 +20,16 @@ Amylase:
   property: "Catalytic Concentration"
   systems:
     - Serum or Plasma
-# Anion gap
+# NOTE: there are two different ways to calculate the anion gap
+# - Anion gap 4: [(Na+) + (K+)] - [(Cl-) + (HCO3-)]
+# - Anion gap 3: (Na+) - [(Cl-) + (HCO3-)] # that is without potassium
+Anion gap: 
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
+    - Serum or Plasma
 aPTT:
   property: "Time (e.g. seconds)"
   systems:
@@ -73,7 +82,12 @@ Carbon dioxide:
   systems:
     - Blood
     - Blood arterial
-# Carboxyhemoglobin/Hemoglobin.total
+Carboxyhemoglobin/Hemoglobin.total:
+  property: "Mass fraction"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
 Chloride:
   property: "Substance Concentration"
   systems:
@@ -214,7 +228,12 @@ Microalbumin:
   property: "Mass Concentration"
   systems:
     - Urine
-# Methemoglobin/Hemoglobin.total
+Methemoglobin/Hemoglobin.total:
+  property: "Mass fraction"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
 Monocytes/100 leukocytes:
   property: "Number Fraction"
   systems:
