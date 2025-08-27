@@ -1087,4 +1087,4 @@ class UnitConverter(UnitConversions):
                 for c in struct_cols
             )
 
-        return data.drop_nulls(pl.all_horizontal(pl.col(struct_cols).is_null()))
+        return data # .filter(pl.any_horizontal(pl.col(struct_cols).is_not_null()))

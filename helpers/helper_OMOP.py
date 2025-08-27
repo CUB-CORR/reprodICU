@@ -403,12 +403,13 @@ class Vocabulary(OMOPPaths):
         self.CONCEPT_LOINC_LAB = self.CONCEPT.filter(
             pl.col("vocabulary_id") == "LOINC",
             # pl.col("concept_class_id") == "Lab Test",
+            # pl.col("domain_id") == "Measurement",
             ~pl.col("concept_name").str.contains("--"),
         ).collect()
-        minusminus_ids = self.CONCEPT_LOINC_LAB.select("concept_id").to_series()
+        concept_ids = self.CONCEPT_LOINC_LAB.select("concept_id").to_series()
         self.RELATIONSHIP_LOINC_LAB = self.RELATIONSHIP.filter(
-            ~pl.col("concept_id_1").is_in(minusminus_ids),
-            ~pl.col("concept_id_2").is_in(minusminus_ids),
+            pl.col("concept_id_1").is_in(concept_ids)
+            | pl.col("concept_id_2").is_in(concept_ids),
         ).collect()
 
     def get_LOINC_codes_for_attributes(
@@ -459,7 +460,16 @@ class Vocabulary(OMOPPaths):
         # Resolve all concept_ids for all names in one pass
         attr_concepts_df = (
             self.CONCEPT_LOINC_LAB.filter(
-                pl.col("concept_name").is_in(all_names)
+                pl.col("concept_name").is_in(all_names),
+                pl.col("concept_class_id").is_in(
+                    [
+                        "LOINC Component",
+                        "LOINC Property",
+                        "LOINC System",
+                        "LOINC Method",
+                        "LOINC Time",
+                    ]
+                ),
             )
             .select("concept_name", "concept_id")
             .unique()
@@ -548,7 +558,15 @@ class Vocabulary(OMOPPaths):
                 "q_syst": [q[2] for q in queries],
                 "q_meth": [q[3] for q in queries],
                 "q_time": [q[4] for q in queries],
-            }
+            },
+            schema={
+                "q_idx": pl.Int64,
+                "q_comp": pl.Utf8,
+                "q_prop": pl.Utf8,
+                "q_syst": pl.Utf8,
+                "q_meth": pl.Utf8,
+                "q_time": pl.Utf8,
+            },
         )
 
         # Join on required keys (comp, prop), then filter optional attributes
