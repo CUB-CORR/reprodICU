@@ -26,29 +26,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         self.icu_length_of_stay = self.extract_patient_information().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
-
-        self.other_lab_values = [
-            "Anion gap 4",
-            "Bilirubin.direct [Mass/volume]",
-            "Bilirubin.indirect [Mass/volume]",
-            "Bilirubin.total [Mass/volume]",
-            "Calcium [Mass/volume]",
-            "Calcium.ionized [Mass/volume]",
-            "Iron [Mass/volume]",
-            "Iron binding capacity [Mass/volume]",
-            "Magnesium [Mass/volume]",
-            "Phosphate [Mass/volume]",
-            "Triiodothyronine (T3) [Mass/volume]",
-            "Thyroxine (T4) [Mass/volume]",
-            "Thyroxine (T4) free [Mass/volume]",
-            "Cobalamin (Vitamin B12) [Mass/volume]",
-            # "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            # "Monocytes [#/volume]",
-            # "Neutrophils [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
+        
         self.lab_specimen_map = {
             "ART": "Blood arterial",
             "CENTRAL VENOUS": "Blood central venous",
@@ -935,7 +913,9 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
         return (
-            labevents.select("HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM")
+            labevents.select(
+                "HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM", "VALUEUOM"
+            )
             # Rename columns for consistency
             .rename({"HADM_ID": self.hospital_stay_id_col})
             .with_columns(
@@ -985,6 +965,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
+                "ITEMID",
                 "LABEL",
                 "labstruct",
             )
@@ -1586,6 +1567,17 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # pl.Config.set_tbl_cols(100)
+        # pl.Config.set_tbl_rows(100)
+        # print(
+        #     inputevents_cv.filter(
+        #         pl.col(self.icu_stay_id_col) == 212128,
+        #         pl.col(self.drug_mixture_id_col).is_in([12062694]),
+        #     )
+        #     .sort(self.drug_mixture_id_col, "ITEMID", "CHARTTIME")
+        #     .collect()
+        # )
+
         # select all inputevents that only represent fluids within the same LINKORDERID
         inputevents_cv_fluids_only = (
             inputevents_cv.with_columns(
@@ -1728,6 +1720,17 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # pl.Config.set_tbl_cols(100)
+        # pl.Config.set_tbl_rows(100)
+        # print(
+        #     inputevents_cv_mixtures.filter(
+        #         pl.col(self.icu_stay_id_col) == 212128,
+        #         pl.col(self.drug_mixture_id_col).is_in([12062694]),
+        #     )
+        #     .sort(self.drug_mixture_id_col, "ITEMID", "STARTTIME")
+        #     .collect()
+        # )
+
         inputevents_cv_combined = (
             pl.concat(
                 [inputevents_cv_fluids_only, inputevents_cv_mixtures],
@@ -1805,6 +1808,35 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # print(
+        #     inputevents_cv_combined.filter(
+        #         pl.col(self.icu_stay_id_col) == 201304
+        #     )
+        #     .sort(self.drug_mixture_id_col, "ITEMID", "STARTTIME")
+        #     .collect()
+        # )
+
+        # print("inputevents_cv_combined")
+        # print(
+        #     inputevents_cv_combined.filter(
+        #         pl.col(self.icu_stay_id_col) == 212128,
+        #         pl.col(self.drug_mixture_id_col).is_in([12062694]),
+        #     )
+        #     .sort(self.drug_mixture_id_col, "ITEMID", "STARTTIME")
+        #     .collect()
+        # )
+
+        # pl.Config.set_tbl_rows(1000)
+        # pl.Config.set_tbl_cols(50)
+        # print(
+        #     inputevents_cv.filter(
+        #         pl.col(self.icu_stay_id_col) == 200091,
+        #         # pl.col("ITEMID") == 30131,
+        #     )
+        #     .sort("Global Drug Mixture ID", "CHARTTIME")
+        #     .collect()
+        # )
+
         # region INPUTEVENTS
         #######################################################################
         inputevents_to_rxnorm_data = (
@@ -1857,6 +1889,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.fluid_group_col),
             )
         )
+
+        # print("inputevents")
+        # print(
+        #     inputevents.filter(
+        #         pl.col(self.icu_stay_id_col) == 212128,
+        #         pl.col(self.drug_mixture_id_col).is_in([12062694]),
+        #     )
+        #     .sort(self.drug_mixture_id_col, "STARTTIME")
+        #     .collect()
+        # )
 
         # region PRESCRIPTIONS
         #######################################################################

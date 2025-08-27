@@ -29,29 +29,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
 
-        self.other_lab_values = [
-            "Anion gap 4",
-            "Bilirubin.direct [Mass/volume]",
-            "Bilirubin.indirect [Mass/volume]",
-            "Bilirubin.total [Mass/volume]",
-            "Calcium [Mass/volume]",
-            "Calcium.ionized [Mass/volume]",
-            "Creatine kinase.MB [Mass/volume]",
-            "Iron [Mass/volume]",
-            "Iron binding capacity [Mass/volume]",
-            "Magnesium [Mass/volume]",
-            "Phosphate [Mass/volume]",
-            "Triiodothyronine (T3) [Mass/volume]",
-            "Thyroxine (T4) [Mass/volume]",
-            "Thyroxine (T4) free [Mass/volume]",
-            "Cobalamin (Vitamin B12) [Mass/volume]",
-            "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            "Monocytes [#/volume]",
-            "Neutrophils [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
         self.lab_specimen_map = {
             "ART.": "Blood arterial",
             "CENTRAL VENOUS.": "Blood central venous",
@@ -1006,6 +983,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
+                "itemid",
                 "label",
                 "labstruct",
             )

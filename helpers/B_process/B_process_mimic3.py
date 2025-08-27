@@ -190,6 +190,8 @@ class MIMIC3Processor(MIMIC3Extractor):
         # Process lab data
         ts_lab = (
             self.extract_lab_measurements()
+            # Align the units of the lab values
+            .pipe(self.convert._align_units)
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
@@ -203,7 +205,7 @@ class MIMIC3Processor(MIMIC3Extractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=["labstruct"],
-                component_col="LABEL"
+                component_col="LABEL",
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
@@ -353,15 +355,14 @@ class MIMIC3Converter(UnitConverter):
         """
         return (
             data.pipe(
-                self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium",
+                self.rename_anion_gap,  # "Anion gap 4" -> "Anion gap"
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized",
+                itemid="Calcium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -487,6 +488,40 @@ class MIMIC3Converter(UnitConverter):
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
+            )
+        )
+
+    def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Aligns lab unit measurements.
+
+        Returns:
+            pl.LazyFrame: The LazyFrame with the units adjusted.
+        """
+
+        print("MIMIC3  - Aligning lab value units...")
+
+        # 51199: Eosinophil Count -> #/uL (52073 "Absolute Eosinophil Count" in K/uL)
+        # 51697: Neutrophil Count -> #/uL (52075 "Absolute Neutrophil Count" in K/uL)
+        # 52769: Absolute Lymphocyte Count -> #/uL (51133 "Absolute Lymphocyte Count" in K/uL)
+
+        return (
+            data.unnest("labstruct")
+            .with_columns(
+                pl.when(pl.col("ITEMID").is_in([51199, 51697, 52769]))
+                .then(pl.col("value").mul(1000))
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+            .select(
+                pl.exclude("value", "system", "method", "time", "LOINC"),
+                pl.struct(
+                    value="value",
+                    system="system",
+                    method="method",
+                    time="time",
+                    LOINC="LOINC",
+                ).alias("labstruct"),
             )
         )
 

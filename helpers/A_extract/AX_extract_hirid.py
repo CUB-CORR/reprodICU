@@ -19,16 +19,6 @@ class HiRIDExtractor(HiRIDPaths):
         self.omop = Vocabulary(paths)
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-        self.other_lab_values = [
-            "Creatinine [Moles/volume]",
-            "Glucose [Moles/volume]",
-            "Urea [Moles/volume]",
-            "Creatine kinase panel - Serum or Plasma",
-            "Creatine kinase.MB [Mass/volume]",
-            "Lactate [Mass/volume]",
-            "Lymphocytes [#/volume]",
-        ]
-
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:

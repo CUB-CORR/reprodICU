@@ -96,84 +96,93 @@ class UnitConversions(GlobalVars):
         """
         Convert absolute counts to relative counts.
         """
-
         if goal_itemcol is None:
             goal_itemcol = itemcol
+
+        if goal_itemcol not in data.collect_schema().names():
+            data = data.with_columns(
+                pl.struct(
+                    value=pl.lit(None),
+                    system=pl.lit(None),
+                    method=pl.lit(None),
+                    time=pl.lit(None),
+                    LOINC=pl.lit(None),
+                )
+                .struct.json_encode()
+                .alias(goal_itemcol)
+            )
+            
+        temp_itemcol = f"temp_{itemcol}"
 
         if structfield is not None:
             if structstring:
                 data = data.with_columns(
                     pl.col(itemcol)
                     .str.json_decode(self.labstructdtype)
-                    .alias(goal_itemcol),
+                    .alias(temp_itemcol),
+                    pl.col(goal_itemcol).str.json_decode(self.labstructdtype),
                     pl.col(total_itemcol).str.json_decode(self.labstructdtype),
                 )
 
             data = (
-                data.with_columns(
-                    # Rename the columns for the unnest
-                    pl.col(goal_itemcol).struct.rename_fields(
-                        [
-                            "goal_itemcol_value",
-                            "goal_itemcol_system",
-                            "goal_itemcol_method",
-                            "goal_itemcol_time",
-                            "goal_itemcol_LOINC",
-                        ]
-                    ),
-                    pl.col(total_itemcol).struct.rename_fields(
-                        [
-                            "total_itemcol_value",
-                            "total_itemcol_system",
-                            "total_itemcol_method",
-                            "total_itemcol_time",
-                            "total_itemcol_LOINC",
-                        ]
-                    ),
-                )
-                .unnest(goal_itemcol)
-                .unnest(total_itemcol)
+                data.unnest(temp_itemcol)
                 .with_columns(
                     pl.when(
-                        pl.col("goal_itemcol_value").is_not_null()
-                        & pl.col("total_itemcol_value").is_not_null()
+                        pl.col("value").is_not_null(),
+                        pl.col(total_itemcol)
+                        .struct.field("value")
+                        .is_not_null(),
                     )
                     .then(
-                        pl.col("goal_itemcol_value").truediv(
-                            pl.col("total_itemcol_value")
-                        )
+                        pl.col("value")
+                        .truediv(pl.col(total_itemcol).struct.field("value"))
+                        .mul(100)  # to percentage
                     )
                     .otherwise(None)
-                    .alias("goal_itemcol_value")
+                    .alias("value")
                 )
                 # Combine the columns back into a struct again
                 .select(
                     pl.exclude(
-                        "goal_itemcol_value",
-                        "goal_itemcol_system",
-                        "goal_itemcol_method",
-                        "goal_itemcol_time",
-                        "goal_itemcol_LOINC",
-                        "total_itemcol_value",
-                        "total_itemcol_system",
-                        "total_itemcol_method",
-                        "total_itemcol_time",
-                        "total_itemcol_LOINC",
+                        "value",
+                        "system",
+                        "method",
+                        "time",
+                        "LOINC",
+                        goal_itemcol,  # avoid name clash
                     ),
                     pl.struct(
-                        value="goal_itemcol_value",
-                        system="goal_itemcol_system",
-                        method="goal_itemcol_method",
-                        time="goal_itemcol_time",
-                        LOINC=pl.lit(None),
+                        value=pl.coalesce(
+                            pl.when(pl.col(goal_itemcol).is_not_null())
+                            .then(pl.col(goal_itemcol).struct.field("value"))
+                            .otherwise(None),
+                            pl.col("value"),
+                        ),
+                        system=pl.coalesce(
+                            pl.when(pl.col(goal_itemcol).is_not_null())
+                            .then(pl.col(goal_itemcol).struct.field("system"))
+                            .otherwise(None),
+                            pl.col("system"),
+                        ),
+                        method=pl.coalesce(
+                            pl.when(pl.col(goal_itemcol).is_not_null())
+                            .then(pl.col(goal_itemcol).struct.field("method"))
+                            .otherwise(None),
+                            pl.col("method"),
+                        ),
+                        time=pl.coalesce(
+                            pl.when(pl.col(goal_itemcol).is_not_null())
+                            .then(pl.col(goal_itemcol).struct.field("time"))
+                            .otherwise(None),
+                            pl.col("time"),
+                        ),
+                        LOINC=pl.coalesce(
+                            pl.when(pl.col(goal_itemcol).is_not_null())
+                            .then(pl.col(goal_itemcol).struct.field("LOINC"))
+                            .otherwise(None),
+                            pl.lit(None),
+                        ),
                     ).alias(goal_itemcol),
-                    pl.struct(
-                        value="total_itemcol_value",
-                        source="total_itemcol_system",
-                        method="total_itemcol_method",
-                        time="total_itemcol_time",
-                        LOINC="total_itemcol_LOINC",
-                    ).alias(total_itemcol),
                 )
                 .pipe(
                     _struct_with_all_null_to_null,
@@ -746,6 +755,45 @@ class UnitConversions(GlobalVars):
             .alias(valuecol)
         )
 
+    def rename_anion_gap(
+        self,
+        data: pl.LazyFrame,
+        itemid: str = "Anion gap 4",
+        labelcol: str = "LABEL",
+        valuecol: str = "VALUENUM",
+        structfield: str = None,
+    ) -> pl.LazyFrame:
+        """
+        Rename "Anion gap 4" to "Anion gap" for consistency.
+        """
+        if structfield is not None:
+            return (
+                data.unnest(valuecol)
+                .with_columns(
+                    pl.when(pl.col(labelcol) == itemid)
+                    .then(pl.lit("Anion gap"))
+                    .otherwise(pl.col(labelcol))
+                    .alias(labelcol)
+                )
+                .select(
+                    pl.exclude("value", "system", "method", "time", "LOINC"),
+                    pl.struct(
+                        value=pl.col("value"),
+                        system=pl.col("system"),
+                        method=pl.col("method"),
+                        time=pl.col("time"),
+                        LOINC=pl.lit(None), # Anion gap LOINC property changes
+                    ).alias(valuecol),
+                )
+            )
+
+        return data.with_columns(
+            pl.when(pl.col(labelcol) == itemid)
+            .then(pl.lit("Anion gap"))
+            .otherwise(pl.col(labelcol))
+            .alias(labelcol)
+        )
+
 
 class UnitConverter(UnitConversions):
     def __init__(self):
@@ -1087,4 +1135,4 @@ class UnitConverter(UnitConversions):
                 for c in struct_cols
             )
 
-        return data # .filter(pl.any_horizontal(pl.col(struct_cols).is_not_null()))
+        return data  # .filter(pl.any_horizontal(pl.col(struct_cols).is_not_null()))

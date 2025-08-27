@@ -28,29 +28,6 @@ class NWICUExtractor(NWICUPaths):
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
 
-        self.other_lab_values = [
-            "Bilirubin.direct [Mass/volume]",
-            "Bilirubin.indirect [Mass/volume]",
-            "Bilirubin.total [Mass/volume]",
-            "Calcium [Mass/volume]",
-            "Calcium.ionized [Mass/volume]",
-            "Creatine kinase.MB [Mass/volume]",
-            "Iron [Mass/volume]",
-            "Iron binding capacity [Mass/volume]",
-            "Magnesium [Mass/volume]",
-            "Phosphate [Mass/volume]",
-            "Triiodothyronine (T3) [Mass/volume]",
-            "Thyroxine (T4) [Mass/volume]",
-            "Thyroxine (T4) free [Mass/volume]",
-            "Cobalamin (Vitamin B12) [Mass/volume]",
-            "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            "Monocytes [#/volume]",
-            "Neutrophils [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
-
     # region ID mapping table
     # Extract the patient IDs that are used in the NWICU dataset
     def extract_patient_IDs(self) -> pl.LazyFrame:
