@@ -11,13 +11,13 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.LazyFrame:
+        print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
+
         # Tables
         careplan = pl.scan_csv(self.eicu_paths.carePlanGeneral_path).select(
             "cplgeneralid",
             "patientunitstayid",
-            pl.col("activeupondischarge")
-            .cast(pl.Boolean)
-            .alias("activeupondischarge"),
+            pl.col("activeupondischarge").cast(bool),
             "cplitemoffset",
             "cplgroup",
             "cplitemvalue",
@@ -559,7 +559,7 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
             )
             .select(
                 "patientunitstayid",
-                "Ventilation Type",
+                # "Ventilation Type",
                 "Ventilation Start Relative to Admission (seconds)",
                 "Ventilation End Relative to Admission (seconds)",
             )
