@@ -22,35 +22,6 @@ class UMCdbExtractor(UMCdbPaths):
         self.omop = Vocabulary(paths)
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-        self.other_lab_values = [
-            "Bilirubin.conjugated [Moles/volume]",
-            "Bilirubin.total [Moles/volume]",
-            "Creatinine [Moles/volume]",
-            "Cholesterol in HDL [Moles/volume]",
-            "Cholesterol in LDL [Moles/volume]",
-            "Cholesterol [Moles/volume]",
-            "Cortisol [Moles/volume]",
-            "Creatine kinase.MB [Mass/volume]",
-            "Folate [Moles/volume]",
-            "Glucose [Moles/volume]",
-            "Hemoglobin [Moles/volume]",
-            "MCHC [Moles/volume]",
-            "Triglyceride [Moles/volume]",
-            "Urate [Moles/volume]",
-            "Urea [Moles/volume]",
-            "Hematocrit [Pure volume fraction]",
-            "MCH [Entitic substance]",
-            "Oxygen saturation [Pure mass fraction]",
-            "Band form neutrophils [#/volume]",
-            "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            "Monocytes [#/volume]",
-            "Neutrophils [#/volume]",
-            "Segmented neutrophils [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
-
         self.MILLISECONDS_IN_1H = 60 * 60 * 1000
         self.MILLISECONDS_IN_1D = 24 * self.MILLISECONDS_IN_1H
         self.MILLISECONDS_IN_1Y = 365 * self.MILLISECONDS_IN_1D

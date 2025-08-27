@@ -23,7 +23,8 @@ Amylase:
 # NOTE: there are two different ways to calculate the anion gap
 # - Anion gap 4: [(Na+) + (K+)] - [(Cl-) + (HCO3-)]
 # - Anion gap 3: (Na+) - [(Cl-) + (HCO3-)] # that is without potassium
-Anion gap: 
+# -> since no dataset specifies Anion gap 3 explicitly, we group "Anion gap 4" under "Anion gap"
+Anion gap:
   property: "Substance Concentration"
   systems:
     - Blood
@@ -127,6 +128,8 @@ Eosinophils/100 leukocytes:
 # Erythrocyte sedimentation rate
 Erythrocytes:
   property: "Number Concentration"
+  # NOTE: other systems usually count in #/uL, not in 10^6/uL, as any erythrocyte is usually unexpected to see
+  # -> e.g. in cerebrospinal fluid etc.
   systems:
     - Blood
 Erythrocyte mean corpuscular hemoglobin: # MCH
@@ -364,6 +367,14 @@ Urea nitrogen:
 #################################################
 # For conversion
 #################################################
+Anion gap 4:
+  for_conversion: true
+  property: "Substance Concentration"
+  systems:
+    - Blood
+    - Blood arterial
+    - Blood venous
+    - Serum or Plasma
 Fibrin D-dimer FEU: # for MIMIC-III / -IV
   for_conversion: true
   property: "Mass Concentration"
@@ -376,7 +387,7 @@ Basophils:
   systems:
     - Blood
 Eosinophils:
-  for_conversion: true  
+  for_conversion: true
   property: "Number Concentration"
   systems:
     - Blood

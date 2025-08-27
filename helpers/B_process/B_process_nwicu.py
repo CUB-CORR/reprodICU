@@ -177,7 +177,7 @@ class NWICUProcessor(NWICUExtractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=["labstruct"],
-                component_col="label"
+                component_col="label",
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
@@ -313,15 +313,14 @@ class NWICUConverter(UnitConverter):
         # Convert the lab values to the correct units.
         return (
             data.pipe(
-                self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium",
+                self.rename_anion_gap,  # "Anion gap 4" -> "Anion gap"
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized",
+                itemid="Calcium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,

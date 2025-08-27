@@ -228,6 +228,8 @@ class UMCdbProcessor(UMCdbExtractor):
         # Process labs data
         ts_labs = (
             pl.scan_parquet(ts_labs_path_cache)
+            # Align the units of the lab values
+            .pipe(self.convert._align_units)
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
@@ -241,7 +243,7 @@ class UMCdbProcessor(UMCdbExtractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=["labstruct"],
-                component_col="item"
+                component_col="item",
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the labs data
@@ -252,8 +254,6 @@ class UMCdbProcessor(UMCdbExtractor):
                 values="labstruct",
                 aggregate_function="first",
             )
-            # Align the units of the lab values
-            .pipe(self.convert._align_units)
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
             # Replace the LOINC codes
@@ -426,18 +426,7 @@ class UMCdbConverter(UnitConverter):
 
         # Convert the lab values to the correct units.
         return (
-            data
-            # .with_columns(
-            #     pl.col(labelcol).replace(
-            #         {
-            #             # NOTE: rename for consistency with other datasets
-            #             "Hematocrit [Pure volume fraction]": "Hematocrit [Volume Fraction]",
-            #             "MCH [Entitic substance]": "MCH [Entitic mass]",
-            #             "Oxygen saturation [Pure mass fraction]": "Oxygen saturation",
-            #         }
-            #     )
-            # )
-            .pipe(
+            data.pipe(
                 self.convert_ratio_to_percentage,
                 itemid="Hematocrit",
                 labelcol=labelcol,
@@ -592,27 +581,24 @@ class UMCdbConverter(UnitConverter):
         """
         Aligns lab unit measurements for {Creatinine} in UMCdb.
 
-        Steps:
-          1. Decode the JSON structure in the "Creatinine" column based on a defined schema.
-          2. If the "system" field equals "Serum or Plasma", divide the {value} by 1000.
-          3. Reassemble the values into a structured field with keys: {value}, {system}, {method}, {time}, and {LOINC}.
-
         Returns:
-            pl.LazyFrame: The LazyFrame with the {Creatinine} column adjusted.
+            pl.LazyFrame: The LazyFrame with the units adjusted for {Creatinine} and {Reticulocytes}.
         """
 
         print("UMCdb   - Aligning lab value units...")
 
+        # Creatinine in Serum or Plasma is in umol/L, convert to mmol/L for consistency
+        # Reticulocytes are given in 10^9/L (percentage), convert to 10^12/L for consistency
+
         return (
-            data
-            # Creatinine in Serum or Plasma is in umol/L,
-            # convert to mmol/L for consistency
+            data.unnest("labstruct")
             .with_columns(
-                pl.col("Creatinine").str.json_decode(self.labstructdtype)
-            )
-            .unnest("Creatinine")
-            .with_columns(
-                pl.when(pl.col("system") == "Serum or Plasma")
+                pl.when(
+                    pl.col("item") == "Creatinine",
+                    pl.col("system") == "Serum or Plasma",
+                )
+                .then(pl.col("value").truediv(1000))
+                .when(pl.col("item") == "Reticulocytes")
                 .then(pl.col("value").truediv(1000))
                 .otherwise(pl.col("value"))
                 .alias("value")
@@ -625,9 +611,7 @@ class UMCdbConverter(UnitConverter):
                     method="method",
                     time="time",
                     LOINC="LOINC",
-                )
-                .struct.json_encode()
-                .alias("Creatinine"),
+                ).alias("labstruct"),
             )
         )
 

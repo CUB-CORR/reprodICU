@@ -18,25 +18,6 @@ class SICdbExtractor(SICdbPaths):
         self.helpers = GlobalHelpers()
         self.omop = Vocabulary(paths)
 
-        self.other_lab_values = [
-            "Bilirubin.direct [Mass/volume]",
-            "Bilirubin.total [Mass/volume]",
-            "Cobalamin (Vitamin B12) [Mass/volume]",  # in Serum or Plasma",
-            "Creatinine [Mass/time]",  # in 24 hour Urine"
-            "Iron [Mass/volume]",
-            "Anion gap 4",
-            "Fractional oxyhemoglobin",
-            "Thyroxine (T4) free [Mass/volume]",  # in Serum or Plasma",
-            "Band form neutrophils [#/volume]",
-            "Basophils [#/volume]",
-            "Eosinophils [#/volume]",
-            "Lymphocytes [#/volume]",
-            "Monocytes [#/volume]",
-            "Neutrophils [#/volume]",
-            "Neutrophils [#/volume]",
-            "Reticulocytes [#/volume]",
-        ]
-
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -471,6 +452,7 @@ class SICdbExtractor(SICdbPaths):
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
+                "LaboratoryID",
                 "LaboratoryName",
                 "labstruct",
             )

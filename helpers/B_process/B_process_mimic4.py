@@ -179,6 +179,8 @@ class MIMIC4Processor(MIMIC4Extractor):
         # Process lab data
         ts_lab = (
             self.extract_lab_measurements()
+            # Align the units of the lab values
+            .pipe(self.convert._align_units)
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
@@ -342,15 +344,14 @@ class MIMIC4Converter(UnitConverter):
         """
         return (
             data.pipe(
-                self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium",
+                self.rename_anion_gap,  # "Anion gap 4" -> "Anion gap"
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
             )
             .pipe(
                 self.convert_calcium_mg_dL_to_mmol_L,
-                itemid="Calcium.ionized",
+                itemid="Calcium",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,
@@ -362,8 +363,6 @@ class MIMIC4Converter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            # NOTE: Experience from clinical practice:
-            # Creatinine is more commonly referred to in mg/L, so this conversion seems necessary
             .pipe(
                 self.convert_mg_dL_to_mg_L,
                 itemid="C reactive protein",
@@ -481,6 +480,41 @@ class MIMIC4Converter(UnitConverter):
             )
         )
 
+    def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Aligns lab unit measurements.
+
+        Returns:
+            pl.LazyFrame: The LazyFrame with the units adjusted.
+        """
+
+        print("MIMIC4  - Aligning lab value units...")
+
+        # 51199: Eosinophil Count -> #/uL (52073 "Absolute Eosinophil Count" in K/uL)
+        # 51253: Monocyte Count -> #/uL (52074 "Absolute Monocyte Count" in K/uL)
+        # 51697: Neutrophil Count -> #/uL (52075 "Absolute Neutrophil Count" in K/uL)
+        # 52769: Absolute Lymphocyte Count -> #/uL (51133 "Absolute Lymphocyte Count" in K/uL)
+
+        return (
+            data.unnest("labstruct")
+            .with_columns(
+                pl.when(pl.col("itemid").is_in([51199, 51253, 51697, 52769]))
+                .then(pl.col("value").mul(1000))
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+            .select(
+                pl.exclude("value", "system", "method", "time", "LOINC"),
+                pl.struct(
+                    value="value",
+                    system="system",
+                    method="method",
+                    time="time",
+                    LOINC="LOINC",
+                ).alias("labstruct"),
+            )
+        )
+
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Convert wide-format lab values to relative measurements where appropriate.
@@ -542,14 +576,6 @@ class MIMIC4Converter(UnitConverter):
                 structfield="value",
                 structstring=True,
             )
-            # .pipe(
-            #     self.convert_absolute_count_to_relative,
-            #     itemcol="Band form neutrophils",
-            #     total_itemcol="Leukocytes",
-            #     goal_itemcol="Neutrophils.band form/100 leukocytes",
-            #     structfield="value",
-            #     structstring=True,
-            # )
             .pipe(
                 self.convert_absolute_count_to_relative,
                 itemcol="Reticulocytes",

@@ -117,7 +117,7 @@ class HiRIDProcessor(HiRIDExtractor):
                     self.timeseries_path + file, parallel="prefiltered"
                 )
                 # Drop the lab values from the timeseries data
-                .filter(~pl.col("variableid").is_between(20000000,25000000))
+                .filter(~pl.col("variableid").is_between(20000000, 25000000))
                 .pipe(
                     self._extract_timeseries_helper,
                     self.admissiontime,
@@ -220,7 +220,7 @@ class HiRIDProcessor(HiRIDExtractor):
                     self.timeseries_path + file, parallel="prefiltered"
                 )
                 # Keep the lab values from the timeseries data
-                .filter(pl.col("variableid").is_between(20000000,25000000))
+                .filter(pl.col("variableid").is_between(20000000, 25000000))
                 .pipe(
                     self._extract_timeseries_helper,
                     self.admissiontime,

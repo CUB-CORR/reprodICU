@@ -188,6 +188,8 @@ class SICdbProcessor(SICdbExtractor):
         # Process timeseries data
         timeseries = (
             self.extract_laboratory_timeseries()
+            # Align the units of the lab values
+            .pipe(self.convert._align_units)
             # Convert the lab values to the correct units
             .pipe(
                 self.convert._convert_lab_values,
@@ -200,7 +202,7 @@ class SICdbProcessor(SICdbExtractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=["labstruct"],
-                component_col="LaboratoryName"
+                component_col="LaboratoryName",
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
@@ -262,6 +264,12 @@ class SICdbConverter(UnitConverter):
         """
         return (
             data.pipe(
+                self.rename_anion_gap,  # "Anion gap 4" -> "Anion gap"
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
                 itemid="Cobalamin",
                 labelcol=labelcol,
@@ -283,17 +291,51 @@ class SICdbConverter(UnitConverter):
                 valuecol=valuecol,
                 structfield=structfield,
             )
-            # .with_columns(
-            #     pl.col(labelcol).replace(
-            #         {
-            #             "Cobalamin (Vitamin B12) [Mass/volume]": "Cobalamin (Vitamin B12) [Moles/volume]",
-            #             "Iron [Mass/volume]": "Iron [Moles/volume]",
-            #             # NOTE: rename for consistency
-            #             "Anion gap 4": "Anion gap",
-            #             "Fractional oxyhemoglobin": "Oxyhemoglobin/Hemoglobin.total",
-            #         }
-            #     )
-            # )
+            .pipe(
+                self.convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L,
+                itemid="Thyroxine free",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+        )
+
+    def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Aligns lab unit measurements for {Protein} in SICdb.
+
+        Returns:
+            pl.LazyFrame: The LazyFrame with the units for {Protein} adjusted.
+        """
+
+        print("SICdb   - Aligning lab value units...")
+
+        # 342 = Eiweiss im Liquor (ZL) -> Protein in Cerebral spinal fluid
+        # 343 = Eiweiss im Urin (ZL) -> Protein in Urine
+        # 406 = Gesamteiweiss im Urin (mg/l) (ZL) -> Protein in Urine
+
+        return (
+            data.unnest("labstruct")
+            .with_columns(
+                # 342 and 343 are in mg/dl, convert to g/dL
+                pl.when(pl.col("LaboratoryID").is_in([342, 343]))
+                .then(pl.col("value") * 1000)
+                # 406 is in mg/L, convert to g/dL
+                .when(pl.col("LaboratoryID") == 406)
+                .then(pl.col("value") * 10000)
+                .otherwise(pl.col("value"))
+                .alias("value"),
+            )
+            .select(
+                pl.exclude("value", "system", "method", "time", "LOINC"),
+                pl.struct(
+                    value="value",
+                    system="system",
+                    method="method",
+                    time="time",
+                    LOINC="LOINC",
+                ).alias("labstruct"),
+            )
         )
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
