@@ -297,18 +297,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.lit("Beth Israel Deaconess Medical Center").alias(
                     self.care_site_col
                 ),
-                # create dummy date of birth from anchor year and age
-                pl.datetime(
-                    year=pl.col("anchor_year") - pl.col("anchor_age"),
-                    month=6,
-                    day=1,
-                ).alias("dob"),
             )
             .with_columns(
-                # Calculate age in years at ICU admission
-                (pl.col("intime") - pl.col("dob"))
-                .dt.total_days()
-                .floordiv(365.25)
+                # Calculate age in years at ICU admission similar to demographics/age.sql
+                pl.col("admittime")
+                .dt.date()
+                .dt.year()
+                .sub(pl.col("anchor_year"))
+                .add(pl.col("anchor_age"))
                 .cast(int)
                 .alias(self.age_col),
                 # For admission year, assume average of the group
@@ -486,18 +482,22 @@ class MIMIC4Extractor(MIMIC4Paths):
                 m = re.search(r"(\d+\.\d+)[\/\\]*$", self.path)
                 version = m.group(1) if m else None
 
-            versions = versions.join(
-                pl.scan_csv(path)
-                .select("stay_id", "hadm_id", "subject_id")
-                .with_columns(pl.lit(version).alias("version")),
-                on=["stay_id", "hadm_id", "subject_id"],
-                how="left",
-                coalesce=True,
-            ).with_columns(
-                pl.coalesce(self.dataset_version_col,"version").alias(
-                    self.dataset_version_col
+            versions = (
+                versions.join(
+                    pl.scan_csv(path)
+                    .select("stay_id", "hadm_id", "subject_id")
+                    .with_columns(pl.lit(version).alias("version")),
+                    on=["stay_id", "hadm_id", "subject_id"],
+                    how="left",
+                    coalesce=True,
                 )
-            ).drop("version")
+                .with_columns(
+                    pl.coalesce(self.dataset_version_col, "version").alias(
+                        self.dataset_version_col
+                    )
+                )
+                .drop("version")
+            )
 
         return versions.rename({"stay_id": self.icu_stay_id_col}).select(
             self.icu_stay_id_col, self.dataset_version_col
