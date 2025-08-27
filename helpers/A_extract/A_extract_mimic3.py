@@ -269,9 +269,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 # Calculate age
                 (
-                    (pl.col("INTIME") - pl.col("DOB")).truediv(
-                        pl.duration(days=self.DAYS_IN_YEAR)
-                    )
+                    pl.col("INTIME").dt.date().dt.year()
+                    - pl.col("DOB").dt.date().dt.year()
+                    - (  # -1 if birthday not yet reached this year
+                        (pl.col("INTIME").dt.month() < pl.col("DOB").dt.month())
+                        & (pl.col("INTIME").dt.day() < pl.col("DOB").dt.day())
+                    ).cast(int)
                 ).alias(self.age_col),
             )
             .with_columns(
@@ -563,6 +566,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .collect()
             .with_columns(
                 pl.col("VALUENUM")
+                .drop_nulls()
                 .first()
                 .over(partition_by=self.icu_stay_id_col, order_by="CHARTTIME")
                 .alias("FIRST_ADMIT_WEIGHT")
@@ -574,6 +578,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .collect()
             .with_columns(
                 pl.col("VALUENUM")
+                .drop_nulls()
                 .first()
                 .over(partition_by=self.icu_stay_id_col, order_by="CHARTTIME")
                 .alias("FIRST_DAILY_WEIGHT")
@@ -905,7 +910,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.labevents_path, parallel="prefiltered"
             )
         else:
-            labevents = pl.scan_csv(self.labevents_path)
+            labevents = pl.scan_csv(
+                self.labevents_path, infer_schema_length=10000
+            )
 
         SPECIMEN_ID = 50800
         SPECIMENS = (
@@ -1633,9 +1640,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("PREV_CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
                 # sum but return None if empty
-                pl.when(pl.col(self.drug_amount_col).count() > 0).then(
-                    pl.col(self.drug_amount_col).sum()
-                ).alias(self.fluid_amount_col),
+                pl.when(pl.col(self.drug_amount_col).count() > 0)
+                .then(pl.col(self.drug_amount_col).sum())
+                .alias(self.fluid_amount_col),
             )
         )
 
@@ -1690,9 +1697,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                         ]
                     ],
                     # sum but return None if empty
-                    pl.when(pl.col(self.drug_amount_col).count() > 0).then(
-                        pl.col(self.drug_amount_col).sum()
-                    ).alias(self.drug_amount_col),
+                    pl.when(pl.col(self.drug_amount_col).count() > 0)
+                    .then(pl.col(self.drug_amount_col).sum())
+                    .alias(self.drug_amount_col),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1712,9 +1719,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                     .first()
                     .alias(self.fluid_rate_col),
                     # sum but return None if empty
-                    pl.when(pl.col(self.drug_amount_col).count() > 0).then(
-                        pl.col(self.drug_amount_col).sum()
-                    ).alias(self.fluid_amount_col),
+                    pl.when(pl.col(self.drug_amount_col).count() > 0)
+                    .then(pl.col(self.drug_amount_col).sum())
+                    .alias(self.fluid_amount_col),
                 ),
                 on=[self.drug_mixture_id_col, self.drug_mixture_admin_id_col],
                 how="left",
@@ -1789,12 +1796,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("STARTTIME").min().alias("STARTTIME"),
                 pl.col("ENDTIME").max().alias("ENDTIME"),
                 # sum but return None if empty
-                pl.when(pl.col(self.drug_amount_col).count() > 0).then(
-                    pl.col(self.drug_amount_col).sum()
-                ).alias(self.drug_amount_col),
-                pl.when(pl.col(self.fluid_amount_col).count() > 0).then(
-                    pl.col(self.fluid_amount_col).sum()
-                ).alias(self.fluid_amount_col),
+                pl.when(pl.col(self.drug_amount_col).count() > 0)
+                .then(pl.col(self.drug_amount_col).sum())
+                .alias(self.drug_amount_col),
+                pl.when(pl.col(self.fluid_amount_col).count() > 0)
+                .then(pl.col(self.fluid_amount_col).sum())
+                .alias(self.fluid_amount_col),
             )
         )
 
