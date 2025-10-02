@@ -863,6 +863,8 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col("doserateunit").replace(
                     {"uur": "hr", "dag": "day", "min": "min"}
                 ),
+                # Add a column to indicate the administration type
+                pl.lit("given").alias(self.drug_admin_type_col),
             )
             # assign to rate or amount column based on availability
             .with_columns(
@@ -1005,6 +1007,7 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(
                     self.drug_start_col,
                     self.drug_end_col,
+                    self.drug_admin_type_col,
                     self.fluid_name_col,
                     self.fluid_amount_col,
                     self.fluid_rate_col,

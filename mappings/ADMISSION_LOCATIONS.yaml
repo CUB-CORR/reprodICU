@@ -65,10 +65,7 @@ Recovery Room:
 Hospital Ward:
   - Floor
   # MIMIC-III
-  - TRANSFER FROM OTHER HEALT
   - TRSF WITHIN THIS FACILITY
-  # MIMIC-IV
-  - TRANSFER FROM HOSPITAL
   # NWICU
   - CARDIOLOGY
   - GASTROENTEROLOGY
@@ -111,7 +108,10 @@ Other Hospital:
   # eICU-CRD
   - Other Hospital
   # MIMIC-III
+  - TRANSFER FROM OTHER HEALT
   - TRANSFER FROM HOSP/EXTRAM
+  # MIMIC-IV
+  - TRANSFER FROM HOSPITAL # UB-04 code 4 Transfer from a Hospital / 6 Transfer from Another Heath Care Facility
   # UMCdb
   - Verpleegafdeling ander ziekenhuis # Nursing ward of another hospital
 Nursing Facility:
