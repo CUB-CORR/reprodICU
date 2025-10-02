@@ -524,6 +524,8 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("DrugID")
                 .replace_strict(self._extract_references("Drug"), default=None)
                 .alias(self.drug_name_col),
+                # Add a column to indicate the administration type
+                pl.lit("given").alias(self.drug_admin_type_col),
             )
             .with_columns(
                 # Get drug units

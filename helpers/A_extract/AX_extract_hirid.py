@@ -769,6 +769,8 @@ class HiRIDExtractor(HiRIDPaths):
                             pl.col("datetime") - pl.col("admissiontime")
                         ).dt.total_seconds()
                     ).alias(self.drug_end_col),
+                    # Add a column to indicate the administration type
+                    pl.lit("given").alias(self.drug_admin_type_col),
                 )
                 .drop("admissiontime", "datetime")
                 # Remove duplicate rows
@@ -778,6 +780,7 @@ class HiRIDExtractor(HiRIDPaths):
                 .select(
                     self.icu_stay_id_col,
                     self.drug_admin_route_col,
+                    self.drug_admin_type_col,
                     self.drug_continuous_col,
                     self.fluid_group_col,
                     self.fluid_amount_col,
@@ -837,11 +840,12 @@ class HiRIDExtractor(HiRIDPaths):
                 .with_columns(
                     # Add a column to indicate the administration type
                     # 2 = invalidated, 32 = notified, not administered
-                    pl.when((pl.col(self.drug_admin_type_col) & 2) == 0)
+                    pl.when((pl.col(self.drug_admin_type_col) & 2) != 0)
                     .then(pl.lit("cancelled"))
-                    .when((pl.col(self.drug_admin_type_col) & 32) == 0)
+                    .when((pl.col(self.drug_admin_type_col) & 32) != 0)
                     .then(pl.lit("ordered"))
-                    .otherwise(pl.lit("given")),
+                    .otherwise(pl.lit("given"))
+                    .alias(self.drug_admin_type_col),
                     pl.col("admissiontime").str.to_datetime(
                         "%Y-%m-%d %H:%M:%S%.9f"
                     ),
@@ -1026,6 +1030,7 @@ class HiRIDExtractor(HiRIDPaths):
                 self.drug_name_col,
                 self.drug_start_col,
                 self.drug_rate_col,
+                self.drug_admin_type_col,
                 maintain_order=True,
             )
             .last()

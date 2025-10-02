@@ -630,7 +630,49 @@ class EICUExtractor(EICUPaths):
             self.resp_oxygen_delivery_device_mapping_path
         )
 
-        return (
+        if "parquet" in self.lab_path:
+            lab = pl.scan_parquet(self.lab_path, parallel="prefiltered")
+        else:
+            lab = pl.scan_csv(self.lab_path)
+
+        lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
+        labs = (
+            lab.select(
+                "patientunitstayid", "labname", "labresultoffset", "labresult"
+            )
+            .filter(
+                pl.col("labname").is_in(
+                    [
+                        "FiO2",
+                        "LPM O2",
+                        "Peak Airway/Pressure",
+                        "PEEP",
+                        "Pressure Support",
+                        # "Respiratory Rate",
+                        # "Spontaneous Rate",
+                        # "TV",
+                        "Vent Rate",
+                    ]
+                )
+            )
+            # Replace lab names with mapped names
+            .with_columns(
+                pl.col("labname")
+                .replace_strict(lab_names_mapping, default=None)
+                .alias("respchartvaluelabel")
+            )
+            .select(
+                pl.col("patientunitstayid").alias(self.icu_stay_id_col),
+                pl.col("labresultoffset").alias(self.timeseries_time_col),
+                "respchartvaluelabel",
+                pl.col("labresult")
+                .cast(float, strict=False)
+                .cast(str)
+                .alias("respchartvalue"),
+            )
+        )
+
+        respiratoryCharting = (
             pl.scan_csv(self.respiratoryCharting_path)
             .select(
                 "patientunitstayid",
@@ -660,8 +702,12 @@ class EICUExtractor(EICUPaths):
                 .str.replace("Refused after education", ""),
                 # .cast(float, strict=False),
             )
+        )
+
+        return (
+            pl.concat([respiratoryCharting, labs], how="vertical")
+            # Map O2 delivery device values
             .with_columns(
-                # Map O2 delivery device values
                 pl.when(
                     pl.col("respchartvaluelabel") == "Oxygen delivery system"
                 )

@@ -39,7 +39,7 @@ creatinine: Creatinine [Mass/volume] in Serum or Plasma # creatinine
 CRP-hs:
 CRP: C reactive protein [Mass/volume] in Serum or Plasma # CRP
 Cyclosporin: # Medication levels in blood
-Device: # Respiratory parameter
+Device:
 Digoxin: # Medication levels in blood
 direct bilirubin: Bilirubin.direct [Mass/volume] in Serum or Plasma # bilirubin_direct
 ESR: Erythrocyte sedimentation rate by Westergren method # erythrocyte_sedimentation_rate
@@ -48,7 +48,7 @@ Fe/TIBC Ratio:
 Fe: Iron [Mass/volume] in Serum or Plasma # iron
 Ferritin: Ferritin [Mass/volume] in Blood # ferritin
 fibrinogen: Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay # fibrinogen
-FiO2: # Respiratory parameter
+FiO2: Oxygen/Total gas setting [Volume Fraction] Ventilator # Respiratory parameter
 folate: Folate [Mass/volume] in Serum or Plasma # folate
 free T4: Thyroxine (T4) free [Mass/volume] in Serum or Plasma # T4_free
 Gentamicin - peak: # Medication levels in blood
@@ -70,7 +70,7 @@ LDH: Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma # lact
 LDL: Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation # cholesterol_LDL
 lipase: Lipase [Enzymatic activity/volume] in Serum or Plasma # lipase
 Lithium: # Medication levels in blood
-LPM O2: # Respiratory parameter
+LPM O2: Oxygen gas flow Oxygen delivery system # Respiratory parameter
 Legionella pneumophila Ab:
 Lidocaine: # Medication levels in blood
 magnesium: Magnesium [Mass/volume] in Serum or Plasma # magnesium # NEEDS UNIT CONVERSION !
@@ -82,13 +82,13 @@ Mode: # Respiratory parameter
 MPV: # MPV
 myoglobin: Myoglobin [Mass/volume] in Serum or Plasma # myoglobin
 NAPA:
-O2 Content: # Respiratory parameter
+O2 Content: Oxygen content in Arterial blood
 O2 Sat (%): Oxygen saturation in Arterial blood # saO2
 Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total [Pure mass fraction] in Arterial blood # oxyhemoglobin
 paCO2: Carbon dioxide [Partial pressure] in Arterial blood # paCO2
 paO2: Oxygen [Partial pressure] in Arterial blood # paO2
-Peak Airway/Pressure: # Respiratory parameter
-PEEP: # Respiratory parameter
+Peak Airway/Pressure: Pressure.max Respiratory system airway --on ventilator # Respiratory parameter
+PEEP: PEEP Respiratory system # Respiratory parameter
 pH: pH of Arterial blood # pH
 Phenobarbital: # Medication levels in blood
 Phenytoin: # Medication levels in blood
@@ -97,7 +97,7 @@ platelets x 1000: Platelets [#/volume] in Blood # thrombocytes
 potassium: Potassium [Moles/volume] in Blood # potassium
 prealbumin: Prealbumin [Mass/volume] in Serum or Plasma # protein_prealbumin
 Pressure Control: # Respiratory parameter
-Pressure Support: # Respiratory parameter
+Pressure Support: Pressure support setting Ventilator # Respiratory parameter
 Procainamide: # Medication levels in blood
 prolactin:
 protein - CSF: # Protein [Mass/volume] in Cerebral spinal fluid # is in mg/dL not g/dL -> needs conversion
@@ -109,7 +109,7 @@ PTT ratio:
 PTT: aPTT in Blood by Coagulation assay # partial_thromboplastin_time
 RBC: Erythrocytes [#/volume] in Blood # erythrocytes
 RDW: Erythrocyte distribution width [Ratio] # red_cell_distribution_width
-Respiratory Rate:
+Respiratory Rate: # Respiratory parameter
 reticulocyte count: Reticulocytes/100 erythrocytes in Blood # reticulocytes
 RPR titer:
 salicylate: # Medication levels in blood
@@ -147,7 +147,7 @@ Vancomycin - peak:
 Vancomycin - random: # Medication levels in blood
 Vancomycin - trough: # Medication levels in blood
 Vent Other: # Respiratory parameter
-Vent Rate: # Respiratory parameter
+Vent Rate: Breath rate setting Ventilator # Respiratory parameter
 Vitamin B12: Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma # vitamin_B12
 WBC x 1000: Leukocytes [#/volume] in Blood # leukocytes
 WBC's in body fluid: Leukocytes [#/volume] in Body fluid

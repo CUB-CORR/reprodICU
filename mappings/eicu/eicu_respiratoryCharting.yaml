@@ -13,7 +13,7 @@ Adult Con Alarms Hi Press Alarm:
 Adult Con Pt/Vent ETCO2: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
 Adult Con Pt/Vent ETCO2_: Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration
 Adult Con Pt/Vent IBW in Kg:
-Adult Con Pt/Vent InspiratorTV:
+Adult Con Pt/Vent InspiratorTV: Tidal volume.spontaneous+mechanical --on ventilator
 Adult Con Pt/Vent MinuteVentil: Minute volume setting Ventilator
 Adult Con Pt/Vent SpO2:
 Adult Con Pt/Vent Spont Rate: Breath rate spontaneous --on ventilator
@@ -129,7 +129,7 @@ PEEP: PEEP Respiratory system
 Plateau Pressure: Pressure.plateau Respiratory system airway --on ventilator
 Position at lip:
 Postion at Lip:
-Pressure Control:
+Pressure Control: 
 Pressure Support: Pressure support setting Ventilator
 Pressure to Trigger PS:
 PS above PEEP: Pressure support setting Ventilator
