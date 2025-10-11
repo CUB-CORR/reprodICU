@@ -35,11 +35,17 @@ class IntakeOutputImprover(GlobalVars):
 
         # Filter the medication data for infusions (i.e. medications with a volume)
         infused_volumes = medications.filter(
-            (pl.col("Drug Amount Unit") == "ml")
-            | (pl.col("Solution Fluid Amount (ml)").is_not_null()),
+            pl.col(self.drug_admin_route_col) == "Intravenous",
+            (pl.col(self.drug_amount_unit_col) == "ml")
+            | (pl.col(self.fluid_amount_col).is_not_null()),
             pl.col(self.drug_class_col).str.contains_any(
                 ["fluid", "drug", None]
             ),
+        ).with_columns(
+            pl.when(pl.col(self.drug_amount_unit_col) == "ml")
+            .then(pl.col(self.drug_amount_col))
+            .otherwise(0)
+            .alias("Drug Amount (ml)"),
         )
 
         infused_volumes = (
@@ -61,10 +67,11 @@ class IntakeOutputImprover(GlobalVars):
                     .group_by(self.drug_mixture_admin_id_col)
                     .agg(
                         pl.exclude(
-                            self.drug_amount_col, self.fluid_amount_col
+                            "Drug Amount (ml)", self.fluid_amount_col
                         ).first(),
                         pl.col(
-                            self.drug_amount_col, self.fluid_amount_col
+                            "Drug Amount (ml)",
+                            self.fluid_amount_col,
                         ).sum(),
                     ),
                 ],
@@ -72,8 +79,8 @@ class IntakeOutputImprover(GlobalVars):
             )
             .with_columns(
                 pl.sum_horizontal(
-                    pl.col("Drug Amount"),
-                    pl.col("Solution Fluid Amount (ml)"),
+                    pl.col("Drug Amount (ml)"),
+                    pl.col(self.fluid_amount_col),
                     ignore_nulls=True,
                 ).alias("Infused volume")
             )
@@ -82,18 +89,15 @@ class IntakeOutputImprover(GlobalVars):
                 "Infused volume",
                 "Drug End Relative to Admission (seconds)",
             )
+            .sort(
+                "Global ICU Stay ID", "Drug End Relative to Admission (seconds)"
+            )
         )
 
         # Sum up the infusion volumes for each intake output time point for joining
         intake_output_times = data.select(
             "Global ICU Stay ID", "Time Relative to Admission (seconds)"
-        ).with_columns(
-            pl.col("Time Relative to Admission (seconds)")
-            .shift()
-            .over("Global ICU Stay ID")
-            .fill_null(-float("inf"))  # Fill the first row with -inf
-            .alias("previous Time Relative to Admission (seconds)")
-        )
+        ).sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
 
         infused_volumes = (
             infused_volumes.join_asof(

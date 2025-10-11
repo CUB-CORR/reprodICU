@@ -305,19 +305,19 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # Fix the values for the mapped listitems
             .with_columns(
-                pl.when(pl.col("label") == "Heart rate rhythm")
+                pl.when(pl.col("item") == "Heart rate rhythm")
                 .then(
                     pl.col("value").replace_strict(
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
-                .when(pl.col("label") == "Oxygen delivery system")
+                .when(pl.col("item") == "Oxygen delivery system")
                 .then(
                     pl.col("value").replace_strict(
                         self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
                     )
                 )
-                .when(pl.col("label") == "Ventilation mode Ventilator")
+                .when(pl.col("item") == "Ventilation mode Ventilator")
                 .then(
                     pl.col("value").replace_strict(
                         self.VENTILATOR_MODE_MAP, default=None

@@ -1390,6 +1390,18 @@ class MIMIC4Extractor(MIMIC4Paths):
                 }
             )
             .with_columns(
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_id_col),
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_admin_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_admin_id_col),
+            )
+            .with_columns(
                 pl.col("ordercategoryname")
                 .replace(mimic4_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),
@@ -1978,6 +1990,136 @@ class MIMIC4Extractor(MIMIC4Paths):
         return pl.concat(
             [procedureevents, procedures_icd, datetimeevents],
             how="diagonal_relaxed",
+        )
+
+    # endregion
+
+    # region notes
+    # Extract clinical notes from the noteevents.csv file
+    def extract_notes(self) -> pl.LazyFrame:
+        """
+        Extract and process clinical notes from noteevents.csv.
+
+        Steps:
+            1. Read clinical notes and rename columns for merging.
+            2. Filter to include only ICU stay notes.
+            3. Standardize and convert timestamps, computing {note_time_col} as relative time.
+            4. Select relevant columns for the final output.
+        Returns:
+            pl.LazyFrame: A lazy frame with the columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Relative time of the note (in seconds).
+                - {note_category_col}: Category of the note.
+                - {note_text_col}: Full text of the clinical note.
+        """
+        print("MIMIC4  - Extracting notes...")
+
+        # DISCHARGE SUMMARIES
+        # ----------------------------------------------------------------------
+        discharge_summaries = (
+            pl.scan_csv(self.discharge_summaries_path)
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "hadm_id": self.hospital_stay_id_col,
+                    "text": self.note_text_col,
+                }
+            )
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                # use "storetime" for actual entry as charttime refers to discharge date only
+                pl.col("storetime").alias("charttime"),
+                pl.lit("Discharge summary").alias(self.note_category_col),
+                pl.lit(None).alias(self.note_description_col),
+                self.note_text_col,
+            )
+        )
+
+        # RADIOLOGY REPORTS
+        # ----------------------------------------------------------------------
+        radiology_exam_name = (
+            pl.scan_csv(self.radiology_reports_detail_path)
+            .filter(pl.col("field_name") == "exam_name")
+            .select("note_id", "field_value")
+            .rename({"field_value": "description"})
+        )
+        radiology_addendum_note = (
+            pl.scan_csv(self.radiology_reports_detail_path)
+            .filter(pl.col("field_name") == "addendum_note_id")
+            .select("note_id", "field_value")
+            .rename({"field_value": "addendum_note_id"})
+        )
+        radiology = pl.scan_csv(self.radiology_reports_path)
+        radiology = (
+            radiology.filter(pl.col("note_type") == "RR")
+            .join(radiology_exam_name, on="note_id", how="left")
+            .join(radiology_addendum_note, on="note_id", how="left")
+            # NOTE: this drops the time of the addendum note
+            .join(
+                radiology.filter(pl.col("note_type") == "AR").select(
+                    pl.col("note_id").alias("addendum_note_id"),
+                    pl.col("text").alias("addendum_text"),
+                ),
+                on="addendum_note_id",
+                how="left",
+            )
+            .with_columns(
+                pl.lit("Radiology").alias("category"),
+                pl.concat_str(
+                    pl.col("text"),
+                    pl.when(pl.col("addendum_text").is_not_null())
+                    .then(
+                        pl.concat_str(
+                            pl.lit("\n\n"),
+                            pl.col("addendum_text"),
+                        )
+                    )
+                    .otherwise(pl.lit("")),
+                    separator="",
+                    ignore_nulls=True,
+                ).alias("text"),
+            )
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "hadm_id": self.hospital_stay_id_col,
+                    "category": self.note_category_col,
+                    "description": self.note_description_col,
+                    "text": self.note_text_col,
+                }
+            )
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                "charttime",
+                self.note_category_col,
+                self.note_description_col,
+                self.note_text_col,
+            )
+        )
+
+        return (
+            pl.concat([discharge_summaries, radiology], how="vertical_relaxed")
+            .with_columns(
+                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+            )
+            .pipe(self.extract_timeseries_helper)
+            # Remove rows with empty lab results
+            .filter(pl.col(self.note_text_col).is_not_null())
+            # Remove duplicate rows
+            .unique()
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                pl.col(self.timeseries_time_col).alias(self.note_time_col),
+                self.note_category_col,
+                self.note_description_col,
+                self.note_text_col,
+            )
         )
 
     # endregion
