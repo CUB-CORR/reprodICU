@@ -265,6 +265,7 @@ class MIMIC3Paths(GlobalVars):
         self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.csv.gz"
         self.labevents_path = mimic3_path + "LABEVENTS.csv.gz"
         self.microbiologyevents_path = mimic3_path + "MICROBIOLOGYEVENTS.csv.gz"
+        self.noteevents_path = mimic3_path + "NOTEEVENTS.csv.gz"
         self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv.gz"
         self.patients_path = mimic3_path + "PATIENTS.csv.gz"
         self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv.gz"
@@ -303,6 +304,7 @@ class MIMIC3Paths(GlobalVars):
                 self.labevents_path,
                 self.inputevents_cv_path,
                 self.inputevents_mv_path,
+                self.noteevents_path,
             ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
@@ -314,6 +316,7 @@ class MIMIC3Paths(GlobalVars):
             self.labevents_path = mimic3_path + "LABEVENTS.parquet"
             self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.parquet"
             self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.parquet"
+            self.noteevents_path = mimic3_path + "NOTEEVENTS.parquet"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
@@ -519,6 +522,7 @@ class MIMIC4Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
         super().__init__(paths, DEMO)
         mimic4_path = paths.mimic4_source_path
+        mimic4_notes_path = paths.mimic4_notes_source_path
 
         # MIMIC-IV raw data paths
         self.admissions_path = mimic4_path + "hosp/admissions.csv.gz"
@@ -543,6 +547,19 @@ class MIMIC4Paths(GlobalVars):
         self.procedureevents_path = mimic4_path + "icu/procedureevents.csv.gz"
         self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv.gz"
         self.services_path = mimic4_path + "hosp/services.csv.gz"
+        
+        self.discharge_summaries_path = (
+            mimic4_notes_path + "note/discharge.csv.gz"
+        )
+        self.discharge_summaries_detail_path = (
+            mimic4_notes_path + "note/discharge_detail.csv.gz"
+        )
+        self.radiology_reports_path = (
+            mimic4_notes_path + "note/radiology.csv.gz"
+        )
+        self.radiology_reports_detail_path = (
+            mimic4_notes_path + "note/radiology_detail.csv.gz"
+        )
 
         # MIMIC-IV DEMO data paths
         if DEMO:

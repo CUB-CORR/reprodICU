@@ -80,6 +80,10 @@ procedure_end_col: Procedure End Relative to Admission (seconds) # procedure_end
 procedure_priority_col: Procedure Priority # procedure_priority
 procedure_discharge_col: Procedure Active on Discharge # procedure_active_on_discharge
 procedure_description_col: Procedure Description # procedure_description
+note_time_col: Note Written Relative to Admission (seconds)
+note_category_col: Note Category
+note_description_col: Note Description
+note_text_col: Note Text
 data_avail_diag_col: Diagnosis Data available
 data_avail_med_col: Medication Data available
 data_avail_lab_col: Laboratory Data available

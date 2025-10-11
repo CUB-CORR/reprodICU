@@ -19,6 +19,7 @@ from helpers.C_harmonize.C_harmonize_patient_information import \
     PatientInformationHarmonizer
 from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
+from helpers.C_harmonize.C_harmonize_notes import NotesHarmonizer
 
 # import overview functions
 from helpers.helper_overview import Overview
@@ -257,6 +258,17 @@ if __name__ == "__main__":
             microbiology_harmonizer.harmonize_microbiology()
             .collect()
             .write_parquet(save_path + "microbiology.parquet")
+        )
+        
+    # region notes
+    if "notes" in TABLES:
+        print("reprodICU - Combining notes...")
+        notes_harmonizer = NotesHarmonizer(
+            paths=paths, datasets=DATASETS, DEMO=args.DEMO
+        )
+        (
+            notes_harmonizer.harmonize_notes()
+            .sink_parquet(save_path + "notes.parquet")
         )
 
     # region timeseries

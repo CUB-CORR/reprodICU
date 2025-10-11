@@ -26,7 +26,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         self.icu_length_of_stay = self.extract_patient_information().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
-        
+
         self.lab_specimen_map = {
             "ART": "Blood arterial",
             "CENTRAL VENOUS": "Blood central venous",
@@ -1375,6 +1375,18 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "CANCELREASON": self.drug_admin_type_col,
                 }
             )
+            .with_columns(
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_id_col),
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_admin_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_admin_id_col),
+            )
             .join(
                 map_route_to_concept,
                 left_on="ORDERCATEGORYNAME",
@@ -1545,6 +1557,18 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "LINKORDERID": self.drug_mixture_id_col,
                     "ORDERID": self.drug_mixture_admin_id_col,
                 }
+            )
+            .with_columns(
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_id_col),
+                pl.concat_str(
+                    pl.col(self.icu_stay_id_col),
+                    pl.col(self.drug_mixture_admin_id_col),
+                    separator="-",
+                ).alias(self.drug_mixture_admin_id_col),
             )
             .join(
                 map_route_to_concept,
@@ -2331,6 +2355,84 @@ class MIMIC3Extractor(MIMIC3Paths):
         return pl.concat(
             [procedureevents_mv, procedures_icd, datetimeevents],
             how="diagonal_relaxed",
+        )
+
+    # endregion
+
+    # region notes
+    # Extract clinical notes from the noteevents.csv file
+    def extract_notes(self) -> pl.LazyFrame:
+        """
+        Extract and process clinical notes from noteevents.csv.
+
+        Steps:
+            1. Read clinical notes and rename columns for merging.
+            2. Filter to include only ICU stay notes.
+            3. Standardize and convert timestamps, computing {note_time_col} as relative time.
+            4. Select relevant columns for the final output.
+        Returns:
+            pl.LazyFrame: A lazy frame with the columns:
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Relative time of the note (in seconds).
+                - {note_category_col}: Category of the note.
+                - {note_text_col}: Full text of the clinical note.
+        """
+        print("MIMIC3  - Extracting notes...")
+
+        if "parquet" in self.noteevents_path:
+            noteevents = pl.scan_parquet(
+                self.noteevents_path, parallel="prefiltered"
+            )
+        else:
+            noteevents = pl.scan_csv(self.noteevents_path)
+
+        return (
+            noteevents.filter(pl.col("ISERROR").is_null())
+            .rename(
+                {
+                    "SUBJECT_ID": self.person_id_col,
+                    "HADM_ID": self.hospital_stay_id_col,
+                    "CATEGORY": self.note_category_col,
+                    "DESCRIPTION": self.note_description_col,
+                    "TEXT": self.note_text_col,
+                }
+            )
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                "CHARTDATE",
+                "CHARTTIME",
+                self.note_category_col,
+                self.note_description_col,
+                self.note_text_col,
+            )
+            .with_columns(
+                # use 00:00:00 at date if CHARTTIME is missing
+                pl.coalesce(
+                    pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                    pl.col("CHARTDATE").str.to_datetime("%Y-%m-%d"),
+                ).alias("CHARTTIME"),
+                # alias "Nursing/other" to "Nursing"
+                pl.col(self.note_category_col).replace(
+                    "Nursing/other", "Nursing"
+                ),
+            )
+            .pipe(self.extract_timeseries_helper)
+            # Remove rows with empty lab results
+            .filter(pl.col(self.note_text_col).is_not_null())
+            # Remove duplicate rows
+            .unique()
+            .select(
+                self.person_id_col,
+                self.hospital_stay_id_col,
+                self.icu_stay_id_col,
+                pl.col(self.timeseries_time_col).alias(self.note_time_col),
+                self.note_category_col,
+                self.note_description_col,
+                self.note_text_col,
+            )
         )
 
     # endregion
