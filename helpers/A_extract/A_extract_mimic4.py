@@ -1608,6 +1608,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     ),
                     default=None,
                 )
+                .str.to_lowercase()
                 .alias(self.drug_admin_route_col)
             )
             .select("route", self.drug_admin_route_col)

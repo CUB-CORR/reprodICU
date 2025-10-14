@@ -1310,8 +1310,12 @@ class MIMIC3Extractor(MIMIC3Paths):
         # Map order categories to administration routes
         map_route_to_concept = (
             pl.scan_csv(self.map_route_to_concept_path)
-            .select("ordercategoryname", "concept_name")
-            .rename({"concept_name": self.drug_admin_route_col})
+            .with_columns(
+                pl.col("concept_name")
+                .str.to_lowercase()
+                .alias(self.drug_admin_route_col)
+            )
+            .select("ordercategoryname", self.drug_admin_route_col)
         )
 
         # Load additional mappings
@@ -1944,6 +1948,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     ),
                     default=None,
                 )
+                .str.to_lowercase()
                 .alias(self.drug_admin_route_col)
             )
             .select("ROUTE", self.drug_admin_route_col)
