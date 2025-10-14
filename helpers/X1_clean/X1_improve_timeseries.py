@@ -35,7 +35,7 @@ class IntakeOutputImprover(GlobalVars):
 
         # Filter the medication data for infusions (i.e. medications with a volume)
         infused_volumes = medications.filter(
-            pl.col(self.drug_admin_route_col) == "Intravenous",
+            pl.col(self.drug_admin_route_col) == "intravenous",
             (pl.col(self.drug_amount_unit_col) == "ml")
             | (pl.col(self.fluid_amount_col).is_not_null()),
             pl.col(self.drug_class_col).str.contains_any(
