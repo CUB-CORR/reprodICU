@@ -1,0 +1,76 @@
+# Based on the ICU module of the German Medical Informatics Initiative (MII)
+# https://www.medizininformatik-initiative.de/Kerndatensatz/KDS_Intensivmedizin_DE_V2025/MII-IG-Modul-ICU-TechnischeImplementierung-FHIR-Profile-ParametervonextrakorporalenVerfahren-ExtrakorporaleVerfahrenProcedure-duplicate-2.html
+
+############
+# DIALYSIS #
+############
+Access pressure Renal replacement therapy circuit: # 99717-1
+  # MIMIC-IV -> same name
+  # UMCdb -> same name
+Effluent pressure Renal replacement therapy circuit: # 99718-9
+  # MIMIC-IV -> same name
+  # UMCdb -> same name
+Filter pressure Renal replacement therapy circuit: # 99719-7
+  # MIMIC-IV -> same name
+  # UMCdb -> same name
+Transmembrane pressure Renal replacement therapy circuit: # 99720-5
+  # UMCdb -> same name
+Return pressure Renal replacement therapy circuit: # 99721-3
+  # MIMIC-IV -> same name
+  # UMCdb -> same name
+
+Continuous renal replacement therapy mode Renal replacement therapy circuit: # 99708-0
+  # MIMIC-IV -> same name
+  # UMCdb -> same name
+
+Blood flow rate Renal replacement therapy circuit: # 99711-4
+  # MIMIC-IV -> same name
+  # SICdb
+  - CRRT Bloodflow
+  # UMCdb -> same name
+Dialysate flow rate Renal replacement therapy circuit: # 99712-2
+  # MIMIC-IV -> same name
+  # SICdb
+  - CRRT DialysateFlow
+Post-filter replacement fluid rate Renal replacement therapy circuit: # 99713-0
+  # MIMIC-IV -> same name
+  # SICdb
+  - CRRT SubstitutePost
+  # UMCdb -> same name
+Pre-filter replacement fluid rate Renal replacement therapy circuit: # 99714-8
+  # MIMIC-IV -> same name
+  # SICdb
+  - CRRT SubstitutePrae
+  # UMCdb -> same name
+
+Continuous renal replacement therapy fluid removal goal [Volume] 1 hour: # 99709-8
+  # MIMIC-IV -> same name
+  # SICdb
+  - CRRT Withdrawal
+  # UMCdb -> same name
+Ultrafiltrate volume removed 1 hour: # 99735-3
+  # MIMIC-IV -> same name
+  # UMCdb -> Ultrafiltrate volume removed -> session/total cumulative ultrafiltration volume
+
+############
+#   ECMO   #
+############
+# Rate of blood flow through cardiovascular device: # 444479000
+#   # SICdb
+#   - ECMO BloodFlow
+# Oxygen gas flow Oxygen delivery system: # 19941-4
+#   # SICdb
+#   - ECMO FI
+
+
+#################### just for reference ####################
+# SICdb
+# CRRT Bloodflow: [] # ml/min
+# CRRT DialysateFlow: [] # ml/h
+# CRRT SubstitutePrae: [] # ml/h
+# CRRT SubstitutePost: [] # ml/h
+# CRRT Withdrawal: [] # ml/h
+# CRRT CalciumSubstitution: [] # %
+# ECMO PumpSpeed: [] # U/min
+# ECMO BloodFlow: [] # L/min
+# ECMO FI: [] # %
