@@ -3,9 +3,11 @@
 ## [DOCUMENTATION](http://wiki.reprodicu.org/)
 
 ## INTRODUCTION
-**reprodICU** is a freely accessible critical care dataset harmonizing data relating to more than 470k admissions to multiple healthcare centers across the US and Europe. The dataset was developed at the **Institute of Medical Informatics** (IMI) at **Charité - Universitätsmedizin Berlin**.
+**reprodICU** is a freely accessible pipeline, streamlining the creation of a harmonized critical care dataset, including data from up to 470k ICU admissions from multiple healthcare centers across the US and Europe. In this pipeline, **reprodICU** harmonizes data from the following publicly available ICU datasets, which were previously published by others: *AmsterdamUMCdb, eICU-CRD, HiRID, MIMIC-III, MIMIC-IV, NWICU, SICb.*
 
-The dataset contains de-identified demographic information and a total of 136 routinely collected physiological variables, diagnostic test results and treatment parameters from almost 350k patients during the period from 2001 to 2022.
+As part of the **Charité Outcomes Research Repository (CORR)**, the pipeline was developed by the **Institute of Medical Informatics** (IMI) at **Charité - Universitätsmedizin Berlin**.
+
+The dataset created by running the pipeline contains de-identified demographic information and a total of 136 routinely collected physiological variables, diagnostic test results and treatment parameters from almost 350k patients during the period from 2001 to 2022.
 
 ## INCLUDED DATASETS
 
@@ -25,21 +27,17 @@ Concepts should be defined as python functions depending on their respective axi
 
 # HIGHLIGHTS
 
-## **Unprecedented Scale and Scope**
+## **Scale and Scope**
 
-reprodICU integrates **469,822 ICU admissions** from **seven** major public datasets across **four countries**, creating the **largest harmonized ICU dataset** publicly available. This breadth enables cross-institutional and cross-national studies that were previously impractical due to data incompatibility.
+reprodICU harmonizes **469,822 ICU admissions** from **seven** major public datasets across **four countries**, creating the **largest harmonized ICU dataset** publicly available. This breadth enables cross-institutional and cross-national studies that were previously impractical due to data incompatibility.
 
 ## **Standardization Without Overprocessing**
 
-reprodICU is harmonized using **established clinical vocabularies** (e.g., SNOMED, LOINC, RxNorm) and broadly follows the structure of the **German Medical Informatics Initiative modules** to ensure interoperability. Crucially, the project applies **minimal preprocessing** to preserve source fidelity and maintain compatibility with the original datasets.
-
-## **Fast, Reproducible Research at Scale**
-
-With the built-in **replication pipeline**, researchers can recreate complex study cohorts across all datasets **in just a few minutes** on a standard machine. This dramatically reduces the time and effort needed for **external validation** of clinical models.
+reprodICU is harmonized using **established clinical vocabularies** (e.g., SNOMED, LOINC, RxNorm) and broadly follows the structure of the **German Medical Informatics Initiative modules** to ensure interoperability. Crucially, the project applies **minimal preprocessing** to preserve source fidelity and maintain compatibility with the original datasets.
 
 ## **Rich Library of Pre-Defined Clinical Concepts**
 
-The project includes a ***massive, curated* catalog** of clinical variables, ranging from advanced ventilator metrics to dozens of mortality and severity scoring systems (e.g., SOFA, APACHE, MODS, NEWS, SAPS). These **ready-to-use components** eliminate the need for researchers and developers to manually redefine or look up formulas, making it easier and faster to build robust analyses or models.
+The project includes the creation of a ***massive, curated* catalog** of clinical variables, ranging from advanced ventilator metrics to dozens of mortality and severity scoring systems (e.g., SOFA, APACHE, MODS, NEWS, SAPS). These **ready-to-use components** eliminate the need for researchers and developers to manually redefine or look up formulas, making it easier and faster to build robust analyses or models.
 
 ## Inspired by previous work by
 
