@@ -113,6 +113,7 @@ class DatasetLoader:
         "diagnoses": "diagnoses.parquet",
         "procedures": "procedures.parquet",
         "medications": "medications.parquet",
+        "prescriptions": "medications_prescribed.parquet",
         "medications_prescribed": "medications_prescribed.parquet",
         "microbiology": "microbiology.parquet",
         "notes": "notes.parquet",
@@ -141,17 +142,18 @@ class DatasetLoader:
     # Map concept names to parquet filenames (pre-computed clinical concepts)
     CONCEPT_MAPPING = {
         # Mechanical ventilation
-        "ventilation": "ventilation.parquet",
-        "ventilation_duration": "ventilation.parquet",
+        "VENT": "VENTILATION_DURATION.parquet",
+        "VENTILATION": "VENTILATION_DURATION.parquet",
+        "VENTILATION_DURATION": "VENTILATION_DURATION.parquet",
         # Renal replacement therapy
-        "rrt": "renal_replacement_therapy.parquet",
-        "renal_replacement_therapy": "renal_replacement_therapy.parquet",
-        "renal_replacement_therapy_duration": "renal_replacement_therapy.parquet",
+        "RRT": "RENAL_REPLACEMENT_THERAPY_DURATION.parquet",
+        "RENAL_REPLACEMENT_THERAPY": "RENAL_REPLACEMENT_THERAPY_DURATION.parquet",
+        "RENAL_REPLACEMENT_THERAPY_DURATION": "RENAL_REPLACEMENT_THERAPY_DURATION.parquet",
         # Antibiotic and infection concepts
-        "received_any_antibiotics": "received_any_antibiotics.parquet",
+        "RECEIVED_ANY_ANTIBIOTICS": "RECEIVED_ANY_ANTIBIOTICS.parquet",
         # Severity scores and status
-        "severity_scores": "severity_scores.parquet",
-        "code_status": "code_status.parquet",
+        "SEVERITY_SCORES": "SEVERITY_SCORES.parquet",
+        "CODE_STATUS": "CODE_STATUS.parquet",
     } # fmt: skip
 
     def __init__(self, config_manager: ConfigManager):

@@ -17,14 +17,14 @@ Output columns per row:
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 Worst-within-window aggregation is applied per organ.
+
+SOURCES
+-------
+- Vincent JL, Moreno R, Takala J, Willatts S, De Mendonça A, Bruining H, Reinhart CK, Suter PM, Thijs LG.
+  The SOFA (Sepsis-related Organ Failure Assessment) score to describe organ dysfunction/failure. On behalf of the Working Group on Sepsis-Related Problems of the European Society of Intensive Care Medicine.
+  Intensive Care Med. 1996 Jul;22(7):707-10.
+  doi: 10.1007/BF01709751. PMID: 8844239.
 """
-
-# author: Finn Fassbender
-# version: 31.08.2025
-
-
-# Implements the Sequential Organ Failure Assessment (SOFA) score
-# as in https://www.mdcalc.com/calc/691/sequential-organ-failure-assessment-sofa-score
 
 from typing import Optional
 
