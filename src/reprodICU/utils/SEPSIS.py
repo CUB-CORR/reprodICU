@@ -10,7 +10,7 @@ Output columns per row:
 - T_0 (seconds from admission used as reference)
 
 Time is in seconds. Window index = floor((time - T_0)/window_size).
-Worst-within-window aggregation is applied for SOFA via SOFA_LONG.
+Worst-within-window aggregation is applied for SOFA via SOFA.
 Three independent suspicion anchors are produced and kept separate.
 
 Sources
@@ -28,16 +28,27 @@ Sources
 
 # author: Finn Fassbender
 # version: 31.08.2025
-import sys
 from pathlib import Path
 from typing import Optional
 
 import polars as pl
 import yaml
 
-# Try to import the long-format SOFA implementation regardless of execution context
-sys.path.append(str(Path(__file__).parent))
-from SOFA import SOFA_LONG
+from .common import (
+    _assign_timeframe,
+    _build_t0,
+    _optional_time_bounds_filter,
+    get_medications,
+    get_microbiology,
+    get_patient_information,
+    get_procedures,
+    get_timeseries_intakeoutput,
+    get_timeseries_labs,
+    get_timeseries_respiratory,
+    get_timeseries_vitals,
+    get_ventilation
+)
+from .SOFA import SOFA
 
 # seconds constants
 SECONDS_PER_HOUR = 60 * 60
@@ -50,50 +61,6 @@ TIME_COL = "Time Relative to Admission (seconds)"
 
 
 # region helpers
-def _build_t0(
-    all_stays: pl.LazyFrame,
-    t_0_per_stay: Optional[pl.LazyFrame],
-    t_0: Optional[int],
-) -> pl.LazyFrame:
-    all_stays = all_stays.lazy()
-
-    if t_0_per_stay is not None:
-        t_0_per_stay = t_0_per_stay.lazy()
-        return (
-            all_stays.select("Global ICU Stay ID")
-            .join(
-                t_0_per_stay.select("Global ICU Stay ID", "T_0"),
-                "Global ICU Stay ID",
-                how="left",
-            )
-            .with_columns(pl.col("T_0").fill_null(0).cast(pl.Int64))
-        )
-
-    t0_val = 0 if t_0 is None else int(t_0)
-    return all_stays.select(
-        "Global ICU Stay ID", pl.lit(t0_val).cast(pl.Int64).alias("T_0")
-    )
-
-
-def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
-    return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size)
-
-
-def _optional_time_bounds_filter(
-    TIME_COL: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
-) -> list[pl.Expr]:
-    conds: list[pl.Expr] = []
-    if t_0 is not None:
-        conds.append(
-            pl.col(TIME_COL) >= pl.lit(int(t_0)).floordiv(window_size).sub(1)
-        )
-    if t_1 is not None:
-        conds.append(
-            pl.col(TIME_COL) < pl.lit(int(t_1)).floordiv(window_size).add(1)
-        )
-    return conds
-
-
 def _read_antibiotic_ranks() -> dict[str, int]:
     ranks_path = Path(__file__).parent / "ANTIBIOTIC_RANKS.yaml"
     with open(ranks_path, "r") as f:
@@ -945,22 +912,22 @@ def rhee_organ_dysfunction(
 
 # region main sepsis long
 def SEPSIS(
-    patient_information: pl.LazyFrame,
-    timeseries_vitals: pl.LazyFrame,
-    timeseries_labs: pl.LazyFrame,
-    timeseries_resp: pl.LazyFrame,
-    timeseries_inout: pl.LazyFrame,
-    medications: pl.LazyFrame,
-    ventilation: pl.LazyFrame,
-    microbiology: pl.LazyFrame,
-    procedures: pl.LazyFrame,
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_vitals: Optional[pl.LazyFrame] = None,
+    timeseries_labs: Optional[pl.LazyFrame] = None,
+    timeseries_resp: Optional[pl.LazyFrame] = None,
+    timeseries_inout: Optional[pl.LazyFrame] = None,
+    medications: Optional[pl.LazyFrame] = None,
+    prescriptions: Optional[pl.LazyFrame] = None,
+    microbiology: Optional[pl.LazyFrame] = None,
+    procedures: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
     *,
-    prescriptions: pl.LazyFrame = None,
     t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
 ) -> pl.LazyFrame:
     """Compute Sepsis in long format from raw inputs.
 
@@ -977,25 +944,25 @@ def SEPSIS(
     ---------
         patient_information: pl.LazyFrame
             Patient/stay-level information; must contain Global ICU Stay ID and any
-            fields needed downstream by SOFA_LONG (e.g., weight).
+            fields needed downstream by SOFA (e.g., weight).
         timeseries_vitals: pl.LazyFrame
-            Raw vitals timeseries used by SOFA_LONG (MAP, GCS, etc.).
+            Raw vitals timeseries used by SOFA (MAP, GCS, etc.).
         timeseries_labs: pl.LazyFrame
-            Raw laboratory results used by SOFA_LONG and lactate detection.
+            Raw laboratory results used by SOFA and lactate detection.
         timeseries_resp: pl.LazyFrame
-            Raw respiratory timeseries (FiO2, etc.) used by SOFA_LONG.
+            Raw respiratory timeseries (FiO2, etc.) used by SOFA.
         timeseries_intakeoutput: pl.LazyFrame
-            Raw intake/output timeseries used by SOFA_LONG (urine output).
+            Raw intake/output timeseries used by SOFA (urine output).
         medications: pl.LazyFrame
             Medication administrations; used for antibiotic detection and SOFA meds.
-        ventilation: pl.LazyFrame
-            Mechanical ventilation intervals (optional for SOFA_LONG behavior).
+        prescriptions: pl.LazyFrame, optional
+            Medication prescriptions; concatenated to medications if provided.
         microbiology: pl.LazyFrame
             Microbiology results for reported cultures.
         procedures: pl.LazyFrame
             Procedures for requested cultures.
-        prescriptions: pl.LazyFrame, optional
-            Medication prescriptions; concatenated to medications if provided.
+        ventilation: pl.LazyFrame
+            Mechanical ventilation intervals (optional for SOFA behavior).
         t_0: int, optional
             Scalar reference time (seconds from admission). Defaults to 0. Ignored
             when t_0_per_stay is provided.
@@ -1023,6 +990,46 @@ def SEPSIS(
         - SEPSIS_RHEE -> "SEPSIS" | null
         - T_0 (seconds)
     """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_vitals is None:
+        timeseries_vitals = get_timeseries_vitals()
+    if timeseries_labs is None:
+        timeseries_labs = get_timeseries_labs()
+    if timeseries_resp is None:
+        timeseries_resp = get_timeseries_respiratory()
+    if timeseries_inout is None:
+        timeseries_inout = get_timeseries_intakeoutput()
+    if medications is None:
+        medications = get_medications()
+    if microbiology is None:
+        microbiology = get_microbiology()
+    if procedures is None:
+        procedures = get_procedures()
+    if ventilation is None:
+        ventilation = get_ventilation()
+    
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_inout": timeseries_inout,
+        "medications": medications,
+        "microbiology": microbiology,
+        "procedures": procedures,
+        "ventilation": ventilation,
+    }
+    
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute SEPSIS: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
 
     # Inputs to Lazy
     patient_information = patient_information.lazy()
@@ -1042,7 +1049,7 @@ def SEPSIS(
 
     # region SOFA
     # SOFA from raw inputs (long format)
-    sofa_long = SOFA_LONG(
+    SOFA_SCORE = SOFA(
         patient_information,
         timeseries_vitals,
         timeseries_labs,
@@ -1058,7 +1065,7 @@ def SEPSIS(
     )
     # Aggregate per timeframe (worst-within-window)
     sofa_base = (
-        sofa_long.select(
+        SOFA_SCORE.select(
             STAY_COL,
             "timeframe",
             pl.col("SOFA Score").alias("sofa_score"),

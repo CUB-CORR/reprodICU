@@ -1,10 +1,8 @@
 import polars as pl
 
+from .common import _to_lazy
+
 SECONDS_IN_1H = 60 * 60
-
-
-def _to_lazy(frame) -> pl.LazyFrame:
-    return frame if isinstance(frame, pl.LazyFrame) else frame.lazy()
 
 
 def FIX_WINDOW_BORDERS(
