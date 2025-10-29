@@ -46,7 +46,7 @@ from ..common import (
     get_timeseries_labs,
     get_timeseries_respiratory,
     get_timeseries_vitals,
-    get_ventilation
+    get_ventilation,
 )
 from ..scores.SOFA import SOFA
 
@@ -417,8 +417,9 @@ def suspected_infection(
             strategy="forward",
             tolerance=72 * SECONDS_PER_HOUR,
         )
-        .drop_nulls(
-            ["Drug Start Relative to Admission (seconds)", "culture_time"]
+        .filter(
+            pl.col("Drug Start Relative to Admission (seconds)").is_not_null(),
+            pl.col("culture_time").is_not_null(),
         )
         .select(
             STAY_COL,
@@ -438,8 +439,9 @@ def suspected_infection(
             strategy="forward",
             tolerance=24 * SECONDS_PER_HOUR,
         )
-        .drop_nulls(
-            ["Drug Start Relative to Admission (seconds)", "culture_time"]
+        .filter(
+            pl.col("Drug Start Relative to Admission (seconds)").is_not_null(),
+            pl.col("culture_time").is_not_null(),
         )
         .select(
             STAY_COL,
@@ -585,7 +587,7 @@ def lactate_long(
     all_stays_t0 = all_stays_t0.lazy()
     labs = timeseries_labs.lazy()
 
-    lact = (
+    return (
         labs.select(STAY_COL, TIME_COL, "Lactate")
         .filter(pl.col("Lactate").struct.field("system").str.contains("Blood"))
         .with_columns(pl.col("Lactate").struct.field("value").alias("Lactate"))
@@ -601,7 +603,6 @@ def lactate_long(
         .with_columns((pl.col("max_lactate") >= 2.0).alias("lactate_ge2"))
         .select(STAY_COL, "timeframe", "lactate_ge2")
     )
-    return lact
 
 
 # endregion lactate
@@ -848,11 +849,7 @@ def rhee_organ_dysfunction(
         .filter(pl.col(TIME_COL) >= pl.col("T_0"))
         .join(baselines, on=STAY_COL, how="inner")
         .with_columns(
-            pl.when(pl.col(col).is_null())
-            .then(pl.lit(None))
-            .otherwise(pl.col(col).struct.field("value"))
-            .alias(col)
-            for col in LABS
+            pl.col(col).struct.field("value").alias(col) for col in LABS
         )
         .with_columns(timeframe=_assign_timeframe(TIME_COL, window_size))
         .filter(pl.col("timeframe") >= 0)
@@ -929,66 +926,65 @@ def SEPSIS(
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
 ) -> pl.LazyFrame:
-    """Compute Sepsis in long format from raw inputs.
+    """Compute Sepsis-3 in long format from raw inputs.
 
     Produces three separate labels per timeframe:
     - SEPSIS: Seymour-anchored on earliest culture+antibiotic pair, requiring an
-      acute SOFA increase (>=2) within [-48h, +24h] of the suspicion time and
-      classifying SHOCK when cardiovascular_points>=3 and lactate>=2 at onset.
+      acute SOFA increase (≥2) within [-48h, +24h] of suspicion time.
     - SEPSIS_ABX: Shah-anchored on earliest antibiotic escalation (with IV),
-      applying the same SOFA delta and shock rules.
+      applying same SOFA delta and shock rules.
     - SEPSIS_RHEE: Rhee-anchored on blood culture + ≥4 consecutive antibiotic days
       + ≥1 organ dysfunction marker within ±2 days of culture.
 
+    All data parameters are optional and will be automatically loaded from the
+    package datasets if not provided. This makes it convenient for quick analysis
+    while maintaining flexibility for custom data.
+
     Arguments
     ---------
-        patient_information: pl.LazyFrame
-            Patient/stay-level information; must contain Global ICU Stay ID and any
-            fields needed downstream by SOFA (e.g., weight).
-        timeseries_vitals: pl.LazyFrame
-            Raw vitals timeseries used by SOFA (MAP, GCS, etc.).
-        timeseries_labs: pl.LazyFrame
-            Raw laboratory results used by SOFA and lactate detection.
-        timeseries_resp: pl.LazyFrame
-            Raw respiratory timeseries (FiO2, etc.) used by SOFA.
-        timeseries_intakeoutput: pl.LazyFrame
-            Raw intake/output timeseries used by SOFA (urine output).
-        medications: pl.LazyFrame
-            Medication administrations; used for antibiotic detection and SOFA meds.
-        prescriptions: pl.LazyFrame, optional
+        patient_information : pl.LazyFrame, optional
+            Patient information dataset. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vitals data. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries labs data. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Timeseries intake/output data. Loaded automatically if None.
+        medications : pl.LazyFrame, optional
+            Medications data. Loaded automatically if None.
+        prescriptions : pl.LazyFrame, optional
             Medication prescriptions; concatenated to medications if provided.
-        microbiology: pl.LazyFrame
-            Microbiology results for reported cultures.
-        procedures: pl.LazyFrame
-            Procedures for requested cultures.
-        ventilation: pl.LazyFrame
-            Mechanical ventilation intervals (optional for SOFA behavior).
-        t_0: int, optional
-            Scalar reference time (seconds from admission). Defaults to 0. Ignored
-            when t_0_per_stay is provided.
-        t_1: int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size: int, optional
-            Timeframe width in seconds (default: 3600). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit: str, optional
-            Semantic only; output column remains a numeric timeframe.
-        t_0_per_stay: pl.LazyFrame, optional
+        microbiology : pl.LazyFrame, optional
+            Microbiology results. Loaded automatically if None.
+        procedures : pl.LazyFrame, optional
+            Procedures data. Loaded automatically if None.
+        ventilation : pl.LazyFrame, optional
+            Ventilation data. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        lactate_item_names: list[str], optional
-            Explicit lactate item names to detect in labs when auto-detection is
-            insufficient.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 3600 = 1 hour). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_unit : str, optional
+            Semantic only; output column remains a numeric timeframe.
 
     Returns
     -------
-        pl.LazyFrame: one row per (stay, timeframe) where onset occurred in at
-        least one mode, with columns
-        - Global ICU Stay ID
-        - timeframe (0-indexed integer window)
-        - SEPSIS      -> "SEPSIS" | "SHOCK" | null
-        - SEPSIS_ABX  -> "SEPSIS" | "SHOCK" | null
-        - SEPSIS_RHEE -> "SEPSIS" | null
-        - T_0 (seconds)
+        pl.LazyFrame
+            One row per (stay, timeframe) with columns:
+            - Global ICU Stay ID
+            - T_0 (seconds)
+            - timeframe (0-indexed integer window)
+            - SEPSIS (Seymour onset): "SEPSIS" | "SHOCK" | null
+            - SEPSIS_ABX (Shah onset): "SEPSIS" | "SHOCK" | null
+            - SEPSIS_RHEE (Rhee onset): "SEPSIS" | null
     """
     # Load defaults if not provided
     if patient_information is None:
@@ -1009,7 +1005,6 @@ def SEPSIS(
         procedures = get_procedures()
     if ventilation is None:
         ventilation = get_ventilation()
-    
 
     # Validate all required data is available
     required = {
@@ -1023,7 +1018,7 @@ def SEPSIS(
         "procedures": procedures,
         "ventilation": ventilation,
     }
-    
+
     missing = [name for name, data in required.items() if data is None]
     if missing:
         raise ValueError(
@@ -1150,17 +1145,12 @@ def SEPSIS(
         )
         .with_columns(
             baseline_timeframe=pl.max_horizontal(
-                pl.lit(0, dtype=pl.Int64),
+                pl.lit(0),
                 pl.col("suspicion_timeframe")
-                - pl.lit(
-                    int(48 * SECONDS_PER_HOUR // window_size), dtype=pl.Int64
-                ),
+                - pl.lit(int((48 * SECONDS_PER_HOUR) // window_size)),
             ),
             end_timeframe=pl.col("suspicion_timeframe")
-            + pl.lit(
-                int(24 * SECONDS_PER_HOUR // window_size),
-                dtype=pl.Int64,
-            ),
+            + pl.lit(int((24 * SECONDS_PER_HOUR) // window_size)),
         )
     )
 
@@ -1177,8 +1167,8 @@ def SEPSIS(
         sofa_base.join(suspicion_numbered, on=STAY_COL, how="inner")
         .join(baseline_scores, on=[STAY_COL, "suspicion_number"], how="inner")
         .filter(
-            (pl.col("timeframe") >= pl.col("baseline_timeframe"))
-            & (pl.col("timeframe") <= pl.col("end_timeframe"))
+            pl.col("timeframe") >= pl.col("baseline_timeframe"),
+            pl.col("timeframe") <= pl.col("end_timeframe"),
         )
         .with_columns(
             sofa_increase_delta=pl.col("sofa_score")
@@ -1187,6 +1177,8 @@ def SEPSIS(
         .filter(pl.col("sofa_increase_delta") >= 2)
         .group_by(STAY_COL, "suspicion_number")
         .agg(onset_timeframe=pl.min("timeframe"))
+        .collect()
+        .lazy()
     )
 
     # Label SEPSIS/SHOCK at onset timeframe
@@ -1220,18 +1212,18 @@ def SEPSIS(
             how="left",
         )
         .with_columns(
-            shock_onset=pl.coalesce(pl.col("cv_ge3_onset"), pl.lit(False))
-            & pl.coalesce(pl.col("lactate_ge2_onset"), pl.lit(False))
-        )
-        .with_columns(
-            SEPSIS=pl.when(pl.col("shock_onset"))
-            .then(pl.lit("SHOCK"))
-            .otherwise(pl.lit("SEPSIS"))
+            (
+                pl.col("cv_ge3_onset").fill_null(False)
+                & pl.col("lactate_ge2_onset").fill_null(False)
+            ).alias("shock_onset")
         )
         .select(
             STAY_COL,
             pl.col("onset_timeframe").alias("timeframe"),
-            "SEPSIS",
+            pl.when(pl.col("shock_onset"))
+            .then(pl.lit("SHOCK"))
+            .otherwise(pl.lit("SEPSIS"))
+            .alias("SEPSIS"),
         )
     )
 
@@ -1285,18 +1277,16 @@ def SEPSIS(
         )
     )
 
-    win_back = int(48 * SECONDS_PER_HOUR // window_size)
-    win_fwd = int(24 * SECONDS_PER_HOUR // window_size)
+    win_back = int((48 * SECONDS_PER_HOUR) // window_size)
+    win_fwd = int((24 * SECONDS_PER_HOUR) // window_size)
 
     # Baseline and end windows relative to antibiotic-only suspicion
     abx_suspicion_numbered = abx_suspicion_numbered.with_columns(
         baseline_timeframe_abx=pl.max_horizontal(
-            pl.lit(0, dtype=pl.Int64),
-            pl.col("abx_suspicion_timeframe")
-            - pl.lit(win_back, dtype=pl.Int64),
+            pl.lit(0),
+            pl.col("abx_suspicion_timeframe") - pl.lit(win_back),
         ),
-        end_timeframe_abx=pl.col("abx_suspicion_timeframe")
-        + pl.lit(win_fwd, dtype=pl.Int64),
+        end_timeframe_abx=pl.col("abx_suspicion_timeframe") + pl.lit(win_fwd),
     )
 
     # Baseline SOFA at antibiotic-anchored baseline timeframe
@@ -1314,8 +1304,8 @@ def SEPSIS(
             baseline_scores_abx, on=[STAY_COL, "suspicion_number"], how="inner"
         )
         .filter(
-            (pl.col("timeframe") >= pl.col("baseline_timeframe_abx"))
-            & (pl.col("timeframe") <= pl.col("end_timeframe_abx"))
+            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
+            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
         )
         .with_columns(
             sofa_increase_delta_abx=pl.col("sofa_score")
@@ -1324,6 +1314,8 @@ def SEPSIS(
         .filter(pl.col("sofa_increase_delta_abx") >= 2)
         .group_by(STAY_COL, "suspicion_number")
         .agg(onset_timeframe_abx=pl.min("timeframe"))
+        .collect()
+        .lazy()
     )
 
     # Determine SEPSIS_ABX vs SHOCK using same shock criteria
@@ -1357,20 +1349,18 @@ def SEPSIS(
             how="left",
         )
         .with_columns(
-            shock_onset_abx=pl.coalesce(
-                [pl.col("cv_ge3_onset_abx"), pl.lit(False)]
+            shock_onset_abx=(
+                pl.col("cv_ge3_onset_abx").fill_null(False)
+                & pl.col("lactate_ge2_onset_abx").fill_null(False)
             )
-            & pl.coalesce([pl.col("lactate_ge2_onset_abx"), pl.lit(False)])
-        )
-        .with_columns(
-            SEPSIS_ABX=pl.when(pl.col("shock_onset_abx"))
-            .then(pl.lit("SHOCK"))
-            .otherwise(pl.lit("SEPSIS"))
         )
         .select(
             STAY_COL,
             pl.col("onset_timeframe_abx").alias("timeframe"),
-            "SEPSIS_ABX",
+            pl.when(pl.col("shock_onset_abx"))
+            .then(pl.lit("SHOCK"))
+            .otherwise(pl.lit("SEPSIS"))
+            .alias("SEPSIS_ABX"),
         )
     )
 
@@ -1579,14 +1569,18 @@ def SEPSIS(
         how="diagonal_relaxed",
     ).unique()
 
-    base = ALL_STAYS_T0.join(tf_union, on=STAY_COL, how="inner")
+    base = ALL_STAYS_T0.join(tf_union, on=STAY_COL, how="left")
 
     return (
-        base.join(onset_labels, on=[STAY_COL, "timeframe"], how="left")
-        .join(onset_labels_abx, on=[STAY_COL, "timeframe"], how="left")
-        .join(septic_shock, on=[STAY_COL, "timeframe"], how="left")
-        .join(septic_shock_abx, on=[STAY_COL, "timeframe"], how="left")
+        # fmt: off
+        base.join(onset_labels,  on=[STAY_COL, "timeframe"], how="left")
+        .join(onset_labels_abx,  on=[STAY_COL, "timeframe"], how="left")
+        .join(septic_shock,      on=[STAY_COL, "timeframe"], how="left")
+        .join(septic_shock_abx,  on=[STAY_COL, "timeframe"], how="left")
         .join(onset_labels_rhee, on=[STAY_COL, "timeframe"], how="left")
+        .collect()
+        .lazy()
+        # fmt: on
         .select(
             STAY_COL,
             "timeframe",
@@ -1598,8 +1592,8 @@ def SEPSIS(
         .filter(
             *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
         )
-        .sort(STAY_COL, "timeframe")  # stable order
         .unique()
+        .sort(STAY_COL, "timeframe")  # stable order
     )
 
 
