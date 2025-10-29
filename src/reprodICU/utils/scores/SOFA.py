@@ -43,7 +43,8 @@ from ..common import (
     get_ventilation,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from ..URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.PF_RATIO import PAO2_FIO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -88,42 +89,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         )
         .then(pl.col("Bilirubin").struct.field("value"))
         .alias("Bilirubin"),
-        pl.when(
-            pl.col("Oxygen")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood"])
-            | pl.col("Oxygen").struct.field("system").is_null()
-        )
-        .then(pl.col("Oxygen").struct.field("value"))
-        .otherwise(None)
-        .alias("Oxygen in Arterial blood"),
-    ).filter(
-        pl.any_horizontal(
-            "Platelets", "Creatinine", "Bilirubin", "Oxygen in Arterial blood"
-        )
-    )
-
-
-def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
-    return (
-        resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2")
-        )
-        .select(
-            "Global ICU Stay ID",
-            "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2"),
-        )
-        .drop_nulls("FiO2")
-    )
+    ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin"))
 
 
 # endregion
@@ -463,10 +429,7 @@ def SOFA(
     platelets_col = "Platelets"
     bilirubin_col = "Bilirubin"
     creatinine_col = "Creatinine"
-
-    # Resp
-    resp = _improve_resp(timeseries_resp.lazy())
-    pf_ratio_col = "PaO2/FiO2 Ratio"
+    pf_ratio_col = "PaO2/FiO2 ratio"
 
     if ventilation is not None:
         vent = ventilation.lazy()
@@ -496,35 +459,9 @@ def SOFA(
     # Ventilation is handled in the respiratory section using start/end intervals
 
     # region respiratory (P/F ratio)
-    pf = (
-        labs.select(STAY_KEY, TIME_KEY, "Oxygen in Arterial blood")
-        .drop_nulls("Oxygen in Arterial blood")
-        # FiO2 occurred at most 4 hours before this blood gas
-        .join_asof(
-            resp,
-            on=TIME_KEY,
-            by=STAY_KEY,
-            strategy="backward",
-            tolerance=SECONDS_IN_4H,
-            coalesce=True,
-        )
-        .with_columns(
-            pl.col("Oxygen in Arterial blood")
-            .truediv(
-                pl.col("FiO2").fill_null(21).truediv(100)
-            )  # 21% if FiO2 missing
-            .alias(pf_ratio_col)
-        )
-        .with_columns(
-            pl.when(pl.col(pf_ratio_col).is_finite())
-            .then(pl.col(pf_ratio_col))
-            .otherwise(None)
-            .alias(pf_ratio_col)
-        )
-    )
-
     resp_tf = (
-        pf.select(STAY_KEY, TIME_KEY, pf_ratio_col)
+        PAO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
