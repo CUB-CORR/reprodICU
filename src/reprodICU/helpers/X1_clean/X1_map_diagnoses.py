@@ -10,12 +10,12 @@ import polars as pl
 from helpers.helper import GlobalVars
 
 
-class DiagnosesImputer(GlobalVars):
+class DiagnosesMapper(GlobalVars):
     def __init__(self, paths, patient_info_path: str) -> None:
         super().__init__(paths)
         self.patient_info_path = patient_info_path
 
-    def impute_diagnoses(self, data) -> pl.LazyFrame:
+    def map_diagnoses(self, data) -> pl.LazyFrame:
         """
         Imputes missing ICD codes in the diagnoses data.
         -> maps ICD9 codes to ICD10 codes and vice versa (for inclusion / exclusion criteria down the line)

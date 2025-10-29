@@ -1,0 +1,27 @@
+# paths for reprodICU project
+reprodICU_files_path: "$reprodICU_path/reprodICU/"
+reprodICU_demo_files_path: "$reprodICU_path/reproDEMO/"
+OMOP_vocab_path: "$reprodICU_path/OMOP_vocabulary/"
+
+# paths for source datasets
+eicu_source_path: "$raw_data_path/physionet.org/files/eicu-crd/2.0/"
+hirid_source_path: "$raw_data_path/physionet.org/files/hirid/1.1.1/"
+mimic3_source_path: "$raw_data_path/physionet.org/files/mimiciii/1.4/"
+mimic4_source_path: "$raw_data_path/physionet.org/files/mimiciv/3.1/"
+mimic4_notes_source_path: "$raw_data_path/physionet.org/files/mimic-iv-note/2.2/"
+nwicu_source_path: "$raw_data_path/physionet.org/files/nwicu-northwestern-icu/0.1.0/data/"
+umcdb_source_path: "$raw_data_path/UMCdb/ENCODINGFIX/"
+sicdb_source_path: "$raw_data_path/physionet.org/files/sicdb/1.0.8/"
+
+# paths for demo datasets
+eicu_demo_source_path: "$raw_data_path/physionet.org/files/eicu-crd-demo/2.0.1/"
+mimic3_demo_source_path: "$raw_data_path/physionet.org/files/mimiciii-demo/headerfix/"
+mimic4_demo_source_path: "$raw_data_path/physionet.org/files/mimic-iv-demo/2.2/"
+
+# paths for individual MIMIC-IV versions
+mimic4_1_0_path: "$raw_data_path/physionet.org/files/mimiciv/1.0/"
+mimic4_2_0_path: "$raw_data_path/physionet.org/files/mimiciv/2.0/"
+mimic4_2_1_path: "$raw_data_path/physionet.org/files/mimiciv/2.1/"
+mimic4_2_2_path: "$raw_data_path/physionet.org/files/mimiciv/2.2/"
+mimic4_3_0_path: "$raw_data_path/physionet.org/files/mimiciv/3.0/"
+mimic4_3_1_path: "$raw_data_path/physionet.org/files/mimiciv/3.1/"
