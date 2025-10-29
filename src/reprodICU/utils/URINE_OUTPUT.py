@@ -2,7 +2,12 @@ from typing import Optional
 
 import polars as pl
 
-from .common import _build_t0, _to_lazy
+from .common import (
+    _build_t0,
+    _to_lazy,
+    get_timeseries_intakeoutput,
+    get_patient_information,
+)
 from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
 SECONDS_IN_1MIN = 60
@@ -29,8 +34,8 @@ def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def URINE_OUTPUT(
-    patient_information: pl.LazyFrame,
-    timeseries_inout: pl.LazyFrame,
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_inout: Optional[pl.LazyFrame] = None,
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
@@ -38,16 +43,65 @@ def URINE_OUTPUT(
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
-    weight_per_stay: Optional[pl.LazyFrame] = None,
-    weight_per_stay_col: Optional[str] = None,
 ) -> pl.LazyFrame:
+    """
+    Calculate urine output per time window from intake/output timeseries.
+
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information; must contain Global ICU Stay ID and
+            Admission Weight (kg). Loaded automatically if None.
+        medications : pl.LazyFrame, optional
+            Medication administrations with drug ingredient, rate, unit, and
+            timing information. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_name : str, optional
+            Name for output timeframe column. Auto-generated if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Urine output aggregated per stay and time window, with columns:
+            - Global ICU Stay ID
+            - timeframe (or custom name)
+            - uo_interval_ml: Total urine output in ml for the window
+            - uo_interval_ml_per_kg: (optional) Urine output per kg body weight
+    """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_inout is None:
+        timeseries_inout = get_timeseries_intakeoutput()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_inout": timeseries_inout,
+    }
+
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute URINE_OUTPUT: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
+
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
 
     patient_information = _to_lazy(patient_information)
     timeseries_inout = _to_lazy(timeseries_inout)
     t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-    weight_per_stay = _to_lazy(weight_per_stay) if weight_per_stay is not None else None # fmt: skip
 
     all_stays = patient_information.select(STAY_KEY)
     all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
@@ -107,21 +161,21 @@ def URINE_OUTPUT(
             < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size).add(1))
         )
 
-    aggregated = windowed.group_by(STAY_KEY, "timeframe").agg(
-        pl.sum("uo_window_ml").alias("uo_interval_ml")
-    )
-
-    has_weight_rate = False
-    if weight_per_stay is not None:
-        aggregated = aggregated.join(
-            weight_per_stay, on=STAY_KEY, how="left"
-        ).with_columns(
-            pl.when(pl.col(weight_per_stay_col) > 0)
-            .then(pl.col("uo_interval_ml") / pl.col(weight_per_stay_col))
+    aggregated = (
+        windowed.group_by(STAY_KEY, "timeframe")
+        .agg(pl.sum("uo_window_ml").alias("uo_interval_ml"))
+        .join(
+            patient_information.select(STAY_KEY, "Admission Weight (kg)"),
+            on=STAY_KEY,
+            how="left",
+        )
+        .with_columns(
+            pl.when(pl.col("Admission Weight (kg)") > 0)
+            .then(pl.col("uo_interval_ml") / pl.col("Admission Weight (kg)"))
             .otherwise(None)
             .alias("uo_interval_ml_per_kg")
         )
-        has_weight_rate = True
+    )
 
     if timeframe_name is not None:
         aggregated = aggregated.with_columns(
@@ -130,13 +184,10 @@ def URINE_OUTPUT(
 
     select_cols = [
         STAY_KEY,
-        "timeframe",
+        "timeframe" if timeframe_name is None else timeframe_name,
         "uo_interval_ml",
+        "uo_interval_ml_per_kg",
     ]
-    if has_weight_rate:
-        select_cols.append("uo_interval_ml_per_kg")
-    if timeframe_name is not None:
-        select_cols.append(timeframe_name)
 
     return aggregated.select(select_cols)
 

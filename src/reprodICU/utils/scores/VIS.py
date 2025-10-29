@@ -21,12 +21,12 @@ from typing import Optional
 
 import polars as pl
 
-from .common import (
+from ..common import (
     _build_t0,
     get_medications,
     get_patient_information,
 )
-from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H

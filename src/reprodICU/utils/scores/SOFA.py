@@ -30,7 +30,7 @@ from typing import Optional
 
 import polars as pl
 
-from .common import (
+from ..common import (
     _assign_timeframe,
     _build_t0,
     _optional_time_bounds_filter,
@@ -42,8 +42,8 @@ from .common import (
     get_timeseries_vitals,
     get_ventilation,
 )
-from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from .URINE_OUTPUT import URINE_OUTPUT
+from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..URINE_OUTPUT import URINE_OUTPUT
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -774,7 +774,7 @@ def SOFA(
                 "vasopressor_points",
             )
             # forward-fill within stay at most 6 hours
-            .forward_fill(window_size // SECONDS_IN_1H * 6).over(
+            .forward_fill((window_size // SECONDS_IN_1H) * 6).over(
                 partition_by=STAY_KEY, order_by="timeframe"
             ),
             pl.col(
@@ -783,7 +783,7 @@ def SOFA(
                 "creatinine_points",
             )
             # forward-fill within stay at most a week
-            .forward_fill(window_size // SECONDS_IN_1H * 168).over(
+            .forward_fill((window_size // SECONDS_IN_1H) * 168).over(
                 partition_by=STAY_KEY, order_by="timeframe"
             ),
             pl.col("uo_points")
@@ -794,7 +794,7 @@ def SOFA(
                 partition_by=[
                     STAY_KEY,
                     pl.col("timeframe").floordiv(
-                        window_size // SECONDS_IN_1H * 24
+                        (window_size // SECONDS_IN_1H) * 24
                     ),
                 ],
             ),

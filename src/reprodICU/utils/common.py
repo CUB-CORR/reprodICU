@@ -123,6 +123,10 @@ def get_medications() -> Optional[pl.LazyFrame]:
     """Load medications dataset from reprodICU."""
     return _load_dataset("medications")
 
+def get_prescriptions() -> Optional[pl.LazyFrame]:
+    """Load prescriptions dataset from reprodICU."""
+    return _load_dataset("prescriptions")
+
 
 def get_diagnoses() -> Optional[pl.LazyFrame]:
     """Load diagnoses dataset from reprodICU."""
