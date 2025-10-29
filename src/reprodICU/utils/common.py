@@ -152,6 +152,10 @@ def get_ventilation() -> Optional[pl.LazyFrame]:
     """Load ventilation concept from reprodICU."""
     return _load_concept("VENTILATION_DURATION")
 
+def get_rrt() -> Optional[pl.LazyFrame]:
+    """Load RRT concept from reprodICU."""
+    return _load_concept("RENAL_REPLACEMENT_THERAPY_DURATION")
+
 
 __all__ = [
     # common utils
