@@ -2,13 +2,13 @@ from typing import Optional
 
 import polars as pl
 
-from .common import (
+from ..common import (
     _build_t0,
     _to_lazy,
     get_timeseries_intakeoutput,
     get_patient_information,
 )
-from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
 SECONDS_IN_1MIN = 60
 SECONDS_IN_1H = 60 * SECONDS_IN_1MIN
@@ -52,9 +52,8 @@ def URINE_OUTPUT(
         patient_information : pl.LazyFrame, optional
             Patient/stay-level information; must contain Global ICU Stay ID and
             Admission Weight (kg). Loaded automatically if None.
-        medications : pl.LazyFrame, optional
-            Medication administrations with drug ingredient, rate, unit, and
-            timing information. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Intake/output timeseries data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
             Ignored when t_0_per_stay is provided.

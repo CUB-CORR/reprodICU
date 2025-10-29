@@ -30,6 +30,7 @@ from utils import (
     SOFA,
     VIS,
     # Data processing utilities
+    PAO2_FIO2_RATIO,
     URINE_OUTPUT,
     FIX_WINDOW_BORDERS,
     # Dataset helpers
@@ -115,6 +116,7 @@ def __dir__() -> list:
         "SEPSIS",
         "SOFA",
         "VIS",
+        "PAO2_FIO2_RATIO",
         "URINE_OUTPUT",
         "FIX_WINDOW_BORDERS",
         # Dataset loading helpers
@@ -225,6 +227,7 @@ __all__ = [
     "SOFA",
     "VIS",
     # Data processing utilities
+    "PAO2_FIO2_RATIO",
     "URINE_OUTPUT",
     "FIX_WINDOW_BORDERS",
     # Dataset loading helpers
