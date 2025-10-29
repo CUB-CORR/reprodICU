@@ -1,0 +1,79 @@
+# Description: List of antibiotics with their respective ranks
+
+# Based on Supplemental Digital Content 12 from Shah et al. (2021; doi:10.1097/CCM.0000000000005169)
+# Descriptors of Sepsis Using the Sepsis-3 Criteria: A Cohort Study in Critical Care Units Within the U.K. National Institute for Health Research Critical Care Health Informatics Collaborative
+
+# As expanded in Edinburgh et al. (2022, doi:10.46471/gigabyte.45)
+# Sepsis-3 Criteria in AmsterdamUMCdb – Open-Source Code Implementation
+# https://github.com/tedinburgh/sepsis3-amsterdamumcdb/blob/main/sepsis3_gigabyte/concepts/sepsis3/sepsis3_amsterdamumcdb.py#L996
+# and updated in the code for another publication:
+# https://github.com/tedinburgh/sepsis3-amsterdamumcdb/blob/main/sepsis3_epidemiology/concepts/sepsis3/sepsis3_amsterdamumcdb.py#L1114
+
+# Original Source for definition of ranks:
+# Braykov et al. (2017; doi:10.1016/S1473-3099(14)70952-1)
+# Assessment of Empirical Antibiotic Therapy Optimisation in Six Hospitals – an Observational Cohort Study
+
+# Ranks:
+# 1: Narrow-spectrum antibiotics
+# 2: Broad-spectrum antibiotics
+# 3: Extended-spectrum antibiotics
+# 4: Reserve antibiotics
+
+# 1: Narrow-spectrum antibiotics
+amoxicillin: 1
+cefazolin: 1
+doxycycline: 1
+ethambutol: 1
+floxacillin: 1
+fusidate: 1 # fusidic acid
+isoniazid: 1
+isoniazid / rifampin: 1 # rifampicin / isoniazid
+isoniazid / pyrazinamide / rifampin: 1 # rifampicin / isoniazid / pyrazinamide
+metronidazole: 1
+nitrofurantoin: 1
+penicillin G: 1 # benzylpenicillin
+penicillin V: 1 # phenoxymethylpenicillin
+pentamidine: 1
+phenethicillin: 1
+pyrazinamide: 1
+rifampin: 1 # rifampicin
+sulfamethoxazole / trimethoprim: 1 # trimethoprim / sulfamethoxazole
+tetracycline: 1 # was 2 previously
+tobramycin: 1
+trimethoprim: 1
+
+# 2: Broad-spectrum antibiotics
+amikacin: 2
+amoxicillin / clavulanate: 2
+azithromycin: 2
+cefotaxime: 2
+ceftriaxone: 2
+cefuroxime: 2
+chloramphenicol: 2
+ciprofloxacin: 2
+clarithromycin: 2
+clindamycin: 2
+erythromycin: 2
+levofloxacin: 2
+moxifloxacin: 2
+neomycin: 2
+norfloxacin: 2
+ofloxacin: 2
+silver sulfadiazine: 2
+
+# 3: Extended-spectrum antibiotics
+ceftazidime: 3
+ertapenem: 3
+gentamicin: 3
+piperacillin: 3 # without tazobactam
+teicoplanin: 3
+vancomycin: 3
+
+# 4: Reserve antibiotics
+aztreonam: 4
+colistin: 4
+daptomycin: 4
+imipenem: 4 # NEW
+linezolid: 4
+meropenem: 4
+tigecycline: 4
