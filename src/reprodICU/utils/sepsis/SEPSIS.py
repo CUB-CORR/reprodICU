@@ -34,7 +34,7 @@ from typing import Optional
 import polars as pl
 import yaml
 
-from .common import (
+from ..common import (
     _assign_timeframe,
     _build_t0,
     _optional_time_bounds_filter,
@@ -48,7 +48,7 @@ from .common import (
     get_timeseries_vitals,
     get_ventilation
 )
-from .SOFA import SOFA
+from ..scores.SOFA import SOFA
 
 # seconds constants
 SECONDS_PER_HOUR = 60 * 60

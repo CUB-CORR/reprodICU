@@ -14,9 +14,9 @@
 # configuration automatically.
 
 # Clinical scoring utilities
-from .SOFA import SOFA
-from .SEPSIS import SEPSIS
-from .VIS import VIS
+from .scores.SOFA import SOFA
+from .scores.VIS import VIS
+from .sepsis.SEPSIS import SEPSIS
 
 # Data processing utilities
 from .URINE_OUTPUT import URINE_OUTPUT
