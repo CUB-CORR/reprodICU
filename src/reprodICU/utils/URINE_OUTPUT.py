@@ -1,6 +1,8 @@
 from typing import Optional
 
 import polars as pl
+
+from .common import _build_t0, _to_lazy
 from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
 SECONDS_IN_1MIN = 60
@@ -10,46 +12,20 @@ SECONDS_IN_1D = 24 * SECONDS_IN_1H
 SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
-def _to_lazy(frame) -> pl.LazyFrame:
-    return frame if isinstance(frame, pl.LazyFrame) else frame.lazy()
-
-
-def _build_t0(
-    all_stays: pl.LazyFrame,
-    t_0_per_stay: Optional[pl.LazyFrame],
-    t_0: Optional[int],
-) -> pl.LazyFrame:
-    all_stays = _to_lazy(all_stays)
-
-    if t_0_per_stay is not None:
-        t_0_per_stay = _to_lazy(t_0_per_stay)
-        return (
-            all_stays.select("Global ICU Stay ID")
-            .join(
-                t_0_per_stay.select("Global ICU Stay ID", "T_0"),
-                "Global ICU Stay ID",
-                how="left",
-            )
-            .with_columns(pl.col("T_0").fill_null(0).cast(pl.Int64))
-        )
-
-    t0_val = 0 if t_0 is None else int(t_0)
-    return all_stays.select(
-        "Global ICU Stay ID", pl.lit(t0_val).cast(pl.Int64).alias("T_0")
-    )
-
-
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
-    inout = _to_lazy(inout)
-    return inout.select(
-        "Global ICU Stay ID",
-        "Time Relative to Admission (seconds)",
-        pl.sum_horizontal(
-            "Fluid output urine in and out urethral catheter",
-            "Fluid output urine nephrostomy",
-            "Urine output",
-        ).alias("Urine output"),
-    ).drop_nulls("Urine output")
+    return (
+        _to_lazy(inout)
+        .select(
+            "Global ICU Stay ID",
+            "Time Relative to Admission (seconds)",
+            pl.sum_horizontal(
+                "Fluid output urine in and out urethral catheter",
+                "Fluid output urine nephrostomy",
+                "Urine output",
+            ).alias("Urine output"),
+        )
+        .drop_nulls("Urine output")
+    )
 
 
 def URINE_OUTPUT(
@@ -60,6 +36,7 @@ def URINE_OUTPUT(
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
     window_size: int = SECONDS_IN_1D,
+    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
     weight_per_stay: Optional[pl.LazyFrame] = None,
     weight_per_stay_col: Optional[str] = None,

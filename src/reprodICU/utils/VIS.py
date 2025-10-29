@@ -1,116 +1,121 @@
-# Belletti, A., Lerose, C. C., Zangrillo, A., & Landoni, G. (2021).
-# Vasoactive-inotropic score: Evolution, clinical utility, and pitfalls.
-# Journal of Cardiothoracic and Vascular Anesthesia, 35(10), 3067–3077. doi:10.1053/j.jvca.2020.09.117
-# ------------------------------------------------------------------------------
-# Implements the Vasoactive-Inotropic Score (VIS)
+"""
+VIS: compute Vasoactive-Inotropic Score in long format directly from raw inputs.
 
-import argparse
-from pathlib import Path
+Output columns per row:
+- Global ICU Stay ID
+- T_0 (seconds from admission used as reference)
+- timeframe (0-indexed integer window)
+- Vasoactive-Inotropic Score (VIS) (sum of vasoactive agent contributions)
+
+Time is in seconds. Windows determined by floor((time - T_0)/window_size).
+
+Sources
+-------
+- Belletti, A., Lerose, C. C., Zangrillo, A., & Landoni, G. (2021).
+  Vasoactive-inotropic score: Evolution, clinical utility, and pitfalls.
+  Journal of Cardiothoracic and Vascular Anesthesia, 35(10), 3067–3077.
+  doi:10.1053/j.jvca.2020.09.117
+"""
+
+from typing import Optional
 
 import polars as pl
-from numpy import all, any
+
+from .common import (
+    _build_t0,
+    get_medications,
+    get_patient_information,
+)
+from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
 SECONDS_IN_1H = 60 * 60
+SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 
-def FIX_WINDOW_BORDERS(
-    DATA: pl.LazyFrame, TIMEWINDOW_IN_SECONDS: int = SECONDS_IN_1H
-) -> pl.LazyFrame:
-    return (
-        DATA.with_columns(
-            pl.int_ranges(
-                # ceil the start
-                (
-                    pl.col("Drug Start Relative to T_0 (seconds)")
-                    // TIMEWINDOW_IN_SECONDS
-                )
-                * TIMEWINDOW_IN_SECONDS,
-                pl.col("Drug End Relative to T_0 (seconds)"),
-                TIMEWINDOW_IN_SECONDS,
-            ).alias("Drug Window Borders")
-        )
-        .with_columns(
-            # concatenate the ranges of start times
-            pl.concat_list(
-                pl.col("Drug Start Relative to T_0 (seconds)"),
-                pl.col("Drug Window Borders"),
-            ).alias("Drug Window Borders Start"),
-            # concatenate the ranges of end times
-            pl.concat_list(
-                pl.col("Drug Window Borders"),
-                pl.col("Drug End Relative to T_0 (seconds)"),
-            ).alias("Drug Window Borders End"),
-        )
-        .drop("Drug Window Borders")
-        # explode the dataframe to long format by exploding the given columns
-        .explode("Drug Window Borders Start", "Drug Window Borders End")
-        .with_columns(
-            # calculate the duration of each drug administration
-            (
-                pl.col("Drug Window Borders End")
-                - pl.col("Drug Window Borders Start")
-            ).alias("Drug Duration (seconds)"),
-            (
-                pl.col("Drug Window Borders End")
-                - pl.col("Drug Window Borders Start")
-            )
-            .truediv(TIMEWINDOW_IN_SECONDS)
-            .alias("Drug Duration (windows)"),
-            # calculate the hour the drug administration started
-            pl.col("Drug Window Borders Start")
-            .floordiv(TIMEWINDOW_IN_SECONDS)
-            .alias("Window Relative to T_0"),
-        )
-        # drop unnecessary columns
-        .drop("Drug Window Borders Start", "Drug Window Borders End")
-    )
-
-
-# region VIS
 def VIS(
-    patient_information: pl.LazyFrame,
-    medications: pl.LazyFrame = None,
-    t_0: int | pl.LazyFrame = 0,
+    patient_information: Optional[pl.LazyFrame] = None,
+    medications: Optional[pl.LazyFrame] = None,
+    *,
+    t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    t_1: Optional[int] = None,
+    window_size: int = SECONDS_IN_1D,
+    timeframe_name: str = None,
 ) -> pl.LazyFrame:
     """
-    Vasoactive-Inotropic Score (VIS)
+    Compute Vasoactive-Inotropic Score (VIS) in long format from raw inputs.
 
-    Calculate the vasoactive-inotropic score based on the provided parameters for each ICU stay.
+    VIS is calculated per hour as the weighted sum of vasoactive agent contributions:
+    VIS = (dopamine dose) + (dobutamine dose) + (100 × epinephrine dose) +
+          (100 × norepinephrine dose) + ... for 13 supported agents.
 
-    :param patient_information: DataFrame with patient information
-    :param medications: DataFrame with medications
-    :param column_names: Optional dictionary to map default column names to custom names
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information; must contain Global ICU Stay ID and
+            Admission Weight (kg). Loaded automatically if None.
+        medications : pl.LazyFrame, optional
+            Medication administrations with drug ingredient, rate, unit, and
+            timing information. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_name : str, optional
+            Name for output timeframe column. Auto-generated if None.
 
-    :return: DataFrame with vasoactive-inotropic score(s) for each ICU stay. Includes timestamp if `calculate_at_each_timestep` is True.
+    Returns
+    -------
+        pl.LazyFrame
+            One row per (stay, timeframe) with columns:
+            - Global ICU Stay ID
+            - T_0
+            - timeframe (or custom name)
+            - Vasoactive-Inotropic Score (VIS)
+
+    Raises
+    ------
+        ValueError
+            If required datasets cannot be loaded or are None.
     """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if medications is None:
+        medications = get_medications()
 
-    # Check if all required data is provided
-    if any([patient_information is None, medications is None]):
-        raise ValueError("All required data must be provided.")
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "medications": medications,
+    }
 
-    # Check that "Global ICU Stay ID" is in both dataframes
-    if not all(
-        [
-            "Global ICU Stay ID" in patient_information.collect_schema().names(),
-            "Global ICU Stay ID" in medications.collect_schema().names(),
-        ] # fmt: skip
-    ):
-        raise ValueError("'Global ICU Stay ID' must be present in both dataframes.") # fmt: skip
-
-    # Check that t_0 is either an integer or a dataframe with "Global ICU Stay ID" and "T_0 (seconds)"
-    if not (
-        isinstance(t_0, int)
-        or (
-            isinstance(t_0, pl.LazyFrame)
-            and all(
-                [
-                    "Global ICU Stay ID" in t_0.collect_schema().names(),
-                    "T_0 (seconds)" in t_0.collect_schema().names(),
-                ]
-            )
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
-    ):
-        raise ValueError("'t_0' must be either an integer or a dataframe with 'Global ICU Stay ID' and 'T_0 (seconds)'.") # fmt: skip
+
+    if timeframe_name is None:
+        unit = (
+            "Days"
+            if window_size == SECONDS_IN_1D
+            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
+        )
+        reference = (
+            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
+        )
+        timeframe_name = f"{unit} Relative to {reference}"
+
+    STAY_KEY = "Global ICU Stay ID"
+    weight_col = "Admission Weight (kg)"
 
     VASOPRESSORS_INOTROPES = [
         "angiotensin II",  # 0.25 * dose in ng/kg/min
@@ -128,37 +133,35 @@ def VIS(
         "vasopressin (USP)",  # 10000 * dose in units/kg/min
     ]
 
-    ### CALCULATIONS ###
-    # Select relevant columns
-    t_0 = (
-        patient_information.select(
-            "Global ICU Stay ID", pl.lit(t_0).alias("T_0 (seconds)")
-        )
-        if isinstance(t_0, int)
-        else t_0.select("Global ICU Stay ID", pl.col("T_0 (seconds)"))
-    )
-    weights = patient_information.select(
-        "Global ICU Stay ID", "Admission Weight (kg)"
-    )
+    # Base frames
+    patient_information = patient_information.lazy()
+    medications = medications.lazy()
+
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+
+    # Select relevant columns and build T_0
+    weights = patient_information.select(STAY_KEY, weight_col)
+
     medications = (
         medications.filter(
             pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
         )
-        .join(t_0, on="Global ICU Stay ID", how="left")
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
             # Calculate start and end relative to T_0
             (
                 pl.col("Drug Start Relative to Admission (seconds)")
-                - pl.col("T_0 (seconds)")
+                - pl.col("T_0")
             ).alias("Drug Start Relative to T_0 (seconds)"),
             (
                 pl.col("Drug End Relative to Admission (seconds)")
-                - pl.col("T_0 (seconds)")
+                - pl.col("T_0")
             ).alias("Drug End Relative to T_0 (seconds)"),
         )
     )
 
-    # Fix rates
+    # Fix rates - handle cases where Drug Amount is provided but Drug Rate is not
     PREDICATES = (
         pl.col("Drug Rate").is_null(),
         pl.col("Drug Rate Unit").is_null(),
@@ -184,53 +187,39 @@ def VIS(
         .alias("Drug Rate Unit"),
     )
 
-    # Fix units
+    # Fix units - normalize all rates to mcg/kg/min
     medications = (
-        medications.join(weights, on="Global ICU Stay ID", how="left")
+        medications.join(weights, on=STAY_KEY, how="left")
         .with_columns(
             # CONVERTING UNITS
             # Convert mcg / mg / g to mcg/kg/min
             pl.when(pl.col("Drug Rate Unit") == "mcg/min")
-            .then(pl.col("Drug Rate") / pl.col("Admission Weight (kg)"))
+            .then(pl.col("Drug Rate") / pl.col(weight_col))
             .when(pl.col("Drug Rate Unit") == "mcg/hr")
-            .then(pl.col("Drug Rate") / pl.col("Admission Weight (kg)") / 60)
+            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
             .when(pl.col("Drug Rate Unit") == "mcg/kg/hr")
             .then(pl.col("Drug Rate") / 60)
             .when(pl.col("Drug Rate Unit") == "mg/hr")
-            .then(
-                pl.col("Drug Rate")
-                * 1000
-                / pl.col("Admission Weight (kg)")
-                / 60
-            )
+            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col) / 60)
             .when(pl.col("Drug Rate Unit") == "mg/min")
-            .then(pl.col("Drug Rate") * 1000 / pl.col("Admission Weight (kg)"))
+            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col))
             .when(pl.col("Drug Rate Unit") == "mg/kg/min")
             .then(pl.col("Drug Rate") * 1000)
             .when(pl.col("Drug Rate Unit") == "g/hr")
-            .then(
-                pl.col("Drug Rate")
-                * 1_000_000
-                / pl.col("Admission Weight (kg)")
-                / 60
-            )
+            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col) / 60)
             .when(pl.col("Drug Rate Unit") == "g/min")
-            .then(
-                pl.col("Drug Rate")
-                * 1_000_000
-                / pl.col("Admission Weight (kg)")
-            )
+            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col))
             .when(pl.col("Drug Rate Unit") == "g/kg/hr")
             .then(pl.col("Drug Rate") * 1_000_000 / 60)
             .when(pl.col("Drug Rate Unit") == "g/kg/min")
             .then(pl.col("Drug Rate") * 1_000_000)
             # Convert Units
             .when(pl.col("Drug Rate Unit").is_in(["U/hr", "units/hr"]))
-            .then(pl.col("Drug Rate") / pl.col("Admission Weight (kg)") / 60)
+            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
             .when(
                 pl.col("Drug Rate Unit").is_in(["U/min", "units/min", "IE/min"])
             )
-            .then(pl.col("Drug Rate") / pl.col("Admission Weight (kg)"))
+            .then(pl.col("Drug Rate") / pl.col(weight_col))
             # Keep unchanged
             .when(
                 pl.col("Drug Rate Unit").is_in(
@@ -343,17 +332,17 @@ def VIS(
             .sum()
             .truediv(pl.sum("Drug Duration (hours)"))
             .alias("VIS Component"),
-            pl.col("T_0 (seconds)").first(),
+            pl.col("T_0").first(),
         )
         .group_by("Global ICU Stay ID", "Hour Relative to T_0")
         .agg(
             pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
-            pl.col("T_0 (seconds)").first(),
+            pl.col("T_0").first(),
         )
         .sort("Global ICU Stay ID", "Hour Relative to T_0")
         .select(
             "Global ICU Stay ID",
-            "T_0 (seconds)",
+            "T_0",
             "Hour Relative to T_0",
             "Vasoactive-Inotropic Score (VIS)",
         )
@@ -362,68 +351,4 @@ def VIS(
     return vis
 
 
-# endregion
-
-# region main
-if __name__ == "__main__":
-    path = "../../reprodICU_files/"
-
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "-p",
-        "--patient-information-path",
-        type=str,
-        help="Path to the patient information file.",
-        default=Path(__file__).parent.joinpath(
-            path + "patient_information.parquet"
-        ),
-    )
-    argparser.add_argument(
-        "-m",
-        "--medications-path",
-        type=str,
-        help="Path to the medications file.",
-        default=Path(__file__).parent.joinpath(path + "medications.parquet"),
-    )
-    argparser.add_argument(
-        "-o",
-        "--output-path",
-        type=str,
-        default=None,
-        help="Path to the output file. If not specified, defaults based on aggregation type.",
-    )
-
-    args = argparser.parse_args()
-
-    # Determine output path
-    output_path = args.output_path
-    if output_path is None:
-        output_dir = Path(__file__).parent.joinpath(
-            path + "PRECALCULATED_CONCEPTS/SCORES/"
-        )
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_filename = "VIS_long_format.parquet"
-        output_path = output_dir.joinpath(output_filename)
-    else:
-        output_path = Path(args.output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Load data (using scan for lazy execution initially)
-    patient_information = pl.scan_parquet(args.patient_information_path)
-    medications = pl.scan_parquet(args.medications_path)
-
-    # Print approximate runtime
-    # Numbers hardcoded from empirical testing
-    count = patient_information.select(pl.len()).collect().to_numpy()[0][0]
-    print(f"Approximate runtime: {count / 439123 * 3:3.0f} minutes")
-
-    # Calculate vasoactive-inotropic score based on CLI arguments
-    print("Calculating vasoactive-inotropic score...") # fmt: skip
-    VIS(
-        patient_information=patient_information,
-        medications=medications,
-    ).sink_parquet(output_path)
-    print("VIS calculations complete.")
-
-
-# endregion
+__all__ = ["VIS"]

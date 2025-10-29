@@ -1,5 +1,5 @@
 """
-SOFA_LONG: compute SOFA in long format directly from raw inputs.
+SOFA: compute SOFA in long format directly from raw inputs.
 
 Output columns per row:
 - Global ICU Stay ID
@@ -29,60 +29,26 @@ Worst-within-window aggregation is applied per organ.
 from typing import Optional
 
 import polars as pl
-from .URINE_OUTPUT import URINE_OUTPUT
-from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
-SECONDS_IN_1MIN = 60
-SECONDS_IN_1H = 60 * SECONDS_IN_1MIN
+from .common import (
+    _assign_timeframe,
+    _build_t0,
+    _optional_time_bounds_filter,
+    get_medications,
+    get_patient_information,
+    get_timeseries_intakeoutput,
+    get_timeseries_labs,
+    get_timeseries_respiratory,
+    get_timeseries_vitals,
+    get_ventilation,
+)
+from .FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from .URINE_OUTPUT import URINE_OUTPUT
+
+SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
-SECONDS_IN_12H = 12 * SECONDS_IN_1H
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
 SECONDS_IN_1W = 7 * SECONDS_IN_1D
-
-
-# region helpers
-def _build_t0(
-    all_stays: pl.LazyFrame,
-    t_0_per_stay: Optional[pl.LazyFrame],
-    t_0: Optional[int],
-) -> pl.LazyFrame:
-    all_stays = all_stays.lazy()
-
-    if t_0_per_stay is not None:
-        t_0_per_stay = t_0_per_stay.lazy()
-        return (
-            all_stays.select("Global ICU Stay ID")
-            .join(
-                t_0_per_stay.select("Global ICU Stay ID", "T_0"),
-                "Global ICU Stay ID",
-                how="left",
-            )
-            .with_columns(pl.col("T_0").fill_null(0).cast(pl.Int64))
-        )
-
-    t0_val = 0 if t_0 is None else int(t_0)
-    return all_stays.select(
-        "Global ICU Stay ID", pl.lit(t0_val).cast(pl.Int64).alias("T_0")
-    )
-
-
-def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
-    return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size)
-
-
-def _optional_time_bounds_filter(
-    time_col: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
-) -> list[pl.Expr]:
-    conds: list[pl.Expr] = []
-    if t_0 is not None:
-        conds.append(
-            pl.col(time_col) >= pl.lit(int(t_0)).floordiv(window_size).sub(1)
-        )
-    if t_1 is not None:
-        conds.append(
-            pl.col(time_col) < pl.lit(int(t_1)).floordiv(window_size).add(1)
-        )
-    return conds
 
 
 ################################################################################
@@ -364,53 +330,62 @@ def _vasopressor_points(
 ################################################################################
 ################################################################################
 # region SOFA
-def SOFA_LONG(
-    patient_information: pl.LazyFrame,
-    timeseries_vitals: pl.LazyFrame,
-    timeseries_labs: pl.LazyFrame,
-    timeseries_resp: pl.LazyFrame,
-    timeseries_inout: pl.LazyFrame,
-    medications: pl.LazyFrame,
+def SOFA(
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_vitals: Optional[pl.LazyFrame] = None,
+    timeseries_labs: Optional[pl.LazyFrame] = None,
+    timeseries_resp: Optional[pl.LazyFrame] = None,
+    timeseries_inout: Optional[pl.LazyFrame] = None,
+    medications: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
     window_size: int = SECONDS_IN_1D,
+    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     forward_fill: bool = True,
     timeframe_name: str = None,
 ) -> pl.LazyFrame:
     """
-    Compute SOFA score in long format directly from raw inputs.
+    Compute SOFA score with automatic dataset loading.
+
+    All data parameters are optional and will be automatically loaded from the
+    package datasets if not provided. This makes it convenient for quick analysis
+    while maintaining flexibility for custom data.
 
     Arguments
     ---------
-        patient_information: pl.LazyFrame
-            _description_
-        timeseries_vitals: pl.LazyFrame
-            _description_
-        timeseries_labs: pl.LazyFrame
-            _description_
-        timeseries_resp: pl.LazyFrame
-            _description_
-        timeseries_inout: pl.LazyFrame
-            _description_
-        medications: pl.LazyFrame
-            _description_
+        patient_information : pl.LazyFrame, optional
+            Patient information dataset. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vitals data. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries labs data. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Timeseries intake/output data. Loaded automatically if None.
+        medications : pl.LazyFrame, optional
+            Medications data. Loaded automatically if None.
         ventilation : pl.LazyFrame, optional
-            _description_. Defaults to None.
+            Ventilation data. Loaded automatically if None.
         t_0 : int, optional
-            _description_. Defaults to 0.
-        t_1 : int, optional
-            _description_. Defaults to None.
-        window_size : int, optional
-            _description_. Defaults to SECONDS_IN_1D.
-        forward_fill : bool, optional
-            _description_. Defaults to True.
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
-            _description_. Defaults to None.
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_unit : str, optional
+            Semantic only; output column remains a numeric timeframe.
+        forward_fill : bool, optional
+            Whether to forward-fill values within windows. Defaults to True.
         timeframe_name : str, optional
-            _description_. Defaults to None.
+            Name for output timeframe column. Auto-generated if None.
 
     Sources
     -------
@@ -424,8 +399,42 @@ def SOFA_LONG(
 
     Returns
     -------
-        pl.LazyFrame: _description_
+        pl.LazyFrame
+            SOFA scores with all organ subscore components
     """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_vitals is None:
+        timeseries_vitals = get_timeseries_vitals()
+    if timeseries_labs is None:
+        timeseries_labs = get_timeseries_labs()
+    if timeseries_resp is None:
+        timeseries_resp = get_timeseries_respiratory()
+    if timeseries_inout is None:
+        timeseries_inout = get_timeseries_intakeoutput()
+    if medications is None:
+        medications = get_medications()
+    if ventilation is None:
+        ventilation = get_ventilation()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_inout": timeseries_inout,
+        "medications": medications,
+        "ventilation": ventilation,
+    }
+
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute SOFA: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
 
     if timeframe_name is None:
         unit = (
@@ -836,4 +845,4 @@ def SOFA_LONG(
     )
 
 
-__all__ = ["SOFA_LONG"]
+__all__ = ["SOFA"]
