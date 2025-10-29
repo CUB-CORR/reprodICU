@@ -48,6 +48,21 @@ def VIS(
     VIS is calculated per hour as the weighted sum of vasoactive agent contributions:
     VIS = (dopamine dose) + (dobutamine dose) + (100 × epinephrine dose) +
           (100 × norepinephrine dose) + ... for 13 supported agents.
+          
+    Included vasoactive agents and their contributions:
+    - Angiotensin II: 0.25 × dose (ng/kg/min)
+    - Dobutamine: dose (mcg/kg/min)
+    - Dopamine: dose (mcg/kg/min)
+    - Enoximone: dose (mcg/kg/min)
+    - Epinephrine: 100 × dose (mcg/kg/min)
+    - Levosimendan: 50 × dose (mcg/kg/min)
+    - Methylene Blue: 20 × dose (mg/kg/h)
+    - Milrinone: 10 × dose (mcg/kg/min)
+    - Norepinephrine: 100 × dose (mcg/kg/min)
+    - Olprinone: 25 × dose (mcg/kg/min)
+    - Phenylephrine: 100 × dose (mcg/kg/min)
+    - Terlipressin: 10 × dose (mcg/h)
+    - Vasopressin (USP): 10000 × dose (units/kg/min)
 
     Arguments
     ---------
@@ -78,11 +93,6 @@ def VIS(
             - T_0
             - timeframe (or custom name)
             - Vasoactive-Inotropic Score (VIS)
-
-    Raises
-    ------
-        ValueError
-            If required datasets cannot be loaded or are None.
     """
     # Load defaults if not provided
     if patient_information is None:

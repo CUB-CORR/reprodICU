@@ -27,9 +27,11 @@ from helpers.MAGIC_CONCEPTS import build_magic_concepts
 from interfaces import convert_to_clif, convert_to_meds, convert_to_omop
 from utils import (
     # Core clinical utilities
-    SEPSIS,
     SOFA,
+    SOFA2,
     VIS,
+    # SEPSIS
+    SEPSIS,
     # Data processing utilities
     PAO2_FIO2_RATIO,
     URINE_OUTPUT,
@@ -79,7 +81,7 @@ def __getattr__(name: str) -> Any:
 
     if name in loader.DATASET_MAPPING:
         return loader.load_dataset(name)
-    
+
     if name in loader.CONCEPT_MAPPING:
         return loader.load_concept(name)
 
@@ -113,10 +115,12 @@ def __dir__() -> list:
         "convert_to_omop",
         "convert_to_clif",
         "convert_to_meds",
-        # Clinical utilities - core (require all data arguments)
-        "SEPSIS",
+        # Clinical scoring functions (auto-load datasets if not provided)
         "SOFA",
+        "SOFA2",
         "VIS",
+        # SEPSIS
+        "SEPSIS",
         "PAO2_FIO2_RATIO",
         "URINE_OUTPUT",
         "FIX_WINDOW_BORDERS",
@@ -223,10 +227,12 @@ __all__ = [
     "convert_to_omop",
     "convert_to_clif",
     "convert_to_meds",
-    # Clinical scoring utilities - core (require all data arguments)
-    "SEPSIS",
+    # Clinical scoring functions (auto-load datasets if not provided)
     "SOFA",
+    "SOFA2",
     "VIS",
+    # SEPSIS
+    "SEPSIS",
     # Data processing utilities
     "PAO2_FIO2_RATIO",
     "URINE_OUTPUT",

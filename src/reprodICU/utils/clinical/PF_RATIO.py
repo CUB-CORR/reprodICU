@@ -160,6 +160,8 @@ def PAO2_FIO2_RATIO(
             )
             .drop("T_0")
         )
+        
+    return pf_ratio
 
 
 __all__ = ["PAO2_FIO2_RATIO"]
