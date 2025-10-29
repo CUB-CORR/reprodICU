@@ -1,6 +1,3 @@
-# Author: Finn Fassbender
-# Last modified: 2024-10-28
-
 # Description: reprodICU package initialization.
 # Exports public API for building data, extracting concepts, converting formats,
 # and implements lazy dataset loading via __getattr__.
@@ -13,8 +10,12 @@ from typing import Any
 # Add package directory to path for relative imports
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-__version__ = "0.1.0"
-__author__ = "Institute of Medical Informatics, Charité"
+__version__ = "0.0.0.1"
+__author__ = "Finn Fassbender"
+__copyright__ = "2024, Institute for Medical Informatics, Charité - Universitätsmedizin Berlin"
+__maintainer__ = "Finn Fassbender"
+__email__ = "finn.fassbender@charite.de"
+__status__ = "Production"
 
 from config import (
     ConfigManager,

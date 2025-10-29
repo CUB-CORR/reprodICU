@@ -17,17 +17,18 @@ Sources
 -------
 - Singer M, Deutschman CS, Seymour CW, Shankar-Hari M, Annane D, Bauer M, Bellomo R, Bernard GR, Chiche JD, Coopersmith CM, Hotchkiss RS, Levy MM, Marshall JC, Martin GS, Opal SM, Rubenfeld GD, van der Poll T, Vincent JL, Angus DC.
   The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3).
-  JAMA. 2016 Feb 23;315(8):801-10. doi: 10.1001/jama.2016.0287. PMID: 26903338; PMCID: PMC4968574.
+  JAMA. 2016 Feb 23;315(8):801-10.
+  doi: 10.1001/jama.2016.0287. PMID: 26903338; PMCID: PMC4968574.
 - Shah AD, MacCallum NS, Harris S, Brealey DA, Palmer E, Hetherington J, Shi S, Perez-Suarez D, Ercole A, Watkinson PJ, Jones A, Ashworth S, Beale R, Brett SJ, Singer M.
   Descriptors of Sepsis Using the Sepsis-3 Criteria: A Cohort Study in Critical Care Units Within the U.K. National Institute for Health Research Critical Care Health Informatics Collaborative.
-  Crit Care Med. 2021 Nov 1;49(11):1883-1894. doi: 10.1097/CCM.0000000000005169. PMID: 34259454; PMCID: PMC8508729.
+  Crit Care Med. 2021 Nov 1;49(11):1883-1894.
+  doi: 10.1097/CCM.0000000000005169. PMID: 34259454; PMCID: PMC8508729.
 - Rhee C, Kadri S, Huang SS, Murphy MV, Li L, Platt R, Klompas M.
   Objective Sepsis Surveillance Using Electronic Clinical Data.
-  Infect Control Hosp Epidemiol. 2016 Feb;37(2):163-71. doi: 10.1017/ice.2015.264. Epub 2015 Nov 3. PMID: 26526737; PMCID: PMC4743875.
+  Infect Control Hosp Epidemiol. 2016 Feb;37(2):163-71.
+  doi: 10.1017/ice.2015.264. Epub 2015 Nov 3. PMID: 26526737; PMCID: PMC4743875.
 """
 
-# author: Finn Fassbender
-# version: 31.08.2025
 from pathlib import Path
 from typing import Optional
 
