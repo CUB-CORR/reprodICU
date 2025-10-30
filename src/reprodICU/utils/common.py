@@ -176,4 +176,5 @@ __all__ = [
     "get_microbiology",
     # concept loaders
     "get_ventilation",
+    "get_rrt",
 ]
