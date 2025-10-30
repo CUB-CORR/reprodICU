@@ -1,6 +1,7 @@
 # Clinical scoring utilities
 from .scores.SOFA import SOFA
 from .scores.SOFA2 import SOFA2
+from .scores.OASIS import OASIS
 from .scores.VIS import VIS
 from .sepsis.SEPSIS import SEPSIS
 
@@ -27,6 +28,7 @@ __all__ = [
     # Clinical scoring functions (auto-load datasets if not provided)
     "SOFA",
     "SOFA2",
+    "OASIS",
     "VIS",
     # SEPSIS
     "SEPSIS",
