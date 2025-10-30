@@ -44,8 +44,8 @@ from ..common import (
     get_rrt,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from ..clinical.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.PF_RATIO import PAO2_FIO2_RATIO, SPO2_FIO2_RATIO
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.respiratory.PF_RATIO import PAO2_FIO2_RATIO, SPO2_FIO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H

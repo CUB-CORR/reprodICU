@@ -2,7 +2,7 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import (
+from ...common import (
     _build_t0,
     _to_lazy,
     get_patient_information,
