@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-10-28
+# Last modified: 2025-10-30
 
 # Description: Configuration management for reprodICU package.
 # Handles loading of config files, user-editable paths, and lazy loading of datasets.
@@ -85,6 +85,40 @@ class ConfigManager:
 
         self._cached_configs[config_name] = config
         return config
+
+    def update_config(
+        self,
+        config_name: str,
+        updates: Dict[str, Any],
+        user_override: bool = True,
+    ) -> None:
+        """
+        Update configuration values and save to file.
+
+        Args:
+            config_name: Name of config file (e.g., 'PATHS.yaml')
+            updates: Dictionary of key-value pairs to update
+            user_override: If True, save to user config, otherwise package config
+
+        Raises:
+            FileNotFoundError: If config file not found
+        """
+        config_path = self.get_config_path(
+            config_name, user_override=user_override
+        )
+
+        # Load current config
+        config = self.load_config(config_name, user_override=user_override)
+
+        # Update with new values
+        config.update(updates)
+
+        # Write back to file
+        with open(config_path, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+        # Clear cache to force reload on next access
+        self._cached_configs.pop(config_name, None)
 
     def get_user_config_dir(self) -> Path:
         """Return the user config directory."""
@@ -340,7 +374,7 @@ class DatasetLoader:
     def clear_cache(self) -> None:
         """Clear all cached datasets."""
         self._lazy_cache.clear()
-        print("✓ Dataset cache cleared")
+        print("-> Dataset cache cleared")
 
 
 # endregion

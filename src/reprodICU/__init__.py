@@ -74,9 +74,29 @@ class _ConvertNamespace:
         raise AttributeError(f"'_ConvertNamespace' object has no attribute '{name}'")
 
 
+class _SetupNamespace:
+    """Namespace for setup functions: reprodICU.setup.FUNCTION"""
+
+    def __getattr__(self, name: str) -> Any:
+        """Dynamically load setup functions without method binding issues."""
+        from setup import setup_mimic3_demo, setup_sicdb, setup_umcdb
+
+        setup_functions = {
+            "setup_mimic3_demo": setup_mimic3_demo,
+            "setup_sicdb": setup_sicdb,
+            "setup_umcdb": setup_umcdb,
+        }
+
+        if name in setup_functions:
+            return setup_functions[name]
+
+        raise AttributeError(f"'_SetupNamespace' object has no attribute '{name}'")
+
+
 # Expose namespaces
 build = _BuildNamespace()
 convert = _ConvertNamespace()
+setup = _SetupNamespace()
 
 # Create global dataset loader instance
 _dataset_loader: DatasetLoader = None
@@ -126,6 +146,7 @@ def __dir__() -> list:
         "interfaces",  # interfaces.convert_to_omop, interfaces.convert_to_clif, etc.
         "build",  # build.build_patient_information, build.build_all, etc.
         "convert",  # convert.convert_to_omop, convert.convert_to_clif, etc.
+        "setup",  # setup.setup_umcdb, setup.setup_sicdb, setup.setup_mimic3_demo
         # Helper functions
         "available_datasets",
         "dataset_exists",
@@ -208,6 +229,7 @@ __all__ = [
     "interfaces",
     "build",
     "convert",
+    "setup",
     # Helper functions
     "available_datasets",
     "dataset_exists",
