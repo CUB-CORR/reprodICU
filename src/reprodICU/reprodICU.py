@@ -1,12 +1,5 @@
-# Author: Finn Fassbender
-# Last modified: 2024-10-28
-
-# Description: This module provides functions to extract, harmonize, and process
-# data from source files and store it in a structured format.
-# All functions are designed to be called programmatically from Python code.
-
 import os
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import polars as pl
 import yaml
