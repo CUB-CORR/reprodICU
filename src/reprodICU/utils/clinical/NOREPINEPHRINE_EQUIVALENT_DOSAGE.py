@@ -113,10 +113,8 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
     # Select relevant columns and build T_0
     weights = patient_information.select(STAY_KEY, weight_col)
 
-    medications = (
-        medications.filter(
-            pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
-        )
+    medications = medications.filter(
+        pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
     )
 
     # Fix rates - handle cases where Drug Amount is provided but Drug Rate is not

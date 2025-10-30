@@ -15,7 +15,7 @@ Time is in seconds. Calendar day indices are computed from 24-hour blocks.
 
 SOURCES
 -------
-- Yehya N, Harhay MO, Curley MAQ, Schoenfeld DA, Reeder RW. 
+- Yehya N, Harhay MO, Curley MAQ, Schoenfeld DA, Reeder RW.
   Reappraisal of Ventilator-Free Days in Critical Care Research.
   Am J Respir Crit Care Med. 2019 Oct 1;200(7):828-836.
   doi: 10.1164/rccm.201810-2050CP. PMID: 31034248; PMCID: PMC6812447.

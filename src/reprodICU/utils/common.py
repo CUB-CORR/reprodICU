@@ -51,7 +51,8 @@ def _optional_time_bounds_filter(
         )
     return conds
 
-# region dataset helpers 
+
+# region dataset helpers
 def _load_dataset(dataset_name: str) -> Optional[pl.LazyFrame]:
     """
     Safely load a dataset from the reprodICU package.
@@ -65,6 +66,7 @@ def _load_dataset(dataset_name: str) -> Optional[pl.LazyFrame]:
         pl.LazyFrame if dataset exists, None otherwise
     """
     import reprodICU
+
     try:
         if reprodICU.dataset_exists(dataset_name):
             return getattr(reprodICU, dataset_name)
@@ -86,6 +88,7 @@ def _load_concept(concept_name: str) -> Optional[pl.LazyFrame]:
         pl.LazyFrame if concept exists, None otherwise
     """
     import reprodICU
+
     try:
         if reprodICU.concept_exists(concept_name):
             return getattr(reprodICU, concept_name)
@@ -123,6 +126,7 @@ def get_medications() -> Optional[pl.LazyFrame]:
     """Load medications dataset from reprodICU."""
     return _load_dataset("medications")
 
+
 def get_prescriptions() -> Optional[pl.LazyFrame]:
     """Load prescriptions dataset from reprodICU."""
     return _load_dataset("prescriptions")
@@ -151,6 +155,7 @@ def get_microbiology() -> Optional[pl.LazyFrame]:
 def get_ventilation() -> Optional[pl.LazyFrame]:
     """Load ventilation concept from reprodICU."""
     return _load_concept("VENTILATION_DURATION")
+
 
 def get_rrt() -> Optional[pl.LazyFrame]:
     """Load RRT concept from reprodICU."""
