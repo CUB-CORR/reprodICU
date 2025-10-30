@@ -1,0 +1,61 @@
+site_name: reprodICU Documentation
+site_description: Reproducible ICU Dataset Harmonization Platform - Harmonize clinical data from 7 international ICU databases
+site_author: Charité Outcomes Research Repository (CUB-CORR)
+site_url: https://docs.reprodicu.org/
+
+repo_url: https://github.com/CUB-CORR/reprodICU
+repo_name: CUB-CORR/reprodICU
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+
+plugins:
+  - search:
+      lang: en
+  - offline
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+nav:
+  - Home: index.md
+  - First Start: first_start.md
+  - Usage & Utilities: usage_utilities.md
+  - Datasets: datasets.md
+  - Data Structure: data_structure.md
+  - MAGIC_CONCEPTS: magic_concepts.md
+  - API Reference: api_reference.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CUB-CORR/reprodICU
+
+extra_css:
+  - css/extra.css
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
