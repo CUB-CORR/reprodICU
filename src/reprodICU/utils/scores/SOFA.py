@@ -92,9 +92,6 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin"))
 
 
-# endregion
-
-
 ################################################################################
 ################################################################################
 # region organ scoring helpers
@@ -288,9 +285,6 @@ def _vasopressor_points(
         .then(2)
         .otherwise(0)
     )
-
-
-# endregion
 
 
 ################################################################################
@@ -496,7 +490,6 @@ def SOFA(
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.max("pf_points").alias("pf_ratio_points"))
     )
-    # endregion
 
     # region labs (platelets, bilirubin, creatinine)
     labs_tf = (
@@ -519,7 +512,6 @@ def SOFA(
             .alias("creatinine_points"),
         )
     )
-    # endregion
 
     # region vitals (GCS & MAP)
     vitals_tf = (
@@ -646,7 +638,6 @@ def SOFA(
             ).alias("vasopressor_points"),
         )
     )
-    # endregion
 
     # region urine output (refactored to call URINE_OUTPUT)
     uo_base = URINE_OUTPUT(
@@ -672,7 +663,6 @@ def SOFA(
         _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
         pl.col("timeframe").cast(float),
     )
-    # endregion
 
     # region union of all (stay,timeframe)
     base = (
@@ -695,7 +685,6 @@ def SOFA(
         .unique()
         .select(STAY_KEY, "T_0", "timeframe")
     )
-    # endregion
 
     # region assemble
     out = base

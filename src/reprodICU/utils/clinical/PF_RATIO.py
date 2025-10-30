@@ -7,13 +7,16 @@ from ..common import (
     _to_lazy,
     get_patient_information,
     get_timeseries_labs,
+    get_timeseries_vitals,
     get_timeseries_respiratory,
 )
 
 SECONDS_IN_4H = 4 * 60 * 60
 pf_ratio_col = "PaO2/FiO2 Ratio"
+sf_ratio_col = "SpO2/FiO2 Ratio"
 
 
+# region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
         resp.with_columns(
@@ -37,7 +40,9 @@ def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    return labs.with_columns(
+    return labs.select(
+        "Global ICU Stay ID",
+        "Time Relative to Admission (seconds)",
         pl.when(
             pl.col("Oxygen")
             .struct.field("system")
@@ -50,6 +55,18 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ).drop_nulls("Oxygen in Arterial blood")
 
 
+def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
+    return vitals.filter(
+        pl.col("Peripheral oxygen saturation").is_not_null(),
+        pl.col("Peripheral oxygen saturation").is_between(0, 98),
+    ).select(
+        "Global ICU Stay ID",
+        "Time Relative to Admission (seconds)",
+        pl.col("Peripheral oxygen saturation").alias("SpO2"),
+    )
+
+
+# region PaO2/FiO2 Ratio
 def PAO2_FIO2_RATIO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
@@ -57,17 +74,14 @@ def PAO2_FIO2_RATIO(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
-    """_summary_
-
-    Calculate urine output per time window from intake/output timeseries.
+    """
+    Calculate PaO2/FiO2 ratio timeseries from respiratory and laboratory timeseries.
 
     Arguments
     ---------
         patient_information : pl.LazyFrame, optional
-            Patient/stay-level information; must contain Global ICU Stay ID and
-            Admission Weight (kg). Loaded automatically if None.
+            Patient/stay-level information. Loaded automatically if None.
         timeseries_resp : pl.LazyFrame, optional
             Respiratory timeseries data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
@@ -104,7 +118,7 @@ def PAO2_FIO2_RATIO(
     missing = [name for name, data in required.items() if data is None]
     if missing:
         raise ValueError(
-            f"Cannot compute URINE_OUTPUT: Missing required datasets: {', '.join(missing)}. "
+            f"Cannot compute PAO2_FIO2_RATIO: Missing required datasets: {', '.join(missing)}. "
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
@@ -123,8 +137,7 @@ def PAO2_FIO2_RATIO(
     timeseries_labs = _improve_labs(timeseries_labs)
 
     pf_ratio = (
-        timeseries_labs.select(STAY_KEY, TIME_KEY, "Oxygen in Arterial blood")
-        .drop_nulls("Oxygen in Arterial blood")
+        timeseries_labs
         # FiO2 occurred at most 4 hours before this blood gas
         .join_asof(
             timeseries_resp,
@@ -160,8 +173,119 @@ def PAO2_FIO2_RATIO(
             )
             .drop("T_0")
         )
-        
+
     return pf_ratio
 
 
-__all__ = ["PAO2_FIO2_RATIO"]
+# region SpO2/FiO2 Ratio
+def SPO2_FIO2_RATIO(
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_resp: Optional[pl.LazyFrame] = None,
+    timeseries_vitals: Optional[pl.LazyFrame] = None,
+    *,
+    t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
+) -> pl.LazyFrame:
+    """
+    Calculate SpO2/FiO2 ratio timeseries from respiratory and vital signs timeseries.
+
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Respiratory timeseries data. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Vital signs timeseries data. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+
+    Returns
+    -------
+        pl.LazyFrame
+            SpO2/FiO2 Ratio timeseries with columns:
+            - Global ICU Stay ID
+            - Time Relative to Admission (seconds)
+            - SpO2/FiO2 Ratio
+    """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_resp is None:
+        timeseries_resp = get_timeseries_respiratory()
+    if timeseries_vitals is None:
+        timeseries_vitals = get_timeseries_vitals()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_vitals": timeseries_vitals,
+    }
+
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute SPO2_FIO2_RATIO: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
+
+    STAY_KEY = "Global ICU Stay ID"
+    TIME_KEY = "Time Relative to Admission (seconds)"
+
+    patient_information = _to_lazy(patient_information)
+    timeseries_resp = _to_lazy(timeseries_resp)
+    timeseries_vitals = _to_lazy(timeseries_vitals)
+    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
+
+    all_stays = patient_information.select(STAY_KEY)
+    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+
+    timeseries_resp = _improve_resp(timeseries_resp)
+    timeseries_vitals = _improve_vitals(timeseries_vitals)
+
+    sf_ratio = (
+        timeseries_vitals
+        # FiO2 occurred at most 4 hours before this blood gas
+        .join_asof(
+            timeseries_resp,
+            on=TIME_KEY,
+            by=STAY_KEY,
+            strategy="backward",
+            tolerance=SECONDS_IN_4H,
+            coalesce=True,
+        )
+        .with_columns(
+            pl.col("SpO2")
+            .truediv(
+                pl.col("FiO2").fill_null(21).truediv(100)
+            )  # 21% if FiO2 missing
+            .alias(sf_ratio_col)
+        )
+        .with_columns(
+            pl.when(pl.col(sf_ratio_col).is_finite())
+            .then(pl.col(sf_ratio_col))
+            .otherwise(None)
+            .alias(sf_ratio_col)
+        )
+        .select(STAY_KEY, TIME_KEY, sf_ratio_col)
+    )
+
+    if t_0 or t_0_per_stay:
+        sf_ratio = (
+            sf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
+            .with_columns(
+                pl.col(TIME_KEY)
+                .sub(pl.col("T_0"))
+                .alias("Time Relative to T_0 (seconds)")
+            )
+            .drop("T_0")
+        )
+
+    return sf_ratio
+
+
+___all__ = ["PAO2_FIO2_RATIO", "SPO2_FIO2_RATIO"]

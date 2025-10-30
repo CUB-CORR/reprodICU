@@ -45,7 +45,7 @@ from ..common import (
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 from ..clinical.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.PF_RATIO import PAO2_FIO2_RATIO
+from ..clinical.PF_RATIO import PAO2_FIO2_RATIO, SPO2_FIO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -93,9 +93,6 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin"))
 
 
-# endregion
-
-
 ################################################################################
 ################################################################################
 # region respiratory
@@ -109,13 +106,6 @@ def _pf_ratio_points(pf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
     <= 75 AND advanced ventilatory support  +4
 
     NOTE:
-    - Use the arterial oxygen saturation (SpO2) to FIO2 ratio only when the
-      PaO2:FIO2 ratio is unavailable and when the SpO2 is less than 98%. Cutoffs:
-      - 0 points, greater than 300 mm Hg
-      - 1 point, 300 mm Hg or less
-      - 2 points, 250 mm Hg or less
-      - 3 points, 200 mm Hg or less with ventilatory support
-      - 4 points, 120 mm Hg or less with ventilatory support or ECMO.
     - Advanced ventilatory support is defined as receipt of high-flow nasal
       cannula, continuous positive airflow pressure, bilevel positive airway
       pressure, noninvasive ventilation, invasive mechanical ventilation, or
@@ -149,6 +139,40 @@ def _pf_ratio_points(pf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
     )
 
 
+def _sf_ratio_points(sf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
+    """
+    SpO2/FIO2, mmHg
+     >300                                    0
+    <=300                                   +1
+    <=250                                   +2
+    <=200 AND advanced ventilatory support  +3
+    <=120 AND advanced ventilatory support  +4
+
+    NOTE:
+    - Use the arterial oxygen saturation (SpO2) to FIO2 ratio only when the
+      PaO2:FIO2 ratio is unavailable and when the SpO2 is less than 98%. Cutoffs:
+      - 0 points, greater than 300 mm Hg
+      - 1 point, 300 mm Hg or less
+      - 2 points, 250 mm Hg or less
+      - 3 points, 200 mm Hg or less with ventilatory support
+      - 4 points, 120 mm Hg or less with ventilatory support or ECMO.
+    """
+    return (
+        pl.when((sf_ratio > 300) | sf_ratio.is_null())
+        .then(0)
+        .when(sf_ratio.is_between(250, 300, closed="right"))
+        .then(1)
+        .when(sf_ratio.is_between(120, 200, closed="right") & ventilated)
+        .then(3)
+        .when((sf_ratio < 120) & ventilated)
+        .then(4)
+        # ensure this is the last condition checked to not override other tiers
+        .when(sf_ratio.is_between(0, 250, closed="right"))
+        .then(2)
+        .otherwise(None)
+    )
+
+
 # region hemostasis
 def _platelet_points(platelets_value: pl.Expr) -> pl.Expr:
     """
@@ -175,7 +199,12 @@ def _platelet_points(platelets_value: pl.Expr) -> pl.Expr:
 
 
 # region brain
-def _gcs_points(gcs: pl.Expr, gcs_motor: pl.Expr) -> pl.Expr:
+def _gcs_points(
+    gcs: pl.Expr,
+    gcs_motor: pl.Expr,
+    sedation_flag: pl.Expr,
+    delirium_treatment_flag: pl.Expr,
+) -> pl.Expr:
     """
     Glasgow Coma Scale
     15    (or GCS-M   6)     0
@@ -193,20 +222,18 @@ def _gcs_points(gcs: pl.Expr, gcs_motor: pl.Expr) -> pl.Expr:
       point even if GCS is 15. For relevant drugs, see the International
       Management of Pain, Agitation, and Delirium in Adult Patients in the ICU
       Guidelines.
-
-    MORE INFO:
-    Devlin JW, Skrobik Y, Gélinas C, Needham DM, Slooter AJC, Pandharipande PP, Watson PL, Weinhouse GL, Nunnally ME, Rochwerg B, Balas MC, van den Boogaard M, Bosma KJ, Brummel NE, Chanques G, Denehy L, Drouot X, Fraser GL, Harris JE, Joffe AM, Kho ME, Kress JP, Lanphere JA, McKinley S, Neufeld KJ, Pisani MA, Payen JF, Pun BT, Puntillo KA, Riker RR, Robinson BRH, Shehabi Y, Szumita PM, Winkelman C, Centofanti JE, Price C, Nikayin S, Misak CJ, Flood PD, Kiedrowski K, Alhazzani W.
-    Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU.
-    Crit Care Med. 2018 Sep;46(9):e825-e873.
-    doi: 10.1097/CCM.0000000000003299. PMID: 30113379.
-    - benzodiazepines (e.g., midazolam, lorazepam)
-    - dexmedetomidine
-    - haloperidol
     """
     return (
-        pl.when(gcs.is_not_null())
+        # For sedated patients, use the last recorded GCS before sedation.
+        pl.when(sedation_flag)
+        .then(None)
+        .when(gcs.is_not_null())
         .then(
-            pl.when(gcs == 15)
+            # If receiving drug treatment for delirium (short- or long-term),
+            # score 1 point even if GCS is 15.
+            pl.when(delirium_treatment_flag)
+            .then(1)
+            .when(gcs == 15)
             .then(0)
             .when(gcs.is_between(13, 14))
             .then(1)
@@ -242,7 +269,7 @@ def _bilirubin_points(bili: pl.Expr) -> pl.Expr:
     Bilirubine, mg/dL (μmol/L)
     <= 1.2 (<= 20.6)     0
     <= 3.0 (<= 51.3)    +1  # cutoff changed from 2.0 to 3.0 in SOFA-2
-    <= 5.0 (<=102.6)    +2
+    <= 6.0 (<=102.6)    +2
     <=12.0 (<=205.2)    +3
      >12.0 (> 205.2)    +4
     """
@@ -606,6 +633,7 @@ def SOFA2(
     map_col = "Mean arterial pressure"
     gcs_col = "Glasgow coma score total"
     gcs_motor_col = "Glasgow coma score motor"
+    sf_ratio_col = "SpO2/FiO2 Ratio"
 
     # Labs
     labs = _improve_labs(timeseries_labs.lazy())
@@ -645,6 +673,21 @@ def SOFA2(
         "vasopressin (USP)",
     ]
 
+    SEDATION_DRUGS = [
+        "propofol",
+        "midazolam",
+        "lorazepam",
+        "dexmedetomidine",
+    ]
+
+    DELIRIUM_DRUGS = [
+        "haloperidol",
+        "quetiapine",
+        "risperidone",
+        "olanzapine",
+        "dexmedetomidine",
+    ]
+
     # Base frames
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
@@ -656,6 +699,14 @@ def SOFA2(
     resp_tf = (
         PAO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
+        .join(
+            SPO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+            .select(STAY_KEY, TIME_KEY, sf_ratio_col)
+            .filter(pl.col("sf_ratio_col").is_not_null()),
+            on=[STAY_KEY, TIME_KEY],
+            how="outer",
+            coalesce=True,
+        )
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
@@ -679,18 +730,31 @@ def SOFA2(
             .otherwise(False)
             .alias("ventilation")
         )
-        .group_by(STAY_KEY, TIME_KEY, "timeframe", pf_ratio_col)
-        .agg(pl.max("ventilation"))
         .with_columns(
             _pf_ratio_points(
                 pl.col(pf_ratio_col).cast(pl.Float64),
                 pl.col("ventilation").fill_null(False),
-            ).alias("pf_points")
+            ).alias("pf_points"),
+            _sf_ratio_points(
+                pl.col(sf_ratio_col).cast(pl.Float64),
+                pl.col("ventilation").fill_null(False),
+            ).alias("sf_points"),
         )
         .group_by(STAY_KEY, "timeframe")
-        .agg(pl.max("pf_points").alias("pf_ratio_points"))
+        .agg(
+            pl.max("pf_points").alias("pf_ratio_points"),
+            pl.max("sf_points").alias("sf_ratio_points"),
+        )
+        .select(
+            STAY_KEY,
+            "timeframe",
+            # Use the arterial oxygen saturation (SpO2) to FIO2 ratio only when
+            # the PaO2:FIO2 ratio is unavailable
+            pl.coalesce(
+                pl.col("pf_ratio_points"), pl.col("sf_ratio_points")
+            ).alias("respiratory_points"),
+        )
     )
-    # endregion
 
     # region labs (platelets, bilirubin, creatinine)
     labs_tf = (
@@ -732,7 +796,6 @@ def SOFA2(
             .alias("creatinine_points"),
         )
     )
-    # endregion
 
     # region vitals (GCS & MAP)
     vitals_tf = (
@@ -740,9 +803,49 @@ def SOFA2(
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        # attach sedation / delirium flag at measurement time using intervals
+        .join(
+            meds.filter(
+                pl.col(drug_ingredient_col).is_in(
+                    SEDATION_DRUGS + DELIRIUM_DRUGS
+                )
+            ).select(
+                STAY_KEY,
+                drug_ingredient_col,
+                drug_start_col,
+                drug_end_col,
+            ),
+            on=STAY_KEY,
+            how="left",
+        )
+        .with_columns(
+            pl.when(
+                pl.col(drug_ingredient_col).is_in(SEDATION_DRUGS),
+                pl.col(TIME_KEY) >= pl.col(drug_start_col),
+                pl.col(drug_end_col).is_null()
+                | (pl.col(TIME_KEY) < pl.col(drug_end_col)),
+            )
+            .then(True)
+            .otherwise(False)
+            .alias("sedation"),
+            pl.when(
+                pl.col(drug_ingredient_col).is_in(DELIRIUM_DRUGS),
+                pl.col(TIME_KEY) >= pl.col(drug_start_col),
+                pl.col(drug_end_col).is_null()
+                | (pl.col(TIME_KEY) < pl.col(drug_end_col)),
+            )
+            .then(True)
+            .otherwise(False)
+            .alias("delirium_treatment"),
+        )
         .group_by(STAY_KEY, "timeframe")
         .agg(
-            _gcs_points(pl.col(gcs_col), pl.col(gcs_motor_col))
+            _gcs_points(
+                pl.col(gcs_col),
+                pl.col(gcs_motor_col),
+                pl.col("sedation"),
+                pl.col("delirium_treatment"),
+            )
             .max()
             .alias("gcs_points"),
             _map_points(pl.col(map_col)).max().alias("map_points"),
@@ -865,7 +968,6 @@ def SOFA2(
             ).alias("vasopressor_points"),
         )
     )
-    # endregion
 
     # region urine output (refactored to call URINE_OUTPUT)
     uo_base = URINE_OUTPUT(
@@ -886,7 +988,6 @@ def SOFA2(
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.max("uo_points").alias("uo_points"))
     )
-    # endregion
 
     # region union of all (stay,timeframe)
     base = (
@@ -909,7 +1010,6 @@ def SOFA2(
         .unique()
         .select(STAY_KEY, "T_0", "timeframe")
     )
-    # endregion
 
     # region assemble
     out = base
@@ -919,7 +1019,7 @@ def SOFA2(
     if forward_fill:
         out = out.with_columns(
             pl.col(
-                "pf_ratio_points",
+                "respiratory_points",
                 "gcs_points",
                 "map_points",
                 "vasopressor_points",
@@ -968,7 +1068,7 @@ def SOFA2(
         )
         .with_columns(
             pl.sum_horizontal(
-                pl.col("pf_ratio_points"),
+                pl.col("respiratory_points"),
                 pl.col("platelet_points"),
                 pl.col("bilirubin_points"),
                 pl.col("cardiovascular_points"),
@@ -982,7 +1082,7 @@ def SOFA2(
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
             "SOFA-2 Score",
-            pl.col("pf_ratio_points").alias("Respiration"),
+            pl.col("respiratory_points").alias("Respiration"),
             pl.col("platelet_points").alias("Coagulation"),
             pl.col("bilirubin_points").alias("Liver"),
             pl.col("map_points").alias("Cardiovascular (MAP)"),

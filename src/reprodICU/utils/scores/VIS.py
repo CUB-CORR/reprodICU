@@ -48,7 +48,7 @@ def VIS(
     VIS is calculated per hour as the weighted sum of vasoactive agent contributions:
     VIS = (dopamine dose) + (dobutamine dose) + (100 × epinephrine dose) +
           (100 × norepinephrine dose) + ... for 13 supported agents.
-          
+
     Included vasoactive agents and their contributions:
     - Angiotensin II: 0.25 × dose (ng/kg/min)
     - Dobutamine: dose (mcg/kg/min)
