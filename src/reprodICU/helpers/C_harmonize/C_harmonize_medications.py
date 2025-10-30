@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: This script combines the preprocessed medications from the different
 # databases into one common table

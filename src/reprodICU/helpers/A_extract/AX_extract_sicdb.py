@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-10
+# Last modified: 2025-10-30
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.

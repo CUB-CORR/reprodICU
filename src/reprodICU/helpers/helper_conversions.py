@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Enables the easy conversion of the data.
 # Conversion constants were taken from: https://www.labcorp.com/resource/si-unit-conversion-table

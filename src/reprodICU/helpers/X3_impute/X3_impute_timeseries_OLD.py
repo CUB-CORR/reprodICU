@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-11
+# Last modified: 2025-10-30
 
 # Adapted from source:
 # https://github.com/ratschlab/circEWS/blob/master/circews/functions/forward_filling.py#L205

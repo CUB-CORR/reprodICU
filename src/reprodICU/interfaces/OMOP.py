@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: Converts the reprodICU structure to the OMOP Common Data Model (CDM) structure.
 # The script is based on the OMOP CDM version 5.4
@@ -7,20 +7,21 @@
 # Input: reprodICU structure
 # Output: OMOP CDM structure
 
-# Usage: python reprOMOPIZE.py
+# Usage: python OMOP.py
 
 # Importing necessary libraries
-import argparse
 import atexit
 import glob
 import os
 import shutil
 import warnings
+from pathlib import Path
 
 import polars as pl
 import yaml
-from helpers.helper import GlobalVars
+from config import reprodICUPaths
 from helpers.helper_OMOP import Vocabulary
+from helpers.helper import GlobalVars
 
 warnings.filterwarnings("ignore")
 
@@ -33,11 +34,24 @@ def load_mapping(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-class reprodICUPaths:
-    def __init__(self) -> None:
-        config = load_mapping("configs/paths_local.yaml")
-        for key, value in config.items():
-            setattr(self, key, str(value))
+def _get_mapping_file(filename: str) -> str:
+    """Get absolute path to a mapping file from the package.
+
+    Args:
+        filename: Name of mapping file (e.g., 'OMOP_CDMv5.4_Field_Level.csv')
+
+    Returns:
+        Absolute path to the mapping file
+    """
+
+    # Get the directory where this file is located
+    current_dir = Path(__file__).parent.parent
+    mapping_path = current_dir / "mappings" / filename
+
+    if not mapping_path.exists():
+        raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
+
+    return str(mapping_path)
 
 
 # region helpers
@@ -48,7 +62,8 @@ def _field_level(table_name: str, return_required: bool = False) -> list:
     """
     return a list of fields for the table in the OMOP CDM in order
     """
-    field_level_ = pl.read_csv("mappings/OMOP_CDMv5.4_Field_Level.csv").filter(
+    field_level_path = _get_mapping_file("OMOP_CDMv5.4_Field_Level.csv")
+    field_level_ = pl.read_csv(field_level_path).filter(
         pl.col("cdmTableName") == table_name
     )
     fields = field_level_.select("cdmFieldName").to_series().to_list()
@@ -288,7 +303,7 @@ def drug_exposure(
     medications: pl.LazyFrame,
     patient_information: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - drug_exposure")
+    print("OMOP - drug_exposure")
 
     ID = _ID(
         patient_information,
@@ -395,7 +410,7 @@ def drug_exposure(
 # (physical or organizational) units where healthcare delivery is practiced
 # (offices, wards, hospitals, clinics, etc.
 def care_site(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprOMOPIZE - care_site")
+    print("OMOP - care_site")
 
     # Extract the care site information
     care_site = (
@@ -439,7 +454,7 @@ def condition_occurrence(
     patient_information: pl.LazyFrame,
     diagnoses: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - condition_occurrence")
+    print("OMOP - condition_occurrence")
 
     ID = _ID(
         patient_information,
@@ -613,7 +628,7 @@ def condition_occurrence(
 # about the Death, such as: Condition in an administrative claim, status of
 # enrollment into a health plan, or explicit record in EHR data.
 def death(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprOMOPIZE - death")
+    print("OMOP - death")
 
     ID = _ID(patient_information)
 
@@ -670,7 +685,7 @@ def device_exposure(
     patient_information: pl.LazyFrame,
     procedures: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - device_exposure")
+    print("OMOP - device_exposure")
 
     ID = _ID(
         patient_information,
@@ -689,111 +704,49 @@ def device_exposure(
     procedures = procedures.with_columns(
         pl.col("Procedure Description").replace(
             {
-                "Insertion of catheter into peripheral vein": (
-                    "Peripheral venous cannula"
-                ),
-                "Peripheral venous cannula insertion": (
-                    "Peripheral venous cannula"
-                ),
+                "Insertion of catheter into peripheral vein": "Peripheral venous cannula",
+                "Peripheral venous cannula insertion": "Peripheral venous cannula",
                 "Insertion of catheter into artery": "Arterial catheter",
                 "Change of dressing": "Wound dressing",
-                "Open insertion of central venous catheter": (
-                    "Central venous catheter"
-                ),
-                "Insertion of peripherally inserted central catheter": (
-                    "Peripherally inserted central catheter"
-                ),
+                "Open insertion of central venous catheter": "Central venous catheter",
+                "Insertion of peripherally inserted central catheter": "Peripherally inserted central catheter",
                 "Invasive ventilation": "Endotracheal tube",
                 "Central venous cannula insertion": "Central venous catheter",
-                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation": (
-                    "Endotracheal tube"
-                ),  # eICU
-                "Introduction of catheter into pulmonary artery": (
-                    "Pulmonary artery catheter"
-                ),
+                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation": "Endotracheal tube",  # eICU
+                "Introduction of catheter into pulmonary artery": "Pulmonary artery catheter",
                 "Insertion of endotracheal tube": "Endotracheal tube",
-                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%) - Nasal Cannula": (
-                    "Oxygen nasal cannula"
-                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%) - Nasal Cannula": "Oxygen nasal cannula",  # eICU
                 "Insertion of hemodialysis catheter": "Hemodialysis catheter",
-                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation": (
-                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
-                ),  # eICU
-                "Pulmonary catheterization with Swan-Ganz catheter": (
-                    "Pulmonary artery catheter"
-                ),
+                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation": "Continuous positive airway pressure/Bilevel positive airway pressure mask",  # eICU
+                "Pulmonary catheterization with Swan-Ganz catheter": "Pulmonary artery catheter",
                 "Bronchoscopy": "Bronchoscope",
-                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (40% to 60%)": (
-                    "Oxygen mask"
-                ),  # eICU
-                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Stockings": (
-                    "Compression stockings"
-                ),  # eICU
-                "Renal - Urinary Catheters - Foley Catheter": (
-                    "Foley catheter"
-                ),  # eICU
-                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%)": (
-                    "Oxygen nasal cannula"
-                ),  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (40% to 60%)": "Oxygen mask",  # eICU
+                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Stockings": "Compression stockings",  # eICU
+                "Renal - Urinary Catheters - Foley Catheter": "Foley catheter",  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (< 40%)": "Oxygen nasal cannula",  # eICU
                 "Continuous renal replacement therapy": "Hemodialysis catheter",
                 "Hemodialysis": "Hemodialysis catheter",
-                "Insertion of cannula for hemodialysis, vein to vein": (
-                    "Hemodialysis catheter"
-                ),
-                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Boots": (
-                    "Compression stockings"
-                ),  # eICU
-                "Pulmonary - Ventilation and Oxygenation - CPAP/PEEP Therapy": (
-                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
-                ),  # eICU
-                "Pulmonary - Ventilation and Oxygenation - Ventilator Weaning": (
-                    "Endotracheal tube"
-                ),  # eICU
-                "Renal - Dialysis - Hemodialysis": (
-                    "Hemodialysis catheter"
-                ),  # eICU
-                "Pulmonary - Ventilation and Oxygenation - Tracheal Suctioning": (
-                    "Tracheal suction catheter"
-                ),  # eICU
-                "Noninvasive ventilation": (
-                    "Continuous positive airway pressure/Bilevel positive airway pressure mask"
-                ),
-                "Introduction of intracranial pressure catheter": (
-                    "Intracranial pressure catheter"
-                ),
-                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (> 60%)": (
-                    "Oxygen mask"
-                ),  # eICU
+                "Insertion of cannula for hemodialysis, vein to vein": "Hemodialysis catheter",
+                "Cardiovascular - Vascular Disorders - VTE Prophylaxis - Compression Boots": "Compression stockings",  # eICU
+                "Pulmonary - Ventilation and Oxygenation - CPAP/PEEP Therapy": "Continuous positive airway pressure/Bilevel positive airway pressure mask",  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Ventilator Weaning": "Endotracheal tube",  # eICU
+                "Renal - Dialysis - Hemodialysis": "Hemodialysis catheter",  # eICU
+                "Pulmonary - Ventilation and Oxygenation - Tracheal Suctioning": "Tracheal suction catheter",  # eICU
+                "Noninvasive ventilation": "Continuous positive airway pressure/Bilevel positive airway pressure mask",
+                "Introduction of intracranial pressure catheter": "Intracranial pressure catheter",
+                "Pulmonary - Ventilation and Oxygenation - Oxygen Therapy (> 60%)": "Oxygen mask",  # eICU
                 "Introduction of urinary catheter": "Foley catheter",
-                "Surgery - Tubes and Catheters - Foley Catheter": (
-                    "Foley catheter"
-                ),  # eICU
-                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube": (
-                    "Endotracheal tube"
-                ),  # eICU
+                "Surgery - Tubes and Catheters - Foley Catheter": "Foley catheter",  # eICU
+                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube": "Endotracheal tube",  # eICU
                 "Endoscopy": "Endoscope",
-                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube - Insertion": (
-                    "Endotracheal tube"
-                ),  # eICU
-                "Ultrasonography guided insertion of midline intravenous catheter": (
-                    "Midline catheter"
-                ),
-                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation - Assist Controlled": (
-                    "Endotracheal tube"
-                ),  # eICU
-                "Surgery - Tubes and Catheters - Chest Tube": (
-                    "Chest drain"
-                ),  # eICU
-                "Percutaneous insertion of intra-aortic balloon catheter": (
-                    "Intra-aortic balloon catheter"
-                ),
-                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation - Face Mask": (
-                    "Oxygen mask"
-                ),  # eICU
-                "Pulmonary - Vascular Disorders - VTE Prophylaxis - Compression Boots": (
-                    "Compression stockings"
-                ),  # eICU
-            }
+                "Pulmonary - Radiologic Procedures / Bronchoscopy - Endotracheal Tube - Insertion": "Endotracheal tube",  # eICU
+                "Ultrasonography guided insertion of midline intravenous catheter": "Midline catheter",
+                "Pulmonary - Ventilation and Oxygenation - Mechanical Ventilation - Assist Controlled": "Endotracheal tube",  # eICU
+                "Surgery - Tubes and Catheters - Chest Tube": "Chest drain",  # eICU
+                "Percutaneous insertion of intra-aortic balloon catheter": "Intra-aortic balloon catheter",
+                "Pulmonary - Ventilation and Oxygenation - Non-Invasive Ventilation - Face Mask": "Oxygen mask",  # eICU
+                "Pulmonary - Vascular Disorders - VTE Prophylaxis - Compression Boots": "Compression stockings",  # eICU
+            } # fmt: skip
         )
     )
 
@@ -880,7 +833,7 @@ def device_exposure(
 # The LOCATION table represents a generic way to capture physical location or
 # address information of Persons and Care Sites.
 def location(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprOMOPIZE - location")
+    print("OMOP - location")
 
     # Adresses of the known institutions
     # HiRID:
@@ -1009,8 +962,10 @@ def measurement(
     timeseries_labs: pl.LazyFrame,
     timeseries_resp: pl.LazyFrame,
     OUTPATH: str,
+    omop,
+    vars,
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - measurement")
+    print("OMOP - measurement")
 
     ID = _ID(
         patient_information,
@@ -1042,7 +997,7 @@ def measurement(
         """
         make time columns to datetime
         """
-        print("reprOMOPIZE - measurement - making datetime")
+        print("OMOP - measurement - making datetime")
         return (
             data.join(ID, on="Global ICU Stay ID", how="right")
             .with_columns(
@@ -1080,7 +1035,7 @@ def measurement(
         """
         unpivot the data
         """
-        print("reprOMOPIZE - measurement - unpivoting")
+        print("OMOP - measurement - unpivoting")
         return data.unpivot(
             index=["person_id", "visit_occurrence_id", "measurement_datetime"],
             variable_name="variable_name",
@@ -1091,7 +1046,7 @@ def measurement(
         """
         de-struct the data after the unpivot operation
         """
-        print("reprOMOPIZE - measurement - de-structing after unpivot")
+        print("OMOP - measurement - de-structing after unpivot")
 
         LOINC_code_list = (
             data.select("value_as_number")
@@ -1124,7 +1079,7 @@ def measurement(
         """
         add the units to the data
         """
-        print("reprOMOPIZE - measurement - adding units")
+        print("OMOP - measurement - adding units")
         return data.join(
             UNITS.lazy(),
             left_on="variable_name",
@@ -1137,7 +1092,7 @@ def measurement(
         """
         add the concept_id to the data
         """
-        print("reprOMOPIZE - measurement - adding concept_id")
+        print("OMOP - measurement - adding concept_id")
 
         return (
             data
@@ -1160,7 +1115,7 @@ def measurement(
     # Extract the measurement information
     # Create a unique prefix for temp files
     # Create a subdirectory in the temp directory for output files
-    output_subdir = os.path.join(OUTPATH, "reprOMOPIZE_output")
+    output_subdir = os.path.join(OUTPATH, "OMOP_output")
     os.makedirs(output_subdir, exist_ok=True)
 
     # Register cleanup function to run at script exit
@@ -1240,7 +1195,7 @@ def measurement(
 def person(
     CONCEPT: pl.LazyFrame, patient_information: pl.LazyFrame
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - person")
+    print("OMOP - person")
 
     # Dates of the databases
     # eICU: 2014 to 2015
@@ -1364,7 +1319,7 @@ def procedure_occurrence(
     patient_information: pl.LazyFrame,
     procedures: pl.LazyFrame,
 ) -> pl.LazyFrame:
-    print("reprOMOPIZE - procedure_occurrence")
+    print("OMOP - procedure_occurrence")
 
     ID = _ID(
         patient_information,
@@ -1467,7 +1422,7 @@ def procedure_occurrence(
 # medical staff is delivering the service during the Visit, and (iii) whether
 # the Visit is transient or for a longer period involving a stay in bed.
 def visit_occurrence(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprOMOPIZE - visit_occurrence")
+    print("OMOP - visit_occurrence")
 
     ID = _ID(
         patient_information, ["Time Relative to First ICU Admission (seconds)"]
@@ -1607,7 +1562,7 @@ def VOCABULARIES(
         VOCABULARY (pl.LazyFrame): _description_
     """
 
-    print("reprOMOPIZE - VOCABULARIES")
+    print("OMOP - VOCABULARIES")
 
     # Iterate over output directory, scan all files, select all columns
     # containing "concept_id" and put the unique values in a list
@@ -1631,7 +1586,7 @@ def VOCABULARIES(
             )
 
     concept_ids = list(set(concept_ids))
-    print(f"reprOMOPIZE - found {len(concept_ids)} unique concept_ids")
+    print(f"OMOP - found {len(concept_ids)} unique concept_ids")
 
     # Filter the vocabulary tables to only include the concept_ids that are in
     # the reprodICU data.
@@ -1694,12 +1649,13 @@ def VOCABULARIES(
 ################################################################################
 # region OTHER
 ################################################################################
-def other():
+def other(OUTPATH):
     """
     add missing tables to the output directory
     """
+    field_level_path = _get_mapping_file("OMOP_CDMv5.4_Field_Level.csv")
     tables = (
-        pl.read_csv("mappings/OMOP_CDMv5.4_Field_Level.csv")
+        pl.read_csv(field_level_path)
         .select("cdmTableName")
         .unique()
         .to_series()
@@ -1712,81 +1668,74 @@ def other():
         if ((table + ".parquet") not in os.listdir(OUTPATH)) and (
             (table.upper() + ".parquet") not in os.listdir(OUTPATH)
         ):
-            print(f"reprOMOPIZE - adding missing table: {table}")
+            print(f"OMOP - adding missing table: {table}")
             pl.DataFrame().pipe(_add_missing_fields, table).write_parquet(
                 OUTPATH + table + ".parquet"
             )
 
 
 ################################################################################
-# region MAIN
+# Public API Functions
 ################################################################################
-if __name__ == "__main__":
-    # Parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--input",
-        type=str,
-        help="Path to the reprodICU data",
-        default="../reprodICU_files/",
-    )
-    parser.add_argument(
-        "--vocab",
-        type=str,
-        help="Path to the OMOP vocabulary files",
-        default="../OMOP_vocabulary/",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        help="Path to the output directory",
-        default="../reprodICU_files_OMOP/",
-    )
-    parser.add_argument(
-        "--datasets",
-        type=str,
-        nargs="+",
-        help="List of specific datasets to convert, e.g. eICU, HiRID",
-        default=["eICU", "HiRID", "MIMIC-III", "MIMIC-IV", "SICdb", "UMCdb"],
-    )
-    args = parser.parse_args()
 
-    # Initialize paths
-    paths = reprodICUPaths()
-    omop = Vocabulary(paths)
-    vars = GlobalVars(paths)
 
-    INPATH = args.input
-    OUTPATH = args.output
-    VOCABPATH = args.vocab
-    os.makedirs(args.output, exist_ok=True)
+def convert_to_omop(
+    paths=None,
+    demo: bool = False,
+    force: bool = False,
+) -> dict:
+    """Convert reprodICU data to OMOP CDM v5.4 format.
 
-    # Load the reprodICU data
+    Args:
+        paths: Optional paths object (uses default paths if None)
+        demo: Use demo data if True
+        force: Force recomputation if True (currently unused)
+
+    Returns:
+        Dict mapping OMOP table names to output file paths
+
+    Raises:
+        FileNotFoundError: If input data not found
+        RuntimeError: If conversion fails
+    """
+    if paths is None:
+        paths = reprodICUPaths()
+        omop = Vocabulary(paths)
+        vars = GlobalVars(paths)
+
+    # Get paths
+    if demo:
+        INPATH = paths.reprodICU_demo_files_path
+        OUTPATH = paths.reprodICU_demo_files_path + "OMOP/"
+    else:
+        INPATH = paths.reprodICU_files_path
+        OUTPATH = paths.reprodICU_files_path + "OMOP/"
+
+    # Get vocabulary path from paths object
+    VOCABPATH = getattr(paths, "OMOP_vocabulary_path", None)
+    if VOCABPATH is None:
+        raise ValueError(
+            "OMOP_vocabulary_path not configured in paths. "
+            "Please set it in your PATHS.yaml configuration."
+        )
+
+    # Create output directory
+    os.makedirs(OUTPATH, exist_ok=True)
+
+    # Load reprodICU data
+    print("OMOP - Loading reprodICU data...")
     diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
     medications = pl.scan_parquet(INPATH + "medications.parquet")
-    patient_information = pl.scan_parquet(
-        INPATH + "patient_information.parquet"
-    )
+    patient_information = pl.scan_parquet(INPATH + "patient_information.parquet") # fmt: skip
     procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
 
-    ########
-    # FILTER
-    # filter patient_information to only include the datasets specified in the
-    # command line arguments
-    patient_information = patient_information.filter(
-        pl.col("Source Dataset").str.contains_any(args.datasets)
-    )
-
-    #########
-    # LOADING
-    # Load the OMOP vocabulary files
+    # Load OMOP vocabulary files
+    print("OMOP - Loading OMOP vocabulary...")
     CONCEPT = pl.scan_parquet(VOCABPATH + "CONCEPT.parquet")
-    CONCEPT_RELATIONSHIP = pl.scan_parquet(
-        VOCABPATH + "CONCEPT_RELATIONSHIP.parquet"
-    )
+    CONCEPT_RELATIONSHIP = pl.scan_parquet(VOCABPATH + "CONCEPT_RELATIONSHIP.parquet") # fmt: skip
     CONCEPT_ANCESTOR = pl.scan_parquet(VOCABPATH + "CONCEPT_ANCESTOR.parquet")
     CONCEPT_CLASS = pl.scan_parquet(VOCABPATH + "CONCEPT_CLASS.parquet")
     CONCEPT_SYNONYM = pl.scan_parquet(VOCABPATH + "CONCEPT_SYNONYM.parquet")
@@ -1794,42 +1743,62 @@ if __name__ == "__main__":
     RELATIONSHIP = pl.scan_parquet(VOCABPATH + "RELATIONSHIP.parquet")
     VOCABULARY = pl.scan_parquet(VOCABPATH + "VOCABULARY.parquet")
 
-    ############
-    # CONVERTING
-    # Convert the reprodICU structure to the OMOP CDM structure
+    # Convert to OMOP CDM
+    print("OMOP - Converting to OMOP CDM...")
+    output_files = {}
+
     # Tables with transformed IDs
     care_site(patient_information).sink_parquet(OUTPATH + "care_site.parquet")
+    output_files["care_site"] = [OUTPATH + "care_site.parquet"]
+
     (
         condition_occurrence(CONCEPT, patient_information, diagnoses)
         .collect()
         .write_parquet(OUTPATH + "condition_occurrence.parquet")
     )
+    output_files["condition_occurrence"] = [
+        OUTPATH + "condition_occurrence.parquet"
+    ]
+
     (
         death(patient_information)
         .collect()
         .write_parquet(OUTPATH + "death.parquet")
     )
+    output_files["death"] = [OUTPATH + "death.parquet"]
+
     (
         device_exposure(CONCEPT, patient_information, procedures)
         .collect()
         .write_parquet(OUTPATH + "device_exposure.parquet")
     )
+    output_files["device_exposure"] = [OUTPATH + "device_exposure.parquet"]
+
     location(patient_information).sink_parquet(OUTPATH + "location.parquet")
+    output_files["location"] = [OUTPATH + "location.parquet"]
+
     (
         person(CONCEPT, patient_information)
         .collect()
         .write_parquet(OUTPATH + "person.parquet")
     )
+    output_files["person"] = [OUTPATH + "person.parquet"]
+
     (
         procedure_occurrence(CONCEPT, patient_information, procedures)
         .collect()
         .write_parquet(OUTPATH + "procedure_occurrence.parquet")
     )
+    output_files["procedure_occurrence"] = [
+        OUTPATH + "procedure_occurrence.parquet"
+    ]
+
     (
         visit_occurrence(patient_information).sink_parquet(
             OUTPATH + "visit_occurrence.parquet"
         )
     )
+    output_files["visit_occurrence"] = [OUTPATH + "visit_occurrence.parquet"]
 
     # Tables with row indices
     (
@@ -1837,6 +1806,8 @@ if __name__ == "__main__":
         .collect()
         .write_parquet(OUTPATH + "drug_exposure.parquet")
     )
+    output_files["drug_exposure"] = [OUTPATH + "drug_exposure.parquet"]
+
     (
         measurement(
             CONCEPT,
@@ -1845,13 +1816,16 @@ if __name__ == "__main__":
             timeseries_labs,
             timeseries_resp,
             OUTPATH,
+            omop,
+            vars,
         )
         .collect()
         .write_parquet(OUTPATH + "measurement.parquet")
     )
+    output_files["measurement"] = [OUTPATH + "measurement.parquet"]
 
-    ##################
-    # ADD VOCABULARIES
+    # Add vocabularies
+    print("OMOP - Adding vocabularies...")
     VOCABULARIES(
         OUTPATH,
         CONCEPT,
@@ -1864,8 +1838,11 @@ if __name__ == "__main__":
         VOCABULARY,
     )
 
-    ####################
-    # ADD MISSING TABLES
-    # other()
+    # Add missing tables
+    other(OUTPATH)
 
-    print("reprOMOPIZE - done")
+    print("OMOP - Done converting to OMOP CDM.")
+    return output_files
+
+
+__all__ = ["convert_to_omop"]
