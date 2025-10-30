@@ -5,6 +5,7 @@
 # It contains the GlobalVars class that stores globally configured variables and the GlobalHelpers class
 # that contains helper functions that are used across multiple scripts.
 
+from pathlib import Path
 from typing import Optional, Sequence, Union
 
 import polars as pl
@@ -134,8 +135,10 @@ class GlobalHelpers:
 # region GlobalVars
 class GlobalVars(GlobalHelpers):
     def __init__(self, paths=None, DEMO=False) -> None:
-        config_path = "configs/"
-        mapping_path = "mappings/"
+        # Get the package directory (parent of helpers directory)
+        package_dir = Path(__file__).parent.parent
+        config_path = str(package_dir / "configs") + "/"
+        mapping_path = str(package_dir / "mappings") + "/"
         reprodICU_files_path = (
             (
                 paths.reprodICU_files_path

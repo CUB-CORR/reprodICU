@@ -40,13 +40,15 @@ def load_mapping(path: str) -> dict:
 
 
 # Helper functions for parameter processing
-def _normalize_datasets(datasets: Optional[List[str]], demo: bool = False) -> List[str]:
+def _normalize_datasets(
+    datasets: Optional[List[str]], demo: bool = False
+) -> List[str]:
     """Normalize dataset selection.
-    
+
     Args:
         datasets: None for "all", or list of specific datasets
         demo: If True, restrict to demo-compatible datasets
-    
+
     Returns:
         List of dataset names to process
     """
@@ -68,10 +70,10 @@ def _normalize_datasets(datasets: Optional[List[str]], demo: bool = False) -> Li
 
 def _normalize_tables(tables: Optional[List[str]]) -> List[str]:
     """Normalize table selection.
-    
+
     Args:
         tables: None for "all", or list of specific tables
-    
+
     Returns:
         List of table names to build
     """
@@ -88,25 +90,27 @@ def _normalize_tables(tables: Optional[List[str]]) -> List[str]:
 
 def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
     """Normalize timeseries selection.
-    
+
     Args:
         timeseries: None for "all", or list of specific timeseries types
-    
+
     Returns:
         List of timeseries types to extract
     """
-    if timeseries is None or (isinstance(timeseries, list) and "all" in timeseries):
+    if timeseries is None or (
+        isinstance(timeseries, list) and "all" in timeseries
+    ):
         return ["vitals", "labs", "respiratory", "inout"]
     return timeseries
 
 
 def _get_save_path(paths: reprodICUPaths, demo: bool = False) -> str:
     """Get the appropriate save path.
-    
+
     Args:
         paths: reprodICUPaths instance
         demo: If True, use demo path
-    
+
     Returns:
         Path string for saving files
     """
@@ -115,12 +119,12 @@ def _get_save_path(paths: reprodICUPaths, demo: bool = False) -> str:
         if not demo
         else paths.reprodICU_demo_files_path
     )
-    
+
     # Ensure tempfiles directory exists
     tempfiles_path = save_path + "_tempfiles/"
     if not os.path.exists(tempfiles_path):
         os.makedirs(tempfiles_path)
-    
+
     return save_path
 
 
@@ -133,19 +137,19 @@ def build_patient_information(
     demo: bool = False,
     impute: bool = False,
     create_overview: bool = True,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build patient information table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
         impute: Impute missing values if True
         create_overview: Create overview if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -154,13 +158,15 @@ def build_patient_information(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     config_manager = get_config_manager()
-    column_names = config_manager.load_config("COLUMN_NAMES.yaml", user_override=False)
-    
+    column_names = config_manager.load_config(
+        "COLUMN_NAMES.yaml", user_override=False
+    )
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining patient information...")
     patient_info_harmonizer = PatientInformationHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -187,28 +193,25 @@ def build_patient_information(
         .collect()
         .write_parquet(save_path + "patient_information.parquet")
     )
-    
-    return {
-        dataset: [save_path + "patient_information.parquet"]
-        for dataset in DATASETS
-    }
+
+    return [save_path + "patient_information.parquet"]
 
 
 def build_diagnoses(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build diagnoses table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -217,10 +220,10 @@ def build_diagnoses(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining diagnoses...")
     diagnoses_harmonizer = DiagnosesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -236,28 +239,25 @@ def build_diagnoses(
         .collect()
         .write_parquet(save_path + "diagnoses.parquet")
     )
-    
-    return {
-        dataset: [save_path + "diagnoses.parquet"]
-        for dataset in DATASETS
-    }
+
+    return [save_path + "diagnoses.parquet"]
 
 
 def build_procedures(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build procedures table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -266,10 +266,10 @@ def build_procedures(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining procedures...")
     procedures_harmonizer = ProceduresHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -279,28 +279,25 @@ def build_procedures(
         .collect()
         .write_parquet(save_path + "procedures.parquet")
     )
-    
-    return {
-        dataset: [save_path + "procedures.parquet"]
-        for dataset in DATASETS
-    }
+
+    return [save_path + "procedures.parquet"]
 
 
 def build_medications(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build medications table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -309,10 +306,10 @@ def build_medications(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining medications...")
     medication_harmonizer = MedicationHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -327,31 +324,28 @@ def build_medications(
             "prescribed"
         ).sink_parquet(save_path + "medications_prescribed.parquet")
     )
-    
-    return {
-        dataset: [
-            save_path + "medications.parquet",
-            save_path + "medications_prescribed.parquet",
-        ]
-        for dataset in DATASETS
-    }
+
+    return [
+        save_path + "medications.parquet",
+        save_path + "medications_prescribed.parquet",
+    ]
 
 
 def build_microbiology(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build microbiology table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -360,10 +354,10 @@ def build_microbiology(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining microbiology data...")
     microbiology_harmonizer = MicrobiologyHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -373,28 +367,25 @@ def build_microbiology(
         .collect()
         .write_parquet(save_path + "microbiology.parquet")
     )
-    
-    return {
-        dataset: [save_path + "microbiology.parquet"]
-        for dataset in DATASETS
-    }
+
+    return [save_path + "microbiology.parquet"]
 
 
 def build_notes(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build notes table.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
         demo: Use demo data if True
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid dataset selection
@@ -403,23 +394,21 @@ def build_notes(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining notes...")
     notes_harmonizer = NotesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
     )
     (
-        notes_harmonizer.harmonize_notes()
-        .sink_parquet(save_path + "notes.parquet")
+        notes_harmonizer.harmonize_notes().sink_parquet(
+            save_path + "notes.parquet"
+        )
     )
-    
-    return {
-        dataset: [save_path + "notes.parquet"]
-        for dataset in DATASETS
-    }
+
+    return [save_path + "notes.parquet"]
 
 
 def build_timeseries(
@@ -429,9 +418,9 @@ def build_timeseries(
     demo: bool = False,
     impute: bool = False,
     resample: Optional[int] = None,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build timeseries data.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
@@ -439,10 +428,10 @@ def build_timeseries(
         demo: Use demo data if True
         impute: Impute missing values if True
         resample: Resample to specified resolution in seconds, or None
-    
+
     Returns:
         Dict mapping dataset names to output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid selection
@@ -451,14 +440,16 @@ def build_timeseries(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     config_manager = get_config_manager()
-    column_names = config_manager.load_config("COLUMN_NAMES.yaml", user_override=False)
-    
+    column_names = config_manager.load_config(
+        "COLUMN_NAMES.yaml", user_override=False
+    )
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     TIMESERIES = _normalize_timeseries(timeseries)
     save_path = _get_save_path(paths, demo=demo)
-    
+
     print("reprodICU - Combining timeseries...")
     timeseries_harmonizer = TimeseriesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
@@ -466,7 +457,7 @@ def build_timeseries(
     timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=demo)
     timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=demo)
     print("reprodICU - Splitting timeseries...")
-    
+
     timeseries_harmonizer.harmonize_split_timeseries(
         timeseries=TIMESERIES, save_to_default=True
     )
@@ -481,9 +472,7 @@ def build_timeseries(
         )
         .pipe(timeseries_inout_improver.improve_intake_output)
         .collect()
-        .write_parquet(
-            save_path + "timeseries_intakeoutput_balanced.parquet"
-        )
+        .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
     )
 
     if "labs" in TIMESERIES:
@@ -497,9 +486,7 @@ def build_timeseries(
             "Base excess",
         ]
         labs_cols = labs.collect_schema().names()
-        columns_to_winsorize = list(
-            set(labs_cols) - set(columns_to_exclude)
-        )
+        columns_to_winsorize = list(set(labs_cols) - set(columns_to_exclude))
         (
             labs.pipe(
                 winsorizer.winsorize_structs,
@@ -532,21 +519,13 @@ def build_timeseries(
                 resolution_in_seconds=resample,
             )
             .collect()
-            .write_parquet(
-                save_path + "timeseries_vitals_resampled.parquet"
-            )
+            .write_parquet(save_path + "timeseries_vitals_resampled.parquet")
         )
-    
+
     # Collect output files
-    output_files = {
-        dataset: [
-            save_path + f"timeseries_{ts_type}.parquet"
-            for ts_type in TIMESERIES
-        ]
-        for dataset in DATASETS
-    }
-    
-    return output_files
+    return [
+        save_path + f"timeseries_{ts_type}.parquet" for ts_type in TIMESERIES
+    ]
 
 
 def build_all(
@@ -556,9 +535,9 @@ def build_all(
     impute: bool = False,
     resample: Optional[int] = None,
     create_overview: bool = True,
-) -> Dict[str, List[str]]:
+) -> List[str]:
     """Build all tables and timeseries.
-    
+
     Args:
         paths: Optional paths object (uses ConfigManager if None)
         datasets: Datasets to process (uses "all" if None)
@@ -566,10 +545,10 @@ def build_all(
         impute: Impute missing values if True
         resample: Resample to specified resolution in seconds, or None
         create_overview: Create overview if True
-    
+
     Returns:
         Dict mapping dataset names to list of all output file paths
-    
+
     Raises:
         FileNotFoundError: If dataset files not found
         ValueError: If invalid selection
@@ -578,17 +557,19 @@ def build_all(
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
-    
+
     config_manager = get_config_manager()
-    column_names = config_manager.load_config("COLUMN_NAMES.yaml", user_override=False)
-    
+    column_names = config_manager.load_config(
+        "COLUMN_NAMES.yaml", user_override=False
+    )
+
     DATASETS = _normalize_datasets(datasets, demo=demo)
     TABLES = _normalize_tables(None)  # Always build all tables
     TIMESERIES = _normalize_timeseries(None)  # Always build all timeseries
     save_path = _get_save_path(paths, demo=demo)
-    
-    all_output_files = {dataset: [] for dataset in DATASETS}
-    
+
+    all_output_files = []
+
     # Build patient information
     if "patient_information" in TABLES:
         print("reprodICU - Combining patient information...")
@@ -616,10 +597,7 @@ def build_all(
             .collect()
             .write_parquet(save_path + "patient_information.parquet")
         )
-        for dataset in DATASETS:
-            all_output_files[dataset].append(
-                save_path + "patient_information.parquet"
-            )
+        all_output_files.append(save_path + "patient_information.parquet")
 
     # Build diagnoses
     if "diagnoses" in TABLES:
@@ -638,10 +616,7 @@ def build_all(
             .collect()
             .write_parquet(save_path + "diagnoses.parquet")
         )
-        for dataset in DATASETS:
-            all_output_files[dataset].append(
-                save_path + "diagnoses.parquet"
-            )
+        all_output_files.append(save_path + "diagnoses.parquet")
 
     # Build procedures
     if "procedures" in TABLES:
@@ -654,10 +629,7 @@ def build_all(
             .collect()
             .write_parquet(save_path + "procedures.parquet")
         )
-        for dataset in DATASETS:
-            all_output_files[dataset].append(
-                save_path + "procedures.parquet"
-            )
+        all_output_files.append(save_path + "procedures.parquet")
 
     # Build medications
     if "medications" in TABLES:
@@ -675,11 +647,12 @@ def build_all(
                 "prescribed"
             ).sink_parquet(save_path + "medications_prescribed.parquet")
         )
-        for dataset in DATASETS:
-            all_output_files[dataset].extend([
+        all_output_files.extend(
+            [
                 save_path + "medications.parquet",
                 save_path + "medications_prescribed.parquet",
-            ])
+            ]
+        )
 
     # Build microbiology
     if "microbiology" in TABLES:
@@ -692,11 +665,8 @@ def build_all(
             .collect()
             .write_parquet(save_path + "microbiology.parquet")
         )
-        for dataset in DATASETS:
-            all_output_files[dataset].append(
-                save_path + "microbiology.parquet"
-            )
-    
+        all_output_files.append(save_path + "microbiology.parquet")
+
     # Build notes
     if "notes" in TABLES:
         print("reprodICU - Combining notes...")
@@ -704,13 +674,11 @@ def build_all(
             paths=paths, datasets=DATASETS, DEMO=demo
         )
         (
-            notes_harmonizer.harmonize_notes()
-            .sink_parquet(save_path + "notes.parquet")
-        )
-        for dataset in DATASETS:
-            all_output_files[dataset].append(
+            notes_harmonizer.harmonize_notes().sink_parquet(
                 save_path + "notes.parquet"
             )
+        )
+        all_output_files.append(save_path + "notes.parquet")
 
     # Build timeseries
     if "timeseries" in TABLES:
@@ -792,12 +760,13 @@ def build_all(
                     save_path + "timeseries_vitals_resampled.parquet"
                 )
             )
-        
-        for dataset in DATASETS:
-            all_output_files[dataset].extend([
+
+        all_output_files.extend(
+            [
                 save_path + f"timeseries_{ts_type}.parquet"
                 for ts_type in TIMESERIES
-            ])
+            ]
+        )
 
     # Add patient information availability
     if "patient_information" in TABLES:

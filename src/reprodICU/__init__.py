@@ -1,3 +1,10 @@
+__version__ = "0.0.0.1"
+__author__ = "Finn Fassbender"
+__copyright__ = "2024, Institute for Medical Informatics, Charité - Universitätsmedizin Berlin"
+__maintainer__ = "Finn Fassbender"
+__email__ = "finn.fassbender@charite.de"
+__status__ = "Production"
+
 # Description: reprodICU package initialization.
 # Exports public API for building data, extracting concepts, converting formats,
 # and implements lazy dataset loading via __getattr__.
@@ -10,52 +17,66 @@ from typing import Any
 # Add package directory to path for relative imports
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-__version__ = "0.0.0.1"
-__author__ = "Finn Fassbender"
-__copyright__ = "2024, Institute for Medical Informatics, Charité - Universitätsmedizin Berlin"
-__maintainer__ = "Finn Fassbender"
-__email__ = "finn.fassbender@charite.de"
-__status__ = "Production"
-
 from config import (
     ConfigManager,
     DatasetLoader,
     get_config_manager,
     reprodICUPaths,
 )
-from helpers.MAGIC_CONCEPTS import build_magic_concepts
-from interfaces import convert_to_clif, convert_to_meds, convert_to_omop
-from utils import (
-    # Core clinical utilities
-    SOFA,
-    SOFA2,
-    VIS,
-    # SEPSIS
-    SEPSIS,
-    # Data processing utilities
-    PAO2_FIO2_RATIO,
-    URINE_OUTPUT,
-    FIX_WINDOW_BORDERS,
-    # Dataset helpers
-    get_patient_information,
-    get_timeseries_vitals,
-    get_timeseries_labs,
-    get_timeseries_respiratory,
-    get_timeseries_intakeoutput,
-    get_medications,
-    get_microbiology,
-)
 
-from reprodICU.reprodICU import (
-    build_all,
-    build_diagnoses,
-    build_medications,
-    build_microbiology,
-    build_notes,
-    build_patient_information,
-    build_procedures,
-    build_timeseries,
-)
+# Import submodule namespaces - don't import contents directly
+from . import interfaces, utils
+
+
+# Create namespace aliases for cleaner API
+class _BuildNamespace:
+    """Namespace for build functions: reprodICU.build.FUNCTION"""
+
+    def __getattr__(self, name: str) -> Any:
+        """Dynamically load build functions without method binding issues."""
+        from reprodICU import reprodICU
+        from helpers import MAGIC_CONCEPTS
+
+        build_functions = {
+            "build_all": reprodICU.build_all,
+            "build_diagnoses": reprodICU.build_diagnoses,
+            "build_medications": reprodICU.build_medications,
+            "build_microbiology": reprodICU.build_microbiology,
+            "build_notes": reprodICU.build_notes,
+            "build_patient_information": reprodICU.build_patient_information,
+            "build_procedures": reprodICU.build_procedures,
+            "build_timeseries": reprodICU.build_timeseries,
+            "build_magic_concepts": MAGIC_CONCEPTS.build_magic_concepts,
+        }
+
+        if name in build_functions:
+            return build_functions[name]
+
+        raise AttributeError(f"'_BuildNamespace' object has no attribute '{name}'")
+
+
+class _ConvertNamespace:
+    """Namespace for conversion functions: reprodICU.convert.convert_to_X"""
+
+    def __getattr__(self, name: str) -> Any:
+        """Dynamically load conversion functions without method binding issues."""
+        from interfaces import convert_to_clif, convert_to_meds, convert_to_omop
+
+        convert_functions = {
+            "convert_to_clif": convert_to_clif,
+            "convert_to_meds": convert_to_meds,
+            "convert_to_omop": convert_to_omop,
+        }
+
+        if name in convert_functions:
+            return convert_functions[name]
+
+        raise AttributeError(f"'_ConvertNamespace' object has no attribute '{name}'")
+
+
+# Expose namespaces
+build = _BuildNamespace()
+convert = _ConvertNamespace()
 
 # Create global dataset loader instance
 _dataset_loader: DatasetLoader = None
@@ -100,41 +121,11 @@ def __dir__() -> list:
         "ConfigManager",
         "DatasetLoader",
         "reprodICUPaths",
-        # Building functions
-        "build_patient_information",
-        "build_diagnoses",
-        "build_procedures",
-        "build_medications",
-        "build_microbiology",
-        "build_notes",
-        "build_timeseries",
-        "build_all",
-        # Magic concepts
-        "build_magic_concepts",
-        # Conversion functions
-        "convert_to_omop",
-        "convert_to_clif",
-        "convert_to_meds",
-        # Clinical scoring functions (auto-load datasets if not provided)
-        "SOFA",
-        "SOFA2",
-        "VIS",
-        # SEPSIS
-        "SEPSIS",
-        "PAO2_FIO2_RATIO",
-        "URINE_OUTPUT",
-        "FIX_WINDOW_BORDERS",
-        # Dataset loading helpers
-        "get_patient_information",
-        "get_timeseries_vitals",
-        "get_timeseries_labs",
-        "get_timeseries_respiratory",
-        "get_timeseries_intakeoutput",
-        "get_medications",
-        "get_diagnoses",
-        "get_procedures",
-        "get_notes",
-        "get_microbiology",
+        # Submodules (namespaced access)
+        "utils",  # utils.scores.SOFA, utils.clinical.URINE_OUTPUT, etc.
+        "interfaces",  # interfaces.convert_to_omop, interfaces.convert_to_clif, etc.
+        "build",  # build.build_patient_information, build.build_all, etc.
+        "convert",  # convert.convert_to_omop, convert.convert_to_clif, etc.
         # Helper functions
         "available_datasets",
         "dataset_exists",
@@ -212,42 +203,11 @@ __all__ = [
     "ConfigManager",
     "DatasetLoader",
     "reprodICUPaths",
-    # Building functions
-    "build_patient_information",
-    "build_diagnoses",
-    "build_procedures",
-    "build_medications",
-    "build_microbiology",
-    "build_notes",
-    "build_timeseries",
-    "build_all",
-    # Magic concepts
-    "build_magic_concepts",
-    # Conversion functions
-    "convert_to_omop",
-    "convert_to_clif",
-    "convert_to_meds",
-    # Clinical scoring functions (auto-load datasets if not provided)
-    "SOFA",
-    "SOFA2",
-    "VIS",
-    # SEPSIS
-    "SEPSIS",
-    # Data processing utilities
-    "PAO2_FIO2_RATIO",
-    "URINE_OUTPUT",
-    "FIX_WINDOW_BORDERS",
-    # Dataset loading helpers
-    "get_patient_information",
-    "get_timeseries_vitals",
-    "get_timeseries_labs",
-    "get_timeseries_respiratory",
-    "get_timeseries_intakeoutput",
-    "get_medications",
-    "get_diagnoses",
-    "get_procedures",
-    "get_notes",
-    "get_microbiology",
+    # Submodules
+    "utils",
+    "interfaces",
+    "build",
+    "convert",
     # Helper functions
     "available_datasets",
     "dataset_exists",
