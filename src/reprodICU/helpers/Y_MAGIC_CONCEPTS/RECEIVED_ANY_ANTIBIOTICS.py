@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: This script extracts the so called MAGIC CONCEPT "Received ANY Antibiotics" directly from the source datasets.
 # The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package and/or

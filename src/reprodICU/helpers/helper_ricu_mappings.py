@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: This script contains helper functions to get the ricu mappings used in
 # eth-mds/ricu (https://github.com/eth-mds/ricu)

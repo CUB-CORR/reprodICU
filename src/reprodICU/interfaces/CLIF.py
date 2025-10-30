@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: Converts the reprodICU structure to the Common Longitudinal ICU Format (CLIF) structure.
 # The script is based on the CLIF-2.0
@@ -7,16 +7,15 @@
 # Input: reprodICU structure
 # Output: CLIF structure
 
-# Usage: python Z_reprodiCLIF.py
+# Usage: python Z_CLIF.py
 
 # Importing necessary libraries
-import argparse
 import os
-import sys
+from pathlib import Path
 
 import polars as pl
 import yaml
-from helpers.helper_OMOP import Vocabulary
+from config import reprodICUPaths
 from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
 SECONDS_IN_DAY = 86400
@@ -29,11 +28,23 @@ def load_mapping(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-class reprodICUPaths:
-    def __init__(self) -> None:
-        config = load_mapping("configs/paths_local.yaml")
-        for key, value in config.items():
-            setattr(self, key, str(value))
+def _get_mapping_file(filename: str) -> str:
+    """Get absolute path to a mapping file from the package.
+
+    Args:
+        filename: Name of mapping file (e.g., 'CLIF_DataDictionary.csv')
+
+    Returns:
+        Absolute path to the mapping file
+    """
+    # Get the directory where this file is located
+    current_dir = Path(__file__).parent.parent
+    mapping_path = current_dir / "mappings" / filename
+
+    if not mapping_path.exists():
+        raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
+
+    return str(mapping_path)
 
 
 # region helpers
@@ -43,7 +54,8 @@ def _field_level(table_name: str, return_required: bool = False) -> list:
     """
     return a list of fields for the table in the CLIF schema in order
     """
-    field_level_ = pl.read_csv("mappings/CLIF_DataDictionary.csv").filter(
+    field_level_path = _get_mapping_file("CLIF_DataDictionary.csv")
+    field_level_ = pl.read_csv(field_level_path).filter(
         pl.col("cdmTableName") == table_name
     )
     fields = field_level_.select("cdmFieldName").to_series().to_list()
@@ -134,7 +146,7 @@ def _ID_ICUOFFSET(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # This table contains demographic information about the patient that does not
 # vary between hospitalizations.
 def Patient(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprodiCLIF - Patient")
+    print("CLIF - Patient")
     return (
         patient_information.with_columns(
             # patient_id
@@ -194,7 +206,7 @@ def Patient(patient_information: pl.LazyFrame) -> pl.LazyFrame:
                     .then(pl.col("ICU Length of Stay (days)"))
                     .otherwise(
                         pl.col("ICU Length of Stay (days)")
-                        + pl.col("Mortality after ICU discharge (days)")
+                        + pl.col("Mortality After ICU Discharge (days)")
                     )
                 )
             ).alias("death_dttm"),
@@ -220,7 +232,7 @@ def Patient(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # specific to inpatient hospitalizations (including those that begin in the
 # emergency room).
 def Hospitalization(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprodiCLIF - Hospitalization")
+    print("CLIF - Hospitalization")
     return (
         patient_information
         # Select only the first ICU stay for each patient
@@ -330,7 +342,7 @@ def Hospitalization(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 # within the hospital. It also has a hospital_id field to distinguish between
 # different hospitals within a health system.
 def ADT(patient_information: pl.LazyFrame) -> pl.LazyFrame:
-    print("reprodiCLIF - ADT")
+    print("CLIF - ADT")
     return (
         patient_information.with_columns(
             # hospitalization_id
@@ -386,7 +398,7 @@ def ADT(patient_information: pl.LazyFrame) -> pl.LazyFrame:
 def Vitals(
     patient_information: pl.LazyFrame, timeseries_vitals: pl.LazyFrame
 ) -> pl.LazyFrame:
-    print("reprodiCLIF - Vitals")
+    print("CLIF - Vitals")
     return (
         timeseries_vitals.select(
             "Global ICU Stay ID",
@@ -503,7 +515,7 @@ def Vitals(
 def PatientAssessments(
     patient_information: pl.LazyFrame, timeseries_vitals: pl.LazyFrame
 ) -> pl.LazyFrame:
-    print("reprodiCLIF - Patient Assessments")
+    print("CLIF - Patient Assessments")
     return (
         timeseries_vitals.select(
             "Global ICU Stay ID",
@@ -607,7 +619,7 @@ def AdmissionDiagnosis(
     patient_information: pl.LazyFrame,
     diagnoses_harmonizer: DiagnosesHarmonizer,
 ) -> pl.LazyFrame:
-    print("reprodiCLIF - Admission Diagnosis")
+    print("CLIF - Admission Diagnosis")
     return (
         diagnoses_harmonizer.harmonize_diagnoses()
         .join(
@@ -689,7 +701,7 @@ def AdmissionDiagnosis(
 def RespiratorySupport(
     patient_information: pl.LazyFrame, timeseries_resp: pl.LazyFrame
 ) -> pl.LazyFrame:
-    print("reprodiCLIF - Respiratory Support")
+    print("CLIF - Respiratory Support")
     return (
         timeseries_resp.join(
             _ID_ICUOFFSET(patient_information),
@@ -954,12 +966,13 @@ def CodeStatus(
 
 
 # region OTHER
-def other():
+def other(OUTPATH: str) -> None:
     """
     add missing tables to the output directory
     """
+    field_level_path = _get_mapping_file("CLIF_DataDictionary.csv")
     tables = (
-        pl.read_csv("mappings/CLIF_DataDictionary.csv")
+        pl.read_csv(field_level_path)
         .select("cdmTableName")
         .unique(maintain_order=True)
         .to_series()
@@ -972,57 +985,62 @@ def other():
         if ((table + ".parquet") not in os.listdir(OUTPATH)) and (
             (table.upper() + ".parquet") not in os.listdir(OUTPATH)
         ):
-            print(f"reprodiCLIF - adding missing table: {table}")
+            print(f"CLIF - adding missing table: {table}")
             pl.DataFrame().pipe(_add_missing_fields, table).write_parquet(
                 OUTPATH + "clif_" + table.lower() + ".parquet"
             )
 
 
-if __name__ == "__main__":
-    # Parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--input",
-        type=str,
-        help="Path to the reprodICU data",
-        default="../reprodICU_files/",
-    )
-    parser.add_argument(
-        "--vocab",
-        type=str,
-        help="Path to the OMOP vocabulary files",
-        default="../OMOP_vocabulary/",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        help="Path to the output directory",
-        default="../reprodICU_files_CLIF/",
-    )
-    args = parser.parse_args()
+################################################################################
+# Public API Functions
+################################################################################
 
-    # Initialize paths
-    paths = reprodICUPaths()
-    omop = Vocabulary(paths)
-    os.makedirs(args.output, exist_ok=True)
 
-    # Load the reprodICU data
-    INPATH = args.input
-    OUTPATH = args.output
-    VOCABPATH = args.vocab
-    diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
-    medications = pl.scan_parquet(INPATH + "medications.parquet")
+def convert_to_clif(
+    paths=None,
+    demo: bool = False,
+    force: bool = False,
+) -> dict:
+    """Convert reprodICU data to Common Longitudinal ICU Format (CLIF).
+
+    Args:
+        paths: Optional paths object (uses default paths if None)
+        demo: Use demo data if True
+        force: Force recomputation if True (currently unused)
+
+    Returns:
+        Dict mapping CLIF table names to output file paths
+
+    Raises:
+        FileNotFoundError: If input data not found
+        RuntimeError: If conversion fails
+    """
+    if paths is None:
+        paths = reprodICUPaths()
+
+    # Get paths
+    if demo:
+        INPATH = paths.reprodICU_demo_files_path
+        OUTPATH = paths.reprodICU_demo_files_path + "CLIF/"
+    else:
+        INPATH = paths.reprodICU_files_path
+        OUTPATH = paths.reprodICU_files_path + "CLIF/"
+
+    # Create output directory
+    os.makedirs(OUTPATH, exist_ok=True)
+
+    # Load reprodICU data
+    print("CLIF - Loading reprodICU data...")
     patient_information = pl.scan_parquet(
         INPATH + "patient_information.parquet"
     )
-    procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
-    timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
 
     CODE_STATUS = pl.scan_parquet(INPATH + "MAGIC_CONCEPTS/CODE_STATUS.parquet")
 
-    # Setup some helpers instead of using the generated files
+    # Setup helpers
+    print("CLIF - Initializing helpers...")
     diagnoses_harmonizer = DiagnosesHarmonizer(
         paths,
         datasets=[
@@ -1036,87 +1054,82 @@ if __name__ == "__main__":
         ],
     )
 
-    #########
-    # LOADING
-    # Load the OMOP vocabulary files
-    CONCEPT = pl.scan_parquet(VOCABPATH + "CONCEPT.parquet")
-    CONCEPT_RELATIONSHIP = pl.scan_parquet(
-        VOCABPATH + "CONCEPT_RELATIONSHIP.parquet"
-    )
-    CONCEPT_ANCESTOR = pl.scan_parquet(VOCABPATH + "CONCEPT_ANCESTOR.parquet")
-    CONCEPT_CLASS = pl.scan_parquet(VOCABPATH + "CONCEPT_CLASS.parquet")
-    CONCEPT_SYNONYM = pl.scan_parquet(VOCABPATH + "CONCEPT_SYNONYM.parquet")
-    DOMAIN = pl.scan_parquet(VOCABPATH + "DOMAIN.parquet")
-    RELATIONSHIP = pl.scan_parquet(VOCABPATH + "RELATIONSHIP.parquet")
-    VOCABULARY = pl.scan_parquet(VOCABPATH + "VOCABULARY.parquet")
+    # Load OMOP vocabulary files
+    print("CLIF - Loading OMOP vocabulary...")
 
-    ############
-    # CONVERTING
-    # Convert the reprodICU structure to the Common Longitudinal ICU Format (CLIF) structure
+    # Convert to CLIF
+    print("CLIF - Converting to CLIF...")
+    output_files = {}
+
     # General inpatient tables
     (
         Patient(patient_information)
         .collect()
         .write_parquet(OUTPATH + "clif_patient.parquet")
     )
+    output_files["patient"] = [OUTPATH + "clif_patient.parquet"]
+
     (
         Hospitalization(patient_information)
         .collect()
         .write_parquet(OUTPATH + "clif_hospitalization.parquet")
     )
+    output_files["hospitalization"] = [OUTPATH + "clif_hospitalization.parquet"]
+
     (
         ADT(patient_information)
         .collect()
         .write_parquet(OUTPATH + "clif_adt.parquet")
     )
+    output_files["adt"] = [OUTPATH + "clif_adt.parquet"]
+
     (
         Vitals(patient_information, timeseries_vitals).sink_parquet(
             OUTPATH + "clif_vitals.parquet"
         )
     )
-    # (
-    #     Labs(patient_information, timeseries_labs)
-    #     .collect()
-    #     .write_parquet(OUTPATH + "clif_labs.parquet")
-    # )
+    output_files["vitals"] = [OUTPATH + "clif_vitals.parquet"]
+
     (
         PatientAssessments(patient_information, timeseries_vitals).sink_parquet(
             OUTPATH + "clif_patient_assessments.parquet"
         )
     )
+    output_files["patient_assessments"] = [
+        OUTPATH + "clif_patient_assessments.parquet"
+    ]
+
     (
         AdmissionDiagnosis(patient_information, diagnoses_harmonizer)
         .collect()
         .write_parquet(OUTPATH + "clif_admission_diagnosis.parquet")
     )
-    # Medication Admin Intermittent
-    # Medication Orders
+    output_files["admission_diagnosis"] = [
+        OUTPATH + "clif_admission_diagnosis.parquet"
+    ]
+
     (
         RespiratorySupport(patient_information, timeseries_resp).sink_parquet(
             OUTPATH + "clif_respiratory_support.parquet"
         )
     )
-    # Medication Admin Continuous
-    # Position
-    # Dialysis
-    # ECMO/MCS
-    # Intake/Output
-    # Therapy Details
-    # Microbiology Culture
-    # Sensitivity
-    # Microbiology Nonculture
-    # Procedures
-    # Transfusion
+    output_files["respiratory_support"] = [
+        OUTPATH + "clif_respiratory_support.parquet"
+    ]
+
     (
         CodeStatus(patient_information, CODE_STATUS)
         .collect()
         .write_parquet(OUTPATH + "clif_code_status.parquet")
     )
-    # Invasive Hemodynamics
-    # Key ICU orders
+    output_files["code_status"] = [OUTPATH + "clif_code_status.parquet"]
 
-    ####################
-    # ADD MISSING TABLES
-    # other()
+    # Add missing tables
+    print("CLIF - Adding missing tables...")
+    other(OUTPATH)
 
-    print("reprodiCLIF - done")
+    print("CLIF - Done converting to CLIF.")
+    return output_files
+
+
+__all__ = ["convert_to_clif"]

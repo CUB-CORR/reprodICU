@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-10
+# Last modified: 2025-10-30
 
 # Description: This script extracts data from HiRID source files and converts them into a structured format for harmonization.
 

@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-10-28
+# Last modified: 2025-10-30
 
 # Description: This module extracts MAGIC CONCEPTS directly from source datasets.
 # The MAGIC CONCEPTS are a set of concepts based on the ricu R package and prewritten code snippets.

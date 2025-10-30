@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2024-09-05
+# Last modified: 2025-10-30
 
 # Description: Converts the reprodICU structure to the Medical Event Data Standard (MEDS).
 
@@ -9,16 +9,14 @@
 # Usage: python Z_MEDS.py
 
 # Importing necessary libraries
-import argparse
 import json
 import os
 import warnings
-
 from datetime import datetime
 
 import polars as pl
 import yaml
-from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
+from config import reprodICUPaths
 from helpers.helper_OMOP import Vocabulary
 from tqdm import tqdm
 
@@ -59,11 +57,27 @@ def load_mapping(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-class reprodICUPaths:
-    def __init__(self) -> None:
-        config = load_mapping("configs/paths_local.yaml")
-        for key, value in config.items():
-            setattr(self, key, str(value))
+def _get_mapping_file(filename: str) -> str:
+    """Get absolute path to a mapping file from the package.
+
+    Args:
+        filename: Name of mapping file
+
+    Returns:
+        Absolute path to the mapping file
+    """
+    from pathlib import Path
+
+    # Get the directory where this file is located
+    current_dir = Path(
+        __file__
+    ).parent.parent  # Go up from interfaces to package root
+    mapping_path = current_dir / "mappings" / filename
+
+    if not mapping_path.exists():
+        raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
+
+    return str(mapping_path)
 
 
 # region helpers
@@ -87,7 +101,7 @@ def _ID_ICUOFFSET(patient_information: pl.LazyFrame) -> pl.LazyFrame:
                         * pl.col("Pre-ICU Length of Stay (days)")
                     ).dt.time()
                 )
-                + pl.duration(days=1) *pl.col("Pre-ICU Length of Stay (days)")
+                + pl.duration(days=1) * pl.col("Pre-ICU Length of Stay (days)")
             ).alias("icu_admission_dttm"),
         )
         .select(
@@ -428,6 +442,7 @@ def MEDS(
     timeseries_resp: pl.LazyFrame,
     timeseries_inout: pl.LazyFrame,
     omop: Vocabulary,
+    OUTPATH: str,
 ) -> pl.LazyFrame:
     """_summary_
 
@@ -513,90 +528,59 @@ def MEDS(
         )
 
 
-# region main
-if __name__ == "__main__":
-    # Parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--input",
-        type=str,
-        help="Path to the reprodICU data",
-        default="../reprodICU_files/",
-    )
-    parser.add_argument(
-        "--vocab",
-        type=str,
-        help="Path to the OMOP vocabulary files",
-        default="../OMOP_vocabulary/",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        help="Path to the output directory",
-        default="../reprodICU_files_MEDS/",
-    )
-    args = parser.parse_args()
+################################################################################
+# Public API Functions
+################################################################################
 
-    # Create Output subdirectories
-    os.makedirs(args.output, exist_ok=True)
-    os.makedirs(args.output + "data/", exist_ok=True)
-    os.makedirs(args.output + "metadata/", exist_ok=True)
 
-    # Initialize paths
-    paths = reprodICUPaths()
+def convert_to_meds(
+    paths=None,
+    demo: bool = False,
+    force: bool = False,
+) -> dict:
+    """Convert reprodICU data to Medical Event Data Standard (MEDS) format.
+
+    Args:
+        paths: Optional paths object (uses default paths if None)
+        demo: Use demo data if True
+        force: Force recomputation if True (currently unused)
+
+    Returns:
+        Dict mapping MEDS output to shard file paths
+
+    Raises:
+        FileNotFoundError: If input data not found
+        RuntimeError: If conversion fails
+    """
+    if paths is None:
+        paths = reprodICUPaths()
+
+    # Get paths
+    if demo:
+        INPATH = paths.reprodICU_demo_files_path
+        OUTPATH = paths.reprodICU_demo_files_path + "MEDS/"
+    else:
+        INPATH = paths.reprodICU_files_path
+        OUTPATH = paths.reprodICU_files_path + "MEDS/"
+
+    # Create output subdirectories
+    os.makedirs(OUTPATH, exist_ok=True)
+    os.makedirs(OUTPATH + "data/", exist_ok=True)
+    os.makedirs(OUTPATH + "metadata/", exist_ok=True)
+
+    # Initialize helpers
     omop = Vocabulary(paths)
-    os.makedirs(args.output, exist_ok=True)
 
     # Load the reprodICU data
-    INPATH = args.input
-    OUTPATH = args.output
-    VOCABPATH = args.vocab
-    diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
-    medications = pl.scan_parquet(INPATH + "medications.parquet")
-    patient_information = pl.scan_parquet(
-        INPATH + "patient_information.parquet"
-    )
-    procedures = pl.scan_parquet(INPATH + "procedures.parquet")
+    print("MEDS - Loading reprodICU data...")
+    patient_information = pl.scan_parquet(INPATH + "patient_information.parquet") # fmt: skip
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
-    timeseries_inout = pl.scan_parquet(
-        INPATH + "timeseries_intakeoutput_balanced.parquet"
-    )
+    timeseries_inout = pl.scan_parquet(INPATH + "timeseries_intakeoutput_balanced.parquet") # fmt: skip
 
-    CODE_STATUS = pl.scan_parquet(INPATH + "MAGIC_CONCEPTS/CODE_STATUS.parquet")
-
-    # Setup some helpers instead of using the generated files
-    diagnoses_harmonizer = DiagnosesHarmonizer(
-        paths,
-        datasets=[
-            "eICU",
-            "HiRID",
-            "MIMIC3",
-            "MIMIC4",
-            "NWICU",
-            "SICdb",
-            "UMCdb",
-        ],
-    )
-
-    #########
-    # LOADING
-    # Load the OMOP vocabulary files
-    CONCEPT = pl.scan_parquet(VOCABPATH + "CONCEPT.parquet")
-    CONCEPT_RELATIONSHIP = pl.scan_parquet(
-        VOCABPATH + "CONCEPT_RELATIONSHIP.parquet"
-    )
-    CONCEPT_ANCESTOR = pl.scan_parquet(VOCABPATH + "CONCEPT_ANCESTOR.parquet")
-    CONCEPT_CLASS = pl.scan_parquet(VOCABPATH + "CONCEPT_CLASS.parquet")
-    CONCEPT_SYNONYM = pl.scan_parquet(VOCABPATH + "CONCEPT_SYNONYM.parquet")
-    DOMAIN = pl.scan_parquet(VOCABPATH + "DOMAIN.parquet")
-    RELATIONSHIP = pl.scan_parquet(VOCABPATH + "RELATIONSHIP.parquet")
-    VOCABULARY = pl.scan_parquet(VOCABPATH + "VOCABULARY.parquet")
-
-    ###########
-    # FILTERING
     # Filter for first ICU stay
+    print("MEDS - Filtering for first ICU stay...")
     patient_information = (
         patient_information.filter(
             pl.col("ICU Stay Sequential Number (per Person ID)").eq(1)
@@ -606,20 +590,24 @@ if __name__ == "__main__":
         .cast({"subject_id": pl.Int64})
     )
 
-    ############
-    # CONVERTING
     # Convert the reprodICU structure to the Medical Event Data Standard (MEDS)
+    print("MEDS - Converting to MEDS format...")
     create_dataset_json(OUTPATH)
     MEDS(
         patient_information,
-        # diagnoses,
-        # medications,
-        # procedures,
         timeseries_vitals,
         timeseries_labs,
         timeseries_resp,
         timeseries_inout,
         omop,
+        OUTPATH,
     )
 
-    print("MEDS - done")
+    print("MEDS - Done converting to MEDS.")
+    return {
+        "data": [f"{OUTPATH}data/shard_*.parquet"],
+        "metadata": [f"{OUTPATH}metadata/dataset.json"],
+    }
+
+
+__all__ = ["convert_to_meds"]
