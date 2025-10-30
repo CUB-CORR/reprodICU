@@ -2,6 +2,7 @@
 Database setup and data preparation functions.
 
 Handles encoding fixes, unpacking, and header normalization for raw source data.
+Provides setup utilities for common data sources used in the reprodICU pipeline.
 """
 
 import csv
@@ -15,27 +16,36 @@ from pathlib import Path
 from config import get_config_manager, reprodICUPaths
 
 
+# region setup UMCdb
 def setup_umcdb(config_manager=None, paths=None):
     """
     Fix UMCdb CSV encoding issues.
 
     UMCdb raw data files come in unicode-escape encoding and need to be
     converted to UTF-8. This function:
-    1. Checks if CSV files exist in the umcdb_source folder
-    2. Verifies they are in unicode-escape encoding
-    3. Re-encodes them to UTF-8 in an "ENCODINGFIX" subfolder
-    4. Updates the local config path to point to the ENCODINGFIX folder
+        1. Checks if CSV files exist in the umcdb_source folder
+        2. Verifies they are in unicode-escape encoding
+        3. Re-encodes them to UTF-8 in an "ENCODINGFIX" subfolder
+        4. Updates the local config path to point to the ENCODINGFIX folder
 
-    Args:
-        config_manager: Optional ConfigManager instance (uses get_config_manager if None)
-        paths: Optional reprodICUPaths instance
+    Arguments
+    ---------
+        config_manager : ConfigManager, optional
+            Configuration manager instance. Uses get_config_manager() if None.
+        paths : reprodICUPaths, optional
+            Paths object. Created from config_manager if None.
 
-    Returns:
-        Path to the ENCODINGFIX folder
+    Returns
+    -------
+        str
+            Path to the ENCODINGFIX folder
 
-    Raises:
-        FileNotFoundError: If umcdb_source folder or CSV files not found
-        RuntimeError: If encoding conversion fails
+    Raises
+    ------
+        FileNotFoundError
+            If umcdb_source folder or CSV files not found
+        RuntimeError
+            If encoding conversion fails
     """
     if config_manager is None:
         config_manager = get_config_manager()
@@ -101,35 +111,56 @@ def setup_umcdb(config_manager=None, paths=None):
 
             with zipfile.ZipFile(zip_file, "r") as zf:
                 # Find the numericitems.csv entry (allow for possible subfolders)
-                members = [name for name in zf.namelist() if name.endswith("numericitems.csv")]
+                members = [
+                    name
+                    for name in zf.namelist()
+                    if name.endswith("numericitems.csv")
+                ]
                 if not members:
-                    raise FileNotFoundError(f"numericitems.csv not found inside {zip_file}")
+                    raise FileNotFoundError(
+                        f"numericitems.csv not found inside {zip_file}"
+                    )
                 member = members[0]
 
-                with zf.open(member) as binary_in, gzip.open(output_gz_file, "wt", encoding="utf-8") as outfile:
+                with (
+                    zf.open(member) as binary_in,
+                    gzip.open(
+                        output_gz_file, "wt", encoding="utf-8"
+                    ) as outfile,
+                ):
                     # Wrap the binary stream to read text with the original encoding
-                    with io.TextIOWrapper(binary_in, encoding="unicode-escape", errors="ignore") as infile:
-                        print("  Converting numericitems.csv from numericitems.zip...")
+                    with io.TextIOWrapper(
+                        binary_in, encoding="unicode-escape", errors="ignore"
+                    ) as infile:
+                        print(
+                            "  Converting numericitems.csv from numericitems.zip..."
+                        )
                         reader = csv.reader(infile)
                         writer = csv.writer(outfile)
                         for row in reader:
                             writer.writerow(row)
         except Exception as e:
-            raise RuntimeError(f"Failed to convert numericitems.csv from {zip_file}: {e}")
+            raise RuntimeError(
+                f"Failed to convert numericitems.csv from {zip_file}: {e}"
+            )
 
     print("-> UMCdb encoding conversion complete")
-    
+
     # Update configuration to point to ENCODINGFIX folder
     config_manager.update_config(
         "PATHS.yaml",
         {"umcdb_source_path": str(encoding_fix_path)},
-        user_override=True
+        user_override=True,
     )
     print(f"  Updated config: umcdb_source_path -> {encoding_fix_path}")
-    
+
     return str(encoding_fix_path)
 
 
+# endregion
+
+
+# region setup SICdb
 def setup_sicdb(config_manager=None, paths=None):
     """
     Unpack SICdb raw data.
@@ -139,18 +170,26 @@ def setup_sicdb(config_manager=None, paths=None):
     unpacks it into individual float values in data_float_m.csv.gz.
 
     Slighly modified from source:
-    https://github.com/nrodemund/sicdb/blob/ea9210169777c13a4732629d4e2979de0d1d9c37/Scripts/Unpack%20raw%20data/unpack.py
+        https://github.com/nrodemund/sicdb/blob/ea9210169777c13a4732629d4e2979de0d1d9c37/Scripts/Unpack%20raw%20data/unpack.py
 
-    Args:
-        config_manager: Optional ConfigManager instance (uses get_config_manager if None)
-        paths: Optional reprodICUPaths instance
+    Arguments
+    ---------
+        config_manager : ConfigManager, optional
+            Configuration manager instance. Uses get_config_manager() if None.
+        paths : reprodICUPaths, optional
+            Paths object. Created from config_manager if None.
 
-    Returns:
-        Path to the unpacked data folder
+    Returns
+    -------
+        str
+            Path to the unpacked data folder
 
-    Raises:
-        FileNotFoundError: If sicdb_source folder or required files not found
-        RuntimeError: If unpacking fails
+    Raises
+    ------
+        FileNotFoundError
+            If sicdb_source folder or required files not found
+        RuntimeError
+            If unpacking fails
     """
     if config_manager is None:
         config_manager = get_config_manager()
@@ -228,27 +267,39 @@ def setup_sicdb(config_manager=None, paths=None):
         os.chdir(original_dir)
 
 
+# endregion
+
+
+# region setup MIMIC-III demo
 def setup_mimic3_demo(config_manager=None, paths=None):
     """
     Fix MIMIC-III demo data headers.
 
     MIMIC-III demo data comes with lowercase column headers that need to be
     converted to uppercase. This function:
-    1. Checks if CSV files exist in the mimic3_demo_source folder
-    2. Converts the first line (header) to uppercase
-    3. Saves files to a "HEADERFIX" subfolder
-    4. Updates the local config path to point to the HEADERFIX folder
+        1. Checks if CSV files exist in the mimic3_demo_source folder
+        2. Converts the first line (header) to uppercase
+        3. Saves files to a "HEADERFIX" subfolder
+        4. Updates the local config path to point to the HEADERFIX folder
 
-    Args:
-        config_manager: Optional ConfigManager instance (uses get_config_manager if None)
-        paths: Optional reprodICUPaths instance
+    Arguments
+    ---------
+        config_manager : ConfigManager, optional
+            Configuration manager instance. Uses get_config_manager() if None.
+        paths : reprodICUPaths, optional
+            Paths object. Created from config_manager if None.
 
-    Returns:
-        Path to the HEADERFIX folder
+    Returns
+    -------
+        str
+            Path to the HEADERFIX folder
 
-    Raises:
-        FileNotFoundError: If mimic3_demo_source folder or CSV files not found
-        RuntimeError: If header fixing fails
+    Raises
+    ------
+        FileNotFoundError
+            If mimic3_demo_source folder or CSV files not found
+        RuntimeError
+            If header fixing fails
     """
     if config_manager is None:
         config_manager = get_config_manager()
@@ -316,13 +367,16 @@ def setup_mimic3_demo(config_manager=None, paths=None):
         raise FileNotFoundError(f"No CSV files found in {source_path}")
 
     print(f"-> MIMIC-III demo header fixing complete ({csv_count} files)")
-    
+
     # Update configuration to point to HEADERFIX folder
     config_manager.update_config(
         "PATHS.yaml",
         {"mimic3_demo_source_path": str(headerfix_path)},
-        user_override=True
+        user_override=True,
     )
     print(f"  Updated config: mimic3_demo_source_path -> {headerfix_path}")
-    
+
     return str(headerfix_path)
+
+
+# endregion

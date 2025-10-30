@@ -95,7 +95,7 @@ def ELIXHAUSER(
     diagnoses: Optional[pl.LazyFrame] = None,
     patient_information: Optional[pl.LazyFrame] = None,
     return_categories: bool = False,
-):
+) -> pl.DataFrame:
     """
     Calculate Elixhauser comorbidity index using Quan implementation with van Walraven weights.
 
@@ -129,7 +129,7 @@ def CHARLSON(
     diagnoses: Optional[pl.LazyFrame] = None,
     patient_information: Optional[pl.LazyFrame] = None,
     return_categories: bool = False,
-):
+) -> pl.DataFrame:
     """
     Calculate Charlson comorbidity index using Quan implementation.
 
@@ -164,7 +164,7 @@ def GAGNE(
     diagnoses: Optional[pl.LazyFrame] = None,
     patient_information: Optional[pl.LazyFrame] = None,
     return_categories: bool = False,
-):
+) -> pl.DataFrame:
     """
     Calculate Gagne comorbidity index (combined implementation).
 

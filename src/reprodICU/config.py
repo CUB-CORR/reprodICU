@@ -1,8 +1,14 @@
 # Author: Finn Fassbender
 # Last modified: 2025-10-30
 
-# Description: Configuration management for reprodICU package.
-# Handles loading of config files, user-editable paths, and lazy loading of datasets.
+"""
+Configuration management for reprodICU package.
+
+Handles loading of YAML configuration files, user-editable paths, and lazy
+loading of datasets and concepts from parquet files. Provides ConfigManager
+for configuration management, DatasetLoader for lazy dataset access, and
+reprodICUPaths for convenient access to configured directory paths.
+"""
 
 import shutil
 from importlib.resources import files
@@ -15,7 +21,13 @@ import yaml
 
 # region ConfigManager
 class ConfigManager:
-    """Manages reprodICU configuration with user overrides."""
+    """
+    Manages reprodICU configuration with user overrides.
+
+    Handles loading of YAML configuration files from both package defaults
+    and user-editable configurations in ~/.reprodICU/. Supports caching
+    for performance and atomic updates to configuration files.
+    """
 
     PACKAGE_NAME = "reprodICU"
     CONFIG_DIR_NAME = ".reprodICU"
@@ -30,7 +42,12 @@ class ConfigManager:
         self._ensure_user_config_dir()
 
     def _ensure_user_config_dir(self) -> None:
-        """Create user config directory and copy templates if needed."""
+        """
+        Create user config directory and copy templates if needed.
+
+        Creates ~/.reprodICU/ directory and copies PATHS.yaml.template
+        to PATHS.yaml if it doesn't exist, allowing users to customize paths.
+        """
         self.user_config_dir.mkdir(parents=True, exist_ok=True)
 
         # Copy PATHS.yaml template if it doesn't exist
@@ -48,12 +65,22 @@ class ConfigManager:
         """
         Get path to a config file.
 
-        Args:
-            config_name: Name of config file (e.g., 'COLUMN_NAMES.yaml', 'PATHS.yaml')
-            user_override: If True, prefer user config over package default
+        Arguments
+        ---------
+            config_name : str
+                Name of config file (e.g., 'COLUMN_NAMES.yaml', 'PATHS.yaml')
+            user_override : bool
+                If True, prefer user config over package default
 
-        Returns:
-            Path to the config file
+        Returns
+        -------
+            Path
+                Path to the config file
+
+        Raises
+        ------
+            FileNotFoundError
+                If config file not found in user or package directories
         """
         user_path = self.user_config_dir / config_name
         package_path = self.package_config_dir / config_name
@@ -72,7 +99,29 @@ class ConfigManager:
     def load_config(
         self, config_name: str, user_override: bool = True
     ) -> Dict[str, Any]:
-        """Load YAML config file."""
+        """
+        Load YAML config file.
+
+        Loads configuration from user or package directory, with results
+        cached for performance. Uses user configuration by default if it exists.
+
+        Arguments
+        ---------
+            config_name : str
+                Name of config file to load
+            user_override : bool
+                If True, prefer user config over package default
+
+        Returns
+        -------
+            dict
+                Parsed YAML configuration
+
+        Raises
+        ------
+            FileNotFoundError
+                If config file not found
+        """
         if config_name in self._cached_configs:
             return self._cached_configs[config_name]
 
@@ -95,13 +144,22 @@ class ConfigManager:
         """
         Update configuration values and save to file.
 
-        Args:
-            config_name: Name of config file (e.g., 'PATHS.yaml')
-            updates: Dictionary of key-value pairs to update
-            user_override: If True, save to user config, otherwise package config
+        Updates configuration values atomically and clears cache to ensure
+        subsequent loads reflect the new values.
 
-        Raises:
-            FileNotFoundError: If config file not found
+        Arguments
+        ---------
+            config_name : str
+                Name of config file (e.g., 'PATHS.yaml')
+            updates : dict
+                Dictionary of key-value pairs to update
+            user_override : bool
+                If True, save to user config, otherwise package config
+
+        Raises
+        ------
+            FileNotFoundError
+                If config file not found
         """
         config_path = self.get_config_path(
             config_name, user_override=user_override
@@ -121,11 +179,22 @@ class ConfigManager:
         self._cached_configs.pop(config_name, None)
 
     def get_user_config_dir(self) -> Path:
-        """Return the user config directory."""
+        """
+        Return the user config directory.
+
+        Returns
+        -------
+            Path
+                Path to ~/.reprodICU/ directory
+        """
         return self.user_config_dir
 
     def print_config_info(self) -> None:
-        """Print information about config locations."""
+        """
+        Print information about config locations.
+
+        Displays package and user configuration directory paths for debugging.
+        """
         print(f"Package config directory: {self.package_config_dir}")
         print(f"User config directory: {self.user_config_dir}")
 
@@ -135,7 +204,13 @@ class ConfigManager:
 
 # region DatasetLoader
 class DatasetLoader:
-    """Lazy-loads parquet datasets from configured paths."""
+    """
+    Lazy-loads parquet datasets and concepts from configured paths.
+
+    Provides efficient lazy access to clinical datasets and pre-computed
+    concepts using Polars LazyFrame. Supports demo/full mode switching and
+    automatic caching for performance.
+    """
 
     # Map attribute names to parquet filenames
     DATASET_MAPPING = {
@@ -191,19 +266,48 @@ class DatasetLoader:
     } # fmt: skip
 
     def __init__(self, config_manager: ConfigManager):
+        """
+        Initialize the dataset loader.
+
+        Arguments
+        ---------
+            config_manager : ConfigManager
+                Configuration manager for accessing paths
+        """
         self.config_manager = config_manager
         self._lazy_cache: Dict[str, pl.LazyFrame] = {}
         self.demo_mode = False
 
     def set_demo_mode(self, enabled: bool = True) -> None:
-        """Switch between demo and full dataset mode."""
+        """
+        Switch between demo and full dataset mode.
+
+        Clears cache when switching to ensure fresh data loads.
+
+        Arguments
+        ---------
+            enabled : bool
+                If True, use demo-sized datasets; otherwise full datasets
+        """
         self.demo_mode = enabled
         self._lazy_cache.clear()  # Clear cache when switching modes
         mode = "DEMO" if enabled else "FULL"
         print(f"!! Switched to {mode} mode !!")
 
     def get_data_path(self) -> Path:
-        """Get the base data path based on current mode."""
+        """
+        Get the base data path based on current mode.
+
+        Returns
+        -------
+            Path
+                Data directory path
+
+        Raises
+        ------
+            ValueError
+                If data paths not configured in PATHS.yaml
+        """
         config = self.config_manager.load_config(
             "PATHS.yaml", user_override=True
         )
@@ -223,12 +327,31 @@ class DatasetLoader:
         return Path(base_path)
 
     def get_concepts_path(self) -> Path:
-        """Get the base data path based on current mode."""
+        """
+        Get the base path for pre-computed concepts.
+
+        Returns
+        -------
+            Path
+                MAGIC_CONCEPTS directory path
+        """
         base_path = self.get_data_path()
         return Path(base_path / "MAGIC_CONCEPTS")
 
     def dataset_exists(self, dataset_name: str) -> bool:
-        """Check if a dataset file exists."""
+        """
+        Check if a dataset file exists.
+
+        Arguments
+        ---------
+            dataset_name : str
+                Name of the dataset to check
+
+        Returns
+        -------
+            bool
+                True if dataset exists, False otherwise
+        """
         if dataset_name not in self.DATASET_MAPPING:
             return False
 
@@ -239,7 +362,24 @@ class DatasetLoader:
             return False
 
     def get_dataset_path(self, dataset_name: str) -> Path:
-        """Get the full path to a dataset file."""
+        """
+        Get the full path to a dataset file.
+
+        Arguments
+        ---------
+            dataset_name : str
+                Name of the dataset
+
+        Returns
+        -------
+            Path
+                Full path to the dataset file
+
+        Raises
+        ------
+            ValueError
+                If dataset name not found in DATASET_MAPPING
+        """
         if dataset_name not in self.DATASET_MAPPING:
             raise ValueError(
                 f"Unknown dataset: '{dataset_name}'. "
@@ -250,7 +390,14 @@ class DatasetLoader:
         return self.get_data_path() / filename
 
     def available_datasets(self) -> list:
-        """Get list of available dataset names (ones that actually exist)."""
+        """
+        Get list of available dataset names (ones that actually exist).
+
+        Returns
+        -------
+            list
+                Names of existing datasets
+        """
         available = []
         for dataset_name in sorted(self.DATASET_MAPPING.keys()):
             if self.dataset_exists(dataset_name):
@@ -258,7 +405,19 @@ class DatasetLoader:
         return available
 
     def concept_exists(self, concept_name: str) -> bool:
-        """Check if a concept file exists."""
+        """
+        Check if a concept file exists.
+
+        Arguments
+        ---------
+            concept_name : str
+                Name of the concept to check
+
+        Returns
+        -------
+            bool
+                True if concept exists, False otherwise
+        """
         if concept_name not in self.CONCEPT_MAPPING:
             return False
 
@@ -269,7 +428,24 @@ class DatasetLoader:
             return False
 
     def get_concept_path(self, concept_name: str) -> Path:
-        """Get the full path to a concept file."""
+        """
+        Get the full path to a concept file.
+
+        Arguments
+        ---------
+            concept_name : str
+                Name of the concept
+
+        Returns
+        -------
+            Path
+                Full path to the concept file
+
+        Raises
+        ------
+            ValueError
+                If concept name not found in CONCEPT_MAPPING
+        """
         if concept_name not in self.CONCEPT_MAPPING:
             raise ValueError(
                 f"Unknown concept: '{concept_name}'. "
@@ -280,7 +456,14 @@ class DatasetLoader:
         return self.get_concepts_path() / filename
 
     def available_concepts(self) -> list:
-        """Get list of available concept names (ones that actually exist)."""
+        """
+        Get list of available concept names (ones that actually exist).
+
+        Returns
+        -------
+            list
+                Names of existing concepts
+        """
         available = []
         for concept_name in sorted(self.CONCEPT_MAPPING.keys()):
             if self.concept_exists(concept_name):
@@ -291,12 +474,25 @@ class DatasetLoader:
         """
         Lazy-load a dataset as a Polars LazyFrame.
 
-        Returns:
-            pl.LazyFrame: Scanned parquet file (lazy, not loaded into memory)
+        Returns dataset without loading into memory using lazy evaluation.
+        Results are cached for performance.
 
-        Raises:
-            FileNotFoundError: If dataset file doesn't exist
-            ValueError: If dataset name unknown
+        Arguments
+        ---------
+            dataset_name : str
+                Name of the dataset to load
+
+        Returns
+        -------
+            pl.LazyFrame
+                Scanned parquet file (lazy, not loaded into memory)
+
+        Raises
+        ------
+            FileNotFoundError
+                If dataset file doesn't exist
+            ValueError
+                If dataset name unknown
         """
         # Return from cache if already loaded
         if dataset_name in self._lazy_cache:
@@ -324,7 +520,21 @@ class DatasetLoader:
         return lazy_frame
 
     def reload_dataset(self, dataset_name: str) -> pl.LazyFrame:
-        """Reload a dataset, clearing the cache."""
+        """
+        Reload a dataset, clearing the cache.
+
+        Forces a fresh load of the specified dataset, discarding any cached version.
+
+        Arguments
+        ---------
+            dataset_name : str
+                Name of the dataset to reload
+
+        Returns
+        -------
+            pl.LazyFrame
+                Fresh lazy-loaded dataset
+        """
         if dataset_name in self._lazy_cache:
             del self._lazy_cache[dataset_name]
         return self.load_dataset(dataset_name)
@@ -333,12 +543,25 @@ class DatasetLoader:
         """
         Lazy-load a concept as a Polars LazyFrame.
 
-        Returns:
-            pl.LazyFrame: Scanned parquet file (lazy, not loaded into memory)
+        Returns concept without loading into memory using lazy evaluation.
+        Results are cached for performance.
 
-        Raises:
-            FileNotFoundError: If concept file doesn't exist
-            ValueError: If concept name unknown
+        Arguments
+        ---------
+            concept_name : str
+                Name of the concept to load
+
+        Returns
+        -------
+            pl.LazyFrame
+                Scanned parquet file (lazy, not loaded into memory)
+
+        Raises
+        ------
+            FileNotFoundError
+                If concept file doesn't exist
+            ValueError
+                If concept name unknown
         """
         # Return from cache if already loaded
         if concept_name in self._lazy_cache:
@@ -366,13 +589,32 @@ class DatasetLoader:
         return lazy_frame
 
     def reload_concept(self, concept_name: str) -> pl.LazyFrame:
-        """Reload a concept, clearing the cache."""
+        """
+        Reload a concept, clearing the cache.
+
+        Forces a fresh load of the specified concept, discarding any cached version.
+
+        Arguments
+        ---------
+            concept_name : str
+                Name of the concept to reload
+
+        Returns
+        -------
+            pl.LazyFrame
+                Fresh lazy-loaded concept
+        """
         if concept_name in self._lazy_cache:
             del self._lazy_cache[concept_name]
         return self.load_concept(concept_name)
 
     def clear_cache(self) -> None:
-        """Clear all cached datasets."""
+        """
+        Clear all cached datasets.
+
+        Removes all cached datasets from memory, forcing fresh loads
+        on next access.
+        """
         self._lazy_cache.clear()
         print("-> Dataset cache cleared")
 
@@ -380,25 +622,36 @@ class DatasetLoader:
 # endregion
 
 
+# region reprodICUPaths
+
+
 class reprodICUPaths:
-    """Load and store reprodICU paths from user configuration.
+    """
+    Load and store reprodICU paths from user configuration.
 
-    This class loads paths from PATHS.yaml and provides convenient
-    access to all configured directories for data, output, etc.
-
-    Attributes are dynamically set from the configuration file.
+    Loads configured directory paths from PATHS.yaml and provides convenient
+    access to all data, output, and configuration directories. Attributes
+    are dynamically set from the configuration file.
     """
 
     def __init__(self, config_manager=None) -> None:
-        """Initialize paths from user configuration.
+        """
+        Initialize paths from user configuration.
 
-        Args:
-            config_manager: Optional ConfigManager instance. If not provided,
-                          a global instance will be created.
+        Loads all paths from PATHS.yaml and sets them as instance attributes
+        for convenient access throughout the package.
 
-        Raises:
-            FileNotFoundError: If PATHS.yaml configuration is not found
-            ValueError: If required paths are missing from configuration
+        Arguments
+        ---------
+            config_manager : ConfigManager, optional
+                Configuration manager instance. Uses get_config_manager() if None.
+
+        Raises
+        ------
+            FileNotFoundError
+                If PATHS.yaml configuration is not found
+            ValueError
+                If required paths are missing from configuration
         """
         if config_manager is None:
             config_manager = get_config_manager()
@@ -408,16 +661,13 @@ class reprodICUPaths:
             setattr(self, key, str(value))
 
     def validate_paths(self) -> list:
-        """Validate that all configured paths exist.
+        """
+        Validate that all configured paths exist.
 
-        Returns:
-            List of tuples (key, path) for paths that don't exist
-
-        Example:
-            >>> paths = reprodICUPaths()
-            >>> missing = paths.validate_paths()
-            >>> if missing:
-            ...     print(f"Missing paths: {missing}")
+        Returns
+        -------
+            list
+                List of tuples (key, path) for paths that don't exist
         """
         missing_paths = []
         for key, value in self.__dict__.items():
@@ -426,13 +676,26 @@ class reprodICUPaths:
         return missing_paths
 
 
-# Global config manager instance
+# endregion
+
+
+# region Global configuration instance
 _config_manager: Optional[ConfigManager] = None
 
 
 def get_config_manager() -> ConfigManager:
-    """Get or create the global config manager."""
+    """
+    Get or create the global config manager.
+
+    Returns
+    -------
+        ConfigManager
+            Singleton configuration manager instance
+    """
     global _config_manager
     if _config_manager is None:
         _config_manager = ConfigManager()
     return _config_manager
+
+
+# endregion

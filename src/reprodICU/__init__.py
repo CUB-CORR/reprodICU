@@ -30,10 +30,35 @@ from . import interfaces, utils
 
 # Create namespace aliases for cleaner API
 class _BuildNamespace:
-    """Namespace for build functions: reprodICU.build.FUNCTION"""
+    """
+    Namespace for build functions: reprodICU.build.FUNCTION
+
+    Access build functions to construct datasets from raw data sources.
+    """
+
+    _FUNCTIONS = {
+        "build_all": None,
+        "build_diagnoses": None,
+        "build_medications": None,
+        "build_microbiology": None,
+        "build_notes": None,
+        "build_patient_information": None,
+        "build_procedures": None,
+        "build_timeseries": None,
+        "build_magic_concepts": None,
+    }
+
+    def __dir__(self) -> list:
+        """Enable auto-completion for build functions."""
+        return sorted(self._FUNCTIONS.keys())
 
     def __getattr__(self, name: str) -> Any:
         """Dynamically load build functions without method binding issues."""
+        if name not in self._FUNCTIONS:
+            raise AttributeError(
+                f"'_BuildNamespace' object has no attribute '{name}'"
+            )
+
         from reprodICU import reprodICU
         from helpers import MAGIC_CONCEPTS
 
@@ -49,17 +74,33 @@ class _BuildNamespace:
             "build_magic_concepts": MAGIC_CONCEPTS.build_magic_concepts,
         }
 
-        if name in build_functions:
-            return build_functions[name]
-
-        raise AttributeError(f"'_BuildNamespace' object has no attribute '{name}'")
+        return build_functions[name]
 
 
 class _ConvertNamespace:
-    """Namespace for conversion functions: reprodICU.convert.convert_to_X"""
+    """
+    Namespace for conversion functions: reprodICU.convert.convert_to_X
+
+    Access conversion functions to transform data into standard formats.
+    """
+
+    _FUNCTIONS = {
+        "convert_to_clif": None,
+        "convert_to_meds": None,
+        "convert_to_omop": None,
+    }
+
+    def __dir__(self) -> list:
+        """Enable auto-completion for convert functions."""
+        return sorted(self._FUNCTIONS.keys())
 
     def __getattr__(self, name: str) -> Any:
         """Dynamically load conversion functions without method binding issues."""
+        if name not in self._FUNCTIONS:
+            raise AttributeError(
+                f"'_ConvertNamespace' object has no attribute '{name}'"
+            )
+
         from interfaces import convert_to_clif, convert_to_meds, convert_to_omop
 
         convert_functions = {
@@ -68,17 +109,33 @@ class _ConvertNamespace:
             "convert_to_omop": convert_to_omop,
         }
 
-        if name in convert_functions:
-            return convert_functions[name]
-
-        raise AttributeError(f"'_ConvertNamespace' object has no attribute '{name}'")
+        return convert_functions[name]
 
 
 class _SetupNamespace:
-    """Namespace for setup functions: reprodICU.setup.FUNCTION"""
+    """
+    Namespace for setup functions: reprodICU.setup.FUNCTION
+
+    Access setup functions to initialize datasets for local development.
+    """
+
+    _FUNCTIONS = {
+        "setup_mimic3_demo": None,
+        "setup_sicdb": None,
+        "setup_umcdb": None,
+    }
+
+    def __dir__(self) -> list:
+        """Enable auto-completion for setup functions."""
+        return sorted(self._FUNCTIONS.keys())
 
     def __getattr__(self, name: str) -> Any:
         """Dynamically load setup functions without method binding issues."""
+        if name not in self._FUNCTIONS:
+            raise AttributeError(
+                f"'_SetupNamespace' object has no attribute '{name}'"
+            )
+
         from setup import setup_mimic3_demo, setup_sicdb, setup_umcdb
 
         setup_functions = {
@@ -87,10 +144,7 @@ class _SetupNamespace:
             "setup_umcdb": setup_umcdb,
         }
 
-        if name in setup_functions:
-            return setup_functions[name]
-
-        raise AttributeError(f"'_SetupNamespace' object has no attribute '{name}'")
+        return setup_functions[name]
 
 
 # Expose namespaces
@@ -103,7 +157,14 @@ _dataset_loader: DatasetLoader = None
 
 
 def _get_dataset_loader() -> DatasetLoader:
-    """Get or create the global dataset loader."""
+    """
+    Get or create the global dataset loader.
+
+    Returns
+    -------
+        DatasetLoader
+            Singleton dataset loader instance
+    """
     global _dataset_loader
     if _dataset_loader is None:
         config_manager = get_config_manager()
@@ -115,9 +176,22 @@ def __getattr__(name: str) -> Any:
     """
     Module-level attribute access for lazy-loading datasets.
 
-    Allows: reprodICU.timeseries_vitals, reprodICU.diagnoses, etc.
+    Allows access to datasets and concepts without explicit imports:
+        - reprodICU.timeseries_vitals
+        - reprodICU.diagnoses
+        - reprodICU.patient_information
+        - etc.
+
+    Arguments
+    ---------
+        name : str
+            Attribute/dataset name to load
+
+    Returns
+    -------
+        pl.LazyFrame
+            Lazy-loaded dataset
     """
-    # Handle dataset access
     loader = _get_dataset_loader()
 
     if name in loader.DATASET_MAPPING:
@@ -130,7 +204,16 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list:
-    """Show available attributes in dir(reprodICU)."""
+    """
+    Show available attributes in dir(reprodICU).
+
+    Enables proper auto-completion and introspection in interactive shells.
+
+    Returns
+    -------
+        list
+            List of all available attributes and functions
+    """
     loader = _get_dataset_loader()
     standard_attrs = [
         # Package metadata
@@ -143,9 +226,9 @@ def __dir__() -> list:
         "reprodICUPaths",
         # Submodules (namespaced access)
         "utils",  # utils.scores.SOFA, utils.clinical.URINE_OUTPUT, etc.
-        "interfaces",  # interfaces.convert_to_omop, interfaces.convert_to_clif, etc.
-        "build",  # build.build_patient_information, build.build_all, etc.
-        "convert",  # convert.convert_to_omop, convert.convert_to_clif, etc.
+        "interfaces",  # interfaces.convert_to_omop, interfaces.convert_to_clif
+        "build",  # build.build_patient_information, build.build_all
+        "convert",  # convert.convert_to_omop, convert.convert_to_clif
         "setup",  # setup.setup_umcdb, setup.setup_sicdb, setup.setup_mimic3_demo
         # Helper functions
         "available_datasets",
@@ -162,54 +245,146 @@ def __dir__() -> list:
     return standard_attrs + list(loader.DATASET_MAPPING.keys())
 
 
-# region Public API functions
+# region public API
 def available_datasets() -> list:
-    """List all available datasets (ones that exist)."""
+    """
+    List all available datasets (ones that exist).
+
+    Returns
+    -------
+        list
+            Names of available datasets
+    """
     return _get_dataset_loader().available_datasets()
 
 
 def dataset_exists(dataset_name: str) -> bool:
-    """Check if a dataset exists."""
+    """
+    Check if a dataset exists.
+
+    Arguments
+    ---------
+        dataset_name : str
+            Name of the dataset to check
+
+    Returns
+    -------
+        bool
+            True if dataset exists, False otherwise
+    """
     return _get_dataset_loader().dataset_exists(dataset_name)
 
 
 def get_dataset_path(dataset_name: str) -> Path:
-    """Get the full path to a dataset file."""
+    """
+    Get the full path to a dataset file.
+
+    Arguments
+    ---------
+        dataset_name : str
+            Name of the dataset
+
+    Returns
+    -------
+        Path
+            Full path to the dataset file
+    """
     return _get_dataset_loader().get_dataset_path(dataset_name)
 
 
 def available_concepts() -> list:
-    """List all available concepts (ones that exist)."""
+    """
+    List all available concepts (ones that exist).
+
+    Returns
+    -------
+        list
+            Names of available concepts
+    """
     return _get_dataset_loader().available_concepts()
 
 
 def concept_exists(concept_name: str) -> bool:
-    """Check if a concept exists."""
+    """
+    Check if a concept exists.
+
+    Arguments
+    ---------
+        concept_name : str
+            Name of the concept to check
+
+    Returns
+    -------
+        bool
+            True if concept exists, False otherwise
+    """
     return _get_dataset_loader().concept_exists(concept_name)
 
 
 def get_concept_path(concept_name: str) -> Path:
-    """Get the full path to a concept file."""
+    """
+    Get the full path to a concept file.
+
+    Arguments
+    ---------
+        concept_name : str
+            Name of the concept
+
+    Returns
+    -------
+        Path
+            Full path to the concept file
+    """
     return _get_dataset_loader().get_concept_path(concept_name)
 
 
 def use_demo_mode() -> None:
-    """Switch to demo dataset mode."""
+    """
+    Switch to demo dataset mode.
+
+    Configures the dataset loader to use demo-sized datasets
+    instead of full production datasets.
+    """
     _get_dataset_loader().set_demo_mode(True)
 
 
 def use_full_mode() -> None:
-    """Switch to full dataset mode."""
+    """
+    Switch to full dataset mode.
+
+    Configures the dataset loader to use full production datasets
+    instead of demo-sized datasets.
+    """
     _get_dataset_loader().set_demo_mode(False)
 
 
 def reload_dataset(dataset_name: str):
-    """Reload a dataset, clearing the cache."""
+    """
+    Reload a dataset, clearing the cache.
+
+    Forces a fresh load of the specified dataset, discarding any
+    cached version.
+
+    Arguments
+    ---------
+        dataset_name : str
+            Name of the dataset to reload
+
+    Returns
+    -------
+        pl.LazyFrame
+            Fresh lazy-loaded dataset
+    """
     return _get_dataset_loader().reload_dataset(dataset_name)
 
 
 def clear_cache() -> None:
-    """Clear all cached datasets."""
+    """
+    Clear all cached datasets.
+
+    Removes all cached datasets from memory, forcing fresh loads
+    on next access.
+    """
     _get_dataset_loader().clear_cache()
 
 
