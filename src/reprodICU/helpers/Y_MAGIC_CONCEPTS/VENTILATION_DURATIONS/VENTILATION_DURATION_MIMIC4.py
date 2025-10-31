@@ -3,7 +3,8 @@
 # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/treatment/ventilation.sql
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
@@ -12,6 +13,23 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
+        """
+        Extract ventilation episodes from MIMIC-IV chartevents.
+
+        Steps:
+            1. Identify ventilation by chartevents item IDs (settings, modes, rates).
+            2. Identify oxygen delivery events marking transitions.
+            3. Calculate episode duration using max pause threshold.
+            4. Classify ventilation type by device and settings.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - stay_id: ICU stay identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC4")
         # fmt: off
         vent_setting_chartevents_ids = [
@@ -440,9 +458,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
         return (
             VENTILATION
             # filter out rows where the ventilation type is "none"
-            .filter(
-                pl.col("Ventilation Type").ne_missing(pl.lit("none"))
-            )
+            .filter(pl.col("Ventilation Type").ne_missing(pl.lit("none")))
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
             .lazy()

@@ -1,5 +1,6 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
@@ -7,6 +8,23 @@ class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
+        """
+        Extract ventilation episodes from UMCdb processitems.
+
+        Steps:
+            1. Extract ventilation process items with start/stop times.
+            2. Join with admission times.
+            3. Filter for ventilation-related process IDs.
+            4. Calculate episode duration.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - admissionid: Admission identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - UMCdb")
 
         ADMISSION_TIMES = pl.scan_parquet(
@@ -89,7 +107,9 @@ class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
             .rename(
                 {
                     "item": "Ventilation Type",
-                    "start": "Ventilation Start Relative to Admission (seconds)",
+                    "start": (
+                        "Ventilation Start Relative to Admission (seconds)"
+                    ),
                     "stop": "Ventilation End Relative to Admission (seconds)",
                 }
             )

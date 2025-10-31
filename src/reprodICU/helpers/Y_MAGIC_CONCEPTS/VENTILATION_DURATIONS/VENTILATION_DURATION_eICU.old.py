@@ -1,8 +1,9 @@
 # based on https://github.com/nus-mornin-lab/oxygenation_kc/blob/master/data-extraction/eICU/eicu_oxygen_therapy.sql
 
 import polars as pl
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ...A_extract.A_extract_eicu import EICUExtractor
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
@@ -387,8 +388,10 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             pl.lit(-1).alias("oxygen_therapy_type"),
             pl.lit(None).alias("activeupondischarge"),
         )
-        
-        OXYGEN_THERAPY_KNOWN_TYPE.collect().write_parquet("eicu_oxygen_therapy_known.parquet")
+
+        OXYGEN_THERAPY_KNOWN_TYPE.collect().write_parquet(
+            "eicu_oxygen_therapy_known.parquet"
+        )
 
         OXYGEN_THERAPY = (
             pl.concat(
@@ -448,14 +451,15 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
                     order_by="charttime",
                 )
                 .alias("ventnum")
-            )   
+            )
         )
-        
+
         OXYGEN_THERAPY.collect().write_parquet(
             "eicu_oxygen_therapy_intermediate.parquet",
         )
-        
-        OXYGEN_THERAPY = (OXYGEN_THERAPY
+
+        OXYGEN_THERAPY = (
+            OXYGEN_THERAPY
             # now we convert CHARTTIME of ventilator settings into durations
             # create the durations for each oxygen therapy instance
             # we only keep the first oxygen therapy instance
@@ -510,7 +514,7 @@ class VENTILATION_DURATION_eICU(MAGIC_CONCEPTS):
             )
             .collect()
         )
-        
+
         OXYGEN_THERAPY.write_parquet("eicu_oxygen_therapy.parquet")
 
         return (

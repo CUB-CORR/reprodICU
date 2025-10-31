@@ -6,7 +6,8 @@
 import os
 
 import polars as pl
-from helpers.helper import GlobalVars
+
+from .helper import GlobalVars
 
 
 # region OMOP
@@ -535,6 +536,8 @@ class MIMIC4Paths(GlobalVars):
         self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv.gz"
         self.datetimeevents_path = mimic4_path + "icu/datetimeevents.csv.gz"
         self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv.gz"
+        self.emar_path = mimic4_path + "hosp/emar.csv.gz"
+        self.emar_detail_path = mimic4_path + "hosp/emar_detail.csv.gz"
         self.icustays_path = mimic4_path + "icu/icustays.csv.gz"
         self.inputevents_path = mimic4_path + "icu/inputevents.csv.gz"
         self.labevents_path = mimic4_path + "hosp/labevents.csv.gz"
@@ -547,7 +550,7 @@ class MIMIC4Paths(GlobalVars):
         self.procedureevents_path = mimic4_path + "icu/procedureevents.csv.gz"
         self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv.gz"
         self.services_path = mimic4_path + "hosp/services.csv.gz"
-        
+
         self.discharge_summaries_path = (
             mimic4_notes_path + "note/discharge.csv.gz"
         )
@@ -574,6 +577,8 @@ class MIMIC4Paths(GlobalVars):
             self.d_labitems_path = mimic4_path + "hosp/d_labitems.csv"
             self.datetimeevents_path = mimic4_path + "icu/datetimeevents.csv"
             self.diagnoses_icd_path = mimic4_path + "hosp/diagnoses_icd.csv"
+            self.emar_path = mimic4_path + "hosp/emar.csv"
+            self.emar_detail_path = mimic4_path + "hosp/emar_detail.csv"
             self.icustays_path = mimic4_path + "icu/icustays.csv"
             self.inputevents_path = mimic4_path + "icu/inputevents.csv"
             self.labevents_path = mimic4_path + "hosp/labevents.csv"
@@ -588,8 +593,11 @@ class MIMIC4Paths(GlobalVars):
         if not DEMO:
             for path in [
                 self.chartevents_path,
+                self.emar_path,
+                self.emar_detail_path,
                 self.labevents_path,
                 self.inputevents_path,
+                self.prescriptions_path,
             ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
@@ -598,8 +606,11 @@ class MIMIC4Paths(GlobalVars):
                     _parquetize(path, "MIMIC-IV")
 
             self.chartevents_path = mimic4_path + "icu/chartevents.parquet"
+            self.emar_path = mimic4_path + "hosp/emar.parquet"
+            self.emar_detail_path = mimic4_path + "hosp/emar_detail.parquet"
             self.labevents_path = mimic4_path + "hosp/labevents.parquet"
             self.inputevents_path = mimic4_path + "icu/inputevents.parquet"
+            self.prescriptions_path = mimic4_path + "hosp/prescriptions.parquet"
 
         # MIMIC-IV custom mapping paths
         self.mimic4_mapping_path = self.mapping_path + "mimic4/"
@@ -961,16 +972,20 @@ def _parquetize(path, db: str):
     pl.scan_csv(
         path,
         schema_overrides={
-            "value": str,
             "amount": float,
-            "totalamount": float,
-            "patientweight": float,
-            "VALUE": str,
             "AMOUNT": float,
-            "TOTALAMOUNT": float,
-            "RATE": float,
+            "dose_given": str,
+            "dose_val_rx": str,
+            "patientweight": float,
             "PATIENTWEIGHT": float,
+            "product_amount_given": str,
+            "RATE": float,
+            "totalamount": float,
+            "TOTALAMOUNT": float,
+            "value": str,
+            "VALUE": str,
         },
+        infer_schema_length=10000,
     ).sink_parquet(path.replace(".csv", ".parquet").replace(".gz", ""))
 
 

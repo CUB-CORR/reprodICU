@@ -6,9 +6,8 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-import os
 
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class ADDITIONAL_APACHE_VARS(MAGIC_CONCEPTS):
@@ -17,26 +16,27 @@ class ADDITIONAL_APACHE_VARS(MAGIC_CONCEPTS):
 
     def ADDITIONAL_APACHE_VARS(self) -> pl.DataFrame:
         """
-        Returns the magic concept ADDITIONAL_APACHE_VARS
+        Extract cardiac and surgical variables for APACHE score calculations.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each database: extract cardiac/surgical procedure and outcome data.
+            2. Map database-specific item IDs to standardized variable names.
+            3. Calculate time relative to ICU admission.
+            4. Concatenate results from all databases.
 
-        Returns a DataFrame with the following columns:
-        - Global ICU stay ID
-        - ADDITIONAL_APACHE_VARS:
-            - Acute MI location
-            - PTCA done within 24 hours
-            - Thrombolytic Therapy received within 24 hours
-            - Number of grafts performed
-            - Internal mammary artery graft?
-            - Saphenous vein graft?
-            - Pre-op MI during current hospitalization
-            - Pre-op cardiac catheterization during this hospitalization
-            - Pre-op ejection fraction (%)
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Acute MI location: Acute MI location code.
+                - PTCA done within 24 hours: PTCA performed flag.
+                - Thrombolytic Therapy received within 24 hours: Thrombolytic therapy flag.
+                - Number of grafts performed: Count of surgical grafts.
+                - Internal mammary artery graft?: IMA graft flag.
+                - Saphenous vein graft?: SVG flag.
+                - Pre-op MI during current hospitalization: Pre-op MI flag.
+                - Pre-op cardiac catheterization during this hospitalization: Pre-op catheterization flag.
+                - Pre-op ejection fraction (%): EF percentage.
         """
 
         # region eICU

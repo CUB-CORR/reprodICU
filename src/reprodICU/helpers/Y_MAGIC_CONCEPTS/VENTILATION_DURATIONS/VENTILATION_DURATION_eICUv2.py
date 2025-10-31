@@ -1,5 +1,6 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_eICUv2(MAGIC_CONCEPTS):
@@ -333,7 +334,7 @@ class VENTILATION_DURATION_eICUv2(MAGIC_CONCEPTS):
         use4 = use.filter(
             ~pl.col("patientunitstayid").is_in(only_adequate_patients)
         ).sort("patientunitstayid", "cplitemoffset")
-        
+
         # ----------------------------------------------------------------------
         # region pivoted_vent_eicu
         # ----------------------------------------------------------------------

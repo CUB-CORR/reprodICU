@@ -6,7 +6,8 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION(MAGIC_CONCEPTS):

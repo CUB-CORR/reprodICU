@@ -8,7 +8,8 @@
 # It is available as a module for piping in the main script.
 
 import polars as pl
-from helpers.helper import GlobalVars
+
+from ..helper import GlobalVars
 
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
 
@@ -32,8 +33,18 @@ class TimeseriesImputer(GlobalVars):
         self, df: pl.LazyFrame, ts_col: str, id_cols=None
     ) -> pl.LazyFrame:
         """
-        Interpolates missing values in a time series.
-        Accepts any number of value columns, ID columns, and a time column (ts_col).
+        Interpolate missing values in timeseries data.
+
+        Steps:
+            1. Extract grid of ID and time columns from input data.
+            2. For each value column: identify non-null observations.
+            3. Calculate per-observation slope (change per time unit).
+            4. Use forward asof join to match each row with preceding observation.
+            5. Interpolate: base_value + slope × time_elapsed.
+            6. Coalesce interpolated values where available.
+
+        Returns:
+            pl.LazyFrame: Data with interpolated values filling gaps.
         """
 
         if not isinstance(ts_col, str):
@@ -71,7 +82,7 @@ class TimeseriesImputer(GlobalVars):
                         ),
                         # Store previous values interpolation
                         __value_slope_since=pl.col(ts_col).shift(),
-                        __value_base=pl.col(value_col).shift()
+                        __value_base=pl.col(value_col).shift(),
                     ),
                     on=ts_col,
                     by=id_cols,
@@ -118,7 +129,14 @@ class TimeseriesImputer(GlobalVars):
 
     def impute_timeseries(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Impute missing values in the data using interpolation and forward filling.
+        Impute missing timeseries values via linear interpolation.
+
+        Steps:
+            1. Call _interp with time column and ICU stay ID columns.
+            2. Interpolate between non-null value observations.
+
+        Returns:
+            pl.LazyFrame: Data with interpolated missing values.
         """
 
         return data.pipe(
@@ -129,7 +147,19 @@ class TimeseriesImputer(GlobalVars):
 
     def impute_timeseries_vitals(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Impute missing values in the vitals data using interpolation and forward filling.
+        Impute missing vital signs using interpolation and standardize types.
+
+        Steps:
+            1. Interpolate missing vital values.
+            2. Cast all numeric vitals (except temperature) to integer.
+            3. Round temperature to 1 decimal place.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Temperature: Body temperature (°C, 1 decimal).
+                - [Other vitals]: Vital measurements (integer).
         """
 
         columns = data.collect_schema().names()

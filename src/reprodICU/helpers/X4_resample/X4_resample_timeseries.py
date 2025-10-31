@@ -8,8 +8,9 @@
 # It is available as a module for piping in the main script.
 
 import polars as pl
-from helpers.helper import GlobalVars
-from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
+
+from ..helper import GlobalVars
+from ..X3_impute.X3_impute_timeseries import TimeseriesImputer
 
 DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
 
@@ -35,7 +36,19 @@ class TimeseriesResampler(GlobalVars):
         resolution_in_seconds: int = 300,
     ) -> pl.LazyFrame:
         """
-        Resample missing values in the data using interpolation and forward filling.
+        Resample timeseries data to uniform time grid via interpolation.
+
+        Steps:
+            1. Group by ICU stay and create regular time grid (0 to max time at resolution).
+            2. Full join original data to resampled grid (coalesce IDs).
+            3. Interpolate values at new grid points.
+            4. Filter to keep only resampled grid times (new observations).
+
+        Returns:
+            pl.LazyFrame: Uniformly resampled timeseries data with columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - [Value columns]: Interpolated measurements.
         """
         resampled_grid = (
             # Group by Global ICU stay ID
@@ -76,7 +89,19 @@ class TimeseriesResampler(GlobalVars):
         resolution_in_seconds: int = 300,
     ) -> pl.LazyFrame:
         """
-        Resample missing values in the vitals data using interpolation and forward filling.
+        Resample vitals to uniform grid and standardize data types.
+
+        Steps:
+            1. Resample timeseries to regular grid.
+            2. Cast numeric vitals (except temperature) to integer.
+            3. Round temperature to 1 decimal place.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Temperature: Body temperature (°C, 1 decimal).
+                - [Other vitals]: Vital measurements (integer).
         """
 
         columns = data.collect_schema().names()

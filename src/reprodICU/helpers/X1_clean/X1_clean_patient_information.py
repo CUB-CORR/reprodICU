@@ -6,7 +6,7 @@
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
 import polars as pl
-from helpers.helper import GlobalVars
+from ..helper import GlobalVars
 
 
 class PatientInformationCleaner(GlobalVars):
@@ -24,7 +24,15 @@ class PatientInformationCleaner(GlobalVars):
 
     def clean_patient_information(self, data) -> pl.LazyFrame:
         """
-        Cleans the height, weight, duration data by rounding the values.
+        Round patient anthropometric and duration values to reduce precision.
+
+        Steps:
+            1. Round height and weight to nearest integer.
+            2. Round stay durations to 4 decimal places (approximately 1-minute resolution).
+            3. Round mortality_after to nearest integer.
+
+        Returns:
+            pl.LazyFrame: Cleaned patient information with same columns.
         """
 
         return data.with_columns(
@@ -44,7 +52,17 @@ class PatientInformationCleaner(GlobalVars):
         self, data: pl.LazyFrame, diagnoses: str
     ) -> pl.LazyFrame:
         """
-        Adds primary diagnoses from the datasets where they need to be extracted
+        Add primary diagnoses to patient information.
+
+        Steps:
+            1. Load primary diagnoses (priority=1) from diagnoses table.
+            2. Split by ICU vs hospital scope using global IDs.
+            3. Select first ICD-10 code per ICU/hospital stay.
+            4. Map ICD-10 code to ICD subchapter.
+            5. Join enriched diagnoses back to patient data.
+
+        Returns:
+            pl.LazyFrame: Patient information with added diagnosis columns.
         """
 
         primary_diagnoses = pl.scan_parquet(diagnoses).filter(
@@ -109,7 +127,15 @@ class PatientInformationCleaner(GlobalVars):
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Removes obviously wrong values from the patient information.
+        Remove and flag invalid patient data.
+
+        Steps:
+            1. Set post-ICU mortality to null for patients who died in ICU.
+            2. Flag stays with ICU duration <15 minutes or missing data as bad.
+            3. Mark for exclusion or special handling.
+
+        Returns:
+            pl.LazyFrame: Patient information with added flag_bad_data column.
         """
 
         return data.with_columns(
@@ -133,7 +159,15 @@ class PatientInformationCleaner(GlobalVars):
 
     def add_good_patient_information(self, data) -> pl.LazyFrame:
         """
-        Adds information that can easily be derived from the existing data.
+        Impute missing mortality flags using logical derivation.
+
+        Steps:
+            1. Impute missing ICU mortality from post-discharge survival info.
+            2. Impute missing hospital mortality from ICU mortality.
+            3. Impute remaining missing values using time-based logic.
+
+        Returns:
+            pl.LazyFrame: Patient information with imputed mortality columns.
         """
 
         return (
@@ -202,8 +236,17 @@ class PatientInformationCleaner(GlobalVars):
         timeseries_inout: str,
     ) -> pl.LazyFrame:
         """
-        Adds information about the availability of the data in the other
-        tables of the dataset.
+        Add data availability counts from other tables.
+
+        Steps:
+            1. For each data table (diagnoses, medications, procedures, timeseries):
+               - Count records per ICU stay.
+               - Add as new availability column.
+            2. Join all availability columns to patient data.
+            3. Return enriched patient information.
+
+        Returns:
+            pl.LazyFrame: Patient information with data availability columns.
         """
 
         for table, table_name in zip(
@@ -231,7 +274,14 @@ class PatientInformationCleaner(GlobalVars):
 
     def sort_columns(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Sort columns
+        Reorder columns in standardized sequence.
+
+        Steps:
+            1. Select columns in fixed order: IDs first, flags, then demographics, outcomes.
+            2. Append data availability columns at end.
+
+        Returns:
+            pl.LazyFrame: Reorganized patient information with standard column order.
         """
         return data.select(
             [
@@ -272,9 +322,3 @@ class PatientInformationCleaner(GlobalVars):
             ]
             + self.data_availability_cols
         )
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

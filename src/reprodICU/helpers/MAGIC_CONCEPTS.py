@@ -8,30 +8,42 @@
 from typing import Dict, List, Optional
 
 import yaml
-from config import get_config_manager, reprodICUPaths
-from Y_MAGIC_CONCEPTS.MAGIC_CONCEPTS_REPOSITORY import MAGIC_CONCEPTS_REPOSITORY
+
+from ..config import get_config_manager, reprodICUPaths
+from .Y_MAGIC_CONCEPTS.MAGIC_CONCEPTS_REPOSITORY import (
+    MAGIC_CONCEPTS_REPOSITORY,
+)
 
 
 def load_mapping(path: str) -> dict:
-    """Load YAML mapping file."""
+    """
+    Load YAML mapping configuration file.
+
+    Steps:
+        1. Open file at path.
+        2. Parse YAML content.
+
+    Returns:
+        dict: Parsed YAML configuration dictionary.
+    """
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
-# Helper functions for parameter processing
-
-
+# region helpers
 def _normalize_datasets(
     datasets: Optional[List[str]], demo: bool = False
 ) -> List[str]:
-    """Normalize dataset selection.
+    """
+    Normalize and expand dataset selection specification.
 
-    Args:
-        datasets: None for "all", or list of specific datasets
-        demo: If True, restrict to demo-compatible datasets (not used for concepts)
+    Steps:
+        1. If datasets is None or contains "all": expand to all 6 databases.
+        2. If demo=True: restrict to demo-compatible databases (eICU, MIMIC3, MIMIC4).
+        3. Otherwise return specified datasets unchanged.
 
     Returns:
-        List of dataset names to process
+        List[str]: Normalized dataset names (e.g., ["MIMIC3", "MIMIC4", ...]).
     """
     if datasets is None or (isinstance(datasets, list) and "all" in datasets):
         all_datasets = [
@@ -49,13 +61,15 @@ def _normalize_datasets(
 
 
 def _normalize_concepts(concepts: Optional[List[str]]) -> List[str]:
-    """Normalize concept selection.
+    """
+    Normalize and expand magic concept selection specification.
 
-    Args:
-        concepts: None for "all", or list of specific concepts
+    Steps:
+        1. If concepts is None or contains "all": expand to all 5 standard concepts.
+        2. Otherwise return specified concepts unchanged.
 
     Returns:
-        List of concept names to extract
+        List[str]: Normalized concept names (CODE_STATUS, RECEIVED_ANY_ANTIBIOTICS, RENAL_REPLACEMENT_THERAPY_DURATION, SEVERITY_SCORES, VENTILATION_DURATION).
     """
     if concepts is None or (isinstance(concepts, list) and "all" in concepts):
         return [
@@ -68,30 +82,30 @@ def _normalize_concepts(concepts: Optional[List[str]]) -> List[str]:
     return concepts
 
 
-# Building functions
-
-
+# region build
 def build_magic_concepts(
     paths=None,
     datasets: Optional[List[str]] = None,
     concepts: Optional[List[str]] = None,
     demo: bool = False,
 ) -> Dict[str, List[str]]:
-    """Build MAGIC CONCEPTS for specified datasets and concepts.
+    """
+    Extract and write MAGIC CONCEPTS for specified databases and concept types.
 
-    Args:
-        paths: Optional paths object (uses ConfigManager if None)
-        datasets: Datasets to process (uses "all" if None)
-        concepts: Concepts to extract (uses "all" if None)
-        demo: Use demo data if True
+    Steps:
+        1. Load config/paths if not provided.
+        2. Normalize dataset and concept selections (expand "all" to full lists).
+        3. Initialize MAGIC_CONCEPTS_REPOSITORY with normalized datasets.
+        4. Validate all requested concepts exist in repository.
+        5. For each concept: call get_magic_concept, collect LazyFrame, write to parquet.
+        6. Return dict mapping concept names to output file paths.
 
     Returns:
-        Dict mapping concept names to output file paths
+        Dict[str, List[str]]: Mapping {concept_name: [output_parquet_path]}.
 
     Raises:
-        FileNotFoundError: If dataset files not found
-        ValueError: If invalid concept selection
-        RuntimeError: If processing fails
+        ValueError: If requested concept not in repository.
+        FileNotFoundError: If output directory does not exist.
     """
     if paths is None:
         config_manager = get_config_manager()

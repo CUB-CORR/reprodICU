@@ -5,10 +5,11 @@
 # The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package and/or
 # available prewritten code snippets where indicated.
 
-import polars as pl
 import os
 
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+import polars as pl
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
@@ -17,17 +18,18 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
 
     def RECEIVED_ANY_ANTIBIOTICS(self) -> pl.DataFrame:
         """
-        Returns the magic concept RECEIVED_ANY_ANTIBIOTICS
+        Determine antibiotic administration across ICU stay.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each database: scan medication/infusion tables.
+            2. Filter for antibiotic drugs using regex patterns from rICU mappings.
+            3. Generate binary indicator: received any antibiotic (bool).
+            4. Concatenate results from all databases.
 
-        Returns a DataFrame with the following columns:
-        - ICU stay ID
-        - RECEIVED_ANY_ANTIBIOTICS (bool)
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - RECEIVED_ANY_ANTIBIOTICS: Binary flag (true if any antibiotic given).
         """
 
         # region eICU

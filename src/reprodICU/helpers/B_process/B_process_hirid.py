@@ -10,9 +10,10 @@ import sys
 import time
 
 import polars as pl
-from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
-from helpers.helper import GlobalHelpers
-from helpers.helper_conversions import UnitConverter
+
+from ..A_extract.A_extract_hirid import HiRIDExtractor
+from ..helper import GlobalHelpers
+from ..helper_conversions import UnitConverter
 
 
 class HiRIDProcessor(HiRIDExtractor):
@@ -70,26 +71,19 @@ class HiRIDProcessor(HiRIDExtractor):
     # region time series
     def process_timeseries(self) -> pl.LazyFrame:
         """
-        Processes and combines non-laboratory time series data for HiRID.
+        Process non-laboratory time series data.
 
         Steps:
-          1. Check if the preprocessed non-lab parquet file exists in {precalc_path}.
-          2. If available, load the LazyFrame with sorted index columns {icu_stay_id_col} and {timeseries_time_col}.
-          3. If not, for each raw timeseries file:
-             a. Use pre-extracted admissions and length of stay data ({admissiontime}, {length_of_stay}).
-             b. Process timeseries data with _extract_timeseries_helper.
-             c. Separate lab measurements by mapping "variable" to "LOINC_component" and DROP rows where "LOINC_component" is not null (keep non-lab only).
-             d. Pivot the remaining (non-lab) data to wide format (on "variable").
-             e. Concatenate results into a single LazyFrame.
-          4. Save and return the non-lab timeseries sorted by the index.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time (as string) after conversion.
-          - Additional columns: Pivoted non-lab measurement variables from raw files.
+            1. Check for preprocessed non-lab timeseries file; load if available.
+            2. For each raw timeseries file: filter to non-lab variables, extract and pivot measurements.
+            3. Combine all files into single wide-format dataset.
+            4. Sort by index columns and save.
 
         Returns:
-            pl.LazyFrame: A sorted wide-format LazyFrame with non-lab measurements.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Non-laboratory measurement columns (pivoted from variable).
         """
         ts_path = self.precalc_path + "HiRID_timeseries.parquet"
 
@@ -169,29 +163,23 @@ class HiRIDProcessor(HiRIDExtractor):
     # region timeseries labs
     def process_timeseries_labs(self) -> pl.LazyFrame:
         """
-        Processes laboratory time series data for HiRID.
+        Process laboratory time series data.
 
         Steps:
-          1. Check if a preprocessed lab parquet file exists in {precalc_path}; load it if available.
-          2. Otherwise, for each raw timeseries file:
-             a. Use pre-extracted admissions and length of stay data ({admissiontime}, {length_of_stay}).
-             b. Process timeseries data with _extract_timeseries_helper.
-             c. Identify lab measurements by mapping "variable" to "LOINC_component" and KEEP rows where "LOINC_component" is not null.
-             d. Convert to structured lab rows via _extract_timeseries_labs_helper and concatenate across files.
-          3. Convert lab values to canonical units via _convert_lab_values.
-          4. Assign LOINC codes pre-pivot using _assign_LOINC_codes (component_col="variable"); JSON-encode "labstruct".
-          5. Pivot on "variable" to create a wide-format dataset (values="labstruct").
-          6. Apply wide-format adjustments via _convert_wide_lab_values.
-          7. (Optional) Assign LOINC codes again to derived columns (e.g., "Lymphocytes/100 leukocytes").
-          8. Save and return the lab timeseries sorted by {icu_stay_id_col} and {timeseries_time_col}.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time (as string) after conversion.
-          - Additional columns: JSON-encoded "labstruct" per lab variable.
+            1. Check for preprocessed labs file; load if available.
+            2. For each raw timeseries file: filter to lab variables, extract measurements.
+            3. Combine all files and map to LOINC components.
+            4. Convert lab values to canonical units.
+            5. Apply LOINC component mapping and JSON encode structured fields.
+            6. Pivot data on variable name to create wide-format dataset.
+            7. Apply post-pivot unit conversions for derived measurements.
+            8. Save, sort by index columns.
 
         Returns:
-            pl.LazyFrame: A sorted wide-format LazyFrame of lab measurements.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Laboratory measurement columns (pivoted from variable, JSON-encoded).
         """
         ts_labs_path = self.precalc_path + "HiRID_timeseries_labs.parquet"
 
@@ -315,32 +303,17 @@ class HiRIDConverter(UnitConverter):
         valuecol: str = "value_struct",
         structfield: str = "value",
     ) -> pl.LazyFrame:
-        """
-        Convert laboratory measurement values to canonical units for the HiRID dataset.
+        """Convert raw lab values to canonical units.
 
-        Applies a series of conversion functions sequentially to the input lab values. The conversion is performed
-        for the following lab tests:
-          - {Bilirubin.direct}
-          - {Bilirubin}
-          - {Creatinine}
-          - {Cortisol}
-          - {Fibrinogen}
-          - {Glucose}
-          - {Hemoglobin}
-          - {Erythrocyte mean corpuscular hemoglobin concentration}
-          - {Urea} to {Urea nitrogen} conversions
+        Applies sequential unit conversions for multiple lab tests including:
+        bilirubin, creatinine, cortisol, fibrinogen, glucose, hemoglobin, and urea.
 
-        Each function converts the lab value from an original unit to a canonical unit. The input data must include
-        a column with the lab label (default: {labelcol}) and lab value stored in the field specified by {structfield}.
-
-        Args:
-            data (pl.LazyFrame): Input lab data containing lab values.
-            labelcol (str, optional): Name of the column with lab identifiers. Defaults to "variableid".
-            valuecol (str, optional): Name of the column containing lab values or structured lab data. Defaults to "value_struct".
-            structfield (str, optional): Field within the structured lab data to extract for conversion. Defaults to "value".
+        Expected columns:
+            - {labelcol}: Lab test identifier.
+            - {valuecol}: Lab measurement value.
 
         Returns:
-            pl.LazyFrame: The input LazyFrame with lab values converted to canonical units.
+            pl.LazyFrame: Lab data with unit-converted values.
         """
         return (
             data.pipe(
@@ -418,19 +391,13 @@ class HiRIDConverter(UnitConverter):
         )
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        Convert wide-format lab values to relative units for the HiRID dataset.
+        """Convert wide-format lab values to relative percentages.
 
-        Specifically, this method converts absolute lab counts into relative values. For example, it converts
-        the absolute value of {Lymphocytes} into a relative value per 100 {Leukocytes}. The conversion is applied
-        to the following columns (if available):
-          - {Lymphocytes} relative to {Leukocytes}.
-
-        Args:
-            data (pl.LazyFrame): Lab data in wide format after pivoting.
+        Transforms absolute counts to percentages for differential cell counts
+        (lymphocytes).
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the applicable lab columns converted to relative units.
+            pl.LazyFrame: Lab data with calculated percentage values.
         """
         return data.pipe(
             self.convert_absolute_count_to_relative,

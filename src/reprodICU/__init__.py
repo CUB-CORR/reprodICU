@@ -17,7 +17,7 @@ from typing import Any
 # Add package directory to path for relative imports
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-from config import (
+from .config import (
     ConfigManager,
     DatasetLoader,
     get_config_manager,
@@ -60,7 +60,7 @@ class _BuildNamespace:
             )
 
         from reprodICU import reprodICU
-        from helpers import MAGIC_CONCEPTS
+        from .helpers import MAGIC_CONCEPTS
 
         build_functions = {
             "build_all": reprodICU.build_all,
@@ -101,8 +101,8 @@ class _ConvertNamespace:
                 f"'_ConvertNamespace' object has no attribute '{name}'"
             )
 
-        from interfaces import convert_to_clif, convert_to_meds, convert_to_omop
-
+        from .interfaces import convert_to_clif, convert_to_meds, convert_to_omop
+        
         convert_functions = {
             "convert_to_clif": convert_to_clif,
             "convert_to_meds": convert_to_meds,
@@ -136,7 +136,7 @@ class _SetupNamespace:
                 f"'_SetupNamespace' object has no attribute '{name}'"
             )
 
-        from setup import setup_mimic3_demo, setup_sicdb, setup_umcdb
+        from .setup import setup_mimic3_demo, setup_sicdb, setup_umcdb
 
         setup_functions = {
             "setup_mimic3_demo": setup_mimic3_demo,

@@ -1,6 +1,8 @@
 import os
+
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
@@ -9,6 +11,23 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
+        """
+        Extract ventilation episodes from HiRID monitoring data.
+
+        Steps:
+            1. Extract ventilation parameters from monitoring tables.
+            2. Identify ventilation start/end based on parameter presence/absence.
+            3. Calculate episode duration using max pause threshold.
+            4. Classify ventilation type by mode indicators.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - patientid: Patient identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - HiRID")
 
         # get admission times for HiRID

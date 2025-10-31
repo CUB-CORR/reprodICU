@@ -43,6 +43,7 @@ diagnosis_end_col: Diagnosis End Relative to Admission (seconds) # diagnosis_end
 diagnosis_priority_col: Diagnosis Priority # diagnosis_priority
 diagnosis_discharge_col: Diagnosis Active on Discharge # diagnosis_active_on_discharge
 diagnosis_description_col: Diagnosis Description # diagnosis_description
+drug_prescription_id_col: Global Drug Prescription ID
 drug_mixture_id_col: Global Drug Mixture ID
 drug_mixture_admin_id_col: Global Drug Mixture Administration ID
 drug_name_col: Drug Name # drug_name

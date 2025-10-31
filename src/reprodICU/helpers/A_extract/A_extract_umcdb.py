@@ -9,9 +9,10 @@ import os.path
 
 import numpy as np
 import polars as pl
-from helpers.helper import GlobalHelpers
-from helpers.helper_filepaths import UMCdbPaths
-from helpers.helper_OMOP import Vocabulary
+
+from ..helper import GlobalHelpers
+from ..helper_filepaths import UMCdbPaths
+from ..helper_OMOP import Vocabulary
 
 
 class UMCdbExtractor(UMCdbPaths):
@@ -30,46 +31,39 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extract and transform patient admission information from UMCdb.
+        Extract and transform patient demographics and clinical information.
 
         Steps:
-            1. Read admission data from a Parquet file at {admissions_path}.
-            2. Select and rename columns:
-               - "patientid" → {person_id_col}: Patient identifier.
-               - "admissionid" → {icu_stay_id_col}: ICU stay identifier.
-               - "admissioncount" → {icu_stay_seq_num_col}: ICU admission sequence.
-               - Other columns like "agegroup", "weightgroup", "heightgroup" for averages.
-            3. Join with APACHE admission data via extract_APACHE_admission().
-            4. Convert group values for age, weight, and height to numeric averages.
-            5. Transform categorical fields (e.g. {gender_col}, {admission_loc_col}, {discharge_loc_col}, {unit_type_col}).
-            6. Compute derived fields:
-               - {icu_length_of_stay_col}: ICU length of stay in days.
-               - {mortality_after_col}: Days until mortality after discharge.
-            7. Set {hospital_stay_id_col} to None and define {care_site_col}.
+            1. Read admission data from parquet file.
+            2. Rename columns to standardized names.
+            3. Join with APACHE admission data.
+            4. Compute derived columns (age, weight, height from group averages).
+            5. Map categorical fields (gender, admission type/location, urgency).
+            6. Compute mortality flags and mortality after discharge.
+            7. Sort by patient ID and compute ICU stay sequence number.
 
         Returns:
-            pl.LazyFrame: Dataframe with columns:
-                - {person_id_col}: Patient ID.
+            pl.LazyFrame: Contains columns:
+                - {person_id_col}: Patient identifier.
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {icu_stay_seq_num_col}: ICU stay sequence number.
-                - {icu_time_rel_to_first_col}: Time relative to first ICU admission.
-                - {age_col}: Patient age.
-                - {weight_col}: Patient weight.
-                - {height_col}: Patient height.
+                - {icu_time_rel_to_first_col}: Time relative to first ICU admission (seconds).
+                - {age_col}: Patient age (years).
+                - {weight_col}: Patient weight (kg).
+                - {height_col}: Patient height (cm).
+                - {gender_col}: Patient gender.
+                - {admission_year_col}: Admission year.
+                - {admission_type_col}: Admission type.
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_loc_col}: Admission location.
+                - {specialty_col}: Treating specialty.
+                - {unit_type_col}: ICU unit type.
+                - {discharge_loc_col}: Discharge location.
                 - {mortality_icu_col}: ICU mortality flag.
                 - {mortality_hosp_col}: Hospital mortality flag.
-                - {icu_length_of_stay_col}: ICU length of stay in days.
-                - {mortality_after_col}: Days until mortality after discharge.
-                - {gender_col}: Patient gender.
-                - {admission_loc_col}: Admission location.
-                - {discharge_loc_col}: Discharge location.
-                - {unit_type_col}: ICU unit type.
-                - {specialty_col}: Specialty information.
-                - {admission_type_col}: Admission type.
-                - {admission_year_col}: Admission year.
-                - {admission_urgency_col}: Admission urgency.
-                - {hospital_stay_id_col}: Hospital stay identifier.
-                - {care_site_col}: Hospital name.
+                - {mortality_after_col}: Days between discharge and death.
+                - {hospital_stay_id_col}: Hospital stay identifier (always null).
+                - {care_site_col}: Care site identifier.
         """
 
         # calculate mortality after discharge censor cutoff (1 year after last ICU discharge)
@@ -265,20 +259,20 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract timeseries information from the listitems.csv file
     def extract_timeseries_listitems(self) -> pl.LazyFrame:
         """
-        Extract and process timeseries list items from the UMCdb dataset.
+        Extract and process timeseries list items.
 
         Steps:
-            1. Reads listitems data from a Parquet file and renames columns (e.g. {icu_stay_id_col}).
-            2. Joins with a lookup table via _extract_list_references() to map item IDs to standardized names.
-            3. Adjusts values for pain and sedation scores.
-            4. Computes Glasgow Coma Scale (GCS) using _compute_gcs() and reshapes the data frame.
-            5. Filters the data for relevant vital, respiratory, and intake/output items.
+            1. Read listitems from parquet file.
+            2. Map item IDs to standardized names via reference lookup.
+            3. Adjust values for pain and sedation scores.
+            4. Compute Glasgow Coma Scale (GCS) from component items.
+            5. Filter for relevant vital, respiratory, and intake/output measurements.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with the following columns:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - "item": Standardized item name.
-                - "value": Processed measurement value.
+                - item: Standardized item name.
+                - value: Measurement value (processed).
         """
 
         listitems = (
@@ -347,17 +341,19 @@ class UMCdbExtractor(UMCdbPaths):
     # region numeric
     def extract_timeseries_numericitems(self) -> pl.LazyFrame:
         """
-        Extract and filter timeseries numeric items from the dataset.
+        Extract and filter timeseries numeric items.
 
         Steps:
-            1. Invokes helper function _extract_timeseries_numericitems() to read and process numeric data.
-            2. Filters the resulting data for specific lists of vital, respiratory, and intake/output measurements.
+            1. Read numeric items from parquet file (labs excluded).
+            2. Map item IDs to standardized names via reference lookup.
+            3. Convert values to float where possible.
+            4. Filter for relevant vital, respiratory, and intake/output measurements.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - "item": Standardized numeric item name.
-                - "value": Numeric measurement value.
+                - item: Standardized numeric item name.
+                - value: Numeric measurement value (float).
         """
 
         return self._extract_timeseries_numericitems().filter(
@@ -371,20 +367,21 @@ class UMCdbExtractor(UMCdbPaths):
     # Separate the lab values from the rest
     def extract_timeseries_labs(self) -> pl.LazyFrame:
         """
-        Extract timeseries laboratory data from numeric items.
+        Extract laboratory measurements and map to LOINC concepts.
 
         Steps:
-            1. Retrieves numeric lab data via _extract_timeseries_numericitems().
-            2. Processes the lab data with _extract_timeseries_labs_helper() to map to LOINC concepts.
-            3. Structures the lab details into a single "labstruct" column.
+            1. Read lab items from numeric items (labs only).
+            2. Process lab data with LOINC mapping.
+            3. Join with LOINC reference mappings.
+            4. Filter for relevant lab components and systems.
+            5. Create struct column with LOINC details.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time offset in seconds from ICU admission.
-                - "item": Laboratory test name (mapped from LOINC component).
-                - "labstruct": A struct with keys: {value} (lab result), {system} (LOINC system), {method} (LOINC method),
-                  {time} (LOINC time aspect), and {LOINC} (LOINC code).
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - item: Laboratory test name.
+                - labstruct: Struct with value, system, method, time, LOINC code.
         """
 
         return self._extract_timeseries_labs_helper(
@@ -396,20 +393,21 @@ class UMCdbExtractor(UMCdbPaths):
         self, labs: bool = False
     ) -> pl.LazyFrame:
         """
-        Internal helper to extract and process numeric timeseries data from a Parquet file.
+        Internal helper to extract and process numeric timeseries data.
 
         Steps:
-            1. Reads numeric items from the file indicated by {numericitems_path}.
-            2. Selects required columns and renames {admissionid} to {icu_stay_id_col}.
-            3. Joins with numeric references from _extract_numeric_references() to standardize item names.
-            4. Processes timeseries data via _extract_timeseries_helper().
-            5. Attempts to cast "value" to float.
+            1. Read numeric items from parquet file.
+            2. Filter for labs or non-labs based on parameter.
+            3. Rename columns to standardized names.
+            4. Join with numeric item references to map to standard names.
+            5. Align data with ICU admission time using helper.
+            6. Convert values to float.
 
         Returns:
-            pl.LazyFrame: A LazyFrame with columns:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - "item": Standardized numeric item name.
-                - "value": Numeric measurement value.
+                - item: Standardized numeric item name.
+                - value: Numeric measurement value (float).
         """
 
         return (
@@ -430,19 +428,19 @@ class UMCdbExtractor(UMCdbPaths):
     # filter and rename columns for timeseries data
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Filter and adjust raw timeseries data relative to ICU admission.
+        Filter and align raw timeseries data to ICU admission time.
 
         Steps:
-            1. Reads admission times from file {admissions_path} and renames columns to 'intime' and 'outtime'.
-            2. Joins the provided data with these admission times using {icu_stay_id_col}.
-            3. Filters data to retain only records within the ICU stay plus a predefined pre-ICU cutoff.
-            4. Computes a time offset {timeseries_time_col} in seconds from ICU admission.
+            1. Read admission times and discharge times from admissions data.
+            2. Join data with admission/discharge times.
+            3. Filter to retain only records within ICU stay plus pre-ICU cutoff.
+            4. Compute time offset in seconds from ICU admission.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time offset in seconds from ICU admission.
-                - (Other columns from `data` with timeseries alignment applied.)
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - Other columns from input data.
         """
 
         intimes = (
@@ -489,21 +487,21 @@ class UMCdbExtractor(UMCdbPaths):
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Process laboratory timeseries data to map numeric items to LOINC concepts.
+        Map laboratory data to LOINC concepts.
 
         Steps:
-            1. Reads the lab mapping CSV from {numericitems_lab_mapping_path} and extracts unique lab names.
-            2. Creates additional columns mapping lab tests to LOINC component, system, method, time aspect, and code.
-            3. Joins the lab mapping with the provided numeric lab data.
-            4. Filters the dataframe for labs of interest based on LOINC components and systems.
-            5. Creates a structured column "labstruct" that encapsulates detailed lab information.
+            1. Extract unique lab test names from mapping file.
+            2. Derive LOINC components (component, system, method, time aspect, code).
+            3. Join LOINC mappings with lab data.
+            4. Filter for relevant lab components and systems.
+            5. Create struct column with LOINC details and lab value.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {timeseries_time_col}: Time offset (seconds) from ICU admission.
-                - "item": Laboratory test name.
-                - "labstruct": Struct with keys {value}, {system}, {method}, {time}, and {LOINC}.
+                - item: Laboratory test name.
+                - labstruct: Struct with value, system, method, time, LOINC code.
         """
 
         LOINC_data = (
@@ -596,24 +594,24 @@ class UMCdbExtractor(UMCdbPaths):
     # https://github.com/AmsterdamUMC/AmsterdamUMCdb/blob/master/amsterdamumcdb/sql/common/legacy/gcs.sql
     def _compute_gcs(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
-        Compute the Glasgow Coma Scale (GCS) scores from timeseries data.
+        Compute Glasgow Coma Scale (GCS) scores from timeseries data.
 
         Steps:
-            1. Determines whether a precomputed GCS file exists and, if so, uses it.
-            2. Reads admission times and sorts the data by {icu_stay_id_col} and related time columns.
-            3. Filters data separately to compute eye opening, motor, and verbal scores based on item IDs.
-            4. Adjusts scores using specific arithmetic transformations.
-            5. Aggregates individual scores into a total GCS score and replaces 'registeredby' with a priority order.
-            6. Groups the data by {icu_stay_id_col} and selects the first valid scores.
+            1. Check for precomputed parquet file; load if available.
+            2. Otherwise, filter data for each GCS component (eye, motor, verbal).
+            3. Apply component-specific score transformations.
+            4. Join component scores and compute total GCS.
+            5. Group by patient/time and select first valid score.
+            6. Save result as parquet file for future reuse.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - "Glasgow coma score eye opening": Numeric score for eye opening.
-                - "Glasgow coma score motor": Numeric score for motor response.
-                - "Glasgow coma score verbal": Numeric score for verbal response.
-                - "Glasgow coma score total": Total GCS score.
-                - "registeredby": Prioritized identifier for the scorer.
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - Glasgow coma score eye opening: Eye opening component (1-4).
+                - Glasgow coma score motor: Motor component (1-6).
+                - Glasgow coma score verbal: Verbal component (1-5).
+                - Glasgow coma score total: Total GCS (3-15).
         """
 
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
@@ -764,31 +762,30 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract medication information from the drugitems.csv file
     def extract_medications(self) -> pl.LazyFrame:
         """
-        Extract and process medication administration data from UMCdb.
+        Extract medication administration events.
 
         Steps:
-            1. Loads medication mapping files and mapping CSVs.
-            2. Reads medication data from a Parquet file specified by {drugitems_path}.
-            3. Renames columns (e.g. {icu_stay_id_col}, {drug_name_col}, {drug_start_col}, {drug_end_col}).
-            4. Joins with admission times to compute drug start and end times relative to ICU admission.
-            5. Converts time values from absolute timestamps to numeric offsets (in seconds).
-            6. Standardizes drug names using multiple mapping dictionaries and helper functions.
-            7. Creates separate columns for drug amount and rate based on data availability.
-            8. Filters out rows with missing values in key columns.
+            1. Load medication reference mappings and ingredient mappings.
+            2. Read drugitems from parquet, map IDs to standardized names.
+            3. Normalize drug units and map to standardized values.
+            4. Separate drug items by category (with solution, without solution, fluids, mixtures).
+            5. Process each category to handle additive medications and fluid components.
+            6. Compute time offsets relative to ICU admission.
+            7. Combine all medication data and filter for valid entries.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {drug_mixture_admin_id_col}: Mixture administration identifier.
-                - {drug_name_col}: Original drug name.
-                - {drug_ingredient_col}: Standardized active ingredient.
-                - {drug_amount_col}: Drug dose amount (if available).
-                - {drug_amount_unit_col}: Unit for the drug amount.
-                - {drug_rate_col}: Calculated infusion rate.
-                - {drug_rate_unit_col}: Unit for the drug rate.
-                - {drug_start_col}: Start time (seconds) relative to ICU admission.
-                - {drug_end_col}: End time (seconds) relative to ICU admission.
-                - {fluid_amount_col}: Fluid amount administered (if available).
+                - {drug_mixture_admin_id_col}: Medication event identifier.
+                - {drug_name_col}: Medication name.
+                - {drug_ingredient_col}: Active drug ingredient.
+                - {drug_amount_col}: Drug amount.
+                - {drug_amount_unit_col}: Amount unit.
+                - {drug_rate_col}: Administration rate.
+                - {drug_rate_unit_col}: Rate unit.
+                - {drug_start_col}: Relative start time (seconds).
+                - {drug_end_col}: Relative end time (seconds).
+                - {drug_admin_type_col}: Administration type.
         """
 
         print("UMCdb   - Extracting medications...")
@@ -1110,22 +1107,23 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract procedure information from the procedures.csv file
     def extract_procedures(self) -> pl.LazyFrame:
         """
-        Extract and process procedure data from UMCdb.
+        Extract procedure events from two data sources.
 
         Steps:
-            1. Reads procedure events from two sources: procedure order items and process items.
-            2. Retrieves admission times from file and renames columns (e.g. {person_id_col}, {icu_stay_id_col}).
-            3. Concatenates both sources of procedure data.
-            4. Joins with admission time details to compute procedure start and end times relative to ICU admission.
-            5. Filters procedures to include only those within a valid time window.
-            6. Replaces procedure IDs with standardized procedure descriptions using a reference mapping.
+            1. Read procedure order items and process items from parquet files.
+            2. Concatenate both sources of procedure data.
+            3. Join with ICU admission times.
+            4. Filter procedures within ICU stay window.
+            5. Compute relative start and end times from ICU admission.
+            6. Map procedure IDs to standardized descriptions.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
+                - {person_id_col}: Patient identifier.
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {procedure_start_col}: Procedure start time (seconds) relative to ICU admission.
-                - {procedure_end_col}: Procedure end time (seconds) relative to ICU admission.
-                - {procedure_description_col}: Standardized procedure description.
+                - {procedure_start_col}: Procedure start time (seconds) from admission.
+                - {procedure_end_col}: Procedure end time (seconds) from admission.
+                - {procedure_description_col}: Procedure description.
         """
 
         print("UMCdb   - Extracting procedures...")
@@ -1200,20 +1198,20 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract APACHE admission information from the listitems.csv file
     def extract_APACHE_admission(self) -> pl.LazyFrame:
         """
-        Extract and process APACHE admission diagnoses for ICU patients.
+        Extract APACHE admission diagnoses.
 
         Steps:
-            1. Loads APACHE mapping from file using helpers.load_mapping({apache_mapping_path}).
-            2. Reads listitems data and renames {admissionid} to {icu_stay_id_col}.
-            3. Uses a series of conditional statements to assign a type identifier based on {itemid}.
-            4. Filters, renames, and adjusts diagnosis text and identifiers.
-            5. Groups by {icu_stay_id_col} and selects the first record.
-            6. Replaces diagnosis values using the APACHE mapping.
+            1. Load APACHE diagnosis mapping.
+            2. Read listitems and filter for APACHE-related item IDs.
+            3. Assign type identifier based on item ID.
+            4. Filter and rename diagnosis value columns.
+            5. Group by patient and select first diagnosis.
+            6. Map diagnosis value using APACHE reference mapping.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing:
+            pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {admission_diagnosis_col}: Standardized admission diagnosis.
+                - {admission_diagnosis_col}: Admission diagnosis mapped to APACHE group.
         """
 
         APACHE_mapping = self.helpers.load_mapping(self.apache_mapping_path)

@@ -2,7 +2,8 @@
 # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_durations.sql
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
@@ -11,6 +12,24 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
+        """
+        Extract ventilation episodes from MIMIC-III chartevents.
+
+        Steps:
+            1. Identify ventilation by chartevents item IDs (mode, type, settings).
+            2. Identify extubation events (item 640).
+            3. Identify NIV/oxygen transitions marking vent end.
+            4. Calculate episode duration from start to end using max pause threshold.
+            5. Classify ventilation type (invasive, NIV, tracheostomy, etc.).
+            6. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - ICUSTAY_ID: ICU stay identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - MIMIC3")
 
         # get admission times for MIMIC-III

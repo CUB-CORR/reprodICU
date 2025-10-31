@@ -8,9 +8,10 @@
 import os
 
 import polars as pl
-from helpers.A_extract.A_extract_nwicu import NWICUExtractor
-from helpers.helper import GlobalHelpers
-from helpers.helper_conversions import UnitConverter
+
+from ..A_extract.A_extract_nwicu import NWICUExtractor
+from ..helper import GlobalHelpers
+from ..helper_conversions import UnitConverter
 
 
 class NWICUProcessor(NWICUExtractor):
@@ -46,25 +47,20 @@ class NWICUProcessor(NWICUExtractor):
     # region vitals
     def process_timeseries_vitals(self):
         """
-        Processes and pivots vital sign measurements for NWICU.
+        Process vital sign time series measurements.
 
         Steps:
-          1. Check for an existing cached vital data file in {precalc_path}.
-          2. If found, load the file with sorted index columns ({icu_stay_id_col} and {timeseries_time_col}).
-          3. Otherwise, extract vital measurements via extract_chartevents(), then:
-             • Convert temperature from Fahrenheit to Celsius.
-             • Pivot the data on "label" using mean aggregation.
-          4. Drop rows where all non-index columns are null.
-          5. Save the unsorted result, sort by {icu_stay_id_col} and {timeseries_time_col}, and remove temporary files.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Time offset (seconds) since ICU admission.
-          - "label": Vital sign label.
-          - Other columns: Numerical measurements.
+            1. Check for preprocessed vitals file; load if available.
+            2. Extract chart events and apply temperature conversion (F→C).
+            3. Pivot data on "label" using mean aggregation for wide-format.
+            4. Drop rows where all non-index columns are null.
+            5. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: A sorted wide-format LazyFrame with vital data.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Vital sign measurement columns (pivoted from label).
         """
         ts_vitals_path = self.precalc_path + "NWICU_timeseries_vitals.parquet"
         ts_vitals_path_unsorted = self.precalc_path + "NWICU_ts_vitals.parquet"
@@ -129,25 +125,22 @@ class NWICUProcessor(NWICUExtractor):
     # region lab
     def process_timeseries_labevents(self):
         """
-        Processes laboratory measurement data for NWICU.
+        Process laboratory time series measurements.
 
         Steps:
-          1. Check if a preprocessed laboratory file exists in {precalc_path} and load it if so.
-          2. Otherwise, extract lab measurements via extract_lab_measurements().
-          3. Convert lab values to canonical units using _convert_lab_values.
-          4. JSON encode the "labstruct" field.
-          5. Pivot on "label" so that each lab test becomes its own column.
-          6. Adjust wide-format lab values using _convert_wide_lab_values.
-          7. Save the unsorted result, sort by {icu_stay_id_col} and {timeseries_time_col}, and remove temporary files.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Observation time (seconds).
-          - "label": Lab test pivot key.
-          - "labstruct": JSON-encoded lab result structure containing {value}.
+            1. Check for preprocessed labs file; load if available.
+            2. Extract lab measurements.
+            3. Convert lab values to canonical units.
+            4. Apply LOINC component mapping and JSON encode structured fields.
+            5. Pivot data on "label" to create wide-format dataset.
+            6. Apply post-pivot unit conversions and percentage calculations.
+            7. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: A sorted wide-format LazyFrame with laboratory data.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Laboratory measurement columns (pivoted from label, JSON-encoded).
         """
         ts_labs_path = self.precalc_path + "NWICU_timeseries_labs.parquet"
         ts_labs_path_unsorted = self.precalc_path + "NWICU_ts_labs.parquet"
@@ -296,18 +289,17 @@ class NWICUConverter(UnitConverter):
         valuecol: str = "valuenum",
         structfield: str = "value",
     ) -> pl.LazyFrame:
-        """
-        Converts lab measurement values for NWICU to canonical units.
+        """Convert raw lab values to canonical units.
 
-        Applies a series of conversion functions (via .pipe calls) on specific lab tests based on their item IDs.
-        Conversions include temperature, inflammation markers, and electrolyte-related values.
+        Applies sequential unit conversions for multiple lab tests including:
+        calcium, creatinine kinase, proteins, hormones, and cardiac markers.
 
-        Expected input columns:
-          - {labelcol}: Lab test identifier.
-          - {valuecol}: Field storing numerical value or a struct containing {structfield}.
+        Expected columns:
+            - {labelcol}: Lab test identifier.
+            - {valuecol}: Lab measurement value.
 
         Returns:
-            pl.LazyFrame: Lab data with converted values.
+            pl.LazyFrame: Lab data with unit-converted values.
         """
 
         # Convert the lab values to the correct units.
@@ -450,23 +442,13 @@ class NWICUConverter(UnitConverter):
         )
 
     def _convert_wide_lab_values(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        Convert wide-format lab values to relative measurements.
+        """Convert wide-format lab values to relative percentages.
 
-        For lab analytes reported as absolute counts, this method converts them to relative values
-        (e.g. counts per 100 {total_itemcol}) for:
-          - "Basophils" relative to "Leukocytes" as {Basophils/100 leukocytes}
-          - "Eosinophils" relative to "Leukocytes" as {Eosinophils/100 leukocytes}
-          - "Lymphocytes" relative to "Leukocytes" as {Lymphocytes/100 leukocytes}
-          - "Monocytes" relative to "Leukocytes" as {Monocytes/100 leukocytes}
-          - "Neutrophils" relative to "Leukocytes" as {Neutrophils/100 leukocytes}
-          - "Reticulocytes" relative to "Erythrocytes" as {Reticulocytes/100 erythrocytes}
-
-        Args:
-            data (pl.LazyFrame): Wide-format lab data with already pivoted columns.
+        Transforms absolute counts to percentages for differential cell counts
+        (basophils, eosinophils, lymphocytes, monocytes, neutrophils).
 
         Returns:
-            pl.LazyFrame: LazyFrame with the applicable lab columns converted to relative measurements.
+            pl.LazyFrame: Lab data with calculated percentage values.
         """
 
         return (

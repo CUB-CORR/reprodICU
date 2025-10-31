@@ -21,14 +21,15 @@ class X2_Winsorizer:
         self, data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
     ) -> pl.LazyFrame:
         """
-        Winsorize the data to remove outliers.
-        Clip the data to the 1-alpha quantile (lower) and alpha quantile (upper bound).
+        Clip outliers to quantile bounds (symmetric winsorization).
 
-        :param data: The data to be winsorized.
-        :param columns: The columns to be winsorized.
-        :param alpha: The quantile to be used for winsorization.
+        Steps:
+            1. Calculate lower quantile at (1-alpha) and upper at alpha.
+            2. Clip each column to these bounds.
+            3. Replace original values with clipped values.
 
-        :return: The winsorized data.
+        Returns:
+            pl.LazyFrame: Data with winsorized columns.
         """
 
         return data.with_columns(
@@ -47,14 +48,15 @@ class X2_Winsorizer:
         self, data: pl.LazyFrame, columns: list, alpha=0.99, **kwargs
     ) -> pl.LazyFrame:
         """
-        Winsorize the data to remove outliers.
-        Clip the data to 0 (lower) and alpha quantile (upper bound).
+        Clip to 0 (lower) and alpha quantile (upper bound).
 
-        :param data: The data to be winsorized.
-        :param columns: The columns to be winsorized.
-        :param alpha: The quantile to be used for winsorization.
+        Steps:
+            1. Calculate upper quantile at alpha.
+            2. Clip each column from 0 to quantile.
+            3. Remove negative values and extreme highs.
 
-        :return: The winsorized data.
+        Returns:
+            pl.LazyFrame: Data with winsorized columns (non-negative).
         """
 
         return data.with_columns(
@@ -70,13 +72,15 @@ class X2_Winsorizer:
         self, data: pl.LazyFrame, columns: list, **kwargs
     ) -> pl.LazyFrame:
         """
-        Winsorize the data to remove outliers.
-        Clip the data to 0 (lower), the upper bound is not changed.
+        Clip to 0 (lower bound only).
 
-        :param data: The data to be winsorized.
-        :param columns: The columns to be winsorized.
+        Steps:
+            1. Set lower bound to 0.
+            2. Keep upper bound unchanged.
+            3. Replace negative values with 0.
 
-        :return: The winsorized data.
+        Returns:
+            pl.LazyFrame: Data with non-negative values.
         """
 
         return data.with_columns(
@@ -95,13 +99,15 @@ class X2_Winsorizer:
         **kwargs,
     ) -> pl.LazyFrame:
         """
-        Winsorize the data to remove outliers.
-        Clip the data to the specified lower and upper bounds.
+        Clip each column to specified lower and upper bounds.
 
-        :param data: The data to be winsorized.
-        :param columns: The columns to be winsorized.
+        Steps:
+            1. Iterate over columns with paired lower/upper bounds.
+            2. Clip each column independently.
+            3. Replace values outside bounds.
 
-        :return: The winsorized data.
+        Returns:
+            pl.LazyFrame: Data with column-specific bounds applied.
         """
 
         return data.with_columns(
@@ -121,7 +127,19 @@ class X2_Winsorizer:
         **kwargs,
     ) -> pl.LazyFrame:
         """
-        Split the struct columns and winsorize the individual columns before reassembling the struct.
+        Winsorize struct columns by disaggregating, processing, and reassembling.
+
+        Steps:
+            1. For each column to winsorize:
+            2. If non-struct: apply winsorization method directly.
+            3. If struct: unnest to get individual LOINC measurements.
+            4. For each unique LOINC code: extract values to separate column.
+            5. Apply winsorization method to disaggregated columns.
+            6. Coalesce back to single value column.
+            7. Reassemble struct with normalized values.
+
+        Returns:
+            pl.LazyFrame: Data with winsorized struct values.
         """
 
         # Assert methods are valid
@@ -205,9 +223,3 @@ class X2_Winsorizer:
         print("reprodICU - Winsorization complete.")
 
         return data
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

@@ -2,7 +2,8 @@
 # and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/ventilation_durations.sql
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
@@ -133,7 +134,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 # ventilator mode
                 .when(
                     pl.col("ITEMID") == 223849,
-                 pl.col("VALUE") != "Standby",
+                    pl.col("VALUE") != "Standby",
                 ).then(1)
                 # O2 delivery device == ventilator
                 .when(
@@ -208,8 +209,10 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
             )
             .collect()
         )
-        
-        CHARTEVENTS_VENTILATION_CLASSIFICATION.write_parquet("debug_chartevents_ventilation_classification.parquet")
+
+        CHARTEVENTS_VENTILATION_CLASSIFICATION.write_parquet(
+            "debug_chartevents_ventilation_classification.parquet"
+        )
 
         # add in the extubation flags from procedureevents_mv
         # note that we only need the start time for the extubation

@@ -6,9 +6,8 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-import os
 
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class SEVERITY_SCORES(MAGIC_CONCEPTS):
@@ -17,25 +16,25 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
 
     def SEVERITY_SCORES(self) -> pl.DataFrame:
         """
-        Returns the magic concept SEVERITY_SCORES
+        Extract severity/acuity scores from multiple ICU databases.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each available database: extract APACHE, APS, SOFA, SAPS scores.
+            2. Map database-specific item IDs to standardized score names.
+            3. Calculate time relative to ICU admission.
+            4. Concatenate scores from all databases.
 
-        Returns a DataFrame with the following columns:
-        - Global ICU stay ID
-        - Time Relative to Admission (seconds)
-        - SEVERITY_SCORES:
-            - APACHE II (MIMIC-III, MIMIC-IV, UMCdb)
-            - APACHE III (MIMIC-III, MIMIC-IV, UMCdb)
-            - APACHE IV (eICU, UMCdb)
-            - APS III (eICU, MIMIC-III, MIMIC-IV)
-            - SOFA (MIMIC-III, MIMIC-IV)
-            - SAPS II (UMCdb)
-            - SAPS III (SICdb)
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - APACHE II: Acute Physiology and Chronic Health Evaluation II score.  (MIMIC-III, MIMIC-IV, UMCdb)
+                - APACHE III: Acute Physiology and Chronic Health Evaluation III score.  (MIMIC-III, MIMIC-IV, UMCdb)
+                - APACHE IV: Acute Physiology and Chronic Health Evaluation IV score. (eICU, UMCdb)
+                - APS III: Acute Physiology Score III. (eICU, MIMIC-III, MIMIC-IV)
+                - SOFA: Sequential Organ Failure Assessment. (MIMIC-III, MIMIC-IV)
+                - SAPS II: Simplified Acute Physiology Score II. (UMCdb)
+                - SAPS III: Simplified Acute Physiology Score III. (SICdb)
         """
 
         # region eICU

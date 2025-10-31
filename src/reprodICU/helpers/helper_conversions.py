@@ -5,8 +5,9 @@
 # Conversion constants were taken from: https://www.labcorp.com/resource/si-unit-conversion-table
 
 import polars as pl
-from helper import GlobalVars
-from helpers.helper_OMOP import Vocabulary
+
+from .helper import GlobalVars
+from .helper_OMOP import Vocabulary
 
 
 def _struct_with_all_null_to_null(
@@ -14,25 +15,14 @@ def _struct_with_all_null_to_null(
     struct_cols: list[str],
 ) -> pl.DataFrame:
     """
-    Set any structs to null that have all null fields.
+    Replace struct columns with null when all struct fields are null.
 
-    WARNING
-    -------
-    The function only checks for null in the current struct fields. It doesn't
-    do recursive checks on structs inside the struct that could also have all
-    null fields.
+    Steps:
+        1. Check if any field within each struct column is non-null.
+        2. Keep struct if any field is non-null; replace with null otherwise.
 
-    Parameters
-    ----------
-    frame: pl.DataFrame
-        The frame to modify.
-    struct_col: str
-        The name of the struct column to modify.
-
-    Returns
-    -------
-    pl.DataFrame
-        Modified DataFrame.
+    Returns:
+        pl.DataFrame: Modified DataFrame with null-all-fields structs replaced by null.
     """
     # If any struct field is non-null, then keep the struct, otherwise replace it by null.
     return frame.with_columns(
@@ -63,10 +53,17 @@ class GCSCombiner:
         total_score: str = "glasgow_coma_score",
     ) -> pl.LazyFrame:
         """
-        Combine the GCS components to the GCS total score.
+        Combine Glasgow Coma Scale (GCS) component subscores into total score.
+
+        Steps:
+            1. If total score is null, sum eye + motor + verbal subscores.
+            2. Otherwise keep existing total score value.
+
+        Returns:
+            pl.LazyFrame: Data with calculated {total_score_col} column (or existing value preserved).
         """
         return data.with_columns(
-            pl.when(pl.col(total_score) == None)
+            pl.when(pl.col(total_score).is_null())
             .then(
                 pl.col(eye_subscore)
                 + pl.col(motor_subscore)
@@ -93,8 +90,15 @@ class UnitConversions(GlobalVars):
         structfield: str = None,
         structstring: bool = False,
     ) -> pl.LazyFrame:
-        """
-        Convert absolute counts to relative counts.
+        """Convert absolute counts to relative counts (as percentage).
+
+        Steps:
+            1. Ensure goal column exists; create with null struct if missing.
+            2. For structfield: decode JSON, calculate relative percentage, rebuild struct.
+            3. For non-struct: divide itemcol by total_itemcol and multiply by 100.
+
+        Returns:
+            pl.LazyFrame: Data with relative count values replacing absolute counts.
         """
         if goal_itemcol is None:
             goal_itemcol = itemcol
@@ -111,7 +115,7 @@ class UnitConversions(GlobalVars):
                 .struct.json_encode()
                 .alias(goal_itemcol)
             )
-            
+
         temp_itemcol = f"temp_{itemcol}"
 
         if structfield is not None:
@@ -221,8 +225,15 @@ class UnitConversions(GlobalVars):
         labelcol: str = "LABEL",
         valuecol: str = "VALUENUM",
     ) -> pl.LazyFrame:
-        """
-        Convert temperature values to Celsius.
+        """Convert temperature values from Fahrenheit to Celsius.
+
+        Steps:
+            1. Filter rows where label matches itemid_F.
+            2. Apply conversion formula: (value - 32) * 5/9.
+            3. Update label from itemid_F to itemid_C.
+
+        Returns:
+            pl.LazyFrame: Data with converted temperature values and updated labels.
         """
         return data.with_columns(
             pl.when(pl.col(labelcol) == itemid_F)
@@ -245,8 +256,15 @@ class UnitConversions(GlobalVars):
         factor: float = 1,
         changes_LOINC_property: bool = True,
     ) -> pl.LazyFrame:
-        """
-        Convert values from one unit to another.
+        """Convert unit values by applying a multiplicative conversion factor.
+
+        Steps:
+            1. Filter rows where label matches itemid.
+            2. Apply conversion: multiply value column by factor.
+            3. For structfield: decode struct, apply conversion, update LOINC if changes_LOINC_property=True.
+
+        Returns:
+            pl.LazyFrame: Data with converted values; LOINC set to null if changes_LOINC_property=True.
         """
         if structfield is not None:
             return (
@@ -284,41 +302,31 @@ class UnitConversions(GlobalVars):
     def convert_ammonia_ug_dL_to_umol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert ammonia values from µg/dL to µmol/L.
-        """
+        """Convert ammonia values from µg/dL to µmol/L (factor: 0.59)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.59, **kwargs)
 
     def convert_bilirubin_mg_dL_to_umol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert bilirubin total values from mg/dL to µmol/L.
-        """
+        """Convert bilirubin values from mg/dL to µmol/L (factor: 17.1)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=17.1, **kwargs)
 
     def convert_bilirubin_umol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert bilirubin total values from µmol/L to mg/dL.
-        """
+        """Convert bilirubin values from µmol/L to mg/dL (factor: 1/17.1)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1 / 17.1, **kwargs)
 
     def convert_blood_urea_nitrogen_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert blood urea nitrogen values from mg/dL to mmol/L.
-        """
+        """Convert blood urea nitrogen values from mg/dL to mmol/L (factor: 0.357)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.357, **kwargs)
 
     def convert_blood_urea_nitrogen_mmol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert blood urea nitrogen values from mmol/L to mg/dL.
-        """
+        """Convert blood urea nitrogen values from mmol/L to mg/dL (factor: 1/0.357)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.357, **kwargs)
 
     def convert_urea_nitrogen_from_urea(
@@ -330,8 +338,15 @@ class UnitConversions(GlobalVars):
         valuecol: str = "VALUENUM",
         structfield: str = None,
     ) -> pl.LazyFrame:
-        """
-        Convert urea nitrogen values from urea.
+        """Convert urea nitrogen values from urea by multiplying by 0.467.
+
+        Steps:
+            1. Filter rows where label matches itemid_urea.
+            2. Apply conversion: multiply value by 0.467.
+            3. Update label from itemid_urea to itemid_BUN (preserves LOINC).
+
+        Returns:
+            pl.LazyFrame: Data with converted urea nitrogen values and updated labels.
         """
 
         if structfield is not None:
@@ -373,64 +388,43 @@ class UnitConversions(GlobalVars):
     def convert_calcium_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert calcium values from mg/dL to mmol/L.
-        """
+        """Convert calcium values from mg/dL to mmol/L (factor: 0.2495)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.2495, **kwargs)
 
     def convert_CKMB_ng_mL_to_U_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert CKMB values from ng/mL to U/L.
-        Does nothing, but is used for consistency.
-
-        1 ng/mL = 1 µg/L
-        1 µg/L  = 0.01667 µkat/L
-        1 µkat/L = 60 U/L
-
-        1 ng/mL = 1 * 0.01667 * 60 U/L = 1 U/L
-        """
+        """Convert CKMB values from ng/mL to U/L (factor: 1, identity conversion)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1, **kwargs)
 
     def convert_creatinine_mg_dL_to_umol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert creatinine values from mg/dL to µmol/L.
-        """
+        """Convert creatinine values from mg/dL to µmol/L (factor: 88.4)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=88.4, **kwargs)
 
     def convert_creatinine_umol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert creatinine values from µmol/L to mg/dL.
-        """
+        """Convert creatinine values from µmol/L to mg/dL (factor: 1/88.4)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1 / 88.4, **kwargs)
 
     def convert_creatinine_mmol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert creatinine values from mmol/L to mg/dL.
-        """
+        """Convert creatinine values from mmol/L to mg/dL (factor: 11.312)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=11.312, **kwargs)
 
     def convert_cholesterol_mmol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert total cholesterol values from mmol/L to mg/dL.
-        """
+        """Convert total cholesterol values from mmol/L to mg/dL (factor: 38.665)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=38.665, **kwargs)
 
     def convert_cortisol_nmol_L_to_ug_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert cortisol values from nmol/L to µg/dL.
-        """
+        """Convert cortisol values from nmol/L to µg/dL (factor: 0.0363)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.0363, **kwargs)
 
     def convert_FEU_to_DDU(
@@ -441,8 +435,15 @@ class UnitConversions(GlobalVars):
         valuecol: str = "VALUENUM",
         structfield: str = None,
     ) -> pl.LazyFrame:
-        """
-        Convert D-Dimer values from FEU to DDU.
+        """Convert D-Dimer values from FEU (Fibrinogen Equivalent Unit) to DDU (D-Dimer Unit).
+
+        Steps:
+            1. Filter rows where label matches itemid.
+            2. Apply conversion: divide value by 2.
+            3. Update label: replace "FEU" with "DDU" in label string.
+
+        Returns:
+            pl.LazyFrame: Data with converted D-Dimer values and updated labels.
         """
 
         if structfield is not None:
@@ -485,103 +486,77 @@ class UnitConversions(GlobalVars):
     def convert_folate_nmol_L_to_ng_mL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert folate values from nmol/L to ng/mL.
-        """
+        """Convert folate values from nmol/L to ng/mL (factor: 2.265)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=2.265, **kwargs)
 
     def convert_glucose_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert glucose values from mg/dL to mmol/L.
-        """
+        """Convert glucose values from mg/dL to mmol/L (factor: 0.0555)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.0555, **kwargs)
 
     def convert_glucose_mmol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert glucose values from mmol/L to mg/dL.
-        """
+        """Convert glucose values from mmol/L to mg/dL (factor: 1/0.0555)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1 / 0.0555, **kwargs)
 
     def convert_hemoglobin_mmol_L_to_g_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert hemoglobin values from mmol/L to g/dL.
-        """
+        """Convert hemoglobin values from mmol/L to g/dL (factor: 1.61)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=1.61, **kwargs)
 
     def convert_iron_ug_dL_to_umol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert iron values from µg/dL to µmol/L.
-        """
+        """Convert iron values from µg/dL to µmol/L (factor: 0.179)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.179, **kwargs)
 
     def convert_magnesium_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert magnesium values from mg/dL to mmol/L.
-        """
+        """Convert magnesium values from mg/dL to mmol/L (factor: 0.4114)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.4114, **kwargs)
 
     def convert_phosphate_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert phosphate values from mg/dL to mmol/L.
-        """
+        """Convert phosphate values from mg/dL to mmol/L (factor: 0.323)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.323, **kwargs)
 
     def convert_T3_ng_dL_to_nmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert T3 values from ng/dL to nmol/L.
-        """
+        """Convert T3 values from ng/dL to nmol/L (factor: 0.0154)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.0154, **kwargs)
 
     def convert_T4_ug_dL_to_nmol_L_or_ng_dL_to_pmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert T4 values from µg/dL to nmol/L or from ng/dL to pmol/L.
-        """
+        """Convert T4 values from µg/dL to nmol/L or from ng/dL to pmol/L (factor: 12.9)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=12.9, **kwargs)
 
     def convert_triglycerides_mmol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert triglycerides values from mmol/L to mg/dL.
-        """
+        """Convert triglycerides values from mmol/L to mg/dL (factor: 88.5)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=88.5, **kwargs)
 
     def convert_urate_umol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert urate values from µmol/L to mg/dL.
-        """
+        """Convert urate values from µmol/L to mg/dL (factor: 16.9)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=16.9, **kwargs)
 
     def convert_VitB12_pg_mL_to_pmol_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert Vitamin B12 values from pg/mL to pmol/L.
-        """
+        """Convert Vitamin B12 values from pg/mL to pmol/L (factor: 0.738)."""
         return data.pipe(self.GENERIC_CONVERTER, factor=0.738, **kwargs)
 
     def convert_g_dL_to_g_L(self, data: pl.LazyFrame, **kwargs) -> pl.LazyFrame:
-        """
-        Convert values from g/dL to g/L.
-        """
+        """Convert values from g/dL to g/L (factor: 10, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=10,
@@ -590,9 +565,7 @@ class UnitConversions(GlobalVars):
         )
 
     def convert_g_L_to_g_dL(self, data: pl.LazyFrame, **kwargs) -> pl.LazyFrame:
-        """
-        Convert values from g/L to g/dL.
-        """
+        """Convert values from g/L to g/dL (factor: 1/10, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1 / 10,
@@ -603,9 +576,7 @@ class UnitConversions(GlobalVars):
     def convert_g_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from g/L to mg/dL.
-        """
+        """Convert values from g/L to mg/dL (factor: 100, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=100,
@@ -616,9 +587,7 @@ class UnitConversions(GlobalVars):
     def convert_mg_dL_to_mg_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from mg/dL to mg/L.
-        """
+        """Convert values from mg/dL to mg/L (factor: 10, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=10,
@@ -629,9 +598,7 @@ class UnitConversions(GlobalVars):
     def convert_mg_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from mg/dL to mg/L.
-        """
+        """Convert values from mg/L to mg/dL (factor: 1/10, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1 / 10,
@@ -642,9 +609,7 @@ class UnitConversions(GlobalVars):
     def convert_ng_L_to_ug_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from ng/L to µg/L.
-        """
+        """Convert values from ng/L to µg/L (factor: 1/1000, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1 / 1000,
@@ -655,9 +620,7 @@ class UnitConversions(GlobalVars):
     def convert_ug_L_to_ng_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from µg/L to ng/L.
-        """
+        """Convert values from µg/L to ng/L (factor: 1000, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1000,
@@ -668,10 +631,7 @@ class UnitConversions(GlobalVars):
     def convert_ng_mL_to_ug_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from ng/mL to µg/L.
-        Does nothing, but is used for consistency.
-        """
+        """Convert values from ng/mL to µg/L (factor: 1, identity, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1,
@@ -682,9 +642,7 @@ class UnitConversions(GlobalVars):
     def convert_ng_mL_to_mg_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from ng/mL to mg/L.
-        """
+        """Convert values from ng/mL to mg/L (factor: 1/1000, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1 / 1000,
@@ -695,9 +653,7 @@ class UnitConversions(GlobalVars):
     def convert_ng_mL_to_ng_L(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from ng/mL to ng/L.
-        """
+        """Convert values from ng/mL to ng/L (factor: 1000, LOINC unchanged)."""
         return data.pipe(
             self.GENERIC_CONVERTER,
             factor=1000,
@@ -708,8 +664,13 @@ class UnitConversions(GlobalVars):
     def convert_mEq_L_to_mmol_L(
         self, data: pl.LazyFrame, ions: int = 1, **kwargs
     ) -> pl.LazyFrame:
-        """
-        Convert values from mEq/L to mmol/L, e.g. for sodium and potassium.
+        """Convert electrolyte values from mEq/L to mmol/L (factor: ions parameter).
+
+        Steps:
+            1. Apply multiplication by ions factor (default: 1 for monovalent ions like Na/K).
+
+        Returns:
+            pl.LazyFrame: Data with converted electrolyte values.
         """
         return data.pipe(self.GENERIC_CONVERTER, factor=ions, **kwargs)
 
@@ -721,8 +682,14 @@ class UnitConversions(GlobalVars):
         valuecol: str = "VALUENUM",
         structfield: str = None,
     ) -> pl.LazyFrame:
-        """
-        Convert ratios to percentages (i.e., 0.23 to 23%).
+        """Convert ratio values to percentages (e.g., 0.23 to 23%).
+
+        Steps:
+            1. Filter rows where label matches itemid and value ≤ 2.
+            2. Multiply value by 100 to convert ratio to percentage.
+
+        Returns:
+            pl.LazyFrame: Data with ratio values converted to percentages.
         """
 
         if structfield is not None:
@@ -764,7 +731,15 @@ class UnitConversions(GlobalVars):
         structfield: str = None,
     ) -> pl.LazyFrame:
         """
-        Rename "Anion gap 4" to "Anion gap" for consistency.
+        Rename "Anion gap 4" to "Anion gap" label for consistency.
+
+        Steps:
+            1. Filter rows where label matches itemid ("Anion gap 4").
+            2. Replace label with "Anion gap".
+            3. For structfield: set LOINC to null (property changes).
+
+        Returns:
+            pl.LazyFrame: Data with standardized "Anion gap" label; LOINC nulled for structfield.
         """
         if structfield is not None:
             return (
@@ -782,7 +757,7 @@ class UnitConversions(GlobalVars):
                         system=pl.col("system"),
                         method=pl.col("method"),
                         time=pl.col("time"),
-                        LOINC=pl.lit(None), # Anion gap LOINC property changes
+                        LOINC=pl.lit(None),  # Anion gap LOINC property changes
                     ).alias(valuecol),
                 )
             )
@@ -806,26 +781,14 @@ class UnitConverter(UnitConversions):
         cols_to_include: list[str] | None = None,
     ) -> pl.LazyFrame:
         """
-        Decodes lab values stored as JSON strings in columns to a structured format.
+        Decode JSON-encoded lab value structs into typed struct format.
 
-        For each non-index column in the input LazyFrame, this function:
-            - Treats the column value as a JSON string.
-            - Decodes it into a struct with fields:
-                 "value": Numeric lab value.
-                 "system": Coding system.
-                 "method": Measurement method.
-                 "time": Time of measurement.
-                 "LOINC": LOINC code.
-
-        Args:
-            lf (pl.LazyFrame): Input LazyFrame with lab value columns.
-            cols_to_exclude (list[str], optional): List of column names to exclude from decoding. Defaults to an empty list.
-            cols_to_include (list[str], optional): List of column names to include in decoding.
-                If provided, only these columns will be decoded, otherwise all non-excluded columns are processed
+        Steps:
+            1. Filter columns: exclude specified columns, optionally include only specified columns.
+            2. For each remaining column: decode JSON string to struct with fields (value, system, method, time, LOINC).
 
         Returns:
-            pl.LazyFrame: The LazyFrame with decoded lab value columns.
-
+            pl.LazyFrame: Data with JSON lab values decoded to struct format.
         """
 
         def decode_lab_struct(lab_value):
@@ -855,22 +818,18 @@ class UnitConverter(UnitConversions):
         component_col: str | None = None,
     ) -> pl.LazyFrame:
         """
-        Assign missing LOINC codes using (component, property, system, time) tuples.
-
-        Supports pre- and post-pivot data:
-          - If component_col is None (default), components are the column names (wide format).
-          - If component_col is provided, components are taken from that column (pre-pivot long format).
-          - If struct_cols is provided, only those struct columns are processed; otherwise all struct-typed columns (excluding cols_to_exclude) are processed.
+        Assign missing LOINC codes using vocabulary attribute queries (component, property, system, method, time).
 
         Steps:
-          1. (Optional) Decode JSON value columns to structs.
-          2. Find distinct (component, property, system, method, time) tuples.
-          3. Query vocabulary; keep pairs with exactly one candidate LOINC.
-          4. For each struct column: extract fields, join mapping (with optional component), fill LOINC, rebuild struct.
-          5. (Optional) Re-encode structs to JSON.
+            1. Decode JSON lab struct columns if not already decoded.
+            2. Extract distinct (component, property, system, method, time) tuples from data.
+            3. Query vocabulary; retain pairs matching exactly one LOINC code.
+            4. For system/component mismatches, query fallback systems (arterial→venous→blood).
+            5. For each struct column: join mapping, fill LOINC with precedence (exact > fallback1 > fallback2), rebuild struct.
+            6. Replace all-null structs with null; re-encode to JSON if needed.
 
         Returns:
-            pl.LazyFrame: Data with LOINC codes filled where uniquely mappable.
+            pl.LazyFrame: Data with LOINC codes filled where uniquely determinable from attributes.
         """
         # Assert only one struct column is provided if component_col is not None
         if component_col is not None and struct_cols is not None:

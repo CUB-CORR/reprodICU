@@ -6,14 +6,14 @@
 
 import polars as pl
 
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
-from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
-from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
-from helpers.A_extract.A_extract_nwicu import NWICUExtractor
-from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
-from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
-from helpers.helper import GlobalVars
+from ..A_extract.A_extract_eicu import EICUExtractor
+from ..A_extract.A_extract_hirid import HiRIDExtractor
+from ..A_extract.A_extract_mimic3 import MIMIC3Extractor
+from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
+from ..A_extract.A_extract_nwicu import NWICUExtractor
+from ..A_extract.A_extract_sicdb import SICdbExtractor
+from ..A_extract.A_extract_umcdb import UMCdbExtractor
+from ..helper import GlobalVars
 
 
 class PatientInformationHarmonizer(GlobalVars):
@@ -38,55 +38,38 @@ class PatientInformationHarmonizer(GlobalVars):
 
     def harmonize_patient_information(self) -> pl.LazyFrame:
         """
-        Harmonizes patient information from multiple databases into a single LazyFrame.
+        Harmonize patient information from multiple databases.
 
-        This function performs the following steps:
-            1. Validates that a non-empty list of datasets is provided; raises a ValueError if empty.
-            2. Initializes an empty list to accumulate patient information datasets.
-            3. For each dataset in {datasets}:
-               - Extracts patient information using the corresponding extractor.
-               - Uses a helper method (_concat_helper1 or _concat_helper2) to concatenate database-specific identifiers with a prefix to form a global identifier.
-               - Adds a constant column {dataset_col} with an alias indicating the originating dataset.
-            4. Concatenates all the patient information datasets using a "diagonal_relaxed" join.
-            5. Selects the desired columns in a pre-defined order.
-            6. Applies a cast operation to ensure the correct data types for each column.
-
-        The final returned LazyFrame contains the following columns:
-            - {global_person_id_col}: Unique global person identifier.
-            - {global_hospital_stay_id_col}: Unique global hospital stay identifier.
-            - {global_icu_stay_id_col}: Unique global ICU stay identifier.
-            - {icu_stay_seq_num_col}: Sequence number for the ICU stay.
-            - {dataset_col}: Identifier for the source dataset.
-            - {person_id_col}: Original person identifier (per dataset).
-            - {hospital_stay_id_col}: Original hospital stay identifier.
-            - {icu_stay_id_col}: Original ICU stay identifier.
-            - {age_col}: Patient age.
-            - {gender_col}: Patient gender.
-            - {height_col}: Patient height (in cm or m as defined).
-            - {weight_col}: Patient weight (in kg).
-            - {ethnicity_col}: Patient ethnicity.
-            - {admission_diagnosis_col}: Diagnosis at admission.
-            - {admission_type_col}: Type of admission.
-            - {admission_urgency_col}: Urgency level of the admission.
-            - {admission_time_col}: Time of admission.
-            - {admission_year_col}: Year of admission.
-            - {admission_loc_col}: Admission location.
-            - {specialty_col}: Medical specialty relevant to the admission.
-            - {care_site_col}: Hospital care site.
-            - {unit_type_col}: Type of hospital unit.
-            - {pre_icu_length_of_stay_col}: Length of stay before ICU (in days).
-            - {icu_length_of_stay_col}: ICU length of stay (in days).
-            - {hospital_length_of_stay_col}: Total hospital length of stay (in days).
-            - {discharge_loc_col}: Location at discharge.
-            - {mortality_hosp_col}: Hospital mortality indicator (True/False).
-            - {mortality_icu_col}: ICU mortality indicator (True/False).
-            - {mortality_after_col}: Post-discharge mortality (in days).
+        Steps:
+            1. Validate non-empty dataset list; raise ValueError if empty.
+            2. For each dataset: extract patient information and create global identifiers.
+            3. Add dataset source column with database name.
+            4. Concatenate all datasets using diagonal-relaxed join.
+            5. Select columns in standardized order and ensure correct data types.
+            6. Remove duplicates.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing harmonized patient information with the columns listed above and the correct data types.
-
-        Raises:
-            ValueError: If no datasets are provided.
+            pl.LazyFrame: Contains columns:
+                - {global_person_id_col}: Global person identifier.
+                - {global_hospital_stay_id_col}: Global hospital stay identifier.
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {dataset_col}: Source database name.
+                - {person_id_col}: Patient identifier.
+                - {hospital_stay_id_col}: Hospital admission identifier.
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {age_col}: Patient age (years).
+                - {gender_col}: Patient gender.
+                - {height_col}: Patient height (cm).
+                - {weight_col}: Patient weight (kg).
+                - {ethnicity_col}: Patient ethnicity.
+                - {admission_diagnosis_col}: Diagnosis at admission.
+                - {admission_type_col}: Admission type.
+                - {admission_urgency_col}: Admission urgency.
+                - {admission_time_col}: Admission datetime.
+                - {discharge_loc_col}: Discharge location.
+                - {mortality_hosp_col}: Hospital mortality flag.
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_after_col}: Days between discharge and death (null if alive).
         """
         if self.datasets == []:
             raise ValueError(

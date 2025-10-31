@@ -1,6 +1,7 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
-from helpers.A_extract.A_extract_eicu import EICUExtractor
+
+from ...A_extract.A_extract_eicu import EICUExtractor
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
@@ -8,21 +9,35 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
+        """
+        Extract renal replacement therapy episodes from eICU treatments.
+
+        Steps:
+            1. Call eICU extractor to get treatments.
+            2. Filter for RRT-related procedures.
+            3. Standardize column names.
+            4. Calculate RRT duration.
+            5. Return formatted result.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - Renal Replacement Therapy Start Relative to Admission (seconds): Start time.
+                - Renal Replacement Therapy End Relative to Admission (seconds): End time.
+                - Renal Replacement Therapy Type: RRT modality.
+                - Renal Replacement Therapy Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - eICU")
-        
+
         eicu_extractor = EICUExtractor(self.paths, DEMO=False)
         RENAL_REPLACEMENT_THERAPY_DURATION = (
             eicu_extractor.extract_treatments(verbose=False)
             .rename(
                 {
-                    self.column_names[
-                        "procedure_start_col"
-                    ]: "Renal Replacement Therapy Start Relative to Admission (seconds)",
-                    self.column_names[
-                        "procedure_end_col"
-                    ]: "Renal Replacement Therapy End Relative to Admission (seconds)",
+                    self.column_names["procedure_start_col"]: "Renal Replacement Therapy Start Relative to Admission (seconds)",
+                    self.column_names["procedure_end_col"]: "Renal Replacement Therapy End Relative to Admission (seconds)",
                     self.column_names["procedure_description_col"]: "RRT Type",
-                }
+                } # fmt: skip
             )
             .filter(
                 pl.col("RRT Type").str.contains("Renal - Dialysis"),

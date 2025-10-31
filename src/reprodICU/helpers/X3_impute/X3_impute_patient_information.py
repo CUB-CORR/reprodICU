@@ -5,13 +5,11 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
-import argparse
-import polars as pl
 import numpy as np
-
+import polars as pl
 from sklearn.impute import KNNImputer
 
-from helpers.helper import GlobalVars
+from ..helper import GlobalVars
 
 
 class PatientInformationImputer(GlobalVars):
@@ -21,8 +19,14 @@ class PatientInformationImputer(GlobalVars):
 
     def impute_patient_IDs(self, data) -> pl.LazyFrame:
         """
-        Imputes missing patient information.
-        For missing IDs, new IDs are generated / IDs are assigned from a lower level.
+        Impute missing global identifiers from hierarchical levels.
+
+        Steps:
+            1. Propagate ICU stay ID to missing hospital stay IDs.
+            2. Propagate hospital stay ID to missing person IDs.
+
+        Returns:
+            pl.LazyFrame: Patient information with filled ID columns.
         """
 
         return data.with_columns(
@@ -42,15 +46,21 @@ class PatientInformationImputer(GlobalVars):
         self, data: pl.LazyFrame, n_neighbors: int = 2
     ) -> pl.LazyFrame:
         """
-        Imputes missing anthropometric data.
-        Anthropometric data is imputed using the KNN algorithm.
+        Impute missing anthropometric data via KNN.
 
-        Anthropometric data includes:
-        - age
-        - height
-        - weight
+        Steps:
+            1. Select columns: age, height, weight (to impute) and demographic/site features.
+            2. Encode categorical columns (dataset, gender, ethnicity, care_site, unit_type) numerically.
+            3. Apply KNN imputation (n_neighbors=2 default).
+            4. Cast imputed values back to original types.
+            5. Drop height for neonatal patients (unreliable).
 
-        :param data: DataFrame with the data
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {age_col}: Patient age (years).
+                - {height_col}: Patient height (cm).
+                - {weight_col}: Patient weight (kg).
+                - [All other original columns]
         """
 
         # get relevant columns for imputation
@@ -151,9 +161,3 @@ class PatientInformationImputer(GlobalVars):
             .otherwise(pl.col(self.height_col))
             .alias(self.height_col),
         )
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )
