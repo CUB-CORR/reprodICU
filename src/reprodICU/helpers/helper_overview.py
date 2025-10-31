@@ -9,7 +9,19 @@ class Overview:
 
     # region overview
     def create_overview(self) -> None:
-        """Create an overview of the data extracted and harmonized."""
+        """
+        Create overview of extracted and harmonized ICU data by ICU stay.
+
+        Steps:
+            1. Load patient_information parquet to get global ICU stay IDs and source datasets.
+            2. Load each harmonized data table (diagnoses, medications, timeseries variants).
+            3. For each table: group by ICU stay ID and count rows.
+            4. Join all counts to patient information (left join to preserve all stays).
+            5. Write result to overview.parquet file.
+
+        Returns:
+            None: Writes to {save_path}/overview.parquet.
+        """
         # Create DataFrame to store the overview, initialize columns for each dataset
         overview = pl.scan_parquet(
             self.save_path + "patient_information.parquet"
@@ -45,7 +57,20 @@ class Overview:
 
     # region overview vars
     def create_database_variable_overview(self) -> None:
-        """Create an overview of the data extracted and harmonized."""
+        """
+        Create overview of data variables aggregated by source database.
+
+        Steps:
+            1. Load patient_information to map ICU stays to databases.
+            2. Group by source dataset and count ICU stays.
+            3. Load each timeseries table (vitals, labs, respiratory, intakeoutput).
+            4. For each table: join with patient info, sum numeric columns by dataset.
+            5. Transpose result to get variables as rows with datasets as columns.
+            6. Write result to overview_database_variable.parquet file.
+
+        Returns:
+            None: Writes to {save_path}/overview_database_variable.parquet.
+        """
         # Create DataFrame to store the overview, initialize columns for each dataset
         ID_TO_DB = pl.scan_parquet(
             self.save_path + "patient_information.parquet"

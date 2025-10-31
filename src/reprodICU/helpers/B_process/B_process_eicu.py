@@ -8,9 +8,10 @@ import os
 from numbers import Number
 
 import polars as pl
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.helper import GlobalHelpers
-from helpers.helper_conversions import UnitConverter
+
+from ..A_extract.A_extract_eicu import EICUExtractor
+from ..helper import GlobalHelpers
+from ..helper_conversions import UnitConverter
 
 
 class EICUProcessor(EICUExtractor):
@@ -47,23 +48,20 @@ class EICUProcessor(EICUExtractor):
     # Processes and combines the time series data of the eICU dataset.
     def process_timeseries(self) -> pl.LazyFrame:
         """
-        Processes and combines time series data from multiple eICU sources.
+        Process and combine time series data from multiple eICU sources.
 
         Steps:
-          1. Check if a preprocessed parquet file exists in {precalc_path}.
-          2. If found, load the data with sorted index columns ({icu_stay_id_col} and {timeseries_time_col}).
-          3. Otherwise, extract numeric data via _process_timeseries_nurse(), _process_periodics()
-             and _process_timeseries_resp(), then join the results.
-          4. Save the unsorted data, sort it by {icu_stay_id_col} and {timeseries_time_col},
-             remove temporary files, and return the final LazyFrame.
-
-        Columns:
-          - {icu_stay_id_col}: Unique ICU stay identifier.
-          - {timeseries_time_col}: Time (in seconds) since admission.
-          - Additional columns: Measurements from nurse charting, periodic, and respiratory data.
+            1. Check for preprocessed timeseries file; load if available.
+            2. Extract nurse charting, periodic/aperiodic, and respiratory measurements.
+            3. Join all three datasets on index columns, preferring later sources when overlapping.
+            4. Check data sortedness and sort if necessary.
+            5. Save sorted data and clean temporary files.
 
         Returns:
-            pl.LazyFrame: A wide-format LazyFrame sorted by [{icu_stay_id_col}, {timeseries_time_col}].
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Measurement columns from nurse charting, periodic, and respiratory data.
         """
         timeseries_path = self.precalc_path + "EICU_timeseries.parquet"
         timeseries_path_unsorted = (
@@ -181,25 +179,21 @@ class EICUProcessor(EICUExtractor):
     # Keep only the relevant lab values.
     def process_timeseries_lab(self):
         """
-        Processes laboratory time series data for eICU.
+        Process laboratory time series measurements.
 
         Steps:
-          1. Check if a preprocessed lab data file exists in {precalc_path}. If so, load it.
-          2. Otherwise, extract raw lab data using extract_time_series_lab().
-          3. Combine duplicate lab columns (e.g. "Base excess" and "Base deficit") via _combine_base_excess_and_deficit.
-          4. Convert lab measurement units using _convert_lab_values.
-          5. JSON encode the "labstruct" field.
-          6. Pivot on "labname" to obtain one column per lab test.
-          7. Save, then sort by {icu_stay_id_col} and {timeseries_time_col}, and remove temporary files.
-
-        Columns:
-          - {icu_stay_id_col}: ICU stay identifier.
-          - {timeseries_time_col}: Observation time (in seconds).
-          - "labname": Laboratory test name.
-          - "labstruct": JSON-encoded structured lab result (including key {value}).
+            1. Check for preprocessed labs file; load if available.
+            2. Extract lab measurements and combine related fields (base excess/deficit).
+            3. Convert lab values to canonical units.
+            4. Apply LOINC component mapping and JSON encode structured fields.
+            5. Pivot data on "labname" to create wide-format dataset.
+            6. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: A wide-format, sorted LazyFrame of laboratory data.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Laboratory measurement columns (pivoted from labname, JSON-encoded).
         """
         ts_labs_path = self.precalc_path + "EICU_timeseries_labs.parquet"
         ts_labs_path_unsorted = self.precalc_path + "EICU_ts_labs.parquet"
@@ -276,12 +270,18 @@ class EICUProcessor(EICUExtractor):
         """
         Process and pivot respiratory time series data.
 
-        This function extracts respiratory data using extract_time_series_resp, pivots the data by the
-        "respchartvaluelabel" column with corresponding {timeseries_time_col} and {icu_stay_id_col}, and cleans the dataset.
+        Steps:
+            1. Check for preprocessed respiratory file; load if available.
+            2. Extract respiratory chart value measurements.
+            3. Pivot data on "respchartvaluelabel" using first aggregation.
+            4. Drop rows where all non-index columns are null.
+            5. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: The respiratory data in wide format indexed by {icu_stay_id_col} and {timeseries_time_col},
-            with columns representing distinct respiratory measurements.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Respiratory measurement columns (pivoted from respchartvaluelabel).
         """
         ts_resp_path = self.precalc_path + "EICU_timeseries_resp.parquet"
         ts_resp_path_unsorted = self.precalc_path + "EICU_ts_resp.parquet"
@@ -345,14 +345,20 @@ class EICUProcessor(EICUExtractor):
     # Process nurse charting data, i.e. extract and pivot nurse charting data.
     def _process_timeseries_nurse(self):
         """
-        Extract and pivot nurse charting time series data.
+        Process and pivot nurse charting time series data.
 
-        This function processes the nurse charting data from extract_time_series_nurse,
-        pivots it using the "nursingchartcelltypevalname" as the key along with {icu_stay_id_col} and {timeseries_time_col},
-        and removes empty rows.
+        Steps:
+            1. Check for preprocessed nurse charting file; load if available.
+            2. Extract nurse charting measurements.
+            3. Pivot data on "nursingchartcelltypevalname" using first aggregation.
+            4. Drop rows where all non-index columns are null.
+            5. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: The nurse charting data in wide format indexed by {icu_stay_id_col} and {timeseries_time_col}.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Nurse charting measurement columns (pivoted from nursingchartcelltypevalname).
         """
         ts_nurse_path = self.precalc_path + "EICU_ts_nurse.parquet"
         ts_nurse_path_unsorted = (
@@ -411,14 +417,20 @@ class EICUProcessor(EICUExtractor):
     # Keep only the relevant inout values.
     def process_timeseries_inout(self):
         """
-        Extract and pivot intake/output time series data.
+        Process and pivot intake/output time series data.
 
-        This function extracts intake/output data using extract_time_series_intake_output,
-        pivots the data with "celllabel" as the key along with {icu_stay_id_col} and {timeseries_time_col},
-        and calculates the mean value for duplicate entries.
+        Steps:
+            1. Check for preprocessed intake/output file; load if available.
+            2. Extract intake/output measurements.
+            3. Pivot data on "celllabel" using mean aggregation for wide-format.
+            4. Drop rows where all non-index columns are null.
+            5. Save, sort by index columns, and clean temporary files.
 
         Returns:
-            pl.LazyFrame: The processed intake/output data in wide format indexed by {icu_stay_id_col} and {timeseries_time_col}.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Intake/output measurement columns (pivoted from celllabel).
         """
         ts_inout_path = self.precalc_path + "EICU_timeseries_inout.parquet"
         ts_inout_path_unsorted = self.precalc_path + "EICU_ts_inout.parquet"
@@ -476,18 +488,20 @@ class EICUProcessor(EICUExtractor):
     # Process periodic data, i.e. extract and combine (a)periodic data.
     def _process_periodics(self):
         """
-        Extract and combine periodic and aperiodic time series data.
+        Process and pivot periodic and aperiodic time series data.
 
-        This function extracts periodic data from vitalPeriodic.csv and aperiodic data from vitalAperiodic.csv,
-        concatenates them, and pivots based on processed measurements.
-
-        Key columns:
-            {icu_stay_id_col}: ICU stay identifier.
-            {timeseries_time_col}: Time of observation.
-            Plus additional columns from periodic/aperiodic measurements.
+        Steps:
+            1. Check for preprocessed (a)periodic file; load if available.
+            2. Extract and combine periodic and aperiodic vital measurements.
+            3. Drop rows where all non-index columns are null.
+            4. Cast to float for normalization and deduplicate.
+            5. Sort by index columns and save.
 
         Returns:
-            pl.LazyFrame: Processed (a)periodic data in wide format indexed by {icu_stay_id_col} and {timeseries_time_col}.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Periodic/aperiodic vital measurement columns.
         """
         ts_period_path = self.precalc_path + "EICU_ts_periodics.parquet"
         ts_period_path_unsorted = (
@@ -538,23 +552,20 @@ class EICUProcessor(EICUExtractor):
     # Processes the diagnoses data of the eICU dataset.
     def process_diagnoses(self):
         """
-        Extracts and processes diagnosis data from eICU.
+        Process diagnosis data with ICD version detection and descriptions.
 
         Steps:
-          1. Extract diagnosis data from file (e.g. diagnosis.csv.gz).
-          2. Remove dots from ICD codes.
-          3. Determine ICD version (9 or 10) based on mappings.
-          4. Add diagnosis description accordingly.
-
-        Columns:
-          - {diagnosis_icd_code_col}: ICD diagnosis code.
-          - {diagnosis_start_col}: Onset time.
-          - {diagnosis_priority_col}: Numeric priority.
-          - {diagnosis_discharge_col}: Active status upon discharge.
-          - {diagnosis_description_col}: Mapped description for the ICD code.
+            1. Extract diagnosis data.
+            2. Remove dots from ICD codes for standardization.
+            3. Determine ICD version (9 or 10) using known code mappings.
+            4. Map codes to standardized descriptions.
 
         Returns:
-            pl.LazyFrame: Processed diagnosis data.
+            pl.LazyFrame: Contains columns:
+                - {diagnosis_icd_code_col}: ICD code.
+                - {diagnosis_icd_version_col}: ICD version (9 or 10).
+                - {diagnosis_description_col}: Mapped diagnosis description.
+                - Additional diagnosis metadata columns.
         """
         ICD9_descriptions = dict(
             zip(
@@ -631,17 +642,17 @@ class EICUConverter(UnitConverter):
         structfield: str = "value",
     ) -> pl.LazyFrame:
         """
-        Combines base excess and base deficit into a unified column.
+        Combine base excess and base deficit measurements into unified column.
 
         Steps:
-          1. Unnest the {labstruct} column.
-          2. For rows where {labname} equals {base_deficit_name}, multiply {value} by -1.
-          3. Rename both {base_excess_name} and {base_deficit_name} to "Base excess".
-          4. Assign the standard LOINC code ({base_excess_LOINC}) for "Base excess".
-          5. Reassemble the struct with keys {value}, {system}, {method}, {time}, and {LOINC}.
+            1. Unnest structured lab value column.
+            2. Negate values for base deficit entries.
+            3. Rename both fields to standardized "Base excess" label.
+            4. Assign standard LOINC code for base excess.
+            5. Reassemble into structured lab value format.
 
         Returns:
-            pl.LazyFrame: DataFrame with combined "Base excess" column.
+            pl.LazyFrame: Lab data with combined base excess column.
         """
         base_excess_LOINC = "11555-0"  # Base excess in Blood by calculation
 
@@ -694,22 +705,17 @@ class EICUConverter(UnitConverter):
         valuecol: str = "labstruct",
         structfield: str = "value",
     ) -> pl.LazyFrame:
-        """
-        Converts raw lab values to canonical units for eICU.
+        """Convert raw lab values to canonical units.
 
-        Applies a series of unit conversion pipes targeting multiple lab tests including:
-          - {Calcium} and {Calcium.ionized}: mg/dL to mmol/L.
-          - {Creatine kinase.MB}: ng/mL to U/L.
-          - {C reactive protein}: mg/dL to mg/L.
-          - {Fibrin D-dimer FEU}, {Iron}, {Magnesium}, {Myoglobin}, {Prealbumin}, {Protein}, {Triiodothyronine},
-            {Thyroxine} (and free), {Troponin I.cardiac}, {Troponin T.cardiac}, {Iron binding capacity}, and {Cobalamin}.
+        Applies sequential unit conversions for multiple lab tests including:
+        calcium, creatinine kinase, proteins, hormones, and cardiac markers.
 
         Expected columns:
-          - {labelcol}: Lab test identifier.
-          - {valuecol}: Lab result struct with key {structfield}.
+            - {labelcol}: Lab test identifier.
+            - {valuecol}: Lab measurement value.
 
         Returns:
-            pl.LazyFrame: Converted lab data.
+            pl.LazyFrame: Lab data with unit-converted values.
         """
         return (
             data.pipe(

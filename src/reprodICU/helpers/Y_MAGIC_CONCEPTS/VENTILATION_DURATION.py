@@ -6,19 +6,26 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_eICUv1 import \
-    VENTILATION_DURATION_eICUv1
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_HiRID import \
-    VENTILATION_DURATION_HiRID
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_MIMIC3 import \
-    VENTILATION_DURATION_MIMIC3
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_MIMIC4 import \
-    VENTILATION_DURATION_MIMIC4
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_SICdb import \
-    VENTILATION_DURATION_SICdb
-from helpers.MAGIC_CONCEPTS.VENTILATION_DURATIONS.VENTILATION_DURATION_UMCdb import \
-    VENTILATION_DURATION_UMCdb
+
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_eICUv1 import (
+    VENTILATION_DURATION_eICUv1,
+)
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_HiRID import (
+    VENTILATION_DURATION_HiRID,
+)
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_MIMIC3 import (
+    VENTILATION_DURATION_MIMIC3,
+)
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_MIMIC4 import (
+    VENTILATION_DURATION_MIMIC4,
+)
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_SICdb import (
+    VENTILATION_DURATION_SICdb,
+)
+from .VENTILATION_DURATIONS.VENTILATION_DURATION_UMCdb import (
+    VENTILATION_DURATION_UMCdb,
+)
 
 
 class VENTILATION_DURATION(MAGIC_CONCEPTS):
@@ -27,26 +34,22 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
         """
-        Returns the magic concept VENTILATION_DURATION
+        Extract mechanical ventilation periods and types.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each database: call database-specific VENTILATION_DURATION extractors.
+            2. Extract ventilation start/end times and type classification.
+            3. Calculate ventilation duration (hours).
+            4. Standardize ventilation types across databases.
+            5. Concatenate results from all databases.
 
-        Returns a DataFrame with the following columns:
-        - ICU stay ID
-        - Ventilation Type, one of
-            - tracheostomy
-            - invasive ventilation
-            - non-invasive ventilation
-            - weaning
-            - other
-            - unknown
-        - Ventilation Start Relative to Admission (seconds)
-        - Ventilation End Relative to Admission (seconds)
-        - Ventilation Duration (hours)
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - Ventilation Type: Ventilation category (tracheostomy, invasive, non-invasive, weaning, other, unknown).
+                - Ventilation Start Relative to Admission (seconds): Start time.
+                - Ventilation End Relative to Admission (seconds): End time.
+                - Ventilation Duration (hours): Total duration (float).
         """
 
         print("MAGIC_CONCEPTS: Ventilation Duration - approx. 40 min")

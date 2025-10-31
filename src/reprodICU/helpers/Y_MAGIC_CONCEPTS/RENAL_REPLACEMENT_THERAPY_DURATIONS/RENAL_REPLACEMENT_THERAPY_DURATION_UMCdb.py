@@ -1,5 +1,6 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb(MAGIC_CONCEPTS):
@@ -7,6 +8,24 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
+        """
+        Extract renal replacement therapy episodes from UMCdb processitems.
+
+        Steps:
+            1. Extract RRT process items with timestamps.
+            2. Join with admission times.
+            3. Filter for RRT-related process IDs.
+            4. Calculate RRT duration.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - admissionid: Admission identifier.
+                - Renal Replacement Therapy Start Relative to Admission (seconds): Start time.
+                - Renal Replacement Therapy End Relative to Admission (seconds): End time.
+                - Renal Replacement Therapy Type: RRT modality.
+                - Renal Replacement Therapy Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - UMCdb")
 
         ADMISSION_TIMES = pl.scan_parquet(
@@ -48,7 +67,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb(MAGIC_CONCEPTS):
                     "item": "Renal Replacement Therapy Type",
                     "start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
                     "stop": "Renal Replacement Therapy End Relative to Admission (seconds)",
-                }
+                } # fmt: skip
             )
             .collect()
         )

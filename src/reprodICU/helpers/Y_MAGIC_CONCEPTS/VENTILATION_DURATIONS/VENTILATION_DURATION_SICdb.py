@@ -1,5 +1,6 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
@@ -8,6 +9,23 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
+        """
+        Extract ventilation episodes from SICdb data range records.
+
+        Steps:
+            1. Extract ventilation data ranges with timestamps.
+            2. Join with admission times for time reference.
+            3. Validate end time before discharge.
+            4. Calculate episode duration.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - CaseID: Case identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - SICdb")
 
         ADMISSION_TIMES = pl.scan_csv(self.sicdb_paths.cases_path).select(

@@ -163,7 +163,7 @@ def PAO2_FIO2_RATIO(
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
     )
 
-    if t_0 or t_0_per_stay:
+    if (t_0 is not None) or (t_0_per_stay is not None):
         pf_ratio = (
             pf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(
@@ -274,7 +274,7 @@ def SPO2_FIO2_RATIO(
         .select(STAY_KEY, TIME_KEY, sf_ratio_col)
     )
 
-    if t_0 or t_0_per_stay:
+    if (t_0 is not None) or (t_0_per_stay is not None):
         sf_ratio = (
             sf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

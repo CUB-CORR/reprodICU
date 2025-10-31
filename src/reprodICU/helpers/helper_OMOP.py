@@ -5,7 +5,8 @@
 from typing import Union
 
 import polars as pl
-from helpers.helper_filepaths import OMOPPaths
+
+from .helper_filepaths import OMOPPaths
 
 
 class Vocabulary(OMOPPaths):
@@ -34,14 +35,15 @@ class Vocabulary(OMOPPaths):
         self, concept_ids: list[int], return_dict: bool = True
     ) -> dict:
         """
-        Get concept_names from concept_ids.
+        Retrieve concept names from OMOP concept IDs.
 
-        Args:
-            concept_ids (list[int]): List of concept_ids.
-            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+        Steps:
+            1. Filter CONCEPT table by concept_ids.
+            2. Select concept_id and concept_name columns.
+            3. Return as dict (concept_id → concept_name) or DataFrame.
 
         Returns:
-            dict: Dictionary with concept_id as key and concept_name as value.
+            dict: Mapping from concept_id to concept_name if return_dict=True; otherwise pl.DataFrame.
         """
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_id").is_in(concept_ids))
@@ -67,16 +69,16 @@ class Vocabulary(OMOPPaths):
         return_dict: bool = True,
     ) -> dict:
         """
-        Get concept_ids from concept_names.
+        Retrieve concept IDs from OMOP concept names.
 
-        Args:
-            concept_names (list[str]): List of concept_names.
-            vocabulary (str, optional): Vocabulary to filter by. Defaults to "LOINC".
-            is_lab_test (bool, optional): Whether to filter for lab tests. Defaults to False.
-            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+        Steps:
+            1. Filter CONCEPT by concept_names and vocabulary_id.
+            2. If is_lab_test=True: filter domain_id to "Measurement".
+            3. Select concept_id and concept_name columns.
+            4. Return as dict (concept_name → concept_id) or DataFrame.
 
         Returns:
-            dict: Dictionary with concept_name as key and concept_id as value.
+            dict: Mapping from concept_name to concept_id if return_dict=True; otherwise pl.DataFrame.
         """
         concept_ids = (
             self.CONCEPT.filter(
@@ -107,14 +109,15 @@ class Vocabulary(OMOPPaths):
         self, concept_names: list[str], return_dict: bool = True
     ) -> dict:
         """
-        Get concept_codes from concept_names.
+        Retrieve concept codes from OMOP concept names.
 
-        Args:
-            concept_names (list[str]): List of concept_names.
-            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+        Steps:
+            1. Filter CONCEPT by concept_names.
+            2. Select concept_name and concept_code columns.
+            3. Return as dict (concept_name → concept_code) or DataFrame.
 
         Returns:
-            dict: Dictionary with concept_name as key and concept_code as value.
+            dict: Mapping from concept_name to concept_code if return_dict=True; otherwise pl.DataFrame.
         """
         concept_codes = (
             self.CONCEPT.filter(pl.col("concept_name").is_in(concept_names))
@@ -136,14 +139,16 @@ class Vocabulary(OMOPPaths):
         self, concept_codes: list[str], return_dict: bool = True
     ) -> dict:
         """
-        Get concept_names from concept_codes.
+        Retrieve concept names from OMOP concept codes.
 
-        Args:
-            concept_codes (list[str]): List of concept_codes.
-            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+        Steps:
+            1. Ensure concept_codes are strings.
+            2. Filter CONCEPT by concept_codes.
+            3. Select concept_code and concept_name columns.
+            4. Return as dict (concept_code → concept_name) or DataFrame.
 
         Returns:
-            dict: Dictionary with concept_code as key and concept_name as value.
+            dict: Mapping from concept_code to concept_name if return_dict=True; otherwise pl.DataFrame.
         """
 
         # ensure concept_codes are strings
@@ -167,26 +172,29 @@ class Vocabulary(OMOPPaths):
 
     def get_concept_name_from_code(self, concept_code: str) -> str:
         """
-        Get concept_name from concept_code.
+        Retrieve a single concept name from a concept code.
 
-        Args:
-            concept_code (str): Concept code.
+        Steps:
+            1. Call get_concept_names_from_codes with single code.
+            2. Return the corresponding concept_name value.
 
         Returns:
-            str: Concept name.
+            str: The concept name for the given code.
         """
         return self.get_concept_names_from_codes([concept_code])[concept_code]
 
     # region ndc
     def get_rxnorm_concept_id_from_ndc(self, ndc: list[str]) -> dict:
         """
-        Get RxNorm from NDC.
+        Retrieve RxNorm concept IDs mapped from NDC (National Drug Code).
 
-        Args:
-            ndc (list[str]): List of NDC.
+        Steps:
+            1. Filter CONCEPT for 11-digit NDC codes matching input list.
+            2. Join RELATIONSHIP table on "Maps to" relationship to find RxNorm concept IDs.
+            3. Return as dict (ndc → rxnorm_concept_id).
 
         Returns:
-            dict: Dictionary with NDC as key and RxNorm concept ID as value.
+            dict: Mapping from NDC code to RxNorm concept ID.
         """
 
         ndc_concept_ids_lf = self.CONCEPT.filter(
@@ -234,16 +242,18 @@ class Vocabulary(OMOPPaths):
         self, drug_concept_ids: list[int], return_dict: bool = True
     ) -> Union[dict, pl.DataFrame]:
         """
-        Get ingredient_id from drug concept_ids.
+        Retrieve drug ingredients using OMOP hierarchy (ANCESTOR relationships).
         Based on OMOP-Queries/Drug/D03: Find ingredients of a drug
         https://github.com/OHDSI/OMOP-Queries/blob/master/md/Drug.md#d03-find-ingredients-of-a-drug
 
-        Args:
-            drug_concept_ids (list[int]): List of drug concept_ids.
-            return_dict (bool, optional): Whether to return the result as a dictionary. Defaults to True.
+        Steps:
+            1. Filter ANCESTOR by descendant_concept_id (input drugs).
+            2. Join CONCEPT twice to get ancestor (ingredient) and descendant (drug) names.
+            3. Filter for concept_class_id == "Ingredient".
+            4. Return as dict (drug_concept_id → ingredient_name) or DataFrame.
 
         Returns:
-            dict: Dictionary with drug_concept_id as key and ingredient_name as value.
+            dict: Mapping from drug_concept_id to ingredient_name if return_dict=True; otherwise pl.DataFrame.
         """
 
         ingredients = (
@@ -295,14 +305,16 @@ class Vocabulary(OMOPPaths):
         self, lab_names: list[str], lab_relationship: str
     ) -> dict:
         """
-        Get lab properties from lab names.
+        Retrieve lab properties from LOINC attributes using specified relationship.
 
-        Args:
-            lab_names (list[str]): List of lab names.
-            lab_relationship (str): Relationship to get.
+        Steps:
+            1. Convert lab_names to OMOP concept IDs.
+            2. Filter RELATIONSHIP by relationship_id (e.g., "Has component", "Has property").
+            3. Join with concept names to resolve attribute names.
+            4. Return as dict (lab_name → attribute_name).
 
         Returns:
-            dict: Dictionary with lab name as key and lab property as value.
+            dict: Mapping from lab name to attribute name for the specified relationship.
         """
 
         lab_names_to_id = self.get_concept_ids_from_names(
@@ -336,69 +348,59 @@ class Vocabulary(OMOPPaths):
 
     def get_lab_component_from_name(self, lab_names: list[str]) -> dict:
         """
-        Get lab component from lab names.
-
-        Args:
-            lab_names (list[str]): List of lab names.
+        Retrieve lab components from lab names using "Has component" relationship.
 
         Returns:
-            dict: Dictionary with lab name as key and lab component as value.
+            dict: Mapping from lab name to component name.
         """
-
         return self.get_lab_relationship_from_name(lab_names, "Has component")
 
     def get_lab_system_from_name(self, lab_names: list[str]) -> dict:
         """
-        Get lab system from lab names.
-
-        Args:
-            lab_names (list[str]): List of lab names.
+        Retrieve lab systems from lab names using "Has system" relationship.
 
         Returns:
-            dict: Dictionary with lab name as key and lab system as value.
+            dict: Mapping from lab name to system name.
         """
         return self.get_lab_relationship_from_name(lab_names, "Has system")
 
     def get_lab_property_from_name(self, lab_names: list[str]) -> dict:
         """
-        Get lab property from lab names.
-
-        Args:
-            lab_names (list[str]): List of lab names.
+        Retrieve lab properties from lab names using "Has property" relationship.
 
         Returns:
-            dict: Dictionary with lab name as key and lab property as value.
+            dict: Mapping from lab name to property name.
         """
         return self.get_lab_relationship_from_name(lab_names, "Has property")
 
     def get_lab_method_from_name(self, lab_names: list[str]) -> dict:
         """
-        Get lab method from lab names.
-
-        Args:
-            lab_names (list[str]): List of lab names.
+        Retrieve lab methods from lab names using "Has method" relationship.
 
         Returns:
-            dict: Dictionary with lab name as key and lab method as value.
+            dict: Mapping from lab name to method name.
         """
         return self.get_lab_relationship_from_name(lab_names, "Has method")
 
     def get_lab_time_aspect_from_name(self, lab_names: list[str]) -> dict:
         """
-        Get lab time aspect from lab names.
-
-        Args:
-            lab_names (list[str]): List of lab names.
+        Retrieve lab time aspects from lab names using "Has time aspect" relationship.
 
         Returns:
-            dict: Dictionary with lab name as key and lab time aspect as value.
+            dict: Mapping from lab name to time aspect name.
         """
         return self.get_lab_relationship_from_name(lab_names, "Has time aspect")
 
     def _load_data_for_get_LOINC_codes_for_attributes(self) -> None:
         """
-        Load necessary data for get_LOINC_codes_for_attributes method.
-        This method is called automatically when the function is called.
+        Load and cache LOINC lab concept and relationship data for attribute queries.
+
+        Steps:
+            1. Load all LOINC concepts excluding multi-attribute combinations (containing "--").
+            2. Load relationships involving loaded LOINC concepts.
+
+        Returns:
+            None: Data stored in self.CONCEPT_LOINC_LAB and self.RELATIONSHIP_LOINC_LAB.
         """
         self.CONCEPT_LOINC_LAB = self.CONCEPT.filter(
             pl.col("vocabulary_id") == "LOINC",
@@ -417,25 +419,19 @@ class Vocabulary(OMOPPaths):
         queries: list[tuple[str, str, str, str, str]] | None = None,
     ) -> list[str] | list[list[str]]:
         """
-        Return all LOINC Lab Test concept_codes matching ALL provided LOINC attributes.
-        Any subset of the attributes can be provided; only labs matching every provided
-        attribute are returned.
-        If no method is provided, only labs WITHOUT a method (no 'Has method' relationship) are returned.
+        Retrieve LOINC lab test codes matching specified LOINC attributes (component, property, system, method, time).
 
-        Args:
-            queries (list[tuple[str, str, str, str, str]] | None): List of queries.
-                Each query is a tuple of the form:
-                (component_name, component_property, component_system, component_method, component_time_aspect).
+        Steps:
+            1. Load LOINC concept and relationship data if not already cached.
+            2. Validate queries: at least one attribute per query; all attribute names must exist.
+            3. For each query: collect distinct (component, property, system, method, time) combinations from data.
+            4. Resolve attributes to concept IDs; build lab_concept_id → attribute mapping.
+            5. Join all attribute mappings on lab_concept_id; filter on exact/null matches for optional attributes.
+            6. Apply system fallbacks (Blood arterial→Blood venous→Blood; Blood mixed→Blood venous).
+            7. Map lab concept IDs to LOINC codes; return sorted lists.
 
         Returns:
-            list[str]: Matching LOINC concept_codes (sorted, may be empty).
-
-        Raises:
-            ValueError: If no attribute provided or an attribute name is unknown.
-
-        Batch queries:
-            Pass a list of tuples: (component_name, component_property, component_system, component_method, component_time_aspect)
-            The function resolves all queries together and returns a list of lists, preserving input order.
+            list[list[str]]: For batch queries: list of LOINC code lists (one per query), preserving input order; may contain empty lists if no matches.
         """
         # Ensure the necessary data is loaded
         if not hasattr(self, "CONCEPT_LOINC_LAB"):

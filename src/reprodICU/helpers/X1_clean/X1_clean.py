@@ -12,12 +12,40 @@ class X1_Cleaner:
 
     def clean_timeseries_labs(data) -> pl.LazyFrame:
         """
-        Clean the timeseries labs data by removing invalid values and outliers.
+        Remove invalid lab measurement values (sentinel values like 999999.0).
 
-        :param data: The timeseries labs data to be cleaned.
+        Steps:
+            1. Identify invalid values for each lab parameter (sentinel values, physiologically impossible).
+            2. Replace invalid values with null.
+            3. Return cleaned timeseries data.
 
-        :return: The cleaned timeseries labs data.
-        :rtype: pl.LazyFrame
+        Returns:
+            pl.LazyFrame: Cleaned timeseries data with columns:
+                - INR: International Normalized Ratio.
+                - basophils: Basophil percentage.
+                - bicarbonate: Serum bicarbonate (mEq/L).
+                - blood_urea_nitrogen: BUN (mg/dL).
+                - chloride: Serum chloride (mEq/L).
+                - creatinine: Serum creatinine (mg/dL).
+                - glucose: Serum glucose (mg/dL).
+                - glucose_bedside: Point-of-care glucose (mg/dL).
+                - hematocrit: Hematocrit percentage.
+                - hemoglobin: Hemoglobin (g/dL).
+                - lactate: Serum lactate (mmol/L).
+                - lymphocytes: Lymphocyte percentage.
+                - magnesium: Serum magnesium (mg/dL).
+                - monocytes: Monocyte percentage.
+                - neutrophils: Neutrophil percentage.
+                - pH: Blood pH.
+                - paCO2: Arterial CO2 partial pressure (mmHg).
+                - paO2: Arterial O2 partial pressure (mmHg).
+                - partial_thromboplastin_time: PTT (seconds).
+                - phosphate: Serum phosphate (mg/dL).
+                - potassium: Serum potassium (mEq/L).
+                - protein_albumin: Serum albumin (g/dL).
+                - saO2: Arterial oxygen saturation (%).
+                - sodium: Serum sodium (mEq/L).
+                - urine_specific_gravity: Urine specific gravity.
         """
 
         # Remove rows with invalid values
@@ -154,9 +182,3 @@ class X1_Cleaner:
             .otherwise(pl.col("urine_specific_gravity"))
             .alias("urine_specific_gravity"),
         )
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

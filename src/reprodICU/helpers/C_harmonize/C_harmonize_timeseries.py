@@ -6,15 +6,15 @@
 
 import polars as pl
 
-from helpers.B_process.B_process_eicu import EICUProcessor
-from helpers.B_process.B_process_mimic3 import MIMIC3Processor
-from helpers.B_process.B_process_mimic4 import MIMIC4Processor
-from helpers.B_process.BX_process_hirid import HiRIDProcessor
-from helpers.B_process.B_process_nwicu import NWICUProcessor
-from helpers.B_process.BX_process_sicdb import SICdbProcessor
-from helpers.B_process.BX_process_umcdb import UMCdbProcessor
-from helpers.helper import GlobalHelpers, GlobalVars
-from helpers.helper_conversions import UnitConverter
+from ..B_process.B_process_eicu import EICUProcessor
+from ..B_process.B_process_hirid import HiRIDProcessor
+from ..B_process.B_process_mimic3 import MIMIC3Processor
+from ..B_process.B_process_mimic4 import MIMIC4Processor
+from ..B_process.B_process_nwicu import NWICUProcessor
+from ..B_process.B_process_sicdb import SICdbProcessor
+from ..B_process.B_process_umcdb import UMCdbProcessor
+from ..helper import GlobalHelpers, GlobalVars
+from ..helper_conversions import UnitConverter
 
 
 class TimeseriesHarmonizer(GlobalVars):
@@ -54,32 +54,18 @@ class TimeseriesHarmonizer(GlobalVars):
         self, timeseries=[], save_to_default=True
     ) -> None:
         """
-        Splits and harmonizes the timeseries data into four categories: vitals, labs, respiratory, and intake/output.
+        Split and harmonize timeseries data into vitals, labs, respiratory, and intake/output.
 
-        This function performs the following steps:
-            1. Validates that {datasets} and the list of timeseries categories are provided; raises ValueError if either is empty.
-            2. Constructs Polars Series for each category to represent the relevant column names:
-               - {index_cols}: Identifiers such as {global_icu_stay_id_col} and {timeseries_time_col}.
-               - {relevant_vital_values}, {relevant_respiratory_values}, {relevant_intakeoutput_values}, {relevant_lab_LOINC_components}: These subsets are used for filtering.
-            3. For each dataset in {datasets} (e.g., "eICU", "HiRID", "MIMIC3", etc.):
-               - Processes the corresponding timeseries data via dataset-specific methods.
-               - Applies a helper method (_concat_helper) to create a global ID by concatenating a dataset prefix.
-               - Filters the schema to select the columns that match the pre-defined Series for each category.
-            4. Concatenates the data for each category using a "diagonal_relaxed" join.
-            5. For each category:
-               - Vitals: Cleans and casts to the appropriate data types, fixes temperature values (e.g., converting accidental Fahrenheit values), and sums subscores for Glasgow coma score.
-               - Labs, Respiratory, and Intake/Output: Cast and remove duplicate records while ensuring {global_icu_stay_id_col} and {timeseries_time_col} are maintained.
-            6. If save_to_default is True, writes the processed data for each category to parquet files under {save_path}; otherwise, returns a tuple containing:
-               - vitals: Contains {global_icu_stay_id_col}, {timeseries_time_col} plus sorted vital measurement columns.
-               - labs: Contains {global_icu_stay_id_col}, {timeseries_time_col} plus lab result columns.
-               - resp: Contains {global_icu_stay_id_col}, {timeseries_time_col} and respiratory parameters.
-               - inout: Contains {global_icu_stay_id_col}, {timeseries_time_col} and intake/output measurements.
+        Steps:
+            1. Validate non-empty datasets and timeseries list.
+            2. Create filter series for each timeseries category (vitals, labs, respiratory, I/O).
+            3. For each dataset: process timeseries and create global identifiers.
+            4. Concatenate data per category using diagonal-relaxed join.
+            5. Clean and cast each category (fix temps, remove duplicates).
+            6. Save to parquet files or return as tuple of DataFrames.
 
         Returns:
-            None if saving to files; otherwise, a tuple (vitals, labs, resp, inout) of processed Polars DataFrames.
-
-        Raises:
-            ValueError: If {datasets} is empty or if no timeseries categories are selected.
+            None if save_to_default=True; otherwise tuple (vitals, labs, resp, inout) of pl.DataFrame.
         """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the timeseries from.")
@@ -358,7 +344,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     "Glasgow coma score motor",
                     "Glasgow coma score verbal",
                     ignore_nulls=False,
-                )
+                ),
             ).alias("Glasgow coma score total")
         )
         # endregion
@@ -393,8 +379,7 @@ class TimeseriesHarmonizer(GlobalVars):
             ts_resp = (
                 ts_resp.pipe(
                     self.helpers.dropna, "all", resp_cols_not_index, False
-                )
-                .cast(
+                ).cast(
                     {  # Convert all columns to float, except for
                         # - Oxygen delivery system
                         # - Ventilation mode Ventilator

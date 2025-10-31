@@ -6,9 +6,10 @@
 import os.path
 
 import polars as pl
-from helpers.helper import GlobalHelpers
-from helpers.helper_filepaths import HiRIDPaths
-from helpers.helper_OMOP import Vocabulary
+
+from ..helper import GlobalHelpers
+from ..helper_filepaths import HiRIDPaths
+from ..helper_OMOP import Vocabulary
 
 
 class HiRIDExtractor(HiRIDPaths):
@@ -23,34 +24,30 @@ class HiRIDExtractor(HiRIDPaths):
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
-        Extracts and harmonizes patient information from the HiRID source data.
+        Extract and harmonize patient demographics and clinical information.
 
-        Steps performed:
-            1. Extract admissions data.
-               - {icu_stay_id_col}: Unique ICU stay identifier.
-               - {gender_col}: Patient gender.
-               - {age_col}: Patient age.
-               - {mortality_icu_col}: Boolean flag indicating ICU mortality.
-               - {mortality_hosp_col}: Boolean flag indicating hospital mortality.
-            2. Join length of stay data.
-               - {icu_stay_id_col}: Unique ICU identifier.
-               - {icu_length_of_stay_col}: ICU length of stay in days (computed from timeseries).
-            3. Join patient height and weight data.
-               - {icu_stay_id_col}: Unique ICU identifier.
-               - {weight_col}: Patient weight.
-               - {height_col}: Patient height.
-            4. Join admission diagnoses data.
-               - {icu_stay_id_col}: Unique ICU identifier.
-               - {admission_diagnosis_col}: Mapped admission diagnosis.
-            5. Assign derived constant information.
-               - {care_site_col}: Patient’s care site.
-               - {unit_type_col}: ICU unit type.
-               - {admission_time_col}: Time component extracted from "admissiontime".
+        Steps:
+            1. Extract admissions data with basic demographics and mortality flags.
+            2. Join with length of stay computed from timeseries.
+            3. Join with height and weight extracted from timeseries.
+            4. Join with admission diagnoses and specialty mapping.
+            5. Assign constant columns (care site, unit type, admission time).
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                {icu_stay_id_col}, {care_site_col}, {unit_type_col}, {admission_time_col},
-                and additional columns from the join operations.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {gender_col}: Patient gender.
+                - {age_col}: Patient age (years).
+                - {height_col}: Patient height (cm).
+                - {weight_col}: Patient weight (kg).
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_hosp_col}: Hospital mortality flag.
+                - {icu_length_of_stay_col}: ICU length of stay (days).
+                - {admission_diagnosis_col}: Admission diagnosis mapped to APACHE group.
+                - {specialty_col}: Treating specialty.
+                - {care_site_col}: Care site identifier.
+                - {unit_type_col}: ICU unit type.
+                - {admission_time_col}: ICU admission time of day.
         """
         return (
             self._extract_admissions()
@@ -97,26 +94,23 @@ class HiRIDExtractor(HiRIDPaths):
     # region admissions
     def _extract_admissions(self) -> pl.LazyFrame:
         """
-        Loads and processes admissions data from HiRID.
+        Load and process admissions data.
 
-        Steps performed:
-            1. Read CSV data from {general_table_path} with "admissiontime" as a string.
-            2. Rename input columns:
-               - "patientid" to {icu_stay_id_col}: Unique ICU identifier.
-               - "sex" to {gender_col}: Patient gender.
-               - "age" to {age_col}: Patient age.
-            3. Convert "admissiontime" to a datetime object.
-            4. Convert gender values:
-               - "M" becomes "Male" and "F" becomes "Female".
-            5. Compute Boolean mortality flags:
-               - {mortality_icu_col}: True if "discharge_status" is non-empty and equals "dead".
-               - {mortality_hosp_col}: True if "discharge_status" equals "dead".
-            6. Drop the "discharge_status" column.
+        Steps:
+            1. Read CSV from {general_table_path} with admissiontime as string.
+            2. Rename columns to standardized names for ID, gender, and age.
+            3. Convert admissiontime to datetime.
+            4. Map gender values (M→Male, F→Female).
+            5. Compute mortality flags based on discharge status.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                {icu_stay_id_col}, {gender_col}, {age_col}, {mortality_icu_col},
-                {mortality_hosp_col}, and formatted "admissiontime".
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {gender_col}: Patient gender.
+                - {age_col}: Patient age (years).
+                - {mortality_icu_col}: ICU mortality flag.
+                - {mortality_hosp_col}: Hospital mortality flag.
+                - admissiontime: ICU admission datetime.
         """
         return (
             pl.scan_csv(
@@ -162,22 +156,19 @@ class HiRIDExtractor(HiRIDPaths):
     # region len of stay
     def _extract_length_of_stay(self) -> pl.LazyFrame:
         """
-        Computes the ICU length of stay from timeseries measurements.
+        Compute ICU length of stay from timeseries data.
 
-        Steps performed:
-            1. Check if a precomputed parquet file exists at {precalc_path} ("HiRID_lengths_of_stay.parquet").
-            2. If available, load that file; otherwise, read parquet files from {imputed_stage_path}.
-            3. Select and rename:
-               - "patientid" to {icu_stay_id_col}: Unique ICU identifier.
-               - "reldatetime" to {icu_length_of_stay_col}: Raw length of stay in seconds.
-            4. Group data by {icu_stay_id_col} and calculate the maximum datetime.
-            5. Convert the duration from seconds to days.
-            6. Save the computed DataFrame as a parquet file.
+        Steps:
+            1. Check for precomputed parquet file; load if available.
+            2. Otherwise, scan timeseries parquet files from {imputed_stage_path}.
+            3. Extract maximum relative time offset per patient.
+            4. Convert duration from seconds to days.
+            5. Save result as parquet file for future reuse.
 
         Returns:
-            pl.LazyFrame: DataFrame with columns:
-                {icu_stay_id_col} (Unique ICU identifier),
-                {icu_length_of_stay_col} (ICU length of stay in days).
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {icu_length_of_stay_col}: ICU length of stay (days).
         """
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_lengths_of_stay.parquet"):
@@ -221,26 +212,20 @@ class HiRIDExtractor(HiRIDPaths):
     # region h/weight
     def _extract_patient_height_weight(self) -> pl.LazyFrame:
         """
-        Extracts patient height and weight from timeseries data within a cutoff time window.
+        Extract patient height and weight from timeseries data.
 
-        Steps performed:
-            1. Check if a precomputed parquet file exists at {precalc_path}("HiRID_height_weight.parquet").
-            2. Read admission times from {general_table_path}.
-            3. For each file in {timeseries_path}:
-               a. Select columns: "patientid", "datetime", "value", "variableid".
-               b. Rename "patientid" to {icu_stay_id_col} and "datetime" to "valuedate".
-               c. Convert datatypes and join with admission times.
-               d. Convert "admissiontime" and "valuedate" to datetime.
-               e. Replace {variableid} with variable names for {weight_col} and {height_col}.
-               f. Filter rows within the cutoff {ADMISSION_WEIGHT_HEIGHT_CUTOFF}.
-            4. Concatenate records from all files and pivot so that each {icu_stay_id_col} maps to {weight_col} and {height_col}.
-            5. Save the result as a parquet file.
+        Steps:
+            1. Check for precomputed parquet file; load if available.
+            2. Otherwise, read admissiontime from {general_table_path}.
+            3. For each timeseries file, extract height and weight within cutoff window.
+            4. Pivot data so each patient maps to a single height and weight value.
+            5. Save result as parquet file for future reuse.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                {icu_stay_id_col} (Unique ICU identifier),
-                {weight_col} (Patient weight),
-                {height_col} (Patient height).
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {weight_col}: Patient weight (kg).
+                - {height_col}: Patient height (cm).
         """
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_height_weight.parquet"):
@@ -332,24 +317,21 @@ class HiRIDExtractor(HiRIDPaths):
     # region admitDX
     def extract_admit_diagnoses(self) -> pl.LazyFrame:
         """
-        Extracts and maps admission diagnoses from timeseries files using HiRID mappings.
+        Extract and map admission diagnoses and specialty information.
 
-        Steps performed:
-            1. If a precomputed parquet file exists at {precalc_path} ("HiRID_admitDX.parquet"), load it.
-            2. Otherwise, load the diagnosis mapping from {apache_mapping_path}.
-            3. For each file in {timeseries_path}:
-               a. Select columns: "patientid", "datetime", "variableid", "value".
-               b. Rename "patientid" to {icu_stay_id_col} (Unique ICU identifier).
-               c. Filter rows where {variableid} is in [9990002, 9990004].
-            4. Concatenate data from all files.
-            5. Sort by {icu_stay_id_col} and "datetime", then group to take the first diagnosis occurrence.
-            6. Replace diagnosis values using the mapping.
-            7. Save the resulting DataFrame as a parquet file.
+        Steps:
+            1. Check for precomputed parquet file; load if available.
+            2. Otherwise, load diagnosis and specialty mappings.
+            3. For each timeseries file, extract diagnosis events.
+            4. Select first diagnosis occurrence per patient, grouped by time.
+            5. Map diagnosis and specialty values using reference mappings.
+            6. Save result as parquet file for future reuse.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                {icu_stay_id_col} (Unique ICU identifier),
-                {admission_diagnosis_col} (Mapped admission diagnosis).
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {admission_diagnosis_col}: Admission diagnosis mapped to APACHE group.
+                - {specialty_col}: Treating specialty.
         """
         # check if precalculated data is available
         if os.path.isfile(self.precalc_path + "HiRID_admitDX.parquet"):
@@ -414,23 +396,22 @@ class HiRIDExtractor(HiRIDPaths):
         length_of_stay: pl.LazyFrame,
     ) -> pl.LazyFrame:
         """
-        Processes raw timeseries events and computes a time offset from admission.
+        Process and align timeseries events relative to ICU admission.
 
-        Steps performed:
-            1. Select columns "patientid", "datetime", "variableid", and "value".
-            2. Rename "patientid" to {icu_stay_id_col} (Unique ICU identifier).
-            3. Join with admission time and length of stay DataFrames.
-            4. Convert "admissiontime" and "datetime" to datetime objects.
-            5. Cast "value" to float.
-            6. Compute {timeseries_time_col} as the difference in seconds between the event time and admission.
-            7. Drop "admissiontime" and "datetime", remove duplicate rows, and filter out null or empty values.
+        Steps:
+            1. Join data with admission time and length of stay.
+            2. Convert admission time and event datetime to datetime objects.
+            3. Cast measurement value to float.
+            4. Compute time offset in seconds from ICU admission.
+            5. Filter for events within ICU stay window.
+            6. Remove duplicates and null values.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                {icu_stay_id_col} (Unique ICU identifier),
-                {timeseries_time_col} (Time offset in seconds from admission),
-                "variable" (Timeseries variable name),
-                "value" (Measurement value).
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - variable: Measurement variable name.
+                - value: Measurement value (float).
         """
         return (
             data.select("patientid", "datetime", "variableid", "value")
@@ -473,32 +454,21 @@ class HiRIDExtractor(HiRIDPaths):
         self, data: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Structures and enriches laboratory timeseries data with LOINC details.
+        Map laboratory timeseries data to LOINC concepts.
 
-        Steps performed:
-            1. Extract unique laboratory test names from "variable".
-            2. For each lab test name, derive LOINC components:
-               - "LOINC_component": Derived lab component.
-               - "LOINC_system": System information.
-               - "LOINC_method": Measurement method.
-               - "LOINC_time": Time aspect (with "Point in time (spot)" filtered out).
-               - "LOINC_code": Corresponding concept code.
-            3. Join the LOINC details back to the original DataFrame.
-            4. Filter rows based on {relevant_lab_LOINC_components} and {relevant_lab_LOINC_systems}.
-            5. Create a struct column "labstruct" containing:
-               - value: Lab result,
-               - system: {LOINC_system},
-               - method: {LOINC_method},
-               - time: {LOINC_time},
-               - LOINC: {LOINC_code}.
-            6. Select and return relevant columns.
+        Steps:
+            1. Extract unique laboratory test names from data.
+            2. Derive LOINC components (component, system, method, time aspect, code).
+            3. Join LOINC details back to original data.
+            4. Filter for relevant lab components and systems.
+            5. Create struct column containing LOINC details and lab result.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                - {icu_stay_id_col} (Unique ICU identifier),
-                - {timeseries_time_col} (Time offset from admission),
-                - "variable" (Lab test name),
-                - "labstruct" (Struct with LOINC details and lab result).
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - variable: Laboratory test name.
+                - labstruct: Struct with value, system, method, time, LOINC code.
         """
         LOINC_data = data.select("variable").unique()
         labnames = LOINC_data.collect().to_series().to_list()
@@ -577,41 +547,28 @@ class HiRIDExtractor(HiRIDPaths):
     # region pharma
     def extract_medications(self) -> pl.LazyFrame:
         """
-        Extracts and processes medication data from HiRID pharmaceutical files.
+        Extract and process medication administration events.
 
-        Steps performed:
-            1. Load medication mapping and drug route mappings.
-            2. Retrieve admission time and length of stay.
-            3. For each file in {pharma_path}:
-               a. Filter out invalid records.
-               b. Select columns:
-                  - "patientid" renamed to {icu_stay_id_col}: Unique ICU identifier.
-                  - "pharmaid": Converted to {drug_name_col} (Medication name).
-                  - "givendose" to {drug_amount_col}: Dosage amount.
-                  - "doseunit" to {drug_amount_unit_col}: Unit of the dosage.
-                  - "route" to {drug_admin_route_col}: Administration route.
-                  - "subtypeid" to {drug_class_col}: Drug classification.
-               c. Convert datetime columns and join with admission time.
-               d. Compute the time offset for the medication as {drug_end_col}.
-               e. Map medication names to ingredients and administration routes.
-            4. Postprocess to calculate infusion rates:
-               a. Compute {drug_rate_col}: Calculated infusion rate.
-               b. Compute {fluid_rate_col}: Fluid infusion rate.
-               c. Determine drug start ({drug_start_col}) and end times ({drug_end_col})
-                  by comparing consecutive log entries.
-            5. Remove helper columns and duplicate rows.
+        Steps:
+            1. Load medication and route mappings.
+            2. Extract pharmaceutical administration records from {pharma_path}.
+            3. Map medication IDs to standardized names and ingredients.
+            4. Compute infusion rates and durations from log entries.
+            5. Extract fluid administration (saline and colloids) from observations.
+            6. Combine pharmaceutical and fluid administration data.
 
         Returns:
-            pl.LazyFrame: DataFrame containing columns:
-                - {icu_stay_id_col} (Unique ICU identifier),
-                - {drug_mixture_id_col}: (Mixture identifier).
-                - {drug_name_col} (Medication name),
-                - {drug_ingredient_col} (Mapped medication ingredient),
-                - {drug_rate_col} (Calculated infusion rate),
-                - {drug_rate_unit_col} (Infusion rate unit),
-                - {drug_start_col} (Drug start offset from admission),
-                - {drug_end_col} (Drug end offset from admission),
-                - along with additional derived columns.
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {drug_name_col}: Medication name.
+                - {drug_ingredient_col}: Active drug ingredient.
+                - {drug_amount_col}: Drug amount.
+                - {drug_amount_unit_col}: Amount unit.
+                - {drug_rate_col}: Administration rate.
+                - {drug_rate_unit_col}: Rate unit.
+                - {drug_start_col}: Relative start time (seconds).
+                - {drug_end_col}: Relative end time (seconds).
+                - Additional administrative columns.
         """
         print("HiRID   - Extracting medications...")
 
@@ -1050,15 +1007,10 @@ class HiRIDExtractor(HiRIDPaths):
     # region helpers
     def _get_variable_reference(self) -> pl.DataFrame:
         """
-        Loads the variable reference mapping from a CSV file.
-
-        The CSV must contain columns:
-            - "Source Table": Indicates the data source.
-            - "ID": The variable identifier.
-            - "Variable Name": The human-readable name of the variable.
+        Load variable reference mapping from CSV file.
 
         Returns:
-            pl.DataFrame: DataFrame with columns "Source Table", "ID", and "Variable Name".
+            pl.DataFrame: Columns: Source Table, ID, Variable Name.
         """
         return pl.read_csv(
             self.variable_reference_path,
@@ -1069,20 +1021,17 @@ class HiRIDExtractor(HiRIDPaths):
 
     def _get_observation_variables(self) -> pl.DataFrame:
         """
-        Retrieves and filters observation variables from the variable reference CSV.
+        Retrieve and filter observation variables from reference mapping.
 
-        Steps performed:
-          1. Load the complete variable reference.
-          2. Filter rows where "Source Table" equals "Observation".
-          3. Select and rename columns:
-              - "ID" to "variableid"
-              - "Variable Name" to "variable"
-          4. Replace legacy mappings using internal dictionaries.
+        Steps:
+            1. Load complete variable reference.
+            2. Filter for "Observation" source table.
+            3. Map variable IDs to standardized names using internal dictionaries.
 
         Returns:
-            pl.DataFrame: DataFrame with columns:
-                - "variableid" (Observation variable identifier),
-                - "variable" (Observation variable name).
+            pl.DataFrame: Columns:
+                - variableid: Observation variable identifier.
+                - variable: Observation variable name.
         """
         return (
             self._get_variable_reference()
@@ -1110,13 +1059,13 @@ class HiRIDExtractor(HiRIDPaths):
 
     def _get_pharma_variables(self) -> pl.LazyFrame:
         """
-        Retrieves pharmaceutical variable mappings from the variable reference CSV.
+        Retrieve pharmaceutical variable mappings.
 
         Returns:
-            pl.LazyFrame: LazyFrame with columns:
-                - "pharmaid"
-                - self.drug_name_col
-                - self.drug_name_OMOP_col
+            pl.LazyFrame: Columns:
+                - pharmaid: Pharmaceutical identifier.
+                - {drug_name_col}: Medication name.
+                - {drug_name_OMOP_col}: OMOP concept name.
         """
         return (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "HiRID.usagi.csv")
@@ -1137,7 +1086,10 @@ class HiRIDExtractor(HiRIDPaths):
     # Extract the information from the HiRID.usagi.csv files
     def _extract_drug_references(self, return_ids: bool = False) -> dict:
         """
-        Extract and process drug references from CSV mapping files.
+        Extract drug concept reference mappings from USAGI file.
+
+        Returns:
+            dict: Mapping from source drug code to concept name (or ID if return_ids=True).
         """
 
         value_col = "conceptName" if not return_ids else "conceptId"

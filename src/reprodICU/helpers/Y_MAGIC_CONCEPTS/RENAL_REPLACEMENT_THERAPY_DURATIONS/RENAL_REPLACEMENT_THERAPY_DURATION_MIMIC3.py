@@ -1,7 +1,8 @@
 # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/crrt_durations.sql
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
@@ -9,6 +10,23 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
+        """
+        Extract renal replacement therapy episodes from MIMIC-III procedures.
+
+        Steps:
+            1. Identify RRT from procedure/event records (CRRT codes).
+            2. Extract RRT start/end times.
+            3. Calculate episode duration.
+            4. Classify RRT type (CVVH, CVVHD, IHD, etc.).
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - ICUSTAY_ID: ICU stay identifier.
+                - {timeseries_time_col}: RRT start time (seconds from admission).
+                - Renal Replacement Therapy Type: RRT modality.
+                - Renal Replacement Therapy Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC3")
 
         # get admission times for MIMIC-III

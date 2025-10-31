@@ -6,7 +6,7 @@
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
 import polars as pl
-from helpers.helper import GlobalVars
+from ..helper import GlobalVars
 
 
 class IntakeOutputImprover(GlobalVars):
@@ -18,14 +18,17 @@ class IntakeOutputImprover(GlobalVars):
         self, data: pl.LazyFrame, medications: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Add the infusion volumes from the medication table to the intake output data.
+        Add infusion volumes from medications to intake/output data.
 
-        Args:
-            data (pl.LazyFrame): The intake output data.
-            medications (pl.LazyFrame): The medication data.
+        Steps:
+            1. Filter medications for intravenous infusions (route="intravenous", unit="ml").
+            2. Extract infused drug amounts and fluid volumes.
+            3. Aggregate volumes for mixed infusions (same mixture ID).
+            4. Sum drug and fluid volumes to get total infused volume.
+            5. Join volumes to intake/output time grid.
 
         Returns:
-            pl.LazyFrame: The intake output data with added infusion volumes.
+            pl.LazyFrame: Intake/output data with added infusion volume measurements.
         """
 
         if medications is None:
@@ -169,9 +172,3 @@ class IntakeOutputImprover(GlobalVars):
             .over("Global ICU Stay ID")
             .alias("Fluid balance"),
         )
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

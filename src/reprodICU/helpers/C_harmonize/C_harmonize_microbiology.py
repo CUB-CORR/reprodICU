@@ -6,12 +6,11 @@
 
 import polars as pl
 
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
-from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
-from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
-from helpers.helper import GlobalVars
-from helpers.helper import GlobalHelpers
+from ..A_extract.A_extract_eicu import EICUExtractor
+from ..A_extract.A_extract_mimic3 import MIMIC3Extractor
+from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
+from ..A_extract.A_extract_umcdb import UMCdbExtractor
+from ..helper import GlobalHelpers, GlobalVars
 
 
 class MicrobiologyHarmonizer(GlobalVars):
@@ -34,34 +33,25 @@ class MicrobiologyHarmonizer(GlobalVars):
 
     def harmonize_microbiology(self) -> pl.LazyFrame:
         """
-        Harmonizes microbiology data from multiple databases into a single LazyFrame.
+        Harmonize microbiology data from multiple databases.
 
-        This function performs the following steps:
-            1. Validates that a non-empty list of datasets is provided; raises ValueError if empty.
-            2. Initializes an empty list to accumulate microbiology datasets.
-            3. For each dataset in {datasets}:
-               - If "eICU" is present: Extracts microbiology data using EICUExtractor, applies _concat_helper to create a global ID and prints the unique cases using _print_unique_cases.
-               - If "MIMIC3" is present: Extracts microbiology data using MIMIC3Extractor with similar processing.
-               - If "MIMIC4" is present: Extracts microbiology data using MIMIC4Extractor with similar processing.
-               - (Note: Extraction for "UMCdb" is commented out.)
-            4. Concatenates all accumulated datasets using a "diagonal_relaxed" join.
-            5. Selects specific columns, removes duplicate records, and sorts based on {global_icu_stay_id_col} and {timeseries_time_col}.
-
-        The final returned LazyFrame contains the following columns:
-            - {global_icu_stay_id_col}: Global ICU stay identifier.
-            - {timeseries_time_col}: Timestamp for the time series data.
-            - {micro_specimen_col}: Specimen type used in the microbiology test.
-            - {micro_test_col}: Identifier or name of the microbiology test.
-            - {micro_organism_col}: Identified microorganism in the test.
-            - {micro_antibiotic_col}: Antibiotic used or administered.
-            - {micro_dilution_col}: Dilution value reported in the test.
-            - {micro_sensitivity_col}: Result indicating microorganism sensitivity.
+        Steps:
+            1. Validate non-empty dataset list; raise ValueError if empty.
+            2. For each dataset: extract microbiology and create global identifiers.
+            3. Concatenate all datasets using diagonal-relaxed join.
+            4. Select columns in standardized order.
+            5. Remove duplicates and sort by ICU stay and time.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing harmonized microbiology data with the columns listed above.
-
-        Raises:
-            ValueError: If no datasets are provided.
+            pl.LazyFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Test time.
+                - {micro_specimen_col}: Specimen type.
+                - {micro_test_col}: Test identifier.
+                - {micro_organism_col}: Identified organism.
+                - {micro_antibiotic_col}: Antibiotic tested.
+                - {micro_dilution_col}: Dilution value.
+                - {micro_sensitivity_col}: Sensitivity result.
         """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the microbiology from.")

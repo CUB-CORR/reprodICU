@@ -6,13 +6,9 @@
 
 import polars as pl
 
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
-from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
-from helpers.A_extract.A_extract_nwicu import NWICUExtractor
-from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
-from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
-from helpers.helper import GlobalVars
+from ..A_extract.A_extract_mimic3 import MIMIC3Extractor
+from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
+from ..helper import GlobalVars
 
 
 class NotesHarmonizer(GlobalVars):
@@ -37,35 +33,25 @@ class NotesHarmonizer(GlobalVars):
 
     def harmonize_notes(self) -> pl.LazyFrame:
         """
-        Harmonizes notes data from multiple databases into a single LazyFrame.
+        Harmonize notes data from multiple databases.
 
-        This function performs the following steps:
-            1. Validates that a non-empty list of datasets is provided; raises a ValueError if empty.
-            2. Initializes an empty list to accumulate notes datasets.
-            3. For each dataset in {datasets}:
-               - If "eICU" is present: Extracts notes using EICUExtractor and applies _concat_helper1 to generate global IDs.
-               - If "MIMIC3" is present: Extracts notes using MIMIC3Extractor and applies _concat_helper1.
-               - If "MIMIC4" is present: Extracts notes using MIMIC4Extractor and applies _concat_helper1.
-               - If "NWICU" is present: Extracts notes using NWICUExtractor and applies _concat_helper1.
-               - If "SICdb" is present: Extracts notes using SICdbExtractor and applies _concat_helper2.
-               - If "UMCdb" is present: Extracts notes using UMCdbExtractor and applies _concat_helper2.
-            4. Concatenates all accumulated notes datasets using a "diagonal_relaxed" join.
-            5. Selects specific columns and removes duplicate records.
-
-        The final returned LazyFrame contains the following columns:
-            - {global_person_id_col}: Global person identifier.
-            - {global_hospital_stay_id_col}: Global hospital stay identifier.
-            - {global_icu_stay_id_col}: Global ICU stay identifier.
-            - {timeseries_time_col}: Timestamp of the note.
-            - {note_category_col}: Category of the note (e.g., Nursing, Physician).
-            - {note_description_col}: Description of the note.
-            - {note_text_col}: The actual text content of the note.
+        Steps:
+            1. Validate non-empty dataset list; raise ValueError if empty.
+            2. For each dataset: extract notes and create global identifiers.
+            3. Apply database-specific identifier concatenation via helper methods.
+            4. Concatenate all datasets using diagonal-relaxed join.
+            5. Select columns in standardized order.
+            6. Remove duplicates.
 
         Returns:
-            pl.LazyFrame: A LazyFrame containing harmonized notes data with the columns listed above.
-
-        Raises:
-            ValueError: If no datasets are provided.
+            pl.LazyFrame: Contains columns:
+                - {global_person_id_col}: Global person identifier.
+                - {global_hospital_stay_id_col}: Global hospital stay identifier.
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {note_time_col}: Note timestamp.
+                - {note_category_col}: Note category (e.g., Nursing, Physician).
+                - {note_description_col}: Note description.
+                - {note_text_col}: Note text content.
         """
         if self.datasets == []:
             raise ValueError("No datasets to harmonize the notes from.")
@@ -93,7 +79,6 @@ class NotesHarmonizer(GlobalVars):
                 )
             )
 
-
         notes = pl.concat(notes_datasets, how="diagonal_relaxed")
         notes_cols_list = [
             self.global_person_id_col,
@@ -106,9 +91,7 @@ class NotesHarmonizer(GlobalVars):
         ]
 
         return (
-            notes.select(
-                col for col in notes_cols_list if col in notes.columns
-            )
+            notes.select(col for col in notes_cols_list if col in notes.columns)
             .unique()
             .sort(self.global_icu_stay_id_col, self.note_time_col)
         )

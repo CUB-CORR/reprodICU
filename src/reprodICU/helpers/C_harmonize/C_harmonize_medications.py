@@ -6,15 +6,14 @@
 
 import polars as pl
 
-from helpers.A_extract.A_extract_eicu import EICUExtractor
-from helpers.A_extract.AX_extract_hirid import HiRIDExtractor
-from helpers.A_extract.A_extract_mimic3 import MIMIC3Extractor
-from helpers.A_extract.A_extract_mimic4 import MIMIC4Extractor
-from helpers.A_extract.A_extract_nwicu import NWICUExtractor
-from helpers.A_extract.AX_extract_sicdb import SICdbExtractor
-from helpers.A_extract.AX_extract_umcdb import UMCdbExtractor
-from helpers.helper import GlobalVars
-from helpers.helper import GlobalHelpers
+from ..A_extract.A_extract_eicu import EICUExtractor
+from ..A_extract.A_extract_hirid import HiRIDExtractor
+from ..A_extract.A_extract_mimic3 import MIMIC3Extractor
+from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
+from ..A_extract.A_extract_nwicu import NWICUExtractor
+from ..A_extract.A_extract_sicdb import SICdbExtractor
+from ..A_extract.A_extract_umcdb import UMCdbExtractor
+from ..helper import GlobalHelpers, GlobalVars
 
 SECONDS_IN_1MIN = 60
 SECONDS_IN_1H = 3600
@@ -44,6 +43,7 @@ class MedicationHarmonizer(GlobalVars):
 
         self.medications_cols_list = [
             self.global_icu_stay_id_col,
+            self.drug_prescription_id_col,
             self.drug_mixture_id_col,
             self.drug_mixture_admin_id_col,
             self.drug_admin_type_col,
@@ -68,58 +68,37 @@ class MedicationHarmonizer(GlobalVars):
 
     def harmonize_medications(self) -> pl.LazyFrame:
         """
-        Harmonizes medication data from multiple databases into a single table.
+        Harmonize medication data from multiple databases.
 
-        This function performs the following steps:
-            1. Validates that datasets are provided; raises a ValueError if empty.
-            2. Loads mapping files for fluids and drugs classes:
-               - {fluids_class_mapping}: Maps medication names to fluid classes.
-               - {drugs_class_mapping}: Maps drug ingredients to drug classes.
-            3. Iterates over each dataset provided in {datasets}:
-               - Extracts medication data using dataset-specific extractors.
-               - Applies helper methods to concatenate and print unique case information.
-            4. Concatenates all medication datasets using a relaxed diagonal join.
-            5. Adds missing drug class information by replacing columns:
-               - Updates {drug_class_col} based on matches from {drug_name_col} and {drug_ingredient_col} using the mappings.
-            6. Harmonizes units in {drug_amount_unit_col} by normalizing common differences (e.g., 'mL' to 'ml', 'µ' to 'mc').
-            7. Selects and casts the following columns:
-               - {global_icu_stay_id_col}: Global ICU stay identifier.
-               - {drug_ingredient_col}: Drug ingredient.
-               - {drug_name_col}: Original medication name.
-               - {drug_name_OMOP_col}: Medications mapped to OMOP convention.
-               - {drug_class_col}: Drug/medication classification.
-               - {drug_admin_route_col}: Administration route.
-               - {drug_amount_col}: Amount of drug administered (float).
-               - {drug_amount_unit_col}: Unit for amount (normalized).
-               - {drug_rate_col}: Rate of administration (float).
-               - {drug_rate_unit_col}: Unit for the rate.
-               - {fluid_amount_col}: Fluid amount administered (float).
-               - {fluid_rate_col}: Fluid rate administered (float).
-               - {drug_start_col}: Start time of medication.
-               - {drug_end_col}: End time of medication.
-               - {drug_patient_weight_col}: Patient weight used for dosing (float).
-            8. Returns a unique and sorted pl.LazyFrame sorted by {global_icu_stay_id_col} and {drug_start_col}.
+        Steps:
+            1. Validate non-empty dataset list; raise ValueError if empty.
+            2. Load drug and fluid classification mappings.
+            3. For each dataset: extract medications and create global identifiers.
+            4. Concatenate all datasets using diagonal-relaxed join.
+            5. Enhance drug classifications using mapping tables.
+            6. Normalize units (mL→ml, µ→mc).
+            7. Select and cast columns to proper types.
+            8. Remove duplicates and sort by ICU stay and start time.
 
         Returns:
-            pl.LazyFrame: A lazy frame containing the harmonized medication data with columns:
+            pl.LazyFrame: Contains columns:
                 - {global_icu_stay_id_col}: Global ICU stay identifier.
-                - {drug_ingredient_col}: Drug ingredient.
+                - {drug_prescription_id_col}: Prescription identifier.
+                - {drug_ingredient_col}: Active drug ingredient.
                 - {drug_name_col}: Original medication name.
-                - {drug_name_OMOP_col}: OMOP mapped medication name.
-                - {drug_class_col}: Medication class.
-                - {drug_admin_route_col}: Route of administration.
-                - {drug_amount_col}: Medication amount.
-                - {drug_amount_unit_col}: Normalized unit for amount.
-                - {drug_rate_col}: Medication rate.
-                - {drug_rate_unit_col}: Unit for rate.
-                - {fluid_amount_col}: Fluid amount.
-                - {fluid_rate_col}: Fluid rate.
-                - {drug_start_col}: Medication start time.
-                - {drug_end_col}: Medication end time.
-                - {drug_patient_weight_col}: Patient weight.
-
-        Raises:
-            ValueError: If no datasets are provided.
+                - {drug_name_OMOP_col}: OMOP-mapped medication name.
+                - {drug_class_col}: Drug classification.
+                - {drug_admin_route_col}: Administration route.
+                - {drug_amount_col}: Dose amount (float).
+                - {drug_amount_unit_col}: Dose unit.
+                - {drug_rate_col}: Infusion rate (float).
+                - {drug_rate_unit_col}: Rate unit.
+                - {fluid_name_col}: Fluid name.
+                - {fluid_amount_col}: Fluid amount (float).
+                - {fluid_rate_col}: Fluid rate (float).
+                - {drug_start_col}: Medication start datetime.
+                - {drug_end_col}: Medication end datetime.
+                - {drug_patient_weight_col}: Patient weight for dosing (float).
         """
         if self.medications is not None:
             print(
@@ -322,7 +301,7 @@ class MedicationHarmonizer(GlobalVars):
             .unique()
             .sort(self.global_icu_stay_id_col, self.drug_start_col)
         )
-        
+
         return self.medications
 
     def harmonize_split_medications(self, table: str) -> pl.LazyFrame:
@@ -347,7 +326,9 @@ class MedicationHarmonizer(GlobalVars):
         self.harmonize_medications()
         if table == "administered":
             return (
-                self.medications.filter(pl.col(self.drug_admin_type_col) == "given")
+                self.medications.filter(
+                    pl.col(self.drug_admin_type_col) == "given"
+                )
                 .select(_medications_cols_list)
                 .sort(self.global_icu_stay_id_col, self.drug_start_col)
             )
@@ -364,6 +345,18 @@ class MedicationHarmonizer(GlobalVars):
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         data_cols = data.columns
+
+        if self.drug_prescription_id_col in data_cols:
+            data = data.with_columns(
+                pl.when(pl.col(self.drug_prescription_id_col).is_not_null())
+                .then(
+                    pl.concat_str(
+                        [pl.lit(name), pl.col(self.drug_prescription_id_col)]
+                    )
+                )
+                .otherwise(None)
+                .alias(self.drug_prescription_id_col)
+            )
 
         if self.drug_mixture_id_col in data_cols:
             data = data.with_columns(

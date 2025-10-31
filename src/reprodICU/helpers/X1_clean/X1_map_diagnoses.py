@@ -7,7 +7,7 @@
 
 import polars as pl
 
-from helpers.helper import GlobalVars
+from ..helper import GlobalVars
 
 
 class DiagnosesMapper(GlobalVars):
@@ -17,8 +17,17 @@ class DiagnosesMapper(GlobalVars):
 
     def map_diagnoses(self, data) -> pl.LazyFrame:
         """
-        Imputes missing ICD codes in the diagnoses data.
-        -> maps ICD9 codes to ICD10 codes and vice versa (for inclusion / exclusion criteria down the line)
+        Map diagnoses between ICD-9 and ICD-10 codes.
+
+        Steps:
+            1. Load patient IDs to fill missing hospital/ICU stay associations.
+            2. Create bidirectional ICD-9 <-> ICD-10 mapping dictionaries.
+            3. Assign missing hospital stay IDs from ICU stay IDs where available.
+            4. Map all diagnoses to both ICD-9 and ICD-10 codes.
+            5. Deduplicate and sort results.
+
+        Returns:
+            pl.LazyFrame: Diagnoses with both ICD-9 and ICD-10 codes added.
         """
 
         IDs = pl.scan_parquet(self.patient_info_path).select(
@@ -152,9 +161,3 @@ class DiagnosesMapper(GlobalVars):
             )
             .lazy()
         )
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

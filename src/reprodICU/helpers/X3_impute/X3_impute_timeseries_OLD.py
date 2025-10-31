@@ -8,11 +8,9 @@
 # It is available as a module for piping in the main script.
 # It can be called with command line arguments to specify the source datasets to be imputed. ! NOT IMPLEMENTED YET !
 
-import argparse
-
 import numpy as np
 import polars as pl
-from helpers.helper import GlobalVars
+from ..helper import GlobalVars
 
 
 class TimeseriesImputer(GlobalVars):
@@ -301,9 +299,3 @@ class TimeseriesImputer(GlobalVars):
         ).sink_parquet(self.save_path + "timeseries_vitals_imputed.parquet")
 
         return timeseries_imputed
-
-
-if __name__ == "__main__":
-    raise NotImplementedError(
-        "This script is not yet implemented as a command line tool."
-    )

@@ -5,10 +5,7 @@
 # eth-mds/ricu (https://github.com/eth-mds/ricu)
 
 import json
-import polars as pl
 from pathlib import Path
-
-from helpers.helper import GlobalVars, GlobalHelpers
 
 
 class ricuMappings:

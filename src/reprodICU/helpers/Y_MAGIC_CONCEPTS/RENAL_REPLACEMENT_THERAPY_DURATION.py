@@ -6,17 +6,23 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
-from helpers.MAGIC_CONCEPTS.RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_eICU import \
-    RENAL_REPLACEMENT_THERAPY_DURATION_eICU
-from helpers.MAGIC_CONCEPTS.RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3 import \
-    RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3
-from helpers.MAGIC_CONCEPTS.RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4 import \
-    RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4
-from helpers.MAGIC_CONCEPTS.RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_SICdb import \
-    RENAL_REPLACEMENT_THERAPY_DURATION_SICdb
-from helpers.MAGIC_CONCEPTS.RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb import \
-    RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb
+
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_eICU import (
+    RENAL_REPLACEMENT_THERAPY_DURATION_eICU,
+)
+from .RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3 import (
+    RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3,
+)
+from .RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4 import (
+    RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4,
+)
+from .RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_SICdb import (
+    RENAL_REPLACEMENT_THERAPY_DURATION_SICdb,
+)
+from .RENAL_REPLACEMENT_THERAPY_DURATIONS.RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb import (
+    RENAL_REPLACEMENT_THERAPY_DURATION_UMCdb,
+)
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
@@ -25,29 +31,22 @@ class RENAL_REPLACEMENT_THERAPY_DURATION(MAGIC_CONCEPTS):
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self):
         """
-        Returns the magic concept RENAL_REPLACEMENT_THERAPY_DURATION
+        Extract renal replacement therapy (dialysis) periods and types.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each database: call database-specific RRT duration extractors.
+            2. Extract RRT start/end times and modality classification.
+            3. Calculate RRT duration (hours).
+            4. Standardize RRT types across databases (CVVH, CVVHD, CVVHDF, IHD, etc.).
+            5. Concatenate results from all databases.
 
-        Returns a DataFrame with the following columns:
-        - ICU stay ID
-        - renal replacement therapy type "Renal Replacement Therapy Type", one of
-            - "CVVH" (Continuous venovenous hemofiltration),
-            - "CAVHD" (Continuous arteriovenous hemodialysis),
-            - "CVVHD" (Continuous venovenous hemodialysis),
-            - "CVVHDF" (Continuous venovenous hemodiafiltration)
-            - "IHD" (Intermittent hemodialysis)
-            - "Peritoneal dialysis"
-            - "SCUF" (Slow continuous ultra filtration)
-            - "SLED" (Sustained low-efficiency dialysis)
-            - None (if the type could not be determined)
-        - renal replacement therapy start "Renal Replacement Therapy Start Relative to Admission (seconds)"
-        - renal replacement therapy end "Renal Replacement Therapy End Relative to Admission (seconds)"
-        - renal replacement therapy duration "Renal Replacement Therapy Duration (hours)"
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - Renal Replacement Therapy Type: RRT modality (CVVH, CAVHD, CVVHD, CVVHDF, IHD, Peritoneal dialysis, SCUF, SLED, unknown).
+                - Renal Replacement Therapy Start Relative to Admission (seconds): Start time.
+                - Renal Replacement Therapy End Relative to Admission (seconds): End time.
+                - Renal Replacement Therapy Duration (hours): Total duration (float).
         """
 
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration")

@@ -1,5 +1,6 @@
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
@@ -7,6 +8,24 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
 
     def RENAL_REPLACEMENT_THERAPY_DURATION(self) -> pl.DataFrame:
+        """
+        Extract renal replacement therapy episodes from SICdb monitoring data.
+
+        Steps:
+            1. Extract RRT data from float measurements.
+            2. Join with admission times.
+            3. Filter for RRT parameter IDs.
+            4. Calculate RRT duration.
+            5. Compute time relative to admission.
+
+        Returns:
+            pl.DataFrame: Contains columns:
+                - CaseID: Case identifier.
+                - Renal Replacement Therapy Start Relative to Admission (seconds): Start time.
+                - Renal Replacement Therapy End Relative to Admission (seconds): End time.
+                - Renal Replacement Therapy Type: RRT modality.
+                - Renal Replacement Therapy Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - SICdb")
 
         ADMISSION_TIMES = pl.scan_csv(self.sicdb_paths.cases_path).select(
@@ -62,7 +81,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
                 {
                     "RRT Start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
                     "RRT End": "Renal Replacement Therapy End Relative to Admission (seconds)",
-                }
+                } # fmt: skip
             )
             .collect()
         )

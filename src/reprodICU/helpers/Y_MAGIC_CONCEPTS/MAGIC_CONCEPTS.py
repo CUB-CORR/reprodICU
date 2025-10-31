@@ -3,8 +3,8 @@
 
 import yaml
 
-from helpers.helper import GlobalHelpers, GlobalVars
-from helpers.helper_filepaths import (
+from ..helper import GlobalHelpers, GlobalVars
+from ..helper_filepaths import (
     EICUPaths,
     HiRIDPaths,
     MIMIC3Paths,
@@ -12,7 +12,7 @@ from helpers.helper_filepaths import (
     SICdbPaths,
     UMCdbPaths,
 )
-from helpers.helper_ricu_mappings import ricuMappings
+from ..helper_ricu_mappings import ricuMappings
 
 
 def load_mapping(path: str) -> dict:

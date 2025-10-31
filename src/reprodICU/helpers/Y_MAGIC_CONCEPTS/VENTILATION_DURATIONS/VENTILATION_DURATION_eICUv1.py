@@ -2,7 +2,8 @@
 # original author: Xiaoli Liu
 
 import polars as pl
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
@@ -11,6 +12,23 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.LazyFrame:
+        """
+        Extract ventilation episodes from eICU careplan and vital data.
+
+        Steps:
+            1. Extract respiratory interventions from careplan (ventilation support).
+            2. Match with vital signs to identify active vent periods.
+            3. Calculate episode start/end times.
+            4. Classify ventilation type by device/mode.
+            5. Compute time relative to admission using max pause threshold.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - patientunitstayid: Patient ICU stay identifier.
+                - {timeseries_time_col}: Ventilation start time (seconds from admission).
+                - Ventilation Type: Classification (invasive ventilation, etc.).
+                - Ventilation Duration (hours): Episode duration.
+        """
         print("MAGIC_CONCEPTS: Ventilation Duration - eICU")
 
         # Tables

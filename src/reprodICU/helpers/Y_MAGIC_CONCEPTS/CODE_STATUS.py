@@ -6,9 +6,8 @@
 # available prewritten code snippets where indicated.
 
 import polars as pl
-import os
 
-from helpers.MAGIC_CONCEPTS.MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class CODE_STATUS(MAGIC_CONCEPTS):
@@ -17,23 +16,19 @@ class CODE_STATUS(MAGIC_CONCEPTS):
 
     def CODE_STATUS(self) -> pl.DataFrame:
         """
-        Returns the magic concept CODE_STATUS
+        Extract patient code status (resuscitation orders) from multiple databases.
 
-        Description:
-        This concept is used to determine whether a patient received any antibiotics during the ICU stay.
+        Steps:
+            1. For each database: extract code status records and timestamps.
+            2. Standardize code status values to common categories.
+            3. Calculate time relative to ICU admission.
+            4. Concatenate from all databases.
 
-        Returns a DataFrame with the following columns:
-        - Global ICU stay ID
-        - CODE_STATUS (ordinal scale):
-            - full code
-            - DNCPR (do not attempt CPR)
-            - DNI (do not intubate)
-            - DNR (do not resuscitate)
-            - DNR / DNI (do not resuscitate / do not intubate)
-            - CMO (comfort measures only)
-
-        :return: DataFrame
-        :rtype: pl.DataFrame
+        Returns:
+            pl.DataFrame: Contains columns:
+                - {global_icu_stay_id_col}: Global ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - CODE_STATUS: Code status category (full code, DNCPR, DNI, DNR, DNR / DNI, CMO).
         """
 
         # region eICU
