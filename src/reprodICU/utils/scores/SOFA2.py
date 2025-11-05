@@ -642,19 +642,19 @@ def SOFA2(
     creatinine_col = "Creatinine"
     pf_ratio_col = "PaO2/FiO2 Ratio"
 
-    if ventilation is not None:
-        vent = ventilation.lazy()
-        vent_start_col = "Ventilation Start Relative to Admission (seconds)"
-        vent_end_col = "Ventilation End Relative to Admission (seconds)"
+    # Resp
+    resp = timeseries_resp.lazy()
+    oxygen_delivery_col = "Oxygen delivery system"
 
-    if rrt is not None:
-        rrt = rrt.lazy()
-        rrt_start_col = (
-            "Renal Replacement Therapy Start Relative to Admission (seconds)"
-        )
-        rrt_end_col = (
-            "Renal Replacement Therapy End Relative to Admission (seconds)"
-        )
+    # Ventilation
+    vent = ventilation.lazy()
+    vent_start_col = "Ventilation Start Relative to Admission (seconds)"
+    vent_end_col = "Ventilation End Relative to Admission (seconds)"
+
+    # RRT
+    rrt = rrt.lazy()
+    rrt_start_col = "Renal Replacement Therapy Start Relative to Admission (seconds)" # fmt: skip
+    rrt_end_col = "Renal Replacement Therapy End Relative to Admission (seconds)" # fmt: skip
 
     # Meds
     meds = medications.lazy()
@@ -702,7 +702,7 @@ def SOFA2(
         .join(
             SPO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
             .select(STAY_KEY, TIME_KEY, sf_ratio_col)
-            .filter(pl.col("sf_ratio_col").is_not_null()),
+            .filter(pl.col(sf_ratio_col).is_not_null()),
             on=[STAY_KEY, TIME_KEY],
             how="outer",
             coalesce=True,
@@ -717,14 +717,30 @@ def SOFA2(
                     ["other", "supplemental oxygen"]
                 )
             ).select(STAY_KEY, vent_start_col, vent_end_col),
-            STAY_KEY,
+            on=STAY_KEY,
             how="left",
+        )
+        .join(
+            resp.select(STAY_KEY, TIME_KEY, oxygen_delivery_col).drop_nulls(),
+            on=[STAY_KEY, TIME_KEY],
+            how="outer",
+            coalesce=True,
         )
         .with_columns(
             pl.when(
                 pl.col(TIME_KEY) >= pl.col(vent_start_col),
                 pl.col(vent_end_col).is_null()
                 | (pl.col(TIME_KEY) < pl.col(vent_end_col)),
+            )
+            .then(True)
+            .when(
+                pl.col(oxygen_delivery_col).is_in(
+                    [
+                        "Mechanical ventilator",
+                        "Continuous positive airway pressure/Bilevel positive airway pressure mask",
+                        "High flow oxygen nasal cannula",
+                    ]
+                )
             )
             .then(True)
             .otherwise(False)
