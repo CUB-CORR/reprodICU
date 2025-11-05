@@ -45,6 +45,7 @@ class _BuildNamespace:
         "build_patient_information": None,
         "build_procedures": None,
         "build_timeseries": None,
+        "build_overview": None,
         "build_magic_concepts": None,
     }
 
@@ -71,6 +72,7 @@ class _BuildNamespace:
             "build_patient_information": reprodICU.build_patient_information,
             "build_procedures": reprodICU.build_procedures,
             "build_timeseries": reprodICU.build_timeseries,
+            "build_overview": reprodICU.build_overview,
             "build_magic_concepts": MAGIC_CONCEPTS.build_magic_concepts,
         }
 

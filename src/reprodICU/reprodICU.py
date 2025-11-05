@@ -3,28 +3,34 @@ from typing import List, Optional
 
 import polars as pl
 import yaml
-from config import get_config_manager, reprodICUPaths
+from .config import get_config_manager, reprodICUPaths
 
 # import harmonizing functions
-from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
-from helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
-from helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
-from helpers.C_harmonize.C_harmonize_notes import NotesHarmonizer
-from helpers.C_harmonize.C_harmonize_patient_information import PatientInformationHarmonizer
-from helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
-from helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
+from .helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
+from .helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
+from .helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
+from .helpers.C_harmonize.C_harmonize_notes import NotesHarmonizer
+from .helpers.C_harmonize.C_harmonize_patient_information import (
+    PatientInformationHarmonizer,
+)
+from .helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
+from .helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
 # import overview functions
-from helpers.helper_overview import Overview
+from .helpers.helper_overview import Overview
 
 # import extra functions for cleaning, winsorizing, etc.
-from helpers.X1_clean.X1_clean_patient_information import PatientInformationCleaner
-from helpers.X1_clean.X1_improve_timeseries import IntakeOutputImprover
-from helpers.X1_clean.X1_map_diagnoses import DiagnosesMapper
-from helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
-from helpers.X3_impute.X3_impute_patient_information import PatientInformationImputer
-from helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
-from helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
+from .helpers.X1_clean.X1_clean_patient_information import (
+    PatientInformationCleaner,
+)
+from .helpers.X1_clean.X1_improve_timeseries import IntakeOutputImprover
+from .helpers.X1_clean.X1_map_diagnoses import DiagnosesMapper
+from .helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
+from .helpers.X3_impute.X3_impute_patient_information import (
+    PatientInformationImputer,
+)
+from .helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
+from .helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
 
 
 def load_mapping(path: str) -> dict:
@@ -679,6 +685,56 @@ def build_timeseries(
 # endregion
 
 
+# region overview
+def build_overview(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+) -> List[str]:
+    """
+    Build data availability overview and summaries.
+
+    Generates comprehensive overview of extracted data including:
+    - By ICU stay: count of records for each data type
+    - By database variable: aggregated counts per source dataset
+
+    Arguments
+    ---------
+        paths : reprodICUPaths, optional
+            Paths configuration object. Uses default ConfigManager if None.
+        demo : bool
+            If True, use demo-sized datasets instead of full data.
+
+    Returns
+    -------
+        list
+            List of overview file paths created
+
+    Raises
+    ------
+        OSError
+            If unable to access or write overview files
+    """
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    save_path = _get_save_path(paths, demo=demo)
+
+    overview = Overview(save_path=save_path)
+    print("reprodICU - Creating overview...")
+    overview.create_overview()
+    print("reprodICU - Creating database variable overview...")
+    overview.create_database_variable_overview()
+
+    return [
+        save_path + "overview.parquet",
+        save_path + "overview_database_variable.parquet",
+    ]
+
+
+# endregion
+
+
 # region build all
 def build_all(
     paths: Optional[reprodICUPaths] = None,
@@ -828,11 +884,7 @@ def build_all(
 
     # Create overview if requested
     if create_overview:
-        overview = Overview(save_path=save_path)
-        print("reprodICU - Creating overview...")
-        overview.create_overview()
-        print("reprodICU - Creating database variable overview...")
-        overview.create_database_variable_overview()
+        all_output_files.extend(build_overview(paths=paths, demo=demo))
 
     print("reprodICU - Done.")
     return all_output_files

@@ -13,7 +13,7 @@ import struct
 import zipfile
 from pathlib import Path
 
-from config import get_config_manager, reprodICUPaths
+from .config import get_config_manager, reprodICUPaths
 
 
 # region setup UMCdb
