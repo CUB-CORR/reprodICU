@@ -19,6 +19,10 @@ Sources
   The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3).
   JAMA. 2016 Feb 23;315(8):801-10.
   doi: 10.1001/jama.2016.0287. PMID: 26903338; PMCID: PMC4968574.
+- Seymour CW, Liu VX, Iwashyna TJ, Brunkhorst FM, Rea TD, Scherag A, Rubenfeld G, Kahn JM, Shankar-Hari M, Singer M, Deutschman CS, Escobar GJ, Angus DC.
+  Assessment of Clinical Criteria for Sepsis: For the Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3).
+  JAMA. 2016 Feb 23;315(8):762-74.
+  doi: 10.1001/jama.2016.0288. PMID: 26903335; PMCID: PMC5433435.
 - Shah AD, MacCallum NS, Harris S, Brealey DA, Palmer E, Hetherington J, Shi S, Perez-Suarez D, Ercole A, Watkinson PJ, Jones A, Ashworth S, Beale R, Brett SJ, Singer M.
   Descriptors of Sepsis Using the Sepsis-3 Criteria: A Cohort Study in Critical Care Units Within the U.K. National Institute for Health Research Critical Care Health Informatics Collaborative.
   Crit Care Med. 2021 Nov 1;49(11):1883-1894.

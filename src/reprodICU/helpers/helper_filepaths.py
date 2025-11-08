@@ -13,6 +13,10 @@ from .helper import GlobalVars
 # region OMOP
 class OMOPPaths(GlobalVars):
     def __init__(self, paths):
+        if paths.OMOP_vocab_path is None or (
+            not os.path.exists(paths.OMOP_vocab_path)
+        ):
+            raise ValueError("OMOP vocabulary path does not exist or is null.")
         super().__init__(paths)
         omop_path = paths.OMOP_vocab_path
 
@@ -60,6 +64,10 @@ class OMOPPaths(GlobalVars):
 # region eICU
 class EICUPaths(GlobalVars):
     def __init__(self, paths, DEMO=False):
+        if paths.eicu_source_path is None or (
+            not os.path.exists(paths.eicu_source_path)
+        ):
+            raise ValueError("eICU source path does not exist or is null.")
         super().__init__(paths, DEMO)
         eicu_path = paths.eicu_source_path
 
@@ -208,6 +216,10 @@ class EICUPaths(GlobalVars):
 # region HiRID
 class HiRIDPaths(GlobalVars):
     def __init__(self, paths):
+        if paths.hirid_source_path is None or (
+            not os.path.exists(paths.hirid_source_path)
+        ):
+            raise ValueError("HiRID source path does not exist or is null.")
         super().__init__(paths)
         hirid_path = paths.hirid_source_path
 
@@ -249,6 +261,10 @@ class HiRIDPaths(GlobalVars):
 # region MIMIC-III
 class MIMIC3Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
+        if paths.mimic3_source_path is None or (
+            not os.path.exists(paths.mimic3_source_path)
+        ):
+            raise ValueError("MIMIC-III source path does not exist or is null.")
         super().__init__(paths, DEMO)
         mimic3_path = paths.mimic3_source_path
 
@@ -521,6 +537,14 @@ class MIMIC3Paths(GlobalVars):
 # region MIMIC-IV
 class MIMIC4Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
+        if paths.mimic4_source_path is None or (
+            not os.path.exists(paths.mimic4_source_path)
+        ):
+            raise ValueError("MIMIC-IV source path does not exist or is null.")
+        if paths.mimic4_notes_source_path is None or (
+            not os.path.exists(paths.mimic4_notes_source_path)
+        ):
+            raise ValueError("MIMIC-IV notes source path does not exist or is null.")
         super().__init__(paths, DEMO)
         mimic4_path = paths.mimic4_source_path
         mimic4_notes_path = paths.mimic4_notes_source_path
@@ -774,6 +798,10 @@ class MIMIC4Paths(GlobalVars):
 # region NWICU
 class NWICUPaths(GlobalVars):
     def __init__(self, paths):
+        if paths.nwicu_source_path is None or (
+            not os.path.exists(paths.nwicu_source_path)
+        ):
+            raise ValueError("NWICU source path does not exist or is null.")
         super().__init__(paths)
         nwicu_path = paths.nwicu_source_path
 
@@ -812,6 +840,10 @@ class NWICUPaths(GlobalVars):
 # region SICdb
 class SICdbPaths(GlobalVars):
     def __init__(self, paths):
+        if paths.sicdb_source_path is None or (
+            not os.path.exists(paths.sicdb_source_path)
+        ):
+            raise ValueError("SICdb source path does not exist or is null.")
         super().__init__(paths)
         sicdb_path = paths.sicdb_source_path
 
@@ -849,6 +881,10 @@ class SICdbPaths(GlobalVars):
 # region UMCdb
 class UMCdbPaths(GlobalVars):
     def __init__(self, paths):
+        if paths.umcdb_source_path is None or (
+            not os.path.exists(paths.umcdb_source_path)
+        ):
+            raise ValueError("UMCdb source path does not exist or is null.")
         super().__init__(paths)
         umcdb_path = paths.umcdb_source_path
 
