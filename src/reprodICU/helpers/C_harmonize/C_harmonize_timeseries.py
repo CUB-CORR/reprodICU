@@ -28,13 +28,20 @@ class TimeseriesHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
-        self.eicu = EICUProcessor(paths, DEMO)
-        self.hirid = HiRIDProcessor(paths)
-        self.mimic3 = MIMIC3Processor(paths, DEMO)
-        self.mimic4 = MIMIC4Processor(paths, DEMO)
-        self.nwicu = NWICUProcessor(paths)
-        self.sicdb = SICdbProcessor(paths)
-        self.umcdb = UMCdbProcessor(paths)
+        if "eICU" in self.datasets:
+            self.eicu = EICUProcessor(paths, DEMO)
+        if "HiRID" in self.datasets:
+            self.hirid = HiRIDProcessor(paths)
+        if "MIMIC3" in self.datasets:
+            self.mimic3 = MIMIC3Processor(paths, DEMO)
+        if "MIMIC4" in self.datasets:
+            self.mimic4 = MIMIC4Processor(paths, DEMO)
+        if "NWICU" in self.datasets:
+            self.nwicu = NWICUProcessor(paths)
+        if "SICdb" in self.datasets:
+            self.sicdb = SICdbProcessor(paths)
+        if "UMCdb" in self.datasets:
+            self.umcdb = UMCdbProcessor(paths)
         self.paths = paths
         self.datasets = datasets
         self.helpers = GlobalHelpers()

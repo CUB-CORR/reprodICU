@@ -9,7 +9,7 @@ import os
 
 import polars as pl
 
-from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):

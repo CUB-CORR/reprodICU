@@ -61,7 +61,7 @@ class _BuildNamespace:
             )
 
         from reprodICU import reprodICU
-        from .helpers import MAGIC_CONCEPTS
+        from .helpers import helper_magic_concepts
 
         build_functions = {
             "build_all": reprodICU.build_all,
@@ -73,7 +73,7 @@ class _BuildNamespace:
             "build_procedures": reprodICU.build_procedures,
             "build_timeseries": reprodICU.build_timeseries,
             "build_overview": reprodICU.build_overview,
-            "build_magic_concepts": MAGIC_CONCEPTS.build_magic_concepts,
+            "build_magic_concepts": helper_magic_concepts.build_magic_concepts,
         }
 
         return build_functions[name]

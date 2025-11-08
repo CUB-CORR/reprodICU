@@ -7,7 +7,7 @@
 
 import polars as pl
 
-from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class CODE_STATUS(MAGIC_CONCEPTS):

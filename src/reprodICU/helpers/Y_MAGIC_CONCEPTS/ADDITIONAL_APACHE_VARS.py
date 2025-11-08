@@ -7,7 +7,7 @@
 
 import polars as pl
 
-from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
+from .MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class ADDITIONAL_APACHE_VARS(MAGIC_CONCEPTS):

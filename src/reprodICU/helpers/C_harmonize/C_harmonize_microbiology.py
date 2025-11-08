@@ -24,10 +24,14 @@ class MicrobiologyHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
-        self.eicu = EICUExtractor(paths, DEMO)
-        self.mimic3 = MIMIC3Extractor(paths, DEMO)
-        self.mimic4 = MIMIC4Extractor(paths, DEMO)
-        self.umcdb = UMCdbExtractor(paths)
+        if "eICU" in self.datasets:
+            self.eicu = EICUExtractor(paths, DEMO)
+        if "MIMIC3" in self.datasets:
+            self.mimic3 = MIMIC3Extractor(paths, DEMO)
+        if "MIMIC4" in self.datasets:
+            self.mimic4 = MIMIC4Extractor(paths, DEMO)
+        if "UMCdb" in self.datasets:
+            self.umcdb = UMCdbExtractor(paths)
         self.helpers = GlobalHelpers()
         self.datasets = datasets
 
