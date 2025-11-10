@@ -30,6 +30,10 @@ class MedicationHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
+        self.helpers = GlobalHelpers()
+        self.datasets = datasets
+        self.medications = None
+        
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "HiRID" in self.datasets:
@@ -44,9 +48,6 @@ class MedicationHarmonizer(GlobalVars):
             self.sicdb = SICdbExtractor(paths)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
-        self.helpers = GlobalHelpers()
-        self.datasets = datasets
-        self.medications = None
 
         self.medications_cols_list = [
             self.global_icu_stay_id_col,

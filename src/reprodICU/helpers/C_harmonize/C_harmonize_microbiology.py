@@ -24,6 +24,9 @@ class MicrobiologyHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
+        self.helpers = GlobalHelpers()
+        self.datasets = datasets
+        
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "MIMIC3" in self.datasets:
@@ -32,9 +35,7 @@ class MicrobiologyHarmonizer(GlobalVars):
             self.mimic4 = MIMIC4Extractor(paths, DEMO)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
-        self.helpers = GlobalHelpers()
-        self.datasets = datasets
-
+        
     def harmonize_microbiology(self) -> pl.LazyFrame:
         """
         Harmonize microbiology data from multiple databases.
