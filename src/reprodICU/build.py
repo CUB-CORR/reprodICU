@@ -164,6 +164,7 @@ def build_patient_information(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
+    impute: bool = False,
 ) -> List[str]:
     """
     Build patient information table from raw data sources.
@@ -180,6 +181,8 @@ def build_patient_information(
             Datasets to process. Uses all datasets if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        impute : bool
+            If True, impute missing anthropometric data.
 
     Returns
     -------
@@ -220,7 +223,8 @@ def build_patient_information(
         column_names["weight_col"],
         column_names["height_col"],
     ]
-    (
+
+    patient_info = (
         patient_info_harmonizer.harmonize_patient_information()
         .pipe(patient_info_cleaner.clean_patient_information)
         .pipe(patient_info_cleaner.add_good_patient_information)
@@ -231,8 +235,19 @@ def build_patient_information(
         )
         .pipe(patient_info_imputer.impute_patient_IDs)
         .collect()
-        .write_parquet(save_path + "patient_information.parquet")
     )
+
+    patient_info.write_parquet(save_path + "patient_information.parquet")
+
+    if impute:
+        patient_info.pipe(
+            patient_info_imputer.impute_patient_anthropometrics,
+            n_neighbors=5,
+        ).write_parquet(save_path + "patient_information_imputed.parquet")
+        return [
+            save_path + "patient_information.parquet",
+            save_path + "patient_information_imputed.parquet",
+        ]
 
     return [save_path + "patient_information.parquet"]
 

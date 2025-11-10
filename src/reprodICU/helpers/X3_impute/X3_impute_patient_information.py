@@ -7,7 +7,10 @@
 
 import numpy as np
 import polars as pl
-from sklearn.impute import KNNImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.linear_model import BayesianRidge
+from sklearn.preprocessing import OrdinalEncoder
 
 from ..helper import GlobalVars
 
@@ -17,7 +20,7 @@ class PatientInformationImputer(GlobalVars):
         super().__init__(paths)
         pass
 
-    def impute_patient_IDs(self, data) -> pl.LazyFrame:
+    def impute_patient_IDs(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Impute missing global identifiers from hierarchical levels.
 
@@ -43,15 +46,15 @@ class PatientInformationImputer(GlobalVars):
         )
 
     def impute_patient_anthropometrics(
-        self, data: pl.LazyFrame, n_neighbors: int = 2
-    ) -> pl.LazyFrame:
+        self, data: pl.DataFrame, n_neighbors: int = 2
+    ) -> pl.DataFrame:
         """
-        Impute missing anthropometric data via KNN.
+        Impute missing anthropometric data via iterative imputation.
 
         Steps:
             1. Select columns: age, height, weight (to impute) and demographic/site features.
             2. Encode categorical columns (dataset, gender, ethnicity, care_site, unit_type) numerically.
-            3. Apply KNN imputation (n_neighbors=2 default).
+            3. Apply iterative imputation.
             4. Cast imputed values back to original types.
             5. Drop height for neonatal patients (unreliable).
 
@@ -63,101 +66,60 @@ class PatientInformationImputer(GlobalVars):
                 - [All other original columns]
         """
 
-        # get relevant columns for imputation
-        columns_to_impute = [
-            self.age_col,
-            self.height_col,
-            self.weight_col,
-        ]
+        # columns to impute and their post-processing functions
+        post_process = {
+            self.age_col: lambda expr: expr.cast(int),
+            self.height_col: lambda expr: expr.round(decimals=1),
+            self.weight_col: lambda expr: expr.round(decimals=1),
+        }
+        columns_to_impute = list(post_process.keys())
 
-        # get relevant columns for nearest neighbors
-        columns_for_neighbors = [
-            self.age_col,
-            self.height_col,
-            self.weight_col,
-            # not imputed, but used for nearest neighbors
+        # categorical columns
+        categorical_cols = [
             self.dataset_col,
             self.gender_col,
             self.ethnicity_col,
             self.care_site_col,
-            self.unit_type_col,  # to ensure Newborns are not imputed with adult values
+            self.unit_type_col,
         ]
 
-        # function for replacing categorical values with numerical values
-        def replace_categorical_with_numerical(
-            column, col_name: str
-        ) -> pl.LazyFrame:
-            return column.replace(
-                data.select(col_name).collect().to_series().unique(),
-                np.arange(
-                    data.select(col_name).collect().to_series().unique().len()
-                ),
-            )
+        # get relevant columns for nearest neighbors
+        columns_for_neighbors = columns_to_impute + categorical_cols
 
         # get data for imputation
-        data_for_imputation = (
-            data.select(columns_for_neighbors)
-            .with_columns(
-                pl.col(self.dataset_col)
-                .pipe(replace_categorical_with_numerical, self.dataset_col)
-                .alias(self.dataset_col),
-                pl.col(self.gender_col)
-                .cast(str)
-                .replace(
-                    self.gender_dtype.categories.to_list(),
-                    np.arange(self.gender_dtype.categories.len()),
-                    return_dtype=int,
-                )
-                .alias(self.gender_col),
-                pl.col(self.ethnicity_col)
-                .cast(str)
-                .replace(
-                    self.ethnicity_dtype.categories.to_list(),
-                    np.arange(self.ethnicity_dtype.categories.len()),
-                    return_dtype=int,
-                )
-                .alias(self.ethnicity_col),
-                pl.col(self.care_site_col)
-                .pipe(replace_categorical_with_numerical, self.care_site_col)
-                .alias(self.care_site_col),
-                pl.col(self.unit_type_col)
-                .cast(str)
-                .pipe(replace_categorical_with_numerical, self.unit_type_col)
-                .alias(self.unit_type_col),
-            )
-            .collect()
-            .to_pandas()
-        )
+        imputation_data = data.select(columns_for_neighbors).to_pandas()
+
+        # encode categorical columns
+        encoders = {}
+        for col in categorical_cols:
+            # fill NaN with 'Unknown' to handle missing categoricals
+            imputation_data[col] = imputation_data[col].fillna("Unknown")
+            encoder = OrdinalEncoder()
+            imputation_data[col] = encoder.fit_transform(imputation_data[[col]])
+            encoders[col] = encoder
 
         # impute missing values
         print("reprodICU - Imputing patient information...")
-        imputer = KNNImputer(n_neighbors=n_neighbors)
-        imputed_data = imputer.fit_transform(data_for_imputation)
+        imputer = IterativeImputer(
+            estimator=BayesianRidge(),  # or LinearRegression()
+            max_iter=10,
+            random_state=42,
+            verbose=1,
+        )
+        imputed_data = imputer.fit_transform(imputation_data)
         imputed_data = pl.DataFrame(
             imputed_data,
             schema=columns_for_neighbors,
         ).select(*columns_to_impute)
 
         return data.with_columns(
-            pl.when(pl.col(self.age_col).is_null())
-            .then(imputed_data[self.age_col])
-            .otherwise(pl.col(self.age_col))
-            .cast(int)
-            .alias(self.age_col),
-            pl.when(pl.col(self.height_col).is_null())
-            .then(imputed_data[self.height_col])
-            .otherwise(pl.col(self.height_col))
-            .round(decimals=1)
-            .alias(self.height_col),
-            pl.when(pl.col(self.weight_col).is_null())
-            .then(imputed_data[self.weight_col])
-            .otherwise(pl.col(self.weight_col))
-            .round(decimals=1)
-            .alias(self.weight_col),
-        ).with_columns(
-            # Drop heights for Newborns since there is no reliable data available
-            pl.when(pl.col(self.unit_type_col) == "Neonatal")
-            .then(None)
-            .otherwise(pl.col(self.height_col))
-            .alias(self.height_col),
+            pl.when(
+                pl.col(col).is_null(),
+                pl.col(self.unit_type_col) != "Neonatal intensive care unit",
+            )
+            .then(imputed_data[col])
+            .otherwise(pl.col(col))
+            .pipe(post_process[col])
+            .alias(col)
+            for col in columns_to_impute
         )
