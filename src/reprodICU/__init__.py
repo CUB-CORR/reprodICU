@@ -9,14 +9,10 @@ __status__ = "Production"
 # Exports public API for building data, extracting concepts, converting formats,
 # and implements lazy dataset loading via __getattr__.
 
-import os
-import sys
 from pathlib import Path
 from typing import Any
 
-# Add package directory to path for relative imports
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-
+from . import build, interfaces, utils
 from .config import (
     ConfigManager,
     DatasetLoader,
@@ -24,61 +20,8 @@ from .config import (
     reprodICUPaths,
 )
 
-# Import submodule namespaces - don't import contents directly
-from . import interfaces, utils
-
 
 # Create namespace aliases for cleaner API
-class _BuildNamespace:
-    """
-    Namespace for build functions: reprodICU.build.FUNCTION
-
-    Access build functions to construct datasets from raw data sources.
-    """
-
-    _FUNCTIONS = {
-        "build_all": None,
-        "build_diagnoses": None,
-        "build_medications": None,
-        "build_microbiology": None,
-        "build_notes": None,
-        "build_patient_information": None,
-        "build_procedures": None,
-        "build_timeseries": None,
-        "build_overview": None,
-        "build_magic_concepts": None,
-    }
-
-    def __dir__(self) -> list:
-        """Enable auto-completion for build functions."""
-        return sorted(self._FUNCTIONS.keys())
-
-    def __getattr__(self, name: str) -> Any:
-        """Dynamically load build functions without method binding issues."""
-        if name not in self._FUNCTIONS:
-            raise AttributeError(
-                f"'_BuildNamespace' object has no attribute '{name}'"
-            )
-
-        from reprodICU import reprodICU
-        from .helpers import helper_magic_concepts
-
-        build_functions = {
-            "build_all": reprodICU.build_all,
-            "build_diagnoses": reprodICU.build_diagnoses,
-            "build_medications": reprodICU.build_medications,
-            "build_microbiology": reprodICU.build_microbiology,
-            "build_notes": reprodICU.build_notes,
-            "build_patient_information": reprodICU.build_patient_information,
-            "build_procedures": reprodICU.build_procedures,
-            "build_timeseries": reprodICU.build_timeseries,
-            "build_overview": reprodICU.build_overview,
-            "build_magic_concepts": helper_magic_concepts.build_magic_concepts,
-        }
-
-        return build_functions[name]
-
-
 class _ConvertNamespace:
     """
     Namespace for conversion functions: reprodICU.convert.convert_to_X
@@ -150,7 +93,6 @@ class _SetupNamespace:
 
 
 # Expose namespaces
-build = _BuildNamespace()
 convert = _ConvertNamespace()
 setup = _SetupNamespace()
 
