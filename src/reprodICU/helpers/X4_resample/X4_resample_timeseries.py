@@ -12,8 +12,6 @@ import polars as pl
 from ..helper import GlobalVars
 from ..X3_impute.X3_impute_timeseries import TimeseriesImputer
 
-DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
-
 
 class TimeseriesResampler(GlobalVars):
     def __init__(self, paths, DEMO=False) -> None:
@@ -28,7 +26,6 @@ class TimeseriesResampler(GlobalVars):
             "Time Relative to Admission (seconds)",
         ]
         self.timeseries_imputer = TimeseriesImputer(paths, DEMO)
-        self._interp = self.timeseries_imputer._interp
 
     def resample_timeseries(
         self,
@@ -71,11 +68,7 @@ class TimeseriesResampler(GlobalVars):
             # Join the original data to the resampled grid
             .join(data, on=self.index_cols, how="full", coalesce=True)
             # Interpolate missing values
-            .pipe(
-                self._interp,
-                "Time Relative to Admission (seconds)",  # Time column
-                ["Global ICU Stay ID"],  # ID columns
-            )
+            .pipe(self.timeseries_imputer.impute_timeseries)
         )
 
         # Return only the new grid with the resampled values

@@ -11,8 +11,6 @@ import polars as pl
 
 from ..helper import GlobalVars
 
-DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
-
 
 class TimeseriesImputer(GlobalVars):
     def __init__(self, paths, DEMO=False) -> None:
@@ -27,7 +25,29 @@ class TimeseriesImputer(GlobalVars):
             "Time Relative to Admission (seconds)",
         ]
 
-    # taken from @deanm0000 on polars github, edited slightly for readability
+    def _interp_simple(
+        self, df: pl.LazyFrame, ts_col: str, id_col: str
+    ) -> pl.LazyFrame:
+        """
+        Interpolate missing values in timeseries data.
+
+        Returns:
+            pl.LazyFrame: Data with interpolated values filling gaps.
+        """
+
+        index_cols = [id_col, ts_col]
+        schema = df.collect_schema()
+        cols = schema.names()
+        value_cols = [
+            x for x in cols if x not in index_cols and schema[x].is_numeric()
+        ]
+
+        return df.with_columns(
+            pl.col(value_col).interpolate_by(ts_col).over(partition_by=id_col)
+            for value_col in value_cols
+        )
+
+    # taken from @deanm0000 on polars github, edited slightly
     # source: https://github.com/pola-rs/polars/issues/9616#issuecomment-1718358252
     def _interp(
         self, df: pl.LazyFrame, ts_col: str, id_cols=None
@@ -140,9 +160,9 @@ class TimeseriesImputer(GlobalVars):
         """
 
         return data.pipe(
-            self._interp,
-            "Time Relative to Admission (seconds)",  # Time column
-            ["Global ICU Stay ID"],  # ID columns
+            self._interp_simple,
+            ts_col="Time Relative to Admission (seconds)",  # Time column
+            id_col="Global ICU Stay ID",  # ID columns
         )
 
     def impute_timeseries_vitals(self, data: pl.LazyFrame) -> pl.LazyFrame:
@@ -170,7 +190,8 @@ class TimeseriesImputer(GlobalVars):
             .with_columns(
                 pl.col(col).cast(int)
                 for col in columns
-                if col not in [*self.index_cols, "Temperature"]
+                if col
+                not in [*self.index_cols, "Temperature", "Heart rate rhythm"]
             )
             # Round temperature to 1 decimal place
             .with_columns(pl.col("Temperature").round(1).alias("Temperature"))

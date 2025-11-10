@@ -32,6 +32,7 @@ from .helpers.X3_impute.X3_impute_patient_information import (
 )
 from .helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 from .helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
+from .helpers.helper_batch import batch_process_timeseries
 
 
 def load_mapping(path: str) -> dict:
@@ -150,8 +151,9 @@ def _get_save_path(paths: reprodICUPaths, demo: bool = False) -> str:
 
     # Ensure tempfiles directory exists
     tempfiles_path = save_path + "_tempfiles/"
-    if not os.path.exists(tempfiles_path):
-        os.makedirs(tempfiles_path)
+    imputefiles_path = save_path + "_imputefiles/"
+    os.makedirs(tempfiles_path, exist_ok=True)
+    os.makedirs(imputefiles_path, exist_ok=True)
 
     return save_path
 
@@ -624,8 +626,6 @@ def build_timeseries(
     timeseries_harmonizer = TimeseriesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
     )
-    timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=demo)
-    timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=demo)
     print("reprodICU - Splitting timeseries...")
 
     timeseries_harmonizer.harmonize_split_timeseries(
@@ -669,33 +669,80 @@ def build_timeseries(
             .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
         )
 
-    if impute and "vitals" in TIMESERIES:
-        # Impute the timeseries data
-        print("reprodICU - Imputing timeseries data...")
-        (
-            pl.scan_parquet(save_path + "timeseries_vitals.parquet")
-            .pipe(timeseries_imputer.impute_timeseries_vitals)
-            .collect()
-            .write_parquet(save_path + "timeseries_vitals_imputed.parquet")
-        )
-
-    if resample and "vitals" in TIMESERIES:
-        # Resample the timeseries data
-        print("reprodICU - Resampling timeseries data...")
-        (
-            pl.scan_parquet(save_path + "timeseries_vitals.parquet")
-            .pipe(
-                timeseries_resampler.resample_timeseries_vitals,
-                resolution_in_seconds=resample,
-            )
-            .collect()
-            .write_parquet(save_path + "timeseries_vitals_resampled.parquet")
-        )
-
-    # Collect output files
-    return [
+    files = [
         save_path + f"timeseries_{ts_type}.parquet" for ts_type in TIMESERIES
     ]
+
+    if impute and "vitals" in TIMESERIES:
+        path = impute_vitals(paths=paths, demo=demo)
+        files.extend(path)
+
+    if resample is not None and "vitals" in TIMESERIES:
+        path = resample_vitals(paths=paths, demo=demo, resample=resample)
+        files.extend(path)
+
+    # Collect output files
+    return files
+
+
+def impute_vitals(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    imputefiles_path: Optional[str] = None,
+) -> List[str]:
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    save_path = _get_save_path(paths, demo=demo)
+    if imputefiles_path is None:
+        imputefiles_path = save_path + "_imputefiles/"
+
+    timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=demo)
+
+    # Impute the timeseries data using batch processing for efficiency
+    print("reprodICU - Imputing timeseries data...")
+    batch_process_timeseries(
+        timeseries="vitals",
+        save_path=save_path,
+        tempfiles_path=imputefiles_path,
+        operation="impute",
+        method=timeseries_imputer.impute_timeseries_vitals,
+    )
+
+    return [save_path + "timeseries_vitals_imputed.parquet"]
+
+
+def resample_vitals(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    resample: Optional[int] = None,
+    imputefiles_path: Optional[str] = None,
+) -> List[str]:
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    if resample is None:
+        resample = 300  # Default to 5 minutes
+
+    save_path = _get_save_path(paths, demo=demo)
+    if imputefiles_path is None:
+        imputefiles_path = save_path + "_imputefiles/"
+    timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=demo)
+
+    # Resample the timeseries data
+    print("reprodICU - Resampling timeseries data...")
+    batch_process_timeseries(
+        timeseries="vitals",
+        save_path=save_path,
+        tempfiles_path=imputefiles_path,
+        operation="resample",
+        method=timeseries_resampler.resample_timeseries_vitals,
+        resolution_in_seconds=resample,
+    )
+
+    return [save_path + "timeseries_vitals_resampled.parquet"]
 
 
 # endregion
