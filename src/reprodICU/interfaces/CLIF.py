@@ -15,8 +15,9 @@ from pathlib import Path
 
 import polars as pl
 import yaml
-from config import reprodICUPaths
-from helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
+
+from ..config import reprodICUPaths
+from ..helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
 SECONDS_IN_DAY = 86400
 DAYS_IN_YEAR = 365.25

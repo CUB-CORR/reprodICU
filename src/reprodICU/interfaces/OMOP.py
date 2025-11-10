@@ -19,9 +19,10 @@ from pathlib import Path
 
 import polars as pl
 import yaml
-from config import reprodICUPaths
-from helpers.helper_OMOP import Vocabulary
-from helpers.helper import GlobalVars
+
+from ..config import reprodICUPaths
+from ..helpers.helper import GlobalVars
+from ..helpers.helper_OMOP import Vocabulary
 
 warnings.filterwarnings("ignore")
 
