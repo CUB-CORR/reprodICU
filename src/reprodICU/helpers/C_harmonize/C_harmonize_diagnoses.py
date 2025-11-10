@@ -25,17 +25,18 @@ class DiagnosesHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
-        if "eICU" in self.datasets:
-            self.eicu = EICUProcessor(paths, DEMO)
-        if "MIMIC3" in self.datasets:
-            self.mimic3 = MIMIC3Extractor(paths, DEMO)
-        if "MIMIC4" in self.datasets:
-            self.mimic4 = MIMIC4Extractor(paths, DEMO)
-        if "NWICU" in self.datasets:
-            self.nwicu = NWICUExtractor(paths)
-        if "SICdb" in self.datasets:
-            self.sicdb = SICdbExtractor(paths)
         self.datasets = datasets
+        
+        if "eICU" in datasets:
+            self.eicu = EICUProcessor(paths, DEMO)
+        if "MIMIC3" in datasets:
+            self.mimic3 = MIMIC3Extractor(paths, DEMO)
+        if "MIMIC4" in datasets:
+            self.mimic4 = MIMIC4Extractor(paths, DEMO)
+        if "NWICU" in datasets:
+            self.nwicu = NWICUExtractor(paths)
+        if "SICdb" in datasets:
+            self.sicdb = SICdbExtractor(paths)
 
     def harmonize_diagnoses(self) -> pl.LazyFrame:
         """

@@ -28,6 +28,11 @@ class TimeseriesHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
+        self.paths = paths
+        self.datasets = datasets
+        self.helpers = GlobalHelpers()
+        self.convert = UnitConverter()
+        
         if "eICU" in self.datasets:
             self.eicu = EICUProcessor(paths, DEMO)
         if "HiRID" in self.datasets:
@@ -42,10 +47,7 @@ class TimeseriesHarmonizer(GlobalVars):
             self.sicdb = SICdbProcessor(paths)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbProcessor(paths)
-        self.paths = paths
-        self.datasets = datasets
-        self.helpers = GlobalHelpers()
-        self.convert = UnitConverter()
+        
         self.index_cols = [
             self.global_icu_stay_id_col,
             self.timeseries_time_col,

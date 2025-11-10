@@ -27,6 +27,8 @@ class PatientInformationHarmonizer(GlobalVars):
             DEMO (bool, optional): A flag indicating whether to use demo data. Defaults to False.
         """
         super().__init__(paths)
+        self.datasets = datasets
+        
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "HiRID" in self.datasets:
@@ -41,7 +43,6 @@ class PatientInformationHarmonizer(GlobalVars):
             self.sicdb = SICdbExtractor(paths)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
-        self.datasets = datasets
 
     def harmonize_patient_information(self) -> pl.LazyFrame:
         """
