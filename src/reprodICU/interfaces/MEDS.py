@@ -16,9 +16,10 @@ from datetime import datetime
 
 import polars as pl
 import yaml
-from config import reprodICUPaths
-from helpers.helper_OMOP import Vocabulary
 from tqdm import tqdm
+
+from ..config import reprodICUPaths
+from ..helpers.helper_OMOP import Vocabulary
 
 warnings.filterwarnings("ignore")
 
