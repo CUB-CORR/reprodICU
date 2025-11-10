@@ -12,6 +12,7 @@ import polars as pl
 from ..A_extract.A_extract_eicu import EICUExtractor
 from ..helper import GlobalHelpers
 from ..helper_conversions import UnitConverter
+from ..helper_batch import batch_process_timeseries
 
 
 class EICUProcessor(EICUExtractor):
@@ -133,34 +134,29 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Checking sortedness of index columns...")
         timeseries_is_sorted = (
             pl.scan_parquet(timeseries_path_unsorted, parallel="prefiltered")
-            .group_by(self.icu_stay_id_col)
+            .group_by(self.icu_stay_id_col, maintain_order=True)
             .agg(
                 pl.col(self.timeseries_time_col)
                 .eq(pl.col(self.timeseries_time_col).sort())
                 .all()
                 .alias("is_sorted")
             )
-            .filter(pl.col("is_sorted") == False)
+            .filter(pl.col("is_sorted").not_())
             .collect()
             .height
             == 0
         )
 
         if not timeseries_is_sorted:
-            # NOTE: if process stops due to insufficient memory, use the following
-            # lines instead within a terminal at the precalc_path:
-            # (
-            #     pl.scan_parquet("EICU_timeseries_grouped.parquet")
-            #     .group_by("ICU Stay ID", "Time Relative to Admission (seconds)")
-            #     .first()
-            #     .sort("ICU Stay ID", "Time Relative to Admission (seconds)")
-            #     .sink_parquet("EICU_timeseries.parquet")
-            # )
             print("eICU    - Sorting wide time series data...")
-            (
-                pl.scan_parquet(timeseries_path_unsorted)
-                .sort(self.index_cols)
-                .sink_parquet(timeseries_path)
+            batch_process_timeseries(
+                input_file=timeseries_path_unsorted,
+                output_file=timeseries_path,
+                tempfiles_path=self.precalc_path,
+                operation="sort",
+                method=lambda df: df,  # identity -> batch processor is sorting
+                id_col=self.icu_stay_id_col,
+                delete_after=True,
             )
             os.remove(timeseries_path_unsorted)
         else:
