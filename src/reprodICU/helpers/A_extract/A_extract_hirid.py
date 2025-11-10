@@ -114,7 +114,8 @@ class HiRIDExtractor(HiRIDPaths):
         """
         return (
             pl.scan_csv(
-                self.general_table_path, schema_overrides={"admissiontime": str}
+                self.general_table_path,
+                schema_overrides={"admissiontime": str},
             )
             # Rename columns for consistency
             .rename(
@@ -160,7 +161,7 @@ class HiRIDExtractor(HiRIDPaths):
 
         Steps:
             1. Check for precomputed parquet file; load if available.
-            2. Otherwise, scan timeseries parquet files from {imputed_stage_path}.
+            2. Otherwise, scan timeseries parquet files from {timeseries_path}.
             3. Extract maximum relative time offset per patient.
             4. Convert duration from seconds to days.
             5. Save result as parquet file for future reuse.
@@ -180,16 +181,24 @@ class HiRIDExtractor(HiRIDPaths):
 
         # The length of stay is derived from the last measurement of a timeseries variable.
         lengths_of_stay = (
-            pl.scan_parquet(self.imputed_stage_path + "*.parquet")
-            .select("patientid", "reldatetime")
-            .drop_nulls()
-            .rename(
-                {
-                    "patientid": self.icu_stay_id_col,
-                    "reldatetime": self.icu_length_of_stay_col,
-                }
-            )
+            pl.scan_parquet(self.timeseries_path + "*.parquet")
+            .select("patientid", "datetime")
+            .rename({"patientid": self.icu_stay_id_col})
             .cast({self.icu_stay_id_col: str})
+            .join(
+                self._extract_admissions().select(
+                    self.icu_stay_id_col, "admissiontime"
+                ),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
+            .with_columns(
+                pl.col("datetime")
+                .sub(pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.icu_length_of_stay_col)
+            )
+            .drop_nulls()
             .group_by(self.icu_stay_id_col)
             .max()
             # Convert the length of stay to days

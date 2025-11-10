@@ -234,9 +234,6 @@ class HiRIDPaths(GlobalVars):
             self.raw_stage_path + "observation_tables/parquet/"
         )
         self.pharma_path = self.raw_stage_path + "pharma_records/parquet/"
-        self.imputed_stage_path = (
-            hirid_path + "imputed_stage/imputed_stage/parquet/"
-        )
 
         # HiRID custom mapping paths
         self.hirid_mapping_path = self.mapping_path + "hirid/"
@@ -322,6 +319,7 @@ class MIMIC3Paths(GlobalVars):
                 self.inputevents_cv_path,
                 self.inputevents_mv_path,
                 self.noteevents_path,
+                self.prescriptions_path,
             ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
@@ -334,6 +332,7 @@ class MIMIC3Paths(GlobalVars):
             self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.parquet"
             self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.parquet"
             self.noteevents_path = mimic3_path + "NOTEEVENTS.parquet"
+            self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.parquet"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"

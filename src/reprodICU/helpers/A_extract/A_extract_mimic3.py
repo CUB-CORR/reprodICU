@@ -1846,6 +1846,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         # These mappings connect medication names to standard concepts and ingredients
         print("MIMIC3  - Loading medication mapping files...")
 
+        if "parquet" in self.prescriptions_path:
+            prescriptions = pl.scan_parquet(
+                self.prescriptions_path, parallel="prefiltered"
+            )
+        else:
+            prescriptions = pl.scan_csv(self.prescriptions_path)
+
         # 1. Load route and administration mappings
         route_to_concept = (
             pl.read_csv(self.route_to_concept_path)
@@ -1875,7 +1882,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         # 2. Create NDC to RxNorm concept mappings
         # Extract unique NDC codes from prescriptions
         ndc_codes = (
-            pl.scan_csv(self.prescriptions_path)
+            prescriptions
             .select("NDC")
             .unique()
             .collect()
@@ -1935,8 +1942,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         }
 
         prescriptions = (
-            pl.scan_csv(self.prescriptions_path)
-            .select(
+            prescriptions.select(
                 "ICUSTAY_ID",
                 "STARTDATE",
                 "ENDDATE",
