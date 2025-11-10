@@ -32,7 +32,7 @@ class TimeseriesHarmonizer(GlobalVars):
         self.datasets = datasets
         self.helpers = GlobalHelpers()
         self.convert = UnitConverter()
-        
+
         if "eICU" in self.datasets:
             self.eicu = EICUProcessor(paths, DEMO)
         if "HiRID" in self.datasets:
@@ -47,7 +47,7 @@ class TimeseriesHarmonizer(GlobalVars):
             self.sicdb = SICdbProcessor(paths)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbProcessor(paths)
-        
+
         self.index_cols = [
             self.global_icu_stay_id_col,
             self.timeseries_time_col,
