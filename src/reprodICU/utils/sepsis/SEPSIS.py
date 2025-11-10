@@ -384,8 +384,6 @@ def suspected_infection(
     procedures: pl.LazyFrame,
     *,
     window_size: int,
-    t_0: Optional[int] = None,
-    t_1: Optional[int] = None,
 ) -> pl.LazyFrame:
     """Suspected infection per timeframe (Seymour et al.).
 
@@ -466,12 +464,9 @@ def suspected_infection(
         suspected.with_columns(
             timeframe=_assign_timeframe("suspected_time", window_size)
         )
-        .filter(pl.col("timeframe") >= 0)
-        .filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
         .group_by(STAY_COL, "timeframe")
         .agg(pl.lit(True).alias("suspected_infection"))
+        .sort(STAY_COL, "timeframe")
     )
 
 
@@ -484,8 +479,6 @@ def antibiotic_escalation(
     medications: pl.LazyFrame,
     *,
     window_size: int,
-    t_0: Optional[int] = None,
-    t_1: Optional[int] = None,
 ) -> pl.LazyFrame:
     """Antibiotic escalation per timeframe (Shah et al.).
 
@@ -515,10 +508,6 @@ def antibiotic_escalation(
         )
         .with_columns(
             timeframe=_assign_timeframe("considered_start", window_size)
-        )
-        .filter(pl.col("timeframe") >= 0)
-        .filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .group_by(STAY_COL, "timeframe", "antibiotic_rank")
         .agg(
@@ -569,6 +558,7 @@ def antibiotic_escalation(
             .alias("antibiotic_escalation")
         )
         .select(STAY_COL, "timeframe", "antibiotic_escalation")
+        .sort(STAY_COL, "timeframe")
     )
 
 
@@ -599,10 +589,6 @@ def lactate_long(
         .drop_nulls("Lactate")
         .join(all_stays_t0, on=STAY_COL, how="inner")
         .with_columns(timeframe=_assign_timeframe(TIME_COL, window_size))
-        .filter(pl.col("timeframe") >= 0)
-        .filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
         .group_by(STAY_COL, "timeframe")
         .agg(max_lactate=pl.max("Lactate").cast(pl.Float64))
         .with_columns((pl.col("max_lactate") >= 2.0).alias("lactate_ge2"))
@@ -726,13 +712,7 @@ def rhee_consecutive_antibiotics(
                 - pl.col("T_0")
             ).floordiv(window_size),
         )
-        .filter(pl.col("timeframe") >= 0)
     )
-
-    if t_0 is not None or t_1 is not None:
-        result = result.filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
 
     return result.select(
         STAY_COL,
@@ -828,7 +808,6 @@ def rhee_organ_dysfunction(
                 window_size,
             )
         )
-        .filter(pl.col("timeframe") >= 0)
         .select(STAY_COL, "timeframe", pl.lit(True).alias("dysfunction"))
     )
 
@@ -857,7 +836,6 @@ def rhee_organ_dysfunction(
             pl.col(col).struct.field("value").alias(col) for col in LABS
         )
         .with_columns(timeframe=_assign_timeframe(TIME_COL, window_size))
-        .filter(pl.col("timeframe") >= 0)
     )
 
     # Creatinine: increase ≥0.5 from baseline (TODO: exclude ESRD)
@@ -894,19 +872,14 @@ def rhee_organ_dysfunction(
     ).select(STAY_COL, "timeframe", pl.lit(True).alias("dysfunction"))
 
     # Union all markers
-    result = pl.concat(
-        [vaso_tf, lact_tf, vent_tf, creat_tf, bili_tf, plt_tf, inr_tf],
-        how="diagonal_relaxed",
-    ).unique()
-
-    if t_0 is not None or t_1 is not None:
-        result = result.filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+    return (
+        pl.concat(
+            [vaso_tf, lact_tf, vent_tf, creat_tf, bili_tf, plt_tf, inr_tf],
+            how="diagonal_relaxed",
         )
-
-    return result.select(
-        STAY_COL, "timeframe", pl.lit(True).alias("organ_dysfunction")
-    ).unique()
+        .select(STAY_COL, "timeframe", pl.lit(True).alias("organ_dysfunction"))
+        .unique()
+    )
 
 
 # endregion rhee helpers
@@ -1107,8 +1080,6 @@ def SEPSIS(
         microbiology,
         procedures,
         window_size=window_size,
-        t_0=t_0,
-        t_1=t_1,
     )
 
     suspicion_numbered = (
@@ -1116,21 +1087,20 @@ def SEPSIS(
         # no new suspicion if [-48h, +24h] includes the previous suspicion time
         #   -> timeframe less than 48h after previous suspicion time
         .with_columns(
-            pl.col("timeframe")
-            .le(
-                pl.col("timeframe")
-                .shift(1)
-                .over(partition_by="Global ICU Stay ID", order_by="timeframe")
-                .fill_null(-999)
-                .add(48)
+            pl.struct(
+                pl.col("Global ICU Stay ID"),
+                pl.col("timeframe").le(
+                    pl.col("timeframe")
+                    .shift(1)
+                    .over(
+                        partition_by="Global ICU Stay ID",
+                        order_by="timeframe",
+                    )
+                    .fill_null(-999)
+                    .add(48)
+                ),
             )
-            .not_()
-            .alias("new_suspicion")
-        )
-        .with_columns(
-            pl.col("new_suspicion")
-            .cum_sum()
-            .over(partition_by="Global ICU Stay ID", order_by="timeframe")
+            .rle_id()
             .alias("suspicion_number")
         )
         .group_by(STAY_COL, "suspicion_number")
@@ -1238,31 +1208,29 @@ def SEPSIS(
         ALL_STAYS_T0,
         medications,
         window_size=window_size,
-        t_0=t_0,
-        t_1=t_1,
     )
 
     # Earliest timeframe with antibiotic escalation
     abx_suspicion_numbered = (
-        abx_escalation_tf.filter(pl.col("antibiotic_escalation"))
+        abx_escalation_tf.sort(STAY_COL, "timeframe")
+        .filter(pl.col("antibiotic_escalation"))
         # no new suspicion if [-48h, +24h] includes the previous suspicion time
         #   -> timeframe less than 72h after previous suspicion time
         .with_columns(
-            pl.col("timeframe")
-            .le(
-                pl.col("timeframe")
-                .shift(1)
-                .over(partition_by="Global ICU Stay ID", order_by="timeframe")
-                .fill_null(-999)
-                .add(72)
+            pl.struct(
+                pl.col("Global ICU Stay ID"),
+                pl.col("timeframe").le(
+                    pl.col("timeframe")
+                    .shift(1)
+                    .over(
+                        partition_by="Global ICU Stay ID",
+                        order_by="timeframe",
+                    )
+                    .fill_null(-999)
+                    .add(72)
+                ),
             )
-            .not_()
-            .alias("new_suspicion")
-        )
-        .with_columns(
-            pl.col("new_suspicion")
-            .cum_sum()
-            .over(partition_by="Global ICU Stay ID", order_by="timeframe")
+            .rle_id()
             .alias("suspicion_number")
         )
         .group_by(STAY_COL, "suspicion_number")
@@ -1463,10 +1431,6 @@ def SEPSIS(
                 pl.col("culture_time"),
                 pl.col("Admission Time (seconds)"),
             ),
-        )
-        .filter(
-            pl.col("timeframe") >= 0,
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1),
         )
         .select(
             STAY_COL,

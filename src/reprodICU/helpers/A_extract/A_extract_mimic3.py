@@ -1736,26 +1736,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .over(self.drug_mixture_id_col, order_by="STARTTIME"),
             )
             .with_columns(
-                pl.coalesce(
-                    pl.col(self.drug_rate_col).ne(
-                        pl.col(self.drug_rate_col)
-                        .shift(1)
-                        .backward_fill()
-                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                    ),
-                    pl.col(self.fluid_rate_col).ne(
-                        pl.col(self.fluid_rate_col)
-                        .shift(1)
-                        .backward_fill()
-                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                    ),
-                ).alias("has_same_rate")
-            )
-            .with_columns(
-                pl.col("has_same_rate")
-                .cum_sum()
+                pl.struct([self.drug_rate_col, self.fluid_rate_col])
+                .rle_id()
                 .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                .alias("has_same_rate"),
+                .alias("has_same_rate")
             )
             .group_by(self.drug_mixture_id_col, "has_same_rate")
             .agg(
@@ -1882,12 +1866,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         # 2. Create NDC to RxNorm concept mappings
         # Extract unique NDC codes from prescriptions
         ndc_codes = (
-            prescriptions
-            .select("NDC")
-            .unique()
-            .collect()
-            .to_series()
-            .to_list()
+            prescriptions.select("NDC").unique().collect().to_series().to_list()
         )
 
         # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
