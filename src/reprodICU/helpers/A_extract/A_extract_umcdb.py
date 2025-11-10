@@ -327,11 +327,7 @@ class UMCdbExtractor(UMCdbPaths):
         )
         listitems = listitems.filter(
             pl.col("item").str.starts_with("Glasgow").not_(),
-            pl.col("item").is_in(
-                self.relevant_vital_values
-                + self.relevant_respiratory_values
-                + self.relevant_intakeoutput_values
-            ),
+            pl.col("item").is_in(self.all_relevant_values),
         ).drop("valueid", "itemid", "registeredby")
 
         return pl.concat([listitems, gcs], how="diagonal_relaxed")
@@ -357,11 +353,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return self._extract_timeseries_numericitems().filter(
-            pl.col("item").is_in(
-                self.relevant_vital_values
-                + self.relevant_respiratory_values
-                + self.relevant_intakeoutput_values
-            )
+            pl.col("item").is_in(self.all_relevant_values)
         )
 
     # Separate the lab values from the rest
