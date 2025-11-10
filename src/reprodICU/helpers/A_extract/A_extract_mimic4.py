@@ -741,11 +741,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col("label").is_not_null(),
                 # lab values are stored in the labevents.csv file and just
                 # duplicated to chartevents.csv
-                pl.col("label").is_in(
-                    self.relevant_vital_values
-                    + self.relevant_respiratory_values
-                    + self.relevant_intakeoutput_values
-                ),
+                pl.col("label").is_in(self.all_relevant_values),
             )
         )
 

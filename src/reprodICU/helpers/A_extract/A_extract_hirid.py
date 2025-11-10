@@ -1014,20 +1014,6 @@ class HiRIDExtractor(HiRIDPaths):
     # endregion
 
     # region helpers
-    def _get_variable_reference(self) -> pl.DataFrame:
-        """
-        Load variable reference mapping from CSV file.
-
-        Returns:
-            pl.DataFrame: Columns: Source Table, ID, Variable Name.
-        """
-        return pl.read_csv(
-            self.variable_reference_path,
-            # separator=";",
-            # encoding="unicode_escape",
-            columns=["Source Table", "ID", "Variable Name"],
-        )
-
     def _get_observation_variables(self) -> pl.DataFrame:
         """
         Retrieve and filter observation variables from reference mapping.
@@ -1042,17 +1028,36 @@ class HiRIDExtractor(HiRIDPaths):
                 - variableid: Observation variable identifier.
                 - variable: Observation variable name.
         """
-        return (
-            self._get_variable_reference()
+
+        references = (
+            pl.read_csv(self.variable_reference_path)
             .filter(pl.col("Source Table") == "Observation")
             .select("ID", "Variable Name")
-            .with_columns(
-                pl.col("Variable Name")
+        )
+
+        extracted_references = dict(
+            zip(
+                references["ID"].to_numpy(),
+                references["Variable Name"].to_numpy(),
+            )
+        )
+
+        extracted_references.update(
+            {
                 # Fix bad mappings (wrong units)
-                .replace(
+                24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma",
                     "Bilirubin.direct [Mass/volume] in Serum or Plasma",
                     "Bilirubin.direct [Moles/volume] in Serum or Plasma",
                 )
+            }
+        )
+
+        return (
+            pl.read_csv(self.variable_reference_path)
+            .select("ID")
+            .with_columns(
+                pl.col("ID")
+                .replace_strict(extracted_references, default=None)
                 # Replace the variable names with the reprodICU mapping
                 .replace(
                     {
@@ -1061,7 +1066,9 @@ class HiRIDExtractor(HiRIDPaths):
                         **self.timeseries_respiratory_mapping,
                     }
                 )
+                .alias("Variable Name")
             )
+            .drop_nulls()
             .rename({"ID": "variableid", "Variable Name": "variable"})
             .lazy()
         )
