@@ -1,0 +1,20 @@
+############
+# DIALYSIS #
+############
+Access pressure Renal replacement therapy circuit: True
+Effluent pressure Renal replacement therapy circuit: True
+Filter pressure Renal replacement therapy circuit: True
+Transmembrane pressure Renal replacement therapy circuit: True
+Return pressure Renal replacement therapy circuit: True
+Continuous renal replacement therapy mode Renal replacement therapy circuit: True
+Blood flow rate Renal replacement therapy circuit: True
+Dialysate flow rate Renal replacement therapy circuit: True
+Post-filter replacement fluid rate Renal replacement therapy circuit: True
+Pre-filter replacement fluid rate Renal replacement therapy circuit: True
+Continuous renal replacement therapy fluid removal goal [Volume] 1 hour: True
+Ultrafiltrate volume removed 1 hour: True
+############
+#   ECMO   #
+############
+# Rate of blood flow through cardiovascular device: True
+# Oxygen gas flow Oxygen delivery system: True

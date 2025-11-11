@@ -372,6 +372,11 @@ class GlobalVars(GlobalHelpers):
                 mapping_path + "TIMESERIES_INTAKEOUTPUT.yaml"
             )
         )
+        self.timeseries_extracorporeal_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path + "TIMESERIES_EXTRACORPOREAL.yaml"
+            )
+        )
 
         # region RELEVANT
         # Select relevant variables
@@ -417,11 +422,19 @@ class GlobalVars(GlobalHelpers):
                 )
             )
         )
+        self.relevant_extracorporeal_values = list(
+            set(
+                self.load_mapping_true_keys(
+                    self.relevant_values_path + "RELEVANT_EXTRACORPOREAL.yaml"
+                )
+            )
+        )
 
         self.all_relevant_values = (
             self.relevant_vital_values
             + self.relevant_respiratory_values
             + self.relevant_intakeoutput_values
+            + self.relevant_extracorporeal_values
         )
 
     def ICD_TO_ICDSUBCHAPTER(self, data: pl.LazyFrame):

@@ -810,6 +810,7 @@ class SICdbExtractor(SICdbPaths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
                 .alias("DataName")

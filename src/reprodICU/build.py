@@ -118,7 +118,7 @@ def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
     if timeseries is None or (
         isinstance(timeseries, list) and "all" in timeseries
     ):
-        return ["vitals", "labs", "respiratory", "inout"]
+        return ["vitals", "labs", "respiratory", "inout", "extracorporeal"]
     return timeseries
 
 
@@ -586,7 +586,7 @@ def build_timeseries(
         datasets : list, optional
             Datasets to process. Uses all datasets if None or contains "all".
         timeseries : list, optional
-            Types to extract: "vitals", "labs", "respiratory", "inout".
+            Types to extract: "vitals", "labs", "respiratory", "inout", "extracorporeal".
             Uses all types if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
@@ -917,6 +917,7 @@ def build_all(
                 timeseries_vitals=save_path + "timeseries_vitals.parquet",
                 timeseries_resp=save_path + "timeseries_respiratory.parquet",
                 timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
+                timeseries_extra=save_path + "timeseries_extracorporeal.parquet", # fmt: skip
             )
             .pipe(patient_info_cleaner.remove_bad_patient_information)
             .pipe(patient_info_cleaner.sort_columns)

@@ -699,6 +699,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
             )

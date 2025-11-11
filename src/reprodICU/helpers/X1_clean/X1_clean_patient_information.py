@@ -20,6 +20,7 @@ class PatientInformationCleaner(GlobalVars):
             "Table: Timeseries (Vitals)",
             "Table: Timeseries (Respiratory data)",
             "Table: Timeseries (In/Out data)",
+            "Table: Timeseries (Extracorporeal data)",
         ]
 
     def clean_patient_information(self, data) -> pl.LazyFrame:
@@ -234,6 +235,7 @@ class PatientInformationCleaner(GlobalVars):
         timeseries_vitals: str,
         timeseries_resp: str,
         timeseries_inout: str,
+        timeseries_extra: str,
     ) -> pl.LazyFrame:
         """
         Add data availability counts from other tables.
@@ -258,6 +260,7 @@ class PatientInformationCleaner(GlobalVars):
                 timeseries_vitals,
                 timeseries_resp,
                 timeseries_inout,
+                timeseries_extra,
             ],
             self.data_availability_cols,
         ):
