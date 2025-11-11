@@ -11,6 +11,7 @@ import polars as pl
 
 from ..A_extract.A_extract_umcdb import UMCdbExtractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -102,52 +103,21 @@ class UMCdbProcessor(UMCdbExtractor):
     # endregion
 
     # region numeric
-    def _process_timeseries_numeric(self) -> pl.LazyFrame:
+    def _process_timeseries_numeric_batch(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
         """
-        Process numeric time series measurements.
+        Helper method to process numeric timeseries data for batch processing.
 
         Steps:
-            1. Check for preprocessed numeric file; load if available.
-            2. Extract numeric measurements and cache.
-            3. Pivot data on "item" using mean aggregation for wide-format.
-            4. Save, sort by index columns, and clean temporary files.
+            1. Pivot measurements on "item" using mean aggregation.
+            2. Return processed timeseries.
 
         Returns:
-            pl.LazyFrame: Contains columns:
-                - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time offset (seconds from ICU admission).
-                - Numeric measurement columns (pivoted from item).
+            pl.LazyFrame: Processed timeseries with pivoted numeric measurements.
         """
-        ts_numeric_path = self.precalc_path + "UMCdb_timeseries_numeric.parquet"
-        ts_numeric_path_unsorted = (
-            self.precalc_path + "UMCdb_ts_numeric.parquet"
-        )
-        ts_numeric_path_cache = (
-            self.precalc_path + "UMCdb_ts_numeric_cache.parquet"
-        )
-
-        if os.path.isfile(ts_numeric_path):
-            # Load the preprocessed data
-            return pl.scan_parquet(ts_numeric_path).select(
-                pl.col(self.index_cols).set_sorted(),
-                pl.exclude(self.index_cols),
-            )
-
-        print("UMCdb   - Collecting numeric time series data...")
-
-        # "Cache" the data before pivoting
-        if not os.path.isfile(ts_numeric_path_cache):
-            self.extract_timeseries_numericitems().sink_parquet(
-                ts_numeric_path_cache
-            )
-
-        print("UMCdb   - Processing numeric time series data...")
-
-        # Process numeric data
-        ts_numeric = (
-            pl.scan_parquet(ts_numeric_path_cache)
-            # Pivot the numeric data
-            .collect()
+        return (
+            data.collect()
             .pivot(
                 on="item",
                 index=self.index_cols,
@@ -157,17 +127,57 @@ class UMCdbProcessor(UMCdbExtractor):
             .lazy()
         )
 
-        # Save the preprocessed data
-        ts_numeric.sink_parquet(ts_numeric_path_unsorted)
+    def _process_timeseries_numeric(self) -> pl.LazyFrame:
+        """
+        Process numeric time series measurements.
 
-        # Sort the data
-        (
-            pl.scan_parquet(ts_numeric_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_numeric_path)
+        Steps:
+            1. Check for preprocessed numeric file; load if available.
+            2. Extract numeric measurements from {extract_timeseries_numericitems}.
+            3. Process in batches of 500 patients: pivot measurements on "item".
+            4. Combine all batches and save sorted result.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Numeric measurement columns (pivoted from item).
+        """
+        ts_numeric_path = self.precalc_path + "UMCdb_timeseries_numeric.parquet"
+        ts_numeric_path_unsorted = self.precalc_path + "UMCdb_ts_numeric.parquet" # fmt: skip
+
+        if os.path.isfile(ts_numeric_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_numeric_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
+
+        print("UMCdb   - Preparing numeric time series data...")
+
+        # Create the raw numeric timeseries parquet file if it doesn't exist
+        if not os.path.isfile(ts_numeric_path_unsorted):
+            self.extract_timeseries_numericitems().sink_parquet(
+                ts_numeric_path_unsorted
+            )
+
+        print("UMCdb   - Processing numeric time series data...")
+
+        # Process in batches using batch_process_timeseries
+        batch_process_timeseries(
+            input_file=ts_numeric_path_unsorted,
+            output_file=ts_numeric_path,
+            tempfiles_path=self.precalc_path,
+            operation="process",
+            method=self._process_timeseries_numeric_batch,
+            id_col=self.icu_stay_id_col,
+            batch_size=500,
+            delete_after=True,
         )
-        os.remove(ts_numeric_path_unsorted)
-        os.remove(ts_numeric_path_cache)
+
+        # Clean up unsorted file
+        if os.path.isfile(ts_numeric_path_unsorted):
+            os.remove(ts_numeric_path_unsorted)
 
         return pl.scan_parquet(ts_numeric_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -344,9 +354,7 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_listitems.collect_schema().names()) - set(self.index_cols)
         )
         ts_listitems = (
-            ts_listitems.pipe(
-                self.helpers.dropna, subset_cols=droplist, how="all"
-            )
+            ts_listitems.pipe(self.helpers.dropna, droplist, "all", False)
             .lazy()
             .unique()
         )
@@ -556,7 +564,7 @@ class UMCdbConverter(UnitConverter):
     def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Align lab unit representations for creatinine and reticulocytes.
-Converts creatinine from umol/L to mmol/L and reticulocytes from
+        Converts creatinine from umol/L to mmol/L and reticulocytes from
         percentage to absolute counts (10^12/L).
 
         Returns:

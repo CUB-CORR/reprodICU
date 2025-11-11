@@ -237,42 +237,6 @@ class SICdbExtractor(SICdbPaths):
     # endregion
 
     # region timeseries
-    # Partition timeseries information from the data_float_m.csv file
-    def partition_timeseries(self, path) -> None:
-        """
-        Partition timeseries data into separate files for efficient processing.
-
-        Steps:
-            1. Read timeseries data from {data_float_m_path}.
-            2. Compute partition ID based on case ID.
-            3. Round values to 2 decimal places for precision.
-            4. Save partitioned data to specified path as parquet files.
-
-        Returns:
-            None: Data is written to parquet files on disk.
-        """
-
-        print("SICdb   - Partitioning timeseries...")
-        (
-            pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
-            .select("CaseID", "Offset", "DataID", "Val")
-            .with_columns(
-                pl.col("CaseID").floordiv(5000).alias("PartitionID"),
-                # Round values to 2 decimal places due to precision issues of IEEE 754 floats
-                pl.col("Val").cast(float).round(2),
-            )
-            .rename({"CaseID": self.icu_stay_id_col})
-            .sink_parquet(
-                pl.PartitionByKey(
-                    base_path=path,
-                    file_path=lambda ctx: f"{ctx.keys[0].str_value}.parquet",
-                    by=["PartitionID"],
-                    include_key=False,
-                ),
-                mkdir=True,
-            )
-        )
-
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Process and align raw timeseries data relative to ICU admission.
