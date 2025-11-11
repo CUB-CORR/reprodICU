@@ -487,13 +487,12 @@ class MIMIC3Paths(GlobalVars):
             self.mimic3_loinc_mapping_path + "d_labitems_to_loinc_mimic3.csv"
         )
 
-        # MIMIC-IV additional LOINC mapping paths
-        self.mimic_loinc_mapping_additional_path = (
+        # MIMIC-III additional mapping paths
+        self.mimic_additional_mapping_path = (
             self.mimic3_mapping_path + "mimic-additional_code_mapping/"
         )
         self.meas_chartevents_main_additional_path = (
-            self.mimic_loinc_mapping_additional_path
-            + "meas_chartevents_main.csv"
+            self.mimic_additional_mapping_path + "meas_chartevents_main.csv"
         )
 
         # MIMIC-IV LOINC mapping paths (additionally used for MIMIC-III)
@@ -543,7 +542,7 @@ class MIMIC4Paths(GlobalVars):
         if paths.mimic4_notes_source_path is None or (
             not os.path.exists(paths.mimic4_notes_source_path)
         ):
-            raise ValueError("MIMIC-IV notes source path does not exist or is null.")
+            raise ValueError("MIMIC-IV notes source path does not exist or is null.") # fmt: skip
         super().__init__(paths, DEMO)
         mimic4_path = paths.mimic4_source_path
         mimic4_notes_path = paths.mimic4_notes_source_path
@@ -750,13 +749,13 @@ class MIMIC4Paths(GlobalVars):
             self.mimic4_loinc_mapping_path + "numerics-summary.csv"
         )
 
-        # MIMIC-IV additional LOINC mapping paths
-        self.mimic_loinc_mapping_additional_path = (
-            self.mimic4_mapping_path + "mimic-additional_code_mapping/"
+        # MIMIC-III additional mapping paths
+        self.mimic3_mapping_path = self.mapping_path + "mimic3/"
+        self.mimic_additional_mapping_path = (
+            self.mimic3_mapping_path + "mimic-additional_code_mapping/"
         )
         self.meas_chartevents_main_additional_path = (
-            self.mimic_loinc_mapping_additional_path
-            + "meas_chartevents_main.csv"
+            self.mimic_additional_mapping_path + "meas_chartevents_main.csv"
         )
 
         # MIMIC-IV additional version paths
