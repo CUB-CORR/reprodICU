@@ -11,28 +11,23 @@ from .helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 from .helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from .helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
 from .helpers.C_harmonize.C_harmonize_notes import NotesHarmonizer
-from .helpers.C_harmonize.C_harmonize_patient_information import (
-    PatientInformationHarmonizer,
-)
+from .helpers.C_harmonize.C_harmonize_patient_information import PatientInformationHarmonizer # fmt: skip
 from .helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from .helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
-# import overview functions
-from .helpers.helper_overview import Overview
-
 # import extra functions for cleaning, winsorizing, etc.
-from .helpers.X1_clean.X1_clean_patient_information import (
-    PatientInformationCleaner,
-)
+from .helpers.X1_clean.X1_clean_patient_information import PatientInformationCleaner # fmt: skip
 from .helpers.X1_clean.X1_improve_timeseries import IntakeOutputImprover
 from .helpers.X1_clean.X1_map_diagnoses import DiagnosesMapper
 from .helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
-from .helpers.X3_impute.X3_impute_patient_information import (
-    PatientInformationImputer,
-)
+from .helpers.X3_impute.X3_impute_patient_information import PatientInformationImputer # fmt: skip
 from .helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 from .helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
+
+# import general helper functions
 from .helpers.helper_batch import batch_process_timeseries
+from .helpers.helper_magic_concepts import build_magic_concepts
+from .helpers.helper_overview import Overview
 
 
 def load_mapping(path: str) -> dict:
@@ -964,6 +959,7 @@ __all__ = [
     "build_microbiology",
     "build_notes",
     "build_timeseries",
+    "build_magic_concepts",
     "build_overview",
     "build_all",
     "impute_vitals",

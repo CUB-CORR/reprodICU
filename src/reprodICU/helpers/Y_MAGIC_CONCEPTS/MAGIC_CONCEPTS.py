@@ -42,4 +42,6 @@ class MAGIC_CONCEPTS:
         self.ricu_concept_dict = self.ricu_mappings.ricu_concept_dict
 
         # Initialize the column names
-        self.column_names = load_mapping("configs/COLUMN_NAMES.yaml")
+        self.column_names = self.global_vars.load_mapping(
+            self.global_vars.config_path + "COLUMN_NAMES.yaml"
+        )

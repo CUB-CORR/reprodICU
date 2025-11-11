@@ -116,6 +116,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 self.mimic3_paths.chartevents_path,
                 schema_overrides={"VALUE": str},
             )
+        
         CHARTEVENTS_VENTILATION_CLASSIFICATION = (
             chartevents.filter(
                 pl.col("ITEMID").is_in(chartevents_all_ids),
