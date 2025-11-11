@@ -789,6 +789,15 @@ class MIMIC4Extractor(MIMIC4Paths):
                     .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
                     .replace(self.ventilator_mode_enum_map)
                 )
+                .when(
+                    pl.col("label")
+                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                )
+                .then(
+                    pl.col("value")
+                    .replace_strict(self.RRT_MODE_MAP, default=None)
+                    .replace(self.rrt_mode_enum_map)
+                )
                 .otherwise(pl.col("valuenum"))
                 .cast(float)
                 .alias("valuenum"),

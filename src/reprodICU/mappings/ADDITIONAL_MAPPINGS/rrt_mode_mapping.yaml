@@ -1,0 +1,18 @@
+Continuous veno-venous hemodiafiltration (CVVHDF): # 1989712
+  - CVVHDF # MIMIC4, UMCdb
+
+Continuous veno-venous hemodialysis (CVVHD): # 1990005
+  - CVVHD # MIMIC3, MIMIC4
+
+Continuous veno-venous hemofiltration (CVVH): # 1990234
+  - CVVH # MIMIC3, MIMIC4, UMCdb
+  - HVCVVH # UMCdb
+
+Slow continuous ultrafiltration (SCUF): # 1989823
+  - SCUF # MIMIC4, UMCdb
+
+Peritoneal dialysis: # 4324124
+  - Peritoneal # MIMIC3
+
+Plasma filtration: # 4052539
+  - MPS # UMCdb
