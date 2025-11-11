@@ -1,5 +1,6 @@
 import glob
 import os
+import time
 from typing import Optional
 
 import polars as pl
@@ -14,6 +15,7 @@ def batch_process_timeseries(
     operation: str = None,
     method: callable = None,
     id_col: str = "Global ICU Stay ID",
+    batch_size: int = 5000,
     delete_after: bool = False,
     **kwargs,
 ) -> None:
@@ -42,6 +44,8 @@ def batch_process_timeseries(
             Method to use for the data.
         id_col : str
             Column name for the ID column (default: "Global ICU Stay ID").
+        batch_size : int
+            Number of patients to process per batch (default: 5000).
         delete_after : bool
             Whether to delete temporary files after processing.
         **kwargs
@@ -64,6 +68,10 @@ def batch_process_timeseries(
     else:
         batch_id = os.path.splitext(os.path.basename(input_file))[0]
 
+    # add e to operation for file naming
+    if not operation.endswith("e"):
+        operation += "e"
+
     input_path = input_file or save_path + f"{batch_id}.parquet"
     output_path = output_file or save_path + f"{batch_id}_{operation}d.parquet"
 
@@ -78,18 +86,13 @@ def batch_process_timeseries(
         .to_list()
     )
 
-    # Process in batches of 5000 patients
-    batch_size = 5000
+    # Process in batches of batch_size patients
     total_batches = (len(unique_ids) + batch_size - 1) // batch_size
-
+    times = []
     for i in range(0, len(unique_ids), batch_size):
+        start = time.time()
         batch_ids = unique_ids[i : i + batch_size]
-        print(
-            f"Processing batch {i//batch_size + 1:3.0f} of {total_batches} "
-            f"with {len(batch_ids):4.0f} patients...",
-            end="\r",
-        )
-
+        
         # Filter to current batch and process
         index = str(i // batch_size).zfill(4)
         (
@@ -101,12 +104,31 @@ def batch_process_timeseries(
                 tempfiles_path + f"{batch_id}_{operation}d_{index}.parquet"
             )
         )
+        
+        # Update timing information
+        elapsed = time.time() - start
+        times.append(elapsed)
+        avg = sum(times) / len(times)
+        eta_min = int(avg * (total_batches - (i // batch_size) - 1) / 60 + 0.5)
+        
+        print(
+            f"Processing batch {i//batch_size + 1:3.0f} of {total_batches} "
+            f"with {len(batch_ids):4.0f} patients "
+            f"(last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
+            end="\r",
+        )
 
     # Concatenate all processed frames and sink
     files = sorted(
         glob.glob(tempfiles_path + f"{batch_id}_{operation}d_*.parquet")
     )
-    pl.scan_parquet(files).sink_parquet(output_path)
+    
+    # Read all batch files and concatenate them, handling schema differences
+    batch_frames = []
+    for file in files:
+        batch_frames.append(pl.scan_parquet(file))
+    
+    pl.concat(batch_frames, how="diagonal_relaxed").sink_parquet(output_path)
 
     # Optionally delete temporary files
     if delete_after:

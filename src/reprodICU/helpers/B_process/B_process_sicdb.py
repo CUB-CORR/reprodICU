@@ -6,13 +6,12 @@
 
 
 import os
-import shutil
-import sys
 
 import polars as pl
 
 from ..A_extract.A_extract_sicdb import SICdbExtractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -47,16 +46,47 @@ class SICdbProcessor(SICdbExtractor):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
     # region vitals
+    def _process_timeseries_batch(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Helper method to process timeseries data for batch processing.
+
+        Steps:
+            1. Extract and align timeseries data relative to ICU admission.
+            2. Pivot measurements on "DataID" using first aggregation.
+            3. Drop rows where all non-index columns are null.
+
+        Returns:
+            pl.LazyFrame: Processed timeseries with pivoted measurements.
+        """
+        # Extract & pivot the timeseries data
+        timeseries = (
+            data.pipe(self._extract_timeseries_helper)
+            .collect()
+            .pivot(
+                on="DataID",
+                index=self.index_cols,
+                values="Val",
+                aggregate_function="first",  # NOTE: first is used here to allow for string values
+            )
+            .lazy()
+        )
+
+        # Drop empty rows
+        droplist = list(
+            set(timeseries.collect_schema().names()) - set(self.index_cols)
+        )
+
+        return timeseries.pipe(self.helpers.dropna, "all", droplist, False)
+
     def process_timeseries_data_float(self) -> pl.LazyFrame:
         """
         Process numerical time series data.
 
         Steps:
             1. Check for preprocessed numeric timeseries file; load if available.
-            2. Partition raw timeseries data by case ID into cache files.
-            3. For each cached file: extract, pivot measurements on "DataID" using first aggregation.
-            4. Drop rows where all non-index columns are null.
-            5. Combine all files and save sorted result.
+            2. Extract raw timeseries data from {data_float_m_path}.
+            3. Process in batches of 500 patients: extract, pivot, and filter measurements.
+            4. Combine all batches and save sorted result.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -65,7 +95,7 @@ class SICdbProcessor(SICdbExtractor):
                 - Numeric measurement columns (pivoted from DataID).
         """
         ts_float_path = self.precalc_path + "SICdb_timeseries.parquet"
-        ts_float_path_cache = self.precalc_path + "SICdb_ts_cache/"
+        ts_float_path_unsorted = self.precalc_path + "SICdb_ts_unsorted.parquet"
 
         if os.path.isfile(ts_float_path):
             # Load the preprocessed data
@@ -76,69 +106,36 @@ class SICdbProcessor(SICdbExtractor):
                 pl.exclude(self.index_cols),
             )
 
-        print("SICdb   - Collecting time series data...")
+        print("SICdb   - Preparing raw timeseries data...")
 
-        # "Cache" the data before pivoting
-        if not os.path.isdir(ts_float_path_cache):
-            self.partition_timeseries(ts_float_path_cache)
+        # Create the raw timeseries parquet file if it doesn't exist
+        if not os.path.isfile(ts_float_path_unsorted):
+            (
+                pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
+                .select("CaseID", "Offset", "DataID", "Val")
+                # Round values to 2 decimal places due to precision issues of IEEE 754 floats
+                .with_columns(pl.col("Val").cast(float).round(2))
+                .rename({"CaseID": self.icu_stay_id_col})
+                .sink_parquet(ts_float_path_unsorted)
+            )
 
         print("SICdb   - Processing numeric time series data...")
 
-        # Create an empty DataFrame to store the timeseries data
-        timeseries_processed = pl.LazyFrame()
+        # Process in batches using batch_process_timeseries
+        batch_process_timeseries(
+            input_file=ts_float_path_unsorted,
+            output_file=ts_float_path,
+            tempfiles_path=self.precalc_path,
+            operation="process",
+            method=self._process_timeseries_batch,
+            id_col=self.icu_stay_id_col,
+            batch_size=500,
+            delete_after=True,
+        )
 
-        # Since each case has it's data in only one file, iterating over the files specifically allows
-        # for a more efficient processing of the data.
-        os_listdir_files = os.listdir(ts_float_path_cache)
-        counter, counter_max, cases = 0, len(os_listdir_files), 0
-
-        for file in os.listdir(ts_float_path_cache):
-            # Update the counter
-            counter += 1
-            sys.stdout.write("\033[K")  # Clear to the end of line
-            print(
-                f"Processing file {file}... \t{counter:3.0f} / {counter_max:3.0f} ({cases:5.0f} cases)",
-                end="\r",
-            )
-
-            # Process timeseries data
-            timeseries = pl.scan_parquet(ts_float_path_cache + file).pipe(
-                self._extract_timeseries_helper
-            )
-            cases += (
-                timeseries.select(self.icu_stay_id_col)
-                .unique()
-                .collect()
-                .shape[0]
-            )
-
-            # Pivot the timeseries data
-            timeseries = timeseries.collect().pivot(
-                on="DataID",
-                index=self.index_cols,
-                values="Val",
-                aggregate_function="first",  # NOTE: first is used here to allow for string values
-            )
-
-            # Drop empty rows
-            droplist = list(
-                set(timeseries.collect_schema().names()) - set(self.index_cols)
-            )
-            timeseries = (
-                timeseries.pipe(self.helpers.dropna, "all", droplist, False)
-                .lazy()
-                .sort(self.index_cols)
-                .unique()
-            )
-
-            # Append the processed timeseries data
-            timeseries_processed = pl.concat(
-                [timeseries_processed, timeseries], how="diagonal_relaxed"
-            )
-
-        # Save the preprocessed data
-        timeseries_processed.sink_parquet(ts_float_path)
-        shutil.rmtree(ts_float_path_cache, ignore_errors=True)
+        # Clean up unsorted file
+        if os.path.isfile(ts_float_path_unsorted):
+            os.remove(ts_float_path_unsorted)
 
         return pl.scan_parquet(ts_float_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -293,7 +290,7 @@ class SICdbConverter(UnitConverter):
     def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Align lab unit representations for protein measurements.
-Converts protein values from mg/dL and mg/L to standardized units.
+        Converts protein values from mg/dL and mg/L to standardized units.
 
         Returns:
             pl.LazyFrame: Lab data with aligned unit values.

@@ -477,7 +477,7 @@ class MIMIC4Converter(UnitConverter):
     def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Align lab unit representations for count measurements.
-Converts absolute counts to consistent units (K/uL → #/uL).
+        Converts absolute counts to consistent units (K/uL → #/uL).
 
         Returns:
             pl.LazyFrame: Lab data with aligned unit values.
