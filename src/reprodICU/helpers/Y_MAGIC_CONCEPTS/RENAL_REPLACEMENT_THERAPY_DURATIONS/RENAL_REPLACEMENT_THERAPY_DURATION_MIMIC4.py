@@ -142,16 +142,25 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             225436,  # CRRT Filter Change
         ]
 
-        # region MIMIC-IV
-
-        # print("MAGIC_CONCEPTS: Renal Replacement Therapy Duration - MIMIC4")
-
-        RENAL_REPLACEMENT_THERAPY_CHARTEVENTS = (
-            pl.scan_csv(
+        if "parquet" in self.mimic4_paths.chartevents_path:
+            CHARTEVENTS = pl.scan_parquet(self.mimic4_paths.chartevents_path)
+        else:
+            CHARTEVENTS = pl.scan_csv(
                 self.mimic4_paths.chartevents_path,
                 schema_overrides={"value": str},
             )
-            .select("stay_id", "charttime", "itemid", "value")
+
+        if "parquet" in self.mimic4_paths.inputevents_path:
+            INPUTEVENTS = pl.scan_parquet(self.mimic4_paths.inputevents_path)
+        else:
+            INPUTEVENTS = pl.scan_csv(self.mimic4_paths.inputevents_path)
+
+        ########################################################################
+        ########################################################################
+
+        # region MIMIC-IV
+        RENAL_REPLACEMENT_THERAPY_CHARTEVENTS = (
+            CHARTEVENTS.select("stay_id", "charttime", "itemid", "value")
             # Filter for renal replacement therapy IDs
             .filter(
                 pl.col("itemid").is_in(
@@ -186,8 +195,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .then(pl.lit("IHD"))
                 .otherwise(None)
                 .alias("dialysis_type"),
-            )
-            .select(
+            ).select(
                 "stay_id",
                 "charttime",
                 "dialysis_present",
@@ -197,8 +205,9 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
         )
 
         RENAL_REPLACEMENT_THERAPY_INPUTEVENTS = (
-            pl.scan_csv(self.mimic4_paths.inputevents_path)
-            .select("stay_id", "starttime", "endtime", "itemid", "amount")
+            INPUTEVENTS.select(
+                "stay_id", "starttime", "endtime", "itemid", "amount"
+            )
             .filter(
                 pl.col("itemid").is_in(inputevents),
                 pl.col("amount") > 0,

@@ -74,6 +74,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 self.mimic4_paths.chartevents_path,
                 schema_overrides={"value": str},
             )
+
         CHARTEVENTS = chartevents.filter(
             pl.col("itemid").is_in(
                 vent_setting_chartevents_ids
