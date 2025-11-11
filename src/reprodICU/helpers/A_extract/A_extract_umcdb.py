@@ -317,6 +317,15 @@ class UMCdbExtractor(UMCdbPaths):
                         self.VENTILATOR_MODE_MAP, default=None
                     )
                 )
+                .when(
+                    pl.col("item")
+                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                )
+                .then(
+                    pl.col("value").replace_strict(
+                        self.RRT_MODE_MAP, default=None
+                    )
+                )
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )

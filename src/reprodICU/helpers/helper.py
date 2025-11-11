@@ -214,6 +214,9 @@ class GlobalVars(GlobalHelpers):
         self.SOLUTION_FLUIDS_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/solution_fluids_mapping.yaml"
         )
+        self.RRT_MODE_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
+        )
 
         # region DATA TYPES
         # Define custom data types
@@ -304,6 +307,17 @@ class GlobalVars(GlobalHelpers):
         }
         self.blood_gas_source_enum_map_inverted = {
             i: v for v, i in self.blood_gas_source_enum_map.items()
+        }
+        self.rrt_mode_enum_map = {
+            v: i
+            for i, v in enumerate(
+                self.load_mapping_keys(
+                    mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
+                )
+            )
+        }
+        self.rrt_mode_enum_map_inverted = {
+            i: v for v, i in self.rrt_mode_enum_map.items()
         }
 
         # region ICD

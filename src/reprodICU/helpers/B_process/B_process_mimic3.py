@@ -114,6 +114,10 @@ class MIMIC3Processor(MIMIC3Extractor):
                     self.ventilator_mode_enum_map_inverted,
                     return_dtype=pl.String,
                 ),
+                pl.col("Continuous renal replacement therapy mode Renal replacement therapy circuit").replace_strict(
+                    self.rrt_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
             )
         )
 
