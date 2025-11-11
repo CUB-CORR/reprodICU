@@ -5,39 +5,48 @@
 # DIALYSIS #
 ############
 Access pressure Renal replacement therapy circuit: # 99717-1
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # UMCdb -> same name
 Effluent pressure Renal replacement therapy circuit: # 99718-9
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # UMCdb -> same name
 Filter pressure Renal replacement therapy circuit: # 99719-7
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # UMCdb -> same name
 Transmembrane pressure Renal replacement therapy circuit: # 99720-5
   # UMCdb -> same name
 Return pressure Renal replacement therapy circuit: # 99721-3
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # UMCdb -> same name
 
 Continuous renal replacement therapy mode Renal replacement therapy circuit: # 99708-0
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # UMCdb -> same name
 
 Blood flow rate Renal replacement therapy circuit: # 99711-4
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # SICdb
   - CRRT Bloodflow
   # UMCdb -> same name
 Dialysate flow rate Renal replacement therapy circuit: # 99712-2
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # SICdb
   - CRRT DialysateFlow
 Post-filter replacement fluid rate Renal replacement therapy circuit: # 99713-0
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # SICdb
   - CRRT SubstitutePost
   # UMCdb -> same name
 Pre-filter replacement fluid rate Renal replacement therapy circuit: # 99714-8
+  # MIMIC-III -> same name
   # MIMIC-IV -> same name
   # SICdb
   - CRRT SubstitutePrae

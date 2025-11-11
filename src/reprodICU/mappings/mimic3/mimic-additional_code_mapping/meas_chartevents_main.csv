@@ -71,3 +71,32 @@ index,itemid (omop_source_code),Label,omop_concept_name,comment
 0,0,,additional cardiological parameters such as LVSWI SVRI etc also available,-> not mapped
 0,0,,not mapped,mimic3_chartevents_labels_counts.csv DONE UNTIL LINE 1500
 3138,3354,Cardiac Rhythm,Heart rate rhythm,
+0,29,Access mmHg,Access pressure Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,79,Blood Flow ml/min,Blood flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,142,Current Goal,Continuous renal replacement therapy fluid removal goal [Volume] 1 hour,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,146,Dialysate Flow ml/hr,Dialysate flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,152,Dialysis Type,Continuous renal replacement therapy mode Renal replacement therapy circuit,
+0,173,Effluent Press mmHg,Effluent pressure Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,192,Filter Pressure mmHg,Filter pressure Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,611,Replace Rate ml/hr,NOT MAPPED,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,624,Return Pressure mmHg,Return pressure Renal replacement therapy circuit,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,5683,Hourly PFR,NOT MAPPED,based on mimic-code/mimic-iii/concepts/durations/crrt_durations.sql
+0,228640,EtCO2,Carbon dioxide [Partial pressure] in Exhaled gas --at end expiration,
+0,227290,CRRT Mode,Continuous renal replacement therapy mode Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224149,Access Pressure,Access pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224144,Blood Flow (ml/min),Blood flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,228004,Citrate (ACD-A),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,225183,Current Goal,Continuous renal replacement therapy fluid removal goal [Volume] 1 hour,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,225977,Dialysate Fluid,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224154,Dialysate Rate,Dialysate flow rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224151,Effluent Pressure,Effluent pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224150,Filter Pressure,Filter pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,225958,Heparin Concentration (units/mL),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224145,Heparin Dose (per hour),NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224191,Hourly Patient Fluid Removal,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,228005,PBP (Prefilter) Replacement Rate,Pre-filter replacement fluid rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,228006,Post Filter Replacement Rate,Post-filter replacement fluid rate Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,225976,Replacement Fluid,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224153,Replacement Rate,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,224152,Return Pressure,Return pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,226457,Ultrafiltrate Output,Ultrafiltrate volume removed 1 hour,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
