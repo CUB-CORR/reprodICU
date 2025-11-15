@@ -22,12 +22,12 @@ AST (SGOT): Aspartate aminotransferase [Enzymatic activity/volume] in Serum or P
 Base Deficit: Base deficit in Blood # NOTE: Later combined with base_excess into base_excess_deficit
 Base Excess: Base excess in Blood # NOTE: Later combined with base_deficit into base_excess_deficit
 bedside glucose: Glucose [Mass/volume] in Blood # glucose_bedside
-bicarbonate: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
+bicarbonate: Bicarbonate [Moles/volume] in Blood # bicarbonate
 BNP: # BNP
 BUN: Urea nitrogen [Mass/volume] in Serum or Plasma # blood_urea_nitrogen
 calcium: Calcium [Mass/volume] in Blood # calcium # NEEDS UNIT CONVERSION !
 Carbamazepine: # Medication levels in blood
-Carboxyhemoglobin: Carboxyhemoglobin/Hemoglobin.total in Arterial blood # carboxyhemoglobin
+Carboxyhemoglobin: Carboxyhemoglobin/Hemoglobin.total in Blood # carboxyhemoglobin
 cd 4:
 chloride: Chloride [Moles/volume] in Blood # chloride
 Clostridium difficile toxin A+B:
@@ -57,7 +57,7 @@ Gentamicin - trough: # Medication levels in blood
 glucose - CSF: Glucose [Mass/volume] in Cerebral spinal fluid
 glucose: Glucose [Mass/volume] in Blood # glucose
 haptoglobin: Haptoglobin [Mass/volume] in Serum or Plasma # haptoglobin
-HCO3: Bicarbonate [Moles/volume] in Arterial blood # bicarbonate
+HCO3: Bicarbonate [Moles/volume] in Blood # bicarbonate
 Hct: Hematocrit [Volume Fraction] of Blood # hematocrit
 HDL: Cholesterol in HDL [Mass/volume] in Serum or Plasma # cholesterol_HDL
 Hgb: Hemoglobin [Mass/volume] in Blood # hemoglobin
@@ -65,7 +65,7 @@ HIV 1&2 AB:
 HSV 1&2 IgG AB:
 HSV 1&2 IgG AB titer:
 ionized calcium: Calcium.ionized [Mass/volume] in Blood # NEEDS UNIT CONVERSION !
-lactate: Lactate [Moles/volume] in Arterial blood # lactate
+lactate: Lactate [Moles/volume] in Blood # lactate
 LDH: Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma # lactate_dehydrogenase
 LDL: Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation # cholesterol_LDL
 lipase: Lipase [Enzymatic activity/volume] in Serum or Plasma # lipase
@@ -77,19 +77,19 @@ magnesium: Magnesium [Mass/volume] in Serum or Plasma # magnesium # NEEDS UNIT C
 MCH: MCH [Entitic mass] # MCH
 MCHC: MCHC [Mass/volume] # MCHC
 MCV: MCV [Entitic volume] # MCV
-Methemoglobin: Methemoglobin/Hemoglobin.total in Arterial blood # methemoglobin
+Methemoglobin: Methemoglobin/Hemoglobin.total in Blood # methemoglobin
 Mode: # Respiratory parameter
 MPV: # MPV
 myoglobin: Myoglobin [Mass/volume] in Serum or Plasma # myoglobin
 NAPA:
-O2 Content: Oxygen content in Arterial blood
-O2 Sat (%): Oxygen saturation in Arterial blood # saO2
-Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total [Pure mass fraction] in Arterial blood # oxyhemoglobin
-paCO2: Carbon dioxide [Partial pressure] in Arterial blood # paCO2
-paO2: Oxygen [Partial pressure] in Arterial blood # paO2
+O2 Content: Oxygen content in Blood
+O2 Sat (%): Oxygen saturation in Blood # saO2
+Oxyhemoglobin: Oxyhemoglobin/Hemoglobin.total [Pure mass fraction] in Blood # oxyhemoglobin
+paCO2: Carbon dioxide [Partial pressure] in Blood # paCO2
+paO2: Oxygen [Partial pressure] in Blood # paO2
 Peak Airway/Pressure: Pressure.max Respiratory system airway --on ventilator # Respiratory parameter
 PEEP: PEEP Respiratory system # Respiratory parameter
-pH: pH of Arterial blood # pH
+pH: pH of Blood # pH
 Phenobarbital: # Medication levels in blood
 Phenytoin: # Medication levels in blood
 phosphate: Phosphate [Mass/volume] in Serum or Plasma # phosphate # NEEDS UNIT CONVERSION !
