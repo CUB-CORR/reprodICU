@@ -17,6 +17,8 @@ Breath rate spontaneous --on ventilator: # 3026892
   # eICU-CRD -> same name
   # MIMIC-III / MIMIC-IV
   - Breath rate spontaneous
+  # HiRID
+  - Respiratory rate (spontaneous)
   # SICdb
   - RespRateSpontanous
   # UMCdb -> same name
@@ -24,10 +26,12 @@ Breath rate spontaneous and mechanical --on ventilator: # 3007646
   # eICU-CRD -> same name
   # MIMIC-III / MIMIC-IV
   - Breath rate
+  # HiRID
+  - Respiratory rate (total)
   # UMCdb -> same name
   ### Both of these refer to non-ventilated data as well as ventilated data
   ### and are better suited for the vitals table
-  ### HiRID / UMCdb
+  ### UMCdb
   ### - Respiratory rate
   ### SICdb
   ### - RespRate
@@ -185,7 +189,6 @@ Tidal volume setting Ventilator: # 3012410
   - Tidal volume setting
   # MIMIC-III / MIMIC-IV / UMCdb
   - Tidal volume Ventilator --on ventilator
-  # UMCdb -> same name
 Tidal volume.spontaneous --on ventilator: [] # 3017594
   # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
 Tidal volume.spontaneous+mechanical --on ventilator: [] # 3004732

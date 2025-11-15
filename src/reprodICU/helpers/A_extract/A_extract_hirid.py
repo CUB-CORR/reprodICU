@@ -431,9 +431,7 @@ class HiRIDExtractor(HiRIDPaths):
             .join(length_of_stay, on=self.icu_stay_id_col)
             .join(self._get_observation_variables(), on="variableid")
             .with_columns(
-                pl.col("admissiontime").str.to_datetime(
-                    "%Y-%m-%d %H:%M:%S%.9f"
-                ),
+                pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                 pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
                 # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
@@ -1046,9 +1044,14 @@ class HiRIDExtractor(HiRIDPaths):
             {
                 # Fix bad mappings (wrong units)
                 24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                    "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-                    "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                )
+                # Update mappings for better clarity
+                20001000: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
+                24000737: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
+                # Update mappings for duplicate names
+                # -> Respiratory rate appears multiple times with different IDs
+                300: "Respiratory rate", # Atemfrequenz
+                310: "Respiratory rate (spontaneous)", # RRsp(m)
+                5685: None, # RR Caresc
             }
         )
 
