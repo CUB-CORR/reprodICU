@@ -369,6 +369,17 @@ class SICdbExtractor(SICdbPaths):
             .rename({"CaseID": self.icu_stay_id_col})
             .join(offsets, on=self.icu_stay_id_col)
             .join(LOINC_data, on="LaboratoryID", how="left")
+            .with_columns(
+                # Mark only as arterial blood if LaboratoryType explicitly indicates so
+                pl.when(pl.col("LOINC_system") == "Blood arterial")
+                .then(
+                    pl.when(pl.col("LaboratoryType") == 2296)
+                    .then(pl.lit("Blood arterial"))
+                    .otherwise(pl.lit("Blood"))
+                )
+                .otherwise(pl.col("LOINC_system"))
+                .alias("LOINC_system")
+            )
             # Fix lab time offset
             .with_columns(
                 (pl.col("Offset") - pl.col("CaseOffset"))
@@ -396,8 +407,6 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LaboratoryValue").is_not_null()
                 & (pl.col("LaboratoryName") != "")
             )
-            # Drop columns
-            .drop("CaseOffset", "LaboratoryType")
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("LaboratoryName"))
             .with_columns(
