@@ -621,14 +621,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .drop("CHARTTIME", "INTIME")
             .filter(
-                (
-                    pl.col("OFFSET")
-                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col("OFFSET")
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
-                )
+                pl.col("OFFSET")
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
+                pl.col("OFFSET")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
             .with_columns(
                 (pl.col("OFFSET").dt.total_seconds())

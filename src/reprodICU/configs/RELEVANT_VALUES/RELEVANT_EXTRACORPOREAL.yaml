@@ -1,3 +1,7 @@
+# Continuous renal replacement therapy panel: https://athena.ohdsi.org/search-terms/terms/1989465
+# Intermittent hemodialysis panel: https://athena.ohdsi.org/search-terms/terms/1989285
+# Peritoneal dialysis panel: https://athena.ohdsi.org/search-terms/terms/1989216
+
 ############
 # DIALYSIS #
 ############
@@ -12,7 +16,10 @@ Dialysate flow rate Renal replacement therapy circuit: True
 Post-filter replacement fluid rate Renal replacement therapy circuit: True
 Pre-filter replacement fluid rate Renal replacement therapy circuit: True
 Continuous renal replacement therapy fluid removal goal [Volume] 1 hour: True
-Ultrafiltrate volume removed 1 hour: True
+
+Hemodialysis fluid removed: True
+Ultrafiltrate volume removed: True
+
 ############
 #   ECMO   #
 ############
