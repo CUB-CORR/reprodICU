@@ -60,7 +60,10 @@ class TimeseriesResampler(GlobalVars):
                 )
                 .cast(float)
                 .alias("Time Relative to Admission (seconds)")
-            ).explode("Time Relative to Admission (seconds)")
+            )
+            .explode("Time Relative to Admission (seconds)")
+            .drop_nulls()
+            .sort(self.index_cols)
         )
 
         resampled_data = (
@@ -72,8 +75,8 @@ class TimeseriesResampler(GlobalVars):
         )
 
         # Return only the new grid with the resampled values
-        return resampled_grid.join(
-            resampled_data, on=self.index_cols, how="left"
+        return resampled_data.join(
+            resampled_grid, on=self.index_cols, how="semi"
         )
 
     def resample_timeseries_vitals(
@@ -108,7 +111,8 @@ class TimeseriesResampler(GlobalVars):
             .with_columns(
                 pl.col(col).cast(int)
                 for col in columns
-                if col not in [*self.index_cols, "Temperature"]
+                if col
+                not in [*self.index_cols, "Temperature", "Heart rate rhythm"]
             )
             # Round temperature to 1 decimal place
             .with_columns(pl.col("Temperature").round(1).alias("Temperature"))
