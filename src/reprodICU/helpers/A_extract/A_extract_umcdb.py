@@ -353,6 +353,7 @@ class UMCdbExtractor(UMCdbPaths):
             2. Map item IDs to standardized names via reference lookup.
             3. Convert values to float where possible.
             4. Filter for relevant vital, respiratory, and intake/output measurements.
+            5. For ultrafiltrate volume, compute cumulative deltas (resetting on decrease).
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -361,8 +362,42 @@ class UMCdbExtractor(UMCdbPaths):
                 - value: Numeric measurement value (float).
         """
 
-        return self._extract_timeseries_numericitems().filter(
+        base_data = self._extract_timeseries_numericitems().filter(
             pl.col("item").is_in(self.all_relevant_values)
+        )
+        other_data = base_data.filter(
+            pl.col("item") != "Ultrafiltrate volume removed"
+        )
+        ultrafiltrate_data = (
+            base_data.filter(pl.col("item") == "Ultrafiltrate volume removed")
+            .sort(self.icu_stay_id_col, self.timeseries_time_col)
+            .with_columns(self._compute_ultrafiltrate_delta().alias("value"))
+        )
+
+        return pl.concat(
+            [ultrafiltrate_data, other_data], how="diagonal_relaxed"
+        )
+
+    def _compute_ultrafiltrate_delta(self):
+        value_col = pl.col("value")
+        partition_cols = [self.icu_stay_id_col, "item"]
+
+        prev = value_col.shift(1).over(
+            partition_cols,
+            order_by=self.timeseries_time_col,
+        )
+        min_val = value_col.filter(value_col != 0).min().over(partition_cols)
+        max_val = value_col.max().over(partition_cols)
+        delta = (
+            pl.when(value_col < prev)
+            .then(value_col)
+            .otherwise(value_col - prev)
+        )
+
+        return (
+            pl.when(min_val < 10, max_val < 1000)
+            .then(delta * 1000)  # convert mL to L
+            .otherwise(delta)  # keep as L
         )
 
     # Separate the lab values from the rest
@@ -1482,15 +1517,7 @@ class UMCdbExtractor(UMCdbPaths):
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
             .with_columns(
-                pl.col("conceptName")
-                .replace(
-                    {
-                        "Tidal volume Ventilator --on ventilator": (
-                            "Tidal volume.spontaneous+mechanical --on ventilator"
-                        )
-                    }
-                )
-                .replace(
+                pl.col("conceptName").replace(
                     {
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,

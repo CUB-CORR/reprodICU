@@ -450,6 +450,8 @@ class TimeseriesHarmonizer(GlobalVars):
         # endregion
 
         # region extracorporeal
+        crrt_mode_str = "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+
         extracorporeal = pl.concat(timeseries_extra, how="diagonal_relaxed")
         extracorporeal_cols = extracorporeal.collect_schema().names()
         extracorporeal_cols_not_index = list(
@@ -464,14 +466,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
-                        col: (
-                            str
-                            if col
-                            in [
-                                "Continuous renal replacement therapy mode Renal replacement therapy circuit",
-                            ]
-                            else float
-                        )
+                        col: str if col in [crrt_mode_str] else int
                         for col in extracorporeal_cols_not_index
                     },
                 }
