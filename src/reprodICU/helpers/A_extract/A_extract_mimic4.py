@@ -1158,7 +1158,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             pl.scan_csv(self.microbiologyevents_path)
             .select(
-                "hadm_id",
+                "subject_id",
                 "charttime",
                 "spec_type_desc",
                 "test_name",
@@ -1171,7 +1171,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # rename columns for consistency
             .rename(
                 {
-                    "hadm_id": self.hospital_stay_id_col,
+                    "subject_id": self.person_id_col,
                     # "spec_type_desc": self.micro_specimen_col,
                     # "test_name": self.micro_test_col,
                     # "org_name": self.micro_organism_col,
@@ -1179,8 +1179,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "interpretation": self.micro_sensitivity_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.hospital_stay_id_col)
-            .drop(self.person_id_col)
+            .join(self.icu_stay_id, on=self.person_id_col, how="left")
             # include only ICU patients
             .filter(pl.col(self.icu_stay_id_col).is_not_null())
             .join(intimes, on=self.icu_stay_id_col)

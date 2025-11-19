@@ -292,7 +292,7 @@ class UMCdbExtractor(UMCdbPaths):
             .with_columns(
                 pl.when(pl.col("item") == "Numeric Pain Rating Scale")
                 .then(pl.col("valueid"))
-                .when(pl.col("item") == "Richmond agitation-sedation scale")
+                .when(pl.col("item") == "Richmond Agitation-Sedation Scale")
                 .then(5 - pl.col("valueid"))
                 .otherwise(pl.col("value"))
                 .alias("value"),

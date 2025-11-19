@@ -1,6 +1,6 @@
 # eICU-CRD:  carePlanCareProvider table -> specialty
 # HiRID:     mapped from APACHE groups
-# MIMIC-III: services table -> CURR_SERVICE column
+# MIMIC-III: SERVICES table -> CURR_SERVICE column
 # MIMIC-IV:  services table -> curr_service column
 # NWICU:      –
 # SICdb:     cases table -> ReferringUnit column
@@ -21,11 +21,13 @@
 # - Pulmonary Disease
 # - Rheumatology
 Internal Medicine: # 38004456
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - MED # Medical - general service for internal medicine
   # UMCdb
   - Inwendig # Internal Medicine
 Cardiology: # 38004451
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - CMED # Cardiac Medical - for non-surgical cardiac related admissions
   # SICdb
@@ -34,31 +36,38 @@ Cardiology: # 38004451
   # UMCdb
   - Cardiologie # Cardiology
 Endocrinology: # 38004485
+  # eICU -> same name
   # SICdb
   - Endokrinologie # Endocrinology
 Gastroenterology: # 38004455
+  # eICU -> same name
   # SICdb
   - 1. Medizin # Gastroenterology
   # UMCdb
   - Maag-,Darm-,Leverziekten # Gastroenterology
 Hematology: # 38004501
+  # eICU -> same name
   # UMCdb
   - Hematologie # Hematology
 Hematology / Oncology: # 38004502 # subsumed under Medical Oncology AND Hematology
+  # eICU -> same name
   # SICdb
   - 3. Medizin # Hematology / Oncology
 Medical Oncology: # 38004507
   # UMCdb
   - Oncologie Inwendig # Internal Oncology
 Nephrology: # 38004479
+  # eICU -> same name
   # UMCdb
   - Nefrologie # Nephrology
 Pulmonary Disease: # 38004472
+  # eICU -> same name
   # SICdb
   - Pneumologie # Pulmonology
   # UMCdb
   - Longziekte # Pulmonology
 Rheumatology: # 38004491
+  # eICU -> same name
   # UMCdb
   - Reumatologie # Rheumatology
 
@@ -75,6 +84,7 @@ Rheumatology: # 38004491
 # - Thoracic Surgery
 # - Trauma Surgery
 Cardiac Surgery: # 38004497
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - CSURG # Cardiac Surgery - for surgical cardiac admissions
   # SICdb
@@ -82,6 +92,7 @@ Cardiac Surgery: # 38004497
   # UMCdb
   - Cardiochirurgie # Cardiac Surgery
 General Surgery: # 38004447
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - SURG # Surgical - general surgical service not classified elsewhere
   # SICdb
@@ -92,11 +103,13 @@ Maxillofacial Surgery: # 38004504
   # SICdb
   - Kieferchirurgie # Oral and Maxillofacial Surgery
 Oral Surgery: # 38004464
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - DENT # Dental - for dental/jaw related admissions
   # UMCdb
   - Mondheelkunde # Oral Surgery
 Orthopedic Surgery: # 38004465
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - ORTHO # Orthopaedic - surgical, relating to the musculoskeletal system
   - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
@@ -105,6 +118,7 @@ Orthopedic Surgery: # 38004465
   # UMCdb
   - Orthopedie # Orthopedics
 Plastic And Reconstructive Surgery: # 38004467
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - PSURG # Plastic - restortation/reconstruction of the human body (including cosmetic or aesthetic)
   # UMCdb
@@ -118,6 +132,7 @@ Thoracic Surgery: # 38004473
   # UMCdb
   - Heelkunde Longen/Oncologie # Pulmo-oncological Surgery
 Trauma Surgery: # 38004016 # NUCC, not Medicare Specialty
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - TRAUM # Trauma - injury or damage caused by physical harm from an external source
   # SICdb
@@ -125,6 +140,7 @@ Trauma Surgery: # 38004016 # NUCC, not Medicare Specialty
   # UMCdb
   - Traumatologie # Traumatology
 Vascular Surgery: # 38004496
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - VSURG # Vascular Surgical - surgery relating to the circulatory system
   # SICdb
@@ -137,6 +153,7 @@ Vascular Surgery: # 38004496
 # Inside the Head
 #######################################
 Neurosurgery:
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - NSURG # Neurologic Surgical - surgical, relating to the brain
   # SICdb
@@ -144,6 +161,7 @@ Neurosurgery:
   # UMCdb
   - Neurochirurgie # Neurosurgery
 Neurology:
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - NMED # Neurologic Medical - non-surgical, relating to the brain
   # SICdb
@@ -151,6 +169,7 @@ Neurology:
   # UMCdb
   - Neurologie # Neurology
 Psychiatry: # 38004469
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - PSYCH # Psychiatric - mental disorders relating to mood, behaviour, cognition, or perceptions
   # SICdb
@@ -167,6 +186,7 @@ Gynecology: # 38003902 # NUCC, not Medicare Specialty
   # UMCdb
   - Gynaecologie # Gynecology
 Obstetrics / Gynecology: # 38004461
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - OBS # Obstetrics - conerned with childbirth and the care of women giving birth
   # UMCdb
@@ -180,6 +200,7 @@ Pediatric Medicine: # 38004477
   # SICdb
   - Pädiatrie # Pediatrics
 Pediatric Surgery: # 45756819 # ABMS, not Medicare Specialty
+  # eICU -> same name
   # SICdb
   - Kinderchirurgie # Pediatric Surgery
 
@@ -187,12 +208,15 @@ Pediatric Surgery: # 45756819 # ABMS, not Medicare Specialty
 # Not Otherwise Classified
 #######################################
 Critical care (intensivist): # 38004500
+  # eICU -> same name
   # UMCdb
   - Intensive Care Volwassenen # Adult Intensive Care
 Dermatology: # 38004452
+  # eICU -> same name
   # SICdb
   - Dermatologie # Dermatology
 Ophthalmology: # 38004463
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - EYE # Eye diseases - including subspecialty services in glaucoma, cataract surgery, cornea and external diseases, and neuro-ophthalmology
   # SICdb
@@ -200,6 +224,7 @@ Ophthalmology: # 38004463
   # UMCdb
   - Oogheelkunde # Ophthalmology
 Otolaryngology: # 38004449
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - ENT # Ear, nose, and throat - conditions primarily affecting these areas
   # SICdb
@@ -207,13 +232,13 @@ Otolaryngology: # 38004449
   # UMCdb
   - Keel, Neus & Oorarts # Ear, Nose & Throat
 Urology: # 38004474
+  # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - GU # Genitourinary - reproductive organs/urinary system
-  # SICdb
-  - Urologie # Urology
-  # UMCdb
+  # SICdb / UMCdb
   - Urologie # Urology
 Emergency Medicine: # 38004454
+  # eICU -> same name
   # SICdb
   - Zentralambulanz (ZANE) CDK # Emergency Department
   - Zentrale Notaufnahme # Emergency Department
@@ -228,11 +253,21 @@ Unknown:
   - ders
 
 #######################################
-# Only in eICU
+# Rare Specialties
 #######################################
 Allergy / Immunology: [] # 38004448
+  # eICU -> same name
 Anesthesiology: [] # 38004450
-Diagnostic Radiology: [] # 45756769 # ABMS, not Medicare Specialty
+  # eICU -> same name
+Diagnostic Radiology: # 45756769 # ABMS, not Medicare Specialty
+  # eICU -> same name
 General Practice: [] # 38004446
-Infectious Disease: [] # 38004484
+  # eICU -> same name
+Infectious Disease: # 38004484
+  # eICU -> same name
+Pain Management: [] # 38004506
+  # eICU -> same name
+Physical Medicine And Rehabilitation: [] # 38004468
+  # eICU -> same name
 Transplant Surgery: [] # 38003827 # NUCC, not Medicare Specialty
+  # eICU -> same name
