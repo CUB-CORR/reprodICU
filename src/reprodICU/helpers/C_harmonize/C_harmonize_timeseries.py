@@ -334,7 +334,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     .otherwise(pl.col("Temperature"))
                     .alias("Temperature"),
                 )
-                .select([*self.index_cols, *sorted(vitals_cols_not_index)])
+                .select(*self.index_cols, *sorted(vitals_cols_not_index))
                 # assume uniqueness & sortedness (since we're just concatenating the data)
                 # .unique(self.index_cols)
                 # .sort(self.index_cols)
@@ -603,8 +603,6 @@ class TimeseriesHarmonizer(GlobalVars):
             .collect()
             .item()
         )
-        print(
-            f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}."
-        )
+        print(f"reprodICU - {unique_count:6.0f} unique cases with timeseries data in {name}.") # fmt: skip
 
         return data
