@@ -99,4 +99,11 @@ index,itemid (omop_source_code),Label,omop_concept_name,comment
 0,225976,Replacement Fluid,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
 0,224153,Replacement Rate,NOT MAPPED,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
 0,224152,Return Pressure,Return pressure Renal replacement therapy circuit,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
-0,226457,Ultrafiltrate Output,Ultrafiltrate volume removed 1 hour,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,226457,Ultrafiltrate Output,Ultrafiltrate volume removed,based on mimic-code/mimic-iv/concepts/treatment/crrt.sql
+0,226499,Hemodialysis Output,Hemodialysis fluid removed,based on mimic-iii/concepts/pivot/pivoted_rrt.sql
+0,0,,Mixed venous oxygen saturation,OTHER ITEMIDS ARE 2194 2669 2933 3194 6486 6860 7645 8186 BUT ALL ARE LESS THAN 100 VALUES
+0,664,Swan SVO2,Mixed venous oxygen saturation,157255 values
+0,838,SvO2,Mixed venous oxygen saturation,1989 values
+0,1624,PreSep Catheter SVO2,Mixed venous oxygen saturation,14405 values
+0,116,Cardiac Index,Cardiac index,214772 values
+0,504,PCWP,Pulmonary artery wedge pressure,26530 values
