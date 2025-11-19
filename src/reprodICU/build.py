@@ -162,6 +162,7 @@ def build_patient_information(
     datasets: Optional[List[str]] = None,
     demo: bool = False,
     impute: bool = False,
+    add_availability: bool = True,
 ) -> List[str]:
     """
     Build patient information table from raw data sources.
@@ -180,6 +181,9 @@ def build_patient_information(
             If True, use demo-sized datasets instead of full data.
         impute : bool
             If True, impute missing anthropometric data.
+        add_availability : bool
+            If True, add data availability information to patient information.
+            Set to False when called from build_all to avoid duplicate processing.
 
     Returns
     -------
@@ -236,11 +240,11 @@ def build_patient_information(
 
     patient_info.write_parquet(save_path + "patient_information.parquet")
 
+    # Add data availability information
+    if add_availability:
+        add_patient_information_availability(paths=paths, demo=demo, impute=impute)
+
     if impute:
-        patient_info.pipe(
-            patient_info_imputer.impute_patient_anthropometrics,
-            n_neighbors=5,
-        ).write_parquet(save_path + "patient_information_imputed.parquet")
         return [
             save_path + "patient_information.parquet",
             save_path + "patient_information_imputed.parquet",
@@ -617,12 +621,11 @@ def build_timeseries(
     TIMESERIES = _normalize_timeseries(timeseries)
     save_path = _get_save_path(paths, demo=demo)
 
-    print("reprodICU - Combining timeseries...")
     timeseries_harmonizer = TimeseriesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
     )
-    print("reprodICU - Splitting timeseries...")
 
+    print("reprodICU - Combining timeseries...")
     timeseries_harmonizer.harmonize_split_timeseries(
         timeseries=TIMESERIES, save_to_default=True
     )
@@ -743,6 +746,91 @@ def resample_vitals(
 # endregion
 
 
+# region patient information availability
+def add_patient_information_availability(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    impute: bool = False,
+) -> None:
+    """
+    Add data availability information to patient information table.
+
+    Updates the patient information table with columns indicating availability
+    of diagnoses, medications, procedures, and timeseries data. Optionally
+    imputes missing anthropometric data.
+
+    Arguments
+    ---------
+        paths : reprodICUPaths, optional
+            Paths configuration object. Uses default ConfigManager if None.
+        demo : bool
+            If True, use demo-sized datasets instead of full data.
+        impute : bool
+            If True, impute missing anthropometric data after adding availability.
+
+    Raises
+    ------
+        FileNotFoundError
+            If patient information or related data files not found
+        RuntimeError
+            If processing fails
+    """
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    save_path = _get_save_path(paths, demo=demo)
+    patient_info_cleaner = PatientInformationCleaner(paths=paths)
+
+    print("reprodICU - Adding data availability to patient information...")
+    (
+        pl.scan_parquet(save_path + "patient_information.parquet")
+        .pipe(
+            patient_info_cleaner.add_primary_diagnoses,
+            diagnoses=save_path + "diagnoses.parquet",
+        )
+        .pipe(
+            patient_info_cleaner.add_data_availability_information,
+            diagnoses=save_path + "diagnoses.parquet",
+            medications=save_path + "medications.parquet",
+            procedures=save_path + "procedures.parquet",
+            timeseries_labs=save_path + "timeseries_labs.parquet",
+            timeseries_vitals=save_path + "timeseries_vitals.parquet",
+            timeseries_resp=save_path + "timeseries_respiratory.parquet",
+            timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
+            timeseries_extra=save_path + "timeseries_extracorporeal.parquet",  # fmt: skip
+        )
+        .pipe(patient_info_cleaner.remove_bad_patient_information)
+        .pipe(patient_info_cleaner.sort_columns)
+        .collect()
+        .write_parquet(
+            save_path + "patient_information_with_data_availability.parquet"
+        )
+    )
+    os.remove(save_path + "patient_information.parquet")
+    os.rename(
+        save_path + "patient_information_with_data_availability.parquet",
+        save_path + "patient_information.parquet",
+    )
+
+    if impute:
+        patient_info_imputer = PatientInformationImputer(paths=paths)
+        (
+            pl.scan_parquet(save_path + "patient_information.parquet")
+            .pipe(
+                patient_info_imputer.impute_patient_anthropometrics,
+                n_neighbors=5,
+            )
+            .collect()
+            .write_parquet(
+                save_path + "patient_information_imputed.parquet"
+            )
+        )
+
+
+# endregion
+
+
 # region overview
 def build_overview(
     paths: Optional[reprodICUPaths] = None,
@@ -845,14 +933,13 @@ def build_all(
         paths = reprodICUPaths(config_manager)
 
     TABLES = _normalize_tables(None)  # Always build all tables
-    save_path = _get_save_path(paths, demo=demo)
 
     all_output_files = []
 
     # Build all individual tables
     if "patient_information" in TABLES:
         all_output_files.extend(
-            build_patient_information(paths=paths, datasets=datasets, demo=demo)
+            build_patient_information(paths=paths, datasets=datasets, demo=demo, add_availability=False)
         )
 
     if "diagnoses" in TABLES:
@@ -895,51 +982,7 @@ def build_all(
 
     # Add patient information availability
     if "patient_information" in TABLES:
-        print("reprodICU - Adding data availability to patient information...")
-        patient_info_cleaner = PatientInformationCleaner(paths=paths)
-        (
-            pl.scan_parquet(save_path + "patient_information.parquet")
-            .pipe(
-                patient_info_cleaner.add_primary_diagnoses,
-                diagnoses=save_path + "diagnoses_imputed.parquet",
-            )
-            .pipe(
-                patient_info_cleaner.add_data_availability_information,
-                diagnoses=save_path + "diagnoses_imputed.parquet",
-                medications=save_path + "medications.parquet",
-                procedures=save_path + "procedures.parquet",
-                timeseries_labs=save_path + "timeseries_labs.parquet",
-                timeseries_vitals=save_path + "timeseries_vitals.parquet",
-                timeseries_resp=save_path + "timeseries_respiratory.parquet",
-                timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
-                timeseries_extra=save_path + "timeseries_extracorporeal.parquet", # fmt: skip
-            )
-            .pipe(patient_info_cleaner.remove_bad_patient_information)
-            .pipe(patient_info_cleaner.sort_columns)
-            .collect()
-            .write_parquet(
-                save_path + "patient_information_with_data_availability.parquet"
-            )
-        )
-        os.remove(save_path + "patient_information.parquet")
-        os.rename(
-            save_path + "patient_information_with_data_availability.parquet",
-            save_path + "patient_information.parquet",
-        )
-
-        if impute:
-            patient_info_imputer = PatientInformationImputer(paths=paths)
-            (
-                pl.scan_parquet(save_path + "patient_information.parquet")
-                .pipe(
-                    patient_info_imputer.impute_patient_anthropometrics,
-                    n_neighbors=5,
-                )
-                .collect()
-                .write_parquet(
-                    save_path + "patient_information_imputed.parquet"
-                )
-            )
+        add_patient_information_availability(paths=paths, demo=demo, impute=impute)
 
     # Create overview if requested
     if create_overview:
@@ -960,6 +1003,7 @@ __all__ = [
     "build_notes",
     "build_timeseries",
     "build_magic_concepts",
+    "add_patient_information_availability",
     "build_overview",
     "build_all",
     "impute_vitals",
