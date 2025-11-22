@@ -188,6 +188,7 @@ def _uo_consecutive_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     - Stage 1: UO <0.5 mL/kg/h for ≥6 consecutive hours
     - Stage 2: UO <0.5 mL/kg/h for ≥12 consecutive hours
     - Stage 3: UO <0.3 mL/kg/h for ≥24 consecutive hours OR anuria for ≥12h
+    - Stage 0: Data available but does not meet criteria for stages 1-3
 
     Returns:
         LazyFrame with columns:
@@ -265,15 +266,34 @@ def _uo_consecutive_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         .select(STAY_KEY, TIMEFRAME_KEY, "_s3")
     )
 
+    # Stage 0: Data available but does not meet criteria for stages 1-3
+    stage0 = (
+        uo_df.rolling(
+            index_column=TIMEFRAME_KEY,
+            period="6i",
+            group_by=STAY_KEY,
+        )
+        .agg(
+            pl.when(pl.len() >= 6)
+            .then(0)
+            .otherwise(None)
+            .alias("_s0")
+        )
+        .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
+    )
+
     # Combine stages: take max of available stages
     result = (
-        stage1.join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True
+        stage0.join(
+            stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True)
+        .join(
+            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
+        )
+        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
-                pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
+                pl.col("_s0"), pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
             ).alias("UO Consecutive AKI Stage")
         )
         .select(STAY_KEY, TIMEFRAME_KEY, "UO Consecutive AKI Stage")
@@ -292,6 +312,7 @@ def _uo_any_period_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     - Stage 1: UO <3 mL/kg during any 6-hour period (avg <0.5 mL/kg/h)
     - Stage 2: UO <6 mL/kg during any 12-hour period (avg <0.5 mL/kg/h)
     - Stage 3: UO <7.2 mL/kg during any 24-hour period (avg <0.3 mL/kg/h)
+    - Stage 0: Data available but does not meet criteria for stages 1-3
 
     Returns:
         LazyFrame with columns:
@@ -359,15 +380,34 @@ def _uo_any_period_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         .select(STAY_KEY, TIMEFRAME_KEY, "_s3")
     )
 
+    # Stage 0: Data available but does not meet criteria for stages 1-3
+    stage0 = (
+        uo_df.rolling(
+            index_column=TIMEFRAME_KEY,
+            period="6i",
+            group_by=STAY_KEY,
+        )
+        .agg(
+            pl.when(pl.len() >= 6)
+            .then(0)
+            .otherwise(None)
+            .alias("_s0")
+        )
+        .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
+    )
+
     # Combine stages
     result = (
-        stage1.join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True
+        stage0.join(
+            stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True)
+        .join(
+            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
+        )
+        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
-                pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
+                pl.col("_s0"), pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
             ).alias("UO Any Period AKI Stage")
         )
         .select(STAY_KEY, TIMEFRAME_KEY, "UO Any Period AKI Stage")
@@ -383,6 +423,7 @@ def _uo_fixed_block_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     Method: Fixed 6-hour, 12-hour, and 24-hour blocks (midnight-aligned).
 
     Same thresholds as any_period method but using fixed block boundaries.
+    Stage 0 is assigned when data is available but does not meet criteria for stages 1-3.
 
     Returns:
         LazyFrame with columns:
@@ -447,15 +488,31 @@ def _uo_fixed_block_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         .select(STAY_KEY, TIMEFRAME_KEY, "_s3")
     )
 
+    # Stage 0: Data available but does not meet criteria for stages 1-3
+    stage0 = (
+        base_data.group_by(STAY_KEY, "_6h_block")
+        .agg(
+            pl.when(pl.len() >= 6)
+            .then(0)
+            .otherwise(None)
+            .alias("_s0"),
+            pl.col(TIMEFRAME_KEY).max().alias(TIMEFRAME_KEY),
+        )
+        .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
+    )
+
     # Combine stages
     result = (
-        stage1.join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True
+        stage0.join(
+            stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="full", coalesce=True)
+        .join(
+            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
+        )
+        .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
-                pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
+                pl.col("_s0"), pl.col("_s1"), pl.col("_s2"), pl.col("_s3")
             ).alias("UO Fixed Block AKI Stage")
         )
         .select(STAY_KEY, TIMEFRAME_KEY, "UO Fixed Block AKI Stage")
