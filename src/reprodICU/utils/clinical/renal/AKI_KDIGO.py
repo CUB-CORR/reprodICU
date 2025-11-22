@@ -273,12 +273,7 @@ def _uo_consecutive_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
             period="6i",
             group_by=STAY_KEY,
         )
-        .agg(
-            pl.when(pl.len() >= 6)
-            .then(0)
-            .otherwise(None)
-            .alias("_s0")
-        )
+        .agg(pl.when(pl.len() >= 6).then(0).otherwise(None).alias("_s0"))
         .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
     )
 
@@ -287,9 +282,7 @@ def _uo_consecutive_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         stage0.join(
             stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
-        )
+        .join(stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
@@ -387,12 +380,7 @@ def _uo_any_period_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
             period="6i",
             group_by=STAY_KEY,
         )
-        .agg(
-            pl.when(pl.len() >= 6)
-            .then(0)
-            .otherwise(None)
-            .alias("_s0")
-        )
+        .agg(pl.when(pl.len() >= 6).then(0).otherwise(None).alias("_s0"))
         .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
     )
 
@@ -401,9 +389,7 @@ def _uo_any_period_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         stage0.join(
             stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
-        )
+        .join(stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
@@ -492,10 +478,7 @@ def _uo_fixed_block_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     stage0 = (
         base_data.group_by(STAY_KEY, "_6h_block")
         .agg(
-            pl.when(pl.len() >= 6)
-            .then(0)
-            .otherwise(None)
-            .alias("_s0"),
+            pl.when(pl.len() >= 6).then(0).otherwise(None).alias("_s0"),
             pl.col(TIMEFRAME_KEY).max().alias(TIMEFRAME_KEY),
         )
         .select(STAY_KEY, TIMEFRAME_KEY, "_s0")
@@ -506,9 +489,7 @@ def _uo_fixed_block_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         stage0.join(
             stage1, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
         )
-        .join(
-            stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True
-        )
+        .join(stage2, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .join(stage3, on=[STAY_KEY, TIMEFRAME_KEY], how="left", coalesce=True)
         .with_columns(
             pl.max_horizontal(
@@ -624,13 +605,16 @@ def AKI_KDIGO(
         )
 
     # Auto-generate timeframe_name if needed
-    if window_size == SECONDS_IN_1H:
-        timeframe_name = "Hours"
-    else:
-        timeframe_name = "Windows"
-
     if timeframe_name is None:
-        timeframe_name = f"{timeframe_unit[:-1] if timeframe_unit.endswith('s') else timeframe_unit}"
+        unit = (
+            "Days"
+            if window_size == SECONDS_IN_1D
+            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
+        )
+        reference = (
+            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
+        )
+        timeframe_name = f"{unit} Relative to {reference}"
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
