@@ -20,6 +20,13 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
     return (
         _to_lazy(inout)
+        .filter(
+            pl.any_horizontal(
+                pl.col("Fluid output urine in and out urethral catheter").is_not_null(),
+                pl.col("Fluid output urine nephrostomy").is_not_null(),
+                pl.col("Urine output").is_not_null(),
+            ) # fmt: skip
+        )
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
