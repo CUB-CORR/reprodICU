@@ -493,6 +493,172 @@ def _vasopressor_points(
     )
 
 
+###################
+###################
+# region vasopressor
+def get_vasopressor_points(
+    meds: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    ALL_STAYS_T0: pl.LazyFrame,
+    *,
+    t_1: Optional[int] = None,
+    window_size: int = SECONDS_IN_1D,
+) -> pl.LazyFrame:
+    """
+    Compute vasopressor points over time windows from medication administration
+    data.
+
+    Arguments
+    ---------
+        meds : pl.LazyFrame
+            Medications administration data.
+        patient_information : pl.LazyFrame
+            Patient information data including weights.
+        ALL_STAYS_T0 : pl.LazyFrame
+            Dataframe with all stays and their T_0 times.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+
+    Returns
+    -------
+        pl.LazyFrame
+            Vasopressor points per stay and timeframe.
+    """
+
+    STAY_KEY = "Global ICU Stay ID"
+    weight_col = "Admission Weight (kg)"
+    drug_ingredient_col = "Drug Ingredient"
+    drug_start_col = "Drug Start Relative to Admission (seconds)"
+    drug_end_col = "Drug End Relative to Admission (seconds)"
+    drug_rate_col = "Drug Rate"
+    drug_rate_unit_col = "Drug Rate Unit"
+
+    VASOACTIVE_AGENTS = [
+        "dobutamine",
+        "dopamine",
+        "epinephrine",
+        "norepinephrine",
+        "phenylephrine",
+        "vasopressin (USP)",
+    ]
+
+    # Normalize to mcg/kg/min
+    vp_tf = (
+        meds.filter(
+            pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS),
+            # filter for infusions of at least 1 hour
+            (pl.col(drug_end_col) - pl.col(drug_start_col)) >= SECONDS_IN_1H,
+        )
+        # Join patient weight
+        .join(
+            patient_information.select(STAY_KEY, weight_col),
+            on=STAY_KEY,
+            how="left",
+        )
+        .with_columns(
+            # convert absolute doses to per-kg when needed
+            pl.when(
+                pl.col(drug_rate_unit_col).is_in(
+                    ["mcg/hr", "mcg/min", "mg/hr", "mg/min"]
+                )
+            )
+            .then(pl.col(drug_rate_col) / pl.col(weight_col))
+            .otherwise(pl.col(drug_rate_col))
+            .alias("rate_perkg"),
+            # update units to reflect per-kg when we converted
+            pl.when(pl.col(drug_rate_unit_col) == "mcg/hr")
+            .then(pl.lit("mcg/kg/hr"))
+            .when(pl.col(drug_rate_unit_col) == "mcg/min")
+            .then(pl.lit("mcg/kg/min"))
+            .when(pl.col(drug_rate_unit_col) == "mg/hr")
+            .then(pl.lit("mg/kg/hr"))
+            .when(pl.col(drug_rate_unit_col) == "mg/min")
+            .then(pl.lit("mg/kg/min"))
+            .otherwise(pl.col(drug_rate_unit_col))
+            .alias("unit_perkg"),
+        )
+        .with_columns(
+            # convert mg to mcg
+            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
+            .then(pl.col("rate_perkg") * 1000)
+            .when(pl.col("unit_perkg") == "mg/kg/min")
+            .then(pl.col("rate_perkg") * 1000)
+            .otherwise(pl.col("rate_perkg"))
+            .alias("rate_mcg"),
+            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
+            .then(pl.lit("mcg/kg/hr"))
+            .when(pl.col("unit_perkg") == "mg/kg/min")
+            .then(pl.lit("mcg/kg/min"))
+            .otherwise(pl.col("unit_perkg"))
+            .alias("unit_mcg"),
+        )
+        .with_columns(
+            # convert /hr to /min
+            pl.when(pl.col("unit_mcg") == "mcg/kg/hr")
+            .then(pl.col("rate_mcg") / 60)
+            .otherwise(pl.col("rate_mcg"))
+            .alias(drug_rate_col),
+            pl.lit("mcg/kg/min").alias(drug_rate_unit_col),
+        )
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(drug_end_col) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(
+            pl.col(drug_start_col)
+            .sub(pl.col("T_0"))
+            .alias("Drug Start Relative to T_0 (seconds)"),
+            pl.col(drug_end_col)
+            .sub(pl.col("T_0"))
+            .alias("Drug End Relative to T_0 (seconds)"),
+        )
+    )
+
+    # Attribute to timeframe using FIX_WINDOW_BORDERS
+    vp_tf = FIX_WINDOW_BORDERS(
+        vp_tf,
+        TIMEWINDOW_IN_SECONDS=window_size,
+        prefix="Drug",
+        reference="T_0",
+        unit="seconds",
+    ).with_columns(
+        pl.col("Window Relative to T_0").alias("timeframe"),
+        pl.col(drug_rate_col)
+        .mul(pl.col("Drug Duration (windows)"))
+        .alias("time-weighted Rate"),
+    )
+
+    if t_1 is not None:
+        vp_tf = vp_tf.filter(
+            pl.col("timeframe")
+            < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size) + 1)
+        )
+
+    return (
+        vp_tf.group_by(STAY_KEY, "timeframe")
+        .agg(
+            pl.when(pl.col(drug_ingredient_col) == agent)
+            .then(
+                pl.sum("time-weighted Rate").truediv(
+                    pl.sum("Drug Duration (windows)")
+                )
+            )
+            .otherwise(0)
+            .max()
+            .alias(agent)
+            for agent in VASOACTIVE_AGENTS
+        )
+        .select(
+            STAY_KEY,
+            "timeframe",
+            _vasopressor_points(
+                *[pl.col(agent) for agent in VASOACTIVE_AGENTS]  # ABC-sorted
+            ).alias("vasopressor_points"),
+        )
+    )
+
+
 ################################################################################
 ################################################################################
 # region SOFA-2
@@ -625,7 +791,6 @@ def SOFA2(
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
-    weight_col = "Admission Weight (kg)"
     los_col = "ICU Length of Stay (days)"
 
     # Vitals
@@ -659,19 +824,8 @@ def SOFA2(
     # Meds
     meds = medications.lazy()
     drug_ingredient_col = "Drug Ingredient"
-    drug_rate_col = "Drug Rate"
-    drug_rate_unit_col = "Drug Rate Unit"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
     drug_end_col = "Drug End Relative to Admission (seconds)"
-
-    VASOACTIVE_AGENTS = [
-        "dobutamine",
-        "dopamine",
-        "epinephrine",
-        "norepinephrine",
-        "phenylephrine",
-        "vasopressin (USP)",
-    ]
 
     SEDATION_DRUGS = [
         "propofol",
@@ -692,8 +846,6 @@ def SOFA2(
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-
-    # Ventilation is handled in the respiratory section using start/end intervals
 
     # region respiratory (P/F ratio)
     resp_tf = (
@@ -869,120 +1021,11 @@ def SOFA2(
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe
-    # Normalize to mcg/kg/min
-    # Join patient weight
-    meds_norm = (
-        meds.join(
-            patient_information.select(STAY_KEY, weight_col),
-            on=STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            # convert absolute doses to per-kg when needed
-            pl.when(
-                pl.col(drug_rate_unit_col).is_in(
-                    ["mcg/hr", "mcg/min", "mg/hr", "mg/min"]
-                )
-            )
-            .then(pl.col(drug_rate_col) / pl.col(weight_col))
-            .otherwise(pl.col(drug_rate_col))
-            .alias("rate_perkg"),
-            # update units to reflect per-kg when we converted
-            pl.when(pl.col(drug_rate_unit_col) == "mcg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mcg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .when(pl.col(drug_rate_unit_col) == "mg/hr")
-            .then(pl.lit("mg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mg/min")
-            .then(pl.lit("mg/kg/min"))
-            .otherwise(pl.col(drug_rate_unit_col))
-            .alias("unit_perkg"),
-        )
-        .with_columns(
-            # convert mg to mcg
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.col("rate_perkg") * 1000)
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.col("rate_perkg") * 1000)
-            .otherwise(pl.col("rate_perkg"))
-            .alias("rate_mcg"),
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .otherwise(pl.col("unit_perkg"))
-            .alias("unit_mcg"),
-        )
-        .with_columns(
-            # convert /hr to /min
-            pl.when(pl.col("unit_mcg") == "mcg/kg/hr")
-            .then(pl.col("rate_mcg") / 60)
-            .otherwise(pl.col("rate_mcg"))
-            .alias("rate_final"),
-            pl.lit("mcg/kg/min").alias("unit_final"),
-        )
-    )
-
-    # Attribute to timeframe using FIX_WINDOW_BORDERS (window-based attribution like VIS.py)
-    meds_tf = (
-        meds_norm.filter(
-            pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS),
-            # filter for infusions of at least 1 hour
-            (pl.col(drug_end_col) - pl.col(drug_start_col)) >= SECONDS_IN_1H,
-        )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(drug_end_col) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(
-            pl.col(drug_start_col)
-            .sub(pl.col("T_0"))
-            .alias("Drug Start Relative to T_0 (seconds)"),
-            pl.col(drug_end_col)
-            .sub(pl.col("T_0"))
-            .alias("Drug End Relative to T_0 (seconds)"),
-        )
-    )
-
-    meds_tf = FIX_WINDOW_BORDERS(
-        meds_tf,
-        TIMEWINDOW_IN_SECONDS=window_size,
-        prefix="Drug",
-        reference="T_0",
-        unit="seconds",
-    ).with_columns(
-        pl.col("Window Relative to T_0").alias("timeframe"),
-        (pl.col("rate_mcg") * pl.col("Drug Duration (windows)")).alias(
-            "time-weighted Rate"
-        ),
-    )
-
-    if t_1 is not None:
-        meds_tf = meds_tf.filter(
-            pl.col("timeframe")
-            < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size) + 1)
-        )
-
-    meds_tf = (
-        meds_tf.group_by(STAY_KEY, "timeframe")
-        .agg(
-            pl.when(pl.col(drug_ingredient_col) == agent)
-            .then(
-                pl.sum("time-weighted Rate").truediv(
-                    pl.sum("Drug Duration (windows)")
-                )
-            )
-            .otherwise(0)
-            .max()
-            .alias(agent)
-            for agent in VASOACTIVE_AGENTS
-        )
-        .select(
-            STAY_KEY,
-            "timeframe",
-            _vasopressor_points(
-                *[pl.col(agent) for agent in VASOACTIVE_AGENTS]  # ABC-sorted
-            ).alias("vasopressor_points"),
-        )
+    vp_tf = get_vasopressor_points(
+        meds=meds,
+        patient_information=patient_information,
+        ALL_STAYS_T0=ALL_STAYS_T0,
+        window_size=window_size,
     )
 
     # region urine output (refactored to call URINE_OUTPUT)
@@ -991,7 +1034,6 @@ def SOFA2(
         timeseries_inout=timeseries_inout,
         t_0=t_0,
         t_0_per_stay=t_0_per_stay,
-        t_1=t_1,
         window_size=SECONDS_IN_1H,  # Return hourly values
     )
     # Apply rolling window assessment to compute urine output points
@@ -1029,32 +1071,30 @@ def SOFA2(
 
     # region assemble
     out = base
-    for part in [resp_tf, labs_tf, vitals_tf, meds_tf, uo_tf]:
+    for part in [resp_tf, labs_tf, vitals_tf, vp_tf, uo_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     if forward_fill:
         out = out.with_columns(
+            # forward-fill within stay at most 6 hours
             pl.col(
                 "respiratory_points",
                 "gcs_points",
                 "map_points",
                 "vasopressor_points",
             )
-            # forward-fill within stay at most 6 hours
-            .forward_fill((window_size // SECONDS_IN_1H) * 6).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
+            .forward_fill((window_size // SECONDS_IN_1H) * 6)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
+            # forward-fill within stay at most a week
             pl.col(
                 "platelet_points",
                 "bilirubin_points",
                 "creatinine_points",
             )
-            # forward-fill within stay at most a week
-            .forward_fill((window_size // SECONDS_IN_1H) * 168).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
-            pl.col("uo_points")
+            .forward_fill((window_size // SECONDS_IN_1H) * 168)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
             # make urine output persistent for 24h
+            pl.col("uo_points")
             .forward_fill()
             .backward_fill()
             .over(
@@ -1064,7 +1104,6 @@ def SOFA2(
                         (window_size // SECONDS_IN_1H) * 24
                     ),
                 ],
-                order_by="timeframe",
             ),
         )
 

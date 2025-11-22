@@ -693,27 +693,25 @@ def SOFA(
 
     if forward_fill:
         out = out.with_columns(
+            # forward-fill within stay at most 6 hours
             pl.col(
                 "pf_ratio_points",
                 "gcs_points",
                 "map_points",
                 "vasopressor_points",
             )
-            # forward-fill within stay at most 6 hours
-            .forward_fill((window_size // SECONDS_IN_1H) * 6).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
+            .forward_fill((window_size // SECONDS_IN_1H) * 6)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
+            # forward-fill within stay at most a week
             pl.col(
                 "platelet_points",
                 "bilirubin_points",
                 "creatinine_points",
             )
-            # forward-fill within stay at most a week
-            .forward_fill((window_size // SECONDS_IN_1H) * 168).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
-            pl.col("uo_points")
+            .forward_fill((window_size // SECONDS_IN_1H) * 168)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
             # make urine output persistent for 24h
+            pl.col("uo_points")
             .forward_fill()
             .backward_fill()
             .over(
