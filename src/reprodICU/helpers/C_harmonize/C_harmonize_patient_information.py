@@ -28,7 +28,7 @@ class PatientInformationHarmonizer(GlobalVars):
         """
         super().__init__(paths)
         self.datasets = datasets
-        
+
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "HiRID" in self.datasets:
@@ -70,7 +70,7 @@ class PatientInformationHarmonizer(GlobalVars):
                 - {height_col}: Patient height (cm).
                 - {weight_col}: Patient weight (kg).
                 - {ethnicity_col}: Patient ethnicity.
-                - {admission_diagnosis_col}: Diagnosis at admission.
+                - {admission_diagnosis_col}: APACHE diagnosis at admission.
                 - {admission_type_col}: Admission type.
                 - {admission_urgency_col}: Admission urgency.
                 - {admission_time_col}: Admission datetime.
@@ -175,6 +175,12 @@ class PatientInformationHarmonizer(GlobalVars):
 
         return (
             patient_information
+            # Add missing columns with None values
+            .with_columns(
+                pl.lit(None).alias(col)
+                for col in patient_information_cols_list
+                if col not in patient_information.columns
+            )
             # Define the data types of the columns
             .cast(
                 {
@@ -209,11 +215,7 @@ class PatientInformationHarmonizer(GlobalVars):
                 strict=False,
             )
             # Define the order of the columns
-            .select(
-                col
-                for col in patient_information_cols_list
-                if col in patient_information.columns
-            ).unique()
+            .select(patient_information_cols_list).unique()
         )
 
     # Helper functions
