@@ -117,6 +117,8 @@ def batch_process_timeseries(
             f"(last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
             end="\r",
         )
+        
+    print("\nBatch processing complete. Concatenating results...")
 
     # Concatenate all processed frames and sink
     files = sorted(

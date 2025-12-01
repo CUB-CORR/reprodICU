@@ -1115,8 +1115,6 @@ class EICUExtractor(EICUPaths):
 
         return (
             pl.concat([periodic, aperiodic], how="diagonal_relaxed")
-            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
-            .first()
             .rename(periodic_mapping)
             .select(
                 [self.icu_stay_id_col, self.timeseries_time_col]
