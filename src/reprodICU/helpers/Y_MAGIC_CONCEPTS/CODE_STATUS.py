@@ -74,7 +74,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
         # region MIMIC-III
         print("MAGIC_CONCEPTS: Code Status - MIMIC-III")
 
-        mimic_CODE_IDS = [128, 223758]
+        mimic_CODE_IDS = [128, 223758, 228687]
 
         mimic3_ADMISSIONTIMES = (
             pl.scan_csv(self.mimic3_paths.icustays_path)
@@ -91,11 +91,13 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                     "Full code",
                     "Comfort Measures",
                     "Comfort measures only",
-                    "Do Not Resuscita",
                     "Do Not Intubate",
-                    "DNR (do not resuscitate)",
                     "DNI (do not intubate)",
+                    "Do Not Resuscita",
+                    "DNR (do not resuscitate)",
+                    "DNAR (Do Not Attempt Resuscitation)  [DNR]",
                     "DNR / DNI",
+                    "DNAR (Do Not Attempt Resuscitation) [DNR] / DNI",
                     "CPR Not Indicate",
                 ],
                 "CODE_STATUS": [
@@ -103,22 +105,32 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                     "full code",
                     "CMO",
                     "CMO",
-                    "DNR",
+                    "DNI",
                     "DNI",
                     "DNR",
-                    "DNI",
+                    "DNR",
+                    "DNR",
+                    "DNR / DNI",
                     "DNR / DNI",
                     "DNCPR",
                 ],
             }
         )
 
-        mimic3_CODE_STATUS = (
-            pl.scan_csv(
-                self.mimic3_paths.chartevents_path,
-                schema_overrides={"VALUE": str},
+        if "parquet" in self.mimic3_paths.chartevents_path:
+            mimic3_chartevents = pl.scan_parquet(
+                self.mimic3_paths.chartevents_path, parallel="prefiltered"
             )
-            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE")
+        else:
+            mimic3_chartevents = pl.scan_csv(
+                self.mimic3_paths.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+
+        mimic3_CODE_STATUS = (
+            mimic3_chartevents.select(
+                "ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE"
+            )
             # Filter for scores
             .filter(pl.col("ITEMID").is_in(mimic_CODE_IDS))
             .drop("ITEMID")
@@ -156,27 +168,37 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             {
                 "value": [
                     "Full code",
-                    "Comfort measures only",
                     "DNI (do not intubate)",
                     "DNR (do not resuscitate)",
+                    "DNAR (Do Not Attempt Resuscitation)  [DNR]",
                     "DNR / DNI",
+                    "DNAR (Do Not Attempt Resuscitation) [DNR] / DNI",
+                    "Comfort measures only",
                 ],
                 "CODE_STATUS": [
                     "full code",
-                    "CMO",
                     "DNI",
                     "DNR",
+                    "DNR",
                     "DNR / DNI",
+                    "DNR / DNI",
+                    "CMO",
                 ],
             }
         )
 
-        mimic4_CODE_STATUS = (
-            pl.scan_csv(
-                self.mimic4_paths.chartevents_path,
-                schema_overrides={"value": str},
+        if "parquet" in self.mimic4_paths.chartevents_path:
+            mimic4_chartevents = pl.scan_parquet(
+                self.mimic4_paths.chartevents_path, parallel="prefiltered"
             )
-            .select("stay_id", "charttime", "itemid", "value")
+        else:
+            mimic4_chartevents = pl.scan_csv(
+                self.mimic4_paths.chartevents_path,
+                schema_overrides={"VALUE": str, "VALUENUM": float},
+            )
+
+        mimic4_CODE_STATUS = (
+            mimic4_chartevents.select("stay_id", "charttime", "itemid", "value")
             # Filter for scores
             .filter(pl.col("itemid").is_in(mimic_CODE_IDS))
             .drop("itemid")
@@ -210,7 +232,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
         )
 
         umcdb_CODE_STATUS = (
-            pl.scan_parquet(self.umcdb_paths.numericitems_path)
+            pl.scan_parquet(self.umcdb_paths.listitems_path)
             .select("admissionid", "itemid", "value", "measuredat")
             # Filter for scores
             .filter(pl.col("itemid") == 10673)
@@ -225,7 +247,8 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                 .alias("Time Relative to Admission (seconds)"),
                 pl.col("value")
                 .replace_strict(
-                    {"I": "full code", "II": "DNCPR", "III": "CMO"},
+                    # see https://github.com/AmsterdamUMC/AmsterdamUMCdb/issues/90
+                    {"I": "full code", "II": "DNR / DNI", "III": "CMO"},
                     default=None,
                 )
                 .alias("CODE_STATUS"),

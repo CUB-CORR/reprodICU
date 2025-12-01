@@ -573,13 +573,16 @@ class UMCdbConverter(UnitConverter):
 
         print("UMCdb   - Aligning lab value units...")
 
+        # some paO2 / paCO2 values are given in kPa, convert to mmHg for consistency
         # Creatinine in Serum or Plasma is in umol/L, convert to mmol/L for consistency
         # Reticulocytes are given in 10^9/L (percentage), convert to 10^12/L for consistency
 
         return (
             data.unnest("labstruct")
             .with_columns(
-                pl.when(
+                pl.when(pl.col("itemid").is_in([21213, 21214]))
+                .then(pl.col("value").mul(7.50061683))
+                .when(
                     pl.col("item") == "Creatinine",
                     pl.col("system") == "Serum or Plasma",
                 )

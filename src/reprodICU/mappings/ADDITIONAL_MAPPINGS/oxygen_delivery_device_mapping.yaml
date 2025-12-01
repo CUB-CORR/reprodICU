@@ -46,15 +46,18 @@ Sleep apnea mask: [] # 45768221 # SNOMED
   - "Trach mask "
   - T-piece
   # UMCdb
-  - Trach.stoma
+  - Kunstneus
   - Spreekcanule
   - Spreekklepje
+  - Trach.stoma
 Venturi mask: # 4322904 # SNOMED
   # eICU -> same name
   # MIMIC-III
   - Venti Mask
   # MIMIC-III / MIMIC-IV
   - "Venti mask "
+  # UMCdb
+  - Kapje
 Venturi oxygen face mask: [] # 45759930 # SNOMED
 Vortex oxygen face mask: [] # 45773303 # SNOMED
 
@@ -77,7 +80,18 @@ High flow oxygen nasal cannula: # 4139525 # SNOMED
   # UMCdb
   - Diep Nasaal
 
-####
+#### OTHER DEVICES ####
+Ambu bag: # 4160626 # SNOMED
+  # eICU -> same name
+  # UMCdb
+  - Ambu
+  - Waterset
+Esophageal tracheal double lumen supraglottic airway device: # 4139134 # SNOMED # Oropharyngeal airway device
+  # UMCdb
+  - DL-tube
+Guedel airway: # 4235033 # SNOMED # Oropharyngeal airway device
+  # UMCdb
+  - Guedel
 Mechanical ventilator: # 40493026 # SNOMED
   # eICU -> same name
   # MIMIC-III
@@ -87,12 +101,16 @@ Mechanical ventilator: # 40493026 # SNOMED
   - Tracheostomy tube
   # UMCdb
   - IV
-
-####
-Ambu bag: # 4160626 # SNOMED
-  # eICU -> same name
+Face tent oxygen delivery device: # 4222965 # SNOMED
+  # MIMIC-III
+  - Face Tent
+  # MIMIC-III / -IV
+  - Face tent
   # UMCdb
-  - Ambu
+  - Kinnebak
+Room air: # 45881798 # LOINC
+  # UMCdb
+  - B.Lucht
 
 
 # MIMIC-III / MIMIC-IV
@@ -101,11 +119,9 @@ Ambu bag: # 4160626 # SNOMED
 # High flow neb
 # Medium conc mask 
 # Ultrasonic neb
-# Face tent
 
 
 # MIMIC-III
-# Face Tent
 # Hi Flow Neb
 # Medium Conc Mask
 # Vapotherm
