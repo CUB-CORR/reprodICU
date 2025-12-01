@@ -259,11 +259,11 @@ Allergy / Immunology: [] # 38004448
   # eICU -> same name
 Anesthesiology: [] # 38004450
   # eICU -> same name
-Diagnostic Radiology: # 45756769 # ABMS, not Medicare Specialty
+Diagnostic Radiology: [] # 45756769 # ABMS, not Medicare Specialty
   # eICU -> same name
 General Practice: [] # 38004446
   # eICU -> same name
-Infectious Disease: # 38004484
+Infectious Disease: [] # 38004484
   # eICU -> same name
 Pain Management: [] # 38004506
   # eICU -> same name
