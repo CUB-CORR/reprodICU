@@ -11,8 +11,8 @@ import polars.selectors as cs
 
 from ..A_extract.A_extract_eicu import EICUExtractor
 from ..helper import GlobalHelpers
-from ..helper_conversions import UnitConverter
 from ..helper_batch import batch_process_timeseries
+from ..helper_conversions import UnitConverter
 
 
 class EICUProcessor(EICUExtractor):
@@ -89,6 +89,7 @@ class EICUProcessor(EICUExtractor):
             # Cast only numeric columns to float using selectors
             .with_columns(cs.numeric().cast(float))
             .unique(self.index_cols)
+            .sort(self.index_cols)
             .lazy()
         )
 
@@ -212,6 +213,11 @@ class EICUProcessor(EICUExtractor):
             print("eICU    - Time series data is already sorted.")
             os.rename(timeseries_path_unsorted, timeseries_path)
 
+        # Delete all EICU_ts_* files
+        for file in os.listdir(self.precalc_path):
+            if file.startswith("EICU_ts_"):
+                os.remove(os.path.join(self.precalc_path, file))
+
         return pl.scan_parquet(timeseries_path).select(
             pl.col(self.index_cols).set_sorted(),
             pl.exclude(self.index_cols),
@@ -241,7 +247,7 @@ class EICUProcessor(EICUExtractor):
                 - Laboratory measurement columns (pivoted from labname, JSON-encoded).
         """
         ts_labs_path = self.precalc_path + "EICU_timeseries_labs.parquet"
-        ts_labs_unsorted_path = self.precalc_path + "EICU_ts_labs.parquet"
+        ts_labs_path_unsorted = self.precalc_path + "EICU_ts_labs.parquet"
 
         if os.path.isfile(ts_labs_path):
             # Load the preprocessed data
@@ -282,11 +288,11 @@ class EICUProcessor(EICUExtractor):
         )
 
         # Save extracted data before pivoting
-        ts_lab_extracted.sink_parquet(ts_labs_unsorted_path)
+        ts_lab_extracted.sink_parquet(ts_labs_path_unsorted)
 
         # Batch pivot the data
         batch_process_timeseries(
-            input_file=ts_labs_unsorted_path,
+            input_file=ts_labs_path_unsorted,
             output_file=ts_labs_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
@@ -298,7 +304,7 @@ class EICUProcessor(EICUExtractor):
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
-        os.remove(ts_labs_unsorted_path)
+        os.remove(ts_labs_path_unsorted)
 
         return pl.scan_parquet(ts_labs_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -327,8 +333,10 @@ class EICUProcessor(EICUExtractor):
                 - {timeseries_time_col}: Time offset (seconds from ICU admission).
                 - Respiratory measurement columns (pivoted from respchartvaluelabel).
         """
-        ts_resp_path = self.precalc_path + "EICU_timeseries_resp.parquet"
-        ts_resp_unsorted_path = self.precalc_path + "EICU_ts_resp.parquet"
+        ts_resp_path = self.precalc_path + "EICU_ts_resp.parquet"
+        ts_resp_path_unsorted = (
+            self.precalc_path + "EICU_ts_resp_unsorted.parquet"
+        )
 
         if os.path.isfile(ts_resp_path):
             # Load the preprocessed data
@@ -341,11 +349,11 @@ class EICUProcessor(EICUExtractor):
 
         # Extract respiratory data and save for batch processing
         ts_resp_extracted = self.extract_time_series_resp()
-        ts_resp_extracted.sink_parquet(ts_resp_unsorted_path)
+        ts_resp_extracted.sink_parquet(ts_resp_path_unsorted)
 
         # Batch pivot the respiratory data
         batch_process_timeseries(
-            input_file=ts_resp_unsorted_path,
+            input_file=ts_resp_path_unsorted,
             output_file=ts_resp_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
@@ -357,7 +365,7 @@ class EICUProcessor(EICUExtractor):
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
-        os.remove(ts_resp_unsorted_path)
+        os.remove(ts_resp_path_unsorted)
 
         return pl.scan_parquet(ts_resp_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -386,7 +394,7 @@ class EICUProcessor(EICUExtractor):
                 - Nurse charting measurement columns (pivoted from nursingchartcelltypevalname).
         """
         ts_nurse_path = self.precalc_path + "EICU_ts_nurse.parquet"
-        ts_nurse_unsorted_path = (
+        ts_nurse_path_unsorted = (
             self.precalc_path + "EICU_ts_nurse_unsorted.parquet"
         )
 
@@ -401,11 +409,11 @@ class EICUProcessor(EICUExtractor):
 
         # Extract nurse charting data and save for batch processing
         ts_nurse_extracted = self.extract_time_series_nurse()
-        ts_nurse_extracted.sink_parquet(ts_nurse_unsorted_path)
+        ts_nurse_extracted.sink_parquet(ts_nurse_path_unsorted)
 
         # Batch pivot the nurse charting data
         batch_process_timeseries(
-            input_file=ts_nurse_unsorted_path,
+            input_file=ts_nurse_path_unsorted,
             output_file=ts_nurse_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
@@ -417,7 +425,7 @@ class EICUProcessor(EICUExtractor):
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
-        os.remove(ts_nurse_unsorted_path)
+        os.remove(ts_nurse_path_unsorted)
 
         return pl.scan_parquet(ts_nurse_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -518,7 +526,7 @@ class EICUProcessor(EICUExtractor):
                 - Periodic/aperiodic vital measurement columns.
         """
         ts_period_path = self.precalc_path + "EICU_ts_periodics.parquet"
-        ts_period_unsorted_path = (
+        ts_period_path_unsorted = (
             self.precalc_path + "EICU_ts_periodics_unsorted.parquet"
         )
 
@@ -534,11 +542,11 @@ class EICUProcessor(EICUExtractor):
 
         # Extract and combine periodic and aperiodic data
         ts_periodics = self.extract_and_combine_periodics()
-        ts_periodics.sink_parquet(ts_period_unsorted_path)
+        ts_periodics.sink_parquet(ts_period_path_unsorted)
 
         # Batch process: cast to float and deduplicate
         batch_process_timeseries(
-            input_file=ts_period_unsorted_path,
+            input_file=ts_period_path_unsorted,
             output_file=ts_period_path,
             tempfiles_path=self.precalc_path,
             operation="process",
@@ -546,7 +554,7 @@ class EICUProcessor(EICUExtractor):
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
-        os.remove(ts_period_unsorted_path)
+        os.remove(ts_period_path_unsorted)
 
         return pl.scan_parquet(ts_period_path).select(
             pl.col(self.index_cols).set_sorted(),

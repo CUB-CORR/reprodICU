@@ -11,6 +11,7 @@ import polars as pl
 
 from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -44,6 +45,58 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
+    def _process_timeseries_vitals_batch(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
+        """
+        Helper to pivot vitals batches during batch processing.
+
+        Steps:
+            1. Collect the batch and pivot on `label` using first aggregation.
+            2. Drop rows that are empty for all non-index columns.
+
+        Returns:
+            pl.LazyFrame: pivoted batch as a lazyframe.
+        """
+        timeseries = (
+            data.collect()
+            .pivot(
+                on="label",
+                index=self.index_cols,
+                values="valuenum",
+                aggregate_function="first",
+            )  # Replace the integerized values with the original values
+            .with_columns(
+                pl.col("Heart rate rhythm").replace_strict(
+                    self.heart_rhythm_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Oxygen delivery system").replace_strict(
+                    self.oxygen_delivery_system_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Ventilation mode Ventilator").replace_strict(
+                    self.ventilator_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col(
+                    "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                ).replace_strict(
+                    self.rrt_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+            )
+        )
+
+        # Drop empty rows
+        droplist = list(set(timeseries.columns) - set(self.index_cols))
+        return (
+            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
+            .lazy()
+        )
+
     # region vitals
     # Processes the vital data of the MIMIC4 dataset.
     def process_timeseries_vitals(self):
@@ -76,63 +129,36 @@ class MIMIC4Processor(MIMIC4Extractor):
 
         print("MIMIC4  - Processing vitals & respiratory data...")
 
-        # Process vitals data
-        ts_vitals = (
-            self.extract_chartevents()
-            # Convert temperature from Fahrenheit to Celsius
-            .pipe(
-                self.convert.convert_temperature_F_to_C,
-                itemid_F="Temperature Fahrenheit",
-                itemid_C="Temperature",
-                labelcol="label",
-                valuecol="valuenum",
+        # Prepare extracted vitals for batch pivoting and save unsorted cache
+        if not os.path.isfile(ts_vitals_path_unsorted):
+            (
+                self.extract_chartevents()
+                # Convert temperature from Fahrenheit to Celsius
+                .pipe(
+                    self.convert.convert_temperature_F_to_C,
+                    itemid_F="Temperature Fahrenheit",
+                    itemid_C="Temperature",
+                    labelcol="label",
+                    valuecol="valuenum",
+                )
+                # Convert fractions to percentages
+                .pipe(
+                    self.convert.convert_ratio_to_percentage,
+                    itemid="Oxygen/Total gas setting [Volume Fraction] Ventilator",
+                    labelcol="label",
+                    valuecol="valuenum",
+                ).sink_parquet(ts_vitals_path_unsorted)
             )
-            # Pivot the vitals data
-            .collect().pivot(
-                on="label",
-                index=self.index_cols,
-                values="valuenum",
-                aggregate_function="first",
-            )
-            # Replace the integerized values with the original values
-            .with_columns(
-                pl.col("Heart rate rhythm").replace_strict(
-                    self.heart_rhythm_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Oxygen delivery system").replace_strict(
-                    self.oxygen_delivery_system_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Ventilation mode Ventilator").replace_strict(
-                    self.ventilator_mode_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Continuous renal replacement therapy mode Renal replacement therapy circuit").replace_strict(
-                    self.rrt_mode_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-            )
-        )
 
-        # Drop empty rows
-        ts_vitals_cols = ts_vitals.collect_schema().names()
-        droplist = list(set(ts_vitals_cols) - set(self.index_cols))
-        ts_vitals = (
-            ts_vitals.lazy()
-            .pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-        )
-
-        # Save the preprocessed data
-        ts_vitals.sink_parquet(ts_vitals_path_unsorted)
-
-        # Sort the data
-        (
-            pl.scan_parquet(ts_vitals_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_vitals_path)
+        # Batch pivot the cached file to avoid large in-memory pivots
+        batch_process_timeseries(
+            input_file=ts_vitals_path_unsorted,
+            output_file=ts_vitals_path,
+            tempfiles_path=self.precalc_path,
+            operation="pivot",
+            method=self._process_timeseries_vitals_batch,
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_vitals_path_unsorted)
 
