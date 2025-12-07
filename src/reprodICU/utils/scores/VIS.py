@@ -21,6 +21,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..common import (
     _build_t0,
     get_medications,
@@ -151,12 +152,11 @@ def VIS(
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
 
     # Select relevant columns and build T_0
-    weights = patient_information.select(STAY_KEY, weight_col)
-
     medications = (
         medications.filter(
             pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
         )
+        .pipe(ALIGNED_UNITS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
             # Calculate start and end relative to T_0
@@ -169,105 +169,6 @@ def VIS(
                 - pl.col("T_0")
             ).alias("Drug End Relative to T_0 (seconds)"),
         )
-    )
-
-    # Fix rates - handle cases where Drug Amount is provided but Drug Rate is not
-    PREDICATES = (
-        pl.col("Drug Rate").is_null(),
-        pl.col("Drug Rate Unit").is_null(),
-        pl.col("Drug Amount").is_not_null(),
-        pl.col("Drug Amount Unit").is_in(
-            ["g", "mg", "mcg", "U", "IE", "units"]
-        ),
-    )
-    medications = medications.with_columns(
-        pl.when(*PREDICATES)
-        .then(
-            pl.col("Drug Amount")
-            / (
-                pl.col("Drug End Relative to Admission (seconds)")
-                - pl.col("Drug Start Relative to Admission (seconds)")
-            ).truediv(60)
-        )
-        .otherwise(pl.col("Drug Rate"))
-        .alias("Drug Rate"),
-        pl.when(*PREDICATES)
-        .then(pl.concat_str(pl.col("Drug Amount Unit"), pl.lit("/min")))
-        .otherwise(pl.col("Drug Rate Unit"))
-        .alias("Drug Rate Unit"),
-    )
-
-    # Fix units - normalize all rates to mcg/kg/min
-    medications = (
-        medications.join(weights, on=STAY_KEY, how="left")
-        .with_columns(
-            # CONVERTING UNITS
-            # Convert mcg / mg / g to mcg/kg/min
-            pl.when(pl.col("Drug Rate Unit") == "mcg/min")
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "mcg/hr")
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "mcg/kg/hr")
-            .then(pl.col("Drug Rate") / 60)
-            .when(pl.col("Drug Rate Unit") == "mg/hr")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "mg/min")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "mg/kg/min")
-            .then(pl.col("Drug Rate") * 1000)
-            .when(pl.col("Drug Rate Unit") == "g/hr")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "g/min")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "g/kg/hr")
-            .then(pl.col("Drug Rate") * 1_000_000 / 60)
-            .when(pl.col("Drug Rate Unit") == "g/kg/min")
-            .then(pl.col("Drug Rate") * 1_000_000)
-            # Convert Units
-            .when(pl.col("Drug Rate Unit").is_in(["U/hr", "units/hr"]))
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
-            .when(
-                pl.col("Drug Rate Unit").is_in(["U/min", "units/min", "IE/min"])
-            )
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
-            # Keep unchanged
-            .when(
-                pl.col("Drug Rate Unit").is_in(
-                    ["mcg/kg/min", "U/min", "units/min", "IE/min"]
-                )
-            )
-            .then(pl.col("Drug Rate"))
-            .otherwise(None)
-            .alias("Drug Rate (fixed units)"),
-            # RENAMING UNITS
-            pl.when(
-                pl.col("Drug Rate Unit").is_in(
-                    [
-                        "mcg/kg/min",
-                        "mcg/min",
-                        "mcg/hr",
-                        "mcg/kg/hr",
-                        "mg/hr",
-                        "mg/min",
-                        "mg/kg/min",
-                        "g/hr",
-                        "g/min",
-                        "g/kg/hr",
-                        "g/kg/min",
-                    ]
-                )
-            ).then(pl.lit("mcg/kg/min"))
-            # TODO: check this again (stupid me, forgot proper documentation)
-            .when(
-                pl.col("Drug Rate Unit").is_in(
-                    ["U/min", "U/hr", "units/hr", "units/min", "IE/min"]
-                )
-            )
-            .then(pl.lit("U/kg/min"))
-            .otherwise(None)
-            .alias("Drug Rate Unit (fixed units)"),
-        )
-        .drop_nulls(["Drug Rate (fixed units)", "Drug Rate Unit (fixed units)"])
     )
 
     # Convert to VIS components
