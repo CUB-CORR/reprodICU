@@ -44,7 +44,7 @@ from ..common import (
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PAO2_FIO2_RATIO
+from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -454,7 +454,7 @@ def SOFA(
 
     # region respiratory (P/F ratio)
     resp_tf = (
-        PAO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))

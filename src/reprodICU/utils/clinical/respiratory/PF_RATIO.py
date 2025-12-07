@@ -67,7 +67,7 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 
 # region PaO2/FiO2 Ratio
-def PAO2_FIO2_RATIO(
+def PaO2_FiO2_RATIO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
@@ -118,7 +118,7 @@ def PAO2_FIO2_RATIO(
     missing = [name for name, data in required.items() if data is None]
     if missing:
         raise ValueError(
-            f"Cannot compute PAO2_FIO2_RATIO: Missing required datasets: {', '.join(missing)}. "
+            f"Cannot compute PaO2_FiO2_RATIO: Missing required datasets: {', '.join(missing)}. "
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
@@ -178,7 +178,7 @@ def PAO2_FIO2_RATIO(
 
 
 # region SpO2/FiO2 Ratio
-def SPO2_FIO2_RATIO(
+def SpO2_FiO2_RATIO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -229,7 +229,7 @@ def SPO2_FIO2_RATIO(
     missing = [name for name, data in required.items() if data is None]
     if missing:
         raise ValueError(
-            f"Cannot compute SPO2_FIO2_RATIO: Missing required datasets: {', '.join(missing)}. "
+            f"Cannot compute SpO2_FiO2_RATIO: Missing required datasets: {', '.join(missing)}. "
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
@@ -288,4 +288,4 @@ def SPO2_FIO2_RATIO(
     return sf_ratio
 
 
-___all__ = ["PAO2_FIO2_RATIO", "SPO2_FIO2_RATIO"]
+___all__ = ["PaO2_FiO2_RATIO", "SpO2_FiO2_RATIO"]

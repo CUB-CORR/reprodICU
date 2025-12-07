@@ -657,7 +657,7 @@ def AKI_KDIGO(
 
     # Aggregate to worst per timeframe
     creatinine_per_frame = (
-        creatinine_data.group_by(STAY_KEY, "timeframe", "T_0")
+        creatinine_data.group_by(STAY_KEY, "timeframe")
         .agg(
             pl.col("Creatinine").max().alias("Creatinine"),
             pl.col("7-day Baseline Creatinine")
@@ -747,7 +747,7 @@ def AKI_KDIGO(
         urine_data, on=[STAY_KEY, "timeframe"], how="left"
     ).join(
         creatinine_per_frame.select(
-            STAY_KEY, "T_0", "timeframe", "Creatinine AKI Stage"
+            STAY_KEY, "timeframe", "Creatinine AKI Stage"
         ),
         on=[STAY_KEY, "timeframe"],
         how="left",

@@ -31,7 +31,7 @@ from typing import Optional
 import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PAO2_FIO2_RATIO, SPO2_FIO2_RATIO
+from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
@@ -849,10 +849,10 @@ def SOFA2(
 
     # region respiratory (P/F ratio)
     resp_tf = (
-        PAO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(
-            SPO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+            SpO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
             .select(STAY_KEY, TIME_KEY, sf_ratio_col)
             .filter(pl.col(sf_ratio_col).is_not_null()),
             on=[STAY_KEY, TIME_KEY],

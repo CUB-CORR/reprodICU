@@ -18,7 +18,7 @@ from .renal.GLOMERULAR_FILTRATION_RATE import ESTIMATED_GFR
 from .renal.URINE_OUTPUT import URINE_OUTPUT
 from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
-from .respiratory.PF_RATIO import PAO2_FIO2_RATIO, SPO2_FIO2_RATIO
+from .respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 __all__ = [
     "VENTILATOR_FREE_DAYS",
@@ -40,6 +40,6 @@ __all__ = [
     "MECHANICAL_POWER",
     "STATIC_COMPLIANCE",
     "DYNAMIC_COMPLIANCE",
-    "PAO2_FIO2_RATIO",
-    "SPO2_FIO2_RATIO",
+    "PaO2_FiO2_RATIO",
+    "SpO2_FiO2_RATIO",
 ]

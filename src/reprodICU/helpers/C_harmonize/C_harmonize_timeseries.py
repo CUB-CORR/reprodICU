@@ -587,9 +587,9 @@ class TimeseriesHarmonizer(GlobalVars):
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         return data.with_columns(
-            pl.concat_str([pl.lit(name), pl.col(self.icu_stay_id_col)]).alias(
-                self.global_icu_stay_id_col
-            )
+            pl.concat_str(
+                [pl.lit(name), pl.col(self.icu_stay_id_col).cast(int).cast(str)]
+            ).alias(self.global_icu_stay_id_col)
         )
 
     # Print the number of unique cases in the timeseries data
