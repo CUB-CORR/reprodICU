@@ -12,6 +12,7 @@ from .IDEAL_BODY_WEIGHT import (
     IDEAL_BODY_WEIGHT_LORENTZ,
 )
 
+from .cardiovascular.SCAI import SCAI
 from .gastrointestinal.MELD import MELD
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .renal.AKI_KDIGO import AKI_KDIGO
@@ -34,6 +35,8 @@ __all__ = [
     "BODY_SURFACE_AREA",
     "BODY_MASS_INDEX",
     "CLASSIFY_BODY_MASS_INDEX",
+    # cardiovascular
+    "SCAI",
     # gastrointestinal
     "MELD",
     # pharmacological
