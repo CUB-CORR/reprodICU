@@ -21,6 +21,7 @@ from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
 from .respiratory.P50 import P50
 from .respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
+from .respiratory.RESPIRATORY_FAILURE import RESPIRATORY_FAILURE
 
 __all__ = [
     "VENTILATOR_FREE_DAYS",
@@ -46,4 +47,5 @@ __all__ = [
     "P50",
     "PaO2_FiO2_RATIO",
     "SpO2_FiO2_RATIO",
+    "RESPIRATORY_FAILURE"
 ]
