@@ -19,6 +19,7 @@ from .renal.AKI_KDIGO import AKI_KDIGO
 from .renal.GLOMERULAR_FILTRATION_RATE import ESTIMATED_GFR
 from .renal.URINE_OUTPUT import URINE_OUTPUT
 from .respiratory.ALVEOLAR_ARTERIAL_GRADIENT import ALVEOLAR_ARTERIAL_GRADIENT
+from .respiratory.ARDS import ARDS
 from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
 from .respiratory.P50 import P50
@@ -47,6 +48,7 @@ __all__ = [
     "URINE_OUTPUT",
     # respiratory
     "ALVEOLAR_ARTERIAL_GRADIENT",
+    "ARDS",
     "MECHANICAL_POWER",
     "STATIC_COMPLIANCE",
     "DYNAMIC_COMPLIANCE",
