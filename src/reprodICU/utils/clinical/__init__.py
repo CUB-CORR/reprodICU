@@ -19,6 +19,7 @@ from .renal.URINE_OUTPUT import URINE_OUTPUT
 from .respiratory.ALVEOLAR_ARTERIAL_GRADIENT import ALVEOLAR_ARTERIAL_GRADIENT
 from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
+from .respiratory.P50 import P50
 from .respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 __all__ = [
@@ -42,6 +43,7 @@ __all__ = [
     "MECHANICAL_POWER",
     "STATIC_COMPLIANCE",
     "DYNAMIC_COMPLIANCE",
+    "P50",
     "PaO2_FiO2_RATIO",
     "SpO2_FiO2_RATIO",
 ]
