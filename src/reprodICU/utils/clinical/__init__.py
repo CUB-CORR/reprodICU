@@ -12,6 +12,7 @@ from .IDEAL_BODY_WEIGHT import (
     IDEAL_BODY_WEIGHT_LORENTZ,
 )
 
+from .gastrointestinal.MELD import MELD
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .renal.AKI_KDIGO import AKI_KDIGO
 from .renal.GLOMERULAR_FILTRATION_RATE import ESTIMATED_GFR
@@ -33,6 +34,8 @@ __all__ = [
     "BODY_SURFACE_AREA",
     "BODY_MASS_INDEX",
     "CLASSIFY_BODY_MASS_INDEX",
+    # gastrointestinal
+    "MELD",
     # pharmacological
     "NOREPINEPHRINE_EQUIVALENT_DOSAGE",
     # renal
