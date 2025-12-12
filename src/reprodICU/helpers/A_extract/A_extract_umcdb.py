@@ -540,13 +540,16 @@ class UMCdbExtractor(UMCdbPaths):
                 - labstruct: Struct with value, system, method, time, LOINC code.
         """
 
-        LOINC_data = (
-            pl.read_csv(self.numericitems_lab_mapping_path)
-            .select("conceptName")
-            .rename({"conceptName": "item"})
-            .unique()
-        )
-        labnames = LOINC_data.to_series().to_list()
+        data = data.with_columns(
+            pl.col("item")
+            # "/100 leukocytes" obselete in v20250827
+            # -> now without "/100", kept for compatibility and conversion
+            .str.replace("/100 leukocytes", "/Leukocytes")
+            .str.replace("/100 erythrocytes", "/Erythrocytes")
+        ) # fmt: skip
+
+        LOINC_data = data.select("item").unique()
+        labnames = LOINC_data.collect().to_series().to_list()
 
         LOINC_data = (
             LOINC_data
@@ -619,6 +622,7 @@ class UMCdbExtractor(UMCdbPaths):
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
+                "itemid",
                 "item",
                 "labstruct",
             )

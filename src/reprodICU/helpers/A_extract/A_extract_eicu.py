@@ -475,9 +475,7 @@ class EICUExtractor(EICUPaths):
             lab = pl.scan_csv(self.lab_path)
 
         labs = (
-            lab.select(
-                "patientunitstayid", "labname", "labresultoffset", "labresult"
-            )
+            lab.select("patientunitstayid", "labname", "labresultoffset", "labresult")
             # Rename columns for consistency
             .rename(
                 {
@@ -489,9 +487,12 @@ class EICUExtractor(EICUPaths):
             .with_columns(
                 pl.col("labname")
                 .replace_strict(lab_names_mapping, default=None)
-                .alias("labname")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
             )
-        )
+        ) # fmt: skip
 
         LOINC_data = labs.select("labname").unique()
         labnames = LOINC_data.collect().to_series().to_list()

@@ -316,9 +316,8 @@ class SICdbExtractor(SICdbPaths):
         offsets = self._get_offsets()
 
         LOINC_data = self._extract_references_LOINC()
-        labnames = (
-            LOINC_data.select("LaboratoryName").unique().to_series().to_list()
-        )
+        labnames = LOINC_data.select("LaboratoryName").unique().to_series().to_list() # fmt: skip
+
         LOINC_data = (
             LOINC_data
             # Add columns for LOINC components and systems
@@ -695,9 +694,7 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LOINC_long").replace(
                     {  # NOTE: fixing wrong unit
                         "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": (
-                            "Thyroxine (T4) free [Moles/volume]"
-                        ),
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]"
                     }
                 )
             )
@@ -708,7 +705,14 @@ class SICdbExtractor(SICdbPaths):
                     "LOINC_long": "LaboratoryName",
                 }
             )
-        )
+            .with_columns(
+                pl.col("LaboratoryName")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
 
     def _extract_drug_units(self) -> dict:
         """

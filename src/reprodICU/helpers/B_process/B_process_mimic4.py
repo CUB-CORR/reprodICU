@@ -214,6 +214,13 @@ class MIMIC4Processor(MIMIC4Extractor):
                 valuecol="labstruct",
                 structfield="value",
             )
+            # Divide by 100 for percentage conversion
+            .pipe(
+                self.convert._divide_by_100,
+                labelcol="label",
+                valuecol="labstruct",
+                structfield="value",
+            )
             # Replace the LOINC codes
             .pipe(
                 self.convert._assign_LOINC_codes,
@@ -239,12 +246,12 @@ class MIMIC4Processor(MIMIC4Extractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=[
-                    "Basophils/100 leukocytes",
-                    "Eosinophils/100 leukocytes",
-                    "Lymphocytes/100 leukocytes",
-                    "Monocytes/100 leukocytes",
-                    "Neutrophils/100 leukocytes",
-                    "Reticulocytes/100 erythrocytes",
+                    "Basophils/leukocytes",
+                    "Eosinophils/leukocytes",
+                    "Lymphocytes/leukocytes",
+                    "Monocytes/leukocytes",
+                    "Neutrophils/leukocytes",
+                    "Reticulocytes/Erythrocytes",
                 ],
             )
             .lazy()
@@ -555,7 +562,7 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Basophils/100 leukocytes",
+                goal_itemcol="Basophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -563,7 +570,7 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Eosinophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Eosinophils/100 leukocytes",
+                goal_itemcol="Eosinophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -571,7 +578,7 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Lymphocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Lymphocytes/100 leukocytes",
+                goal_itemcol="Lymphocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -579,7 +586,7 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Monocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Monocytes/100 leukocytes",
+                goal_itemcol="Monocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -587,7 +594,7 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils/100 leukocytes",
+                goal_itemcol="Neutrophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -595,10 +602,56 @@ class MIMIC4Converter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Reticulocytes",
                 total_itemcol="Erythrocytes",
-                goal_itemcol="Reticulocytes/100 erythrocytes",
+                goal_itemcol="Reticulocytes/Erythrocytes",
                 structfield="value",
                 structstring=True,
             )
+        )
+
+    def _divide_by_100(
+        self,
+        data: pl.LazyFrame,
+        labelcol: str = "variableid",
+        valuecol: str = "value_struct",
+        structfield: str = "value",
+    ) -> pl.LazyFrame:
+        """Divide specified lab values by 100 for percentage conversion.
+
+        Steps:
+            1. Divide struct field by 100 for items containing "/100".
+            2. Update item labels to remove "100" prefix.
+
+        Returns:
+            pl.LazyFrame: Lab data with adjusted values and updated labels.
+        """
+        print("MIMIC4  - Dividing lab values by 100...")
+
+        items_to_divide = [
+            "Basophils/100 leukocytes",
+            "Eosinophils/100 leukocytes",
+            "Lymphocytes/100 leukocytes",
+            "Monocytes/100 leukocytes",
+            "Neutrophils/100 leukocytes",
+            "Neutrophils.band form/100 leukocytes",
+            "Neutrophils.segmented/100 leukocytes",
+            "Reticulocytes/100 erythrocytes",
+        ]
+
+        return data.with_columns(
+            pl.when(pl.col(labelcol).is_in(items_to_divide))
+            .then(
+                pl.col(valuecol).struct.with_fields(
+                    structfield=pl.col(valuecol)
+                    .struct.field(structfield)
+                    .truediv(100)
+                )
+            )
+            .otherwise(pl.col(valuecol))
+            .alias(valuecol),
+            pl.when(pl.col(labelcol) == "Reticulocytes/100 erythrocytes")
+            .then(pl.lit("Reticulocytes/Erythrocytes"))
+            .otherwise(pl.col(labelcol).str.replace("/100 ", "/"))
+            .alias(labelcol),
         )
 
 

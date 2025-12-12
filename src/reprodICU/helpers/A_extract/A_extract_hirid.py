@@ -477,8 +477,18 @@ class HiRIDExtractor(HiRIDPaths):
                 - variable: Laboratory test name.
                 - labstruct: Struct with value, system, method, time, LOINC code.
         """
+
+        data = data.with_columns(
+            pl.col("variable")
+            # "/100 leukocytes" obselete in v20250827
+            # -> now without "/100", kept for compatibility and conversion
+            .str.replace("/100 leukocytes", "/Leukocytes")
+            .str.replace("/100 erythrocytes", "/Erythrocytes")
+        ) # fmt: skip
+
         LOINC_data = data.select("variable").unique()
         labnames = LOINC_data.collect().to_series().to_list()
+
         LOINC_data = (
             data.select("variable").unique()
             # Add columns for LOINC components and systems

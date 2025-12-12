@@ -50,9 +50,7 @@ class OMOPPaths(GlobalVars):
 
             self.CONCEPT_ANCESTOR_path = omop_path + "CONCEPT_ANCESTOR.parquet"
             self.CONCEPT_CLASS_path = omop_path + "CONCEPT_CLASS.parquet"
-            self.CONCEPT_RELATIONSHIP_path = (
-                omop_path + "CONCEPT_RELATIONSHIP.parquet"
-            )
+            self.CONCEPT_RELATIONSHIP_path = omop_path + "CONCEPT_RELATIONSHIP.parquet" # fmt: skip
             self.CONCEPT_SYNONYM_path = omop_path + "CONCEPT_SYNONYM.parquet"
             self.CONCEPT_path = omop_path + "CONCEPT.parquet"
             self.DOMAIN_path = omop_path + "DOMAIN.parquet"

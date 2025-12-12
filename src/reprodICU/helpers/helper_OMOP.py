@@ -22,9 +22,7 @@ class Vocabulary(OMOPPaths):
             self.CONCEPT_RELATIONSHIP_path, parallel="prefiltered"
         )
         self.SYNONYM = pl.scan_parquet(self.CONCEPT_SYNONYM_path)
-        self.CONCEPT = pl.scan_parquet(
-            self.CONCEPT_path, parallel="prefiltered"
-        )
+        self.CONCEPT = pl.scan_parquet(self.CONCEPT_path)
         self.DOMAIN = pl.scan_parquet(self.DOMAIN_path)
         self.DRUG_STRENGTH = pl.scan_parquet(self.DRUG_STRENGTH_path)
         # self.RELATIONSHIP = pl.scan_parquet(self.RELATIONSHIP_path)
@@ -48,6 +46,7 @@ class Vocabulary(OMOPPaths):
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_id").is_in(concept_ids))
             .select("concept_id", "concept_name")
+            .drop_nulls()
             .collect()
         )
 
@@ -56,8 +55,8 @@ class Vocabulary(OMOPPaths):
 
         return dict(
             zip(
-                concept_names["concept_id"].to_numpy(),
-                concept_names["concept_name"].to_numpy(),
+                concept_names.get_column("concept_id").to_list(),
+                concept_names.get_column("concept_name").to_list(),
             )
         )
 
@@ -92,16 +91,18 @@ class Vocabulary(OMOPPaths):
                 ),
             )
             .select("concept_id", "concept_name")
+            .drop_nulls()
             .collect()
         )
 
         if not return_dict:
             return concept_ids
 
+        # Use Polars to_list instead of to_numpy (avoids issues)
         return dict(
             zip(
-                concept_ids["concept_name"].to_numpy(),
-                concept_ids["concept_id"].to_numpy(),
+                concept_ids.get_column("concept_name").to_list(),
+                concept_ids.get_column("concept_id").to_list(),
             )
         )
 
@@ -122,6 +123,7 @@ class Vocabulary(OMOPPaths):
         concept_codes = (
             self.CONCEPT.filter(pl.col("concept_name").is_in(concept_names))
             .select("concept_name", "concept_code")
+            .drop_nulls()
             .collect()
         )
 
@@ -130,8 +132,8 @@ class Vocabulary(OMOPPaths):
 
         return dict(
             zip(
-                concept_codes["concept_name"].to_numpy(),
-                concept_codes["concept_code"].to_numpy(),
+                concept_codes.get_column("concept_name").to_list(),
+                concept_codes.get_column("concept_code").to_list(),
             )
         )
 
@@ -157,16 +159,17 @@ class Vocabulary(OMOPPaths):
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
             .select("concept_code", "concept_name")
+            .drop_nulls()
             .collect()
         )
 
         if not return_dict:
             return concept_names
 
-        return dict(
+        dict(
             zip(
-                concept_names["concept_code"].to_numpy(),
-                concept_names["concept_name"].to_numpy(),
+                concept_names.get_column("concept_code").to_list(),
+                concept_names.get_column("concept_name").to_list(),
             )
         )
 
@@ -227,13 +230,14 @@ class Vocabulary(OMOPPaths):
                     "concept_id_2": "rxnorm_concept_id",
                 }
             )
+            .drop_nulls()
             .collect()
         )
 
         return dict(
             zip(
-                rxnorm_concept_ids["ndc"].to_numpy(),
-                rxnorm_concept_ids["rxnorm_concept_id"].to_numpy(),
+                rxnorm_concept_ids.get_column("ndc").to_list(),
+                rxnorm_concept_ids.get_column("rxnorm_concept_id").to_list(),
             )
         )
 
@@ -287,6 +291,7 @@ class Vocabulary(OMOPPaths):
                     "concept_name": "ingredient_name",
                 }
             )
+            .drop_nulls()
             .collect()
         )
 
@@ -295,8 +300,8 @@ class Vocabulary(OMOPPaths):
 
         return dict(
             zip(
-                ingredients["drug_concept_id"].to_numpy(),
-                ingredients["ingredient_name"].to_numpy(),
+                ingredients.get_column("drug_concept_id").to_list(),
+                ingredients.get_column("ingredient_name").to_list(),
             )
         )
 
@@ -328,12 +333,13 @@ class Vocabulary(OMOPPaths):
                 pl.col("relationship_id") == lab_relationship,
             )
             .select("concept_id_1", "concept_id_2")
+            .drop_nulls()
             .collect()
         )
         lab_id_to_property_id = dict(
             zip(
-                lab_id_to_property_id["concept_id_1"].to_numpy(),
-                lab_id_to_property_id["concept_id_2"].to_numpy(),
+                lab_id_to_property_id.get_column("concept_id_1").to_list(),
+                lab_id_to_property_id.get_column("concept_id_2").to_list(),
             )
         )
 

@@ -47,9 +47,9 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.with_columns(
         pl.col("Leukocytes").struct.field("value").alias("Leukocytes"),
-        pl.col("Neutrophils.band form/100 leukocytes")
+        pl.col("Neutrophils.band form/leukocytes")
         .struct.field("value")
-        .alias("Neutrophils.band form/100 leukocytes"),
+        .alias("Neutrophils.band form/leukocytes"),
         pl.when(
             pl.col("Carbon dioxide")
             .struct.field("system")
@@ -60,7 +60,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ).filter(
         pl.any_horizontal(
             "Leukocytes",
-            "Neutrophils.band form/100 leukocytes",
+            "Neutrophils.band form/leukocytes",
             "Carbon dioxide",
         )
     )
@@ -236,7 +236,7 @@ def SIRS(
     # Labs
     labs = _improve_labs(timeseries_labs.lazy())
     wbc_col = "Leukocytes"
-    bands_col = "Neutrophils.band form/100 leukocytes"
+    bands_col = "Neutrophils.band form/leukocytes"
     paco2_col = "Carbon dioxide"
 
     # Base frames

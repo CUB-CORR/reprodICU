@@ -1,10 +1,10 @@
 # Format labname: mapped_name
--bands: Band form neutrophils/100 leukocytes in Blood # banded_neutrophils
--basos: Basophils/100 leukocytes in Blood # basophils
--eos: Eosinophils/100 leukocytes in Blood # eosinophils
--lymphs: Lymphocytes/100 leukocytes in Blood # lymphocytes
--monos: Monocytes/100 leukocytes in Blood # monocytes
--polys: Neutrophils/100 leukocytes in Blood # neutrophils
+-bands: Band form neutrophils/Leukocytes in Blood # banded_neutrophils
+-basos: Basophils/Leukocytes in Blood # basophils
+-eos: Eosinophils/Leukocytes in Blood # eosinophils
+-lymphs: Lymphocytes/Leukocytes in Blood # lymphocytes
+-monos: Monocytes/Leukocytes in Blood # monocytes
+-polys: Neutrophils/Leukocytes in Blood # neutrophils
 24 h urine protein: Protein [Mass/volume] in 24 hour Urine # urine_protein_24h
 24 h urine urea nitrogen: # urine_nitrogen_24h
 Acetaminophen: # Medication levels in blood
@@ -110,7 +110,7 @@ PTT: aPTT in Blood by Coagulation assay # partial_thromboplastin_time
 RBC: Erythrocytes [#/volume] in Blood # erythrocytes
 RDW: Erythrocyte distribution width [Ratio] # red_cell_distribution_width
 Respiratory Rate: # Respiratory parameter
-reticulocyte count: Reticulocytes/100 erythrocytes in Blood # reticulocytes
+reticulocyte count: Reticulocytes/Erythrocytes in Blood # reticulocytes
 RPR titer:
 salicylate: # Medication levels in blood
 serum ketones: # serum_ketones

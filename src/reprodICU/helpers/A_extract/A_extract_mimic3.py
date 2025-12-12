@@ -800,7 +800,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             pl.scan_csv(self.d_labitems_to_loinc_path)
             .select("ITEMID", "COALESCED_CONCEPT_NAME", "CATEGORY")
             .rename({"COALESCED_CONCEPT_NAME": "LABEL"})
-        )
+            .with_columns(
+                pl.col("LABEL")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("LABEL")
             .unique()

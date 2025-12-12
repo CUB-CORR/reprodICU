@@ -836,16 +836,21 @@ class MIMIC4Extractor(MIMIC4Paths):
         """
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select(
-                "itemid (omop_source_code)", "omop_concept_name", "category"
-            )
+            .select("itemid (omop_source_code)", "omop_concept_name", "category")
             .rename(
                 {
                     "itemid (omop_source_code)": "itemid",
                     "omop_concept_name": "label",
                 }
             )
-        )
+            .with_columns(
+                pl.col("label")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("label")
             .unique()

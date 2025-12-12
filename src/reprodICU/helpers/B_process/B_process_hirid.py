@@ -249,6 +249,13 @@ class HiRIDProcessor(HiRIDExtractor):
                 labelcol="variable",
                 valuecol="labstruct",
             )
+            # Divide by 100 for percentage conversion
+            .pipe(
+                self.convert._divide_by_100,
+                labelcol="variable",
+                valuecol="labstruct",
+                structfield="value",
+            )
             # Replace the LOINC codes
             .pipe(
                 self.convert._assign_LOINC_codes,
@@ -273,7 +280,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 self.convert._assign_LOINC_codes,
                 self.omop,
                 self.index_cols,
-                struct_cols=["Lymphocytes/100 leukocytes"],
+                struct_cols=["Lymphocytes/leukocytes"],
             )
             .sort(self.index_cols)
             .lazy()
@@ -403,9 +410,48 @@ class HiRIDConverter(UnitConverter):
             self.convert_absolute_count_to_relative,
             itemcol="Lymphocytes",
             total_itemcol="Leukocytes",
-            goal_itemcol="Lymphocytes/100 leukocytes",
+            goal_itemcol="Lymphocytes/leukocytes",
             structfield="value",
             structstring=True,
+        )
+
+    def _divide_by_100(
+        self,
+        data: pl.LazyFrame,
+        labelcol: str = "variableid",
+        valuecol: str = "value_struct",
+        structfield: str = "value",
+    ) -> pl.LazyFrame:
+        """Divide specified lab values by 100 for percentage conversion.
+
+        Steps:
+            1. Divide struct field by 100 for items containing "/100".
+            2. Update item labels to remove "100" prefix.
+
+        Returns:
+            pl.LazyFrame: Lab data with adjusted values and updated labels.
+        """
+        print("HiRID   - Dividing lab values by 100...")
+
+        items_to_divide = [
+            "Lymphocytes/100 leukocytes",
+        ]
+
+        return data.with_columns(
+            pl.when(pl.col(labelcol).is_in(items_to_divide))
+            .then(
+                pl.col(valuecol).struct.with_fields(
+                    structfield=pl.col(valuecol)
+                    .struct.field(structfield)
+                    .truediv(100)
+                )
+            )
+            .otherwise(pl.col(valuecol))
+            .alias(valuecol),
+            pl.when(pl.col(labelcol).is_in(items_to_divide))
+            .then(pl.col(labelcol).str.replace("/100 ", "/"))
+            .otherwise(pl.col(labelcol))
+            .alias(labelcol),
         )
 
 
