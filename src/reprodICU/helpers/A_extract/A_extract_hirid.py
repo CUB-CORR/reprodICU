@@ -1053,7 +1053,8 @@ class HiRIDExtractor(HiRIDPaths):
         extracted_references.update(
             {
                 # Fix bad mappings (wrong units)
-                24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma",
+                24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma", # was "Bilirubin.direct [Mass/volume] in Serum or Plasma"
+                24000480: "Lymphocytes/100 leukocytes in Blood", # was "Lymphocytes [#/volume] in Blood"
                 # Update mappings for better clarity
                 20001000: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
                 24000737: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
