@@ -496,6 +496,27 @@ class TimeseriesHarmonizer(GlobalVars):
                         self.convert._decode_lab_structs,
                         cols_to_exclude=self.index_cols,
                     )
+                    # ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
+                    .with_columns(
+                        pl.col(col)
+                        .struct.with_fields(
+                            pl.when(pl.field("value") > 1)
+                            .then(pl.field("value").truediv(100))
+                            .otherwise(pl.field("value"))
+                            .alias("value")
+                        )
+                        .alias(col)
+                        for col in [
+                            "Basophils/leukocytes",
+                            "Eosinophils/leukocytes",
+                            "Lymphocytes/leukocytes",
+                            "Monocytes/leukocytes",
+                            "Neutrophils/leukocytes",
+                            "Neutrophils.band form/leukocytes",
+                            "Reticulocytes/Erythrocytes",
+                            "Neutrophils.segmented/leukocytes",
+                        ]
+                    )
                     .collect()
                     .write_parquet(self.save_path + "timeseries_labs.parquet")
                 )
