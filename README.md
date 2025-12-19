@@ -26,7 +26,7 @@ The dataset created by running the pipeline contains de-identified demographic i
 
 **`Axioms`** are datapoints that are completely underivable — for example: the `heart_rate` of a patient is not calculable from his lab values.
 **Anything else(!)** that can be calculated, however complicated that may be, is not(!) an axiom. Anything that can be calculated, should be calculated. Calculable variables are called **`Concepts`**.
-Concepts should be defined as python functions depending on their respective axiomatic inputs. Concepts do not need to be defined on the basis of axioms, concepts may also be derived from other concepts. At the end, where there is no more derivation possible, there there are the axioms.
+Concepts should be defined as python functions depending on their respective axiomatic inputs. Concepts do not need to be defined on the basis of axioms, concepts may also be derived from other concepts. At the end, where no further derivation is possible, there are the axioms.
 
 # HIGHLIGHTS
 
