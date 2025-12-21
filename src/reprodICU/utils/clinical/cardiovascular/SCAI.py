@@ -292,7 +292,8 @@ def SCAI(
                 end=pl.col(los_col)
                 .mul(SECONDS_PER_DAY)
                 .sub("T_0")
-                .floordiv(window_size)
+                .truediv(window_size)
+                .ceil()
                 .add(1),
                 step=1,
             )

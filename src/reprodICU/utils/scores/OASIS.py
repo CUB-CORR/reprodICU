@@ -546,7 +546,8 @@ def OASIS(
                 end=pl.col("ICU Length of Stay (days)")
                 .mul(SECONDS_IN_1D)
                 .sub("T_0")
-                .floordiv(window_size)
+                .truediv(window_size)
+                .ceil()
                 .add(1),
                 step=1,
             )

@@ -321,7 +321,8 @@ def SIRS(
                 end=pl.col(los_col)
                 .mul(SECONDS_IN_1D)
                 .sub("T_0")
-                .floordiv(window_size)
+                .truediv(window_size)
+                .ceil()
                 .add(1),
                 step=1,
             )
