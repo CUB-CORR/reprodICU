@@ -161,6 +161,7 @@ def build_patient_information(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
     impute: bool = False,
     add_availability: bool = True,
 ) -> List[str]:
@@ -169,7 +170,7 @@ def build_patient_information(
 
     Harmonizes patient demographics, anthropometrics, and admission metadata
     from configured source datasets. Applies data cleaning, validation, and
-    winsorization for clinical plausibility.
+    optional winsorization for clinical plausibility.
 
     Arguments
     ---------
@@ -179,6 +180,8 @@ def build_patient_information(
             Datasets to process. Uses all datasets if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize anthropometric data to clinically plausible ranges.
         impute : bool
             If True, impute missing anthropometric data.
         add_availability : bool
@@ -218,24 +221,27 @@ def build_patient_information(
     patient_info_cleaner = PatientInformationCleaner(paths=paths)
     patient_info_imputer = PatientInformationImputer(paths=paths)
 
-    # Winsorize the patient information
-    winsorizer = X2_Winsorizer()
-    columns_to_winsorize = [
-        column_names["weight_col"],
-        column_names["height_col"],
-    ]
-
     patient_info = (
         patient_info_harmonizer.harmonize_patient_information()
         .pipe(patient_info_cleaner.clean_patient_information)
         .pipe(patient_info_cleaner.add_good_patient_information)
-        .pipe(
+    )
+
+    # Winsorize the patient information
+    if winsorize:
+        winsorizer = X2_Winsorizer()
+        columns_to_winsorize = [
+            column_names["weight_col"],
+            column_names["height_col"],
+        ]
+        patient_info = patient_info.pipe(
             winsorizer.winsorize_clip_lower_0_quantiles,
             columns=columns_to_winsorize,
             alpha=0.9995,
         )
-        .pipe(patient_info_imputer.impute_patient_IDs)
-        .collect()
+
+    patient_info = (
+        patient_info.pipe(patient_info_imputer.impute_patient_IDs).collect()
     )
 
     patient_info.write_parquet(save_path + "patient_information.parquet")
@@ -568,6 +574,7 @@ def build_timeseries(
     datasets: Optional[List[str]] = None,
     timeseries: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
     impute: bool = False,
     resample: Optional[int] = None,
 ) -> List[str]:
@@ -575,8 +582,8 @@ def build_timeseries(
     Build timeseries data from raw data sources.
 
     Harmonizes vital signs, laboratory values, respiratory parameters, and
-    intake/output records across datasets. Applies optional imputation and
-    resampling to standardize temporal resolution.
+    intake/output records across datasets. Applies optional winsorization,
+    imputation and resampling to standardize temporal resolution.
 
     Arguments
     ---------
@@ -589,6 +596,8 @@ def build_timeseries(
             Uses all types if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize laboratory data to clinically plausible ranges.
         impute : bool
             If True, impute missing values in vital signs.
         resample : int, optional
@@ -643,7 +652,7 @@ def build_timeseries(
         .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
     )
 
-    if "labs" in TIMESERIES:
+    if "labs" in TIMESERIES and winsorize:
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
         winsorizer = X2_Winsorizer()
@@ -886,6 +895,7 @@ def build_all(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
     impute: bool = False,
     resample: Optional[int] = None,
     create_overview: bool = True,
@@ -906,6 +916,8 @@ def build_all(
             Datasets to process. Uses all datasets if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize anthropometric and laboratory data.
         impute : bool
             If True, impute missing values in vital signs.
         resample : int, optional
@@ -939,7 +951,13 @@ def build_all(
     # Build all individual tables
     if "patient_information" in TABLES:
         all_output_files.extend(
-            build_patient_information(paths=paths, datasets=datasets, demo=demo, add_availability=False)
+            build_patient_information(
+                paths=paths,
+                datasets=datasets,
+                demo=demo,
+                winsorize=winsorize,
+                add_availability=False,
+            )
         )
 
     if "diagnoses" in TABLES:
@@ -975,6 +993,7 @@ def build_all(
                 datasets=datasets,
                 timeseries=None,
                 demo=demo,
+                winsorize=winsorize,
                 impute=impute,
                 resample=resample,
             )
