@@ -431,17 +431,16 @@ class HiRIDExtractor(HiRIDPaths):
             .join(length_of_stay, on=self.icu_stay_id_col)
             .join(self._get_observation_variables(), on="variableid")
             .with_columns(
-                pl.col("admissiontime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
                 pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
             )
             .with_columns(
-                (
-                    (
-                        pl.col("datetime") - pl.col("admissiontime")
-                    ).dt.total_seconds()
-                ).alias(self.timeseries_time_col)
+                (pl.col("datetime") - pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.timeseries_time_col)
             )
             .drop("admissiontime", "datetime")
             # Remove duplicate rows
@@ -449,9 +448,7 @@ class HiRIDExtractor(HiRIDPaths):
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
             # Remove rows with empty lab results
-            .filter(
-                pl.col("variable").is_not_null() & (pl.col("variable") != "")
-            )
+            .filter(pl.col("variable").is_not_null(), pl.col("variable") != "")
         )
 
     # endregion
@@ -477,14 +474,6 @@ class HiRIDExtractor(HiRIDPaths):
                 - variable: Laboratory test name.
                 - labstruct: Struct with value, system, method, time, LOINC code.
         """
-
-        data = data.with_columns(
-            pl.col("variable")
-            # "/100 leukocytes" obselete in v20250827
-            # -> now without "/100", kept for compatibility and conversion
-            .str.replace("/100 leukocytes", "/Leukocytes")
-            .str.replace("/100 erythrocytes", "/Erythrocytes")
-        ) # fmt: skip
 
         LOINC_data = data.select("variable").unique()
         labnames = LOINC_data.collect().to_series().to_list()
@@ -722,27 +711,21 @@ class HiRIDExtractor(HiRIDPaths):
                 # Calculate the rate
                 .with_columns(
                     (
-                        (
-                            pl.col(self.fluid_amount_col)
-                            / pl.col("datetime")
-                            .sub(pl.col("prev_datetime"))
-                            .dt.total_seconds()
-                        )
-                        .round_sig_figs(2)
-                        .alias(self.fluid_rate_col)
+                        pl.col(self.fluid_amount_col)
+                        / pl.col("datetime")
+                        .sub(pl.col("prev_datetime"))
+                        .dt.total_seconds()
                     )
+                    .round_sig_figs(2)
+                    .alias(self.fluid_rate_col)
                 )
                 .with_columns(
-                    (
-                        (
-                            pl.col("prev_datetime") - pl.col("admissiontime")
-                        ).dt.total_seconds()
-                    ).alias(self.drug_start_col),
-                    (
-                        (
-                            pl.col("datetime") - pl.col("admissiontime")
-                        ).dt.total_seconds()
-                    ).alias(self.drug_end_col),
+                    (pl.col("prev_datetime") - pl.col("admissiontime"))
+                    .dt.total_seconds()
+                    .alias(self.drug_start_col),
+                    (pl.col("datetime") - pl.col("admissiontime"))
+                    .dt.total_seconds()
+                    .alias(self.drug_end_col),
                     # Add a column to indicate the administration type
                     pl.lit("given").alias(self.drug_admin_type_col),
                 )
@@ -1045,8 +1028,8 @@ class HiRIDExtractor(HiRIDPaths):
 
         extracted_references = dict(
             zip(
-                references["ID"].to_numpy(),
-                references["Variable Name"].to_numpy(),
+                references.get_column("ID").to_list(),
+                references.get_column("Variable Name").to_list(),
             )
         )
 
@@ -1054,16 +1037,20 @@ class HiRIDExtractor(HiRIDPaths):
             {
                 # Fix bad mappings (wrong units)
                 24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma", # was "Bilirubin.direct [Mass/volume] in Serum or Plasma"
-                24000480: "Lymphocytes/100 leukocytes in Blood", # was "Lymphocytes [#/volume] in Blood"
+                # "/100 leukocytes" obselete in v20250827
+                24000480: "Lymphocytes/Leukocytes in Blood", # was "Lymphocytes [#/volume] in Blood"
+                24000550: "Neutrophils/Leukocytes in Blood", # was "Neutrophils/100 leukocytes in Blood"
+                24000556: "Segmented neutrophils/Leukocytes in Blood", # was "Segmented neutrophils/100 leukocytes in Blood"
+                24000557: "Band form neutrophils/Leukocytes in Blood", # was "Band form neutrophils/100 leukocytes in Blood"
                 # Update mappings for better clarity
-                20001000: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
-                24000737: "Oxygen saturation in Central venous blood", # was "Central venous oxygenation saturation"
+                20001000: "Oxygen saturation in Central venous blood",  # was "Central venous oxygenation saturation"
+                24000737: "Oxygen saturation in Central venous blood",  # was "Central venous oxygenation saturation"
                 # Update mappings for duplicate names
                 # -> Respiratory rate appears multiple times with different IDs
-                300: "Respiratory rate", # Atemfrequenz
-                310: "Respiratory rate (spontaneous)", # RRsp(m)
-                5685: None, # RR Caresc
-            }
+                300: "Respiratory rate",  # Atemfrequenz
+                310: "Respiratory rate (spontaneous)",  # RRsp(m)
+                5685: None,  # RR Caresc
+            } # fmt: skip
         )
 
         return (

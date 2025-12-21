@@ -264,8 +264,22 @@ class SICdbConverter(UnitConverter):
                 structfield=structfield,
             )
             .pipe(
+                self.convert_mg_dL_to_mg_L,
+                itemid="C reactive protein",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
                 self.convert_iron_ug_dL_to_umol_L,
                 itemid="Iron",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_g_dL_to_g_L,
+                itemid="Protein",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,

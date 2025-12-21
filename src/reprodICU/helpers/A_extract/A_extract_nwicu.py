@@ -494,14 +494,10 @@ class NWICUExtractor(NWICUPaths):
             )
             .drop("charttime", "intime")
             .filter(
-                (
-                    pl.col("offset")
-                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col("offset")
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
-                )
+                pl.col("offset")
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
+                pl.col("offset")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
             .with_columns(
                 pl.col("offset")
