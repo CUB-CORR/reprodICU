@@ -30,6 +30,8 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
@@ -43,8 +45,6 @@ from ..common import (
     get_ventilation,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H

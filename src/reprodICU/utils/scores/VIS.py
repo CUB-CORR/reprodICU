@@ -24,10 +24,13 @@ import polars as pl
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..common import (
     _build_t0,
+    _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+
+STAY_KEY = "Global ICU Stay ID"
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
@@ -124,9 +127,6 @@ def VIS(
             "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
         )
         timeframe_name = f"{unit} Relative to {reference}"
-
-    STAY_KEY = "Global ICU Stay ID"
-    weight_col = "Admission Weight (kg)"
 
     VASOPRESSORS_INOTROPES = [
         "angiotensin II",  # 0.25 * dose in ng/kg/min
@@ -250,11 +250,16 @@ def VIS(
             pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
             pl.col("T_0").first(),
         )
+        .filter(
+            _optional_time_bounds_filter(
+                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
+            )
+        )
         .sort("Global ICU Stay ID", "Hour Relative to T_0")
         .select(
             "Global ICU Stay ID",
             "T_0",
-            "Hour Relative to T_0",
+            pl.col("Hour Relative to T_0").alias(timeframe_name),
             "Vasoactive-Inotropic Score (VIS)",
         )
     )
