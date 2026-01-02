@@ -454,3 +454,12 @@ Reticulocytes/100 erythrocytes:
   for_conversion: true
   systems:
     - Blood
+Urea:
+  for_conversion: true
+  property:
+    - Substance Concentration
+    - Mass Concentration
+  systems:
+    - Blood
+    - Serum or Plasma
+    - Urine
