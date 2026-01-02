@@ -7,19 +7,19 @@
 # NOTE: In MIMIC-III/-IV and eICU, dates of birth for patients aged over 89 were shifted to obscure
 # their true age and comply with HIPAA regulations: these patients appear in the database with ages
 # of over 300 years.
-age:
+Admission Age (years):
   min: 0
   max: 120
 
 # height in cm
 # NOTE: tallest living person is 251cm, shortest is 54.6cm
-height:
+Admission Height (cm):
   min: 50
   max: 250
 
 #  weight in kg
 # heaviest person ever was 635kg, Wikipedia list of heaviest people starts at 440kg
-weight:
+Admission Weight (kg):
   min: 25
   max: 440
 
@@ -83,6 +83,10 @@ Peripheral oxygen saturation:
   min: 0
   max: 100
 
+Mixed venous oxygen saturation:
+  min: 0
+  max: 100
+
 Glasgow coma score total:
   min: 3
   max: 15
@@ -110,7 +114,7 @@ Richmond Agitation-Sedation Scale:
 ##########
 #  LABS  #
 ##########
-Oxygen: 
+Oxygen:
   min: 20
   max: 500
 
@@ -134,41 +138,16 @@ Hemoglobin:
   min: 2
   max: 25
 
+Oxygen saturation:
+  min: 0
+  max: 100
+
 ###############
 # RESPIRATORY #
 ###############
-Ccw:
-  min: 0
-  max: 500
-
-Clung:
-  min: 0
-  max: 150
-
-DP_TP:
-  min: 4
-  max: 40
-
-Crs:
-  min: 0
-  max: 150
-
-DP:
-  min: 4
-  max: 40
-
 # fraction of inspired oxygen
 # FiO2 must be between 0 and 1 by definition
 FiO2:
-  min: 0
-  max: 100
-
-MPplat:
-  min: 0
-  max: 100
-
-# mechanical power
-MP:
   min: 0
   max: 100
 
@@ -197,6 +176,32 @@ PEEP:
 Breath rate setting Ventilator:
   min: 5
   max: 40
+
+# ------------------------------------------------------------------------------
+
+Chest wall compliance: # Ccw # 4090321
+  min: 0
+  max: 500
+
+Lung compliance: # Clung # 4298264
+  min: 0
+  max: 150
+
+Total thoracic compliance: # Crs # 4089928
+  min: 0
+  max: 150
+
+Airway driving pressure: # DPaw
+  min: 4
+  max: 40
+
+Transpulmonary driving pressure: # DPtp
+  min: 4
+  max: 40
+
+Mechanical power:
+  min: 0
+  max: 100
 
 ################################################################################
 ## OLD ABG VALUES, KEPT FOR REFERENCE BUT NOT USED ANYMORE ##

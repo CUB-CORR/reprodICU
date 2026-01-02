@@ -1,6 +1,14 @@
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union
 
 import polars as pl
+
+from ..config import ConfigManager
+
+# Load config for plausible values
+_config = ConfigManager()
+CIV = _config.load_config(
+    "CLINICALLY_PLAUSIBLE_VALUES.yaml", user_override=True
+)
 
 
 def _to_lazy(frame) -> pl.LazyFrame:
@@ -162,6 +170,114 @@ def get_rrt() -> Optional[pl.LazyFrame]:
     return _load_concept("RENAL_REPLACEMENT_THERAPY_DURATION")
 
 
+# region data cleaning
+def _plausible_values(
+    obj: Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str],
+    columns: Optional[Union[str, List[str]]],
+    column_config: Dict[str, Any],
+    mode: str,  # "clip" or "drop"
+) -> Union[pl.LazyFrame, pl.DataFrame, pl.Expr]:
+    """Internal implementation for clipping or dropping implausible values."""
+    if isinstance(obj, (pl.LazyFrame, pl.DataFrame)):
+        # Dataframe mode
+        target_cols = columns if columns else obj.collect_schema().names()
+        if isinstance(target_cols, str):
+            target_cols = [target_cols]
+
+        # Check if all target columns are present in column_config
+        missing_cols = [c for c in target_cols if c not in column_config]
+        if missing_cols:
+            raise ValueError(
+                f"The following columns are not present in the column_config: {missing_cols}. "
+                "Please add them to CLINICALLY_PLAUSIBLE_VALUES.yaml or provide a custom config."
+            )
+
+        expressions = [
+            _plausible_values(pl.col(col), None, column_config, mode)
+            for col in target_cols
+        ]
+
+        return obj.with_columns(expressions)
+
+    # Expression mode
+    expr = pl.col(obj) if isinstance(obj, str) else obj
+
+    # Determine column name for config lookup
+    col_name = columns if isinstance(columns, str) else None
+    if col_name is None:
+        try:
+            col_name = expr.meta.output_name()
+        except Exception:
+            raise ValueError(
+                "Could not determine column name from expression. "
+                "Please provide 'columns' as a string for config lookup."
+            )
+
+    if col_name not in column_config:
+        raise ValueError(f"Column '{col_name}' not in config.")
+
+    limits = column_config[col_name]
+    min_val = limits.get("min", float("-inf"))
+    max_val = limits.get("max", float("inf"))
+
+    if mode == "clip":
+        return expr.clip(
+            lower_bound=min_val,
+            upper_bound=max_val,
+        ).alias(col_name)
+    else:  # mode == "drop"
+        return (
+            pl.when(expr.is_between(min_val, max_val))
+            .then(expr)
+            .otherwise(None)
+            .alias(col_name)
+        )
+
+
+def CLIP_PLAUSIBLE_VALUES(
+    obj: Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str],
+    columns: Optional[Union[str, List[str]]] = None,
+    column_config: Dict[str, Any] = CIV,
+) -> Union[pl.LazyFrame, pl.DataFrame, pl.Expr]:
+    """
+    Clip columns to clinically plausible values.
+
+    Can be used as a dataframe pipe or an expression pipe.
+
+    Arguments:
+        obj: Input LazyFrame, DataFrame, Expr, or column name.
+        columns: Optional list of columns to clean (if obj is a dataframe)
+                 or the name to use for config lookup (if obj is an expression).
+        column_config: Dictionary specifying min and max values for each column.
+
+    Returns:
+        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]: Clipped data or clipping expression.
+    """
+    return _plausible_values(obj, columns, column_config, mode="clip")
+
+
+def DROP_IMPLAUSIBLE_VALUES(
+    obj: Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str],
+    columns: Optional[Union[str, List[str]]] = None,
+    column_config: Dict[str, Any] = CIV,
+) -> Union[pl.LazyFrame, pl.DataFrame, pl.Expr]:
+    """
+    Drop (set to null) values outside the clinically plausible range.
+
+    Can be used as a dataframe pipe or an expression pipe.
+
+    Arguments:
+        obj: Input LazyFrame, DataFrame, Expr, or column name.
+        columns: Optional list of columns to clean (if obj is a dataframe)
+                 or the name to use for config lookup (if obj is an expression).
+        column_config: Dictionary specifying min and max values for each column.
+
+    Returns:
+        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]: Cleaned data or cleaning expression.
+    """
+    return _plausible_values(obj, columns, column_config, mode="drop")
+
+
 __all__ = [
     # common utils
     "_to_lazy",
@@ -182,4 +298,7 @@ __all__ = [
     # concept loaders
     "get_ventilation",
     "get_rrt",
+    # data cleaning
+    "CLIP_PLAUSIBLE_VALUES",
+    "DROP_IMPLAUSIBLE_VALUES",
 ]
