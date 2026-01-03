@@ -30,6 +30,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 from ..common import (
@@ -530,12 +531,10 @@ def get_vasopressor_points(
     """
 
     STAY_KEY = "Global ICU Stay ID"
-    weight_col = "Admission Weight (kg)"
     drug_ingredient_col = "Drug Ingredient"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
     drug_end_col = "Drug End Relative to Admission (seconds)"
     drug_rate_col = "Drug Rate"
-    drug_rate_unit_col = "Drug Rate Unit"
 
     VASOACTIVE_AGENTS = [
         "dobutamine",
@@ -553,57 +552,7 @@ def get_vasopressor_points(
             # filter for infusions of at least 1 hour
             (pl.col(drug_end_col) - pl.col(drug_start_col)) >= SECONDS_IN_1H,
         )
-        # Join patient weight
-        .join(
-            patient_information.select(STAY_KEY, weight_col),
-            on=STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            # convert absolute doses to per-kg when needed
-            pl.when(
-                pl.col(drug_rate_unit_col).is_in(
-                    ["mcg/hr", "mcg/min", "mg/hr", "mg/min"]
-                )
-            )
-            .then(pl.col(drug_rate_col) / pl.col(weight_col))
-            .otherwise(pl.col(drug_rate_col))
-            .alias("rate_perkg"),
-            # update units to reflect per-kg when we converted
-            pl.when(pl.col(drug_rate_unit_col) == "mcg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mcg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .when(pl.col(drug_rate_unit_col) == "mg/hr")
-            .then(pl.lit("mg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mg/min")
-            .then(pl.lit("mg/kg/min"))
-            .otherwise(pl.col(drug_rate_unit_col))
-            .alias("unit_perkg"),
-        )
-        .with_columns(
-            # convert mg to mcg
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.col("rate_perkg") * 1000)
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.col("rate_perkg") * 1000)
-            .otherwise(pl.col("rate_perkg"))
-            .alias("rate_mcg"),
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .otherwise(pl.col("unit_perkg"))
-            .alias("unit_mcg"),
-        )
-        .with_columns(
-            # convert /hr to /min
-            pl.when(pl.col("unit_mcg") == "mcg/kg/hr")
-            .then(pl.col("rate_mcg") / 60)
-            .otherwise(pl.col("rate_mcg"))
-            .alias(drug_rate_col),
-            pl.lit("mcg/kg/min").alias(drug_rate_unit_col),
-        )
+        .pipe(ALIGNED_UNITS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(drug_end_col) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(
