@@ -34,6 +34,7 @@ from ..common import (
     get_timeseries_intakeoutput,
     get_timeseries_vitals,
     get_ventilation,
+    intervention_per_timeframe,
 )
 
 SECONDS_IN_1H = 60 * 60
@@ -395,10 +396,6 @@ def OASIS(
     rr_col = "Respiratory rate"
     temp_col = "Temperature"
 
-    vent_start_col = "Ventilation Start Relative to Admission (seconds)"
-    vent_end_col = "Ventilation End Relative to Admission (seconds)"
-    vent_type_col = "Ventilation Type"
-
     # Base frames
     patient_information = patient_information.lazy()
     timeseries_vitals = timeseries_vitals.lazy()
@@ -474,37 +471,18 @@ def OASIS(
     # region ventilation (per day)
     ventilation_scores = (
         ventilation.filter(
-            ~pl.col(vent_type_col).is_in(["other", "supplemental oxygen"])
+            ~pl.col("Ventilation Type").is_in(["other", "supplemental oxygen"])
         )
-        .select(STAY_KEY, vent_start_col, vent_end_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(
-            (pl.col(vent_start_col) - pl.col("T_0")).alias("vent_start_rel"),
-            (pl.col(vent_end_col) - pl.col("T_0")).alias("vent_end_rel"),
+        .pipe(
+            intervention_per_timeframe,
+            patient_information,
+            start_col="Ventilation Start Relative to Admission (seconds)",
+            end_col="Ventilation End Relative to Admission (seconds)",
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+            window_size=window_size,
         )
-        .with_columns(
-            timeframe_start=pl.col("vent_start_rel").floordiv(window_size),
-            timeframe_end=pl.col("vent_end_rel").floordiv(window_size),
-        )
-        .select(
-            STAY_KEY,
-            pl.int_ranges(
-                pl.col("timeframe_start"),
-                pl.col("timeframe_end").add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .with_columns(
-            pl.when(pl.col("timeframe").is_not_null())
-            .then(1)
-            .otherwise(0)
-            .alias("ventilated")
-        )
-        .group_by(STAY_KEY, "timeframe")
-        .agg(pl.max("ventilated"))
+        .rename({"intervention": "ventilated"})
         .with_columns(
             _ventilation_points(pl.col("ventilated") > 0).alias(
                 "ventilation_points"

@@ -187,6 +187,53 @@ def get_rrt() -> Optional[pl.LazyFrame]:
     return _load_concept("RENAL_REPLACEMENT_THERAPY_DURATION")
 
 
+# region timeframe helpers
+def intervention_per_timeframe(
+    data: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    start_col: str,
+    end_col: str,
+    t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    window_size: int = SECONDS_IN_1H,
+) -> pl.LazyFrame:
+    """Determine whether an intervention was active in each timeframe per stay."""
+
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    return (
+        data.select(STAY_KEY, start_col, end_col)
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(
+            (pl.col(start_col) - pl.col("T_0")).alias("start_rel"),
+            (pl.col(end_col) - pl.col("T_0")).alias("end_rel"),
+        )
+        .with_columns(
+            timeframe_start=pl.col("start_rel").floordiv(window_size),
+            timeframe_end=pl.col("end_rel").floordiv(window_size),
+        )
+        .select(
+            STAY_KEY,
+            pl.int_ranges(
+                pl.col("timeframe_start"),
+                pl.col("timeframe_end").add(1),
+                step=1,
+            )
+            .cast(pl.List(float))
+            .alias("timeframe"),
+        )
+        .explode("timeframe")
+        .with_columns(
+            pl.when(pl.col("timeframe").is_not_null())
+            .then(True)
+            .otherwise(False)
+            .alias("intervention"),
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.max("intervention"))
+    )
+
+
 # region data cleaning
 def _plausible_values(
     obj: Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str],
