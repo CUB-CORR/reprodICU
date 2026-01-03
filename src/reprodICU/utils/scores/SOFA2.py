@@ -35,6 +35,7 @@ from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
@@ -777,17 +778,6 @@ def SOFA2(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -846,6 +836,9 @@ def SOFA2(
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # region respiratory (P/F ratio)
     resp_tf = (

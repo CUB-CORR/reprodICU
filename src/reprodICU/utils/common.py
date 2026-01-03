@@ -4,6 +4,10 @@ import polars as pl
 
 from ..config import ConfigManager
 
+STAY_KEY = "Global ICU Stay ID"
+SECONDS_IN_1H = 60 * 60
+SECONDS_IN_1D = 24 * SECONDS_IN_1H
+
 # Load config for plausible values
 _config = ConfigManager()
 CIV = _config.load_config(
@@ -26,18 +30,14 @@ def _build_t0(
     if t_0_per_stay is not None:
         t_0_per_stay = _to_lazy(t_0_per_stay)
         return (
-            all_stays.select("Global ICU Stay ID")
-            .join(
-                t_0_per_stay.select("Global ICU Stay ID", "T_0"),
-                "Global ICU Stay ID",
-                how="left",
-            )
+            all_stays.select(STAY_KEY)
+            .join(t_0_per_stay.select(STAY_KEY, "T_0"), STAY_KEY, how="left")
             .with_columns(pl.col("T_0").fill_null(0).cast(pl.Int64))
         )
 
     t0_val = 0 if t_0 is None else int(t_0)
     return all_stays.select(
-        "Global ICU Stay ID", pl.lit(t0_val).cast(pl.Int64).alias("T_0")
+        STAY_KEY, pl.lit(t0_val).cast(pl.Int64).alias("T_0")
     )
 
 
@@ -58,6 +58,23 @@ def _optional_time_bounds_filter(
             pl.col(time_col) < pl.lit(int(t_1)).floordiv(window_size).add(1)
         )
     return conds
+
+
+def _get_timeframe_name(
+    timeframe_name: Optional[str],
+    window_size: int,
+    t_0: int,
+    t_0_per_stay: Optional[pl.LazyFrame],
+) -> str:
+    if timeframe_name is not None:
+        return timeframe_name
+    unit = (
+        "Days"
+        if window_size == SECONDS_IN_1D
+        else "Hours" if window_size == SECONDS_IN_1H else "Windows"
+    )
+    reference = "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
+    return f"{unit} Relative to {reference}"
 
 
 # region dataset helpers
@@ -284,6 +301,7 @@ __all__ = [
     "_build_t0",
     "_assign_timeframe",
     "_optional_time_bounds_filter",
+    "_get_timeframe_name",
     # dataset loaders
     "get_patient_information",
     "get_timeseries_vitals",

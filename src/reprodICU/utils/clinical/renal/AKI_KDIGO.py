@@ -33,6 +33,7 @@ import polars as pl
 from ...common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     _to_lazy,
     get_patient_information,
@@ -604,17 +605,6 @@ def AKI_KDIGO(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    # Auto-generate timeframe_name if needed
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -625,8 +615,11 @@ def AKI_KDIGO(
     timeseries_inout = _to_lazy(timeseries_inout)
 
     # region 1. Build T_0
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay, t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
     # endregion
 
     # region 2. Prepare creatinine data
@@ -634,7 +627,7 @@ def AKI_KDIGO(
 
     # Join with T_0 and assign timeframes
     creatinine_data = (
-        creatinine_data.join(all_stays_t0, on=STAY_KEY, how="inner")
+        creatinine_data.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
             _assign_timeframe(TIME_KEY, window_size)
             .cast(int)
@@ -688,7 +681,7 @@ def AKI_KDIGO(
             window_size=SECONDS_IN_1H,
         )
         # Keep hourly data for UO staging calculations
-        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .cast({"timeframe": int})
         .sort("timeframe")  # Sort for rolling operations
     )
