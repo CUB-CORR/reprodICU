@@ -13,11 +13,13 @@ import json
 import os
 import warnings
 from datetime import datetime
+from typing import List, Optional
 
 import polars as pl
 import yaml
 from tqdm import tqdm
 
+from ..build import _normalize_datasets
 from ..config import reprodICUPaths
 from ..helpers.helper_OMOP import Vocabulary
 
@@ -56,29 +58,6 @@ PATIENT_INFO_CODES = {
 def load_mapping(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
-
-
-def _get_mapping_file(filename: str) -> str:
-    """Get absolute path to a mapping file from the package.
-
-    Args:
-        filename: Name of mapping file
-
-    Returns:
-        Absolute path to the mapping file
-    """
-    from pathlib import Path
-
-    # Get the directory where this file is located
-    current_dir = Path(
-        __file__
-    ).parent.parent  # Go up from interfaces to package root
-    mapping_path = current_dir / "mappings" / filename
-
-    if not mapping_path.exists():
-        raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
-
-    return str(mapping_path)
 
 
 # region helpers
@@ -137,7 +116,7 @@ def create_dataset_json(OUTPATH: str) -> None:
     dataset = {
         "dataset_name": "reprodICU_MEDS",
         "dataset_version": "0.1",
-        "etl_name": "Z_MEDS.py",
+        "etl_name": "MEDS.py",
         "etl_version": "0.1",
         "meds_version": "0.1",
         "created_at": datetime.now().isoformat(),
@@ -535,7 +514,8 @@ def MEDS(
 
 
 def convert_to_meds(
-    paths=None,
+    paths: Optional[reprodICUPaths] = None,
+    datasets: Optional[List[str]] = None,
     demo: bool = False,
     force: bool = False,
 ) -> dict:
@@ -543,6 +523,8 @@ def convert_to_meds(
 
     Args:
         paths: Optional paths object (uses default paths if None)
+        datasets: List of datasets to convert (e.g., ['MIMIC4', 'eICU']).
+            Uses all available datasets if None or contains 'all'.
         demo: Use demo data if True
         force: Force recomputation if True (currently unused)
 
@@ -564,6 +546,9 @@ def convert_to_meds(
         INPATH = paths.reprodICU_files_path
         OUTPATH = paths.reprodICU_files_path + "MEDS/"
 
+    # Normalize datasets
+    datasets = _normalize_datasets(datasets, demo=demo)
+
     # Create output subdirectories
     os.makedirs(OUTPATH, exist_ok=True)
     os.makedirs(OUTPATH + "data/", exist_ok=True)
@@ -575,6 +560,23 @@ def convert_to_meds(
     # Load the reprodICU data
     print("MEDS - Loading reprodICU data...")
     patient_information = pl.scan_parquet(INPATH + "patient_information.parquet") # fmt: skip
+
+    if datasets is not None:
+        # Map user-friendly names to Source Dataset names
+        dataset_map = {
+            "eICU": "eICU-CRD",
+            "HiRID": "HiRID",
+            "MIMIC3": "MIMIC-III",
+            "MIMIC4": "MIMIC-IV",
+            "NWICU": "NWICU",
+            "SICdb": "SICdb",
+            "UMCdb": "AmsterdamUMCdb",
+        }
+        mapped_datasets = [dataset_map.get(d, d) for d in datasets]
+        patient_information = patient_information.filter(
+            pl.col("Source Dataset").is_in(mapped_datasets)
+        )
+
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")

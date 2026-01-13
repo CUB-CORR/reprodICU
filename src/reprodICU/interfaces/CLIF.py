@@ -12,10 +12,12 @@
 # Importing necessary libraries
 import os
 from pathlib import Path
+from typing import List, Optional
 
 import polars as pl
 import yaml
 
+from ..build import _normalize_datasets
 from ..config import reprodICUPaths
 from ..helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 
@@ -998,7 +1000,8 @@ def other(OUTPATH: str) -> None:
 
 
 def convert_to_clif(
-    paths=None,
+    paths: Optional[reprodICUPaths] = None,
+    datasets: Optional[List[str]] = None,
     demo: bool = False,
     force: bool = False,
 ) -> dict:
@@ -1006,6 +1009,8 @@ def convert_to_clif(
 
     Args:
         paths: Optional paths object (uses default paths if None)
+        datasets: List of datasets to convert (e.g., ['MIMIC4', 'eICU']).
+            Uses all available datasets if None or contains 'all'.
         demo: Use demo data if True
         force: Force recomputation if True (currently unused)
 
@@ -1027,6 +1032,9 @@ def convert_to_clif(
         INPATH = paths.reprodICU_files_path
         OUTPATH = paths.reprodICU_files_path + "CLIF/"
 
+    # Normalize datasets
+    datasets = _normalize_datasets(datasets, demo=demo)
+
     # Create output directory
     os.makedirs(OUTPATH, exist_ok=True)
 
@@ -1035,6 +1043,23 @@ def convert_to_clif(
     patient_information = pl.scan_parquet(
         INPATH + "patient_information.parquet"
     )
+
+    if datasets is not None:
+        # Map user-friendly names to Source Dataset names
+        dataset_map = {
+            "eICU": "eICU-CRD",
+            "HiRID": "HiRID",
+            "MIMIC3": "MIMIC-III",
+            "MIMIC4": "MIMIC-IV",
+            "NWICU": "NWICU",
+            "SICdb": "SICdb",
+            "UMCdb": "AmsterdamUMCdb",
+        }
+        mapped_datasets = [dataset_map.get(d, d) for d in datasets]
+        patient_information = patient_information.filter(
+            pl.col("Source Dataset").is_in(mapped_datasets)
+        )
+
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
 
@@ -1042,18 +1067,7 @@ def convert_to_clif(
 
     # Setup helpers
     print("CLIF - Initializing helpers...")
-    diagnoses_harmonizer = DiagnosesHarmonizer(
-        paths,
-        datasets=[
-            "eICU",
-            "HiRID",
-            "MIMIC3",
-            "MIMIC4",
-            "NWICU",
-            "SICdb",
-            "UMCdb",
-        ],
-    )
+    diagnoses_harmonizer = DiagnosesHarmonizer(paths, datasets=datasets)
 
     # Load OMOP vocabulary files
     print("CLIF - Loading OMOP vocabulary...")
