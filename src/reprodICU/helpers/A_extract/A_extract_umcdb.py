@@ -1439,9 +1439,6 @@ class UMCdbExtractor(UMCdbPaths):
             .rename({"value": "diagnosis", "valueid": "diagnosis_id"})
             .sort(self.icu_stay_id_col, "updatedat", descending=True)
             .with_columns(
-                pl.int_range(pl.len())
-                .over(self.icu_stay_id_col, order_by="updatedat")
-                .alias("rownum"),
                 pl.when(pl.col("itemid").is_in(SURGICAL_ITEMIDS))
                 .then(True)
                 .when(
@@ -1458,13 +1455,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("surgical"),
             )
             .cast({"diagnosis": str, "diagnosis_id": str, "surgical": bool})
-            .group_by(self.icu_stay_id_col, "typeid", "updatedat")
-            .agg(
-                pl.col("diagnosis"),
-                pl.col("diagnosis_id"),
-                pl.col("surgical").first(),
-            )
-            .explode("diagnosis", "diagnosis_id")
             .unique()
             .sort(
                 self.icu_stay_id_col,
@@ -1477,7 +1467,7 @@ class UMCdbExtractor(UMCdbPaths):
             .select(self.icu_stay_id_col, "diagnosis", "surgical")
             .with_columns(
                 pl.col("diagnosis")
-                .replace(APACHE_mapping, default=None)
+                .replace_strict(APACHE_mapping, default=None)
                 .alias(self.admission_diagnosis_col),
                 pl.when(pl.col("surgical").cast(bool, strict=False))
                 .then(pl.lit("Surgical"))
