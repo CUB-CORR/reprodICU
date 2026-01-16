@@ -542,7 +542,7 @@ def SOFA(
         unit="seconds",
     ).with_columns(
         pl.col("Window Relative to T_0").alias("timeframe"),
-        (pl.col("rate_mcg") * pl.col("Drug Duration (windows)")).alias(
+        (pl.col("Drug Rate (fixed units)") * pl.col("Drug Duration (windows)")).alias(
             "time-weighted Rate"
         ),
     )

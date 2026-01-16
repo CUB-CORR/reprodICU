@@ -1000,8 +1000,7 @@ def SOFA2(
                 .mul(SECONDS_IN_1D)
                 .sub("T_0")
                 .truediv(window_size)
-                .ceil   
-                .add(1),
+                .ceil.add(1),
                 step=1,
             )
             .cast(pl.List(float))

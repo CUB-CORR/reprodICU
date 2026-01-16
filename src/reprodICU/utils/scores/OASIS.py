@@ -37,6 +37,9 @@ from ..common import (
     intervention_per_timeframe,
 )
 
+STAY_KEY = "Global ICU Stay ID"
+TIME_KEY = "Time Relative to Admission (seconds)"
+
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
 SECONDS_IN_1W = 7 * SECONDS_IN_1D
@@ -383,8 +386,6 @@ def OASIS(
         )
 
     # Strict original column names
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
     age_col = "Admission Age (years)"
     pre_los_col = "Pre-ICU Length of Stay (days)"
     urgency_col = "Admission Urgency"
