@@ -5,6 +5,7 @@ from .VIS import VIS
 from .EWS import EWS, MEWS, NEWS, NEWS2
 from .LODS import LODS, mLODS, LODS_mortality
 from .APS import APS, APS3
+from .APACHE import APACHE2, APACHE3
 
 __all__ = [
     "SOFA",
@@ -22,4 +23,6 @@ __all__ = [
     "mLODS",
     "APS",
     "APS3",
+    "APACHE2",
+    "APACHE3",
 ]
