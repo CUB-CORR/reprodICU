@@ -111,9 +111,9 @@ Richmond Agitation-Sedation Scale:
   min: -5
   max: 4
 
-##########
-#  LABS  #
-##########
+################
+#  LABS - ABG  #
+################
 Oxygen:
   min: 20
   max: 500
@@ -141,6 +141,87 @@ Hemoglobin:
 Oxygen saturation:
   min: 0
   max: 100
+
+#########################
+#  LABS - ELECTROLYTES  #
+#########################
+Chloride:
+  min: 50
+  max: 150
+
+Potassium:
+  min: 2
+  max: 12
+
+Sodium:
+  min: 100
+  max: 180
+
+#######################
+#  LABS - HEMATOLOGY  #
+#######################
+Hemoglobin:
+  min: 2
+  max: 20
+
+Erythrocyte sedimentation rate:
+  min: 0
+  max: 150
+
+Leukocytes:
+  min: 0
+  max: 300
+
+Neutrophils.band form/leukocytes:
+  min: 0
+  max: 100
+
+Platelets:
+  min: 0
+  max: 1500
+
+######################
+#  LABS - CHEMISTRY  #
+######################
+Albumin:
+  min: 0
+  max: 70
+
+Alanine aminotransferase:
+  min: 0
+  max: 12000
+
+Aspartate aminotransferase:
+  min: 0
+  max: 30000
+
+Bilirubin:
+  min: 0
+  max: 1000
+
+C reactive protein:
+  min: 0
+  max: 600
+
+Creatinine:
+  min: 0
+  max: 17 # 1500 umol/L = 17 mg/dL
+
+Glucose:
+  min: 0
+  max: 1000
+
+INR:
+  min: 0
+  max: 8
+
+Troponin I.cardiac:
+  min: 0
+  max: 15000
+
+Urea nitrogen:
+  min: 0
+  max: 30
 
 ###############
 # RESPIRATORY #
