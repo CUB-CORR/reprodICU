@@ -20,17 +20,21 @@ sf_ratio_col = "SpO2/FiO2 Ratio"
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
         resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
+            pl.coalesce(
+                pl.max_horizontal(
+                    "Oxygen/Total gas setting [Volume Fraction] Ventilator",
+                    "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
+                ),
+                # approx. FiO2 = 0.21 + 0.03 * O2 flow in L/min
+                pl.col("Oxygen gas flow Oxygen delivery system").mul(3).add(21),
             ).alias("FiO2")
         )
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0, 1))
+            pl.when(pl.col("FiO2").is_between(0.21, 1))
             .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
+            .when(pl.col("FiO2").is_between(21, 100))
             .then(pl.col("FiO2"))
             .otherwise(None)
             .alias("FiO2"),
