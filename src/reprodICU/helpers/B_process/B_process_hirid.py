@@ -6,8 +6,10 @@
 
 
 import os
+import sys
 
 import polars as pl
+import time
 
 from ..A_extract.A_extract_hirid import HiRIDExtractor
 from ..helper import GlobalHelpers
@@ -68,34 +70,15 @@ class HiRIDProcessor(HiRIDExtractor):
         )
 
     # region time series
-    def _pivot_timeseries_batch(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """Helper to pivot timeseries batches during batch processing."""
-        timeseries = data.collect().pivot(
-            on="variable",
-            index=self.index_cols,
-            values="value",
-            aggregate_function="mean",
-        )
-
-        # Drop empty rows
-        droplist = list(set(timeseries.columns) - set(self.index_cols))
-        return (
-            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-            .lazy()
-        )
-
     def process_timeseries(self) -> pl.LazyFrame:
         """
         Process non-laboratory time series data.
 
         Steps:
             1. Check for preprocessed non-lab timeseries file; load if available.
-            2. Scan all raw timeseries files: filter to non-lab variables, extract measurements.
-            3. Save extracted data to temporary file before batch pivoting.
-            4. Batch pivot data on variable name to create wide-format dataset.
-            5. Save, sort by index columns, and clean temporary files.
+            2. For each raw timeseries file: filter to non-lab variables, extract and pivot measurements.
+            3. Combine all files into single wide-format dataset.
+            4. Sort by index columns and save.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -104,7 +87,6 @@ class HiRIDProcessor(HiRIDExtractor):
                 - Non-laboratory measurement columns (pivoted from variable).
         """
         ts_path = self.precalc_path + "HiRID_timeseries.parquet"
-        ts_path_unsorted = self.precalc_path + "HiRID_ts.parquet"
 
         if os.path.isfile(ts_path):
             # Load the preprocessed data
@@ -115,32 +97,68 @@ class HiRIDProcessor(HiRIDExtractor):
 
         print("HiRID   - Processing timeseries data...")
 
-        # Process timeseries data
-        (
-            pl.scan_parquet(
-                self.timeseries_path + "*.parquet", parallel="prefiltered"
-            )
-            # Drop the lab values from the timeseries data
-            .filter(~pl.col("variableid").is_between(20000000, 25000000)).pipe(
-                self._extract_timeseries_helper,
-                self.admissiontime,
-                self.length_of_stay,
-            )
-            # Save extracted data before pivoting
-            .sink_parquet(ts_path_unsorted)
-        )
+        # Create an empty DataFrame to store the timeseries data
+        timeseries_processed = pl.LazyFrame()
 
-        # Batch pivot the data
-        batch_process_timeseries(
-            input_file=ts_path_unsorted,
-            output_file=ts_path,
-            tempfiles_path=self.precalc_path,
-            operation="pivot",
-            method=self._pivot_timeseries_batch,
-            id_col=self.icu_stay_id_col,
-            delete_after=True,
-        )
-        os.remove(ts_path_unsorted)
+        # Since each case has its data in only one file, iterating over the files specifically
+        # allows for a more efficient processing of the data.
+        files = os.listdir(self.timeseries_path)
+        total_files = len(files)
+        batch_size = 10
+        total_batches = (total_files + batch_size - 1) // batch_size
+
+        times, cases = [], 0
+        for i in range(0, total_files, batch_size):
+            start = time.time()
+
+            batch_files = files[i : i + batch_size]
+            batch_paths = [self.timeseries_path + f for f in batch_files]
+
+            # Process timeseries data
+            timeseries = (
+                pl.scan_parquet(batch_paths, parallel="prefiltered")
+                # Drop the lab values from the timeseries data
+                .filter(~pl.col("variableid").is_between(20000000, 25000000))
+                .pipe(
+                    self._extract_timeseries_helper,
+                    self.admissiontime,
+                    self.length_of_stay,
+                )
+                # Pivot the timeseries data
+                .collect()
+                .pivot(
+                    on="variable",
+                    index=self.index_cols,
+                    values="value",
+                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+                )
+                .sort(self.index_cols)
+            )
+
+            # Append the data to the DataFrame
+            timeseries_processed = pl.concat(
+                [timeseries_processed, timeseries.lazy()],
+                how="diagonal_relaxed",
+            )
+
+            # Update timing information
+            elapsed = time.time() - start
+            times.append(elapsed)
+            avg = sum(times) / len(times)
+            eta_min = int(avg * (total_batches - (i // batch_size) - 1) / 60 + 0.5) # fmt: skip
+
+            cases += timeseries.select(self.icu_stay_id_col).unique().shape[0]
+
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            print(
+                f"Processing batch {i//batch_size + 1:3.0f} of {total_batches} "
+                f"with {len(batch_files):4.0f} files ({cases:5.0f} cases) "
+                f"(last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
+                end="\r",
+            )
+
+        # Save the preprocessed data
+        timeseries_processed.sink_parquet(ts_path)
 
         # Load the preprocessed data
         return pl.scan_parquet(ts_path).select(
@@ -353,5 +371,6 @@ class HiRIDConverter(UnitConverter):
                 structfield=structfield,
             )
         )
+
 
 # endregion
