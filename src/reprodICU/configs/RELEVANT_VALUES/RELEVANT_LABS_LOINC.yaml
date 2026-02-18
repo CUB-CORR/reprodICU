@@ -144,6 +144,11 @@ Erythrocyte mean corpuscular volume: # MCV
   property: "Entitic volume"
   systems:
     - Red Blood Cells
+Erythrocyte/Blood: # Hematocrit
+  property: "Volume Fraction"
+  systems:
+    - Blood
+    - Blood arterial
 Ferritin:
   property: "Mass Concentration"
   systems:
@@ -175,11 +180,6 @@ Haptoglobin:
   property: "Mass Concentration"
   systems:
     - Serum or Plasma
-Hematocrit:
-  property: "Volume Fraction"
-  systems:
-    - Blood
-    - Blood arterial
 Hemoglobin:
   property: "Mass Concentration"
   systems:

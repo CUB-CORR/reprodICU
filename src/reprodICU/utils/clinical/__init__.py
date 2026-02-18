@@ -18,7 +18,7 @@ from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQU
 from .renal.AKI_KDIGO import AKI_KDIGO
 from .renal.GLOMERULAR_FILTRATION_RATE import ESTIMATED_GFR
 from .renal.URINE_OUTPUT import URINE_OUTPUT
-from .respiratory.ALVEOLAR_ARTERIAL_GRADIENT import ALVEOLAR_ARTERIAL_GRADIENT
+from .respiratory.ALVEOLAR_ARTERIAL_GRADIENT import Aa_GRADIENT
 from .respiratory.ARDS import ARDS
 from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
@@ -47,7 +47,7 @@ __all__ = [
     "ESTIMATED_GFR",
     "URINE_OUTPUT",
     # respiratory
-    "ALVEOLAR_ARTERIAL_GRADIENT",
+    "Aa_GRADIENT",
     "ARDS",
     "MECHANICAL_POWER",
     "STATIC_COMPLIANCE",
@@ -55,5 +55,5 @@ __all__ = [
     "P50",
     "PaO2_FiO2_RATIO",
     "SpO2_FiO2_RATIO",
-    "RESPIRATORY_FAILURE"
+    "RESPIRATORY_FAILURE",
 ]

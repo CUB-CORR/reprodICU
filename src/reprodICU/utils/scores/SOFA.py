@@ -30,9 +30,13 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
@@ -43,8 +47,6 @@ from ..common import (
     get_ventilation,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -396,21 +398,9 @@ def SOFA(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
-    weight_col = "Admission Weight (kg)"
     los_col = "ICU Length of Stay (days)"
 
     # Vitals
@@ -433,8 +423,6 @@ def SOFA(
     # Meds
     meds = medications.lazy()
     drug_ingredient_col = "Drug Ingredient"
-    drug_rate_col = "Drug Rate"
-    drug_rate_unit_col = "Drug Rate Unit"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
     drug_end_col = "Drug End Relative to Admission (seconds)"
 
@@ -449,6 +437,9 @@ def SOFA(
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # Ventilation is handled in the respiratory section using start/end intervals
 
@@ -527,64 +518,10 @@ def SOFA(
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe
-    # Normalize to mcg/kg/min
-    # Join patient weight
-    meds_norm = (
-        meds.join(
-            patient_information.select(STAY_KEY, weight_col),
-            on=STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            # convert absolute doses to per-kg when needed
-            pl.when(
-                pl.col(drug_rate_unit_col).is_in(
-                    ["mcg/hr", "mcg/min", "mg/hr", "mg/min"]
-                )
-            )
-            .then(pl.col(drug_rate_col) / pl.col(weight_col))
-            .otherwise(pl.col(drug_rate_col))
-            .alias("rate_perkg"),
-            # update units to reflect per-kg when we converted
-            pl.when(pl.col(drug_rate_unit_col) == "mcg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mcg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .when(pl.col(drug_rate_unit_col) == "mg/hr")
-            .then(pl.lit("mg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mg/min")
-            .then(pl.lit("mg/kg/min"))
-            .otherwise(pl.col(drug_rate_unit_col))
-            .alias("unit_perkg"),
-        )
-        .with_columns(
-            # convert mg to mcg
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.col("rate_perkg") * 1000)
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.col("rate_perkg") * 1000)
-            .otherwise(pl.col("rate_perkg"))
-            .alias("rate_mcg"),
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .otherwise(pl.col("unit_perkg"))
-            .alias("unit_mcg"),
-        )
-        .with_columns(
-            # convert /hr to /min
-            pl.when(pl.col("unit_mcg") == "mcg/kg/hr")
-            .then(pl.col("rate_mcg") / 60)
-            .otherwise(pl.col("rate_mcg"))
-            .alias("rate_final"),
-            pl.lit("mcg/kg/min").alias("unit_final"),
-        )
-    )
-
     # Attribute to timeframe using FIX_WINDOW_BORDERS (window-based attribution like VIS.py)
     meds_tf = (
-        meds_norm.filter(pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS))
+        meds.filter(pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS))
+        .pipe(ALIGNED_UNITS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(drug_end_col) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(
@@ -640,28 +577,31 @@ def SOFA(
     )
 
     # region urine output (refactored to call URINE_OUTPUT)
-    uo_base = URINE_OUTPUT(
-        patient_information=patient_information,
-        timeseries_inout=timeseries_inout,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
-        t_1=t_1,
-        window_size=window_size,
-    )
-    uo_tf = uo_base.with_columns(
-        pl.sum("uo_interval_ml")
-        .over(
-            partition_by=[
-                STAY_KEY,
-                (pl.col("timeframe") * window_size)
-                .floordiv(SECONDS_IN_1D)
-                .alias("uo_day_index"),
-            ]
+    uo_tf = (
+        URINE_OUTPUT(
+            patient_information=patient_information,
+            timeseries_inout=timeseries_inout,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+            t_1=t_1,
+            window_size=window_size,
         )
-        .alias("uo_daily_ml")
-    ).with_columns(
-        _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
-        pl.col("timeframe").cast(float),
+        .with_columns(
+            pl.sum("uo_interval_ml")
+            .over(
+                partition_by=[
+                    STAY_KEY,
+                    (pl.col("timeframe") * window_size)
+                    .floordiv(SECONDS_IN_1D)
+                    .alias("uo_day_index"),
+                ]
+            )
+            .alias("uo_daily_ml")
+        )
+        .with_columns(
+            _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
+            pl.col("timeframe").cast(float),
+        )
     )
 
     # region union of all (stay,timeframe)

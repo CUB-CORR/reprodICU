@@ -9,7 +9,7 @@ Output columns per row:
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 
-Sources
+SOURCES
 -------
 - Belletti, A., Lerose, C. C., Zangrillo, A., & Landoni, G. (2021).
   Vasoactive-inotropic score: Evolution, clinical utility, and pitfalls.
@@ -24,10 +24,14 @@ import polars as pl
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..common import (
     _build_t0,
+    _get_timeframe_name,
+    _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+
+STAY_KEY = "Global ICU Stay ID"
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
@@ -114,20 +118,6 @@ def VIS(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
-    STAY_KEY = "Global ICU Stay ID"
-    weight_col = "Admission Weight (kg)"
-
     VASOPRESSORS_INOTROPES = [
         "angiotensin II",  # 0.25 * dose in ng/kg/min
         "dobutamine",  # dose in mcg/kg/min
@@ -150,6 +140,9 @@ def VIS(
 
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # Select relevant columns and build T_0
     medications = (
@@ -250,11 +243,16 @@ def VIS(
             pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
             pl.col("T_0").first(),
         )
+        .filter(
+            _optional_time_bounds_filter(
+                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
+            )
+        )
         .sort("Global ICU Stay ID", "Hour Relative to T_0")
         .select(
             "Global ICU Stay ID",
             "T_0",
-            "Hour Relative to T_0",
+            pl.col("Hour Relative to T_0").alias(timeframe_name),
             "Vasoactive-Inotropic Score (VIS)",
         )
     )

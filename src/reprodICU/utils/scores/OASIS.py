@@ -11,7 +11,7 @@ Output columns per row:
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 Worst-within-window aggregation is applied per component.
 
-Sources
+SOURCES
 -------
 - Johnson AE, Kramer AA, Clifford GD.
   A new severity of illness scale using a subset of Acute Physiology And Chronic Health Evaluation data elements shows comparable predictive accuracy.
@@ -24,13 +24,15 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     get_patient_information,
-    get_timeseries_vitals,
     get_timeseries_intakeoutput,
+    get_timeseries_vitals,
     get_ventilation,
 )
 
@@ -379,17 +381,6 @@ def OASIS(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -403,7 +394,6 @@ def OASIS(
     map_col = "Mean arterial pressure"
     rr_col = "Respiratory rate"
     temp_col = "Temperature"
-    uo_col = "Urine output"
 
     vent_start_col = "Ventilation Start Relative to Admission (seconds)"
     vent_end_col = "Ventilation End Relative to Admission (seconds)"
@@ -417,6 +407,9 @@ def OASIS(
 
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # region patient-level scores (pre-ICU LOS, age, elective surgery)
     patient_scores = (
@@ -522,16 +515,17 @@ def OASIS(
 
     # region urine output (daily totals)
     urine_scores = (
-        timeseries_inout.select(STAY_KEY, TIME_KEY, uo_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
-        .group_by(STAY_KEY, "timeframe")
-        .agg(pl.sum(uo_col).alias("uo_total"))
+        URINE_OUTPUT(
+            patient_information=patient_information,
+            timeseries_inout=timeseries_inout,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+            window_size=window_size,
+        )
         .with_columns(
-            _urine_output_points(pl.col("uo_total")).alias(
-                "urine_output_points"
-            )
+            _urine_output_points(
+                pl.col("uo_interval_ml") * (SECONDS_IN_1D / window_size)
+            ).alias("urine_output_points")
         )
         .select(STAY_KEY, "timeframe", "urine_output_points")
     )

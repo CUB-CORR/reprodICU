@@ -180,8 +180,8 @@ def PAO2(
 # endregion PAO2
 
 
-# region ALVEOLAR_ARTERIAL_GRADIENT
-def ALVEOLAR_ARTERIAL_GRADIENT(
+# region Aa_GRADIENT
+def Aa_GRADIENT(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
@@ -278,7 +278,7 @@ def ALVEOLAR_ARTERIAL_GRADIENT(
     return Aa_gradient
 
 
-# endregion ALVEOLAR_ARTERIAL_GRADIENT
+# endregion Aa_GRADIENT
 
 
-___all__ = ["PAO2", "ALVEOLAR_ARTERIAL_GRADIENT"]
+___all__ = ["PAO2", "Aa_GRADIENT"]

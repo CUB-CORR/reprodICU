@@ -58,7 +58,7 @@ glucose - CSF: Glucose [Mass/volume] in Cerebral spinal fluid
 glucose: Glucose [Mass/volume] in Blood # glucose
 haptoglobin: Haptoglobin [Mass/volume] in Serum or Plasma # haptoglobin
 HCO3: Bicarbonate [Moles/volume] in Blood # bicarbonate
-Hct: Hematocrit [Volume Fraction] of Blood # hematocrit
+Hct: Hematocrit [Volume Fraction] of Blood by Automated count # hematocrit
 HDL: Cholesterol in HDL [Mass/volume] in Serum or Plasma # cholesterol_HDL
 Hgb: Hemoglobin [Mass/volume] in Blood # hemoglobin
 HIV 1&2 AB:

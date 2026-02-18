@@ -694,7 +694,8 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LOINC_long").replace(
                     {  # NOTE: fixing wrong unit
                         "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]"
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                        "Hematocrit [Volume Fraction] of Arterial blood": "Hematocrit [Volume Fraction] of Blood by Automated count"
                     }
                 )
             )
