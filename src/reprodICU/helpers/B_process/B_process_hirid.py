@@ -5,6 +5,7 @@
 # processing and harmonization.
 
 
+import glob
 import os
 import sys
 
@@ -97,9 +98,6 @@ class HiRIDProcessor(HiRIDExtractor):
 
         print("HiRID   - Processing timeseries data...")
 
-        # Create an empty DataFrame to store the timeseries data
-        timeseries_processed = pl.LazyFrame()
-
         # Since each case has its data in only one file, iterating over the files specifically
         # allows for a more efficient processing of the data.
         files = os.listdir(self.timeseries_path)
@@ -108,8 +106,10 @@ class HiRIDProcessor(HiRIDExtractor):
         total_batches = (total_files + batch_size - 1) // batch_size
 
         times, cases = [], 0
+        batch_id = "HiRID_ts_batch"
         for i in range(0, total_files, batch_size):
             start = time.time()
+            index = str(i // batch_size).zfill(4)
 
             batch_files = files[i : i + batch_size]
             batch_paths = [self.timeseries_path + f for f in batch_files]
@@ -124,21 +124,21 @@ class HiRIDProcessor(HiRIDExtractor):
                     self.admissiontime,
                     self.length_of_stay,
                 )
-                # Pivot the timeseries data
                 .collect()
-                .pivot(
+            )
+
+            (
+                # Pivot the timeseries data
+                timeseries.pivot(
                     on="variable",
                     index=self.index_cols,
                     values="value",
                     aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
                 )
                 .sort(self.index_cols)
-            )
-
-            # Append the data to the DataFrame
-            timeseries_processed = pl.concat(
-                [timeseries_processed, timeseries.lazy()],
-                how="diagonal_relaxed",
+                # Sink each intermittent batch result to a parquet
+                .lazy()
+                .sink_parquet(self.precalc_path + f"{batch_id}_{index}.parquet")
             )
 
             # Update timing information
@@ -157,8 +157,18 @@ class HiRIDProcessor(HiRIDExtractor):
                 end="\r",
             )
 
-        # Save the preprocessed data
-        timeseries_processed.sink_parquet(ts_path)
+        print("\nBatch processing complete. Concatenating results...")
+
+        # Concatenate and sink all processed frames
+        temp_files = sorted(
+            glob.glob(self.precalc_path + f"{batch_id}_*.parquet")
+        )
+        batch_frames = [pl.scan_parquet(file) for file in temp_files]
+        pl.concat(batch_frames, how="diagonal_relaxed").sink_parquet(ts_path)
+
+        # Delete the temporary files
+        for file in temp_files:
+            os.remove(file)
 
         # Load the preprocessed data
         return pl.scan_parquet(ts_path).select(
