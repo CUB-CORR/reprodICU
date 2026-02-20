@@ -163,7 +163,7 @@ def PAO2(
         .select(STAY_KEY, TIME_KEY, PAO2_col)
     ) # fmt: skip
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         PAO2 = (
             PAO2.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(
@@ -256,7 +256,8 @@ def Aa_GRADIENT(
             ).drop_nulls(),
             on=[STAY_KEY, TIME_KEY],
             how="inner",
-        ).with_columns(
+        )
+        .with_columns(
             pl.col(PAO2_col)
             .sub(pl.col("Oxygen in Arterial blood"))
             .alias(Aa_gradient_col)
@@ -264,7 +265,7 @@ def Aa_GRADIENT(
         .select(STAY_KEY, TIME_KEY, Aa_gradient_col)
     )
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         Aa_gradient = (
             Aa_gradient.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(
