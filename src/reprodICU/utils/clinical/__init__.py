@@ -15,6 +15,7 @@ from .IDEAL_BODY_WEIGHT import (
 from .cardiovascular.SCAI import SCAI
 from .gastrointestinal.MELD import MELD
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
+from .pharmocological.HYDROCORTISONE_EQUIVALENT_DOSAGE import HYDROCORTISONE_EQUIVALENT_DOSAGE  # fmt: skip
 from .renal.AKI_KDIGO import AKI_KDIGO
 from .renal.GLOMERULAR_FILTRATION_RATE import ESTIMATED_GFR
 from .renal.URINE_OUTPUT import URINE_OUTPUT
@@ -42,6 +43,7 @@ __all__ = [
     "MELD",
     # pharmacological
     "NOREPINEPHRINE_EQUIVALENT_DOSAGE",
+    "HYDROCORTISONE_EQUIVALENT_DOSAGE",
     # renal
     "AKI_KDIGO",
     "ESTIMATED_GFR",
