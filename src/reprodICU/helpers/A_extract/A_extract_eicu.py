@@ -309,81 +309,16 @@ class EICUExtractor(EICUPaths):
                 - {admission_urgency_col}: Admission urgency status.
                 - {admission_diagnosis_col}: Admission diagnosis text.
         """
+        APACHE_mapping = self.helpers.load_mapping(self.apache_mapping_path)
+
         return (
             pl.scan_csv(self.admissionDx_path)
             .select("patientunitstayid", "admitdxpath", "admitdxname")
             .rename({"patientunitstayid": self.icu_stay_id_col})
             .with_columns(
                 # Admission Diagnosis
-                pl.when(
-                    pl.col("admitdxpath").str.starts_with(
-                        "admission diagnosis|All Diagnosis|"
-                    )
-                )
-                .then(
-                    pl.col("admitdxpath")
-                    .str.replace("admission diagnosis\|All Diagnosis\|", "")
-                    .str.replace("\|Diagnosis\|", " - ")
-                    .str.replace_all("\|", " - ")
-                    .str.replace_all(" ,", ",")
-                    .str.replace_all(",", ", ")
-                    .str.replace_all("  ", " ")
-                    # clean comments
-                    .str.replace(
-                        " \(angina interferes w/quality of life or meds are tolerated poorly\)",
-                        "",
-                    )
-                    .str.replace(
-                        " \(with or without respiratory arrest; for respiratory arrest see Respiratory System\)",
-                        "",
-                    )
-                    .str.replace(
-                        " \(for gastrointestinal bleeding GI-see GI system\) \(for trauma see Trauma\)",
-                        "",
-                    )
-                    .str.replace(
-                        " \(for cerebrovascular accident-see Neurological System\)",
-                        "",
-                    )
-                    .str.replace(
-                        ", Do not include shock states",
-                        "",
-                    )
-                    .str.replace(
-                        " \(for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV\)",
-                        "",
-                    )
-                    .str.replace(
-                        " \(excluding vascular shunting-see surgery for portosystemic shunt\)",
-                        "",
-                    )
-                    .str.replace(
-                        " \(if related to trauma, see Trauma\)",
-                        "",
-                    )
-                    .str.replace(
-                        "-no structural brain disease",
-                        "",
-                    )
-                    .str.replace(
-                        ", for fractures due to trauma see Trauma",
-                        "",
-                    )
-                    # harmonize comments
-                    .str.replace("Hematoma subdural", "Hematoma, subdural")
-                    .str.replace("Hematoma-epidural", "Hematoma, epidural")
-                    .str.replace_all("i.e.,", "i.e.", literal=True)
-                    .str.replace_all("i.e.", "i.e. ", literal=True)
-                    .str.replace_all("i.e.  ", "i.e. ", literal=True)
-                    .str.replace("ileal-conduit", "ileal conduit")
-                    .str.replace(
-                        "Pneumocystic pneumonia", "Pneumocystis pneumonia"
-                    )
-                    .str.replace("surgery,surgery", "surgery, surgery")
-                    .str.replace("; surgery", ", surgery")
-                    .str.replace("for;", "for")
-                )
-                .otherwise(None)
+                pl.col("admitdxpath")
+                .replace_strict(APACHE_mapping, default=None)
                 .alias(self.admission_diagnosis_col),
             )
             .with_columns(

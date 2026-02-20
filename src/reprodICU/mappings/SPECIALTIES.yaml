@@ -21,13 +21,13 @@
 # - Pulmonary Disease
 # - Rheumatology
 Internal Medicine: # 38004456
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - MED # Medical - general service for internal medicine
   # UMCdb
   - Inwendig # Internal Medicine
 Cardiology: # 38004451
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - CMED # Cardiac Medical - for non-surgical cardiac related admissions
   # SICdb
@@ -36,17 +36,17 @@ Cardiology: # 38004451
   # UMCdb
   - Cardiologie # Cardiology
 Endocrinology: # 38004485
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # SICdb
   - Endokrinologie # Endocrinology
 Gastroenterology: # 38004455
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # SICdb
   - 1. Medizin # Gastroenterology
   # UMCdb
   - Maag-,Darm-,Leverziekten # Gastroenterology
 Hematology: # 38004501
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # UMCdb
   - Hematologie # Hematology
 Hematology / Oncology: # 38004502 # subsumed under Medical Oncology AND Hematology
@@ -61,7 +61,7 @@ Nephrology: # 38004479
   # UMCdb
   - Nefrologie # Nephrology
 Pulmonary Disease: # 38004472
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # SICdb
   - Pneumologie # Pulmonology
   # UMCdb
@@ -84,7 +84,7 @@ Rheumatology: # 38004491
 # - Thoracic Surgery
 # - Trauma Surgery
 Cardiac Surgery: # 38004497
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - CSURG # Cardiac Surgery - for surgical cardiac admissions
   # SICdb
@@ -92,7 +92,7 @@ Cardiac Surgery: # 38004497
   # UMCdb
   - Cardiochirurgie # Cardiac Surgery
 General Surgery: # 38004447
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - SURG # Surgical - general surgical service not classified elsewhere
   # SICdb
@@ -127,12 +127,13 @@ Surgical Oncology: # 38004508
   # UMCdb
   - Heelkunde Oncologie # Oncological Surgery
 Thoracic Surgery: # 38004473
+  # HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - TSURG # Thoracic Surgical - surgery on the thorax, located between the neck and the abdomen
   # UMCdb
   - Heelkunde Longen/Oncologie # Pulmo-oncological Surgery
 Trauma Surgery: # 38004016 # NUCC, not Medicare Specialty
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - TRAUM # Trauma - injury or damage caused by physical harm from an external source
   # SICdb
@@ -153,7 +154,7 @@ Vascular Surgery: # 38004496
 # Inside the Head
 #######################################
 Neurosurgery:
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - NSURG # Neurologic Surgical - surgical, relating to the brain
   # SICdb
@@ -161,7 +162,7 @@ Neurosurgery:
   # UMCdb
   - Neurochirurgie # Neurosurgery
 Neurology:
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - NMED # Neurologic Medical - non-surgical, relating to the brain
   # SICdb
@@ -179,6 +180,7 @@ Psychiatry: # 38004469
 #  Women's and Children's Health
 #######################################
 Gynecology: # 38003902 # NUCC, not Medicare Specialty
+  # HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - GYN # Gynecological - female reproductive systems and breasts
   # SICdb
@@ -232,7 +234,7 @@ Otolaryngology: # 38004449
   # UMCdb
   - Keel, Neus & Oorarts # Ear, Nose & Throat
 Urology: # 38004474
-  # eICU -> same name
+  # eICU / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - GU # Genitourinary - reproductive organs/urinary system
   # SICdb / UMCdb

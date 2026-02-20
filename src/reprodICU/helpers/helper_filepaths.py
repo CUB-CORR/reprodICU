@@ -170,6 +170,7 @@ class EICUPaths(GlobalVars):
 
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
+        self.apache_mapping_path = self.eICU_mapping_path + "eicu_APACHE.yaml"
         self.careprovider_mapping_path = (
             self.eICU_mapping_path + "eicu_carePlanCareProvider_specialty.yaml"
         )
