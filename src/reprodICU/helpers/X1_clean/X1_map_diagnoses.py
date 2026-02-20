@@ -71,8 +71,8 @@ class DiagnosesMapper(GlobalVars):
                 pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
                 .then(pl.col(self.diagnosis_icd_code_col))
                 .otherwise(
-                    pl.col(self.diagnosis_icd_code_col).replace(
-                        ICD10_TO_ICD9_MAPPING
+                    pl.col(self.diagnosis_icd_code_col).replace_strict(
+                        ICD10_TO_ICD9_MAPPING, default=None
                     )
                 )
                 .alias(self.diagnosis_icd9_code_col),
@@ -80,8 +80,8 @@ class DiagnosesMapper(GlobalVars):
                 pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
                 .then(pl.col(self.diagnosis_icd_code_col))
                 .otherwise(
-                    pl.col(self.diagnosis_icd_code_col).replace(
-                        ICD9_TO_ICD10_MAPPING
+                    pl.col(self.diagnosis_icd_code_col).replace_strict(
+                        ICD9_TO_ICD10_MAPPING, default=None
                     )
                 )
                 .replace("NoDx", None)

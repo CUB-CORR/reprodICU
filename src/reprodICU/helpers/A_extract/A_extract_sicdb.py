@@ -587,12 +587,13 @@ class SICdbExtractor(SICdbPaths):
 
         return (
             pl.scan_csv(self.cases_path)
-            .select("CaseID", "PatientID", "ICD10Main")
+            .select("CaseID", "PatientID", "ICD10Main", "ICD10MainText")
             .rename(
                 {
                     "CaseID": self.icu_stay_id_col,
                     "PatientID": self.person_id_col,
                     "ICD10Main": self.diagnosis_icd_code_col,
+                    "ICD10MainText": self.diagnosis_description_col,
                 }
             )
             .with_columns(

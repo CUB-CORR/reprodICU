@@ -422,10 +422,6 @@ class EICUExtractor(EICUPaths):
             .with_columns(
                 pl.col("labname")
                 .replace_strict(lab_names_mapping, default=None)
-                # "/100 leukocytes" obselete in v20250827
-                # -> now without "/100", kept for compatibility and conversion
-                .str.replace("/100 leukocytes", "/Leukocytes")
-                .str.replace("/100 erythrocytes", "/Erythrocytes")
             )
         ) # fmt: skip
 
