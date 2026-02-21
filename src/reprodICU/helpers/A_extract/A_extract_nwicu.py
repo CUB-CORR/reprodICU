@@ -493,6 +493,7 @@ class NWICUExtractor(NWICUPaths):
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
             .drop("charttime", "intime")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("offset")
                 < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),

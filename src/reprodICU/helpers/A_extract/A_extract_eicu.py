@@ -439,12 +439,14 @@ class EICUExtractor(EICUPaths):
                 .alias("LOINC_component"),
                 pl.col("labname")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("labname")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("labname").replace_strict(

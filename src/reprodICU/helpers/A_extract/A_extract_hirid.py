@@ -490,12 +490,14 @@ class HiRIDExtractor(HiRIDPaths):
                 .alias("LOINC_component"),
                 pl.col("variable")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("variable")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("variable").replace_strict(

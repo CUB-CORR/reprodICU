@@ -563,12 +563,14 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("LOINC_component"),
                 pl.col("item")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("item")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("item").replace_strict(
@@ -584,16 +586,6 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .alias("LOINC_code"),
             )
-            .with_columns(
-                pl.col("LOINC_component")
-                .replace_strict(
-                    self.relevant_lab_LOINC_systems,
-                    return_dtype=pl.List(str),
-                    default=None,
-                )
-                .alias("relevant_LOINC_systems")
-            )
-            .lazy()
         )
 
         return (
@@ -606,7 +598,13 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # Filter for systems of interest
             .filter(
-                pl.col("LOINC_system").is_in(pl.col("relevant_LOINC_systems"))
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
             )
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("item"))
@@ -1080,30 +1078,24 @@ class UMCdbExtractor(UMCdbPaths):
             .join(intimes, on=self.icu_stay_id_col)
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (pl.col(self.drug_start_col) < pl.col("outtime"))
-                & (
-                    pl.col(self.drug_end_col)
-                    > (
-                        pl.col("intime")
-                        - pl.duration(
-                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).dt.total_milliseconds()
-                    )
-                )
+                pl.col(self.drug_start_col) < pl.col("outtime"),
+                pl.col(self.drug_end_col)
+                > pl.col("intime")
+                - pl.duration(
+                    days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_milliseconds(),
             )
             .with_columns(
                 # Calculate drug start times relative to ICU admission
                 pl.duration(
-                    milliseconds=(
-                        pl.col(self.drug_start_col) - pl.col("intime")
-                    )
+                    milliseconds=pl.col(self.drug_start_col) - pl.col("intime")
                 )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_start_col),
                 # Calculate drug end times relative to ICU admission
                 pl.duration(
-                    milliseconds=(pl.col(self.drug_end_col) - pl.col("intime"))
+                    milliseconds=pl.col(self.drug_end_col) - pl.col("intime")
                 )
                 .dt.total_seconds()
                 .cast(float)
@@ -1201,24 +1193,20 @@ class UMCdbExtractor(UMCdbPaths):
             .join(intimes, on=self.icu_stay_id_col, how="left")
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (pl.col("start") < pl.col("outtime"))
-                & (
-                    pl.col("start")
-                    > (
-                        pl.col("intime")
-                        - pl.duration(
-                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).dt.total_milliseconds()
-                    )
-                )
+                pl.col("start") < pl.col("outtime"),
+                pl.col("start")
+                > pl.col("intime")
+                - pl.duration(
+                    days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_milliseconds(),
             )
             .with_columns(
                 # Calculate procedure start / end times relative to ICU admission
-                pl.duration(milliseconds=(pl.col("start") - pl.col("intime")))
+                pl.duration(milliseconds=pl.col("start") - pl.col("intime"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.procedure_start_col),
-                pl.duration(milliseconds=(pl.col("stop") - pl.col("intime")))
+                pl.duration(milliseconds=pl.col("stop") - pl.col("intime"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.procedure_end_col),

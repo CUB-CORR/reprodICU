@@ -653,15 +653,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
             .drop("charttime", "intime")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (
-                    pl.col("offset")
-                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col("offset")
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
-                )
+                pl.col("offset")
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
+                pl.col("offset")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
             .with_columns(
                 pl.col("offset")
@@ -871,12 +868,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .alias("LOINC_component"),
                 pl.col("label")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("label")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("label").replace_strict(
