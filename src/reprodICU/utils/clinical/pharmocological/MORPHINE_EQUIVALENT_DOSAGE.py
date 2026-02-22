@@ -119,79 +119,98 @@ def MORPHINE_EQUIVALENT_DOSAGE(
     # Convert to Morphine Equivalent Amount
     return medications.with_columns(
         pl.when(
-            (pl.col("Drug Ingredient") == "morphine") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "morphine",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 25)
         .when(
-            (pl.col("Drug Ingredient") == "morphine") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "morphine",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 10)
         .when(
-            (pl.col("Drug Ingredient") == "buprenorphine") & (pl.col("Drug Administration Route") == "sublingual")
+            pl.col("Drug Ingredient") == "buprenorphine",
+            pl.col("Drug Administration Route") == "sublingual"
         )
         .then(pl.col("Drug Amount (mg)") / 0.4)
         .when(
-            (pl.col("Drug Ingredient") == "buprenorphine") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "buprenorphine",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 0.3)
         .when(
-            (pl.col("Drug Ingredient") == "codeine") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "codeine",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 200)
         .when(
-            (pl.col("Drug Ingredient") == "codeine") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "codeine",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 100)
         .when(
-            (pl.col("Drug Ingredient") == "fentanyl") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "fentanyl",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 0.15)
         .when(
-            (pl.col("Drug Ingredient") == "hydrocodone") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "hydrocodone",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 25)
         .when(
-            (pl.col("Drug Ingredient") == "hydromorphone") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "hydromorphone",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 5)
         .when(
-            (pl.col("Drug Ingredient") == "hydromorphone") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "hydromorphone",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 2)
         .when(
-            (pl.col("Drug Ingredient") == "meperidine") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "meperidine",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 300)
         .when(
-            (pl.col("Drug Ingredient") == "meperidine") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "meperidine",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 100)
         .when(
-            (pl.col("Drug Ingredient") == "oxycodone") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "oxycodone",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 20)
         .when(
-            (pl.col("Drug Ingredient") == "oxycodone") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "oxycodone",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 10)
         .when(
-            (pl.col("Drug Ingredient") == "oxymorphone") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "oxymorphone",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 10)
         .when(
-            (pl.col("Drug Ingredient") == "oxymorphone") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "oxymorphone",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 1)
         .when(
-            (pl.col("Drug Ingredient") == "tapentadol") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "tapentadol",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 100)
         .when(
-            (pl.col("Drug Ingredient") == "tramadol") & (pl.col("Drug Administration Route") == "oral")
+            pl.col("Drug Ingredient") == "tramadol",
+            pl.col("Drug Administration Route") == "oral"
         )
         .then(pl.col("Drug Amount (mg)") / 120)
         .when(
-            (pl.col("Drug Ingredient") == "tramadol") & (pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"]))
+            pl.col("Drug Ingredient") == "tramadol",
+            pl.col("Drug Administration Route").is_in(["intravenous", "parenteral", "subcutaneous"])
         )
         .then(pl.col("Drug Amount (mg)") / 100)
         .otherwise(None)

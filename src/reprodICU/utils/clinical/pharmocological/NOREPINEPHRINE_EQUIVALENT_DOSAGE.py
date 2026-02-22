@@ -21,14 +21,25 @@ from typing import Optional
 
 import polars as pl
 
+from ...common import get_medications, get_patient_information
 from .ALIGNED_UNITS import ALIGNED_UNITS
-from ...common import (
-    get_medications,
-    get_patient_information,
-)
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
+
+VASOPRESSORS_INOTROPES = [
+    "angiotensin II",  # 0.0025 * dose in ng/kg/min
+    "dopamine",  # 1/100 * dose in mcg/kg/min
+    "epinephrine",  # 1 * dose in mcg/kg/min
+    "hydroxocobalamin",  # 0.02 * dose in g
+    "metaraminol",  # 1/8 * dose in mcg/kg/min
+    "methylene blue",  # 0.2 * dose in mg/kg/h
+    "midodrine",  # 0.4 * dose in mcg/kg/min
+    "norepinephrine",  # 1 * dose in mcg/kg/min
+    "phenylephrine",  # 100 * dose in mcg/kg/min
+    "terlipressin",  # 10 * dose in mcg/h
+    "vasopressin (USP)",  # 2.5 * dose in units/kg
+]
 
 
 def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
@@ -90,20 +101,6 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    VASOPRESSORS_INOTROPES = [
-        "angiotensin II",  # 0.0025 * dose in ng/kg/min
-        "dopamine",  # 1/100 * dose in mcg/kg/min
-        "epinephrine",  # 1 * dose in mcg/kg/min
-        "hydroxocobalamin",  # 0.02 * dose in g
-        "metaraminol",  # 1/8 * dose in mcg/kg/min
-        "methylene blue",  # 0.2 * dose in mg/kg/h
-        "midodrine",  # 0.4 * dose in mcg/kg/min
-        "norepinephrine",  # 1 * dose in mcg/kg/min
-        "phenylephrine",  # 100 * dose in mcg/kg/min
-        "terlipressin",  # 10 * dose in mcg/h
-        "vasopressin (USP)",  # 2.5 * dose in units/kg/min
-    ]
-
     # Base frames
     patient_information = patient_information.lazy()
     medications = medications.lazy()
@@ -162,7 +159,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
         .then(pl.col("Drug Rate (fixed units)") * 1)
         .when(
             pl.col("Drug Ingredient") == "vasopressin (USP)",
-            pl.col("Drug Rate Unit (fixed units)") == "U/kg/min",
+            pl.col("Drug Rate Unit (fixed units)") == "U/min",
         )
         .then(pl.col("Drug Rate (fixed units)") * 2.5)
         .otherwise(None)
