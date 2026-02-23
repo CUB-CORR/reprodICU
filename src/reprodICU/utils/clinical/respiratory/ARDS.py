@@ -202,6 +202,7 @@ def RESPIRATORY_CRITERION(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
+    pf_ratio_only: bool = False,
 ) -> pl.LazyFrame:
     """
     Identify periods meeting respiratory criteria:
@@ -226,6 +227,8 @@ def RESPIRATORY_CRITERION(
             Ignored when t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        pf_ratio_only : bool, optional
+            If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False.
 
     Returns
     -------
@@ -315,7 +318,6 @@ def RESPIRATORY_CRITERION(
     INVASIVE_O2_RATIOS = O2_RATIOS(fio2_type="invasive")
     NONINVASIVE_O2_RATIOS = O2_RATIOS(fio2_type="non-invasive")
 
-
     # region ventilation
     # --------------------------------------------------------------------------
     VENTILATION = (
@@ -389,7 +391,11 @@ def RESPIRATORY_CRITERION(
         .join(PEEP, on=[STAY_KEY, TIME_KEY], how="left")
         .filter(
             (pl.col("PaO2/FiO2 Ratio") <= 300)
-            | (pl.col("SpO2/FiO2 Ratio") <= 315),
+            | (
+                pl.col("SpO2/FiO2 Ratio") <= 315
+                if not pf_ratio_only
+                else pl.lit(True)
+            ),
             pl.col("PEEP") >= 5,
         )
     )
@@ -420,6 +426,7 @@ def ARDS(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
+    pf_ratio_only: bool = False,
     definition_source: Literal["Qian", "Neto", "Pensier", "any"] = "Qian",
 ) -> pl.LazyFrame:
     """
@@ -450,6 +457,8 @@ def ARDS(
             Ignored when t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        pf_ratio_only : bool, optional
+            If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False
         definition_source : str, optional
             Choice of definition for detecting bilateral infiltrates in chest
             imaging reports. Can be 'Qian', 'Neto', 'Pensier', or 'any'.
@@ -581,6 +590,7 @@ def ARDS(
         vent=vent,
         t_0=t_0,
         t_0_per_stay=t_0_per_stay,
+        pf_ratio_only=pf_ratio_only,
     )
 
     # region ARDS cohort
