@@ -48,6 +48,7 @@ drug_mixture_id_col: Global Drug Mixture ID
 drug_mixture_admin_id_col: Global Drug Mixture Administration ID
 drug_name_col: Drug Name # drug_name
 drug_name_OMOP_col: Drug Name (OMOP)
+drug_code_col: Drug Code (HICL / NDC) # drug_code
 drug_ingredient_col: Drug Ingredient # drug_ingredient
 drug_admin_route_col: Drug Administration Route # drug_administration_route
 drug_continuous_col: Drug is Continuous Infusion

@@ -1955,13 +1955,16 @@ class MIMIC3Extractor(MIMIC3Paths):
             # NOTE: dirty, but necessary to join with inputevents
             .rename({"STARTDATE": "STARTTIME", "ENDDATE": "ENDTIME"})
             .with_columns(
+                pl.col("NDC").cast(int).alias(self.drug_code_col),
                 pl.lit("prescribed")
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
+                # Map NDC codes to ingredients and drug names
                 pl.when(pl.col("NDC") != 0)
                 .then(
                     pl.col("NDC").replace_strict(
-                        ndc_to_ingredient, default=None
+                        ndc_to_ingredient,
+                        default=None,
                     )
                 )
                 .otherwise(
@@ -1973,7 +1976,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.drug_ingredient_col),
                 pl.when(pl.col("NDC") != 0)
                 .then(
-                    pl.col("NDC").replace_strict(ndc_to_drugname, default=None)
+                    pl.col("NDC").replace_strict(
+                        ndc_to_drugname,
+                        default=None,
+                    )
                 )
                 .otherwise(
                     pl.col(self.drug_name_col).replace_strict(

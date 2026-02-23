@@ -1197,6 +1197,8 @@ class EICUExtractor(EICUPaths):
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
         # admissiondrug = None
 
+        # region INFUSIONDRUG
+        ########################################################################
         # NOTE: a lot of calcalations can be done here
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/infusiondrug/
         infusiondrug = (
@@ -1370,13 +1372,17 @@ class EICUExtractor(EICUPaths):
             )
         )
 
+        # region MEDICATION
+        ########################################################################
         medication = (
             pl.scan_csv(self.medication_path)
             .select(
                 "patientunitstayid",
+                "medicationid",
                 "drugstartoffset",
                 "drugordercancelled",
                 "drugname",
+                "drughiclseqno",
                 "dosage",
                 "drugstopoffset",
                 "routeadmin",
@@ -1385,10 +1391,11 @@ class EICUExtractor(EICUPaths):
             .rename(
                 {
                     "patientunitstayid": self.icu_stay_id_col,
+                    "medicationid": self.drug_mixture_id_col,
                     "drugstartoffset": self.drug_start_col,
                     "drugordercancelled": self.drug_admin_type_col,
                     "drugname": self.drug_name_col,
-                    "dosage": self.drug_amount_col,
+                    "drughiclseqno": self.drug_code_col,
                     "drugstopoffset": self.drug_end_col,
                     "routeadmin": self.drug_admin_route_col,
                 }
@@ -1396,6 +1403,9 @@ class EICUExtractor(EICUPaths):
             # # Dropping drug dosages due to bad data quality
             # .drop(self.drug_amount_col)
             .with_columns(
+            .with_columns(
+                # HICL sequence number can be used to map to drug ingredient
+                pl.col(self.drug_code_col).cast(int),
                 # Add a column to indicate the administration type
                 pl.when(pl.col(self.drug_admin_type_col) == "Yes")
                 .then(pl.lit("cancelled"))
@@ -1412,9 +1422,7 @@ class EICUExtractor(EICUPaths):
                 )
                 .alias(self.drug_admin_route_col),
                 # Fix stop offsets (if smaller than start offset)
-                pl.when(
-                    pl.col(self.drug_end_col) < pl.col(self.drug_start_col),
-                )
+                pl.when(pl.col(self.drug_end_col) < pl.col(self.drug_start_col))
                 .then(pl.col(self.drug_start_col))
                 .otherwise(pl.col(self.drug_end_col))
                 .alias(self.drug_end_col),

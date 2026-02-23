@@ -1594,7 +1594,10 @@ class MIMIC4Extractor(MIMIC4Paths):
         else:
             prescriptions = pl.scan_csv(
                 self.prescriptions_path,
-                schema_overrides={"dose_val_rx": str},
+                schema_overrides={
+                    "dose_val_rx": str,
+                    "doses_per_24_hrs": float,
+                },
                 infer_schema_length=10000,
             )
 
@@ -1662,6 +1665,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 "ndc",
                 "dose_val_rx",
                 "dose_unit_rx",
+                "doses_per_24_hrs",
                 "route",
             )
             .rename(
@@ -1675,9 +1679,11 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(route_to_concept, on="route", how="left")
             .with_columns(
+                pl.col("ndc").cast(int).alias(self.drug_code_col),
                 pl.lit("prescribed")
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
+                # Map NDC codes to ingredients and drug names
                 pl.col("ndc")
                 .replace_strict(ndc_to_ingredient, default=None)
                 .alias(self.drug_ingredient_col),
@@ -1686,6 +1692,16 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .alias(self.drug_name_OMOP_col),
                 # Add a column to indicate if the drug is continuous
                 pl.lit(False).alias(self.drug_continuous_col),
+                # Calculate total doses that should have been given in period
+                # -> how often was the threshold of next administration crossed within the start and stop time?
+                (
+                    pl.col(self.drug_amount_col).cast(float, strict=False)
+                    * (
+                        pl.col("stoptime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                        - pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                    ).dt.total_hours()
+                    // (24 / pl.col("doses_per_24_hrs"))
+                ).alias(self.drug_amount_col),
             )
             .rename({"stoptime": "endtime"})
             .join(
