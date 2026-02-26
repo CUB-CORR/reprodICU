@@ -69,8 +69,25 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
         ).alias("Mean arterial pressure"),
     ).filter(
         pl.col("Mean arterial pressure").is_finite(),
-        pl.col("Glasgow coma score total").is_finite(),
-        pl.any_horizontal("Mean arterial pressure", "Glasgow coma score total"),
+        pl.any_horizontal(
+            "Mean arterial pressure",
+            "Glasgow coma score total",
+        ),
+    )
+
+
+def _improve_vitals_quick(vitals: pl.LazyFrame) -> pl.LazyFrame:
+    return vitals.with_columns(
+        pl.coalesce(
+            pl.col("Invasive systolic arterial pressure"),
+            pl.col("Non-invasive systolic arterial pressure"),
+        ).alias("Systolic arterial pressure"),
+    ).filter(
+        pl.any_horizontal(
+            "Systolic arterial pressure",
+            "Respiratory rate",
+            "Glasgow coma score total",
+        ),
     )
 
 
@@ -286,6 +303,165 @@ def _vasopressor_points(
         .when(((dopa > 0) & (dopa <= 5)) | (dobu > 0))
         .then(2)
         .otherwise(0)
+    )
+
+
+################################################################################
+################################################################################
+# region qSOFA
+def qSOFA(
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_vitals: Optional[pl.LazyFrame] = None,
+    *,
+    t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    t_1: Optional[int] = None,
+    window_size: int = SECONDS_IN_1D,
+    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
+    timeframe_name: str = None,
+) -> pl.LazyFrame:
+    """
+    Compute qSOFA score with automatic dataset loading.
+
+    All data parameters are optional and will be automatically loaded from the
+    package datasets if not provided. This makes it convenient for quick analysis
+    while maintaining flexibility for custom data.
+
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information dataset. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vitals data. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_unit : str, optional
+            Semantic only; output column remains a numeric timeframe.
+        forward_fill : bool, optional
+            Whether to forward-fill values within windows. Defaults to True.
+        timeframe_name : str, optional
+            Name for output timeframe column. Auto-generated if None.
+
+    Sources
+    -------
+
+    - original source:
+        Seymour CW, Liu VX, Iwashyna TJ, Brunkhorst FM, Rea TD, Scherag A, Rubenfeld G, Kahn JM, Shankar-Hari M, Singer M, Deutschman CS, Escobar GJ, Angus DC. Assessment of Clinical Criteria for Sepsis: For the Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3). JAMA. 2016 Feb 23;315(8):762-74. doi: 10.1001/jama.2016.0288. Erratum in: JAMA. 2016 May 24-31;315(20):2237. doi: 10.1001/jama.2016.5850. PMID: 26903335; PMCID: PMC5433435.
+
+    Returns
+    -------
+        pl.LazyFrame
+            qSOFA scores with all subscore components
+    """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_vitals is None:
+        timeseries_vitals = get_timeseries_vitals()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+    }
+
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute SOFA: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
+
+    # Strict original column names
+    STAY_KEY = "Global ICU Stay ID"
+    TIME_KEY = "Time Relative to Admission (seconds)"
+    los_col = "ICU Length of Stay (days)"
+
+    # Vitals
+    vitals = _improve_vitals_quick(timeseries_vitals.lazy())
+    sbp_col = "Systolic arterial pressure"
+    rr_col = "Respiratory rate"
+    gcs_col = "Glasgow coma score total"
+
+    # Base frames
+    patient_information = patient_information.lazy()
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
+
+    # vitals (SBP, RR & GCS)
+    vitals_tf = (
+        vitals.select(STAY_KEY, TIME_KEY, sbp_col, rr_col, gcs_col)
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .group_by(STAY_KEY, "timeframe")
+        # 1 point each for systolic hypotension, tachypnea, or altered mentation
+        .agg(
+            (pl.col(sbp_col) <= 100).cast(int).max().alias("sbp_points"),
+            (pl.col(rr_col) >= 22).cast(int).max().alias("rr_points"),
+            (pl.col(gcs_col) != 15).cast(int).max().alias("gcs_points"),
+        )
+    )
+
+    # union of all (stay,timeframe)
+    base = (
+        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
+        .select(STAY_KEY, "T_0", los_col)
+        .with_columns(
+            pl.int_ranges(
+                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
+                end=pl.col(los_col)
+                .mul(SECONDS_IN_1D)
+                .sub("T_0")
+                .truediv(window_size)
+                .ceil()
+                .add(1),
+                step=1,
+            )
+            .cast(pl.List(float))
+            .alias("timeframe"),
+        )
+        .explode("timeframe")
+        .unique()
+        .select(STAY_KEY, "T_0", "timeframe")
+    )
+
+    # assemble
+    out = base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+
+    return (
+        out.filter(
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+        )
+        .with_columns(
+            pl.sum_horizontal(
+                pl.col("sbp_points"),
+                pl.col("rr_points"),
+                pl.col("gcs_points"),
+                ignore_nulls=True,
+            ).alias("qSOFA Score")
+        )
+        .select(
+            STAY_KEY,
+            "T_0",
+            pl.col("timeframe").alias(timeframe_name),
+            "qSOFA Score",
+            pl.col("sbp_points").alias("Systolic hypotension (<=100 mmHg)"),
+            pl.col("rr_points").alias("Tachypnea (>=22/min)"),
+            pl.col("gcs_points").alias("Altered mentation (GCS < 15)"),
+        )
+        .sort(STAY_KEY, timeframe_name)
     )
 
 
