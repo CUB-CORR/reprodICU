@@ -2,8 +2,7 @@
 
 ## [DOCUMENTATION](http://wiki.reprodicu.org/)
 
-## INSTALLATION
-Please refer to the [package guide](https://reprodicu.notion.site/package) in the documentation.
+## [INSTALLATION & GETTING STARTED](https://reprodicu.notion.site/gettingstarted)
 
 ## INTRODUCTION
 **reprodICU** is a freely accessible pipeline, streamlining the creation of a harmonized critical care dataset, including data from up to 470k ICU admissions from multiple healthcare centers across the US and Europe. In this pipeline, **reprodICU** harmonizes data from the following publicly available ICU datasets, which were previously published by others: *AmsterdamUMCdb, eICU-CRD, HiRID, MIMIC-III, MIMIC-IV, NWICU, SICb.*
