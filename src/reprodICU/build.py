@@ -11,27 +11,23 @@ from .helpers.C_harmonize.C_harmonize_diagnoses import DiagnosesHarmonizer
 from .helpers.C_harmonize.C_harmonize_medications import MedicationHarmonizer
 from .helpers.C_harmonize.C_harmonize_microbiology import MicrobiologyHarmonizer
 from .helpers.C_harmonize.C_harmonize_notes import NotesHarmonizer
-from .helpers.C_harmonize.C_harmonize_patient_information import (
-    PatientInformationHarmonizer,
-)
+from .helpers.C_harmonize.C_harmonize_patient_information import PatientInformationHarmonizer # fmt: skip
 from .helpers.C_harmonize.C_harmonize_procedures import ProceduresHarmonizer
 from .helpers.C_harmonize.C_harmonize_timeseries import TimeseriesHarmonizer
 
-# import overview functions
-from .helpers.helper_overview import Overview
-
 # import extra functions for cleaning, winsorizing, etc.
-from .helpers.X1_clean.X1_clean_patient_information import (
-    PatientInformationCleaner,
-)
+from .helpers.X1_clean.X1_clean_patient_information import PatientInformationCleaner # fmt: skip
 from .helpers.X1_clean.X1_improve_timeseries import IntakeOutputImprover
 from .helpers.X1_clean.X1_map_diagnoses import DiagnosesMapper
 from .helpers.X2_winsorize.X2_winsorize import X2_Winsorizer
-from .helpers.X3_impute.X3_impute_patient_information import (
-    PatientInformationImputer,
-)
+from .helpers.X3_impute.X3_impute_patient_information import PatientInformationImputer # fmt: skip
 from .helpers.X3_impute.X3_impute_timeseries import TimeseriesImputer
 from .helpers.X4_resample.X4_resample_timeseries import TimeseriesResampler
+
+# import general helper functions
+from .helpers.helper_batch import batch_process_timeseries
+from .helpers.helper_magic_concepts import build_magic_concepts
+from .helpers.helper_overview import Overview
 
 
 def load_mapping(path: str) -> dict:
@@ -117,7 +113,7 @@ def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
     if timeseries is None or (
         isinstance(timeseries, list) and "all" in timeseries
     ):
-        return ["vitals", "labs", "respiratory", "inout"]
+        return ["vitals", "labs", "respiratory", "inout", "extracorporeal"]
     return timeseries
 
 
@@ -150,8 +146,9 @@ def _get_save_path(paths: reprodICUPaths, demo: bool = False) -> str:
 
     # Ensure tempfiles directory exists
     tempfiles_path = save_path + "_tempfiles/"
-    if not os.path.exists(tempfiles_path):
-        os.makedirs(tempfiles_path)
+    imputefiles_path = save_path + "_imputefiles/"
+    os.makedirs(tempfiles_path, exist_ok=True)
+    os.makedirs(imputefiles_path, exist_ok=True)
 
     return save_path
 
@@ -164,13 +161,16 @@ def build_patient_information(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
+    impute: bool = False,
+    add_availability: bool = True,
 ) -> List[str]:
     """
     Build patient information table from raw data sources.
 
     Harmonizes patient demographics, anthropometrics, and admission metadata
     from configured source datasets. Applies data cleaning, validation, and
-    winsorization for clinical plausibility.
+    optional winsorization for clinical plausibility.
 
     Arguments
     ---------
@@ -180,6 +180,13 @@ def build_patient_information(
             Datasets to process. Uses all datasets if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize anthropometric data to clinically plausible ranges.
+        impute : bool
+            If True, impute missing anthropometric data.
+        add_availability : bool
+            If True, add data availability information to patient information.
+            Set to False when called from build_all to avoid duplicate processing.
 
     Returns
     -------
@@ -214,25 +221,40 @@ def build_patient_information(
     patient_info_cleaner = PatientInformationCleaner(paths=paths)
     patient_info_imputer = PatientInformationImputer(paths=paths)
 
-    # Winsorize the patient information
-    winsorizer = X2_Winsorizer()
-    columns_to_winsorize = [
-        column_names["weight_col"],
-        column_names["height_col"],
-    ]
-    (
+    patient_info = (
         patient_info_harmonizer.harmonize_patient_information()
         .pipe(patient_info_cleaner.clean_patient_information)
         .pipe(patient_info_cleaner.add_good_patient_information)
-        .pipe(
+    )
+
+    # Winsorize the patient information
+    if winsorize:
+        winsorizer = X2_Winsorizer()
+        columns_to_winsorize = [
+            column_names["weight_col"],
+            column_names["height_col"],
+        ]
+        patient_info = patient_info.pipe(
             winsorizer.winsorize_clip_lower_0_quantiles,
             columns=columns_to_winsorize,
             alpha=0.9995,
         )
-        .pipe(patient_info_imputer.impute_patient_IDs)
-        .collect()
-        .write_parquet(save_path + "patient_information.parquet")
+
+    patient_info = (
+        patient_info.pipe(patient_info_imputer.impute_patient_IDs).collect()
     )
+
+    patient_info.write_parquet(save_path + "patient_information.parquet")
+
+    # Add data availability information
+    if add_availability:
+        add_patient_information_availability(paths=paths, demo=demo, impute=impute)
+
+    if impute:
+        return [
+            save_path + "patient_information.parquet",
+            save_path + "patient_information_imputed.parquet",
+        ]
 
     return [save_path + "patient_information.parquet"]
 
@@ -552,6 +574,7 @@ def build_timeseries(
     datasets: Optional[List[str]] = None,
     timeseries: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
     impute: bool = False,
     resample: Optional[int] = None,
 ) -> List[str]:
@@ -559,8 +582,8 @@ def build_timeseries(
     Build timeseries data from raw data sources.
 
     Harmonizes vital signs, laboratory values, respiratory parameters, and
-    intake/output records across datasets. Applies optional imputation and
-    resampling to standardize temporal resolution.
+    intake/output records across datasets. Applies optional winsorization,
+    imputation and resampling to standardize temporal resolution.
 
     Arguments
     ---------
@@ -569,10 +592,12 @@ def build_timeseries(
         datasets : list, optional
             Datasets to process. Uses all datasets if None or contains "all".
         timeseries : list, optional
-            Types to extract: "vitals", "labs", "respiratory", "inout".
+            Types to extract: "vitals", "labs", "respiratory", "inout", "extracorporeal".
             Uses all types if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize laboratory data to clinically plausible ranges.
         impute : bool
             If True, impute missing values in vital signs.
         resample : int, optional
@@ -605,14 +630,11 @@ def build_timeseries(
     TIMESERIES = _normalize_timeseries(timeseries)
     save_path = _get_save_path(paths, demo=demo)
 
-    print("reprodICU - Combining timeseries...")
     timeseries_harmonizer = TimeseriesHarmonizer(
         paths=paths, datasets=DATASETS, DEMO=demo
     )
-    timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=demo)
-    timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=demo)
-    print("reprodICU - Splitting timeseries...")
 
+    print("reprodICU - Combining timeseries...")
     timeseries_harmonizer.harmonize_split_timeseries(
         timeseries=TIMESERIES, save_to_default=True
     )
@@ -630,7 +652,7 @@ def build_timeseries(
         .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
     )
 
-    if "labs" in TIMESERIES:
+    if "labs" in TIMESERIES and winsorize:
         # Winsorize the lab data
         print("reprodICU - Winsorizing lab data...")
         winsorizer = X2_Winsorizer()
@@ -654,33 +676,165 @@ def build_timeseries(
             .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
         )
 
-    if impute and "vitals" in TIMESERIES:
-        # Impute the timeseries data
-        print("reprodICU - Imputing timeseries data...")
-        (
-            pl.scan_parquet(save_path + "timeseries_vitals.parquet")
-            .pipe(timeseries_imputer.impute_timeseries_vitals)
-            .collect()
-            .write_parquet(save_path + "timeseries_vitals_imputed.parquet")
-        )
-
-    if resample and "vitals" in TIMESERIES:
-        # Resample the timeseries data
-        print("reprodICU - Resampling timeseries data...")
-        (
-            pl.scan_parquet(save_path + "timeseries_vitals.parquet")
-            .pipe(
-                timeseries_resampler.resample_timeseries_vitals,
-                resolution_in_seconds=resample,
-            )
-            .collect()
-            .write_parquet(save_path + "timeseries_vitals_resampled.parquet")
-        )
-
-    # Collect output files
-    return [
+    files = [
         save_path + f"timeseries_{ts_type}.parquet" for ts_type in TIMESERIES
     ]
+
+    if impute and "vitals" in TIMESERIES:
+        path = impute_vitals(paths=paths, demo=demo)
+        files.extend(path)
+
+    if resample is not None and "vitals" in TIMESERIES:
+        path = resample_vitals(paths=paths, demo=demo, resample=resample)
+        files.extend(path)
+
+    # Collect output files
+    return files
+
+
+def impute_vitals(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    imputefiles_path: Optional[str] = None,
+) -> List[str]:
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    save_path = _get_save_path(paths, demo=demo)
+    if imputefiles_path is None:
+        imputefiles_path = save_path + "_imputefiles/"
+
+    timeseries_imputer = TimeseriesImputer(paths=paths, DEMO=demo)
+
+    # Impute the timeseries data using batch processing for efficiency
+    print("reprodICU - Imputing timeseries data...")
+    batch_process_timeseries(
+        timeseries="vitals",
+        save_path=save_path,
+        tempfiles_path=imputefiles_path,
+        operation="impute",
+        method=timeseries_imputer.impute_timeseries_vitals,
+    )
+
+    return [save_path + "timeseries_vitals_imputed.parquet"]
+
+
+def resample_vitals(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    resample: Optional[int] = None,
+    imputefiles_path: Optional[str] = None,
+) -> List[str]:
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    if resample is None:
+        resample = 300  # Default to 5 minutes
+
+    save_path = _get_save_path(paths, demo=demo)
+    if imputefiles_path is None:
+        imputefiles_path = save_path + "_imputefiles/"
+    timeseries_resampler = TimeseriesResampler(paths=paths, DEMO=demo)
+
+    # Resample the timeseries data
+    print("reprodICU - Resampling timeseries data...")
+    batch_process_timeseries(
+        timeseries="vitals",
+        save_path=save_path,
+        tempfiles_path=imputefiles_path,
+        operation="resample",
+        method=timeseries_resampler.resample_timeseries_vitals,
+        resolution_in_seconds=resample,
+    )
+
+    return [save_path + "timeseries_vitals_resampled.parquet"]
+
+
+# endregion
+
+
+# region patient information availability
+def add_patient_information_availability(
+    paths: Optional[reprodICUPaths] = None,
+    demo: bool = False,
+    impute: bool = False,
+) -> None:
+    """
+    Add data availability information to patient information table.
+
+    Updates the patient information table with columns indicating availability
+    of diagnoses, medications, procedures, and timeseries data. Optionally
+    imputes missing anthropometric data.
+
+    Arguments
+    ---------
+        paths : reprodICUPaths, optional
+            Paths configuration object. Uses default ConfigManager if None.
+        demo : bool
+            If True, use demo-sized datasets instead of full data.
+        impute : bool
+            If True, impute missing anthropometric data after adding availability.
+
+    Raises
+    ------
+        FileNotFoundError
+            If patient information or related data files not found
+        RuntimeError
+            If processing fails
+    """
+    if paths is None:
+        config_manager = get_config_manager()
+        paths = reprodICUPaths(config_manager)
+
+    save_path = _get_save_path(paths, demo=demo)
+    patient_info_cleaner = PatientInformationCleaner(paths=paths)
+
+    print("reprodICU - Adding data availability to patient information...")
+    (
+        pl.scan_parquet(save_path + "patient_information.parquet")
+        .pipe(
+            patient_info_cleaner.add_primary_diagnoses,
+            diagnoses=save_path + "diagnoses.parquet",
+        )
+        .pipe(
+            patient_info_cleaner.add_data_availability_information,
+            diagnoses=save_path + "diagnoses.parquet",
+            medications=save_path + "medications.parquet",
+            procedures=save_path + "procedures.parquet",
+            timeseries_labs=save_path + "timeseries_labs.parquet",
+            timeseries_vitals=save_path + "timeseries_vitals.parquet",
+            timeseries_resp=save_path + "timeseries_respiratory.parquet",
+            timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
+            timeseries_extra=save_path + "timeseries_extracorporeal.parquet",  # fmt: skip
+        )
+        .pipe(patient_info_cleaner.remove_bad_patient_information)
+        .pipe(patient_info_cleaner.sort_columns)
+        .collect()
+        .write_parquet(
+            save_path + "patient_information_with_data_availability.parquet"
+        )
+    )
+    os.remove(save_path + "patient_information.parquet")
+    os.rename(
+        save_path + "patient_information_with_data_availability.parquet",
+        save_path + "patient_information.parquet",
+    )
+
+    if impute:
+        patient_info_imputer = PatientInformationImputer(paths=paths)
+        (
+            pl.scan_parquet(save_path + "patient_information.parquet")
+            .pipe(
+                patient_info_imputer.impute_patient_anthropometrics,
+                n_neighbors=5,
+            )
+            .collect()
+            .write_parquet(
+                save_path + "patient_information_imputed.parquet"
+            )
+        )
 
 
 # endregion
@@ -741,6 +895,7 @@ def build_all(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
     demo: bool = False,
+    winsorize: bool = False,
     impute: bool = False,
     resample: Optional[int] = None,
     create_overview: bool = True,
@@ -761,6 +916,8 @@ def build_all(
             Datasets to process. Uses all datasets if None or contains "all".
         demo : bool
             If True, use demo-sized datasets instead of full data.
+        winsorize : bool
+            If True, winsorize anthropometric and laboratory data.
         impute : bool
             If True, impute missing values in vital signs.
         resample : int, optional
@@ -788,14 +945,19 @@ def build_all(
         paths = reprodICUPaths(config_manager)
 
     TABLES = _normalize_tables(None)  # Always build all tables
-    save_path = _get_save_path(paths, demo=demo)
 
     all_output_files = []
 
     # Build all individual tables
     if "patient_information" in TABLES:
         all_output_files.extend(
-            build_patient_information(paths=paths, datasets=datasets, demo=demo)
+            build_patient_information(
+                paths=paths,
+                datasets=datasets,
+                demo=demo,
+                winsorize=winsorize,
+                add_availability=False,
+            )
         )
 
     if "diagnoses" in TABLES:
@@ -831,6 +993,7 @@ def build_all(
                 datasets=datasets,
                 timeseries=None,
                 demo=demo,
+                winsorize=winsorize,
                 impute=impute,
                 resample=resample,
             )
@@ -838,50 +1001,7 @@ def build_all(
 
     # Add patient information availability
     if "patient_information" in TABLES:
-        print("reprodICU - Adding data availability to patient information...")
-        patient_info_cleaner = PatientInformationCleaner(paths=paths)
-        (
-            pl.scan_parquet(save_path + "patient_information.parquet")
-            .pipe(
-                patient_info_cleaner.add_primary_diagnoses,
-                diagnoses=save_path + "diagnoses_imputed.parquet",
-            )
-            .pipe(
-                patient_info_cleaner.add_data_availability_information,
-                diagnoses=save_path + "diagnoses_imputed.parquet",
-                medications=save_path + "medications.parquet",
-                procedures=save_path + "procedures.parquet",
-                timeseries_labs=save_path + "timeseries_labs.parquet",
-                timeseries_vitals=save_path + "timeseries_vitals.parquet",
-                timeseries_resp=save_path + "timeseries_respiratory.parquet",
-                timeseries_inout=save_path + "timeseries_intakeoutput.parquet",
-            )
-            .pipe(patient_info_cleaner.remove_bad_patient_information)
-            .pipe(patient_info_cleaner.sort_columns)
-            .collect()
-            .write_parquet(
-                save_path + "patient_information_with_data_availability.parquet"
-            )
-        )
-        os.remove(save_path + "patient_information.parquet")
-        os.rename(
-            save_path + "patient_information_with_data_availability.parquet",
-            save_path + "patient_information.parquet",
-        )
-
-        if impute:
-            patient_info_imputer = PatientInformationImputer(paths=paths)
-            (
-                pl.scan_parquet(save_path + "patient_information.parquet")
-                .pipe(
-                    patient_info_imputer.impute_patient_anthropometrics,
-                    n_neighbors=5,
-                )
-                .collect()
-                .write_parquet(
-                    save_path + "patient_information_imputed.parquet"
-                )
-            )
+        add_patient_information_availability(paths=paths, demo=demo, impute=impute)
 
     # Create overview if requested
     if create_overview:
@@ -892,3 +1012,19 @@ def build_all(
 
 
 # endregion
+
+__all__ = [
+    "build_patient_information",
+    "build_diagnoses",
+    "build_procedures",
+    "build_medications",
+    "build_microbiology",
+    "build_notes",
+    "build_timeseries",
+    "build_magic_concepts",
+    "add_patient_information_availability",
+    "build_overview",
+    "build_all",
+    "impute_vitals",
+    "resample_vitals",
+]

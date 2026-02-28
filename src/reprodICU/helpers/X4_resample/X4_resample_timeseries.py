@@ -12,8 +12,6 @@ import polars as pl
 from ..helper import GlobalVars
 from ..X3_impute.X3_impute_timeseries import TimeseriesImputer
 
-DAY_ZERO = pl.datetime(year=2000, month=1, day=1, hour=0, minute=0, second=0)
-
 
 class TimeseriesResampler(GlobalVars):
     def __init__(self, paths, DEMO=False) -> None:
@@ -28,7 +26,6 @@ class TimeseriesResampler(GlobalVars):
             "Time Relative to Admission (seconds)",
         ]
         self.timeseries_imputer = TimeseriesImputer(paths, DEMO)
-        self._interp = self.timeseries_imputer._interp
 
     def resample_timeseries(
         self,
@@ -63,7 +60,10 @@ class TimeseriesResampler(GlobalVars):
                 )
                 .cast(float)
                 .alias("Time Relative to Admission (seconds)")
-            ).explode("Time Relative to Admission (seconds)")
+            )
+            .explode("Time Relative to Admission (seconds)")
+            .drop_nulls()
+            .sort(self.index_cols)
         )
 
         resampled_data = (
@@ -71,16 +71,12 @@ class TimeseriesResampler(GlobalVars):
             # Join the original data to the resampled grid
             .join(data, on=self.index_cols, how="full", coalesce=True)
             # Interpolate missing values
-            .pipe(
-                self._interp,
-                "Time Relative to Admission (seconds)",  # Time column
-                ["Global ICU Stay ID"],  # ID columns
-            )
+            .pipe(self.timeseries_imputer.impute_timeseries)
         )
 
         # Return only the new grid with the resampled values
-        return resampled_grid.join(
-            resampled_data, on=self.index_cols, how="left"
+        return resampled_data.join(
+            resampled_grid, on=self.index_cols, how="semi"
         )
 
     def resample_timeseries_vitals(
@@ -115,7 +111,8 @@ class TimeseriesResampler(GlobalVars):
             .with_columns(
                 pl.col(col).cast(int)
                 for col in columns
-                if col not in [*self.index_cols, "Temperature"]
+                if col
+                not in [*self.index_cols, "Temperature", "Heart rate rhythm"]
             )
             # Round temperature to 1 decimal place
             .with_columns(pl.col("Temperature").round(1).alias("Temperature"))

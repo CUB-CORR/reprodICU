@@ -5,12 +5,13 @@
 # processing and harmonization.
 
 import os
-from numbers import Number
 
 import polars as pl
+import polars.selectors as cs
 
 from ..A_extract.A_extract_eicu import EICUExtractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -43,6 +44,56 @@ class EICUProcessor(EICUExtractor):
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
+
+    # region helpers
+    # Helper methods for batch processing
+    def _pivot_timeseries_batch(
+        self, data: pl.LazyFrame, on: str, values: str
+    ) -> pl.LazyFrame:
+        """
+        Generic helper method to pivot timeseries data for batch processing.
+
+        Args:
+            data: Input LazyFrame to pivot.
+            on: Column name to pivot on (e.g., "labname", "respchartvaluelabel").
+            values: Column name containing values to pivot (e.g., "labstruct", "respchartvalue").
+
+        Returns:
+            pl.LazyFrame: Processed timeseries with pivoted measurements.
+        """
+        return (
+            data.collect()
+            .pivot(
+                on=on,
+                index=self.index_cols,
+                values=values,
+                aggregate_function="first",
+            )
+            .pipe(self._dropna_and_cast_numeric)
+        )
+
+    def _dropna_and_cast_numeric(self, df: pl.DataFrame) -> pl.LazyFrame:
+        """
+        Drop rows with all nulls in non-index columns and cast numeric columns to float.
+
+        Args:
+            df: Input DataFrame to process.
+
+        Returns:
+            pl.LazyFrame: Processed DataFrame with dropped null rows and cast numeric columns.
+        """
+        droplist = [col for col in df.columns if col not in self.index_cols]
+        return (
+            # Drop empty rows
+            df.pipe(self.helpers.dropna, "all", droplist, False)
+            # Cast only numeric columns to float using selectors
+            .with_columns(cs.numeric().cast(float))
+            .unique(self.index_cols)
+            .sort(self.index_cols)
+            .lazy()
+        )
+
+    # endregion
 
     # region time series
     # Processes and combines the time series data of the eICU dataset.
@@ -133,39 +184,39 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Checking sortedness of index columns...")
         timeseries_is_sorted = (
             pl.scan_parquet(timeseries_path_unsorted, parallel="prefiltered")
-            .group_by(self.icu_stay_id_col)
+            .group_by(self.icu_stay_id_col, maintain_order=True)
             .agg(
                 pl.col(self.timeseries_time_col)
                 .eq(pl.col(self.timeseries_time_col).sort())
                 .all()
                 .alias("is_sorted")
             )
-            .filter(pl.col("is_sorted") == False)
+            .filter(pl.col("is_sorted").not_())
             .collect()
             .height
             == 0
         )
 
         if not timeseries_is_sorted:
-            # NOTE: if process stops due to insufficient memory, use the following
-            # lines instead within a terminal at the precalc_path:
-            # (
-            #     pl.scan_parquet("EICU_timeseries_grouped.parquet")
-            #     .group_by("ICU Stay ID", "Time Relative to Admission (seconds)")
-            #     .first()
-            #     .sort("ICU Stay ID", "Time Relative to Admission (seconds)")
-            #     .sink_parquet("EICU_timeseries.parquet")
-            # )
             print("eICU    - Sorting wide time series data...")
-            (
-                pl.scan_parquet(timeseries_path_unsorted)
-                .sort(self.index_cols)
-                .sink_parquet(timeseries_path)
+            batch_process_timeseries(
+                input_file=timeseries_path_unsorted,
+                output_file=timeseries_path,
+                tempfiles_path=self.precalc_path,
+                operation="sort",
+                method=lambda df: df,  # identity -> batch processor is sorting
+                id_col=self.icu_stay_id_col,
+                delete_after=True,
             )
             os.remove(timeseries_path_unsorted)
         else:
             print("eICU    - Time series data is already sorted.")
             os.rename(timeseries_path_unsorted, timeseries_path)
+
+        # Delete all EICU_ts_* files
+        for file in os.listdir(self.precalc_path):
+            if file.startswith("EICU_ts_"):
+                os.remove(os.path.join(self.precalc_path, file))
 
         return pl.scan_parquet(timeseries_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -186,8 +237,8 @@ class EICUProcessor(EICUExtractor):
             2. Extract lab measurements and combine related fields (base excess/deficit).
             3. Convert lab values to canonical units.
             4. Apply LOINC component mapping and JSON encode structured fields.
-            5. Pivot data on "labname" to create wide-format dataset.
-            6. Save, sort by index columns, and clean temporary files.
+            5. Pivot data on "labname" to create wide-format dataset using batch processing.
+            6. Sort by index columns and clean temporary files.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -207,7 +258,8 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Processing lab data...")
 
-        ts_lab = (
+        # Extract and transform lab data
+        ts_lab_extracted = (
             self.extract_time_series_lab()
             # Combine base_excess and base_deficit into one column base_excess_deficit
             .pipe(
@@ -232,27 +284,25 @@ class EICUProcessor(EICUExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="labname",
-            )
-            .with_columns(pl.col("labstruct").struct.json_encode())
-            # Pivot the lab values to wide format
-            .collect()
-            .pivot(
-                on="labname",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
-            )
-            .lazy()
+            ).with_columns(pl.col("labstruct").struct.json_encode())
         )
 
-        # Save the preprocessed data
-        ts_lab.sink_parquet(ts_labs_path_unsorted)
+        # Save extracted data before pivoting
+        ts_lab_extracted.sink_parquet(ts_labs_path_unsorted)
 
-        # Sort the data
-        (
-            pl.scan_parquet(ts_labs_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_labs_path)
+        # Batch pivot the data
+        batch_process_timeseries(
+            input_file=ts_labs_path_unsorted,
+            output_file=ts_labs_path,
+            tempfiles_path=self.precalc_path,
+            operation="pivot",
+            method=lambda df: self._pivot_timeseries_batch(
+                df,
+                on="labname",
+                values="labstruct",
+            ),
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_labs_path_unsorted)
 
@@ -273,9 +323,9 @@ class EICUProcessor(EICUExtractor):
         Steps:
             1. Check for preprocessed respiratory file; load if available.
             2. Extract respiratory chart value measurements.
-            3. Pivot data on "respchartvaluelabel" using first aggregation.
+            3. Pivot data on "respchartvaluelabel" using first aggregation in batch processing.
             4. Drop rows where all non-index columns are null.
-            5. Save, sort by index columns, and clean temporary files.
+            5. Cast to float for numeric data and clean temporary files.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -283,8 +333,10 @@ class EICUProcessor(EICUExtractor):
                 - {timeseries_time_col}: Time offset (seconds from ICU admission).
                 - Respiratory measurement columns (pivoted from respchartvaluelabel).
         """
-        ts_resp_path = self.precalc_path + "EICU_timeseries_resp.parquet"
-        ts_resp_path_unsorted = self.precalc_path + "EICU_ts_resp.parquet"
+        ts_resp_path = self.precalc_path + "EICU_ts_resp.parquet"
+        ts_resp_path_unsorted = (
+            self.precalc_path + "EICU_ts_resp_unsorted.parquet"
+        )
 
         if os.path.isfile(ts_resp_path):
             # Load the preprocessed data
@@ -295,42 +347,23 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Processing resp data...")
 
-        ts_resp = (
-            self.extract_time_series_resp()
-            # Pivot the respiratory values to wide format
-            .collect().pivot(
+        # Extract respiratory data and save for batch processing
+        ts_resp_extracted = self.extract_time_series_resp()
+        ts_resp_extracted.sink_parquet(ts_resp_path_unsorted)
+
+        # Batch pivot the respiratory data
+        batch_process_timeseries(
+            input_file=ts_resp_path_unsorted,
+            output_file=ts_resp_path,
+            tempfiles_path=self.precalc_path,
+            operation="pivot",
+            method=lambda df: self._pivot_timeseries_batch(
+                df,
                 on="respchartvaluelabel",
-                index=self.index_cols,
                 values="respchartvalue",
-                aggregate_function="first",  # NOTE: first is used here to allow for strings
-            )
-        )
-
-        # Drop empty rows
-        ts_resp_cols = ts_resp.collect_schema().names()
-        droplist = list(set(ts_resp_cols) - set(self.index_cols))
-        ts_resp = (
-            ts_resp.pipe(self.helpers.dropna, "all", droplist, False)
-            .cast(
-                {
-                    col: float
-                    for col in droplist
-                    if isinstance(ts_resp[col].drop_nulls().first(), Number)
-                }
-            )
-            .unique()
-            .sort(self.index_cols)
-            .lazy()
-        )
-
-        # Save the preprocessed data
-        ts_resp.sink_parquet(ts_resp_path_unsorted)
-
-        # Sort the data
-        (
-            pl.scan_parquet(ts_resp_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_resp_path)
+            ),
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_resp_path_unsorted)
 
@@ -350,9 +383,9 @@ class EICUProcessor(EICUExtractor):
         Steps:
             1. Check for preprocessed nurse charting file; load if available.
             2. Extract nurse charting measurements.
-            3. Pivot data on "nursingchartcelltypevalname" using first aggregation.
+            3. Pivot data on "nursingchartcelltypevalname" using first aggregation in batch processing.
             4. Drop rows where all non-index columns are null.
-            5. Save, sort by index columns, and clean temporary files.
+            5. Clean temporary files.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -374,34 +407,23 @@ class EICUProcessor(EICUExtractor):
                 pl.exclude(self.index_cols),
             )
 
-        ts_nurse = (
-            self.extract_time_series_nurse()
-            # Pivot the nurse values to wide format
-            .collect().pivot(
+        # Extract nurse charting data and save for batch processing
+        ts_nurse_extracted = self.extract_time_series_nurse()
+        ts_nurse_extracted.sink_parquet(ts_nurse_path_unsorted)
+
+        # Batch pivot the nurse charting data
+        batch_process_timeseries(
+            input_file=ts_nurse_path_unsorted,
+            output_file=ts_nurse_path,
+            tempfiles_path=self.precalc_path,
+            operation="pivot",
+            method=lambda df: self._pivot_timeseries_batch(
+                df,
                 on="nursingchartcelltypevalname",
-                index=self.index_cols,
                 values="nursingchartvalue",
-                aggregate_function="first",  # NOTE: first is used here to not run into issues with strings -> check if this is sensible
-            )
-        )
-
-        # Drop empty rows
-        ts_nurse_cols = ts_nurse.collect_schema().names()
-        droplist = list(set(ts_nurse_cols) - set(self.index_cols))
-        ts_nurse = (
-            ts_nurse.pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .lazy()
-        )
-
-        # Save the preprocessed data
-        ts_nurse.sink_parquet(ts_nurse_path_unsorted)
-
-        # Sort the data
-        (
-            pl.scan_parquet(ts_nurse_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_nurse_path)
+            ),
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_nurse_path_unsorted)
 
@@ -494,8 +516,8 @@ class EICUProcessor(EICUExtractor):
             1. Check for preprocessed (a)periodic file; load if available.
             2. Extract and combine periodic and aperiodic vital measurements.
             3. Drop rows where all non-index columns are null.
-            4. Cast to float for normalization and deduplicate.
-            5. Sort by index columns and save.
+            4. Cast to float for normalization in batch processing.
+            5. Clean temporary files.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -518,26 +540,19 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Processing (a)periodic data...")
 
+        # Extract and combine periodic and aperiodic data
         ts_periodics = self.extract_and_combine_periodics()
-
-        # Drop empty rows
-        ts_periodics_cols = ts_periodics.collect_schema().names()
-        droplist = list(set(ts_periodics_cols) - set(self.index_cols))
-        ts_periodics = ts_periodics.pipe(
-            self.helpers.dropna, "all", droplist, False
-        )
-
-        # Save the preprocessed data
         ts_periodics.sink_parquet(ts_period_path_unsorted)
 
-        # Sort the data
-        (
-            pl.scan_parquet(ts_period_path_unsorted)
-            .cast(float)
-            .cast({self.icu_stay_id_col: int})
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-            .sink_parquet(ts_period_path)
+        # Batch process: cast to float and deduplicate
+        batch_process_timeseries(
+            input_file=ts_period_path_unsorted,
+            output_file=ts_period_path,
+            tempfiles_path=self.precalc_path,
+            operation="process",
+            method=lambda df: self._dropna_and_cast_numeric(df),
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_period_path_unsorted)
 

@@ -11,6 +11,7 @@ import polars as pl
 
 from ..A_extract.A_extract_umcdb import UMCdbExtractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -102,52 +103,21 @@ class UMCdbProcessor(UMCdbExtractor):
     # endregion
 
     # region numeric
-    def _process_timeseries_numeric(self) -> pl.LazyFrame:
+    def _process_timeseries_numeric_batch(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
         """
-        Process numeric time series measurements.
+        Helper method to process numeric timeseries data for batch processing.
 
         Steps:
-            1. Check for preprocessed numeric file; load if available.
-            2. Extract numeric measurements and cache.
-            3. Pivot data on "item" using mean aggregation for wide-format.
-            4. Save, sort by index columns, and clean temporary files.
+            1. Pivot measurements on "item" using mean aggregation.
+            2. Return processed timeseries.
 
         Returns:
-            pl.LazyFrame: Contains columns:
-                - {icu_stay_id_col}: ICU stay identifier.
-                - {timeseries_time_col}: Time offset (seconds from ICU admission).
-                - Numeric measurement columns (pivoted from item).
+            pl.LazyFrame: Processed timeseries with pivoted numeric measurements.
         """
-        ts_numeric_path = self.precalc_path + "UMCdb_timeseries_numeric.parquet"
-        ts_numeric_path_unsorted = (
-            self.precalc_path + "UMCdb_ts_numeric.parquet"
-        )
-        ts_numeric_path_cache = (
-            self.precalc_path + "UMCdb_ts_numeric_cache.parquet"
-        )
-
-        if os.path.isfile(ts_numeric_path):
-            # Load the preprocessed data
-            return pl.scan_parquet(ts_numeric_path).select(
-                pl.col(self.index_cols).set_sorted(),
-                pl.exclude(self.index_cols),
-            )
-
-        print("UMCdb   - Collecting numeric time series data...")
-
-        # "Cache" the data before pivoting
-        if not os.path.isfile(ts_numeric_path_cache):
-            self.extract_timeseries_numericitems().sink_parquet(
-                ts_numeric_path_cache
-            )
-
-        print("UMCdb   - Processing numeric time series data...")
-
-        # Process numeric data
-        ts_numeric = (
-            pl.scan_parquet(ts_numeric_path_cache)
-            # Pivot the numeric data
-            .collect()
+        return (
+            data.collect()
             .pivot(
                 on="item",
                 index=self.index_cols,
@@ -157,17 +127,57 @@ class UMCdbProcessor(UMCdbExtractor):
             .lazy()
         )
 
-        # Save the preprocessed data
-        ts_numeric.sink_parquet(ts_numeric_path_unsorted)
+    def _process_timeseries_numeric(self) -> pl.LazyFrame:
+        """
+        Process numeric time series measurements.
 
-        # Sort the data
-        (
-            pl.scan_parquet(ts_numeric_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_numeric_path)
+        Steps:
+            1. Check for preprocessed numeric file; load if available.
+            2. Extract numeric measurements from {extract_timeseries_numericitems}.
+            3. Process in batches of 500 patients: pivot measurements on "item".
+            4. Combine all batches and save sorted result.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds from ICU admission).
+                - Numeric measurement columns (pivoted from item).
+        """
+        ts_numeric_path = self.precalc_path + "UMCdb_timeseries_numeric.parquet"
+        ts_numeric_path_unsorted = self.precalc_path + "UMCdb_ts_numeric.parquet" # fmt: skip
+
+        if os.path.isfile(ts_numeric_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(ts_numeric_path).select(
+                pl.col(self.index_cols).set_sorted(),
+                pl.exclude(self.index_cols),
+            )
+
+        print("UMCdb   - Preparing numeric time series data...")
+
+        # Create the raw numeric timeseries parquet file if it doesn't exist
+        if not os.path.isfile(ts_numeric_path_unsorted):
+            self.extract_timeseries_numericitems().sink_parquet(
+                ts_numeric_path_unsorted
+            )
+
+        print("UMCdb   - Processing numeric time series data...")
+
+        # Process in batches using batch_process_timeseries
+        batch_process_timeseries(
+            input_file=ts_numeric_path_unsorted,
+            output_file=ts_numeric_path,
+            tempfiles_path=self.precalc_path,
+            operation="process",
+            method=self._process_timeseries_numeric_batch,
+            id_col=self.icu_stay_id_col,
+            batch_size=500,
+            delete_after=True,
         )
-        os.remove(ts_numeric_path_unsorted)
-        os.remove(ts_numeric_path_cache)
+
+        # Clean up unsorted file
+        if os.path.isfile(ts_numeric_path_unsorted):
+            os.remove(ts_numeric_path_unsorted)
 
         return pl.scan_parquet(ts_numeric_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -212,11 +222,7 @@ class UMCdbProcessor(UMCdbExtractor):
 
         # "Cache" the data before pivoting
         if not os.path.isfile(ts_labs_path_cache):
-            (
-                self.extract_timeseries_labs()
-                .collect()
-                .write_parquet(ts_labs_path_cache)
-            )
+            self.extract_timeseries_labs().sink_parquet(ts_labs_path_cache)
 
         print("UMCdb   - Processing lab time series data...")
 
@@ -257,14 +263,14 @@ class UMCdbProcessor(UMCdbExtractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=[
-                    "Basophils/100 leukocytes",
-                    "Eosinophils/100 leukocytes",
-                    "Lymphocytes/100 leukocytes",
-                    "Monocytes/100 leukocytes",
-                    "Neutrophils/100 leukocytes",
-                    "Neutrophils.band form/100 leukocytes",
-                    "Neutrophils.segmented/100 leukocytes",
-                    "Reticulocytes/100 erythrocytes",
+                    "Basophils/leukocytes",
+                    "Eosinophils/leukocytes",
+                    "Lymphocytes/leukocytes",
+                    "Monocytes/leukocytes",
+                    "Neutrophils/leukocytes",
+                    "Neutrophils.band form/leukocytes",
+                    "Neutrophils.segmented/leukocytes",
+                    "Reticulocytes/Erythrocytes",
                 ],
             )
             .lazy()
@@ -344,9 +350,7 @@ class UMCdbProcessor(UMCdbExtractor):
             set(ts_listitems.collect_schema().names()) - set(self.index_cols)
         )
         ts_listitems = (
-            ts_listitems.pipe(
-                self.helpers.dropna, subset_cols=droplist, how="all"
-            )
+            ts_listitems.pipe(self.helpers.dropna, "all", droplist, False)
             .lazy()
             .unique()
         )
@@ -556,7 +560,7 @@ class UMCdbConverter(UnitConverter):
     def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Align lab unit representations for creatinine and reticulocytes.
-Converts creatinine from umol/L to mmol/L and reticulocytes from
+        Converts creatinine from umol/L to mmol/L and reticulocytes from
         percentage to absolute counts (10^12/L).
 
         Returns:
@@ -565,13 +569,16 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
 
         print("UMCdb   - Aligning lab value units...")
 
+        # some paO2 / paCO2 values are given in kPa, convert to mmHg for consistency
         # Creatinine in Serum or Plasma is in umol/L, convert to mmol/L for consistency
         # Reticulocytes are given in 10^9/L (percentage), convert to 10^12/L for consistency
 
         return (
             data.unnest("labstruct")
             .with_columns(
-                pl.when(
+                pl.when(pl.col("itemid").is_in([21213, 21214]))
+                .then(pl.col("value").mul(7.50061683))
+                .when(
                     pl.col("item") == "Creatinine",
                     pl.col("system") == "Serum or Plasma",
                 )
@@ -611,7 +618,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Basophils/100 leukocytes",
+                goal_itemcol="Basophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -619,7 +626,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Eosinophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Eosinophils/100 leukocytes",
+                goal_itemcol="Eosinophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -627,7 +634,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Lymphocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Lymphocytes/100 leukocytes",
+                goal_itemcol="Lymphocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -635,7 +642,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Monocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Monocytes/100 leukocytes",
+                goal_itemcol="Monocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -643,7 +650,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils/100 leukocytes",
+                goal_itemcol="Neutrophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -651,7 +658,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Band form neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils.band form/100 leukocytes",
+                goal_itemcol="Neutrophils.band form/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -659,7 +666,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Segmented neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils.segmented/100 leukocytes",
+                goal_itemcol="Neutrophils.segmented/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -667,7 +674,7 @@ Converts creatinine from umol/L to mmol/L and reticulocytes from
                 self.convert_absolute_count_to_relative,
                 itemcol="Reticulocytes",
                 total_itemcol="Erythrocytes",
-                goal_itemcol="Reticulocytes/100 erythrocytes",
+                goal_itemcol="Reticulocytes/Erythrocytes",
                 structfield="value",
                 structstring=True,
             )

@@ -93,17 +93,21 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
         ]
         # fmt: on
 
+        if "parquet" in self.mimic3_paths.chartevents_path:
+            CHARTEVENTS = pl.scan_parquet(self.mimic3_paths.chartevents_path)
+        else:
+            CHARTEVENTS = pl.scan_csv(
+                self.mimic3_paths.chartevents_path,
+                schema_overrides={"VALUE": str},
+            )
+
         ##############################################################################
-        # pivoted_rrt.sql
+        # crrt_durations.sql
         ##############################################################################
         # region CE
         RENAL_REPLACEMENT_THERAPY_DURATION = (
             # Load chartevents and filter for CRRT settings (see crrt.sql: crrt_settings)
-            pl.scan_csv(
-                self.mimic3_paths.chartevents_path,
-                schema_overrides={"VALUE": str},
-            )
-            .filter(
+            CHARTEVENTS.filter(
                 pl.col("ITEMID").is_in(
                     chartevents_metavision
                     + chartevents_metavision_addional
@@ -112,8 +116,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 )
             )
             .filter(
-                pl.col("VALUE").is_not_null()
-                & ((pl.col("VALUENUM").fill_null(1)) != 0)
+                pl.col("VALUE").is_not_null(),
+                pl.col("VALUENUM").ne_missing(0),  # non-zero rates/values
             )
             .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUE")
             .with_columns(
@@ -170,16 +174,15 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.when(
                     pl.col("ITEMID") == 224146,
                     pl.col("VALUE").is_in(["Discontinued", "Recirculating"]),
-                )
-                .then(1)
+                ).then(1)
+                # the only value like DC is "DC'D", use starts_with to handle pattern
                 .when(
                     pl.col("ITEMID") == 665,
                     (pl.col("VALUE") == "Clotted")
                     | pl.col("VALUE").str.starts_with("DC"),
-                )
-                .then(1)
-                .when(pl.col("ITEMID") == 225956)
-                .then(1)
+                ).then(1)
+                # Reason for CRRT filter change
+                .when(pl.col("ITEMID") == 225956).then(1)
                 # taken from pivoted_rrt.sql
                 .when(
                     pl.col("ITEMID") == 582,
@@ -249,9 +252,9 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.when(pl.col("RRT_start") == 1)
                 .then(1)
                 # if there is an end flag, we mark any subsequent event as new
+                .when(pl.col("RRT_end") == 1)
                 # note the end is *not* a new event, the *subsequent* row is
                 # so here we output 0
-                .when(pl.col("RRT_end") == 1)
                 .then(0)
                 .when(pl.col("rrt_ended_prev_row") == 1)
                 .then(1)
@@ -281,14 +284,14 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("num")
             )
-            # # now we can isolate to just rows with settings
-            # # (before we had rows with start/end flags)
-            # # this removes any null values for NewCRRT
-            # .filter(
-            #     pl.col("RRT_start") == 1,
-            #     pl.col("RRT") == 1,
-            #     pl.col("RRT_end") == 1,
-            # )
+            # now we can isolate to just rows with settings
+            # (before we had rows with start/end flags)
+            # this removes any null values for NewCRRT
+            .filter(
+                (pl.col("RRT_start") == 1)
+                | (pl.col("RRT") == 1)
+                | (pl.col("RRT_end") == 1)
+            )
             .group_by("ICUSTAY_ID", "num")
             .agg(
                 pl.col("CHARTTIME").min().alias("STARTTIME"),

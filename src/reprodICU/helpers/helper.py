@@ -214,6 +214,9 @@ class GlobalVars(GlobalHelpers):
         self.SOLUTION_FLUIDS_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/solution_fluids_mapping.yaml"
         )
+        self.RRT_MODE_MAP = self.load_many_to_one_mapping(
+            mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
+        )
 
         # region DATA TYPES
         # Define custom data types
@@ -305,6 +308,17 @@ class GlobalVars(GlobalHelpers):
         self.blood_gas_source_enum_map_inverted = {
             i: v for v, i in self.blood_gas_source_enum_map.items()
         }
+        self.rrt_mode_enum_map = {
+            v: i
+            for i, v in enumerate(
+                self.load_mapping_keys(
+                    mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
+                )
+            )
+        }
+        self.rrt_mode_enum_map_inverted = {
+            i: v for v, i in self.rrt_mode_enum_map.items()
+        }
 
         # region ICD
         # Define global mappings (ICD diagnoses & procedures and more)
@@ -372,6 +386,11 @@ class GlobalVars(GlobalHelpers):
                 mapping_path + "TIMESERIES_INTAKEOUTPUT.yaml"
             )
         )
+        self.timeseries_extracorporeal_mapping = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path + "TIMESERIES_EXTRACORPOREAL.yaml"
+            )
+        )
 
         # region RELEVANT
         # Select relevant variables
@@ -417,11 +436,19 @@ class GlobalVars(GlobalHelpers):
                 )
             )
         )
+        self.relevant_extracorporeal_values = list(
+            set(
+                self.load_mapping_true_keys(
+                    self.relevant_values_path + "RELEVANT_EXTRACORPOREAL.yaml"
+                )
+            )
+        )
 
         self.all_relevant_values = (
             self.relevant_vital_values
             + self.relevant_respiratory_values
             + self.relevant_intakeoutput_values
+            + self.relevant_extracorporeal_values
         )
 
     def ICD_TO_ICDSUBCHAPTER(self, data: pl.LazyFrame):

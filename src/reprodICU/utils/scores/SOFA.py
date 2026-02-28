@@ -30,9 +30,13 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
@@ -43,8 +47,6 @@ from ..common import (
     get_ventilation,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PAO2_FIO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -67,8 +69,25 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
         ).alias("Mean arterial pressure"),
     ).filter(
         pl.col("Mean arterial pressure").is_finite(),
-        pl.col("Glasgow coma score total").is_finite(),
-        pl.any_horizontal("Mean arterial pressure", "Glasgow coma score total"),
+        pl.any_horizontal(
+            "Mean arterial pressure",
+            "Glasgow coma score total",
+        ),
+    )
+
+
+def _improve_vitals_quick(vitals: pl.LazyFrame) -> pl.LazyFrame:
+    return vitals.with_columns(
+        pl.coalesce(
+            pl.col("Invasive systolic arterial pressure"),
+            pl.col("Non-invasive systolic arterial pressure"),
+        ).alias("Systolic arterial pressure"),
+    ).filter(
+        pl.any_horizontal(
+            "Systolic arterial pressure",
+            "Respiratory rate",
+            "Glasgow coma score total",
+        ),
     )
 
 
@@ -289,6 +308,165 @@ def _vasopressor_points(
 
 ################################################################################
 ################################################################################
+# region qSOFA
+def qSOFA(
+    patient_information: Optional[pl.LazyFrame] = None,
+    timeseries_vitals: Optional[pl.LazyFrame] = None,
+    *,
+    t_0: Optional[int] = 0,
+    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    t_1: Optional[int] = None,
+    window_size: int = SECONDS_IN_1D,
+    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
+    timeframe_name: str = None,
+) -> pl.LazyFrame:
+    """
+    Compute qSOFA score with automatic dataset loading.
+
+    All data parameters are optional and will be automatically loaded from the
+    package datasets if not provided. This makes it convenient for quick analysis
+    while maintaining flexibility for custom data.
+
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information dataset. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vitals data. Loaded automatically if None.
+        t_0 : int, optional
+            Scalar reference time (seconds from admission). Defaults to 0 (admission).
+            Ignored when t_0_per_stay is provided.
+        t_0_per_stay : pl.LazyFrame, optional
+            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission) for filtering inputs.
+        window_size : int, optional
+            Timeframe width in seconds (default: 86400 = 1 day). Window index is
+            floor((time - T_0)/window_size).
+        timeframe_unit : str, optional
+            Semantic only; output column remains a numeric timeframe.
+        forward_fill : bool, optional
+            Whether to forward-fill values within windows. Defaults to True.
+        timeframe_name : str, optional
+            Name for output timeframe column. Auto-generated if None.
+
+    Sources
+    -------
+
+    - original source:
+        Seymour CW, Liu VX, Iwashyna TJ, Brunkhorst FM, Rea TD, Scherag A, Rubenfeld G, Kahn JM, Shankar-Hari M, Singer M, Deutschman CS, Escobar GJ, Angus DC. Assessment of Clinical Criteria for Sepsis: For the Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3). JAMA. 2016 Feb 23;315(8):762-74. doi: 10.1001/jama.2016.0288. Erratum in: JAMA. 2016 May 24-31;315(20):2237. doi: 10.1001/jama.2016.5850. PMID: 26903335; PMCID: PMC5433435.
+
+    Returns
+    -------
+        pl.LazyFrame
+            qSOFA scores with all subscore components
+    """
+    # Load defaults if not provided
+    if patient_information is None:
+        patient_information = get_patient_information()
+    if timeseries_vitals is None:
+        timeseries_vitals = get_timeseries_vitals()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+    }
+
+    missing = [name for name, data in required.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute SOFA: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
+
+    # Strict original column names
+    STAY_KEY = "Global ICU Stay ID"
+    TIME_KEY = "Time Relative to Admission (seconds)"
+    los_col = "ICU Length of Stay (days)"
+
+    # Vitals
+    vitals = _improve_vitals_quick(timeseries_vitals.lazy())
+    sbp_col = "Systolic arterial pressure"
+    rr_col = "Respiratory rate"
+    gcs_col = "Glasgow coma score total"
+
+    # Base frames
+    patient_information = patient_information.lazy()
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
+
+    # vitals (SBP, RR & GCS)
+    vitals_tf = (
+        vitals.select(STAY_KEY, TIME_KEY, sbp_col, rr_col, gcs_col)
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .group_by(STAY_KEY, "timeframe")
+        # 1 point each for systolic hypotension, tachypnea, or altered mentation
+        .agg(
+            (pl.col(sbp_col) <= 100).cast(int).max().alias("sbp_points"),
+            (pl.col(rr_col) >= 22).cast(int).max().alias("rr_points"),
+            (pl.col(gcs_col) != 15).cast(int).max().alias("gcs_points"),
+        )
+    )
+
+    # union of all (stay,timeframe)
+    base = (
+        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
+        .select(STAY_KEY, "T_0", los_col)
+        .with_columns(
+            pl.int_ranges(
+                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
+                end=pl.col(los_col)
+                .mul(SECONDS_IN_1D)
+                .sub("T_0")
+                .truediv(window_size)
+                .ceil()
+                .add(1),
+                step=1,
+            )
+            .cast(pl.List(float))
+            .alias("timeframe"),
+        )
+        .explode("timeframe")
+        .unique()
+        .select(STAY_KEY, "T_0", "timeframe")
+    )
+
+    # assemble
+    out = base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+
+    return (
+        out.filter(
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+        )
+        .with_columns(
+            pl.sum_horizontal(
+                pl.col("sbp_points"),
+                pl.col("rr_points"),
+                pl.col("gcs_points"),
+                ignore_nulls=True,
+            ).alias("qSOFA Score")
+        )
+        .select(
+            STAY_KEY,
+            "T_0",
+            pl.col("timeframe").alias(timeframe_name),
+            "qSOFA Score",
+            pl.col("sbp_points").alias("Systolic hypotension (<=100 mmHg)"),
+            pl.col("rr_points").alias("Tachypnea (>=22/min)"),
+            pl.col("gcs_points").alias("Altered mentation (GCS < 15)"),
+        )
+        .sort(STAY_KEY, timeframe_name)
+    )
+
+
+################################################################################
+################################################################################
 # region SOFA
 def SOFA(
     patient_information: Optional[pl.LazyFrame] = None,
@@ -396,21 +574,9 @@ def SOFA(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
-    weight_col = "Admission Weight (kg)"
     los_col = "ICU Length of Stay (days)"
 
     # Vitals
@@ -433,8 +599,6 @@ def SOFA(
     # Meds
     meds = medications.lazy()
     drug_ingredient_col = "Drug Ingredient"
-    drug_rate_col = "Drug Rate"
-    drug_rate_unit_col = "Drug Rate Unit"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
     drug_end_col = "Drug End Relative to Admission (seconds)"
 
@@ -449,12 +613,15 @@ def SOFA(
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # Ventilation is handled in the respiratory section using start/end intervals
 
     # region respiratory (P/F ratio)
     resp_tf = (
-        PAO2_FIO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
@@ -527,64 +694,10 @@ def SOFA(
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe
-    # Normalize to mcg/kg/min
-    # Join patient weight
-    meds_norm = (
-        meds.join(
-            patient_information.select(STAY_KEY, weight_col),
-            on=STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            # convert absolute doses to per-kg when needed
-            pl.when(
-                pl.col(drug_rate_unit_col).is_in(
-                    ["mcg/hr", "mcg/min", "mg/hr", "mg/min"]
-                )
-            )
-            .then(pl.col(drug_rate_col) / pl.col(weight_col))
-            .otherwise(pl.col(drug_rate_col))
-            .alias("rate_perkg"),
-            # update units to reflect per-kg when we converted
-            pl.when(pl.col(drug_rate_unit_col) == "mcg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mcg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .when(pl.col(drug_rate_unit_col) == "mg/hr")
-            .then(pl.lit("mg/kg/hr"))
-            .when(pl.col(drug_rate_unit_col) == "mg/min")
-            .then(pl.lit("mg/kg/min"))
-            .otherwise(pl.col(drug_rate_unit_col))
-            .alias("unit_perkg"),
-        )
-        .with_columns(
-            # convert mg to mcg
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.col("rate_perkg") * 1000)
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.col("rate_perkg") * 1000)
-            .otherwise(pl.col("rate_perkg"))
-            .alias("rate_mcg"),
-            pl.when(pl.col("unit_perkg") == "mg/kg/hr")
-            .then(pl.lit("mcg/kg/hr"))
-            .when(pl.col("unit_perkg") == "mg/kg/min")
-            .then(pl.lit("mcg/kg/min"))
-            .otherwise(pl.col("unit_perkg"))
-            .alias("unit_mcg"),
-        )
-        .with_columns(
-            # convert /hr to /min
-            pl.when(pl.col("unit_mcg") == "mcg/kg/hr")
-            .then(pl.col("rate_mcg") / 60)
-            .otherwise(pl.col("rate_mcg"))
-            .alias("rate_final"),
-            pl.lit("mcg/kg/min").alias("unit_final"),
-        )
-    )
-
     # Attribute to timeframe using FIX_WINDOW_BORDERS (window-based attribution like VIS.py)
     meds_tf = (
-        meds_norm.filter(pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS))
+        meds.filter(pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS))
+        .pipe(ALIGNED_UNITS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(drug_end_col) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(
@@ -605,9 +718,10 @@ def SOFA(
         unit="seconds",
     ).with_columns(
         pl.col("Window Relative to T_0").alias("timeframe"),
-        (pl.col("rate_mcg") * pl.col("Drug Duration (windows)")).alias(
-            "time-weighted Rate"
-        ),
+        (
+            pl.col("Drug Rate (fixed units)")
+            * pl.col("Drug Duration (windows)")
+        ).alias("time-weighted Rate"),
     )
 
     if t_1 is not None:
@@ -640,28 +754,31 @@ def SOFA(
     )
 
     # region urine output (refactored to call URINE_OUTPUT)
-    uo_base = URINE_OUTPUT(
-        patient_information=patient_information,
-        timeseries_inout=timeseries_inout,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
-        t_1=t_1,
-        window_size=window_size,
-    )
-    uo_tf = uo_base.with_columns(
-        pl.sum("uo_interval_ml")
-        .over(
-            partition_by=[
-                STAY_KEY,
-                (pl.col("timeframe") * window_size)
-                .floordiv(SECONDS_IN_1D)
-                .alias("uo_day_index"),
-            ]
+    uo_tf = (
+        URINE_OUTPUT(
+            patient_information=patient_information,
+            timeseries_inout=timeseries_inout,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+            t_1=t_1,
+            window_size=window_size,
         )
-        .alias("uo_daily_ml")
-    ).with_columns(
-        _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
-        pl.col("timeframe").cast(float),
+        .with_columns(
+            pl.sum("uo_interval_ml")
+            .over(
+                partition_by=[
+                    STAY_KEY,
+                    (pl.col("timeframe") * window_size)
+                    .floordiv(SECONDS_IN_1D)
+                    .alias("uo_day_index"),
+                ]
+            )
+            .alias("uo_daily_ml")
+        )
+        .with_columns(
+            _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
+            pl.col("timeframe").cast(float),
+        )
     )
 
     # region union of all (stay,timeframe)
@@ -674,12 +791,13 @@ def SOFA(
                 end=pl.col(los_col)
                 .mul(SECONDS_IN_1D)
                 .sub("T_0")
-                .floordiv(window_size)
+                .truediv(window_size)
+                .ceil()
                 .add(1),
                 step=1,
             )
             .cast(pl.List(float))
-            .alias("timeframe")
+            .alias("timeframe"),
         )
         .explode("timeframe")
         .unique()
@@ -693,27 +811,25 @@ def SOFA(
 
     if forward_fill:
         out = out.with_columns(
+            # forward-fill within stay at most 6 hours
             pl.col(
                 "pf_ratio_points",
                 "gcs_points",
                 "map_points",
                 "vasopressor_points",
             )
-            # forward-fill within stay at most 6 hours
-            .forward_fill((window_size // SECONDS_IN_1H) * 6).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
+            .forward_fill((window_size // SECONDS_IN_1H) * 6)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
+            # forward-fill within stay at most a week
             pl.col(
                 "platelet_points",
                 "bilirubin_points",
                 "creatinine_points",
             )
-            # forward-fill within stay at most a week
-            .forward_fill((window_size // SECONDS_IN_1H) * 168).over(
-                partition_by=STAY_KEY, order_by="timeframe"
-            ),
-            pl.col("uo_points")
+            .forward_fill((window_size // SECONDS_IN_1H) * 168)
+            .over(partition_by=STAY_KEY, order_by="timeframe"),
             # make urine output persistent for 24h
+            pl.col("uo_points")
             .forward_fill()
             .backward_fill()
             .over(

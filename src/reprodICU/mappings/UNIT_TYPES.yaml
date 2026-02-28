@@ -1,6 +1,6 @@
 # eICU-CRD:  patient table -> unittype column
 # HiRID:     "Medical-Surgical" by definition (only one ICU in the hospital)
-# MIMIC-III: icustays table -> FIRST_CAREUNIT column
+# MIMIC-III: ICUSTAYS table -> FIRST_CAREUNIT column
 # MIMIC-IV:  icustays table -> first_careunit column
 # NWICU:     icustays table -> first_careunit column
 # SICdb:     cases table -> HospitalUnit column

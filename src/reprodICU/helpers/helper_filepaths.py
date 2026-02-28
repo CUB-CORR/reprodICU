@@ -50,9 +50,7 @@ class OMOPPaths(GlobalVars):
 
             self.CONCEPT_ANCESTOR_path = omop_path + "CONCEPT_ANCESTOR.parquet"
             self.CONCEPT_CLASS_path = omop_path + "CONCEPT_CLASS.parquet"
-            self.CONCEPT_RELATIONSHIP_path = (
-                omop_path + "CONCEPT_RELATIONSHIP.parquet"
-            )
+            self.CONCEPT_RELATIONSHIP_path = omop_path + "CONCEPT_RELATIONSHIP.parquet" # fmt: skip
             self.CONCEPT_SYNONYM_path = omop_path + "CONCEPT_SYNONYM.parquet"
             self.CONCEPT_path = omop_path + "CONCEPT.parquet"
             self.DOMAIN_path = omop_path + "DOMAIN.parquet"
@@ -172,6 +170,7 @@ class EICUPaths(GlobalVars):
 
         # eICU custom mapping paths
         self.eICU_mapping_path = self.mapping_path + "eicu/"
+        self.apache_mapping_path = self.eICU_mapping_path + "eicu_APACHE.yaml"
         self.careprovider_mapping_path = (
             self.eICU_mapping_path + "eicu_carePlanCareProvider_specialty.yaml"
         )
@@ -234,9 +233,6 @@ class HiRIDPaths(GlobalVars):
             self.raw_stage_path + "observation_tables/parquet/"
         )
         self.pharma_path = self.raw_stage_path + "pharma_records/parquet/"
-        self.imputed_stage_path = (
-            hirid_path + "imputed_stage/imputed_stage/parquet/"
-        )
 
         # HiRID custom mapping paths
         self.hirid_mapping_path = self.mapping_path + "hirid/"
@@ -322,6 +318,7 @@ class MIMIC3Paths(GlobalVars):
                 self.inputevents_cv_path,
                 self.inputevents_mv_path,
                 self.noteevents_path,
+                self.prescriptions_path,
             ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(
                     ".gz", ""
@@ -334,6 +331,7 @@ class MIMIC3Paths(GlobalVars):
             self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.parquet"
             self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.parquet"
             self.noteevents_path = mimic3_path + "NOTEEVENTS.parquet"
+            self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.parquet"
 
         # MIMIC-III custom mapping paths
         self.mimic3_mapping_path = self.mapping_path + "mimic3/"
@@ -488,13 +486,12 @@ class MIMIC3Paths(GlobalVars):
             self.mimic3_loinc_mapping_path + "d_labitems_to_loinc_mimic3.csv"
         )
 
-        # MIMIC-IV additional LOINC mapping paths
-        self.mimic_loinc_mapping_additional_path = (
+        # MIMIC-III additional mapping paths
+        self.mimic_additional_mapping_path = (
             self.mimic3_mapping_path + "mimic-additional_code_mapping/"
         )
         self.meas_chartevents_main_additional_path = (
-            self.mimic_loinc_mapping_additional_path
-            + "meas_chartevents_main.csv"
+            self.mimic_additional_mapping_path + "meas_chartevents_main.csv"
         )
 
         # MIMIC-IV LOINC mapping paths (additionally used for MIMIC-III)
@@ -544,7 +541,7 @@ class MIMIC4Paths(GlobalVars):
         if paths.mimic4_notes_source_path is None or (
             not os.path.exists(paths.mimic4_notes_source_path)
         ):
-            raise ValueError("MIMIC-IV notes source path does not exist or is null.")
+            raise ValueError("MIMIC-IV notes source path does not exist or is null.") # fmt: skip
         super().__init__(paths, DEMO)
         mimic4_path = paths.mimic4_source_path
         mimic4_notes_path = paths.mimic4_notes_source_path
@@ -751,45 +748,41 @@ class MIMIC4Paths(GlobalVars):
             self.mimic4_loinc_mapping_path + "numerics-summary.csv"
         )
 
-        # MIMIC-IV additional LOINC mapping paths
-        self.mimic_loinc_mapping_additional_path = (
-            self.mimic4_mapping_path + "mimic-additional_code_mapping/"
+        # MIMIC-III additional mapping paths
+        self.mimic3_mapping_path = self.mapping_path + "mimic3/"
+        self.mimic_additional_mapping_path = (
+            self.mimic3_mapping_path + "mimic-additional_code_mapping/"
         )
         self.meas_chartevents_main_additional_path = (
-            self.mimic_loinc_mapping_additional_path
-            + "meas_chartevents_main.csv"
+            self.mimic_additional_mapping_path + "meas_chartevents_main.csv"
         )
 
         # MIMIC-IV additional version paths
-        # assumes that
-        self.icustays_version_paths = {
-            "v1.0": (
+        # assumes that the version paths are in the same parent directory as the current source path
+        self.icustays_version_paths = {}
+        if hasattr(paths, "mimic4_1_0_path"):
+            self.icustays_version_paths["v1.0"] = (
                 paths.mimic4_1_0_path + "icu/icustays.csv.gz"
-                if paths.mimic4_1_0_path
-                else None
-            ),
-            "v2.0": (
+            )
+        if hasattr(paths, "mimic4_2_0_path"):
+            self.icustays_version_paths["v2.0"] = (
                 paths.mimic4_2_0_path + "icu/icustays.csv.gz"
-                if paths.mimic4_2_0_path
-                else None
-            ),
-            "v2.1": (
+            )
+        if hasattr(paths, "mimic4_2_1_path"):
+            self.icustays_version_paths["v2.1"] = (
                 paths.mimic4_2_1_path + "icu/icustays.csv.gz"
-                if paths.mimic4_2_1_path
-                else None
-            ),
-            "v2.2": (
+            )
+        if hasattr(paths, "mimic4_2_2_path"):
+            self.icustays_version_paths["v2.2"] = (
                 paths.mimic4_2_2_path + "icu/icustays.csv.gz"
-                if paths.mimic4_2_2_path
-                else None
-            ),
-            "v3.0": (
+            )
+        if hasattr(paths, "mimic4_3_0_path"):
+            self.icustays_version_paths["v3.0"] = (
                 paths.mimic4_3_0_path + "icu/icustays.csv.gz"
-                if paths.mimic4_3_0_path
-                else None
-            ),
-            "current": paths.mimic4_source_path + "icu/icustays.csv.gz",
-        }
+            )
+        self.icustays_version_paths["current"] = (
+            paths.mimic4_source_path + "icu/icustays.csv.gz"
+        )
 
 
 # endregion
@@ -1012,6 +1005,7 @@ def _parquetize(path, db: str):
             "AMOUNT": float,
             "dose_given": str,
             "dose_val_rx": str,
+            "doses_per_24_hrs": float,
             "patientweight": float,
             "PATIENTWEIGHT": float,
             "product_amount_given": str,

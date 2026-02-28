@@ -112,26 +112,23 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
             )
             # Combine consecutive rows where end time equals next start time
             .with_columns(
-                pl.col(vent_start_col)
-                .ne_missing(
-                    pl.col(vent_end_col)
-                    .shift(1)
-                    .fill_null(pl.col(vent_start_col).min())
-                    .over(
-                        partition_by=["Global ICU Stay ID", "Ventilation Type"],
-                        order_by=vent_start_col,
-                    )
+                pl.struct(
+                    pl.col("Global ICU Stay ID"),
+                    pl.col(vent_start_col).eq_missing(
+                        pl.col(vent_end_col)
+                        .shift(1)
+                        .fill_null(pl.col(vent_start_col).min())
+                        .over(
+                            partition_by=[
+                                "Global ICU Stay ID",
+                                "Ventilation Type",
+                            ],
+                            order_by=vent_start_col,
+                        )
+                    ),
                 )
+                .rle_id()
                 .alias("is_consecutive"),
-            )
-            .with_columns(
-                pl.col("is_consecutive")
-                .cum_sum()
-                .over(
-                    partition_by=["Global ICU Stay ID", "Ventilation Type"],
-                    order_by=vent_start_col,
-                )
-                .alias("is_consecutive")
             )
             .group_by(
                 "Global ICU Stay ID",

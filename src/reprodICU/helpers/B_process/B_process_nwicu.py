@@ -189,11 +189,11 @@ class NWICUProcessor(NWICUExtractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=[
-                    "Basophils/100 leukocytes",
-                    "Eosinophils/100 leukocytes",
-                    "Lymphocytes/100 leukocytes",
-                    "Monocytes/100 leukocytes",
-                    "Neutrophils/100 leukocytes",
+                    "Basophils/leukocytes",
+                    "Eosinophils/leukocytes",
+                    "Lymphocytes/leukocytes",
+                    "Monocytes/leukocytes",
+                    "Neutrophils/leukocytes",
                 ],
             )
             .lazy()
@@ -217,64 +217,6 @@ class NWICUProcessor(NWICUExtractor):
         )
 
     # endregion
-
-    # # region input/output
-    # # Processes the input/output data of the NWICU dataset.
-    # def process_timeseries_inputoutput(self):
-    #     """
-    #     Processes the input/output data of the NWICU dataset.
-    #     """
-    #     ts_inout_path = self.precalc_path + "NWICU_timeseries_inout.parquet"
-    #     ts_inout_path_unsorted = self.precalc_path + "NWICU_ts_inout.parquet"
-
-    #     if os.path.isfile(ts_inout_path):
-    #         # Load the preprocessed data
-    #         return pl.scan_parquet(ts_inout_path).select(
-    #             pl.col(self.index_cols).set_sorted(),
-    #             pl.exclude(self.index_cols),
-    #         )
-
-    #     print("NWICU  - Processing inout data...")
-
-    #     # Process inout data
-    #     ts_inout = (
-    #         self.extract_output_measurements()
-    #         # Pivot the inout data
-    #         .collect().pivot(
-    #             on="label",
-    #             index=self.index_cols,
-    #             values="valuenum",
-    #             aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-    #         )
-    #     )
-
-    #     # Drop empty rows
-    #     ts_inout_cols = ts_inout.collect_schema().names()
-    #     droplist = list(set(ts_inout_cols) - set(self.index_cols))
-    #     ts_inout = (
-    #         ts_inout.lazy()
-    #         .pipe(self.helpers.dropna, "all", droplist, False)
-    #         .unique()
-    #         .sort(self.index_cols)
-    #     )
-
-    #     # Save the preprocessed data
-    #     ts_inout.sink_parquet(ts_inout_path_unsorted)
-
-    #     # Sort the data
-    #     (
-    #         pl.scan_parquet(ts_inout_path_unsorted)
-    #         .sort(self.index_cols)
-    #         .sink_parquet(ts_inout_path)
-    #     )
-    #     os.remove(ts_inout_path_unsorted)
-
-    #     return pl.scan_parquet(ts_inout_path).select(
-    #         pl.col(self.index_cols).set_sorted(),
-    #         pl.exclude(self.index_cols),
-    #     )
-
-    # # endregion
 
 
 # region convert
@@ -456,7 +398,7 @@ class NWICUConverter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Basophils/100 leukocytes",
+                goal_itemcol="Basophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -464,7 +406,7 @@ class NWICUConverter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Eosinophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Eosinophils/100 leukocytes",
+                goal_itemcol="Eosinophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -472,7 +414,7 @@ class NWICUConverter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Lymphocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Lymphocytes/100 leukocytes",
+                goal_itemcol="Lymphocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -480,7 +422,7 @@ class NWICUConverter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Monocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Monocytes/100 leukocytes",
+                goal_itemcol="Monocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -488,7 +430,7 @@ class NWICUConverter(UnitConverter):
                 self.convert_absolute_count_to_relative,
                 itemcol="Neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils/100 leukocytes",
+                goal_itemcol="Neutrophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )

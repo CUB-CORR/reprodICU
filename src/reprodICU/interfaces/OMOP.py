@@ -16,12 +16,15 @@ import os
 import shutil
 import warnings
 from pathlib import Path
+from typing import List, Optional
 
 import polars as pl
 import yaml
-from config import reprodICUPaths
-from helpers.helper_OMOP import Vocabulary
-from helpers.helper import GlobalVars
+
+from ..build import _normalize_datasets
+from ..config import reprodICUPaths
+from ..helpers.helper import GlobalVars
+from ..helpers.helper_OMOP import Vocabulary
 
 warnings.filterwarnings("ignore")
 
@@ -1040,7 +1043,7 @@ def measurement(
             index=["person_id", "visit_occurrence_id", "measurement_datetime"],
             variable_name="variable_name",
             value_name="value_as_number",
-        )
+        ).drop_nulls("value_as_number")
 
     def _destruct_after_unpivot(data: pl.LazyFrame) -> pl.LazyFrame:
         """
@@ -1065,7 +1068,7 @@ def measurement(
         return (
             data.unnest("value_as_number")
             .rename({"value": "value_as_number", "LOINC": "variable_code"})
-            .drop("system", "method", "time")
+            .drop("system", "method", "time", "variable_name")
             .join(
                 LOINC_code_frame,
                 left_on="variable_code",
@@ -1073,6 +1076,7 @@ def measurement(
             )
             .rename({"concept_name": "variable_name"})
             .drop("variable_code")
+            .drop_nulls("value_as_number")
         )
 
     def _add_units(data: pl.LazyFrame) -> pl.LazyFrame:
@@ -1173,7 +1177,7 @@ def measurement(
                 pl.scan_parquet(temp_file2),
                 pl.scan_parquet(temp_file3),
             ],
-            how="vertical",
+            how="diagonal",
         )
         .pipe(_conceptualize)
         .with_columns(
@@ -1680,7 +1684,8 @@ def other(OUTPATH):
 
 
 def convert_to_omop(
-    paths=None,
+    paths: Optional[reprodICUPaths] = None,
+    datasets: Optional[List[str]] = None,
     demo: bool = False,
     force: bool = False,
 ) -> dict:
@@ -1688,6 +1693,8 @@ def convert_to_omop(
 
     Args:
         paths: Optional paths object (uses default paths if None)
+        datasets: List of datasets to convert (e.g., ['MIMIC4', 'eICU']).
+            Uses all available datasets if None or contains 'all'.
         demo: Use demo data if True
         force: Force recomputation if True (currently unused)
 
@@ -1700,8 +1707,8 @@ def convert_to_omop(
     """
     if paths is None:
         paths = reprodICUPaths()
-        omop = Vocabulary(paths)
-        vars = GlobalVars(paths)
+    omop = Vocabulary(paths)
+    vars = GlobalVars(paths)
 
     # Get paths
     if demo:
@@ -1712,25 +1719,45 @@ def convert_to_omop(
         OUTPATH = paths.reprodICU_files_path + "OMOP/"
 
     # Get vocabulary path from paths object
-    VOCABPATH = getattr(paths, "OMOP_vocabulary_path", None)
+    VOCABPATH = getattr(paths, "OMOP_vocab_path", None)
     if VOCABPATH is None:
         raise ValueError(
-            "OMOP_vocabulary_path not configured in paths. "
+            "OMOP_vocab_path not configured in paths. "
             "Please set it in your PATHS.yaml configuration."
         )
+
+    # Normalize datasets
+    datasets = _normalize_datasets(datasets, demo=demo)
 
     # Create output directory
     os.makedirs(OUTPATH, exist_ok=True)
 
     # Load reprodICU data
     print("OMOP - Loading reprodICU data...")
-    diagnoses = pl.scan_parquet(INPATH + "diagnoses_imputed.parquet")
-    medications = pl.scan_parquet(INPATH + "medications.parquet")
     patient_information = pl.scan_parquet(INPATH + "patient_information.parquet") # fmt: skip
+
+    if datasets is not None:
+        # Map user-friendly names to Source Dataset names
+        dataset_map = {
+            "eICU": "eICU-CRD",
+            "HiRID": "HiRID",
+            "MIMIC3": "MIMIC-III",
+            "MIMIC4": "MIMIC-IV",
+            "NWICU": "NWICU",
+            "SICdb": "SICdb",
+            "UMCdb": "AmsterdamUMCdb",
+        }
+        mapped_datasets = [dataset_map.get(d, d) for d in datasets]
+        patient_information = patient_information.filter(
+            pl.col("Source Dataset").is_in(mapped_datasets)
+        )
+
+    diagnoses = pl.scan_parquet(INPATH + "diagnoses.parquet")
+    medications = pl.scan_parquet(INPATH + "medications.parquet")
     procedures = pl.scan_parquet(INPATH + "procedures.parquet")
     timeseries_vitals = pl.scan_parquet(INPATH + "timeseries_vitals.parquet")
     timeseries_labs = pl.scan_parquet(INPATH + "timeseries_labs.parquet")
-    timeseries_resp = pl.scan_parquet(INPATH + "timeseries_resp.parquet")
+    timeseries_resp = pl.scan_parquet(INPATH + "timeseries_respiratory.parquet")
 
     # Load OMOP vocabulary files
     print("OMOP - Loading OMOP vocabulary...")

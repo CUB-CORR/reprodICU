@@ -405,29 +405,17 @@ def VENTILATOR_FREE_DAYS(
             "Ventilation Start Relative to Admission (seconds)",
         )
         .with_columns(
-            pl.col("Ventilation End Relative to Admission (seconds)")
-            .shift(1)
-            .over("Global ICU Stay ID")
-            .alias("Previous Ventilation End")
-        )
-        .with_columns(
-            (
+            pl.struct(
+                pl.col("Global ICU Stay ID"),
                 (
-                    (
-                        pl.col(
-                            "Ventilation Start Relative to Admission (seconds)"
-                        )
-                        - pl.col("Previous Ventilation End")
-                    )
-                    > SUCCESSFUL_EXTUBATION_GAP_SECONDS
+                    pl.col("Ventilation Start Relative to Admission (seconds)")
+                    - pl.col("Ventilation End Relative to Admission (seconds)")
+                    .shift(1)
+                    .over("Global ICU Stay ID")
                 )
-                | pl.col("Previous Ventilation End").is_null()
-            ).alias("is_new_block")
-        )
-        .with_columns(
-            pl.col("is_new_block")
-            .cum_sum()
-            .over("Global ICU Stay ID")
+                <= SUCCESSFUL_EXTUBATION_GAP_SECONDS,
+            )
+            .rle_id()
             .alias("block_id")
         )
         .group_by("Global ICU Stay ID", "block_id")

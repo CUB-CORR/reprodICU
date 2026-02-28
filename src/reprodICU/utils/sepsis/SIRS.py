@@ -30,6 +30,7 @@ import polars as pl
 from ..common import (
     _assign_timeframe,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     get_patient_information,
     get_timeseries_labs,
@@ -47,9 +48,9 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.with_columns(
         pl.col("Leukocytes").struct.field("value").alias("Leukocytes"),
-        pl.col("Neutrophils.band form/100 leukocytes")
+        pl.col("Neutrophils.band form/leukocytes")
         .struct.field("value")
-        .alias("Neutrophils.band form/100 leukocytes"),
+        .alias("Neutrophils.band form/leukocytes"),
         pl.when(
             pl.col("Carbon dioxide")
             .struct.field("system")
@@ -60,7 +61,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ).filter(
         pl.any_horizontal(
             "Leukocytes",
-            "Neutrophils.band form/100 leukocytes",
+            "Neutrophils.band form/leukocytes",
             "Carbon dioxide",
         )
     )
@@ -211,17 +212,6 @@ def SIRS(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -236,13 +226,16 @@ def SIRS(
     # Labs
     labs = _improve_labs(timeseries_labs.lazy())
     wbc_col = "Leukocytes"
-    bands_col = "Neutrophils.band form/100 leukocytes"
+    bands_col = "Neutrophils.band form/leukocytes"
     paco2_col = "Carbon dioxide"
 
     # Base frames
     patient_information = patient_information.lazy()
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # region temperature criterion
     temp_tf = (
@@ -321,7 +314,8 @@ def SIRS(
                 end=pl.col(los_col)
                 .mul(SECONDS_IN_1D)
                 .sub("T_0")
-                .floordiv(window_size)
+                .truediv(window_size)
+                .ceil()
                 .add(1),
                 step=1,
             )

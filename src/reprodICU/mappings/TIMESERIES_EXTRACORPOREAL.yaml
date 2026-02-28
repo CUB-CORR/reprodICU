@@ -1,0 +1,70 @@
+# Based on the ICU module of the German Medical Informatics Initiative (MII)
+# https://www.medizininformatik-initiative.de/Kerndatensatz/KDS_Intensivmedizin_DE_V2025/MII-IG-Modul-ICU-TechnischeImplementierung-FHIR-Profile-ParametervonextrakorporalenVerfahren-ExtrakorporaleVerfahrenProcedure-duplicate-2.html
+
+# Continuous renal replacement therapy panel: https://athena.ohdsi.org/search-terms/terms/1989465
+# Intermittent hemodialysis panel: https://athena.ohdsi.org/search-terms/terms/1989285
+# Peritoneal dialysis panel: https://athena.ohdsi.org/search-terms/terms/1989216
+
+############
+# DIALYSIS #
+############
+Access pressure Renal replacement therapy circuit: [] # 99717-1
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Effluent pressure Renal replacement therapy circuit: [] # 99718-9
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Filter pressure Renal replacement therapy circuit: [] # 99719-7
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+Transmembrane pressure Renal replacement therapy circuit: [] # 99720-5
+  # UMCdb -> same name
+Return pressure Renal replacement therapy circuit: [] # 99721-3
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+
+Continuous renal replacement therapy mode Renal replacement therapy circuit: [] # 99708-0
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+
+Blood flow rate Renal replacement therapy circuit: # 99711-4
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+  # SICdb
+  - CRRT Bloodflow
+Dialysate flow rate Renal replacement therapy circuit: # 99712-2
+  # MIMIC-III / MIMIC-IV -> same name
+  # SICdb
+  - CRRT DialysateFlow
+Post-filter replacement fluid rate Renal replacement therapy circuit: # 99713-0
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+  # SICdb
+  - CRRT SubstitutePost
+Pre-filter replacement fluid rate Renal replacement therapy circuit: # 99714-8
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+  # SICdb
+  - CRRT SubstitutePrae
+
+Continuous renal replacement therapy fluid removal goal [Volume] 1 hour: # 99709-8
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+  # SICdb
+  - CRRT Withdrawal
+
+Hemodialysis fluid removed:  [] # 99739-5
+  # MIMIC-III / MIMIC-IV -> same name
+Ultrafiltrate volume removed: [] # 99741-1
+  # -> 99735-3 would be in both IHD / CRRT panels, but is too specific (exactly 1 hour)
+  # MIMIC-III / MIMIC-IV / UMCdb -> same name
+
+############
+#   ECMO   #
+############
+# Rate of blood flow through cardiovascular device: # 444479000
+#   # SICdb
+#   - ECMO BloodFlow
+# Oxygen gas flow Oxygen delivery system: # 19941-4
+#   # SICdb
+#   - ECMO FI
+
+
+#################### just for reference ####################
+# SICdb
+# CRRT Withdrawal: [] # ml/h
+# CRRT CalciumSubstitution: [] # %
+# ECMO PumpSpeed: [] # U/min
+# ECMO BloodFlow: [] # L/min
+# ECMO FI: [] # %

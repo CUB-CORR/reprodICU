@@ -26,7 +26,7 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, get_patient_information
+from ..common import DROP_IMPLAUSIBLE_VALUES, _to_lazy, get_patient_information
 
 height_col = "Admission Height (cm)"
 weight_col = "Admission Weight (kg)"
@@ -49,11 +49,6 @@ def _load_patient_information(
     -------
         pl.LazyFrame
             Patient information data converted to lazy frame.
-
-    Raises
-    ------
-        ValueError
-            If patient information cannot be loaded.
     """
     if patient_information is None:
         patient_information = get_patient_information()
@@ -64,7 +59,10 @@ def _load_patient_information(
             "Ensure patient_information is configured in ~/.reprodICU/PATHS.yaml or provide data explicitly."
         )
 
-    return _to_lazy(patient_information)
+    return _to_lazy(patient_information).with_columns(
+        pl.col(height_col).pipe(DROP_IMPLAUSIBLE_VALUES, height_col),
+        pl.col(weight_col).pipe(DROP_IMPLAUSIBLE_VALUES, weight_col),
+    )
 
 
 # region IBW
@@ -87,14 +85,16 @@ def IDEAL_BODY_WEIGHT_DEVINE(
             - Global ICU Stay ID
             - Ideal Body Weight (Devine): Calculated ideal body weight in kg
     """
-    patient_information = _load_patient_information(patient_information)
-
-    return patient_information.with_columns(
-        pl.when(pl.col(gender_col) == "Female")
-        .then(45.5 + 2.3 * (pl.col(height_col) / 2.54 - 60))
-        .otherwise(50 + 2.3 * (pl.col(height_col) / 2.54 - 60))
-        .alias("Ideal Body Weight (Devine)")
-    ).select("Global ICU Stay ID", "Ideal Body Weight (Devine)")
+    return (
+        _load_patient_information(patient_information)
+        .with_columns(
+            pl.when(pl.col(gender_col) == "Female")
+            .then(45.5 + 2.3 * (pl.col(height_col) / 2.54 - 60))
+            .otherwise(50 + 2.3 * (pl.col(height_col) / 2.54 - 60))
+            .alias("Ideal Body Weight (Devine)")
+        )
+        .select("Global ICU Stay ID", "Ideal Body Weight (Devine)")
+    )
 
 
 # region IBW
@@ -117,16 +117,18 @@ def IDEAL_BODY_WEIGHT_LORENTZ(
             - Global ICU Stay ID
             - Ideal Body Weight (Lorentz): Calculated ideal body weight in kg
     """
-    patient_information = _load_patient_information(patient_information)
-
-    return patient_information.with_columns(
-        pl.when(pl.col(gender_col) == "Female")
-        .then((pl.col(height_col) - 100) - ((pl.col(height_col) - 150) / 2))
-        .otherwise(
-            (pl.col(height_col) - 100) - ((pl.col(height_col) - 150) / 4)
+    return (
+        _load_patient_information(patient_information)
+        .with_columns(
+            pl.when(pl.col(gender_col) == "Female")
+            .then((pl.col(height_col) - 100) - ((pl.col(height_col) - 150) / 2))
+            .otherwise(
+                (pl.col(height_col) - 100) - ((pl.col(height_col) - 150) / 4)
+            )
+            .alias("Ideal Body Weight (Lorentz)")
         )
-        .alias("Ideal Body Weight (Lorentz)")
-    ).select("Global ICU Stay ID", "Ideal Body Weight (Lorentz)")
+        .select("Global ICU Stay ID", "Ideal Body Weight (Lorentz)")
+    )
 
 
 # region ABW
@@ -150,10 +152,9 @@ def ADJUSTED_BODY_WEIGHT(
             - Ideal Body Weight (Devine)
             - Adjusted Body Weight: Adjusted weight for dosing in kg (or None if not obese)
     """
-    patient_information = _load_patient_information(patient_information)
-
     return (
-        patient_information.pipe(IDEAL_BODY_WEIGHT_DEVINE)
+        _load_patient_information(patient_information)
+        .pipe(IDEAL_BODY_WEIGHT_DEVINE)
         .with_columns(
             pl.when(pl.col(weight_col) > pl.col("Ideal Body Weight (Devine)"))
             .then(
@@ -191,9 +192,7 @@ def BODY_SURFACE_AREA(
             Input data with additional column:
             - Body Surface Area: Body surface area in m²
     """
-    patient_information = _load_patient_information(patient_information)
-
-    return patient_information.with_columns(
+    return _load_patient_information(patient_information).with_columns(
         (((pl.col(height_col) * pl.col(weight_col)) / 3600) ** 0.5).alias(
             "Body Surface Area"
         )
@@ -219,9 +218,7 @@ def BODY_MASS_INDEX(
             Input data with additional column:
             - Body Mass Index: BMI in kg/m²
     """
-    patient_information = _load_patient_information(patient_information)
-
-    return patient_information.with_columns(
+    return _load_patient_information(patient_information).with_columns(
         (pl.col(weight_col) / ((pl.col(height_col) / 100) ** 2)).alias(
             "Body Mass Index"
         )
@@ -249,8 +246,6 @@ def CLASSIFY_BODY_MASS_INDEX(
             - BMI Classification: WHO classification category (Severe Thinness, Moderate Thinness,
               Mild Thinness, Normal, Overweight, Obese Class I, II, or III)
     """
-    patient_information = _load_patient_information(patient_information)
-
     bmi_classification_dtype = pl.Enum(
         [
             "Severe Thinness",
@@ -264,26 +259,30 @@ def CLASSIFY_BODY_MASS_INDEX(
         ]
     )
 
-    return patient_information.pipe(BODY_MASS_INDEX).with_columns(
-        pl.when(pl.col("Body Mass Index").is_null())
-        .then(None)
-        .when(pl.col("Body Mass Index") < 16)
-        .then(pl.lit("Severe Thinness"))
-        .when(pl.col("Body Mass Index") < 17)
-        .then(pl.lit("Moderate Thinness"))
-        .when(pl.col("Body Mass Index") < 18.5)
-        .then(pl.lit("Mild Thinness"))
-        .when(pl.col("Body Mass Index") < 25)
-        .then(pl.lit("Normal"))
-        .when(pl.col("Body Mass Index") < 30)
-        .then(pl.lit("Overweight"))
-        .when(pl.col("Body Mass Index") < 35)
-        .then(pl.lit("Obese Class I (Moderate)"))
-        .when(pl.col("Body Mass Index") < 40)
-        .then(pl.lit("Obese Class II (Severe)"))
-        .otherwise(pl.lit("Obese Class III (Very Severe)"))
-        .cast(bmi_classification_dtype)
-        .alias("BMI Classification")
+    return (
+        _load_patient_information(patient_information)
+        .pipe(BODY_MASS_INDEX)
+        .with_columns(
+            pl.when(pl.col("Body Mass Index").is_null())
+            .then(None)
+            .when(pl.col("Body Mass Index") < 16)
+            .then(pl.lit("Severe Thinness"))
+            .when(pl.col("Body Mass Index") < 17)
+            .then(pl.lit("Moderate Thinness"))
+            .when(pl.col("Body Mass Index") < 18.5)
+            .then(pl.lit("Mild Thinness"))
+            .when(pl.col("Body Mass Index") < 25)
+            .then(pl.lit("Normal"))
+            .when(pl.col("Body Mass Index") < 30)
+            .then(pl.lit("Overweight"))
+            .when(pl.col("Body Mass Index") < 35)
+            .then(pl.lit("Obese Class I (Moderate)"))
+            .when(pl.col("Body Mass Index") < 40)
+            .then(pl.lit("Obese Class II (Severe)"))
+            .otherwise(pl.lit("Obese Class III (Very Severe)"))
+            .cast(bmi_classification_dtype)
+            .alias("BMI Classification")
+        )
     )
 
 

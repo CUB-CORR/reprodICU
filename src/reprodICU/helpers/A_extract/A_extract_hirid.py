@@ -114,7 +114,8 @@ class HiRIDExtractor(HiRIDPaths):
         """
         return (
             pl.scan_csv(
-                self.general_table_path, schema_overrides={"admissiontime": str}
+                self.general_table_path,
+                schema_overrides={"admissiontime": str},
             )
             # Rename columns for consistency
             .rename(
@@ -160,7 +161,7 @@ class HiRIDExtractor(HiRIDPaths):
 
         Steps:
             1. Check for precomputed parquet file; load if available.
-            2. Otherwise, scan timeseries parquet files from {imputed_stage_path}.
+            2. Otherwise, scan timeseries parquet files from {timeseries_path}.
             3. Extract maximum relative time offset per patient.
             4. Convert duration from seconds to days.
             5. Save result as parquet file for future reuse.
@@ -180,16 +181,24 @@ class HiRIDExtractor(HiRIDPaths):
 
         # The length of stay is derived from the last measurement of a timeseries variable.
         lengths_of_stay = (
-            pl.scan_parquet(self.imputed_stage_path + "*.parquet")
-            .select("patientid", "reldatetime")
-            .drop_nulls()
-            .rename(
-                {
-                    "patientid": self.icu_stay_id_col,
-                    "reldatetime": self.icu_length_of_stay_col,
-                }
-            )
+            pl.scan_parquet(self.timeseries_path + "*.parquet")
+            .select("patientid", "datetime")
+            .rename({"patientid": self.icu_stay_id_col})
             .cast({self.icu_stay_id_col: str})
+            .join(
+                self._extract_admissions().select(
+                    self.icu_stay_id_col, "admissiontime"
+                ),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
+            .with_columns(
+                pl.col("datetime")
+                .sub(pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.icu_length_of_stay_col)
+            )
+            .drop_nulls()
             .group_by(self.icu_stay_id_col)
             .max()
             # Convert the length of stay to days
@@ -426,15 +435,12 @@ class HiRIDExtractor(HiRIDPaths):
                     "%Y-%m-%d %H:%M:%S%.9f"
                 ),
                 pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                # .replace_strict(observation_mapping, default=None),
                 pl.col("value").cast(float),
             )
             .with_columns(
-                (
-                    (
-                        pl.col("datetime") - pl.col("admissiontime")
-                    ).dt.total_seconds()
-                ).alias(self.timeseries_time_col)
+                (pl.col("datetime") - pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.timeseries_time_col)
             )
             .drop("admissiontime", "datetime")
             # Remove duplicate rows
@@ -442,9 +448,7 @@ class HiRIDExtractor(HiRIDPaths):
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
             # Remove rows with empty lab results
-            .filter(
-                pl.col("variable").is_not_null() & (pl.col("variable") != "")
-            )
+            .filter(pl.col("variable").is_not_null(), pl.col("variable") != "")
         )
 
     # endregion
@@ -470,8 +474,10 @@ class HiRIDExtractor(HiRIDPaths):
                 - variable: Laboratory test name.
                 - labstruct: Struct with value, system, method, time, LOINC code.
         """
+
         LOINC_data = data.select("variable").unique()
         labnames = LOINC_data.collect().to_series().to_list()
+
         LOINC_data = (
             data.select("variable").unique()
             # Add columns for LOINC components and systems
@@ -484,12 +490,14 @@ class HiRIDExtractor(HiRIDPaths):
                 .alias("LOINC_component"),
                 pl.col("variable")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("variable")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("variable").replace_strict(
@@ -705,27 +713,21 @@ class HiRIDExtractor(HiRIDPaths):
                 # Calculate the rate
                 .with_columns(
                     (
-                        (
-                            pl.col(self.fluid_amount_col)
-                            / pl.col("datetime")
-                            .sub(pl.col("prev_datetime"))
-                            .dt.total_seconds()
-                        )
-                        .round_sig_figs(2)
-                        .alias(self.fluid_rate_col)
+                        pl.col(self.fluid_amount_col)
+                        / pl.col("datetime")
+                        .sub(pl.col("prev_datetime"))
+                        .dt.total_seconds()
                     )
+                    .round_sig_figs(2)
+                    .alias(self.fluid_rate_col)
                 )
                 .with_columns(
-                    (
-                        (
-                            pl.col("prev_datetime") - pl.col("admissiontime")
-                        ).dt.total_seconds()
-                    ).alias(self.drug_start_col),
-                    (
-                        (
-                            pl.col("datetime") - pl.col("admissiontime")
-                        ).dt.total_seconds()
-                    ).alias(self.drug_end_col),
+                    (pl.col("prev_datetime") - pl.col("admissiontime"))
+                    .dt.total_seconds()
+                    .alias(self.drug_start_col),
+                    (pl.col("datetime") - pl.col("admissiontime"))
+                    .dt.total_seconds()
+                    .alias(self.drug_end_col),
                     # Add a column to indicate the administration type
                     pl.lit("given").alias(self.drug_admin_type_col),
                 )
@@ -1005,20 +1007,6 @@ class HiRIDExtractor(HiRIDPaths):
     # endregion
 
     # region helpers
-    def _get_variable_reference(self) -> pl.DataFrame:
-        """
-        Load variable reference mapping from CSV file.
-
-        Returns:
-            pl.DataFrame: Columns: Source Table, ID, Variable Name.
-        """
-        return pl.read_csv(
-            self.variable_reference_path,
-            # separator=";",
-            # encoding="unicode_escape",
-            columns=["Source Table", "ID", "Variable Name"],
-        )
-
     def _get_observation_variables(self) -> pl.DataFrame:
         """
         Retrieve and filter observation variables from reference mapping.
@@ -1033,26 +1021,58 @@ class HiRIDExtractor(HiRIDPaths):
                 - variableid: Observation variable identifier.
                 - variable: Observation variable name.
         """
-        return (
-            self._get_variable_reference()
+
+        references = (
+            pl.read_csv(self.variable_reference_path)
             .filter(pl.col("Source Table") == "Observation")
             .select("ID", "Variable Name")
-            .with_columns(
-                pl.col("Variable Name")
+        )
+
+        extracted_references = dict(
+            zip(
+                references.get_column("ID").to_list(),
+                references.get_column("Variable Name").to_list(),
+            )
+        )
+
+        extracted_references.update(
+            {
                 # Fix bad mappings (wrong units)
-                .replace(
-                    "Bilirubin.direct [Mass/volume] in Serum or Plasma",
-                    "Bilirubin.direct [Moles/volume] in Serum or Plasma",
-                )
+                24000560: "Bilirubin.direct [Moles/volume] in Serum or Plasma", # was "Bilirubin.direct [Mass/volume] in Serum or Plasma"
+                # "/100 leukocytes" obselete in v20250827
+                24000480: "Lymphocytes/Leukocytes in Blood", # was "Lymphocytes [#/volume] in Blood"
+                24000550: "Neutrophils/Leukocytes in Blood", # was "Neutrophils/100 leukocytes in Blood"
+                24000556: "Segmented neutrophils/Leukocytes in Blood", # was "Segmented neutrophils/100 leukocytes in Blood"
+                24000557: "Band form neutrophils/Leukocytes in Blood", # was "Band form neutrophils/100 leukocytes in Blood"
+                # Update mappings for better clarity
+                20001000: "Oxygen saturation in Central venous blood",  # was "Central venous oxygenation saturation"
+                24000737: "Oxygen saturation in Central venous blood",  # was "Central venous oxygenation saturation"
+                # Update mappings for duplicate names
+                # -> Respiratory rate appears multiple times with different IDs
+                300: "Respiratory rate",  # Atemfrequenz
+                310: "Respiratory rate (spontaneous)",  # RRsp(m)
+                5685: None,  # RR Caresc
+            } # fmt: skip
+        )
+
+        return (
+            pl.read_csv(self.variable_reference_path)
+            .select("ID")
+            .with_columns(
+                pl.col("ID")
+                .replace_strict(extracted_references, default=None)
                 # Replace the variable names with the reprodICU mapping
                 .replace(
                     {
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
+                .alias("Variable Name")
             )
+            .drop_nulls()
             .rename({"ID": "variableid", "Variable Name": "variable"})
             .lazy()
         )

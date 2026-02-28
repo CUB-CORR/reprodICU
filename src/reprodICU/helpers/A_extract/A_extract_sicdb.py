@@ -237,42 +237,6 @@ class SICdbExtractor(SICdbPaths):
     # endregion
 
     # region timeseries
-    # Partition timeseries information from the data_float_m.csv file
-    def partition_timeseries(self, path) -> None:
-        """
-        Partition timeseries data into separate files for efficient processing.
-
-        Steps:
-            1. Read timeseries data from {data_float_m_path}.
-            2. Compute partition ID based on case ID.
-            3. Round values to 2 decimal places for precision.
-            4. Save partitioned data to specified path as parquet files.
-
-        Returns:
-            None: Data is written to parquet files on disk.
-        """
-
-        print("SICdb   - Partitioning timeseries...")
-        (
-            pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
-            .select("CaseID", "Offset", "DataID", "Val")
-            .with_columns(
-                pl.col("CaseID").floordiv(5000).alias("PartitionID"),
-                # Round values to 2 decimal places due to precision issues of IEEE 754 floats
-                pl.col("Val").cast(float).round(2),
-            )
-            .rename({"CaseID": self.icu_stay_id_col})
-            .sink_parquet(
-                pl.PartitionByKey(
-                    base_path=path,
-                    file_path=lambda ctx: f"{ctx.keys[0].str_value}.parquet",
-                    by=["PartitionID"],
-                    include_key=False,
-                ),
-                mkdir=True,
-            )
-        )
-
     def _extract_timeseries_helper(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Process and align raw timeseries data relative to ICU admission.
@@ -351,10 +315,15 @@ class SICdbExtractor(SICdbPaths):
         """
         offsets = self._get_offsets()
 
-        LOINC_data = self._extract_references_LOINC()
+        LOINC_data = self._extract_references_LOINC().lazy()
         labnames = (
-            LOINC_data.select("LaboratoryName").unique().to_series().to_list()
+            LOINC_data.select("LaboratoryName")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
         )
+
         LOINC_data = (
             LOINC_data
             # Add columns for LOINC components and systems
@@ -367,12 +336,14 @@ class SICdbExtractor(SICdbPaths):
                 .alias("LOINC_component"),
                 pl.col("LaboratoryName")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("LaboratoryName")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("LaboratoryName").replace_strict(
@@ -388,16 +359,6 @@ class SICdbExtractor(SICdbPaths):
                 )
                 .alias("LOINC_code"),
             )
-            .with_columns(
-                pl.col("LOINC_component")
-                .replace_strict(
-                    self.relevant_lab_LOINC_systems,
-                    return_dtype=pl.List(str),
-                    default=None,
-                )
-                .alias("relevant_LOINC_systems")
-            )
-            .lazy()
         )
 
         return (
@@ -405,6 +366,33 @@ class SICdbExtractor(SICdbPaths):
             .rename({"CaseID": self.icu_stay_id_col})
             .join(offsets, on=self.icu_stay_id_col)
             .join(LOINC_data, on="LaboratoryID", how="left")
+            # Filter for lab names of interest
+            .filter(
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
+            )
+            .with_columns(
+                # Mark only as arterial blood if LaboratoryType explicitly indicates so
+                pl.when(pl.col("LOINC_system") == "Blood arterial")
+                .then(
+                    pl.when(pl.col("LaboratoryType") == 2296)
+                    .then(pl.lit("Blood arterial"))
+                    .otherwise(pl.lit("Blood"))
+                )
+                .otherwise(pl.col("LOINC_system"))
+                .alias("LOINC_system")
+            )
             # Fix lab time offset
             .with_columns(
                 (pl.col("Offset") - pl.col("CaseOffset"))
@@ -432,8 +420,6 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LaboratoryValue").is_not_null()
                 & (pl.col("LaboratoryName") != "")
             )
-            # Drop columns
-            .drop("CaseOffset", "LaboratoryType")
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("LaboratoryName"))
             .with_columns(
@@ -615,12 +601,13 @@ class SICdbExtractor(SICdbPaths):
 
         return (
             pl.scan_csv(self.cases_path)
-            .select("CaseID", "PatientID", "ICD10Main")
+            .select("CaseID", "PatientID", "ICD10Main", "ICD10MainText")
             .rename(
                 {
                     "CaseID": self.icu_stay_id_col,
                     "PatientID": self.person_id_col,
                     "ICD10Main": self.diagnosis_icd_code_col,
+                    "ICD10MainText": self.diagnosis_description_col,
                 }
             )
             .with_columns(
@@ -722,9 +709,8 @@ class SICdbExtractor(SICdbPaths):
                 pl.col("LOINC_long").replace(
                     {  # NOTE: fixing wrong unit
                         "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": (
-                            "Thyroxine (T4) free [Moles/volume]"
-                        ),
+                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                        "Hematocrit [Volume Fraction] of Arterial blood": "Hematocrit [Volume Fraction] of Blood by Automated count"
                     }
                 )
             )
@@ -735,7 +721,14 @@ class SICdbExtractor(SICdbPaths):
                     "LOINC_long": "LaboratoryName",
                 }
             )
-        )
+            .with_columns(
+                pl.col("LaboratoryName")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
 
     def _extract_drug_units(self) -> dict:
         """
@@ -846,6 +839,7 @@ class SICdbExtractor(SICdbPaths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
                 .alias("DataName")

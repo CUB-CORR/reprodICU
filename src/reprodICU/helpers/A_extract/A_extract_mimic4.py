@@ -653,15 +653,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
             .drop("charttime", "intime")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (
-                    pl.col("offset")
-                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col("offset")
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
-                )
+                pl.col("offset")
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
+                pl.col("offset")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
             .with_columns(
                 pl.col("offset")
@@ -733,6 +730,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
             )
@@ -741,11 +739,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 pl.col("label").is_not_null(),
                 # lab values are stored in the labevents.csv file and just
                 # duplicated to chartevents.csv
-                pl.col("label").is_in(
-                    self.relevant_vital_values
-                    + self.relevant_respiratory_values
-                    + self.relevant_intakeoutput_values
-                ),
+                pl.col("label").is_in(self.all_relevant_values),
             )
         )
 
@@ -792,6 +786,15 @@ class MIMIC4Extractor(MIMIC4Paths):
                     .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
                     .replace(self.ventilator_mode_enum_map)
                 )
+                .when(
+                    pl.col("label")
+                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                )
+                .then(
+                    pl.col("value")
+                    .replace_strict(self.RRT_MODE_MAP, default=None)
+                    .replace(self.rrt_mode_enum_map)
+                )
                 .otherwise(pl.col("valuenum"))
                 .cast(float)
                 .alias("valuenum"),
@@ -830,16 +833,21 @@ class MIMIC4Extractor(MIMIC4Paths):
         """
         d_labitems_to_loinc_data = (
             pl.scan_csv(self.d_labitems_to_loinc_path)
-            .select(
-                "itemid (omop_source_code)", "omop_concept_name", "category"
-            )
+            .select("itemid (omop_source_code)", "omop_concept_name", "category")
             .rename(
                 {
                     "itemid (omop_source_code)": "itemid",
                     "omop_concept_name": "label",
                 }
             )
-        )
+            .with_columns(
+                pl.col("label")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("label")
             .unique()
@@ -860,12 +868,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .alias("LOINC_component"),
                 pl.col("label")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("label")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("label").replace_strict(
@@ -1152,7 +1162,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             pl.scan_csv(self.microbiologyevents_path)
             .select(
-                "hadm_id",
+                "subject_id",
                 "charttime",
                 "spec_type_desc",
                 "test_name",
@@ -1165,7 +1175,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # rename columns for consistency
             .rename(
                 {
-                    "hadm_id": self.hospital_stay_id_col,
+                    "subject_id": self.person_id_col,
                     # "spec_type_desc": self.micro_specimen_col,
                     # "test_name": self.micro_test_col,
                     # "org_name": self.micro_organism_col,
@@ -1173,8 +1183,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                     "interpretation": self.micro_sensitivity_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.hospital_stay_id_col)
-            .drop(self.person_id_col)
+            .join(self.icu_stay_id, on=self.person_id_col, how="left")
             # include only ICU patients
             .filter(pl.col(self.icu_stay_id_col).is_not_null())
             .join(intimes, on=self.icu_stay_id_col)
@@ -1585,7 +1594,10 @@ class MIMIC4Extractor(MIMIC4Paths):
         else:
             prescriptions = pl.scan_csv(
                 self.prescriptions_path,
-                schema_overrides={"dose_val_rx": str},
+                schema_overrides={
+                    "dose_val_rx": str,
+                    "doses_per_24_hrs": float,
+                },
                 infer_schema_length=10000,
             )
 
@@ -1653,6 +1665,7 @@ class MIMIC4Extractor(MIMIC4Paths):
                 "ndc",
                 "dose_val_rx",
                 "dose_unit_rx",
+                "doses_per_24_hrs",
                 "route",
             )
             .rename(
@@ -1666,9 +1679,11 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(route_to_concept, on="route", how="left")
             .with_columns(
+                pl.col("ndc").cast(int).alias(self.drug_code_col),
                 pl.lit("prescribed")
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
+                # Map NDC codes to ingredients and drug names
                 pl.col("ndc")
                 .replace_strict(ndc_to_ingredient, default=None)
                 .alias(self.drug_ingredient_col),
@@ -1677,6 +1692,16 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .alias(self.drug_name_OMOP_col),
                 # Add a column to indicate if the drug is continuous
                 pl.lit(False).alias(self.drug_continuous_col),
+                # Calculate total doses that should have been given in period
+                # -> how often was the threshold of next administration crossed within the start and stop time?
+                (
+                    pl.col(self.drug_amount_col).cast(float, strict=False)
+                    * (
+                        pl.col("stoptime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                        - pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                    ).dt.total_hours()
+                    // (24 / pl.col("doses_per_24_hrs"))
+                ).alias(self.drug_amount_col),
             )
             .rename({"stoptime": "endtime"})
             .join(

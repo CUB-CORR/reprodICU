@@ -620,15 +620,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET")
             )
             .drop("CHARTTIME", "INTIME")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (
-                    pl.col("OFFSET")
-                    < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col("OFFSET")
-                    > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF)
-                )
+                pl.col("OFFSET")
+                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
+                pl.col("OFFSET")
+                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
             )
             .with_columns(
                 (pl.col("OFFSET").dt.total_seconds())
@@ -699,6 +696,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
             )
@@ -707,11 +705,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("LABEL").is_not_null(),
                 # lab values are stored in the labevents.csv file and just
                 # duplicated to chartevents.csv
-                pl.col("LABEL").is_in(
-                    self.relevant_vital_values
-                    + self.relevant_respiratory_values
-                    + self.relevant_intakeoutput_values
-                ),
+                pl.col("LABEL").is_in(self.all_relevant_values),
             )
         )
 
@@ -758,6 +752,15 @@ class MIMIC3Extractor(MIMIC3Paths):
                     .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
                     .replace(self.ventilator_mode_enum_map)
                 )
+                .when(
+                    pl.col("LABEL")
+                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                )
+                .then(
+                    pl.col("VALUE")
+                    .replace_strict(self.RRT_MODE_MAP, default=None)
+                    .replace(self.rrt_mode_enum_map)
+                )
                 .otherwise(pl.col("VALUENUM"))
                 .cast(float)
                 .alias("VALUENUM"),
@@ -798,7 +801,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             pl.scan_csv(self.d_labitems_to_loinc_path)
             .select("ITEMID", "COALESCED_CONCEPT_NAME", "CATEGORY")
             .rename({"COALESCED_CONCEPT_NAME": "LABEL"})
-        )
+            .with_columns(
+                pl.col("LABEL")
+                # "/100 leukocytes" obselete in v20250827
+                # -> now without "/100", kept for compatibility and conversion
+                .str.replace("/100 leukocytes", "/Leukocytes")
+                .str.replace("/100 erythrocytes", "/Erythrocytes")
+            )
+        ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("LABEL")
             .unique()
@@ -819,12 +829,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias("LOINC_component"),
                 pl.col("LABEL")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("LABEL")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("LABEL").replace_strict(
@@ -1736,26 +1748,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .over(self.drug_mixture_id_col, order_by="STARTTIME"),
             )
             .with_columns(
-                pl.coalesce(
-                    pl.col(self.drug_rate_col).ne(
-                        pl.col(self.drug_rate_col)
-                        .shift(1)
-                        .backward_fill()
-                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                    ),
-                    pl.col(self.fluid_rate_col).ne(
-                        pl.col(self.fluid_rate_col)
-                        .shift(1)
-                        .backward_fill()
-                        .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                    ),
-                ).alias("has_same_rate")
-            )
-            .with_columns(
-                pl.col("has_same_rate")
-                .cum_sum()
+                pl.struct([self.drug_rate_col, self.fluid_rate_col])
+                .rle_id()
                 .over(self.drug_mixture_id_col, order_by="STARTTIME")
-                .alias("has_same_rate"),
+                .alias("has_same_rate")
             )
             .group_by(self.drug_mixture_id_col, "has_same_rate")
             .agg(
@@ -1846,6 +1842,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         # These mappings connect medication names to standard concepts and ingredients
         print("MIMIC3  - Loading medication mapping files...")
 
+        if "parquet" in self.prescriptions_path:
+            prescriptions = pl.scan_parquet(
+                self.prescriptions_path, parallel="prefiltered"
+            )
+        else:
+            prescriptions = pl.scan_csv(self.prescriptions_path)
+
         # 1. Load route and administration mappings
         route_to_concept = (
             pl.read_csv(self.route_to_concept_path)
@@ -1875,12 +1878,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         # 2. Create NDC to RxNorm concept mappings
         # Extract unique NDC codes from prescriptions
         ndc_codes = (
-            pl.scan_csv(self.prescriptions_path)
-            .select("NDC")
-            .unique()
-            .collect()
-            .to_series()
-            .to_list()
+            prescriptions.select("NDC").unique().collect().to_series().to_list()
         )
 
         # Map NDCs to RxNorm concept IDs (standardize to 11 digits with leading zeros)
@@ -1935,8 +1933,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         }
 
         prescriptions = (
-            pl.scan_csv(self.prescriptions_path)
-            .select(
+            prescriptions.select(
                 "ICUSTAY_ID",
                 "STARTDATE",
                 "ENDDATE",
@@ -1958,13 +1955,16 @@ class MIMIC3Extractor(MIMIC3Paths):
             # NOTE: dirty, but necessary to join with inputevents
             .rename({"STARTDATE": "STARTTIME", "ENDDATE": "ENDTIME"})
             .with_columns(
+                pl.col("NDC").cast(int).alias(self.drug_code_col),
                 pl.lit("prescribed")
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
+                # Map NDC codes to ingredients and drug names
                 pl.when(pl.col("NDC") != 0)
                 .then(
                     pl.col("NDC").replace_strict(
-                        ndc_to_ingredient, default=None
+                        ndc_to_ingredient,
+                        default=None,
                     )
                 )
                 .otherwise(
@@ -1976,7 +1976,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.drug_ingredient_col),
                 pl.when(pl.col("NDC") != 0)
                 .then(
-                    pl.col("NDC").replace_strict(ndc_to_drugname, default=None)
+                    pl.col("NDC").replace_strict(
+                        ndc_to_drugname,
+                        default=None,
+                    )
                 )
                 .otherwise(
                     pl.col(self.drug_name_col).replace_strict(
@@ -2011,17 +2014,13 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (
-                    pl.col(self.drug_start_col)
-                    < pl.duration(days=1).dt.total_seconds()
-                    * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col(self.drug_start_col)
-                    > pl.duration(
-                        days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).dt.total_seconds()
-                )
+                pl.col(self.drug_start_col)
+                < pl.duration(days=1).dt.total_seconds()
+                * pl.col(self.icu_length_of_stay_col),
+                pl.col(self.drug_start_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
             )
             .drop("STARTTIME", "ENDTIME", "INTIME", self.icu_length_of_stay_col)
         )

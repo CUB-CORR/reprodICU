@@ -11,6 +11,7 @@ import polars as pl
 
 from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
 from ..helper import GlobalHelpers
+from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -44,6 +45,58 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
+    def _process_timeseries_vitals_batch(
+        self, data: pl.LazyFrame
+    ) -> pl.LazyFrame:
+        """
+        Helper to pivot vitals batches during batch processing.
+
+        Steps:
+            1. Collect the batch and pivot on `label` using first aggregation.
+            2. Drop rows that are empty for all non-index columns.
+
+        Returns:
+            pl.LazyFrame: pivoted batch as a lazyframe.
+        """
+        timeseries = (
+            data.collect()
+            .pivot(
+                on="label",
+                index=self.index_cols,
+                values="valuenum",
+                aggregate_function="first",
+            )  # Replace the integerized values with the original values
+            .with_columns(
+                pl.col("Heart rate rhythm").replace_strict(
+                    self.heart_rhythm_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Oxygen delivery system").replace_strict(
+                    self.oxygen_delivery_system_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col("Ventilation mode Ventilator").replace_strict(
+                    self.ventilator_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+                pl.col(
+                    "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                ).replace_strict(
+                    self.rrt_mode_enum_map_inverted,
+                    return_dtype=pl.String,
+                ),
+            )
+        )
+
+        # Drop empty rows
+        droplist = list(set(timeseries.columns) - set(self.index_cols))
+        return (
+            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
+            .unique(self.index_cols)
+            .sort(self.index_cols)
+            .lazy()
+        )
+
     # region vitals
     # Processes the vital data of the MIMIC4 dataset.
     def process_timeseries_vitals(self):
@@ -76,59 +129,36 @@ class MIMIC4Processor(MIMIC4Extractor):
 
         print("MIMIC4  - Processing vitals & respiratory data...")
 
-        # Process vitals data
-        ts_vitals = (
-            self.extract_chartevents()
-            # Convert temperature from Fahrenheit to Celsius
-            .pipe(
-                self.convert.convert_temperature_F_to_C,
-                itemid_F="Temperature Fahrenheit",
-                itemid_C="Temperature",
-                labelcol="label",
-                valuecol="valuenum",
+        # Prepare extracted vitals for batch pivoting and save unsorted cache
+        if not os.path.isfile(ts_vitals_path_unsorted):
+            (
+                self.extract_chartevents()
+                # Convert temperature from Fahrenheit to Celsius
+                .pipe(
+                    self.convert.convert_temperature_F_to_C,
+                    itemid_F="Temperature Fahrenheit",
+                    itemid_C="Temperature",
+                    labelcol="label",
+                    valuecol="valuenum",
+                )
+                # Convert fractions to percentages
+                .pipe(
+                    self.convert.convert_ratio_to_percentage,
+                    itemid="Oxygen/Total gas setting [Volume Fraction] Ventilator",
+                    labelcol="label",
+                    valuecol="valuenum",
+                ).sink_parquet(ts_vitals_path_unsorted)
             )
-            # Pivot the vitals data
-            .collect().pivot(
-                on="label",
-                index=self.index_cols,
-                values="valuenum",
-                aggregate_function="first",
-            )
-            # Replace the integerized values with the original values
-            .with_columns(
-                pl.col("Heart rate rhythm").replace_strict(
-                    self.heart_rhythm_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Oxygen delivery system").replace_strict(
-                    self.oxygen_delivery_system_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Ventilation mode Ventilator").replace_strict(
-                    self.ventilator_mode_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-            )
-        )
 
-        # Drop empty rows
-        ts_vitals_cols = ts_vitals.collect_schema().names()
-        droplist = list(set(ts_vitals_cols) - set(self.index_cols))
-        ts_vitals = (
-            ts_vitals.lazy()
-            .pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-        )
-
-        # Save the preprocessed data
-        ts_vitals.sink_parquet(ts_vitals_path_unsorted)
-
-        # Sort the data
-        (
-            pl.scan_parquet(ts_vitals_path_unsorted)
-            .sort(self.index_cols)
-            .sink_parquet(ts_vitals_path)
+        # Batch pivot the cached file to avoid large in-memory pivots
+        batch_process_timeseries(
+            input_file=ts_vitals_path_unsorted,
+            output_file=ts_vitals_path,
+            tempfiles_path=self.precalc_path,
+            operation="pivot",
+            method=self._process_timeseries_vitals_batch,
+            id_col=self.icu_stay_id_col,
+            delete_after=True,
         )
         os.remove(ts_vitals_path_unsorted)
 
@@ -209,12 +239,12 @@ class MIMIC4Processor(MIMIC4Extractor):
                 self.omop,
                 self.index_cols,
                 struct_cols=[
-                    "Basophils/100 leukocytes",
-                    "Eosinophils/100 leukocytes",
-                    "Lymphocytes/100 leukocytes",
-                    "Monocytes/100 leukocytes",
-                    "Neutrophils/100 leukocytes",
-                    "Reticulocytes/100 erythrocytes",
+                    "Basophils/leukocytes",
+                    "Eosinophils/leukocytes",
+                    "Lymphocytes/leukocytes",
+                    "Monocytes/leukocytes",
+                    "Neutrophils/leukocytes",
+                    "Reticulocytes/Erythrocytes",
                 ],
             )
             .lazy()
@@ -477,7 +507,7 @@ class MIMIC4Converter(UnitConverter):
     def _align_units(self, data: pl.LazyFrame) -> pl.LazyFrame:
         """
         Align lab unit representations for count measurements.
-Converts absolute counts to consistent units (K/uL → #/uL).
+        Converts absolute counts to consistent units (K/uL → #/uL).
 
         Returns:
             pl.LazyFrame: Lab data with aligned unit values.
@@ -525,7 +555,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Basophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Basophils/100 leukocytes",
+                goal_itemcol="Basophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -533,7 +563,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Eosinophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Eosinophils/100 leukocytes",
+                goal_itemcol="Eosinophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -541,7 +571,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Lymphocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Lymphocytes/100 leukocytes",
+                goal_itemcol="Lymphocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -549,7 +579,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Monocytes",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Monocytes/100 leukocytes",
+                goal_itemcol="Monocytes/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -557,7 +587,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Neutrophils",
                 total_itemcol="Leukocytes",
-                goal_itemcol="Neutrophils/100 leukocytes",
+                goal_itemcol="Neutrophils/leukocytes",
                 structfield="value",
                 structstring=True,
             )
@@ -565,7 +595,7 @@ Converts absolute counts to consistent units (K/uL → #/uL).
                 self.convert_absolute_count_to_relative,
                 itemcol="Reticulocytes",
                 total_itemcol="Erythrocytes",
-                goal_itemcol="Reticulocytes/100 erythrocytes",
+                goal_itemcol="Reticulocytes/Erythrocytes",
                 structfield="value",
                 structstring=True,
             )

@@ -4,9 +4,10 @@ import polars as pl
 
 from ...common import (
     _build_t0,
+    _optional_time_bounds_filter,
     _to_lazy,
-    get_timeseries_intakeoutput,
     get_patient_information,
+    get_timeseries_intakeoutput,
 )
 from ...FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 
@@ -20,6 +21,13 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
     return (
         _to_lazy(inout)
+        .filter(
+            pl.any_horizontal(
+                pl.col("Fluid output urine in and out urethral catheter").is_not_null(),
+                pl.col("Fluid output urine nephrostomy").is_not_null(),
+                pl.col("Urine output").is_not_null(),
+            ) # fmt: skip
+        )
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
@@ -154,12 +162,6 @@ def URINE_OUTPUT(
         .alias("uo_window_ml"),
     )
 
-    if t_1 is not None:
-        windowed = windowed.filter(
-            pl.col("timeframe")
-            < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size).add(1))
-        )
-
     aggregated = (
         windowed.group_by(STAY_KEY, "timeframe")
         .agg(pl.sum("uo_window_ml").alias("uo_interval_ml"))
@@ -188,7 +190,9 @@ def URINE_OUTPUT(
         "uo_interval_ml_per_kg",
     ]
 
-    return aggregated.select(select_cols)
+    return aggregated.filter(
+        _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+    ).select(select_cols)
 
 
 __all__ = ["URINE_OUTPUT"]

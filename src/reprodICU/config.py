@@ -198,6 +198,22 @@ class ConfigManager:
         print(f"Package config directory: {self.package_config_dir}")
         print(f"User config directory: {self.user_config_dir}")
 
+    def get_clinically_plausible_values(self) -> Dict[str, Any]:
+        """
+        Load clinically plausible value ranges from package config.
+
+        Returns predefined min/max ranges for clinical measurements
+        used for data validation and outlier detection.
+
+        Returns
+        -------
+            dict
+                Dictionary of measurement names with min/max value ranges
+        """
+        return self.load_config(
+            "CLINICALLY_PLAUSIBLE_VALUES.yaml", user_override=False
+        )
+
 
 # endregion
 
@@ -623,8 +639,6 @@ class DatasetLoader:
 
 
 # region reprodICUPaths
-
-
 class reprodICUPaths:
     """
     Load and store reprodICU paths from user configuration.

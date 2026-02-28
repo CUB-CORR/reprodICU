@@ -1,21 +1,25 @@
+# partially based on clinically plausible value ranges from:
+# HiRID: https://github.com/ratschlab/circEWS/blob/dc5f5ccbc060ece97cc65080d10b3589c251f5c6/preprocessing/resource/varref_excel_v6.tsv
+# eICU / SICdb do not provide references for clinically plausible value ranges
+
 # age in years
 # NOTE: oldest person ever only became 121yrs old
 # NOTE: In MIMIC-III/-IV and eICU, dates of birth for patients aged over 89 were shifted to obscure
 # their true age and comply with HIPAA regulations: these patients appear in the database with ages
 # of over 300 years.
-age:
+Admission Age (years):
   min: 0
   max: 120
 
 # height in cm
 # NOTE: tallest living person is 251cm, shortest is 54.6cm
-height:
+Admission Height (cm):
   min: 50
   max: 250
 
 #  weight in kg
 # heaviest person ever was 635kg, Wikipedia list of heaviest people starts at 440kg
-weight:
+Admission Weight (kg):
   min: 25
   max: 440
 
@@ -26,38 +30,205 @@ BMI:
   min: 6.7
   max: 100
 
-Ccw:
+##########
+# VITALS #
+##########
+# heart rate in beats per minute
+Heart rate:
   min: 0
+  max: 300
+
+Invasive diastolic arterial pressure:
+  min: 10
+  max: 175
+
+Invasive mean arterial pressure:
+  min: 10
+  max: 200
+
+Invasive systolic arterial pressure:
+  min: 10
+  max: 300
+
+Non-invasive diastolic arterial pressure:
+  min: 10
+  max: 175
+
+Non-invasive mean arterial pressure:
+  min: 10
+  max: 200
+
+Non-invasive systolic arterial pressure:
+  min: 10
+  max: 300
+
+Central venous pressure:
+  min: 0
+  max: 50
+
+Intracranial pressure:
+  min: 0
+  max: 150
+
+Respiratory rate:
+  min: 0
+  max: 50
+
+Temperature:
+  min: 25
+  max: 45
+
+# the following are limited by definition
+Peripheral oxygen saturation:
+  min: 0
+  max: 100
+
+Mixed venous oxygen saturation:
+  min: 0
+  max: 100
+
+Glasgow coma score total:
+  min: 3
+  max: 15
+
+Glasgow coma score eye opening:
+  min: 1
+  max: 4
+
+Glasgow coma score verbal:
+  min: 1
+  max: 5
+
+Glasgow coma score motor:
+  min: 1
+  max: 6
+
+Numeric Pain Rating Scale:
+  min: 0
+  max: 10
+
+Richmond Agitation-Sedation Scale:
+  min: -5
+  max: 4
+
+################
+#  LABS - ABG  #
+################
+Oxygen:
+  min: 20
   max: 500
 
-Clung:
+Carbon dioxide:
+  min: 3
+  max: 100
+
+pH:
+  min: 6.5
+  max: 7.8
+
+Lactate:
+  min: 0
+  max: 20
+
+Bicarbonate:
+  min: 0
+  max: 50
+
+Hemoglobin:
+  min: 2
+  max: 25
+
+Oxygen saturation:
+  min: 0
+  max: 100
+
+#########################
+#  LABS - ELECTROLYTES  #
+#########################
+Chloride:
+  min: 50
+  max: 150
+
+Potassium:
+  min: 2
+  max: 12
+
+Sodium:
+  min: 100
+  max: 180
+
+#######################
+#  LABS - HEMATOLOGY  #
+#######################
+Hemoglobin:
+  min: 2
+  max: 20
+
+Erythrocyte sedimentation rate:
   min: 0
   max: 150
 
-DP_TP:
-  min: 4
-  max: 40
-
-Crs:
+Leukocytes:
   min: 0
-  max: 150
+  max: 300
 
-DP:
-  min: 4
-  max: 40
+Neutrophils.band form/leukocytes:
+  min: 0
+  max: 100
 
+Platelets:
+  min: 0
+  max: 1500
+
+######################
+#  LABS - CHEMISTRY  #
+######################
+Albumin:
+  min: 0
+  max: 70
+
+Alanine aminotransferase:
+  min: 0
+  max: 12000
+
+Aspartate aminotransferase:
+  min: 0
+  max: 30000
+
+Bilirubin:
+  min: 0
+  max: 1000
+
+C reactive protein:
+  min: 0
+  max: 600
+
+Creatinine:
+  min: 0
+  max: 17 # 1500 umol/L = 17 mg/dL
+
+Glucose:
+  min: 0
+  max: 1000
+
+INR:
+  min: 0
+  max: 8
+
+Troponin I.cardiac:
+  min: 0
+  max: 15000
+
+Urea nitrogen:
+  min: 0
+  max: 30
+
+###############
+# RESPIRATORY #
+###############
 # fraction of inspired oxygen
 # FiO2 must be between 0 and 1 by definition
 FiO2:
-  min: 0
-  max: 100
-
-MPplat:
-  min: 0
-  max: 100
-
-# mechanical power
-MP:
   min: 0
   max: 100
 
@@ -82,63 +253,93 @@ PEEP:
   max: 25
 
 # set ventilation rate
-# this refers to the ventilator rate, not the patient's spontaneous  breathing rate
-RR:
+# this refers to the ventilator rate, not the patient's spontaneous breathing rate
+Breath rate setting Ventilator:
   min: 5
   max: 40
 
-## REFERENCE FOR THE FOLLOWING ABG VALUES:
-# https://newtechnologyba.com/wp-content/uploads/2020/04/ABL-800-specification-1.pdf
-# pH
-# pH range is 6.3–8.0
-pH:
-  min: 6.3
-  max: 8
+# ------------------------------------------------------------------------------
 
-# partial pressure of carbon dioxide
-# paCO2 range is 5–250 mmHg
-paCO2:
-  min: 5
-  max: 250
-
-# partial pressure of oxygen
-# paO2 range is 0–800 mmHg
-paO2:
+Chest wall compliance: # Ccw # 4090321
   min: 0
-  max: 800
+  max: 500
 
-# serum chloride in the blood gas analysis
-# Cl- range is 7–350 mmol/L
-chloride:
-  min: 7
-  max: 350
-
-# serum calcium in the blood gas analysis
-# Ca2+ range is 0.20–9.99 mmol/L
-calcium:
-  min: 0.2
-  max: 9.99
-
-# serum potassium in the blood gas analysis
-# K+ range is 0.5–25 mmol/L
-potassium:
-  min: 0.5
-  max: 25
-
-# serum sodium in the blood gas analysis
-# Na+ range is 7–350 mmol/L
-sodium:
-  min: 7
-  max: 350
-
-# serum glucose in the blood gas analysis
-# glucose range is 0–1081 mg/dL
-glucose:
+Lung compliance: # Clung # 4298264
   min: 0
-  max: 1080
+  max: 150
 
-# serum lactate in the blood gas analysis
-# lactate range is 0–270 mg/dL
-lactate:
+Total thoracic compliance: # Crs # 4089928
   min: 0
-  max: 270
+  max: 150
+
+Airway driving pressure: # DPaw
+  min: 4
+  max: 40
+
+Transpulmonary driving pressure: # DPtp
+  min: 4
+  max: 40
+
+Mechanical power:
+  min: 0
+  max: 100
+
+################################################################################
+## OLD ABG VALUES, KEPT FOR REFERENCE BUT NOT USED ANYMORE ##
+################################################################################
+
+# ## REFERENCE FOR THE FOLLOWING ABG VALUES:
+# # https://newtechnologyba.com/wp-content/uploads/2020/04/ABL-800-specification-1.pdf
+# # pH
+# # pH range is 6.3–8.0
+# pH:
+#   min: 6.3
+#   max: 8
+
+# # partial pressure of carbon dioxide
+# # paCO2 range is 5–250 mmHg
+# paCO2:
+#   min: 5
+#   max: 250
+
+# # partial pressure of oxygen
+# # paO2 range is 0–800 mmHg
+# paO2:
+#   min: 0
+#   max: 800
+
+# # serum chloride in the blood gas analysis
+# # Cl- range is 7–350 mmol/L
+# chloride:
+#   min: 7
+#   max: 350
+
+# # serum calcium in the blood gas analysis
+# # Ca2+ range is 0.20–9.99 mmol/L
+# calcium:
+#   min: 0.2
+#   max: 9.99
+
+# # serum potassium in the blood gas analysis
+# # K+ range is 0.5–25 mmol/L
+# potassium:
+#   min: 0.5
+#   max: 25
+
+# # serum sodium in the blood gas analysis
+# # Na+ range is 7–350 mmol/L
+# sodium:
+#   min: 7
+#   max: 350
+
+# # serum glucose in the blood gas analysis
+# # glucose range is 0–1081 mg/dL
+# glucose:
+#   min: 0
+#   max: 1080
+
+# # serum lactate in the blood gas analysis
+# # lactate range is 0–270 mg/dL
+# lactate:
+#   min: 0
+#   max: 270

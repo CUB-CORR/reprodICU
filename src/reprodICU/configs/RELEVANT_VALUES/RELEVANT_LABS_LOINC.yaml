@@ -45,7 +45,7 @@ Base excess:
   systems:
     - Blood
     - Blood arterial
-Basophils/100 leukocytes:
+Basophils/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -120,7 +120,7 @@ Creatinine:
     - Blood
     - Serum or Plasma
     - Urine
-Eosinophils/100 leukocytes:
+Eosinophils/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -144,6 +144,11 @@ Erythrocyte mean corpuscular volume: # MCV
   property: "Entitic volume"
   systems:
     - Red Blood Cells
+Erythrocyte/Blood: # Hematocrit
+  property: "Volume Fraction"
+  systems:
+    - Blood
+    - Blood arterial
 Ferritin:
   property: "Mass Concentration"
   systems:
@@ -175,11 +180,6 @@ Haptoglobin:
   property: "Mass Concentration"
   systems:
     - Serum or Plasma
-Hematocrit:
-  property: "Volume Fraction"
-  systems:
-    - Blood
-    - Blood arterial
 Hemoglobin:
   property: "Mass Concentration"
   systems:
@@ -218,7 +218,7 @@ Lipase:
   property: "Catalytic Concentration"
   systems:
     - Serum or Plasma
-Lymphocytes/100 leukocytes:
+Lymphocytes/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -237,7 +237,7 @@ Methemoglobin/Hemoglobin.total:
     - Blood
     - Blood arterial
     - Blood venous
-Monocytes/100 leukocytes:
+Monocytes/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -246,15 +246,15 @@ Natriuretic peptide.B prohormone N-Terminal:
   property: "Mass Concentration"
   systems:
     - Serum or Plasma
-Neutrophils/100 leukocytes:
+Neutrophils/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
-Neutrophils.band form/100 leukocytes:
+Neutrophils.band form/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
-Neutrophils.segmented/100 leukocytes:
+Neutrophils.segmented/leukocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -304,7 +304,7 @@ Protein:
     - Serum or Plasma
     - Urine
 # Prothrombin time (PT)
-Reticulocytes/100 erythrocytes:
+Reticulocytes/Erythrocytes:
   property: "Number Fraction"
   systems:
     - Blood
@@ -421,3 +421,45 @@ Reticulocytes:
   property: "Number Concentration"
   systems:
     - Blood
+# obselete in v20250827 -> now without "/100", kept for compatibility and conversion
+Basophils/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Eosinophils/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Lymphocytes/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Monocytes/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Neutrophils/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Neutrophils.band form/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Neutrophils.segmented/100 leukocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Reticulocytes/100 erythrocytes:
+  for_conversion: true
+  systems:
+    - Blood
+Urea:
+  for_conversion: true
+  property:
+    - Substance Concentration
+    - Mass Concentration
+  systems:
+    - Blood
+    - Serum or Plasma
+    - Urine

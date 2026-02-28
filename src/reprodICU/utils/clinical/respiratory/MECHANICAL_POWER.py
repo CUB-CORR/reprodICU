@@ -175,7 +175,7 @@ def MECHANICAL_POWER(
         .select(STAY_KEY, TIME_KEY, "Mechanical Power (J/min)")
     )
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         mechanical_power = (
             mechanical_power.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

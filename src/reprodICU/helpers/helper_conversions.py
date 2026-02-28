@@ -138,9 +138,9 @@ class UnitConversions(GlobalVars):
                         .is_not_null(),
                     )
                     .then(
-                        pl.col("value")
-                        .truediv(pl.col(total_itemcol).struct.field("value"))
-                        .mul(100)  # to percentage
+                        pl.col("value").truediv(
+                            pl.col(total_itemcol).struct.field("value")
+                        )
                     )
                     .otherwise(None)
                     .alias("value")

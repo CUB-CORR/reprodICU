@@ -292,7 +292,7 @@ class UMCdbExtractor(UMCdbPaths):
             .with_columns(
                 pl.when(pl.col("item") == "Numeric Pain Rating Scale")
                 .then(pl.col("valueid"))
-                .when(pl.col("item") == "Richmond agitation-sedation scale")
+                .when(pl.col("item") == "Richmond Agitation-Sedation Scale")
                 .then(5 - pl.col("valueid"))
                 .otherwise(pl.col("value"))
                 .alias("value"),
@@ -317,6 +317,15 @@ class UMCdbExtractor(UMCdbPaths):
                         self.VENTILATOR_MODE_MAP, default=None
                     )
                 )
+                .when(
+                    pl.col("item")
+                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
+                )
+                .then(
+                    pl.col("value").replace_strict(
+                        self.RRT_MODE_MAP, default=None
+                    )
+                )
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
@@ -327,11 +336,7 @@ class UMCdbExtractor(UMCdbPaths):
         )
         listitems = listitems.filter(
             pl.col("item").str.starts_with("Glasgow").not_(),
-            pl.col("item").is_in(
-                self.relevant_vital_values
-                + self.relevant_respiratory_values
-                + self.relevant_intakeoutput_values
-            ),
+            pl.col("item").is_in(self.all_relevant_values),
         ).drop("valueid", "itemid", "registeredby")
 
         return pl.concat([listitems, gcs], how="diagonal_relaxed")
@@ -348,6 +353,7 @@ class UMCdbExtractor(UMCdbPaths):
             2. Map item IDs to standardized names via reference lookup.
             3. Convert values to float where possible.
             4. Filter for relevant vital, respiratory, and intake/output measurements.
+            5. For ultrafiltrate volume, compute cumulative deltas (resetting on decrease).
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -356,12 +362,42 @@ class UMCdbExtractor(UMCdbPaths):
                 - value: Numeric measurement value (float).
         """
 
-        return self._extract_timeseries_numericitems().filter(
-            pl.col("item").is_in(
-                self.relevant_vital_values
-                + self.relevant_respiratory_values
-                + self.relevant_intakeoutput_values
-            )
+        base_data = self._extract_timeseries_numericitems().filter(
+            pl.col("item").is_in(self.all_relevant_values)
+        )
+        other_data = base_data.filter(
+            pl.col("item") != "Ultrafiltrate volume removed"
+        )
+        ultrafiltrate_data = (
+            base_data.filter(pl.col("item") == "Ultrafiltrate volume removed")
+            .sort(self.icu_stay_id_col, self.timeseries_time_col)
+            .with_columns(self._compute_ultrafiltrate_delta().alias("value"))
+        )
+
+        return pl.concat(
+            [ultrafiltrate_data, other_data], how="diagonal_relaxed"
+        )
+
+    def _compute_ultrafiltrate_delta(self):
+        value_col = pl.col("value")
+        partition_cols = [self.icu_stay_id_col, "item"]
+
+        prev = value_col.shift(1).over(
+            partition_cols,
+            order_by=self.timeseries_time_col,
+        )
+        min_val = value_col.filter(value_col != 0).min().over(partition_cols)
+        max_val = value_col.max().over(partition_cols)
+        delta = (
+            pl.when(value_col < prev)
+            .then(value_col)
+            .otherwise(value_col - prev)
+        )
+
+        return (
+            pl.when(min_val < 10, max_val < 1000)
+            .then(delta * 1000)  # convert mL to L
+            .otherwise(delta)  # keep as L
         )
 
     # Separate the lab values from the rest
@@ -504,13 +540,16 @@ class UMCdbExtractor(UMCdbPaths):
                 - labstruct: Struct with value, system, method, time, LOINC code.
         """
 
-        LOINC_data = (
-            pl.read_csv(self.numericitems_lab_mapping_path)
-            .select("conceptName")
-            .rename({"conceptName": "item"})
-            .unique()
-        )
-        labnames = LOINC_data.to_series().to_list()
+        data = data.with_columns(
+            pl.col("item")
+            # "/100 leukocytes" obselete in v20250827
+            # -> now without "/100", kept for compatibility and conversion
+            .str.replace("/100 leukocytes", "/Leukocytes")
+            .str.replace("/100 erythrocytes", "/Erythrocytes")
+        ) # fmt: skip
+
+        LOINC_data = data.select("item").unique()
+        labnames = LOINC_data.collect().to_series().to_list()
 
         LOINC_data = (
             LOINC_data
@@ -524,12 +563,14 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("LOINC_component"),
                 pl.col("item")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("item")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("item").replace_strict(
@@ -545,16 +586,6 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .alias("LOINC_code"),
             )
-            .with_columns(
-                pl.col("LOINC_component")
-                .replace_strict(
-                    self.relevant_lab_LOINC_systems,
-                    return_dtype=pl.List(str),
-                    default=None,
-                )
-                .alias("relevant_LOINC_systems")
-            )
-            .lazy()
         )
 
         return (
@@ -567,7 +598,13 @@ class UMCdbExtractor(UMCdbPaths):
             )
             # Filter for systems of interest
             .filter(
-                pl.col("LOINC_system").is_in(pl.col("relevant_LOINC_systems"))
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
             )
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("item"))
@@ -583,6 +620,7 @@ class UMCdbExtractor(UMCdbPaths):
             .select(
                 self.icu_stay_id_col,
                 self.timeseries_time_col,
+                "itemid",
                 "item",
                 "labstruct",
             )
@@ -1040,30 +1078,24 @@ class UMCdbExtractor(UMCdbPaths):
             .join(intimes, on=self.icu_stay_id_col)
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (pl.col(self.drug_start_col) < pl.col("outtime"))
-                & (
-                    pl.col(self.drug_end_col)
-                    > (
-                        pl.col("intime")
-                        - pl.duration(
-                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).dt.total_milliseconds()
-                    )
-                )
+                pl.col(self.drug_start_col) < pl.col("outtime"),
+                pl.col(self.drug_end_col)
+                > pl.col("intime")
+                - pl.duration(
+                    days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_milliseconds(),
             )
             .with_columns(
                 # Calculate drug start times relative to ICU admission
                 pl.duration(
-                    milliseconds=(
-                        pl.col(self.drug_start_col) - pl.col("intime")
-                    )
+                    milliseconds=pl.col(self.drug_start_col) - pl.col("intime")
                 )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_start_col),
                 # Calculate drug end times relative to ICU admission
                 pl.duration(
-                    milliseconds=(pl.col(self.drug_end_col) - pl.col("intime"))
+                    milliseconds=pl.col(self.drug_end_col) - pl.col("intime")
                 )
                 .dt.total_seconds()
                 .cast(float)
@@ -1161,24 +1193,20 @@ class UMCdbExtractor(UMCdbPaths):
             .join(intimes, on=self.icu_stay_id_col, how="left")
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (pl.col("start") < pl.col("outtime"))
-                & (
-                    pl.col("start")
-                    > (
-                        pl.col("intime")
-                        - pl.duration(
-                            days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                        ).dt.total_milliseconds()
-                    )
-                )
+                pl.col("start") < pl.col("outtime"),
+                pl.col("start")
+                > pl.col("intime")
+                - pl.duration(
+                    days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_milliseconds(),
             )
             .with_columns(
                 # Calculate procedure start / end times relative to ICU admission
-                pl.duration(milliseconds=(pl.col("start") - pl.col("intime")))
+                pl.duration(milliseconds=pl.col("start") - pl.col("intime"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.procedure_start_col),
-                pl.duration(milliseconds=(pl.col("stop") - pl.col("intime")))
+                pl.duration(milliseconds=pl.col("stop") - pl.col("intime"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.procedure_end_col),
@@ -1399,9 +1427,6 @@ class UMCdbExtractor(UMCdbPaths):
             .rename({"value": "diagnosis", "valueid": "diagnosis_id"})
             .sort(self.icu_stay_id_col, "updatedat", descending=True)
             .with_columns(
-                pl.int_range(pl.len())
-                .over(self.icu_stay_id_col, order_by="updatedat")
-                .alias("rownum"),
                 pl.when(pl.col("itemid").is_in(SURGICAL_ITEMIDS))
                 .then(True)
                 .when(
@@ -1418,13 +1443,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("surgical"),
             )
             .cast({"diagnosis": str, "diagnosis_id": str, "surgical": bool})
-            .group_by(self.icu_stay_id_col, "typeid", "updatedat")
-            .agg(
-                pl.col("diagnosis"),
-                pl.col("diagnosis_id"),
-                pl.col("surgical").first(),
-            )
-            .explode("diagnosis", "diagnosis_id")
             .unique()
             .sort(
                 self.icu_stay_id_col,
@@ -1437,7 +1455,7 @@ class UMCdbExtractor(UMCdbPaths):
             .select(self.icu_stay_id_col, "diagnosis", "surgical")
             .with_columns(
                 pl.col("diagnosis")
-                .replace(APACHE_mapping, default=None)
+                .replace_strict(APACHE_mapping, default=None)
                 .alias(self.admission_diagnosis_col),
                 pl.when(pl.col("surgical").cast(bool, strict=False))
                 .then(pl.lit("Surgical"))
@@ -1481,19 +1499,12 @@ class UMCdbExtractor(UMCdbPaths):
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
             .with_columns(
-                pl.col("conceptName")
-                .replace(
-                    {
-                        "Tidal volume Ventilator --on ventilator": (
-                            "Tidal volume.spontaneous+mechanical --on ventilator"
-                        )
-                    }
-                )
-                .replace(
+                pl.col("conceptName").replace(
                     {
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
             )
@@ -1538,6 +1549,7 @@ class UMCdbExtractor(UMCdbPaths):
                         **self.timeseries_vitals_mapping,
                         **self.timeseries_intakeoutput_mapping,
                         **self.timeseries_respiratory_mapping,
+                        **self.timeseries_extracorporeal_mapping,
                     }
                 )
             )

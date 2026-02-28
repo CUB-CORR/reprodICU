@@ -9,7 +9,7 @@ Output columns per row:
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 
-Sources
+SOURCES
 -------
 - Belletti, A., Lerose, C. C., Zangrillo, A., & Landoni, G. (2021).
   Vasoactive-inotropic score: Evolution, clinical utility, and pitfalls.
@@ -21,12 +21,17 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS_VIS
 from ..common import (
     _build_t0,
+    _get_timeframe_name,
+    _optional_time_bounds_filter,
     get_medications,
     get_patient_information,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+
+STAY_KEY = "Global ICU Stay ID"
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
@@ -113,20 +118,6 @@ def VIS(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-    if timeframe_name is None:
-        unit = (
-            "Days"
-            if window_size == SECONDS_IN_1D
-            else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-        )
-        reference = (
-            "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-        )
-        timeframe_name = f"{unit} Relative to {reference}"
-
-    STAY_KEY = "Global ICU Stay ID"
-    weight_col = "Admission Weight (kg)"
-
     VASOPRESSORS_INOTROPES = [
         "angiotensin II",  # 0.25 * dose in ng/kg/min
         "dobutamine",  # dose in mcg/kg/min
@@ -149,14 +140,16 @@ def VIS(
 
     ALL_STAYS = patient_information.select(STAY_KEY)
     ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
+    )
 
     # Select relevant columns and build T_0
-    weights = patient_information.select(STAY_KEY, weight_col)
-
     medications = (
         medications.filter(
             pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
         )
+        .pipe(ALIGNED_UNITS_VIS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
             # Calculate start and end relative to T_0
@@ -169,105 +162,6 @@ def VIS(
                 - pl.col("T_0")
             ).alias("Drug End Relative to T_0 (seconds)"),
         )
-    )
-
-    # Fix rates - handle cases where Drug Amount is provided but Drug Rate is not
-    PREDICATES = (
-        pl.col("Drug Rate").is_null(),
-        pl.col("Drug Rate Unit").is_null(),
-        pl.col("Drug Amount").is_not_null(),
-        pl.col("Drug Amount Unit").is_in(
-            ["g", "mg", "mcg", "U", "IE", "units"]
-        ),
-    )
-    medications = medications.with_columns(
-        pl.when(*PREDICATES)
-        .then(
-            pl.col("Drug Amount")
-            / (
-                pl.col("Drug End Relative to Admission (seconds)")
-                - pl.col("Drug Start Relative to Admission (seconds)")
-            ).truediv(60)
-        )
-        .otherwise(pl.col("Drug Rate"))
-        .alias("Drug Rate"),
-        pl.when(*PREDICATES)
-        .then(pl.concat_str(pl.col("Drug Amount Unit"), pl.lit("/min")))
-        .otherwise(pl.col("Drug Rate Unit"))
-        .alias("Drug Rate Unit"),
-    )
-
-    # Fix units - normalize all rates to mcg/kg/min
-    medications = (
-        medications.join(weights, on=STAY_KEY, how="left")
-        .with_columns(
-            # CONVERTING UNITS
-            # Convert mcg / mg / g to mcg/kg/min
-            pl.when(pl.col("Drug Rate Unit") == "mcg/min")
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "mcg/hr")
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "mcg/kg/hr")
-            .then(pl.col("Drug Rate") / 60)
-            .when(pl.col("Drug Rate Unit") == "mg/hr")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "mg/min")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "mg/kg/min")
-            .then(pl.col("Drug Rate") * 1000)
-            .when(pl.col("Drug Rate Unit") == "g/hr")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col) / 60)
-            .when(pl.col("Drug Rate Unit") == "g/min")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col))
-            .when(pl.col("Drug Rate Unit") == "g/kg/hr")
-            .then(pl.col("Drug Rate") * 1_000_000 / 60)
-            .when(pl.col("Drug Rate Unit") == "g/kg/min")
-            .then(pl.col("Drug Rate") * 1_000_000)
-            # Convert Units
-            .when(pl.col("Drug Rate Unit").is_in(["U/hr", "units/hr"]))
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
-            .when(
-                pl.col("Drug Rate Unit").is_in(["U/min", "units/min", "IE/min"])
-            )
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
-            # Keep unchanged
-            .when(
-                pl.col("Drug Rate Unit").is_in(
-                    ["mcg/kg/min", "U/min", "units/min", "IE/min"]
-                )
-            )
-            .then(pl.col("Drug Rate"))
-            .otherwise(None)
-            .alias("Drug Rate (fixed units)"),
-            # RENAMING UNITS
-            pl.when(
-                pl.col("Drug Rate Unit").is_in(
-                    [
-                        "mcg/kg/min",
-                        "mcg/min",
-                        "mcg/hr",
-                        "mcg/kg/hr",
-                        "mg/hr",
-                        "mg/min",
-                        "mg/kg/min",
-                        "g/hr",
-                        "g/min",
-                        "g/kg/hr",
-                        "g/kg/min",
-                    ]
-                )
-            ).then(pl.lit("mcg/kg/min"))
-            # TODO: check this again (stupid me, forgot proper documentation)
-            .when(
-                pl.col("Drug Rate Unit").is_in(
-                    ["U/min", "U/hr", "units/hr", "units/min", "IE/min"]
-                )
-            )
-            .then(pl.lit("U/kg/min"))
-            .otherwise(None)
-            .alias("Drug Rate Unit (fixed units)"),
-        )
-        .drop_nulls(["Drug Rate (fixed units)", "Drug Rate Unit (fixed units)"])
     )
 
     # Convert to VIS components
@@ -334,7 +228,7 @@ def VIS(
     # Calculate VIS per hour
     vis = (
         medications.group_by(
-            "Global ICU Stay ID", "Hour Relative to T_0", "Drug Ingredient"
+            STAY_KEY, "Hour Relative to T_0", "Drug Ingredient"
         )
         .agg(
             pl.col("VIS Component")
@@ -344,16 +238,21 @@ def VIS(
             .alias("VIS Component"),
             pl.col("T_0").first(),
         )
-        .group_by("Global ICU Stay ID", "Hour Relative to T_0")
+        .group_by(STAY_KEY, "Hour Relative to T_0")
         .agg(
             pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
             pl.col("T_0").first(),
         )
-        .sort("Global ICU Stay ID", "Hour Relative to T_0")
+        .filter(
+            _optional_time_bounds_filter(
+                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
+            )
+        )
+        .sort(STAY_KEY, "Hour Relative to T_0")
         .select(
-            "Global ICU Stay ID",
+            STAY_KEY,
             "T_0",
-            "Hour Relative to T_0",
+            pl.col("Hour Relative to T_0").alias(timeframe_name),
             "Vasoactive-Inotropic Score (VIS)",
         )
     )
