@@ -160,7 +160,7 @@ def P50(
         .select(STAY_KEY, TIME_KEY, "P50 (mmHg)")
     )
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         p50 = (
             p50.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

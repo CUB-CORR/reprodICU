@@ -152,7 +152,7 @@ def STATIC_COMPLIANCE(
         )
     ).select(STAY_KEY, TIME_KEY, "Static Compliance (mL/cm H2O)")
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         static_compliance = (
             static_compliance.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(
@@ -235,7 +235,7 @@ def DYNAMIC_COMPLIANCE(
         )
     ).select(STAY_KEY, TIME_KEY, "Dynamic Compliance (mL/cm H2O)")
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         dynamic_compliance = (
             dynamic_compliance.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

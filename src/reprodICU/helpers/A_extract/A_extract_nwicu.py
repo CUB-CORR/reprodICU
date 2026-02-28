@@ -493,6 +493,7 @@ class NWICUExtractor(NWICUPaths):
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
             .drop("charttime", "intime")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("offset")
                 < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
@@ -754,6 +755,7 @@ class NWICUExtractor(NWICUPaths):
                 "drug",
                 "dose_val_rx",
                 "dose_unit_rx",
+                "doses_per_24_hrs",
                 "route",
             )
             .rename(
@@ -784,6 +786,14 @@ class NWICUExtractor(NWICUPaths):
                 pl.col(self.drug_amount_unit_col)
                 .str.contains_any(["min", "hr", "day"])
                 .alias("is_rate"),
+                # Calculate total doses that should have been given in period
+                # -> how often was the threshold of next administration crossed within the start and stop time?
+                pl.col(self.drug_amount_col)
+                * (
+                    pl.col("stoptime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                    - pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                ).dt.total_hours()
+                // (24 / pl.col("doses_per_24_hrs")),
             )
             .with_columns(
                 # select rates

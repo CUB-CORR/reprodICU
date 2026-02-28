@@ -620,6 +620,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET")
             )
             .drop("CHARTTIME", "INTIME")
+            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("OFFSET")
                 < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
@@ -828,12 +829,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias("LOINC_component"),
                 pl.col("LABEL")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("LABEL")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("LABEL").replace_strict(
@@ -1952,13 +1955,16 @@ class MIMIC3Extractor(MIMIC3Paths):
             # NOTE: dirty, but necessary to join with inputevents
             .rename({"STARTDATE": "STARTTIME", "ENDDATE": "ENDTIME"})
             .with_columns(
+                pl.col("NDC").cast(int).alias(self.drug_code_col),
                 pl.lit("prescribed")
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
+                # Map NDC codes to ingredients and drug names
                 pl.when(pl.col("NDC") != 0)
                 .then(
                     pl.col("NDC").replace_strict(
-                        ndc_to_ingredient, default=None
+                        ndc_to_ingredient,
+                        default=None,
                     )
                 )
                 .otherwise(
@@ -1970,7 +1976,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .alias(self.drug_ingredient_col),
                 pl.when(pl.col("NDC") != 0)
                 .then(
-                    pl.col("NDC").replace_strict(ndc_to_drugname, default=None)
+                    pl.col("NDC").replace_strict(
+                        ndc_to_drugname,
+                        default=None,
+                    )
                 )
                 .otherwise(
                     pl.col(self.drug_name_col).replace_strict(
@@ -2005,17 +2014,13 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
-                (
-                    pl.col(self.drug_start_col)
-                    < pl.duration(days=1).dt.total_seconds()
-                    * pl.col(self.icu_length_of_stay_col)
-                )
-                & (
-                    pl.col(self.drug_start_col)
-                    > pl.duration(
-                        days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).dt.total_seconds()
-                )
+                pl.col(self.drug_start_col)
+                < pl.duration(days=1).dt.total_seconds()
+                * pl.col(self.icu_length_of_stay_col),
+                pl.col(self.drug_start_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
             )
             .drop("STARTTIME", "ENDTIME", "INTIME", self.icu_length_of_stay_col)
         )

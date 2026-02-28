@@ -21,7 +21,7 @@ from typing import Optional
 
 import polars as pl
 
-from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS_VIS
 from ..common import (
     _build_t0,
     _get_timeframe_name,
@@ -149,7 +149,7 @@ def VIS(
         medications.filter(
             pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
         )
-        .pipe(ALIGNED_UNITS, patient_information=patient_information)
+        .pipe(ALIGNED_UNITS_VIS, patient_information=patient_information)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
             # Calculate start and end relative to T_0
@@ -228,7 +228,7 @@ def VIS(
     # Calculate VIS per hour
     vis = (
         medications.group_by(
-            "Global ICU Stay ID", "Hour Relative to T_0", "Drug Ingredient"
+            STAY_KEY, "Hour Relative to T_0", "Drug Ingredient"
         )
         .agg(
             pl.col("VIS Component")
@@ -238,7 +238,7 @@ def VIS(
             .alias("VIS Component"),
             pl.col("T_0").first(),
         )
-        .group_by("Global ICU Stay ID", "Hour Relative to T_0")
+        .group_by(STAY_KEY, "Hour Relative to T_0")
         .agg(
             pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
             pl.col("T_0").first(),
@@ -248,9 +248,9 @@ def VIS(
                 "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
             )
         )
-        .sort("Global ICU Stay ID", "Hour Relative to T_0")
+        .sort(STAY_KEY, "Hour Relative to T_0")
         .select(
-            "Global ICU Stay ID",
+            STAY_KEY,
             "T_0",
             pl.col("Hour Relative to T_0").alias(timeframe_name),
             "Vasoactive-Inotropic Score (VIS)",

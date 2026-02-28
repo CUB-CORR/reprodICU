@@ -15,13 +15,16 @@ import polars as pl
 
 from ...common import get_patient_information
 
+STAY_KEY = "Global ICU Stay ID"
+WEIGHT_COL = "Admission Weight (kg)"
+
 
 def ALIGNED_UNITS(
     medications: pl.LazyFrame,
     patient_information: Optional[pl.LazyFrame] = None,
 ) -> pl.LazyFrame:
     """
-    Normalize drug rates to standard units (mcg/kg/min or U/kg/min).
+    Normalize drug rates to standard units (mcg/kg/min or U/min).
 
     Arguments
     ---------
@@ -43,15 +46,12 @@ def ALIGNED_UNITS(
     if patient_information is None:
         patient_information = get_patient_information()
 
-    STAY_KEY = "Global ICU Stay ID"
-    weight_col = "Admission Weight (kg)"
-
     # Base frames
     patient_information = patient_information.lazy()
     medications = medications.lazy()
 
     # Select relevant columns
-    weights = patient_information.select(STAY_KEY, weight_col)
+    weights = patient_information.select(STAY_KEY, WEIGHT_COL)
 
     # Fix rates - handle cases where Drug Amount is provided but Drug Rate is not
     PREDICATES = (
@@ -86,38 +86,32 @@ def ALIGNED_UNITS(
             # CONVERTING UNITS
             # Convert mcg / mg / g to mcg/kg/min
             pl.when(pl.col("Drug Rate Unit") == "mcg/min")
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
+            .then(pl.col("Drug Rate") / pl.col(WEIGHT_COL))
             .when(pl.col("Drug Rate Unit") == "mcg/hr")
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
+            .then(pl.col("Drug Rate") / pl.col(WEIGHT_COL) / 60)
             .when(pl.col("Drug Rate Unit") == "mcg/kg/hr")
             .then(pl.col("Drug Rate") / 60)
             .when(pl.col("Drug Rate Unit") == "mg/hr")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col) / 60)
+            .then(pl.col("Drug Rate") * 1000 / pl.col(WEIGHT_COL) / 60)
             .when(pl.col("Drug Rate Unit") == "mg/min")
-            .then(pl.col("Drug Rate") * 1000 / pl.col(weight_col))
+            .then(pl.col("Drug Rate") * 1000 / pl.col(WEIGHT_COL))
             .when(pl.col("Drug Rate Unit") == "mg/kg/min")
             .then(pl.col("Drug Rate") * 1000)
             .when(pl.col("Drug Rate Unit") == "g/hr")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col) / 60)
+            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(WEIGHT_COL) / 60)
             .when(pl.col("Drug Rate Unit") == "g/min")
-            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(weight_col))
+            .then(pl.col("Drug Rate") * 1_000_000 / pl.col(WEIGHT_COL))
             .when(pl.col("Drug Rate Unit") == "g/kg/hr")
             .then(pl.col("Drug Rate") * 1_000_000 / 60)
             .when(pl.col("Drug Rate Unit") == "g/kg/min")
             .then(pl.col("Drug Rate") * 1_000_000)
             # Convert Units
             .when(pl.col("Drug Rate Unit").is_in(["U/hr", "units/hr"]))
-            .then(pl.col("Drug Rate") / pl.col(weight_col) / 60)
-            .when(
-                pl.col("Drug Rate Unit").is_in(["U/min", "units/min", "IE/min"])
-            )
-            .then(pl.col("Drug Rate") / pl.col(weight_col))
+            .then(pl.col("Drug Rate") / 60)
+            .when(pl.col("Drug Rate Unit").is_in(["U/min", "units/min", "IE/min"]))
+            .then(pl.col("Drug Rate"))
             # Keep unchanged
-            .when(
-                pl.col("Drug Rate Unit").is_in(
-                    ["mcg/kg/min", "U/min", "units/min", "IE/min"]
-                )
-            )
+            .when(pl.col("Drug Rate Unit") == "mcg/kg/min")
             .then(pl.col("Drug Rate"))
             .otherwise(None)
             .alias("Drug Rate (fixed units)"),
@@ -138,14 +132,14 @@ def ALIGNED_UNITS(
                         "g/kg/min",
                     ]
                 )
-            ).then(pl.lit("mcg/kg/min"))
-            # TODO: check this again (stupid me, forgot proper documentation)
+            )
+            .then(pl.lit("mcg/kg/min"))
             .when(
                 pl.col("Drug Rate Unit").is_in(
                     ["U/min", "U/hr", "units/hr", "units/min", "IE/min"]
                 )
             )
-            .then(pl.lit("U/kg/min"))
+            .then(pl.lit("U/min"))
             .otherwise(None)
             .alias("Drug Rate Unit (fixed units)"),
         )
@@ -155,4 +149,42 @@ def ALIGNED_UNITS(
     return medications
 
 
-__all__ = ["ALIGNED_UNITS"]
+def ALIGNED_UNITS_VIS(
+    medications: pl.LazyFrame,
+    patient_information: Optional[pl.LazyFrame] = None,
+) -> pl.LazyFrame:
+    """
+    Normalize drug rates to standard units (mcg/kg/min or U/kg/min).
+    Used for VIS calculation where vasopressin should be in U/kg/min, not U/min.
+
+    Arguments
+    ---------
+        medications : pl.LazyFrame
+            Medication administrations with drug ingredient, rate, unit, and
+            timing information.
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information; must contain Global ICU Stay ID and
+            Admission Weight (kg). Loaded automatically if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Medications dataframe with additional columns:
+            - Drug Rate (fixed units)
+            - Drug Rate Unit (fixed units)
+            Rows with null fixed units are dropped.
+    """
+
+    return ALIGNED_UNITS(medications, patient_information).with_columns(
+        pl.when(pl.col("Drug Rate Unit (fixed units)") == "U/min")
+        .then(pl.col("Drug Rate (fixed units)") / pl.col(WEIGHT_COL))
+        .otherwise(pl.col("Drug Rate (fixed units)"))
+        .alias("Drug Rate (fixed units)"),
+        pl.when(pl.col("Drug Rate Unit (fixed units)") == "U/min")
+        .then(pl.lit("U/kg/min"))
+        .otherwise(pl.col("Drug Rate Unit (fixed units)"))
+        .alias("Drug Rate Unit (fixed units)"),
+    )
+
+
+__all__ = ["ALIGNED_UNITS", "ALIGNED_UNITS_VIS"]

@@ -148,6 +148,7 @@ def RESPIRATORY_FAILURE(
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
+    LAB_COLS = ["PaO2", "PaCO2", "pH", "SaO2", "SpO2"]
 
     patient_information = _to_lazy(patient_information)
     timeseries_vitals = _to_lazy(timeseries_vitals)
@@ -168,8 +169,8 @@ def RESPIRATORY_FAILURE(
             how="outer",
             coalesce=True,
         )
-        # Classify Acute Hypoxemic: SpO2 < 88% OR PaO2 < 60 mmHg OR SaO2 < 88%
         .with_columns(
+            # Classify Acute Hypoxemic: SpO2 < 88% OR PaO2 < 60 mmHg OR SaO2 < 88%
             pl.when(
                 (pl.col("SpO2") < 88)
                 | (pl.col("PaO2") < 60)
@@ -184,7 +185,7 @@ def RESPIRATORY_FAILURE(
             .then(False)
             .otherwise(None)
             .alias("is_hypoxemic"),
-        # Classify Acute Hypercapnic: PaCO2 ≥ 45 mmHg AND pH < 7.35
+            # Classify Acute Hypercapnic: PaCO2 ≥ 45 mmHg AND pH < 7.35
             pl.when(
                 (pl.col("PaCO2") >= 45)
                 & (pl.col("pH") < 7.35)
@@ -210,10 +211,10 @@ def RESPIRATORY_FAILURE(
             .alias(respiratory_failure_type_col)
         )
         .filter(pl.col(respiratory_failure_type_col).is_not_null())
-        .select(STAY_KEY, TIME_KEY, respiratory_failure_type_col)
+        .select(STAY_KEY, TIME_KEY, *LAB_COLS, respiratory_failure_type_col)
     ) # fmt: skip
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         resp_failure = (
             resp_failure.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

@@ -1005,6 +1005,7 @@ def _parquetize(path, db: str):
             "AMOUNT": float,
             "dose_given": str,
             "dose_val_rx": str,
+            "doses_per_24_hrs": float,
             "patientweight": float,
             "PATIENTWEIGHT": float,
             "product_amount_given": str,

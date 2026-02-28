@@ -93,10 +93,28 @@ def COMMON_MORTALITY_MEASURES(
                     - pl.col("Pre-ICU Length of Stay (days)")
                 )
                 .otherwise(None),
-            ).alias("Mortality After ICU Admission (days)")
+            ).alias("Mortality After ICU Admission (days)"),
+            pl.coalesce(
+                pl.col("ICU Length of Stay (days)")
+                + pl.col("Mortality After ICU Discharge Censor Cutoff (days)"),
+                pl.col("ICU Length of Stay (days)")
+                + pl.coalesce(
+                    pl.col("Mortality After ICU Discharge (days)"),
+                    pl.when(pl.col("Mortality in ICU"))
+                    .then(pl.lit(0))
+                    .otherwise(None),
+                ),
+                pl.when(pl.col("Mortality in Hospital"))
+                .then(
+                    pl.col("Hospital Length of Stay (days)")
+                    - pl.col("Pre-ICU Length of Stay (days)")
+                )
+                .otherwise(None),
+            )
+            .alias("Mortality After ICU Admission Censor Cutoff (days)"),
         )
         .with_columns(
-            pl.when(pl.col("Mortality After ICU Admission (days)").le(0))
+            pl.when(pl.col("Mortality After ICU Admission (days)") <= 0)
             .then(None)
             .otherwise(pl.col("Mortality After ICU Admission (days)"))
             .alias("Mortality After ICU Admission (days)")

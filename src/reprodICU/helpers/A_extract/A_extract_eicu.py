@@ -422,10 +422,6 @@ class EICUExtractor(EICUPaths):
             .with_columns(
                 pl.col("labname")
                 .replace_strict(lab_names_mapping, default=None)
-                # "/100 leukocytes" obselete in v20250827
-                # -> now without "/100", kept for compatibility and conversion
-                .str.replace("/100 leukocytes", "/Leukocytes")
-                .str.replace("/100 erythrocytes", "/Erythrocytes")
             )
         ) # fmt: skip
 
@@ -443,12 +439,14 @@ class EICUExtractor(EICUPaths):
                 .alias("LOINC_component"),
                 pl.col("labname")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("labname")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("labname").replace_strict(
@@ -1199,6 +1197,8 @@ class EICUExtractor(EICUPaths):
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/admissiondrug/
         # admissiondrug = None
 
+        # region INFUSIONDRUG
+        ########################################################################
         # NOTE: a lot of calcalations can be done here
         # cf. w/ Important considerations @ https://eicu-crd.mit.edu/eicutables/infusiondrug/
         infusiondrug = (
@@ -1372,13 +1372,17 @@ class EICUExtractor(EICUPaths):
             )
         )
 
+        # region MEDICATION
+        ########################################################################
         medication = (
             pl.scan_csv(self.medication_path)
             .select(
                 "patientunitstayid",
+                "medicationid",
                 "drugstartoffset",
                 "drugordercancelled",
                 "drugname",
+                "drughiclseqno",
                 "dosage",
                 "drugstopoffset",
                 "routeadmin",
@@ -1387,17 +1391,80 @@ class EICUExtractor(EICUPaths):
             .rename(
                 {
                     "patientunitstayid": self.icu_stay_id_col,
+                    "medicationid": self.drug_mixture_id_col,
                     "drugstartoffset": self.drug_start_col,
                     "drugordercancelled": self.drug_admin_type_col,
                     "drugname": self.drug_name_col,
-                    "dosage": self.drug_amount_col,
+                    "drughiclseqno": self.drug_code_col,
+                    # "dosage": self.drug_amount_col,
                     "drugstopoffset": self.drug_end_col,
                     "routeadmin": self.drug_admin_route_col,
                 }
             )
-            # # Dropping drug dosages due to bad data quality
-            # .drop(self.drug_amount_col)
             .with_columns(
+                # Split dosage into amount and unit
+                pl.col("dosage")
+                .str.split(" ")
+                .list.get(0)
+                .alias(self.drug_amount_col),
+                pl.col("dosage")
+                .str.split(" ")
+                .list.get(1, null_on_oob=True)
+                .alias(self.drug_amount_unit_col),
+            )
+            .with_columns(
+                pl.when(pl.col(self.drug_amount_col).str.contains("-"))
+                # TODO: Ambigous dosage values with a range (e.g. "5-10") are set to None for now
+                .then(None)
+                .otherwise(
+                    pl.col(self.drug_amount_col)
+                    .replace(",", "")
+                    .cast(float, strict=False)
+                )
+                .alias(self.drug_amount_col),
+                pl.col(self.drug_amount_unit_col)
+                .replace(
+                    {
+                        "1": "ml",
+                        "3": "mg",
+                        "4": "g",
+                        "5": "units",
+                        "7": "mEq",
+                        "8": "mcg",
+                        "41": "ml/hr",
+                        "103": "syringes",  # unsure, but best approximation
+                        "5001": "tablets",
+                        "5002": "tablets",
+                        "5004": "drops",
+                        "5006": "puffs",
+                        "5011": "patch",
+                        "10021": "app",
+                    }
+                )
+                # fmt: off
+                .str.replace(r"MCG|mcg", "mcg")
+                .str.replace(r"MG|mg", "mg")
+                .str.replace(r"Gram|GM|Gm|G|gm", "g")
+                .str.replace(r"ML|mL", "ml")
+                .str.replace(r"MEQ", "mEq")
+                .str.replace(r"MMOL|MM|mM", "mmol")
+                # case-insensitive replacements
+                .str.replace(r"(?i)APPLICATION|APPLY|APP", "application")
+                .str.replace(r"(?i)cap\(s\)|CAP", "doses")
+                .str.replace(r"(?i)dose\(s\)|DOSES|DOSE", "doses")
+                .str.replace(r"(?i)drop\(s\)|DROPS|DROP", "drops")
+                .str.replace(r"(?i)puff\(s\)|PUFFS|PUFF", "puffs")
+                .str.replace(r"(?i)PACKET", "packet")
+                .str.replace(r"(?i)PATCH", "patch")
+                .str.replace(r"(?i)SPRAY", "sprays")
+                .str.replace(r"(?i)tablet\(s\)|TABLETS|TABLET|tab\(s\)|TABS|TAB", "tablets")
+                .str.replace(r"(?i)unit\(s\)|UNITS|UNIT", "units")
+                # fmt: on
+                .alias(self.drug_amount_unit_col),
+            )
+            .with_columns(
+                # HICL sequence number can be used to map to drug ingredient
+                pl.col(self.drug_code_col).cast(int),
                 # Add a column to indicate the administration type
                 pl.when(pl.col(self.drug_admin_type_col) == "Yes")
                 .then(pl.lit("cancelled"))
@@ -1414,9 +1481,7 @@ class EICUExtractor(EICUPaths):
                 )
                 .alias(self.drug_admin_route_col),
                 # Fix stop offsets (if smaller than start offset)
-                pl.when(
-                    pl.col(self.drug_end_col) < pl.col(self.drug_start_col),
-                )
+                pl.when(pl.col(self.drug_end_col) < pl.col(self.drug_start_col))
                 .then(pl.col(self.drug_start_col))
                 .otherwise(pl.col(self.drug_end_col))
                 .alias(self.drug_end_col),

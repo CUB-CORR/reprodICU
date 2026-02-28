@@ -315,8 +315,14 @@ class SICdbExtractor(SICdbPaths):
         """
         offsets = self._get_offsets()
 
-        LOINC_data = self._extract_references_LOINC()
-        labnames = LOINC_data.select("LaboratoryName").unique().to_series().to_list() # fmt: skip
+        LOINC_data = self._extract_references_LOINC().lazy()
+        labnames = (
+            LOINC_data.select("LaboratoryName")
+            .unique()
+            .collect()
+            .to_series()
+            .to_list()
+        )
 
         LOINC_data = (
             LOINC_data
@@ -330,12 +336,14 @@ class SICdbExtractor(SICdbPaths):
                 .alias("LOINC_component"),
                 pl.col("LaboratoryName")
                 .replace_strict(
-                    self.omop.get_lab_system_from_name(labnames), default=None
+                    self.omop.get_lab_system_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_system"),
                 pl.col("LaboratoryName")
                 .replace_strict(
-                    self.omop.get_lab_method_from_name(labnames), default=None
+                    self.omop.get_lab_method_from_name(labnames),
+                    default=None,
                 )
                 .alias("LOINC_method"),
                 pl.col("LaboratoryName").replace_strict(
@@ -351,16 +359,6 @@ class SICdbExtractor(SICdbPaths):
                 )
                 .alias("LOINC_code"),
             )
-            .with_columns(
-                pl.col("LOINC_component")
-                .replace_strict(
-                    self.relevant_lab_LOINC_systems,
-                    return_dtype=pl.List(str),
-                    default=None,
-                )
-                .alias("relevant_LOINC_systems")
-            )
-            .lazy()
         )
 
         return (
@@ -368,6 +366,22 @@ class SICdbExtractor(SICdbPaths):
             .rename({"CaseID": self.icu_stay_id_col})
             .join(offsets, on=self.icu_stay_id_col)
             .join(LOINC_data, on="LaboratoryID", how="left")
+            # Filter for lab names of interest
+            .filter(
+                pl.col("LOINC_component").is_in(
+                    self.relevant_lab_LOINC_components
+                )
+            )
+            # Filter for systems of interest
+            .filter(
+                pl.col("LOINC_system").is_in(
+                    pl.col("LOINC_component").replace_strict(
+                        self.relevant_lab_LOINC_systems,
+                        return_dtype=pl.List(str),
+                        default=None,
+                    )
+                )
+            )
             .with_columns(
                 # Mark only as arterial blood if LaboratoryType explicitly indicates so
                 pl.when(pl.col("LOINC_system") == "Blood arterial")
@@ -587,12 +601,13 @@ class SICdbExtractor(SICdbPaths):
 
         return (
             pl.scan_csv(self.cases_path)
-            .select("CaseID", "PatientID", "ICD10Main")
+            .select("CaseID", "PatientID", "ICD10Main", "ICD10MainText")
             .rename(
                 {
                     "CaseID": self.icu_stay_id_col,
                     "PatientID": self.person_id_col,
                     "ICD10Main": self.diagnosis_icd_code_col,
+                    "ICD10MainText": self.diagnosis_description_col,
                 }
             )
             .with_columns(

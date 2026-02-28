@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 
 import polars as pl
 
@@ -17,20 +17,42 @@ sf_ratio_col = "SpO2/FiO2 Ratio"
 
 
 # region helpers
-def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
-    return (
-        resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2")
+def _improve_resp(
+    resp: pl.LazyFrame,
+    fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
+) -> pl.LazyFrame:
+    VENT_FIO2 = pl.max_horizontal(
+        "Oxygen/Total gas setting [Volume Fraction] Ventilator",
+        "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
+    )
+
+    FLOW_FIO2 = (
+        pl.col("Oxygen gas flow Oxygen delivery system")
+        .mul(3)
+        .add(21)
+        .clip(upper_bound=100)
+    )
+
+    if fio2_type == "non-invasive":
+        resp = resp.filter(
+            pl.col("Oxygen delivery system").str.contains_any(
+                ["High flow", "Continuous positive"]
+            )
         )
+        combined_fio2 = FLOW_FIO2
+    elif fio2_type == "invasive":
+        combined_fio2 = VENT_FIO2
+    else:  # fio2_type == "both"
+        combined_fio2 = pl.coalesce(VENT_FIO2, FLOW_FIO2)
+
+    return (
+        resp.with_columns(combined_fio2.alias("FiO2"))
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0, 1))
+            pl.when(pl.col("FiO2").is_between(0.21, 1))
             .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
+            .when(pl.col("FiO2").is_between(21, 100))
             .then(pl.col("FiO2"))
             .otherwise(None)
             .alias("FiO2"),
@@ -74,6 +96,8 @@ def PaO2_FiO2_RATIO(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
+    tolerance: Optional[int] = SECONDS_IN_4H,
+    fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
 ) -> pl.LazyFrame:
     """
     Calculate PaO2/FiO2 ratio timeseries from respiratory and laboratory timeseries.
@@ -91,6 +115,11 @@ def PaO2_FiO2_RATIO(
             Ignored when t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        tolerance : int, optional
+            Join tolerance in seconds. Default is 4 hours.
+        fio2_type : str, optional
+            Source of FiO2: 'invasive' (ventilator), 'non-invasive' (flow-based),
+            or 'both' (ventilator with flow-based fallback). Defaults to 'both'.
 
     Returns
     -------
@@ -133,7 +162,7 @@ def PaO2_FiO2_RATIO(
     all_stays = patient_information.select(STAY_KEY)
     all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
 
-    timeseries_resp = _improve_resp(timeseries_resp)
+    timeseries_resp = _improve_resp(timeseries_resp, fio2_type=fio2_type)
     timeseries_labs = _improve_labs(timeseries_labs)
 
     pf_ratio = (
@@ -144,7 +173,7 @@ def PaO2_FiO2_RATIO(
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
-            tolerance=SECONDS_IN_4H,
+            tolerance=tolerance,
             coalesce=True,
         )
         .with_columns(
@@ -163,7 +192,7 @@ def PaO2_FiO2_RATIO(
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
     )
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         pf_ratio = (
             pf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(
@@ -185,6 +214,8 @@ def SpO2_FiO2_RATIO(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
+    tolerance: Optional[int] = SECONDS_IN_4H,
+    fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
 ) -> pl.LazyFrame:
     """
     Calculate SpO2/FiO2 ratio timeseries from respiratory and vital signs timeseries.
@@ -202,6 +233,11 @@ def SpO2_FiO2_RATIO(
             Ignored when t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        tolerance : int, optional
+            Join tolerance in seconds. Default is 4 hours.
+        fio2_type : str, optional
+            Source of FiO2: 'invasive' (ventilator), 'non-invasive' (flow-based),
+            or 'both' (ventilator with flow-based fallback). Defaults to 'both'.
 
     Returns
     -------
@@ -244,7 +280,7 @@ def SpO2_FiO2_RATIO(
     all_stays = patient_information.select(STAY_KEY)
     all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
 
-    timeseries_resp = _improve_resp(timeseries_resp)
+    timeseries_resp = _improve_resp(timeseries_resp, fio2_type=fio2_type)
     timeseries_vitals = _improve_vitals(timeseries_vitals)
 
     sf_ratio = (
@@ -255,7 +291,7 @@ def SpO2_FiO2_RATIO(
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
-            tolerance=SECONDS_IN_4H,
+            tolerance=tolerance,
             coalesce=True,
         )
         .with_columns(
@@ -274,7 +310,7 @@ def SpO2_FiO2_RATIO(
         .select(STAY_KEY, TIME_KEY, sf_ratio_col)
     )
 
-    if (t_0 is not None) or (t_0_per_stay is not None):
+    if (t_0 != 0) or (t_0_per_stay is not None):
         sf_ratio = (
             sf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
             .with_columns(

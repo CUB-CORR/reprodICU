@@ -58,6 +58,7 @@ class MedicationHarmonizer(GlobalVars):
             self.drug_ingredient_col,
             self.drug_name_col,
             self.drug_name_OMOP_col,
+            self.drug_code_col,
             self.drug_class_col,
             self.drug_continuous_col,
             self.drug_admin_route_col,
@@ -192,6 +193,7 @@ class MedicationHarmonizer(GlobalVars):
                 {
                     self.drug_name_col: str,
                     self.drug_ingredient_col: str,
+                    self.drug_code_col: int,
                     self.drug_amount_col: float,
                     self.drug_rate_col: float,
                     self.fluid_amount_col: float,
