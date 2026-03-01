@@ -262,7 +262,11 @@ class DatasetLoader:
         "inout": "timeseries_intakeoutput.parquet",
         "intakeoutput": "timeseries_intakeoutput.parquet",
         "timeseries_intakeoutput": "timeseries_intakeoutput.parquet",
-    }
+        # Timeseries - intake/output balanced
+        "inout_balanced": "timeseries_intakeoutput_balanced.parquet",
+        "intakeoutput_balanced": "timeseries_intakeoutput_balanced.parquet",
+        "timeseries_intakeoutput_balanced": "timeseries_intakeoutput_balanced.parquet",
+    } # fmt: skip
 
     # Map concept names to parquet filenames (pre-computed clinical concepts)
     CONCEPT_MAPPING = {
