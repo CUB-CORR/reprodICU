@@ -903,6 +903,7 @@ def SEPSIS(
     t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
+    sofa_filter: str = "absolute",  # "absolute" or "delta" for SOFA criteria
 ) -> pl.LazyFrame:
     """Compute Sepsis-3 in long format from raw inputs.
 
@@ -952,6 +953,10 @@ def SEPSIS(
             floor((time - T_0)/window_size).
         timeframe_unit : str, optional
             Semantic only; output column remains a numeric timeframe.
+        sofa_filter : str, optional
+            "absolute" (default) applies SOFA criteria to raw scores; "delta" applies
+            to change from baseline. Baseline is defined as the lowest score in the
+            24h prior to suspicion time (Seymour) or antibiotic escalation (Shah).
 
     Returns
     -------
@@ -1021,6 +1026,12 @@ def SEPSIS(
     )
 
     # region SOFA
+    SOFA_FILTER = (
+        pl.col("sofa_score") >= 2
+        if sofa_filter == "absolute"
+        else pl.col("sofa_increase_delta") >= 2
+    )
+
     # SOFA from raw inputs (long format)
     SOFA_SCORE = SOFA(
         patient_information,
@@ -1149,7 +1160,7 @@ def SEPSIS(
             sofa_increase_delta=pl.col("sofa_score")
             - pl.col("baseline_sofa_score")
         )
-        .filter(pl.col("sofa_increase_delta") >= 2)
+        .filter(SOFA_FILTER)
         .group_by(STAY_COL, "suspicion_number")
         .agg(onset_timeframe=pl.min("timeframe"))
         .collect()

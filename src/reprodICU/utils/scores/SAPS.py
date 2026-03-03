@@ -433,25 +433,16 @@ def SAPS2(
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
     """
-    Simplified Acute Physiology Score II (SAPS II).
+    Compute Simplified Acute Physiology Score II (SAPS II) with automatic dataset loading.
 
-    Steps:
-        1. Load and improve vitals and labs.
-        2. Calculate physiological points (HR, SBP, Temp, GCS, BUN, WBC, Na, K, HCO3, Bili).
-        3. Calculate PaO2/FiO2 points (only if ventilated/CPAP).
-        4. Calculate Urine Output points (scaled to 24h).
-        5. Add Age, Admission Type, and Chronic Disease points.
-        6. Sum all points to get the SAPS II score.
+    All data parameters are optional and will be automatically loaded from the
+    package datasets if not provided. This makes it convenient for quick analysis
+    while maintaining flexibility for custom data.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {STAY_KEY}: Global ICU Stay ID.
-            - {TIME_KEY}: Reference time (T_0).
-            - timeframe: 0-indexed window.
-            - SAPS-II Score: Total points (0-163).
-            - Components: age_pts, hr_pts, sbp_pts, temp_pts, gcs_pts, bun_pts,
-                         wbc_pts, na_pts, k_pts, hco3_pts, bili_pts, uo_pts,
-                         pafi_pts, adm_pts, chronic_pts.
+    Returns
+    -------
+        pl.LazyFrame
+            SAPS-II scores with all organ subscore components
     """
     # region data loading
     if patient_information is None:

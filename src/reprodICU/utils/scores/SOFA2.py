@@ -767,19 +767,26 @@ def SOFA2(
     drug_end_col = "Drug End Relative to Admission (seconds)"
 
     SEDATION_DRUGS = [
+        "amitriptyline", "doxepin", "nortriptyline", # tricyclic antidepressants
+        "clonidine", "dexmedetomidine", # alpha-2 agonists
+        "diazepam", "lorazepam", "midazolam", "nitrazepam", "oxazepam", "temazepam", "tetrazepam", # benzodiazepines
+        "diphenhydramine", "hydroxyzine", "doxylamine", # 1st-gen antihistamines
+        "etomidate",
+        "isoflurane", "sevoflurane", "desflurane", # volatile anesthetics
+        "ketamine", "esketamine",
+        "melatonin", "Agomelatine" # melatonin receptor agonists (Agemelatine is capitalized in RxNorm Extension)
+        "mirtazapine", # tetracyclic antidepressant
         "propofol",
-        "midazolam",
-        "lorazepam",
-        "dexmedetomidine",
-    ]
+        "sufentanil", "remifentanil", "fentanyl", "alfentanil", # opioids
+        "thiopental", "phenobarbital", "methohexital", # barbiturates
+        "trazodone",
+        "zolpidem", "zopiclone", "zaleplon", # z-drugs
+    ] # fmt: skip
 
     DELIRIUM_DRUGS = [
-        "haloperidol",
-        "quetiapine",
-        "risperidone",
-        "olanzapine",
+        "haloperidol", "olanzapine", "quetiapine", "risperidone", # antipsychotics
         "dexmedetomidine",
-    ]
+    ] # fmt: skip
 
     # Base frames
     patient_information = patient_information.lazy()

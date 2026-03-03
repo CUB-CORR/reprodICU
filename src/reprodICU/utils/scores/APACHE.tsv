@@ -1,0 +1,476 @@
+APACHE version	APACHE diagnostic category	APACHE code	coefficient
+II	Non-Operative - Respiratory - Asthma/allergy		-2.108
+II	Non-Operative - Respiratory - Chronic obstructive pulmonary disease		-0.367
+II	Non-Operative - Respiratory - Pulmonary edema (non-cardiogenic)		-0.251
+II	Non-Operative - Respiratory - Postrespiratory arrest		-0.168
+II	Non-Operative - Respiratory - Aspiration/poisoning/toxic		-0.142
+II	Non-Operative - Respiratory - Pulmonary embolus		-0.128
+II	Non-Operative - Respiratory - Infection		0
+II	Non-Operative - Respiratory - Neoplasm		0.891
+II	Non-Operative - Cardiovascular - Hypertension		-1.798
+II	Non-Operative - Cardiovascular - Rhythm disturbance		-1.368
+II	Non-Operative - Cardiovascular - Congestive heart failure		-0.424
+II	Non-Operative - Cardiovascular - Hemorrhagic shock/hypovolemia		-0.493
+II	Non-Operative - Cardiovascular - Coronary artery disease		-0.191
+II	Non-Operative - Cardiovascular - Sepsis		0.113
+II	Non-Operative - Cardiovascular - Postcardiac arrest		0.393
+II	Non-Operative - Cardiovascular - Cardiogenic shock		-0.259
+II	Non-Operative - Cardiovascular - Dissecting thoracic/abdominal aneurysm		0.731
+II	Non-Operative - Trauma - Multiple trauma		-1.228
+II	Non-Operative - Trauma - Head trauma		-0.517
+II	Non-Operative - Neurologic - Seizure disorder		-0.584
+II	Non-Operative - Neurologic - ICD/SDH/SAH		-0.723
+II	Non-Operative - Other - Drug overdose		-3.353
+II	Non-Operative - Other - Diabetic ketoacidosis		-1.507
+II	Non-Operative - Other - Gastrointestinal bleeding		0.334
+II	Non-Operative - Metabolic/Renal		-0.885
+II	Non-Operative - Respiratory		-0.890
+II	Non-Operative - Neurologic		-0.759
+II	Non-Operative - Cardiovascular		0.470
+II	Non-Operative - Gastrointestinal		0.501
+II	Post-Operative - Multiple trauma		-1.684
+II	Post-Operative - Admission due to chronic cardiovascular disease		-1.376
+II	Post-Operative - Peripheral vascular surgery		-1.315
+II	Post-Operative - Heart valve surgery		-1.261
+II	Post-Operative - Craniotomy for neoplasm		-1.245
+II	Post-Operative - Renal surgery for neoplasm		-1.204
+II	Post-Operative - Renal transplant		-1.042
+II	Post-Operative - Head trauma		-0.955
+II	Post-Operative - Thoracic surgery for neoplasm		-0.802
+II	Post-Operative - Craniotomy for ICH/SDH/SAH		-0.788
+II	Post-Operative - Laminectomy and other spinal cord surgery		-0.699
+II	Post-Operative - Hemorrhagic shock/hypovolemia		-0.682
+II	Post-Operative - Gastrointestinal bleeding		-0.617
+II	Post-Operative - GI surgery for neoplasm		-0.248
+II	Post-Operative - Respiratory insufficiency after surgery		-0.140
+II	Post-Operative - Gastrointestinal perforation/obstruction		-0.060
+II	Post-Operative - Sepsis		0.113
+II	Post-Operative - Postcardiac arrest		0.393
+II	Post-Operative - Postrespiratory arrest		-0.168
+II	Post-Operative - Neurologic		-1.150
+II	Post-Operative - Cardiovascular		-0.797
+II	Post-Operative - Respiratory		-0.610
+II	Post-Operative - Gastrointestinal		-0.613
+II	Post-Operative - Metabolic/Renal		-0.196
+IV	Non-Operative - Cardiovascular - Infarction, acute myocardial (MI), anterior	AMI_ANT	0.102949765
+IV	Non-Operative - Cardiovascular - Infarction, acute myocardial (MI), inferolateral	AMI_INFRLATR	-0.152525079
+IV	Non-Operative - Cardiovascular - Infarction, acute myocardial (MI), non-Q-wave	AMI_NONQ	-0.270872458
+IV	Non-Operative - Cardiovascular - Infarction, acute myocardial (MI), none of the above	AMI_OTHER	
+IV	Non-Operative - Cardiovascular - Anaphylaxis	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Aneurysm, dissecting aortic	MEDAORT	0.649149305
+IV	Non-Operative - Cardiovascular - Aneurysm/pseudoaneurysm, other	PERIART	-0.502752032
+IV	Non-Operative - Cardiovascular - Angina, stable (asymptomatic or stable pattern of symptoms w/ meds)	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - Angina, unstable (angina interferes w/ quality of life or meds are tolerated poorly)	USTAANG	-1.212730735
+IV	Non-Operative - Cardiovascular - Cardiac arrest (with or without respiratory arrest, for respiratory arrest see Respiratory)	CARDARR	0.416919141
+IV	Non-Operative - Cardiovascular - Cardiomyopathy	CARDIOMY	0.059962444
+IV	Non-Operative - Cardiovascular - Cardiovascular medical, other	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Chest pain, atypical (noncardiac chest pain)	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - Chest pain, epigastric	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - Chest pain, musculoskeletal	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - Chest pain, respiratory	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - Chest pain, unknown origin	CHESTPAIN	-1.122354572
+IV	Non-Operative - Cardiovascular - CHF (congestive heart failure)	CHFD	-0.422587793
+IV	Non-Operative - Cardiovascular - Complications of previous open heart surgery (i.e., bleeding, infection, etc.)	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Contusion, myocardial (include R/O)	MULTRAUM	-0.678110274
+IV	Non-Operative - Cardiovascular - Effusion, pericardial	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Endocarditis	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Hematomas	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Hemorrhage (for gastrointestinal bleeding see GI, for trauma see Trauma)	HEMORRHAE	
+IV	Non-Operative - Cardiovascular - Hypertension, uncontrolled (for cerebrovascular accident see Neurological)	HYPERT	-0.813921325
+IV	Non-Operative - Cardiovascular - Hypovolemia (including dehydration, do NOT include shock states)	HYPOVOLEM	-0.622592285
+IV	Non-Operative - Cardiovascular - MI admitted > 24hrs after onset of ischemia	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Monitoring, hemodynamic (pre-operative evaluation)	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Papillary muscle rupture	CARDIOG	0.239711472
+IV	Non-Operative - Cardiovascular - Pericarditis	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Rhythm disturbance (atrial, supraventricular)	RHYTHM	-0.603060945
+IV	Non-Operative - Cardiovascular - Rhythm disturbance (conduction defect)	RHYTHM	-0.603060945
+IV	Non-Operative - Cardiovascular - Rhythm disturbance (ventricular)	RHYTHM	-0.603060945
+IV	Non-Operative - Cardiovascular - Sepsis, cutaneous/soft tissue	SEPSISCUT	0.126440315
+IV	Non-Operative - Cardiovascular - Sepsis, GI	SEPSISGI	-0.13010935
+IV	Non-Operative - Cardiovascular - Sepsis, gynecologic	SEPTICUT	-0.732788506
+IV	Non-Operative - Cardiovascular - Sepsis, other	SEPSISOTH	-0.04233671
+IV	Non-Operative - Cardiovascular - Sepsis, pulmonary	SEPSISPULM	-0.258766455
+IV	Non-Operative - Cardiovascular - Sepsis, renal/UTI (including bladder)	SEPTICUT	-0.732788506
+IV	Non-Operative - Cardiovascular - Sepsis, unknown	SEPSISUNK	-0.093377498
+IV	Non-Operative - Cardiovascular - Shock, cardiogenic	CARDIOG	0.239711472
+IV	Non-Operative - Cardiovascular - Tamponade, pericardial	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Thrombosis, vascular (deep vein)	CVOTH	-0.369658509
+IV	Non-Operative - Cardiovascular - Thrombus, arterial	PERIART	-0.502752032
+IV	Non-Operative - Cardiovascular - Toxicity, drug (i.e., beta blockers, calcium channel blockers, etc.)	DRUGTOXIC	-0.690943246
+IV	Non-Operative - Cardiovascular - Vascular medical, other	CVOTH	-0.369658509
+IV	Post-Operative - Cardiovascular - Ablation or mapping of cardiac conduction pathway	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Aneurysm repair, ventricular	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Aneurysm, abdominal aortic	SELAORT	-0.760703396
+IV	Post-Operative - Cardiovascular - Aneurysm, abdominal aortic; with dissection	SAORTDIS	-0.178456475
+IV	Post-Operative - Cardiovascular - Aneurysm, abdominal aortic; with rupture	SRUPAOR	0.204404736
+IV	Post-Operative - Cardiovascular - Aneurysm, thoracic aortic	SELAORT	-0.760703396
+IV	Post-Operative - Cardiovascular - Aneurysm, thoracic aortic; with dissection	SAORTDIS	-0.178456475
+IV	Post-Operative - Cardiovascular - Aneurysm, thoracic aortic; with rupture	SRUPAORT	
+IV	Post-Operative - Cardiovascular - Aneurysms, repair of other (except ventricular)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Aortic and Mitral valve replacement	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Aortic valve replacement (isolated)	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Atrial septal defect (ASD) repair	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - CABG redo with valve repair/replacement	SVHDCABG	-0.155141644
+IV	Post-Operative - Cardiovascular - CABG with aortic valve replacement	SCABGVALV	-1.199434806
+IV	Post-Operative - Cardiovascular - CABG with double valve repair/replacement	SVHDCABG	-0.155141644
+IV	Post-Operative - Cardiovascular - CABG with mitral valve repair	SCABGVALV	-1.199434806
+IV	Post-Operative - Cardiovascular - CABG with mitral valve replacement	SCABGVALV	-1.199434806
+IV	Post-Operative - Cardiovascular - CABG with pulmonic or tricuspid valve repair or replacement	SCABGVALV	-1.199434806
+IV	Post-Operative - Cardiovascular - CABG, minimally invasive; MIDCAB	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Cardiovascular surgery, other	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Complications of prev. peripheral vasc. surgery, surgery for (i.e., ligation of bleeder, exploration and evacuation of hematoma, debridement, pseudoaneurysms, clots, fistula, etc.)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Complications of previous open-heart surgery, surgery for (i.e., bleeding, infection, mediastinal rewiring, leaking aortic graft, etc.)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Congenital defect repair (other)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Defibrillator, automatic implantable cardiac; insertion of	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Dilatation (with general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Dilatation (without general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Embolectomy (with general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Embolectomy (without general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Endarterectomy (other vessels)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Endarterectomy, carotid	SCAROTID	-1.332642438
+IV	Post-Operative - Cardiovascular - Graft for dialysis, insertion of	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Graft, all other bypass (except renal)	SAGRAFT	-0.831194514
+IV	Post-Operative - Cardiovascular - Graft, all renal bypass	SAGRAFT	-0.831194514
+IV	Post-Operative - Cardiovascular - Graft, aorto-femoral bypass	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Graft, aorto-iliac bypass	SFEMPGRAF	-0.786571016
+IV	Post-Operative - Cardiovascular - Graft, femoral-femoral bypass	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Graft, femoral-popliteal bypass	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Graft, removal of infected vascular	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Mitral valve repair	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Mitral valve replacement	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Pericardial effusion/tamponade	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Pericardiectomy (total/subtotal)	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Pulmonary valve surgery	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Thrombectomy (with general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Thrombectomy (without general anesthesia)	SPERISC	-0.504208244
+IV	Post-Operative - Cardiovascular - Tricuspid valve surgery	SVALVE	-1.371763972
+IV	Post-Operative - Cardiovascular - Tumor removal, intracardiac	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Vascular surgery, other	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Vena cava clipping	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Vena cava filter insertion	SCARDOTH	-0.59044574
+IV	Post-Operative - Cardiovascular - Ventricular septal defect (VSD) repair	SCARDOTH	-0.59044574
+IV	Non-Operative - Gastrointestinal - Alcohol withdrawal	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Bleeding, GI (location unknown)	CVOTH	-0.369658509
+IV	Non-Operative - Gastrointestinal - Bleeding, GI from esophageal varices/portal hypertension	HEPATF	-0.119675791
+IV	Non-Operative - Gastrointestinal - Bleeding, lower GI	HYPERT	-0.813921325
+IV	Non-Operative - Gastrointestinal - Bleeding, upper GI	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Cancer, colon/rectal	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Cancer, esophageal	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Cancer, other GI	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Cancer, pancreatic	RENOTH	-0.54158014
+IV	Non-Operative - Gastrointestinal - Cancer, stomach	SRENOTH	-0.693574061
+IV	Non-Operative - Gastrointestinal - Cholangitis	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Diverticular disease	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Encephalopathy, hepatic	SRENOTH	-0.693574061
+IV	Non-Operative - Gastrointestinal - GI abscess/cyst	SRENCA	-1.397212695
+IV	Non-Operative - Gastrointestinal - GI medical, other	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - GI obstruction	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - GI perforation/rupture	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - GI vascular insufficiency	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Hemorrhage, intra/retroperitoneal	SOBHYST	-0.795847883
+IV	Non-Operative - Gastrointestinal - Hepatic failure, acute	SOBHYST	-0.795847883
+IV	Non-Operative - Gastrointestinal - Inflammatory bowel disease	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Pancreatitis	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Peritonitis	GENOTH	-0.667576408
+IV	Non-Operative - Gastrointestinal - Ulcer disease, peptic	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - Appendectomy	SRENCA	-1.397212695
+IV	Post-Operative - Gastrointestinal - Bleeding, lower GI, surgery for	SRENCA	-1.397212695
+IV	Post-Operative - Gastrointestinal - Bleeding, other GI, surgery for	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - Bleeding, upper GI, surgery for	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - Bleeding, variceal, surgery for (excluding vascular shunting, see surgery for portosystemic shunt)	GENOTH	-0.667576408
+IV	Post-Operative - Gastrointestinal - Cancer, colon/rectal, surgery for (including abdominoperineal resections)	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - Cancer, esophageal, surgery for (abdominal approach)	GENOTH	-0.667576408
+IV	Post-Operative - Gastrointestinal - Cancer, other GI tract, surgery for (i.e., hepatoma, gallbladder, etc.)	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - Cancer, small intestinal, surgery for	SRENCA	-1.397212695
+IV	Post-Operative - Gastrointestinal - Cancer, stomach, surgery for	SRENOTH	-0.693574061
+IV	Post-Operative - Gastrointestinal - CAPD catheter insertion	SRENCA	-1.397212695
+IV	Post-Operative - Gastrointestinal - Cholecystectomy/cholangitis, surgery for (i.e., gallbladder removal)	OD	-1.55261952
+IV	Post-Operative - Gastrointestinal - Complications of previous GI surgery, surgery for (i.e., anastomotic leak, bleeding, abscess, infection, dehiscence, etc.)	GIBLVAR	-0.527719358
+IV	Post-Operative - Gastrointestinal - Diverticular disease, surgery for	GIBLEED	-0.551832894
+IV	Post-Operative - Gastrointestinal - Esophageal surgery, other	GIBLEUL	-0.579471867
+IV	Post-Operative - Gastrointestinal - Fistula/abscess, surgery for (not inflammatory bowel disease)	GIBLEED	-0.551832894
+IV	Post-Operative - Gastrointestinal - Gastrostomy	GINEOP	0.195130291
+IV	Post-Operative - Gastrointestinal - GI abscess/cyst, primary, surgery for (for complications of GI surgery see below)	GINEOP	0.195130291
+IV	Post-Operative - Gastrointestinal - GI obstruction, surgery for (including lysis of adhesions)	GINEOP	0.195130291
+IV	Post-Operative - Gastrointestinal - GI perforation/rupture, surgery for	GINEOP	0.195130291
+IV	Post-Operative - Gastrointestinal - GI surgery, other	GINEOP	0.195130291
+IV	Post-Operative - Gastrointestinal - GI vascular ischemia, surgery for (resection)	GIINFLA	-0.211771894
+IV	Post-Operative - Gastrointestinal - Hernia, hiatal/esophageal, surgery for	GIINFLA	-0.211771894
+IV	Post-Operative - Gastrointestinal - Herniorrhaphy	HEPATF	-0.119675791
+IV	Post-Operative - Gastrointestinal - Inflammatory bowel disease, surgery for	GIINFLA	-0.211771894
+IV	Post-Operative - Gastrointestinal - Obesity, morbid, surgery for	GIOTHER	-0.252586643
+IV	Post-Operative - Gastrointestinal - Pancreatitis, surgery for	GIOBSTR	-0.369945003
+IV	Post-Operative - Gastrointestinal - Peritoneal lavage	GIPERF	-0.327171182
+IV	Post-Operative - Gastrointestinal - Peritonitis, surgery for	GIVASC	0.714879336
+IV	Post-Operative - Gastrointestinal - Shunt, peritoneal-venous, surgery for	PERITOHEM	-0.659544401
+IV	Post-Operative - Gastrointestinal - Shunt, portosystemic, surgery for	HEPATF	-0.119675791
+IV	Post-Operative - Gastrointestinal - Splenectomy	GIINFLA	-0.211771894
+IV	Post-Operative - Gastrointestinal - Whipple surgery for pancreatic cancer	PANCRE	-0.513627563
+IV	Non-Operative - Genitourinary - Genitourinary medical, other	GIINFLA	-0.211771894
+IV	Non-Operative - Genitourinary - Hemorrhage, postpartum	GIOTHER	-0.252586643
+IV	Non-Operative - Genitourinary - Hepato-renal syndrome	SGIOTH	-0.295894316
+IV	Non-Operative - Genitourinary - Pre-eclampsia/eclampsia	SGIBLEE	-0.329679773
+IV	Non-Operative - Genitourinary - Renal bleeding	SGIBLEE	-0.329679773
+IV	Non-Operative - Genitourinary - Renal failure, acute	SGIBLEE	-0.329679773
+IV	Non-Operative - Genitourinary - Renal infection/abscess	SGIBLEE	-0.329679773
+IV	Non-Operative - Genitourinary - Renal neoplasm, cancer	SGICA	0.136282662
+IV	Non-Operative - Genitourinary - Renal obstruction	SGICA	0.136282662
+IV	Post-Operative - Genitourinary - Bladder repair for perforation/rupture	SGICA	0.136282662
+IV	Post-Operative - Genitourinary - Cesarean section	SGICA	0.136282662
+IV	Post-Operative - Genitourinary - Cyst, ruptured ovarian	SGICA	0.136282662
+IV	Post-Operative - Genitourinary - Cystectomy (other reasons)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Cystectomy for neoplasm	SGICHOL	-0.593293673
+IV	Post-Operative - Genitourinary - Ectopic pregnancy (all)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Exenteration, pelvic (female)	SGIINFL	-0.165585527
+IV	Post-Operative - Genitourinary - Exenteration, pelvic (male)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Genitourinary surgery, other	SGIABCES	-0.556661177
+IV	Post-Operative - Genitourinary - Hysterectomy for cancer with or without lymph node dissection	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Hysterectomy for other benign neoplasm/fibroids	SGIABCES	-0.556661177
+IV	Post-Operative - Genitourinary - Lymph node dissection, pelvic or retroperitoneal (female)	SGIOBS	-0.189005132
+IV	Post-Operative - Genitourinary - Lymph node dissection, pelvic or retroperitoneal (male)	SGIPERF	-0.189960264
+IV	Post-Operative - Genitourinary - Mastectomy (all)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Nephrectomy (other reasons)	SGIVASC	0.498328014
+IV	Post-Operative - Genitourinary - Nephrectomy for neoplasm	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Obstruction due to neoplasm, surgery for (with or without ileal conduit)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Obstruction due to nephrolithiasis, surgery for (with or without ileal conduit)	SGIINFL	-0.165585527
+IV	Post-Operative - Genitourinary - Obstruction/other, surgery for (with or without ileal conduit)	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Oophorectomy with or without salpingectomy with or without lymph node dissection	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Orchiectomy with or without pelvic lymph node dissection	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Pelvic relaxation (cystocele, rectocele, etc.)	SGIPERF	-0.189960264
+IV	Post-Operative - Genitourinary - Prostatectomy, suprapubic; for benign prostatic hypertrophy	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - Prostatectomy, suprapubic; for cancer	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - TURP, transurethral prostate resection for benign prostatic hypertrophy	SGIOTH	-0.295894316
+IV	Post-Operative - Genitourinary - TURP, transurethral prostate resection for cancer	SGICA	0.136282662
+IV	Non-Operative - Hematology - Anemia	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Blood transfusion reaction	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Coagulopathy	COAGTHRO	0.258172435
+IV	Non-Operative - Hematology - Hematologic medical, other	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Leukemia, acute lymphocytic	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Leukemia, acute myelocytic	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Leukemia, chronic lymphocytic	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Leukemia, chronic myelocytic	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Leukemia, other	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Lymphoma, Hodgkins	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Lymphoma, non-Hodgkins	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Neutropenia	COAGTHRO	0.258172435
+IV	Non-Operative - Hematology - Pancytopenia	COAGTHRO	0.258172435
+IV	Non-Operative - Hematology - Sickle cell crisis	HEMAMISC	-0.342352862
+IV	Non-Operative - Hematology - Thrombocytopenia	COAGTHRO	0.258172435
+IV	Post-Operative - Hematology - Hematologic surgery, other	HEMAMISC	-0.342352862
+IV	Post-Operative - Hematology - Lymphoma, Hodgkins, surgery for (including staging)	HEMAMISC	-0.342352862
+IV	Post-Operative - Hematology - Lymphoma, non-Hodgkins, surgery for (including staging)	HEMAMISC	-0.342352862
+IV	Non-Operative - Metabolic/Endocrine - Acid-base/electrolyte disturbance	ACIDBASE	-0.640575517
+IV	Non-Operative - Metabolic/Endocrine - Addisons disease	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Adrenal neoplasm (including pheochromocytoma)	GIOTHER	-0.252586643
+IV	Non-Operative - Metabolic/Endocrine - Diabetic hyperglycemic hyperosmolar nonketotic coma (HHNC)	COMAMETU	-0.927156778
+IV	Non-Operative - Metabolic/Endocrine - Diabetic ketoacidosis	DIABETIC	-1.775702142
+IV	Non-Operative - Metabolic/Endocrine - Heat exhaustion/stroke	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Hyperthermia	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Hyperthyroid storm/crisis	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Hypoglycemia	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Hypothermia	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Hypothyroid/myxedema	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Metabolic/Endocrine medical, other	METAMISC	-0.986438209
+IV	Non-Operative - Metabolic/Endocrine - Thyroid neoplasm	METAMISC	-0.986438209
+IV	Post-Operative - Metabolic/Endocrine - Adrenalectomy	HEMAMISC	-0.342352862
+IV	Post-Operative - Metabolic/Endocrine - Metabolic/Endocrine surgery, other	HEMAMISC	-0.342352862
+IV	Post-Operative - Metabolic/Endocrine - Parathyroidectomy	HEMAMISC	-0.342352862
+IV	Post-Operative - Metabolic/Endocrine - Thyroidectomy	HEMAMISC	-0.342352862
+IV	Post-Operative - Metabolic/Endocrine - Thyroidectomy and parathyroidectomy	HEMAMISC	-0.342352862
+IV	Non-Operative - Musculoskeletal/Skin - Arthritis, rheumatoid	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Arthritis, septic	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Cellulitis and localized soft tissue infections	PERIART	-0.502752032
+IV	Non-Operative - Musculoskeletal/Skin - Connective tissue disease (mixed)	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Lupus, systemic	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Musculoskeletal/Skin medical, other	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Myositis, viral	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Rhabdomyolysis	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Scleroderma	GENOTH	-0.667576408
+IV	Non-Operative - Musculoskeletal/Skin - Vasculitis	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Amputation (non-traumatic)	SAMPUTATE	0.604910303
+IV	Post-Operative - Musculoskeletal/Skin - Cellulitis and localized soft tissue infections, surgery for	SPERISC	-0.504208244
+IV	Post-Operative - Musculoskeletal/Skin - Cosmetic surgery (all)	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Fracture, pathological, non-union, non-traumatic (for fractures due to trauma see Trauma)	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Grafting, skin (all)	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Hip replacement, total (non-traumatic)	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Knee replacement, total (non-traumatic)	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Orthopedic surgery, other	GENOTH	-0.667576408
+IV	Post-Operative - Musculoskeletal/Skin - Skin surgery, other	GENOTH	-0.667576408
+IV	Non-Operative - Neurology - Abscess, neurologic	NEURINF	-0.535783229
+IV	Non-Operative - Neurology - Amyotrophic lateral sclerosis	NEURMUS	-0.550653067
+IV	Non-Operative - Neurology - Coma/change in level of consciousness (for hepatic see GI, for diabetic see Endocrine, if related to cardiac arrest, see CV)	COMAMETU	-0.927156778
+IV	Non-Operative - Neurology - CVA (cerebrovascular accident)/stroke	STROKE	0.519453035
+IV	Non-Operative - Neurology - Drug withdrawal	OD	-1.55261952
+IV	Non-Operative - Neurology - Encephalitis	NEURINF	-0.535783229
+IV	Non-Operative - Neurology - Encephalopathies (excluding hepatic)	COMAMETU	-0.927156778
+IV	Non-Operative - Neurology - Guillain-Barre syndrome	NEURMUS	-0.550653067
+IV	Non-Operative - Neurology - Hematoma, epidural	SAHMED	0.295093901
+IV	Non-Operative - Neurology - Hematoma, subdural	SAHMED	0.295093901
+IV	Non-Operative - Neurology - Hemorrhage/hematoma, intracranial	ICHMED	0.945056155
+IV	Non-Operative - Neurology - Hydrocephalus, obstructive	NEUROTH	-0.176828697
+IV	Non-Operative - Neurology - Meningitis	NEURINF	-0.535783229
+IV	Non-Operative - Neurology - Myasthenia gravis	NEURMUS	-0.550653067
+IV	Non-Operative - Neurology - Neoplasm, neurologic	NEONEUR	0.018952727
+IV	Non-Operative - Neurology - Neurologic medical, other	NEUROTH	-0.176828697
+IV	Non-Operative - Neurology - Neuromuscular medical, other	NEURMUS	-0.550653067
+IV	Non-Operative - Neurology - Nontraumatic coma due to anoxia/ischemia	CARDARR	0.416919141
+IV	Non-Operative - Neurology - Overdose, alcohols (bethanol, methanol, ethylene glycol)	OD	-1.55261952
+IV	Non-Operative - Neurology - Overdose, analgesic (aspirin, acetaminophen)	OD	-1.55261952
+IV	Non-Operative - Neurology - Overdose, antidepressants (cyclic, lithium)	OD	-1.55261952
+IV	Non-Operative - Neurology - Overdose, other toxin, poison or drug	OD	-1.55261952
+IV	Non-Operative - Neurology - Overdose, sedatives, hypnotics, antipsychotics, benzodiazepines	OD	-1.55261952
+IV	Non-Operative - Neurology - Overdose, street drugs (opiates, cocaine, amphetamine)	OD	-1.55261952
+IV	Non-Operative - Neurology - Poisoning, carbon monoxide, arsenic, cyanide	CARDARR	0.416919141
+IV	Non-Operative - Neurology - Seizures, primary (no structural brain disease)	SEIZ	-0.942170992
+IV	Non-Operative - Neurology - Subarachnoid hemorrhage/arteriovenous malformation	SAHICH	0.615950385
+IV	Non-Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm	SAHICH	0.615950385
+IV	Post-Operative - Neurology - Abscess/infection, cranial, surgery for	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Anastomosis, vascular	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Arteriovenous malformation, surgery for	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Biopsy, brain	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Burr hole placement	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Cerebrospinal fluid leak, surgery for	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Complications of previous spinal cord surgery, surgery for	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Cranial nerve, decompression/ligation	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Cranioplasty and complications from previous craniotomies	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Devices for spine fracture/dislocation	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Fusion, spinal/Harrington rods	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Hematoma, epidural, surgery for	SSDH	0.715682622
+IV	Post-Operative - Neurology - Hematoma, subdural, surgery for	SSDH	0.715682622
+IV	Post-Operative - Neurology - Hemorrhage/hematoma, intracranial, surgery for	SICH	0.52671741
+IV	Post-Operative - Neurology - Laminectomy/spinal cord decompression (excluding malignancies)	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Neoplasm, cranial, surgery for (excluding transphenoidal)	SCRANNEO	-0.437737676
+IV	Post-Operative - Neurology - Neoplasm, spinal cord, surgery or other related procedures	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Neurologic surgery, other	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Seizures, intractable, surgery for	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Shunts and revisions	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Spinal cord surgery, other	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Stereotactic procedure	SNEUROTH	0.003996339
+IV	Post-Operative - Neurology - Subarachnoid hemorrhage/intracranial aneurysm, surgery for	SSAH	0.318905704
+IV	Post-Operative - Neurology - Sympathectomy	SLAMINE	-0.628609547
+IV	Post-Operative - Neurology - Transphenoidal surgery	SCRANNEO	-0.437737676
+IV	Post-Operative - Neurology - Ventriculostomy	SNEUROTH	0.003996339
+IV	Non-Operative - Respiratory - Apnea, sleep	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - ARDS (acute respiratory distress syndrome), non-cardiogenic pulmonary edema	PULEDEM	-0.2416873
+IV	Non-Operative - Respiratory - Arrest, respiratory (without cardiac arrest)	RESPARR	-0.390631425
+IV	Non-Operative - Respiratory - Asthma	ALLERGY	-1.540678498
+IV	Non-Operative - Respiratory - Atelectasis	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Cancer, laryngeal	RESPCA	0.966313802
+IV	Non-Operative - Respiratory - Cancer, lung	RESPCA	0.966313802
+IV	Non-Operative - Respiratory - Cancer, oral	RESPCA	0.966313802
+IV	Non-Operative - Respiratory - Cancer, tracheal	RESPCA	0.966313802
+IV	Non-Operative - Respiratory - Effusions, pleural	PLEUREFFUS	0.189900524
+IV	Non-Operative - Respiratory - Embolus, pulmonary	PULEMB	-0.051527401
+IV	Non-Operative - Respiratory - Emphysema/bronchitis	COPD	
+IV	Non-Operative - Respiratory - Hemorrhage/hemoptysis, pulmonary	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Hemothorax	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Hypertension, pulmonary, primary/idiopathic	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Near drowning accident	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Obstruction of airway (i.e., acute epiglottitis, post-extubation edema, foreign body, etc.)	AIROBS	-0.977669154
+IV	Non-Operative - Respiratory - Pneumonia, aspiration	ASPPNEU	-0.37223658
+IV	Non-Operative - Respiratory - Pneumonia, bacterial	BACPNEU	-0.043365914
+IV	Non-Operative - Respiratory - Pneumonia, fungal	PARAPNEU	1.056187347
+IV	Non-Operative - Respiratory - Pneumonia, other	BACPNEU	-0.043365914
+IV	Non-Operative - Respiratory - Pneumonia, parasitic (i.e., Pneumocystis pneumonia)	PARAPNEU	1.056187347
+IV	Non-Operative - Respiratory - Pneumonia, viral	BACVPNEU	0.254374904
+IV	Non-Operative - Respiratory - Pneumothorax	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Respiratory medical, other	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Restrictive lung disease (i.e., sarcoidosis, pulmonary fibrosis)	RESLUNGDIS	1.55529658
+IV	Non-Operative - Respiratory - Smoke inhalation	RESPOTH	-0.202823617
+IV	Non-Operative - Respiratory - Weaning from mechanical ventilation (transfer from other unit or hospital only)	RESPOTH	-0.202823617
+IV	Post-Operative - Respiratory - Apnea, sleep, surgery for (i.e., uvulopalatopharyngoplasty)	SRESTOTH	
+IV	Post-Operative - Respiratory - Biopsy, open lung	SLUNG	0.405738008
+IV	Post-Operative - Respiratory - Bullectomy	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Cancer, laryngeal/tracheal, surgery for	SRESPLAR	-1.152870135
+IV	Post-Operative - Respiratory - Cancer, oral/sinus, surgery for	SRESPLAR	-1.152870135
+IV	Post-Operative - Respiratory - Facial surgery (if related to trauma see Trauma)	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Infection/abscess, other, surgery for	SRESPINF	-0.005937516
+IV	Post-Operative - Respiratory - Respiratory surgery, other	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Thoracotomy for benign tumor (i.e., mediastinal chest wall mass, thymectomy)	SRESPCA	0.086933576
+IV	Post-Operative - Respiratory - Thoracotomy for bronchopleural fistula	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Thoracotomy for esophageal cancer	SGICA	0.136282662
+IV	Post-Operative - Respiratory - Thoracotomy for lung cancer	SRESPCA	0.086933576
+IV	Post-Operative - Respiratory - Thoracotomy for lung reduction	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Thoracotomy for other malignancy in chest	SRESPCA	0.086933576
+IV	Post-Operative - Respiratory - Thoracotomy for other reasons	SRESOTH	-0.249217228
+IV	Post-Operative - Respiratory - Thoracotomy for pleural disease	SLUNG	0.405738008
+IV	Post-Operative - Respiratory - Thoracotomy for thoracic/respiratory infection	SRESPINF	-0.005937516
+IV	Post-Operative - Respiratory - Tracheostomy	SRESOTH	-0.249217228
+IV	Non-Operative - Transplant - ALL OTHER NON-OPERATIVE TRANSPLANTS	RENOTH	-0.54158014
+IV	Non-Operative - Transplant - Kidney transplant	HEPATF	-0.119675791
+IV	Non-Operative - Transplant - Liver transplant	NON-PREDICTIVE	
+IV	Post-Operative - Transplant - ALL OTHER POST-OPERATIVE TRANSPLANTS	SRENTRAN	-1.308449407
+IV	Post-Operative - Transplant - Kidney transplant	SLIVERTR	-1.370278559
+IV	Post-Operative - Transplant - Liver transplant	NON-PREDICTIVE	
+IV	Non-Operative - Trauma - Abdomen only trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Abdomen/extremity trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Abdomen/face trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Abdomen/multiple trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Abdomen/pelvis trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Abdomen/spinal trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Chest/abdomen trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Chest/extremity trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Chest/face trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Chest/multiple trauma	TRAUMCHSP	-0.717432122
+IV	Non-Operative - Trauma - Chest/pelvis trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Chest/spinal trauma	TRAUMCHSP	-0.717432122
+IV	Non-Operative - Trauma - Chest/thorax only trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Extremity only trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Extremity/face trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Extremity/multiple trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Face only trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Face/multiple trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Head (CNS) only trauma	TRHEADONLY	0.595869416
+IV	Non-Operative - Trauma - Head/abdomen trauma	HEADTR	-0.372350315
+IV	Non-Operative - Trauma - Head/chest trauma	HEADTR	-0.372350315
+IV	Non-Operative - Trauma - Head/extremity trauma	TRHEADEXF	-0.364128015
+IV	Non-Operative - Trauma - Head/face trauma	TRHEADEXF	-0.364128015
+IV	Non-Operative - Trauma - Head/multiple trauma	TRHEADMULT	-0.067960926
+IV	Non-Operative - Trauma - Head/pelvis trauma	HEADTR	-0.372350315
+IV	Non-Operative - Trauma - Head/spinal trauma	HEADTR	-0.372350315
+IV	Non-Operative - Trauma - Pelvis/extremity trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Pelvis/face trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Pelvis/hip only trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Pelvis/multiple trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Pelvis/spinal trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Spinal cord only trauma	TRAUMSPINE	0.033769484
+IV	Non-Operative - Trauma - Spinal/extremity trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Spinal/face trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Spinal/multiple trauma	MULTRAUM	-0.678110274
+IV	Non-Operative - Trauma - Trauma medical, other	MULTRAUM	-0.678110274
+IV	Post-Operative - Trauma - Abdomen only trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Abdomen/extremity trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Abdomen/face trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Abdomen/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Abdomen/pelvis trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Abdomen/spinal trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/abdomen trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/extremity trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/face trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/pelvis trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/spinal trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Chest/thorax only trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Extremity only trauma, surgery for	STRAUMEXT	-0.180386981
+IV	Post-Operative - Trauma - Extremity/face trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Extremity/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Face only trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Face/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Head (CNS) only trauma, surgery for	STRHDONLY	1.088819324
+IV	Post-Operative - Trauma - Head/abdomen trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/chest trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/extremity trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/face trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/multiple trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/pelvis trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Head/spinal trauma, surgery for	SHEADTR	0.357797735
+IV	Post-Operative - Trauma - Pelvis/extremity trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Pelvis/face trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Pelvis/hip only trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Pelvis/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Pelvis/spinal trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Spinal cord only trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Spinal/extremity trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Spinal/face trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Spinal/multiple trauma, surgery for	SMULTR	-0.377807998
+IV	Post-Operative - Trauma - Trauma surgery, other	SMULTR	-0.377807998
