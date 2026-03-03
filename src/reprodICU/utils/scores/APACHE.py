@@ -439,7 +439,7 @@ def APACHE2(
             t_0_per_stay=t_0_per_stay,
             window_size=SECONDS_IN_1D,
         )
-        .filter(pl.col("Days Relative to Admission") == 1)
+        .filter(pl.col("Days Relative to T_0") == 1)
         .select(STAY_KEY, "T_0", "APS Score")
     )
 
