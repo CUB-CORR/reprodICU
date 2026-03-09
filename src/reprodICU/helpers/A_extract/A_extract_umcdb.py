@@ -1498,6 +1498,17 @@ class UMCdbExtractor(UMCdbPaths):
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
+            # fix singular bad mapping
+            .with_columns(
+                # original: Cobalamin (Vitamin B12) [Mass/volume] in Blood
+                pl.when(pl.col("sourceCode") == 10173)
+                .then(pl.lit("Cobalamin (Vitamin B12) [Moles/volume] in Blood"))
+                # original: Transferrin level
+                .when(pl.col("sourceCode") == 9981)
+                .then(pl.lit("Transferrin [Mass/volume] in Blood"))
+                .otherwise(pl.col("conceptName"))
+                .alias("conceptName")
+            )
             .with_columns(
                 pl.col("conceptName").replace(
                     {
