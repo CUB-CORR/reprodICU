@@ -27,7 +27,6 @@ import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..clinical.respiratory.ALVEOLAR_ARTERIAL_GRADIENT import Aa_GRADIENT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_t0,
@@ -126,6 +125,7 @@ def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
             .otherwise(None)
             .alias("FiO2")
         )
+        .filter(pl.col("FiO2").is_finite())
         .select(STAY_KEY, TIME_KEY, "FiO2")
     )
 
@@ -603,22 +603,12 @@ def APS(
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
     )
 
-    pf_ratio_tf = (
-        PaO2_FiO2_RATIO(
-            timeseries_resp=timeseries_resp,
-            timeseries_labs=timeseries_labs,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-        )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
-    )
-
     oxy_tf = (
         aa_grad_tf.join(
-            labs.select(STAY_KEY, TIME_KEY, "Oxygen"),
+            labs.select(STAY_KEY, TIME_KEY, "Oxygen")
+            .filter(pl.col("Oxygen").is_not_null()),
             on=[STAY_KEY, TIME_KEY],
-            how="inner",
+            how="outer",
         )
         .join_asof(
             resp_tf.select(STAY_KEY, TIME_KEY, "FiO2"),
@@ -626,11 +616,6 @@ def APS(
             by=STAY_KEY,
             strategy="backward",
             tolerance=4 * SECONDS_IN_1H,
-        )
-        .join(
-            pf_ratio_tf.select(STAY_KEY, TIME_KEY, "PaO2/FiO2 Ratio"),
-            on=[STAY_KEY, TIME_KEY],
-            how="left",
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(
@@ -1353,36 +1338,19 @@ def APS3(
         )
     )
 
-    pf_ratio_tf = (
-        PaO2_FiO2_RATIO(
-            timeseries_resp=timeseries_resp,
-            timeseries_labs=timeseries_labs,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-        )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(
-            _assign_timeframe(TIME_KEY, window_size).alias("timeframe")
-        )
-    )
-
     oxy_tf = (
         aa_grad_tf.join(
             labs.select(STAY_KEY, TIME_KEY, "Oxygen"),
             [STAY_KEY, TIME_KEY],
             how="inner",
         )
+        .sort(STAY_KEY, TIME_KEY)
         .join_asof(
-            resp_tf.select(STAY_KEY, TIME_KEY, "FiO2"),
+            resp_tf.select(STAY_KEY, TIME_KEY, "FiO2").sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
             tolerance=4 * SECONDS_IN_1H,
-        )
-        .join(
-            pf_ratio_tf.select(STAY_KEY, TIME_KEY, "PaO2/FiO2 Ratio"),
-            [STAY_KEY, TIME_KEY],
-            how="left",
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(
