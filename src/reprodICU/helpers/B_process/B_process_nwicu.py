@@ -75,7 +75,7 @@ class NWICUProcessor(NWICUExtractor):
         print("NWICU  - Processing vitals data...")
 
         # Process vitals data
-        ts_vitals = (
+        (
             self.extract_chartevents()
             # Convert temperature from Fahrenheit to Celsius
             .pipe(
@@ -86,26 +86,15 @@ class NWICUProcessor(NWICUExtractor):
                 valuecol="valuenum",
             )
             # Pivot the vitals data
-            .collect().pivot(
-                on="label",
-                index=self.index_cols,
-                values="valuenum",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="label",
+                index_cols=self.index_cols,
+                numeric_col="valuenum",
             )
+            # Save the preprocessed data
+            .sink_parquet(ts_vitals_path_unsorted)
         )
-
-        # Drop empty rows
-        ts_vitals_cols = ts_vitals.collect_schema().names()
-        droplist = list(set(ts_vitals_cols) - set(self.index_cols))
-        ts_vitals = (
-            ts_vitals.lazy()
-            .pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-        )
-
-        # Save the preprocessed data
-        ts_vitals.sink_parquet(ts_vitals_path_unsorted)
 
         # Sort the data
         (
@@ -155,7 +144,7 @@ class NWICUProcessor(NWICUExtractor):
         print("NWICU  - Processing lab data...")
 
         # Process lab data
-        ts_lab = (
+        (
             self.extract_lab_measurements()
             # Convert the lab values to the correct units
             .pipe(
@@ -171,15 +160,13 @@ class NWICUProcessor(NWICUExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="label",
-            )
-            .with_columns(pl.col("labstruct").struct.json_encode())
+            ).with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
-            .collect()
-            .pivot(
-                on="label",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="label",
+                index_cols=self.index_cols,
+                string_col="labstruct",
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
@@ -196,12 +183,9 @@ class NWICUProcessor(NWICUExtractor):
                     "Neutrophils/leukocytes",
                 ],
             )
-            .lazy()
-            .lazy()
+            # Save the preprocessed data
+            .sink_parquet(ts_labs_path_unsorted)
         )
-
-        # Save the preprocessed data
-        ts_lab.sink_parquet(ts_labs_path_unsorted)
 
         # Sort the data
         (

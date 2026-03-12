@@ -1,6 +1,7 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/MonitoringundVitaldatenObservation.html
 Temperature: # 45771331
+  # eICU-CRD -> same name
   # HiRID
   - Core body temperature
   # HiRID / UMCdb
@@ -19,7 +20,7 @@ Temperature: # 45771331
   - Temperature of Skin
   - Tympanic membrane temperature
 Heart rate: # 4239408
-  # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
+  # eICU-RD / HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
   - HeartRateECG
   # UMCdb -> same name
@@ -31,19 +32,19 @@ Heart rate rhythm: # 3022318
   # UMCdb
   - Cardiac rhythm type
 Peripheral oxygen saturation: # 4196147
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Oxygen saturation in Arterial blood by Pulse oximetry
   # NWICU -> same name
   # SICdb
   - SPO2
 Respiratory rate: # 4313591
-  # HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
+  # eICU-CRD / HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
   - RespRate
   # UMCdb -> same name
 Invasive systolic arterial pressure: # 4353843
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Systolic blood pressure
   # NWICU -> same name
@@ -52,7 +53,7 @@ Invasive systolic arterial pressure: # 4353843
   # UMCdb
   - Invasive Systolic blood pressure
 Invasive diastolic arterial pressure: # 4354253
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Diastolic blood pressure
   # NWICU -> same name
@@ -61,7 +62,7 @@ Invasive diastolic arterial pressure: # 4354253
   # UMCdb
   - Invasive Diastolic blood pressure
 Invasive mean arterial pressure: # 4108290
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV
   - Mean blood pressure
   # NWICU -> same name
@@ -70,61 +71,66 @@ Invasive mean arterial pressure: # 4108290
   # UMCdb
   - Invasive Mean blood pressure
 Non-invasive systolic arterial pressure: # 4354252
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Systolic blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNISystolic
 Non-invasive diastolic arterial pressure: # 4068414
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Diastolic blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNIDiastolic
 Non-invasive mean arterial pressure: # 4108289
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Mean blood pressure by Noninvasive
   # NWICU -> same name
   # SICdb
   - BloodPressureNIMAP
 Central venous pressure: # 4323687
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Central venous pressure (CVP)
   # SICdb
   - CentralVenousPressure
 Intracranial pressure: # 4353953
-  # HiRID -> same name
+  # eICU-CRD / HiRID -> same name
   # MIMIC-III / MIMIC-IV / UMCdb
   - Intracranial pressure (ICP)
 Glasgow coma score total: [] # 3007194
-  # MIMIC-III / MIMIC-IV -> same name
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
   # calculated from the three subscores for other datasets
 Glasgow coma score eye opening: # 3016335
+  # eICU-CRD -> same name
   # HiRID
   - Glasgow Coma Score eye opening subscore
   # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
 Glasgow coma score verbal: # 3009094
+  # eICU-CRD -> same name
   # HiRID
   - Glasgow Coma Score verbal response subscore
   # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
 Glasgow coma score motor: # 3008223
+  # eICU-CRD -> same name
   # HiRID
   - Glasgow Coma Score motor response subscore
   # MIMIC-III / MIMIC-IV -> same name
   # UMCdb -> manually extracted and calculated from different variables
 Richmond Agitation-Sedation Scale: # 36684829
+  # eICU-CRD -> same name
   # HiRID / MIMIC-III / MIMIC-IV
   - Richmond agitation-sedation scale
   # SICdb
   - RASS - Richmond Agitation-Sedation Scale
   # UMCdb -> same name
 Numeric Pain Rating Scale: # 37151627
+  # eICU-CRD -> same name
   # MIMIC-III / MIMIC-IV
   - Pain severity - 0-10 verbal numeric rating [Score] - Reported
   # SICdb

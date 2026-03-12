@@ -116,28 +116,25 @@ class HiRIDProcessor(HiRIDExtractor):
 
             # Process timeseries data
             timeseries = (
-                pl.scan_parquet(batch_paths, parallel="prefiltered")
                 # Drop the lab values from the timeseries data
+                pl.scan_parquet(batch_paths, parallel="prefiltered")
                 .filter(~pl.col("variableid").is_between(20000000, 25000000))
                 .pipe(
                     self._extract_timeseries_helper,
                     self.admissiontime,
                     self.length_of_stay,
                 )
-                .collect()
             )
 
             (
                 # Pivot the timeseries data
-                timeseries.pivot(
-                    on="variable",
-                    index=self.index_cols,
-                    values="value",
-                    aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-                )
-                .sort(self.index_cols)
+                self.pivot_numeric_or_string(
+                    timeseries,
+                    on_col="variable",
+                    index_cols=self.index_cols,
+                    numeric_col="value",
+                ).sort(self.index_cols)
                 # Sink each intermittent batch result to a parquet
-                .lazy()
                 .sink_parquet(self.precalc_path + f"{batch_id}_{index}.parquet")
             )
 
@@ -147,7 +144,7 @@ class HiRIDProcessor(HiRIDExtractor):
             avg = sum(times) / len(times)
             eta_min = int(avg * (total_batches - (i // batch_size) - 1) / 60 + 0.5) # fmt: skip
 
-            cases += timeseries.select(self.icu_stay_id_col).unique().shape[0]
+            cases += timeseries.select(self.icu_stay_id_col).unique().collect().shape[0]
 
             sys.stdout.write("\033[K")  # Clear to the end of line
             print(
@@ -175,22 +172,6 @@ class HiRIDProcessor(HiRIDExtractor):
             pl.col(self.index_cols).set_sorted(),
             pl.exclude(self.index_cols),
         )
-
-    def _pivot_timeseries_labs_batch(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """Helper to pivot labs batches during batch processing."""
-        timeseries = (
-            data.collect()
-            .pivot(
-                on="variable",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
-            )
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-            .lazy()
-        )
-        return timeseries
 
     # endregion
 
@@ -268,7 +249,12 @@ class HiRIDProcessor(HiRIDExtractor):
             output_file=ts_labs_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=self._pivot_timeseries_labs_batch,
+            method=lambda df: self.pivot_numeric_or_string(
+                df,
+                on_col="variable",
+                index_cols=self.index_cols,
+                string_col="labstruct",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )

@@ -382,7 +382,7 @@ class EICUExtractor(EICUPaths):
 
     # region lab TS
     # Extract time series information for lab values from the lab.csv file
-    def extract_time_series_lab(self) -> pl.LazyFrame:
+    def extract_timeseries_lab(self) -> pl.LazyFrame:
         """
         Extract laboratory measurement time series.
 
@@ -420,8 +420,10 @@ class EICUExtractor(EICUPaths):
             )
             # Replace lab names with mapped names
             .with_columns(
-                pl.col("labname")
-                .replace_strict(lab_names_mapping, default=None)
+                pl.col("labname").replace_strict(
+                    lab_names_mapping,
+                    default=None,
+                )
             )
         ) # fmt: skip
 
@@ -517,7 +519,7 @@ class EICUExtractor(EICUPaths):
 
     # region resp TS
     # Extract time series information for respiratory values from the respiratorycharting.csv file
-    def extract_time_series_resp(self) -> pl.LazyFrame:
+    def extract_timeseries_resp(self) -> pl.LazyFrame:
         """
         Extract respiratory measurement time series.
 
@@ -552,7 +554,10 @@ class EICUExtractor(EICUPaths):
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
         labs = (
             lab.select(
-                "patientunitstayid", "labname", "labresultoffset", "labresult"
+                "patientunitstayid",
+                "labname",
+                "labresultoffset",
+                "labresult",
             )
             .filter(
                 pl.col("labname").is_in(
@@ -584,6 +589,7 @@ class EICUExtractor(EICUPaths):
                 .cast(str)
                 .alias("respchartvalue"),
             )
+            .drop_nulls("respchartvalue")
         )
 
         respiratoryCharting = (
@@ -613,15 +619,26 @@ class EICUExtractor(EICUPaths):
                 .str.replace("Initiated", "")
                 .str.replace("Maintained", "")
                 .str.replace("Not applicable", "")
-                .str.replace("Refused after education", ""),
-                # .cast(float, strict=False),
+                .str.replace("Refused after education", "")
+                .str.strip_chars(),
             )
         )
 
+        resp_str_cols = [
+            "Oxygen delivery system",
+            "Ventilation mode Ventilator",
+            "Ventilator type",
+        ]
+
         return (
             pl.concat([respiratoryCharting, labs], how="vertical")
-            # Map O2 delivery device values
             .with_columns(
+                pl.col("respchartvalue")
+                .cast(float, strict=False)
+                .alias("respchartvaluefloat")
+            )
+            .with_columns(
+                # Separate respchartvalue into string ...
                 pl.when(
                     pl.col("respchartvaluelabel") == "Oxygen delivery system"
                 )
@@ -630,15 +647,25 @@ class EICUExtractor(EICUPaths):
                         resp_oxygen_delivery_device_mapping, default=None
                     )
                 )
-                .otherwise(pl.col("respchartvalue"))
-                .alias("respchartvalue"),
+                .when(pl.col("respchartvaluelabel").is_in(resp_str_cols))
+                .then(pl.col("respchartvalue"))
+                .otherwise(None)
+                .alias("respchartvaluestr"),
+                # ... and numeric columns
+                pl.when(
+                    ~pl.col("respchartvaluelabel").is_in(resp_str_cols),
+                    pl.col("respchartvaluefloat").is_not_null(),
+                )
+                .then(pl.col("respchartvaluefloat"))
+                .otherwise(None)
+                .alias("respchartvaluefloat"),
             )
             # Filter for resp names of interest
             .filter(pl.col("respchartvaluelabel").is_in(keep_resp_names))
             # Remove rows with empty resp values
             .filter(
-                pl.col("respchartvalue").is_not_null(),
-                pl.col("respchartvalue").ne_missing(""),
+                pl.col("respchartvaluestr").is_not_null()
+                | pl.col("respchartvaluefloat").is_not_null()
             )
             # Remove duplicate rows
             .unique()
@@ -654,7 +681,7 @@ class EICUExtractor(EICUPaths):
 
     # region nurse TS
     # Extract time series information for nurse values from the nurseCharting.csv file
-    def extract_time_series_nurse(self) -> pl.LazyFrame:
+    def extract_timeseries_nurse(self) -> pl.LazyFrame:
         """
         Extract nurse charting measurement time series.
 
@@ -722,13 +749,7 @@ class EICUExtractor(EICUPaths):
                 pl.col("nursingchartcelltypevallabel").is_in(keep_nurse_names)
             )
             # Remove rows with empty nurse values
-            .drop_nulls(
-                [
-                    "nursingchartcelltypevallabel",
-                    "nursingchartcelltypevalname",
-                    "nursingchartvalue",
-                ]
-            )
+            .drop_nulls(["nursingchartcelltypevalname", "nursingchartvalue"])
             # Remove duplicate rows
             .unique()
         )
@@ -763,21 +784,14 @@ class EICUExtractor(EICUPaths):
                     ),
                     nurseCharting_RASS,
                 ],
-                how="vertical_relaxed",
+                how="vertical",
             )
-            .drop("nursingchartcelltypevallabel")
             .with_columns(
-                # Replace "Unable to score due to medication" values with None
-                pl.when(
-                    pl.col("nursingchartvalue")
-                    == "Unable to score due to medication"
-                )
-                .then(None)
+                pl.col("nursingchartvalue")
+                # Replace "Unable to score due to medication" values with 0
+                .replace("Unable to score due to medication", 0)
                 # Replace empty strings with None
-                .when(pl.col("nursingchartvalue") == "")
-                .then(None)
-                .otherwise(pl.col("nursingchartvalue"))
-                .alias("nursingchartvalue"),
+                .replace("", None)
             )
             .with_columns(
                 pl.col("nursingchartvalue")
@@ -788,40 +802,33 @@ class EICUExtractor(EICUPaths):
                 # Split "O2 L/%" into two separate columns:
                 # 1. "FiO2" -> Oxygen/Total gas setting [Volume Fraction] Ventilator
                 # 2. "O2 L" -> Oxygen gas flow Oxygen delivery system
-                pl.when(
-                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
-                    pl.col("nursingchartvaluefloat").is_between(21, 100)
-                    | pl.col("nursingchartvaluefloat").is_between(
-                        0.21, 1.0, closed="left"
-                    ),
+                pl.when(pl.col("nursingchartcelltypevalname") == "O2 L/%")
+                .then(
+                    pl.when(
+                        pl.col("nursingchartvaluefloat").is_between(21, 100)
+                        | pl.col("nursingchartvaluefloat").is_between(0.21, 1.0)
+                    )
+                    .then(pl.lit("FiO2"))
+                    .otherwise(pl.lit("O2 L"))
                 )
-                .then(pl.lit("FiO2"))
-                .when(
-                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
-                    pl.col("nursingchartvaluefloat").is_between(
-                        1, 21, closed="left"
-                    ),
-                )
-                .then(pl.lit("O2 L"))
                 .otherwise(pl.col("nursingchartcelltypevalname"))
                 .alias("nursingchartcelltypevalname"),
+            )
+            .with_columns(
+                # Handle FiO2 conversion from decimal to percentage
                 pl.when(
-                    pl.col("nursingchartcelltypevalname") == "O2 L/%",
-                    pl.col("nursingchartvaluefloat").is_between(
-                        0.21, 1.0, closed="left"
-                    ),
+                    pl.col("nursingchartcelltypevalname") == "FiO2",
+                    pl.col("nursingchartvaluefloat").is_between(0.21, 1.0),
                 )
-                .then(pl.col("nursingchartvaluefloat").mul(100).cast(str))
-                .otherwise(pl.col("nursingchartvalue"))
-                .alias("nursingchartvalue"),
+                .then(pl.col("nursingchartvaluefloat") * 100)
+                .otherwise(pl.col("nursingchartvaluefloat"))
+                .alias("nursingchartvaluefloat"),
             )
             .with_columns(
                 # Replace nurse names with mapped names
-                pl.col("nursingchartcelltypevalname")
-                .replace_strict(nurse_names_mapping, default=None)
-                .alias("nursingchartcelltypevalname"),
-            )
-            .with_columns(
+                pl.col("nursingchartcelltypevalname").replace_strict(
+                    nurse_names_mapping, default=None
+                ),
                 # Map O2 delivery device values
                 pl.when(
                     pl.col("nursingchartcelltypevalname")
@@ -833,10 +840,22 @@ class EICUExtractor(EICUPaths):
                     )
                 )
                 .otherwise(pl.col("nursingchartvalue"))
-                .alias("nursingchartvalue"),
+                .alias("nursingchartvaluestr"),
             )
+            .with_columns(
+                # Finalize exclusive columns
+                pl.when(pl.col("nursingchartvaluefloat").is_not_null())
+                .then(None)
+                .otherwise(pl.col("nursingchartvaluestr"))
+                .alias("nursingchartvaluestr")
+            )
+            # Remove rows with empty names
+            .filter(pl.col("nursingchartcelltypevalname").is_not_null())
             # Remove rows with empty nurse values
-            .drop_nulls(["nursingchartcelltypevalname", "nursingchartvalue"])
+            .filter(
+                pl.col("nursingchartvaluestr").is_not_null()
+                | pl.col("nursingchartvaluefloat").is_not_null(),
+            )
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -849,7 +868,7 @@ class EICUExtractor(EICUPaths):
 
     # region in/out TS
     # Extract time series information for intake/output values from the intakeOutput.csv file
-    def extract_time_series_intake_output(self) -> pl.LazyFrame:
+    def extract_timeseries_intake_output(self) -> pl.LazyFrame:
         """
         Extract intake/output measurement time series.
 
@@ -921,7 +940,7 @@ class EICUExtractor(EICUPaths):
 
     # region periodic TS
     # Extract time series information for periodic values from the vitalPeriodic.csv file
-    def extract_time_series_periodic(self) -> pl.LazyFrame:
+    def extract_timeseries_periodic(self) -> pl.LazyFrame:
         """
         Extract periodic vital sign measurement time series.
 
@@ -968,7 +987,7 @@ class EICUExtractor(EICUPaths):
 
     # region aperiodic TS
     # Extract time series information for aperiodic values from the vitalAperiodic.csv file
-    def extract_time_series_aperiodic(self) -> pl.LazyFrame:
+    def extract_timeseries_aperiodic(self) -> pl.LazyFrame:
         """
         Extract aperiodic vital sign measurement time series.
 
@@ -1044,8 +1063,8 @@ class EICUExtractor(EICUPaths):
         periodic_mapping = self.helpers.load_mapping(self.periodic_mapping_path)
         periodic_mapping_keys = list(periodic_mapping.values())
 
-        periodic = self.extract_time_series_periodic()
-        aperiodic = self.extract_time_series_aperiodic()
+        periodic = self.extract_timeseries_periodic()
+        aperiodic = self.extract_timeseries_aperiodic()
 
         return (
             pl.concat([periodic, aperiodic], how="diagonal_relaxed")
@@ -1115,20 +1134,14 @@ class EICUExtractor(EICUPaths):
                 pl.col("antibiotic")
                 .replace(
                     {
-                        "amoxicillin/clavulonic acid": (
-                            "amoxicillin / clavulanate"
-                        ),
+                        "amoxicillin/clavulonic acid": "amoxicillin / clavulanate",
                         "ampicillin/sulbactam": "ampicillin / sulbactam",
                         "imipenem/cilastatin": "cilastatin / imipenem",
                         "piperacillin/tazobactam": "piperacillin / tazobactam",
-                        "ticarcillin/clavulonic acid": (
-                            "clavulanate / ticarcillin"
-                        ),
-                        "trimethoprim/sulfamethoxazole": (
-                            "sulfamethoxazole / trimethoprim"
-                        ),
+                        "ticarcillin/clavulonic acid": "clavulanate / ticarcillin",
+                        "trimethoprim/sulfamethoxazole": "sulfamethoxazole / trimethoprim",
                         "": None,
-                    }
+                    } # fmt: skip
                 )
                 .alias(self.micro_antibiotic_col),
                 # Replace sensitivities with shorthands
@@ -1422,8 +1435,7 @@ class EICUExtractor(EICUPaths):
                     .cast(float, strict=False)
                 )
                 .alias(self.drug_amount_col),
-                pl.col(self.drug_amount_unit_col)
-                .replace(
+                pl.col(self.drug_amount_unit_col).replace(
                     {
                         "1": "ml",
                         "3": "mg",

@@ -77,14 +77,16 @@ class UMCdbProcessor(UMCdbExtractor):
         # Load the time series data.
         print("UMCdb   - Loading time series data...")
 
-        ts_numeric = self._process_timeseries_numeric()
-        ts_listitems = self._process_timeseries_listitems()
-
         # Save the preprocessed data
         (
-            ts_numeric.join(
-                ts_listitems, on=self.index_cols, how="full", coalesce=True
-            ).sink_parquet(ts_path_unsorted)
+            self._process_timeseries_numeric()
+            .join(
+                self._process_timeseries_listitems(),
+                on=self.index_cols,
+                how="full",
+                coalesce=True,
+            )
+            .sink_parquet(ts_path_unsorted)
         )
 
         # Sort the data
@@ -103,30 +105,6 @@ class UMCdbProcessor(UMCdbExtractor):
     # endregion
 
     # region numeric
-    def _process_timeseries_numeric_batch(
-        self, data: pl.LazyFrame
-    ) -> pl.LazyFrame:
-        """
-        Helper method to process numeric timeseries data for batch processing.
-
-        Steps:
-            1. Pivot measurements on "item" using mean aggregation.
-            2. Return processed timeseries.
-
-        Returns:
-            pl.LazyFrame: Processed timeseries with pivoted numeric measurements.
-        """
-        return (
-            data.collect()
-            .pivot(
-                on="item",
-                index=self.index_cols,
-                values="value",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
-            )
-            .lazy()
-        )
-
     def _process_timeseries_numeric(self) -> pl.LazyFrame:
         """
         Process numeric time series measurements.
@@ -155,11 +133,8 @@ class UMCdbProcessor(UMCdbExtractor):
 
         print("UMCdb   - Preparing numeric time series data...")
 
-        # Create the raw numeric timeseries parquet file if it doesn't exist
-        if not os.path.isfile(ts_numeric_path_unsorted):
-            self.extract_timeseries_numericitems().sink_parquet(
-                ts_numeric_path_unsorted
-            )
+        # Extract the numeric timeseries
+        self.extract_timeseries_numericitems().sink_parquet(ts_numeric_path_unsorted) # fmt: skip
 
         print("UMCdb   - Processing numeric time series data...")
 
@@ -169,15 +144,17 @@ class UMCdbProcessor(UMCdbExtractor):
             output_file=ts_numeric_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=self._process_timeseries_numeric_batch,
+            method=lambda df: self.pivot_numeric_or_string(
+                df,
+                on_col="item",
+                index_cols=self.index_cols,
+                numeric_col="value",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             batch_size=500,
             delete_after=True,
         )
-
-        # Clean up unsorted file
-        if os.path.isfile(ts_numeric_path_unsorted):
-            os.remove(ts_numeric_path_unsorted)
+        os.remove(ts_numeric_path_unsorted)
 
         return pl.scan_parquet(ts_numeric_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -227,7 +204,7 @@ class UMCdbProcessor(UMCdbExtractor):
         print("UMCdb   - Processing lab time series data...")
 
         # Process labs data
-        ts_labs = (
+        (
             pl.scan_parquet(ts_labs_path_cache)
             # Align the units of the lab values
             .pipe(self.convert._align_units)
@@ -245,15 +222,13 @@ class UMCdbProcessor(UMCdbExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="item",
-            )
-            .with_columns(pl.col("labstruct").struct.json_encode())
+            ).with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the labs data
-            .collect()
-            .pivot(
-                on="item",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="item",
+                index_cols=self.index_cols,
+                string_col="labstruct",
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
@@ -273,12 +248,9 @@ class UMCdbProcessor(UMCdbExtractor):
                     "Reticulocytes/Erythrocytes",
                 ],
             )
-            .lazy()
+            # Save the preprocessed data
+            .sink_parquet(ts_labs_path_unsorted)
         )
-
-        # Save the preprocessed data
-        # ts_labs.sink_parquet(ts_labs_path_unsorted)
-        ts_labs.collect().write_parquet(ts_labs_path_unsorted)
 
         # Sort the data
         (
@@ -328,35 +300,23 @@ class UMCdbProcessor(UMCdbExtractor):
         print("UMCdb   - Collecting list time series data...")
 
         # "Cache" the data before pivoting
-        if not os.path.isfile(ts_list_path_cache):
-            self.extract_timeseries_listitems().sink_parquet(ts_list_path_cache)
+        self.extract_timeseries_listitems().sink_parquet(ts_list_path_cache)
 
         print("UMCdb   - Processing list time series data...")
 
         # Process list data
-        ts_listitems = (
+        (
             pl.scan_parquet(ts_list_path_cache)
             # Pivot the list data
-            .collect().pivot(
-                on="item",
-                index=self.index_cols,
-                values="value",
-                aggregate_function="first",
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="item",
+                index_cols=self.index_cols,
+                string_col="value",
             )
+            # Save the preprocessed data
+            .sink_parquet(ts_list_path_unsorted)
         )
-
-        # Drop empty rows
-        droplist = list(
-            set(ts_listitems.collect_schema().names()) - set(self.index_cols)
-        )
-        ts_listitems = (
-            ts_listitems.pipe(self.helpers.dropna, "all", droplist, False)
-            .lazy()
-            .unique()
-        )
-
-        # Save the preprocessed data
-        ts_listitems.sink_parquet(ts_list_path_unsorted)
 
         # Sort the data
         (

@@ -5,6 +5,7 @@
 # It contains the GlobalVars class that stores globally configured variables and the GlobalHelpers class
 # that contains helper functions that are used across multiple scripts.
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -131,6 +132,111 @@ class GlobalHelpers:
 
         return result
 
+    # region pivot / cast
+    def pivot_numeric_or_string(
+        self,
+        data: pl.LazyFrame,
+        on_col: str,
+        index_cols: list[str],
+        numeric_col: Optional[str] = None,
+        string_col: Optional[str] = None,
+    ) -> pl.LazyFrame:
+        """
+        Pivot and aggregate: compute median of numeric_col, or first value of string_col.
+        At least one of numeric_col or string_col must be provided.
+        Result columns are cast to String.
+        """
+        if numeric_col is None and string_col is None:
+            raise ValueError(
+                "At least one of numeric_col or string_col must be provided."
+            )
+
+        df_num_pivoted = None
+        df_str_pivoted = None
+        cols_num = []
+        cols_str = []
+
+        # 1. Pivot numeric (median)
+        df_num = pl.DataFrame()
+        if numeric_col:
+            df_num = data.filter(pl.col(numeric_col).is_not_null()).collect()
+
+        if not df_num.is_empty():
+            df_num_pivoted = df_num.pivot(
+                on=on_col,
+                index=index_cols,
+                values=numeric_col,
+                aggregate_function="median",
+            ).lazy()
+
+            cols_num = [
+                c
+                for c in df_num_pivoted.collect_schema().names()
+                if c not in index_cols
+            ]
+
+            df_num_pivoted = df_num_pivoted.with_columns(
+                pl.col(c).cast(pl.String) for c in cols_num
+            )
+
+        # 2. Pivot string (first)
+        df_str = pl.DataFrame()
+        if string_col:
+            df_str = data.filter(pl.col(string_col).is_not_null()).collect()
+
+        if not df_str.is_empty():
+            # Check for non-uniqueness: count occurrences per unique cell after consolidation
+            non_unique = (
+                df_str.group_by(index_cols + [on_col])
+                .agg(pl.col(string_col).unique().count().alias("count"))
+                .filter(pl.col("count") > 1)
+            )
+            if not non_unique.is_empty():
+                print(
+                    f"Warning: Non-unique string values found for {len(non_unique)} "
+                    f"index/on_col combinations in {string_col}. Only the first will be kept."
+                )
+
+            df_str_pivoted = df_str.pivot(
+                on=on_col,
+                index=index_cols,
+                values=string_col,
+                aggregate_function="first",
+            ).lazy()
+
+            cols_str = [
+                c
+                for c in df_str_pivoted.collect_schema().names()
+                if c not in index_cols
+            ]
+
+        # 3. Combine results
+        if df_num_pivoted is not None and df_str_pivoted is not None:
+            res = df_num_pivoted.join(
+                df_str_pivoted, on=index_cols, how="full", coalesce=True
+            )
+            common_cols = [c for c in cols_num if c in cols_str]
+            if common_cols:
+                res = res.with_columns(
+                    [pl.coalesce(c, f"{c}_right").alias(c) for c in common_cols]
+                )
+            final_cols = (
+                index_cols
+                + cols_num
+                + [c for c in cols_str if c not in cols_num]
+            )
+            return res.select(final_cols)
+
+        elif df_num_pivoted is not None:
+            return df_num_pivoted.select(index_cols + cols_num)
+
+        elif df_str_pivoted is not None:
+            return df_str_pivoted.select(index_cols + cols_str)
+
+        else:
+            # Return empty frame with correct schema if possible, or just start from original indices
+            return data.select(index_cols).unique()
+
 
 # region GlobalVars
 class GlobalVars(GlobalHelpers):
@@ -255,70 +361,6 @@ class GlobalVars(GlobalHelpers):
                 pl.Field("LOINC", pl.String),
             ]
         )
-
-        # region ENUM MAPS
-        # Define custom enum maps
-        self.heart_rhythm_enum_map = {
-            v: i
-            for i, v in enumerate(
-                self.load_mapping_keys(
-                    mapping_path
-                    + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
-                )
-            )
-        }
-        self.heart_rhythm_enum_map_inverted = {
-            i: v for v, i in self.heart_rhythm_enum_map.items()
-        }
-        self.oxygen_delivery_system_enum_map = {
-            v: i
-            for i, v in enumerate(
-                self.load_mapping_keys(
-                    mapping_path
-                    + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
-                )
-            )
-        }
-        self.oxygen_delivery_system_enum_map_inverted = {
-            i: v for v, i in self.oxygen_delivery_system_enum_map.items()
-        }
-        self.ventilator_mode_enum_map = {
-            v: i
-            for i, v in enumerate(
-                self.load_mapping_keys(
-                    mapping_path
-                    + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
-                )
-            )
-        }
-        self.ventilator_mode_enum_map_inverted = {
-            i: v for v, i in self.ventilator_mode_enum_map.items()
-        }
-        self.blood_gas_source_enum_map = {
-            v: i
-            for i, v in enumerate(
-                [
-                    "Blood arterial",
-                    "Blood mixed venous",
-                    "Blood central venous",
-                    "Blood venous",
-                ]
-            )
-        }
-        self.blood_gas_source_enum_map_inverted = {
-            i: v for v, i in self.blood_gas_source_enum_map.items()
-        }
-        self.rrt_mode_enum_map = {
-            v: i
-            for i, v in enumerate(
-                self.load_mapping_keys(
-                    mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
-                )
-            )
-        }
-        self.rrt_mode_enum_map_inverted = {
-            i: v for v, i in self.rrt_mode_enum_map.items()
-        }
 
         # region ICD
         # Define global mappings (ICD diagnoses & procedures and more)

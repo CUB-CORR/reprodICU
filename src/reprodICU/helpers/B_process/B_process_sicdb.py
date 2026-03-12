@@ -46,38 +46,6 @@ class SICdbProcessor(SICdbExtractor):
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
     # region vitals
-    def _process_timeseries_batch(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """
-        Helper method to process timeseries data for batch processing.
-
-        Steps:
-            1. Extract and align timeseries data relative to ICU admission.
-            2. Pivot measurements on "DataID" using first aggregation.
-            3. Drop rows where all non-index columns are null.
-
-        Returns:
-            pl.LazyFrame: Processed timeseries with pivoted measurements.
-        """
-        # Extract & pivot the timeseries data
-        timeseries = (
-            data.pipe(self._extract_timeseries_helper)
-            .collect()
-            .pivot(
-                on="DataID",
-                index=self.index_cols,
-                values="Val",
-                aggregate_function="first",  # NOTE: first is used here to allow for string values
-            )
-            .lazy()
-        )
-
-        # Drop empty rows
-        droplist = list(
-            set(timeseries.collect_schema().names()) - set(self.index_cols)
-        )
-
-        return timeseries.pipe(self.helpers.dropna, "all", droplist, False)
-
     def process_timeseries_data_float(self) -> pl.LazyFrame:
         """
         Process numerical time series data.
@@ -109,15 +77,14 @@ class SICdbProcessor(SICdbExtractor):
         print("SICdb   - Preparing raw timeseries data...")
 
         # Create the raw timeseries parquet file if it doesn't exist
-        if not os.path.isfile(ts_float_path_unsorted):
-            (
-                pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
-                .select("CaseID", "Offset", "DataID", "Val")
-                # Round values to 2 decimal places due to precision issues of IEEE 754 floats
-                .with_columns(pl.col("Val").cast(float).round(2))
-                .rename({"CaseID": self.icu_stay_id_col})
-                .sink_parquet(ts_float_path_unsorted)
-            )
+        (
+            pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
+            .select("CaseID", "Offset", "DataID", "Val")
+            # Round values to 2 decimal places due to precision issues of IEEE 754 floats
+            .with_columns(pl.col("Val").cast(float).round(2))
+            .rename({"CaseID": self.icu_stay_id_col})
+            .sink_parquet(ts_float_path_unsorted)
+        )
 
         print("SICdb   - Processing numeric time series data...")
 
@@ -127,15 +94,17 @@ class SICdbProcessor(SICdbExtractor):
             output_file=ts_float_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=self._process_timeseries_batch,
+            method=lambda df: self.pivot_numeric_or_string(
+                df.pipe(self._extract_timeseries_helper),
+                on_col="DataID",
+                index_cols=self.index_cols,
+                numeric_col="Val",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             batch_size=500,
             delete_after=True,
         )
-
-        # Clean up unsorted file
-        if os.path.isfile(ts_float_path_unsorted):
-            os.remove(ts_float_path_unsorted)
+        os.remove(ts_float_path_unsorted)
 
         return pl.scan_parquet(ts_float_path).select(
             pl.col(self.index_cols).set_sorted(),
@@ -176,7 +145,7 @@ class SICdbProcessor(SICdbExtractor):
         print("SICdb   - Processing laboratory data...")
 
         # Process timeseries data
-        timeseries = (
+        (
             self.extract_laboratory_timeseries()
             # Align the units of the lab values
             .pipe(self.convert._align_units)
@@ -193,21 +162,17 @@ class SICdbProcessor(SICdbExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="LaboratoryName",
-            )
-            .with_columns(pl.col("labstruct").struct.json_encode())
+            ).with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
-            .collect()
-            .pivot(
-                on="LaboratoryName",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="LaboratoryName",
+                index_cols=self.index_cols,
+                string_col="labstruct",
             )
-            .lazy()
+            # Save the preprocessed data
+            .sink_parquet(ts_labs_path_unsorted)
         )
-
-        # Save the preprocessed data
-        timeseries.sink_parquet(ts_labs_path_unsorted)
 
         # Sort the data
         (

@@ -734,42 +734,42 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.when(pl.col("LABEL") == "Heart rate rhythm")
                 .then(
-                    pl.col("VALUE")
-                    .replace_strict(self.HEART_RHYTHM_MAP, default=None)
-                    .replace(self.heart_rhythm_enum_map)
+                    pl.col("VALUE").replace_strict(
+                        self.HEART_RHYTHM_MAP, default=None
+                    )
                 )
                 .when(pl.col("LABEL") == "Oxygen delivery system")
                 .then(
-                    pl.col("VALUE")
-                    .replace_strict(
+                    pl.col("VALUE").replace_strict(
                         self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
                     )
-                    .replace(self.oxygen_delivery_system_enum_map)
                 )
                 .when(pl.col("LABEL") == "Ventilation mode Ventilator")
                 .then(
-                    pl.col("VALUE")
-                    .replace_strict(self.VENTILATOR_MODE_MAP, default=None)
-                    .replace(self.ventilator_mode_enum_map)
+                    pl.col("VALUE").replace_strict(
+                        self.VENTILATOR_MODE_MAP, default=None
+                    )
                 )
                 .when(
                     pl.col("LABEL")
                     == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
                 )
                 .then(
-                    pl.col("VALUE")
-                    .replace_strict(self.RRT_MODE_MAP, default=None)
-                    .replace(self.rrt_mode_enum_map)
+                    pl.col("VALUE").replace_strict(
+                        self.RRT_MODE_MAP, default=None
+                    )
                 )
-                .otherwise(pl.col("VALUENUM"))
-                .cast(float)
-                .alias("VALUENUM"),
+                .otherwise(None)
+                .alias("VALUE"),
             )
             .drop("ITEMID")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null())  # & (pl.col("LABEL") != ""))
-            # Remove rows with empty values
-            .filter(pl.col("VALUENUM").is_not_null())
+            # Remove rows with empty values (numeric or categorical string)
+            .filter(
+                pl.col("VALUENUM").is_not_null()
+                | pl.col("VALUE").is_not_null(),
+            )
             # Remove duplicate rows
             .unique()
         )

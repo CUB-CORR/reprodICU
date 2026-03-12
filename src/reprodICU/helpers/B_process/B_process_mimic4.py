@@ -45,58 +45,6 @@ class MIMIC4Processor(MIMIC4Extractor):
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
 
-    def _process_timeseries_vitals_batch(
-        self, data: pl.LazyFrame
-    ) -> pl.LazyFrame:
-        """
-        Helper to pivot vitals batches during batch processing.
-
-        Steps:
-            1. Collect the batch and pivot on `label` using first aggregation.
-            2. Drop rows that are empty for all non-index columns.
-
-        Returns:
-            pl.LazyFrame: pivoted batch as a lazyframe.
-        """
-        timeseries = (
-            data.collect()
-            .pivot(
-                on="label",
-                index=self.index_cols,
-                values="valuenum",
-                aggregate_function="first",
-            )  # Replace the integerized values with the original values
-            .with_columns(
-                pl.col("Heart rate rhythm").replace_strict(
-                    self.heart_rhythm_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Oxygen delivery system").replace_strict(
-                    self.oxygen_delivery_system_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col("Ventilation mode Ventilator").replace_strict(
-                    self.ventilator_mode_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-                pl.col(
-                    "Continuous renal replacement therapy mode Renal replacement therapy circuit"
-                ).replace_strict(
-                    self.rrt_mode_enum_map_inverted,
-                    return_dtype=pl.String,
-                ),
-            )
-        )
-
-        # Drop empty rows
-        droplist = list(set(timeseries.columns) - set(self.index_cols))
-        return (
-            timeseries.pipe(self.helpers.dropna, "all", droplist, False)
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-            .lazy()
-        )
-
     # region vitals
     # Processes the vital data of the MIMIC4 dataset.
     def process_timeseries_vitals(self):
@@ -156,7 +104,13 @@ class MIMIC4Processor(MIMIC4Extractor):
             output_file=ts_vitals_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=self._process_timeseries_vitals_batch,
+            method=lambda df: self.pivot_numeric_or_string(
+                df,
+                on_col="label",
+                index_cols=self.index_cols,
+                numeric_col="valuenum",
+                string_col="value",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
@@ -203,7 +157,7 @@ class MIMIC4Processor(MIMIC4Extractor):
         print("MIMIC4  - Processing lab data...")
 
         # Process lab data
-        ts_lab = (
+        (
             self.extract_lab_measurements()
             # Align the units of the lab values
             .pipe(self.convert._align_units)
@@ -221,15 +175,13 @@ class MIMIC4Processor(MIMIC4Extractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="label",
-            )
-            .with_columns(pl.col("labstruct").struct.json_encode())
+            ).with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
-            .collect()
-            .pivot(
-                on="label",
-                index=self.index_cols,
-                values="labstruct",
-                aggregate_function="first",
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="label",
+                index_cols=self.index_cols,
+                string_col="labstruct",
             )
             # Convert the wide lab values to the correct units
             .pipe(self.convert._convert_wide_lab_values)
@@ -247,11 +199,9 @@ class MIMIC4Processor(MIMIC4Extractor):
                     "Reticulocytes/Erythrocytes",
                 ],
             )
-            .lazy()
+            # Save the preprocessed data
+            .sink_parquet(ts_labs_path_unsorted)
         )
-
-        # Save the preprocessed data
-        ts_lab.sink_parquet(ts_labs_path_unsorted)
 
         # Sort the data
         (
@@ -300,29 +250,18 @@ class MIMIC4Processor(MIMIC4Extractor):
         print("MIMIC4  - Processing inout data...")
 
         # Process inout data
-        ts_inout = (
+        (
             self.extract_output_measurements()
             # Pivot the inout data
-            .collect().pivot(
-                on="label",
-                index=self.index_cols,
-                values="valuenum",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="label",
+                index_cols=self.index_cols,
+                numeric_col="valuenum",
             )
+            # Save the preprocessed data
+            .sink_parquet(ts_inout_path_unsorted)
         )
-
-        # Drop empty rows
-        ts_inout_cols = ts_inout.collect_schema().names()
-        droplist = list(set(ts_inout_cols) - set(self.index_cols))
-        ts_inout = (
-            ts_inout.lazy()
-            .pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-        )
-
-        # Save the preprocessed data
-        ts_inout.sink_parquet(ts_inout_path_unsorted)
 
         # Sort the data
         (

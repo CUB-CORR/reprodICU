@@ -7,7 +7,6 @@
 import os
 
 import polars as pl
-import polars.selectors as cs
 
 from ..A_extract.A_extract_eicu import EICUExtractor
 from ..helper import GlobalHelpers
@@ -44,56 +43,6 @@ class EICUProcessor(EICUExtractor):
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
         self.index_cols = [self.icu_stay_id_col, self.timeseries_time_col]
-
-    # region helpers
-    # Helper methods for batch processing
-    def _pivot_timeseries_batch(
-        self, data: pl.LazyFrame, on: str, values: str
-    ) -> pl.LazyFrame:
-        """
-        Generic helper method to pivot timeseries data for batch processing.
-
-        Args:
-            data: Input LazyFrame to pivot.
-            on: Column name to pivot on (e.g., "labname", "respchartvaluelabel").
-            values: Column name containing values to pivot (e.g., "labstruct", "respchartvalue").
-
-        Returns:
-            pl.LazyFrame: Processed timeseries with pivoted measurements.
-        """
-        return (
-            data.collect()
-            .pivot(
-                on=on,
-                index=self.index_cols,
-                values=values,
-                aggregate_function="first",
-            )
-            .pipe(self._dropna_and_cast_numeric)
-        )
-
-    def _dropna_and_cast_numeric(self, df: pl.DataFrame) -> pl.LazyFrame:
-        """
-        Drop rows with all nulls in non-index columns and cast numeric columns to float.
-
-        Args:
-            df: Input DataFrame to process.
-
-        Returns:
-            pl.LazyFrame: Processed DataFrame with dropped null rows and cast numeric columns.
-        """
-        droplist = [col for col in df.columns if col not in self.index_cols]
-        return (
-            # Drop empty rows
-            df.pipe(self.helpers.dropna, "all", droplist, False)
-            # Cast only numeric columns to float using selectors
-            .with_columns(cs.numeric().cast(float))
-            .unique(self.index_cols)
-            .sort(self.index_cols)
-            .lazy()
-        )
-
-    # endregion
 
     # region time series
     # Processes and combines the time series data of the eICU dataset.
@@ -259,8 +208,8 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Processing lab data...")
 
         # Extract and transform lab data
-        ts_lab_extracted = (
-            self.extract_time_series_lab()
+        (
+            self.extract_timeseries_lab()
             # Combine base_excess and base_deficit into one column base_excess_deficit
             .pipe(
                 self.convert._combine_base_excess_and_deficit,
@@ -285,10 +234,9 @@ class EICUProcessor(EICUExtractor):
                 struct_cols=["labstruct"],
                 component_col="labname",
             ).with_columns(pl.col("labstruct").struct.json_encode())
+            # Save extracted data before pivoting
+            .sink_parquet(ts_labs_path_unsorted)
         )
-
-        # Save extracted data before pivoting
-        ts_lab_extracted.sink_parquet(ts_labs_path_unsorted)
 
         # Batch pivot the data
         batch_process_timeseries(
@@ -296,11 +244,12 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_labs_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self._pivot_timeseries_batch(
+            method=lambda df: self.pivot_numeric_or_string(
                 df,
-                on="labname",
-                values="labstruct",
-            ),
+                on_col="labname",
+                index_cols=self.index_cols,
+                string_col="labstruct",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
@@ -348,8 +297,7 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Processing resp data...")
 
         # Extract respiratory data and save for batch processing
-        ts_resp_extracted = self.extract_time_series_resp()
-        ts_resp_extracted.sink_parquet(ts_resp_path_unsorted)
+        self.extract_timeseries_resp().sink_parquet(ts_resp_path_unsorted)
 
         # Batch pivot the respiratory data
         batch_process_timeseries(
@@ -357,11 +305,13 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_resp_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self._pivot_timeseries_batch(
+            method=lambda df: self.pivot_numeric_or_string(
                 df,
-                on="respchartvaluelabel",
-                values="respchartvalue",
-            ),
+                on_col="respchartvaluelabel",
+                index_cols=self.index_cols,
+                numeric_col="respchartvaluefloat",
+                string_col="respchartvaluestr",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
@@ -408,8 +358,7 @@ class EICUProcessor(EICUExtractor):
             )
 
         # Extract nurse charting data and save for batch processing
-        ts_nurse_extracted = self.extract_time_series_nurse()
-        ts_nurse_extracted.sink_parquet(ts_nurse_path_unsorted)
+        self.extract_timeseries_nurse().sink_parquet(ts_nurse_path_unsorted)
 
         # Batch pivot the nurse charting data
         batch_process_timeseries(
@@ -417,11 +366,13 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_nurse_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self._pivot_timeseries_batch(
+            method=lambda df: self.pivot_numeric_or_string(
                 df,
-                on="nursingchartcelltypevalname",
-                values="nursingchartvalue",
-            ),
+                on_col="nursingchartcelltypevalname",
+                index_cols=self.index_cols,
+                numeric_col="nursingchartvaluefloat",
+                string_col="nursingchartvaluestr",
+            ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
@@ -467,29 +418,18 @@ class EICUProcessor(EICUExtractor):
 
         print("eICU    - Processing intake/output data...")
 
-        ts_inout = (
-            self.extract_time_series_intake_output()
+        (
+            self.extract_timeseries_intake_output()
             # Pivot the intake/output values to wide format
-            .collect().pivot(
-                on="celllabel",
-                index=self.index_cols,
-                values="cellvaluenumeric",
-                aggregate_function="mean",  # NOTE: mean is used here -> check if this is sensible
+            .pipe(
+                self.pivot_numeric_or_string,
+                on_col="celllabel",
+                index_cols=self.index_cols,
+                numeric_col="cellvaluenumeric",
             )
+            # Save the preprocessed data
+            .sink_parquet(ts_inout_path_unsorted)
         )
-
-        # Drop empty rows
-        ts_inout_cols = ts_inout.collect_schema().names()
-        droplist = list(set(ts_inout_cols) - set(self.index_cols))
-        ts_inout = (
-            ts_inout.pipe(self.helpers.dropna, "all", droplist, False)
-            .unique()
-            .sort(self.index_cols)
-            .lazy()
-        )
-
-        # Save the preprocessed data
-        ts_inout.sink_parquet(ts_inout_path_unsorted)
 
         # Sort the data
         (
@@ -541,8 +481,7 @@ class EICUProcessor(EICUExtractor):
         print("eICU    - Processing (a)periodic data...")
 
         # Extract and combine periodic and aperiodic data
-        ts_periodics = self.extract_and_combine_periodics()
-        ts_periodics.sink_parquet(ts_period_path_unsorted)
+        self.extract_and_combine_periodics().sink_parquet(ts_period_path_unsorted) # fmt: skip
 
         # Batch process: cast to float and deduplicate
         batch_process_timeseries(
@@ -550,7 +489,7 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_period_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: self._dropna_and_cast_numeric(df),
+            method=lambda df: df.unique(self.index_cols).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
