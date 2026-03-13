@@ -146,6 +146,7 @@ class UMCdbProcessor(UMCdbExtractor):
             operation="process",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="UMCdb_numeric",
                 on_col="item",
                 index_cols=self.index_cols,
                 numeric_col="value",
@@ -226,6 +227,7 @@ class UMCdbProcessor(UMCdbExtractor):
             # Pivot the labs data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="UMCdb_labs",
                 on_col="item",
                 index_cols=self.index_cols,
                 string_col="labstruct",
@@ -310,6 +312,7 @@ class UMCdbProcessor(UMCdbExtractor):
             # Pivot the list data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="UMCdb_listitems",
                 on_col="item",
                 index_cols=self.index_cols,
                 string_col="value",

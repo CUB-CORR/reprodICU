@@ -246,6 +246,7 @@ class EICUProcessor(EICUExtractor):
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="eICU_labs",
                 on_col="labname",
                 index_cols=self.index_cols,
                 string_col="labstruct",
@@ -307,6 +308,7 @@ class EICUProcessor(EICUExtractor):
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="eICU_resp",
                 on_col="respchartvaluelabel",
                 index_cols=self.index_cols,
                 numeric_col="respchartvaluefloat",
@@ -368,6 +370,7 @@ class EICUProcessor(EICUExtractor):
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="eICU_nurse",
                 on_col="nursingchartcelltypevalname",
                 index_cols=self.index_cols,
                 numeric_col="nursingchartvaluefloat",
@@ -423,6 +426,7 @@ class EICUProcessor(EICUExtractor):
             # Pivot the intake/output values to wide format
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="eICU_inout",
                 on_col="celllabel",
                 index_cols=self.index_cols,
                 numeric_col="cellvaluenumeric",

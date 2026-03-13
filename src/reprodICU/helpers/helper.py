@@ -136,10 +136,12 @@ class GlobalHelpers:
     def pivot_numeric_or_string(
         self,
         data: pl.LazyFrame,
+        dataset: str,
         on_col: str,
         index_cols: list[str],
         numeric_col: Optional[str] = None,
         string_col: Optional[str] = None,
+        save_conflicts: bool = False,
     ) -> pl.LazyFrame:
         """
         Pivot and aggregate: compute median of numeric_col, or first value of string_col.
@@ -196,6 +198,19 @@ class GlobalHelpers:
                     f"Warning: Non-unique string values found for {len(non_unique)} "
                     f"index/on_col combinations in {string_col}. Only the first will be kept."
                 )
+            if save_conflicts and not non_unique.is_empty():
+                # Get the full non-aggregated records that cause the conflict
+                conflicts = df_str.join(
+                    non_unique.select(index_cols + [on_col]),
+                    on=index_cols + [on_col],
+                    how="inner",
+                )
+                filename = f"conflicts_{dataset}_{string_col}_{datetime.now().strftime('%Y%m%d')}.parquet" # fmt: skip
+                if Path(filename).exists():
+                    existing_conflicts = pl.read_parquet(filename)
+                    conflicts = pl.concat([existing_conflicts, conflicts]).unique()
+                conflicts.write_parquet(filename)
+                print(f"Non-aggregated conflicting values saved to {filename}")
 
             df_str_pivoted = df_str.pivot(
                 on=on_col,

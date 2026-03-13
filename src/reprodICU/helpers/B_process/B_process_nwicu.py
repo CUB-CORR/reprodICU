@@ -88,6 +88,7 @@ class NWICUProcessor(NWICUExtractor):
             # Pivot the vitals data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="NWICU_vitals",
                 on_col="label",
                 index_cols=self.index_cols,
                 numeric_col="valuenum",
@@ -164,6 +165,7 @@ class NWICUProcessor(NWICUExtractor):
             # Pivot the lab data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="NWICU_labs",
                 on_col="label",
                 index_cols=self.index_cols,
                 string_col="labstruct",

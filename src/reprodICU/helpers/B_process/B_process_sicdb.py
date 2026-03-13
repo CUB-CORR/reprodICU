@@ -96,6 +96,7 @@ class SICdbProcessor(SICdbExtractor):
             operation="process",
             method=lambda df: self.pivot_numeric_or_string(
                 df.pipe(self._extract_timeseries_helper),
+                dataset="SICdb_vitals",
                 on_col="DataID",
                 index_cols=self.index_cols,
                 numeric_col="Val",
@@ -166,6 +167,7 @@ class SICdbProcessor(SICdbExtractor):
             # Pivot the timeseries data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="SICdb_labs",
                 on_col="LaboratoryName",
                 index_cols=self.index_cols,
                 string_col="labstruct",

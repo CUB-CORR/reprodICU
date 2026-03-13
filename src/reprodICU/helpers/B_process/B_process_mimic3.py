@@ -105,6 +105,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="MIMIC3_vitals",
                 on_col="LABEL",
                 index_cols=self.index_cols,
                 numeric_col="VALUENUM",
@@ -177,6 +178,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             # Pivot the lab data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="MIMIC3_labs",
                 on_col="LABEL",
                 index_cols=self.index_cols,
                 string_col="labstruct",
@@ -249,6 +251,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             # Pivot the inout data
             .pipe(
                 self.pivot_numeric_or_string,
+                dataset="MIMIC3_inout",
                 on_col="LABEL",
                 index_cols=self.index_cols,
                 numeric_col="VALUENUM",

@@ -130,6 +130,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 # Pivot the timeseries data
                 self.pivot_numeric_or_string(
                     timeseries,
+                    dataset="HiRID_ts",
                     on_col="variable",
                     index_cols=self.index_cols,
                     numeric_col="value",
@@ -251,6 +252,7 @@ class HiRIDProcessor(HiRIDExtractor):
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string(
                 df,
+                dataset="HiRID_labs",
                 on_col="variable",
                 index_cols=self.index_cols,
                 string_col="labstruct",
