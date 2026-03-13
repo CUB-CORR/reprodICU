@@ -1,0 +1,13 @@
+# there are no specific CAM-ICU concepts in SNOMED
+CAM-ICU positive:
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # UMCdb
+  - POSITIEF
+
+CAM-ICU negative:
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
+  # UMCdb
+  - NEGATIEF
+
+Unable to Assess: []
+  # eICU-CRD / MIMIC-III / MIMIC-IV -> same name

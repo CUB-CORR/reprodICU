@@ -715,7 +715,7 @@ class EICUExtractor(EICUPaths):
             "O2 L/%",
             "O2 Admin Device",
             "Sedation Scale/Score/Goal",
-            # "Delirium Scale/Score",
+            "Delirium Scale/Score",
         ]
         nurse_names_mapping = self.load_mapping(self.nurse_mapping_path)
         nurse_oxygen_delivery_device_mapping = self.load_mapping(
@@ -775,14 +775,49 @@ class EICUExtractor(EICUPaths):
             )
         )
 
+        nurseCharting_CAM = (
+            nurseCharting.filter(
+                pl.col("nursingchartcelltypevalname") == "Delirium Score",
+            )
+            .join(
+                nurseCharting.filter(
+                    pl.col("nursingchartcelltypevalname") == "Delirium Scale",
+                    pl.col("nursingchartvalue") == "CAM-ICU",
+                ).select(self.icu_stay_id_col, self.timeseries_time_col),
+                on=[self.icu_stay_id_col, self.timeseries_time_col],
+                how="right",
+            )
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "nursingchartcelltypevallabel",
+                "nursingchartcelltypevalname",
+                pl.col("nursingchartvalue")
+                .fill_null("N/A")
+                .str.to_lowercase()
+                .replace(
+                    {
+                        "yes": "CAM-ICU positive",
+                        "no": "CAM-ICU negative",
+                        "n/a": "Unable to Assess",
+                    }
+                ),
+            )
+        )
+
         return (
             pl.concat(
                 [
                     nurseCharting.filter(
-                        pl.col("nursingchartcelltypevallabel")
-                        != "Sedation Scale/Score/Goal"
+                        ~pl.col("nursingchartcelltypevallabel").is_in(
+                            [
+                                "Sedation Scale/Score/Goal",
+                                "Delirium Scale/Score",
+                            ]
+                        )
                     ),
                     nurseCharting_RASS,
+                    nurseCharting_CAM,
                 ],
                 how="vertical",
             )

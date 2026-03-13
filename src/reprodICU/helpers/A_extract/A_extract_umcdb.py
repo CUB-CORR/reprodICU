@@ -326,6 +326,12 @@ class UMCdbExtractor(UMCdbPaths):
                         self.RRT_MODE_MAP, default=None
                     )
                 )
+                .when(pl.col("item") == "Confusion Assessment Method")
+                .then(
+                    pl.col("value").replace_strict(
+                        self.DELIRIUM_MAP, default=None
+                    )
+                )
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
@@ -1554,6 +1560,14 @@ class UMCdbExtractor(UMCdbPaths):
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
+            # add singular mapping
+            .with_columns(
+                # original: CAM-ICU score -> Unmapped
+                pl.when(pl.col("sourceCode") == 20351)
+                .then(pl.lit("Confusion Assessment Method"))
+                .otherwise(pl.col("conceptName"))
+                .alias("conceptName")
+            )
             .with_columns(
                 pl.col("conceptName").replace(
                     {

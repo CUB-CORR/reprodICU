@@ -24,6 +24,7 @@ Glasgow coma score verbal: True # 3009094
 Glasgow coma score motor: True # 3008223
 Richmond Agitation-Sedation Scale: True # 36684829
 Numeric Pain Rating Scale: True # 37151627
+Confusion Assessment Method: True # 1447712
 
 
 ####################################################################################################

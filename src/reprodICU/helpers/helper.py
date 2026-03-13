@@ -332,11 +332,14 @@ class GlobalVars(GlobalHelpers):
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
         )
-        self.SOLUTION_FLUIDS_MAP = self.load_many_to_one_mapping(
+        self.SOLUTION_FLUIDS_MAP = self.load_many_to_one_mapping_incl_keys(
             mapping_path + "ADDITIONAL_MAPPINGS/solution_fluids_mapping.yaml"
         )
         self.RRT_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/rrt_mode_mapping.yaml"
+        )
+        self.DELIRIUM_MAP = self.load_many_to_one_mapping_incl_keys(
+            mapping_path + "ADDITIONAL_MAPPINGS/delirium_status_mapping.yaml"
         )
 
         # region DATA TYPES

@@ -137,6 +137,13 @@ Numeric Pain Rating Scale: # 37151627
   - NRS - Numeric Rating Scale
   # UMCdb
   - Visual analog pain scale # not exactly the same, but similar enough
+Confusion Assessment Method: # 1447712 # no direct CAM-ICU code
+  # eICU-CRD -> same name
+  # MIMIC-III / MIMIC-IV
+  - CAM-ICU delirium status # custom variable created from the four CAM-ICU components (see A_extract_mimic3.py / A_extract_mimic4.py)
+  # SICdb
+  - CAM-ICU # exists as reference, but has no values in the dataset
+  # UMCdb -> same name
 
 ################################################################################
 # Harmonised but not included by default

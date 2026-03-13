@@ -730,6 +730,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col(self.hospital_stay_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
+            .pipe(self._compute_cam_icu)
             .join(meas_chartevents_main_data, on="ITEMID", how="left")
             .with_columns(
                 pl.when(pl.col("LABEL") == "Heart rate rhythm")
@@ -759,6 +760,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.RRT_MODE_MAP, default=None
                     )
                 )
+                .when(pl.col("LABEL") == "Confusion Assessment Method")
+                .then(
+                    pl.col("VALUE").replace_strict(
+                        self.DELIRIUM_MAP, default=None
+                    )
+                )
                 .otherwise(None)
                 .alias("VALUE"),
             )
@@ -775,6 +782,127 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
     # endregion
+
+    # region CAM-ICU
+    # compute delirium status based on the CAM-ICU criteria using chartevents data
+    def _compute_cam_icu(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Compute CAM-ICU delirium status based on chartevents data.
+
+        Steps:
+            1. Check for precomputed parquet file; load if available.
+            2. Otherwise, filter data for each CAM-ICU component.
+            4. Join component scores and compute overall delirium status.
+            5. Group by patient/time and select first valid score.
+            6. Save result as parquet file for future reuse.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {timeseries_time_col}: Time offset (seconds) from ICU admission.
+                - Acute change or fluctuating course of mental status
+                - Inattention
+                - Altered level of consciousness
+                - Disorganized thinking
+                - CAM-ICU delirium status (positive/negative)
+        """
+
+        if os.path.isfile(self.precalc_path + "MIMIC3_cam_icu.parquet"):
+            return pl.concat(
+                [
+                    pl.scan_parquet(
+                        self.precalc_path + "MIMIC3_cam_icu.parquet"
+                    )
+                    # custom ITEMID to identify precomputed CAM-ICU data
+                    .select(
+                        self.icu_stay_id_col,
+                        self.timeseries_time_col,
+                        pl.lit(999999).alias("ITEMID"),
+                        pl.col("CAM-ICU delirium status").alias("VALUE"),
+                    ),
+                    data,
+                ],
+                how="diagonal_relaxed",
+            )
+
+        COMPONENTS = [
+            "Acute change or fluctuating course of mental status",
+            "Inattention",
+            "Altered level of consciousness",
+            "Disorganized thinking",
+        ]
+
+        cam_icu = (
+            data.select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "VALUE",
+                "ITEMID",
+            )
+            .filter(
+                pl.col("ITEMID").is_in(
+                    [228300, 228337]    # CAM-ICU MS Change
+                    + [228301, 228336]  # CAM-ICU Inattention
+                    + [228302, 228334]  # CAM-ICU Altered LOC
+                    + [228303, 228335]  # CAM-ICU Disorganized Thinking
+                )
+            )
+            .with_columns(
+                pl.when(pl.col("VALUE").str.contains("Yes"))
+                .then(pl.lit("Yes"))
+                .when(pl.col("VALUE").str.contains("No"))
+                .then(pl.lit("No"))
+                .otherwise(pl.lit("Unable to Assess"))
+                .alias("VALUE"),
+                pl.when(pl.col("ITEMID").is_in([228300, 228337]))
+                .then(pl.lit("Acute change or fluctuating course of mental status"))
+                .when(pl.col("ITEMID").is_in([228301, 228336]))
+                .then(pl.lit("Inattention"))
+                .when(pl.col("ITEMID").is_in([228302, 228334]))
+                .then(pl.lit("Altered level of consciousness"))
+                .when(pl.col("ITEMID").is_in([228303, 228335]))
+                .then(pl.lit("Disorganized thinking"))
+                .alias("LABEL"),
+            )
+            .collect()
+            .pivot(
+                index=[self.icu_stay_id_col, self.timeseries_time_col],
+                on="LABEL",
+                values="VALUE",
+                aggregate_function="first",
+            )
+            .with_columns(
+                pl.when(pl.any_horizontal(pl.col(COMPONENTS) == "Unable to Assess"))
+                .then(pl.lit("Unable to Assess"))
+                .when(pl.any_horizontal(pl.col(COMPONENTS) == "No"))
+                .then(pl.lit("CAM-ICU negative"))
+                .otherwise(pl.lit("CAM-ICU positive"))
+                .alias("CAM-ICU delirium status")
+            )
+            .select(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                *COMPONENTS,
+                "CAM-ICU delirium status",
+            )
+            .lazy()
+        ) # fmt: skip
+
+        cam_icu.sink_parquet(self.precalc_path + "MIMIC3_cam_icu.parquet")
+
+        return pl.concat(
+            [
+                # custom ITEMID to identify precomputed CAM-ICU data
+                cam_icu.select(
+                    self.icu_stay_id_col,
+                    self.timeseries_time_col,
+                    pl.lit(999999).alias("ITEMID"),
+                    pl.col("CAM-ICU delirium status").alias("VALUE"),
+                ),
+                data,
+            ],
+            how="diagonal_relaxed",
+        )
 
     # region lab TS
     # Extract lab measurements from the labevents.csv file

@@ -305,6 +305,7 @@ class TimeseriesHarmonizer(GlobalVars):
         # region vitals
         vitals_strs = [
             "Heart rate rhythm",
+            "Confusion Assessment Method",
         ]
 
         vitals = pl.LazyFrame()
@@ -351,9 +352,16 @@ class TimeseriesHarmonizer(GlobalVars):
             pl.coalesce(
                 pl.col("Glasgow coma score total"),
                 pl.sum_horizontal(
-                    "Glasgow coma score eye opening",
-                    "Glasgow coma score motor",
-                    "Glasgow coma score verbal",
+                    [
+                        pl.when(pl.col(col) == 0)
+                        .then(None) 
+                        .otherwise(pl.col(col))
+                        for col in [
+                            "Glasgow coma score eye opening",
+                            "Glasgow coma score motor",
+                            "Glasgow coma score verbal",
+                        ]
+                    ],
                     ignore_nulls=False,
                 ),
             ).alias("Glasgow coma score total")
@@ -469,7 +477,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
                     **{
-                        col: str if col in extracorporeal_strs else int
+                        col: str if col in extracorporeal_strs else float
                         for col in extracorporeal_cols_not_index
                     },
                 }

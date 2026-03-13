@@ -22,3 +22,4 @@ Motor: Glasgow coma score motor
 Verbal: Glasgow coma score verbal
 Pain Score: Numeric Pain Rating Scale
 Sedation Score: Richmond Agitation-Sedation Scale # requires sub-selection for only RASS sedation scale values
+Delirium Score: Confusion Assessment Method # requires sub-selection for only CAM-ICU delirium scale values

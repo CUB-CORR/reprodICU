@@ -107,3 +107,4 @@ index,itemid (omop_source_code),Label,omop_concept_name,comment
 0,1624,PreSep Catheter SVO2,Mixed venous oxygen saturation,14405 values
 0,116,Cardiac Index,Cardiac index,214772 values
 0,504,PCWP,Pulmonary artery wedge pressure,26530 values
+0,999999,Confusion Assessment Method,Confusion Assessment Method,576297 values -> no specific CAM-ICU concept in SNOMED
