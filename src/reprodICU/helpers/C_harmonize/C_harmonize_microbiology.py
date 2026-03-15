@@ -26,7 +26,7 @@ class MicrobiologyHarmonizer(GlobalVars):
         super().__init__(paths)
         self.helpers = GlobalHelpers()
         self.datasets = datasets
-        
+
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "MIMIC3" in self.datasets:
@@ -35,7 +35,18 @@ class MicrobiologyHarmonizer(GlobalVars):
             self.mimic4 = MIMIC4Extractor(paths, DEMO)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
-        
+
+        self.microbiology_cols_list = [
+            self.global_icu_stay_id_col,
+            self.timeseries_time_col,
+            self.micro_specimen_col,
+            self.micro_test_col,
+            self.micro_organism_col,
+            self.micro_antibiotic_col,
+            self.micro_dilution_col,
+            self.micro_sensitivity_col,
+        ]
+
     def harmonize_microbiology(self) -> pl.LazyFrame:
         """
         Harmonize microbiology data from multiple databases.
@@ -92,23 +103,16 @@ class MicrobiologyHarmonizer(GlobalVars):
         #     )
 
         microbiology = pl.concat(microbiology_datasets, how="diagonal_relaxed")
-        microbiology_cols_list = [
-            self.global_icu_stay_id_col,
-            self.timeseries_time_col,
-            self.micro_specimen_col,
-            self.micro_test_col,
-            self.micro_organism_col,
-            self.micro_antibiotic_col,
-            self.micro_dilution_col,
-            self.micro_sensitivity_col,
-        ]
+
+        # Add missing columns as null columns
+        microbiology = microbiology.with_columns(
+            pl.lit(None).alias(col)
+            for col in self.microbiology_cols_list
+            if col not in microbiology.columns
+        )
 
         return (
-            microbiology.select(
-                col
-                for col in microbiology_cols_list
-                if col in microbiology.columns
-            )
+            microbiology.select(self.microbiology_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.timeseries_time_col)
         )

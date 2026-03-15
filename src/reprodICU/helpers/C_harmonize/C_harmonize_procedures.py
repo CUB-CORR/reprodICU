@@ -27,7 +27,7 @@ class ProceduresHarmonizer(GlobalVars):
         """
         super().__init__(paths)
         self.datasets = datasets
-        
+
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "MIMIC3" in self.datasets:
@@ -40,6 +40,20 @@ class ProceduresHarmonizer(GlobalVars):
             self.sicdb = SICdbExtractor(paths)
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
+
+        self.procedures_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.procedure_icd_code_col,
+            self.procedure_icd_version_col,
+            self.procedure_category_col,
+            self.procedure_start_col,
+            self.procedure_end_col,
+            self.procedure_priority_col,
+            self.procedure_discharge_col,
+            self.procedure_description_col,
+        ]
 
     def harmonize_procedures(self) -> pl.LazyFrame:
         """
@@ -115,24 +129,16 @@ class ProceduresHarmonizer(GlobalVars):
             )
 
         procedures = pl.concat(procedures_datasets, how="diagonal_relaxed")
-        procedures_cols_list = [
-            self.global_person_id_col,
-            self.global_hospital_stay_id_col,
-            self.global_icu_stay_id_col,
-            self.procedure_icd_code_col,
-            self.procedure_icd_version_col,
-            self.procedure_category_col,
-            self.procedure_start_col,
-            self.procedure_end_col,
-            self.procedure_priority_col,
-            self.procedure_discharge_col,
-            self.procedure_description_col,
-        ]
+
+        # Add missing columns as null columns
+        procedures = procedures.with_columns(
+            pl.lit(None).alias(col)
+            for col in self.procedures_cols_list
+            if col not in procedures.columns
+        )
 
         return (
-            procedures.select(
-                col for col in procedures_cols_list if col in procedures.columns
-            )
+            procedures.select(self.procedures_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.procedure_start_col)
         )

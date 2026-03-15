@@ -354,7 +354,7 @@ class TimeseriesHarmonizer(GlobalVars):
                 pl.sum_horizontal(
                     [
                         pl.when(pl.col(col) == 0)
-                        .then(None) 
+                        .then(None)
                         .otherwise(pl.col(col))
                         for col in [
                             "Glasgow coma score eye opening",

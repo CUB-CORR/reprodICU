@@ -44,6 +44,41 @@ class PatientInformationHarmonizer(GlobalVars):
         if "UMCdb" in self.datasets:
             self.umcdb = UMCdbExtractor(paths)
 
+        self.patient_information_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.icu_stay_seq_num_col,
+            self.icu_time_rel_to_first_col,
+            self.dataset_col,
+            self.dataset_version_col,
+            self.person_id_col,
+            self.hospital_stay_id_col,
+            self.icu_stay_id_col,
+            self.age_col,
+            self.gender_col,
+            self.height_col,
+            self.weight_col,
+            self.ethnicity_col,
+            self.admission_diagnosis_col,
+            self.admission_type_col,
+            self.admission_urgency_col,
+            self.admission_time_col,
+            self.admission_year_col,
+            self.admission_loc_col,
+            self.specialty_col,
+            self.care_site_col,
+            self.unit_type_col,
+            self.pre_icu_length_of_stay_col,
+            self.icu_length_of_stay_col,
+            self.hospital_length_of_stay_col,
+            self.discharge_loc_col,
+            self.mortality_hosp_col,
+            self.mortality_icu_col,
+            self.mortality_after_col,
+            self.mortality_after_cutoff_col,
+        ]
+
     def harmonize_patient_information(self) -> pl.LazyFrame:
         """
         Harmonize patient information from multiple databases.
@@ -138,49 +173,16 @@ class PatientInformationHarmonizer(GlobalVars):
         patient_information = pl.concat(
             patient_information_datasets, how="diagonal_relaxed"
         )
-        patient_information_cols_list = [
-            self.global_person_id_col,
-            self.global_hospital_stay_id_col,
-            self.global_icu_stay_id_col,
-            self.icu_stay_seq_num_col,
-            self.icu_time_rel_to_first_col,
-            self.dataset_col,
-            self.dataset_version_col,
-            self.person_id_col,
-            self.hospital_stay_id_col,
-            self.icu_stay_id_col,
-            self.age_col,
-            self.gender_col,
-            self.height_col,
-            self.weight_col,
-            self.ethnicity_col,
-            self.admission_diagnosis_col,
-            self.admission_type_col,
-            self.admission_urgency_col,
-            self.admission_time_col,
-            self.admission_year_col,
-            self.admission_loc_col,
-            self.specialty_col,
-            self.care_site_col,
-            self.unit_type_col,
-            self.pre_icu_length_of_stay_col,
-            self.icu_length_of_stay_col,
-            self.hospital_length_of_stay_col,
-            self.discharge_loc_col,
-            self.mortality_hosp_col,
-            self.mortality_icu_col,
-            self.mortality_after_col,
-            self.mortality_after_cutoff_col,
-        ]
+
+        # Add missing columns as null columns
+        patient_information = patient_information.with_columns(
+            pl.lit(None).alias(col)
+            for col in self.patient_information_cols_list
+            if col not in patient_information.columns
+        )
 
         return (
             patient_information
-            # Add missing columns with None values
-            .with_columns(
-                pl.lit(None).alias(col)
-                for col in patient_information_cols_list
-                if col not in patient_information.columns
-            )
             # Define the data types of the columns
             .cast(
                 {
@@ -215,7 +217,7 @@ class PatientInformationHarmonizer(GlobalVars):
                 strict=False,
             )
             # Define the order of the columns
-            .select(patient_information_cols_list).unique()
+            .select(self.patient_information_cols_list).unique()
         )
 
     # Helper functions

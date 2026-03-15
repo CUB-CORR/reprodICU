@@ -23,11 +23,21 @@ class NotesHarmonizer(GlobalVars):
         """
         super().__init__(paths)
         self.datasets = datasets
-        
+
         if "MIMIC3" in self.datasets:
             self.mimic3 = MIMIC3Extractor(paths, DEMO)
         if "MIMIC4" in self.datasets:
             self.mimic4 = MIMIC4Extractor(paths, DEMO)
+
+        self.notes_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.note_time_col,
+            self.note_category_col,
+            self.note_description_col,
+            self.note_text_col,
+        ]
 
     def harmonize_notes(self) -> pl.LazyFrame:
         """
@@ -78,18 +88,16 @@ class NotesHarmonizer(GlobalVars):
             )
 
         notes = pl.concat(notes_datasets, how="diagonal_relaxed")
-        notes_cols_list = [
-            self.global_person_id_col,
-            self.global_hospital_stay_id_col,
-            self.global_icu_stay_id_col,
-            self.note_time_col,
-            self.note_category_col,
-            self.note_description_col,
-            self.note_text_col,
-        ]
+
+        # Add missing columns as null columns
+        notes = notes.with_columns(
+            pl.lit(None).alias(col)
+            for col in self.notes_cols_list
+            if col not in notes.columns
+        )
 
         return (
-            notes.select(col for col in notes_cols_list if col in notes.columns)
+            notes.select(self.notes_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.note_time_col)
         )

@@ -33,7 +33,7 @@ class MedicationHarmonizer(GlobalVars):
         self.helpers = GlobalHelpers()
         self.datasets = datasets
         self.medications = None
-        
+
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "HiRID" in self.datasets:

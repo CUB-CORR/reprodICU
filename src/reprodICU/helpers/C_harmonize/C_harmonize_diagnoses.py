@@ -26,7 +26,7 @@ class DiagnosesHarmonizer(GlobalVars):
         """
         super().__init__(paths)
         self.datasets = datasets
-        
+
         if "eICU" in datasets:
             self.eicu = EICUProcessor(paths, DEMO)
         if "MIMIC3" in datasets:
@@ -37,6 +37,19 @@ class DiagnosesHarmonizer(GlobalVars):
             self.nwicu = NWICUExtractor(paths)
         if "SICdb" in datasets:
             self.sicdb = SICdbExtractor(paths)
+
+        self.diagnoses_cols_list = [
+            self.global_person_id_col,
+            self.global_hospital_stay_id_col,
+            self.global_icu_stay_id_col,
+            self.diagnosis_icd_code_col,
+            self.diagnosis_icd_version_col,
+            self.diagnosis_start_col,
+            self.diagnosis_end_col,
+            self.diagnosis_priority_col,
+            self.diagnosis_discharge_col,
+            self.diagnosis_description_col,
+        ]
 
     def harmonize_diagnoses(self) -> pl.LazyFrame:
         """
@@ -105,23 +118,16 @@ class DiagnosesHarmonizer(GlobalVars):
             )
 
         diagnoses = pl.concat(diagnoses_datasets, how="diagonal_relaxed")
-        diagnoses_cols_list = [
-            self.global_person_id_col,
-            self.global_hospital_stay_id_col,
-            self.global_icu_stay_id_col,
-            self.diagnosis_icd_code_col,
-            self.diagnosis_icd_version_col,
-            self.diagnosis_start_col,
-            self.diagnosis_end_col,
-            self.diagnosis_priority_col,
-            self.diagnosis_discharge_col,
-            self.diagnosis_description_col,
-        ]
+
+        # Add missing columns as null columns
+        diagnoses = diagnoses.with_columns(
+            pl.lit(None).alias(col)
+            for col in self.diagnoses_cols_list
+            if col not in diagnoses.columns
+        )
 
         return (
-            diagnoses.select(
-                col for col in diagnoses_cols_list if col in diagnoses.columns
-            )
+            diagnoses.select(self.diagnoses_cols_list)
             .unique()
             .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)
         )
