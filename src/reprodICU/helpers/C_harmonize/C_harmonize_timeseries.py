@@ -339,6 +339,7 @@ class TimeseriesHarmonizer(GlobalVars):
             vitals = pl.concat([vitals, ts_vitals], how="diagonal_relaxed")
 
         vitals_cols = vitals.collect_schema().names()
+        vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols))
         vitals = vitals.with_columns(
             # Sum Glasgow coma score components if total is missing
             pl.coalesce(
@@ -366,7 +367,7 @@ class TimeseriesHarmonizer(GlobalVars):
             .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
             .otherwise(pl.col("Temperature"))
             .alias("Temperature"),
-        )
+        ).select(*self.index_cols, *sorted(vitals_cols_not_index))
         # endregion
 
         # region labs
@@ -395,9 +396,10 @@ class TimeseriesHarmonizer(GlobalVars):
             # .sort(self.index_cols)
         )
 
-        # ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
         labs_cols = labs.collect_schema().names()
+        labs_cols_not_index = list(set(labs_cols) - set(self.index_cols))
         labs = labs.with_columns(
+            # ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
             pl.col(col)
             .struct.with_fields(
                 pl.when(pl.field("value") > 1)
@@ -417,7 +419,7 @@ class TimeseriesHarmonizer(GlobalVars):
                 "Neutrophils.segmented/leukocytes",
             ]
             if col in labs_cols
-        )
+        ).select(*self.index_cols, *sorted(labs_cols_not_index))
         # endregion
 
         # region respiratory
@@ -451,13 +453,17 @@ class TimeseriesHarmonizer(GlobalVars):
                     },
                     # silently fail on invalid values (i.e. don't raise an error)
                     strict=False,
-                ).select(*self.index_cols, *sorted(resp_cols_not_index))
+                )
                 # assume uniqueness & sortedness (since we're just concatenating the data)
                 # .unique(self.index_cols)
                 # .sort(self.index_cols)
             )
 
             resp = pl.concat([resp, ts_resp], how="diagonal_relaxed")
+
+        resp_cols = ts_resp.collect_schema().names()
+        resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
+        resp = resp.select(*self.index_cols, *sorted(resp_cols_not_index))
         # endregion
 
         # region intakeoutput
