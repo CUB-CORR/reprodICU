@@ -109,7 +109,7 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         # Identify the presence of a mechanical ventilation using settings
         if "parquet" in self.mimic3_paths.chartevents_path:
             chartevents = pl.scan_parquet(
-                self.mimic3_paths.chartevents_path, parallel="prefiltered"
+                self.mimic3_paths.chartevents_path
             )
         else:
             chartevents = pl.scan_csv(

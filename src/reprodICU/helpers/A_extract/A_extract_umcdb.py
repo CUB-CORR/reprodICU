@@ -453,7 +453,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return (
-            pl.scan_parquet(self.numericitems_path, parallel="prefiltered")
+            pl.scan_parquet(self.numericitems_path)
             # If labs is True, filter for lab items only
             .filter(pl.col("islabresult").cast(bool) == labs)
             .select("admissionid", "itemid", "value", "measuredat")

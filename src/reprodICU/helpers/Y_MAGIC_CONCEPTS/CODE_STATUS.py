@@ -119,7 +119,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
 
         if "parquet" in self.mimic3_paths.chartevents_path:
             mimic3_chartevents = pl.scan_parquet(
-                self.mimic3_paths.chartevents_path, parallel="prefiltered"
+                self.mimic3_paths.chartevents_path
             )
         else:
             mimic3_chartevents = pl.scan_csv(
@@ -189,7 +189,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
 
         if "parquet" in self.mimic4_paths.chartevents_path:
             mimic4_chartevents = pl.scan_parquet(
-                self.mimic4_paths.chartevents_path, parallel="prefiltered"
+                self.mimic4_paths.chartevents_path
             )
         else:
             mimic4_chartevents = pl.scan_csv(

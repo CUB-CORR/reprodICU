@@ -18,9 +18,7 @@ class Vocabulary(OMOPPaths):
         super().__init__(paths)
         self.ANCESTOR = pl.scan_parquet(self.CONCEPT_ANCESTOR_path)
         self.CLASS = pl.scan_parquet(self.CONCEPT_CLASS_path)
-        self.RELATIONSHIP = pl.scan_parquet(
-            self.CONCEPT_RELATIONSHIP_path, parallel="prefiltered"
-        )
+        self.RELATIONSHIP = pl.scan_parquet(self.CONCEPT_RELATIONSHIP_path)
         self.SYNONYM = pl.scan_parquet(self.CONCEPT_SYNONYM_path)
         self.CONCEPT = pl.scan_parquet(self.CONCEPT_path)
         self.DOMAIN = pl.scan_parquet(self.DOMAIN_path)

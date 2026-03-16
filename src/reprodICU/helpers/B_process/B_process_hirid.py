@@ -53,7 +53,7 @@ class HiRIDProcessor(HiRIDExtractor):
             pl.LazyFrame: LazyFrame containing the LOINC data.
         """
         data = (
-            pl.scan_parquet(self.timeseries_path + "*.parquet", parallel="prefiltered")
+            pl.scan_parquet(self.timeseries_path + "*.parquet")
             .select("variableid")
             .unique()
             .join(self._get_observation_variables(), on="variableid")
@@ -92,7 +92,7 @@ class HiRIDProcessor(HiRIDExtractor):
 
         if os.path.isfile(ts_path):
             # Load the preprocessed data
-            return pl.scan_parquet(ts_path, parallel="prefiltered").select(
+            return pl.scan_parquet(ts_path).select(
                 pl.col(self.index_cols).set_sorted(),
                 pl.exclude(self.index_cols),
             )
@@ -117,7 +117,7 @@ class HiRIDProcessor(HiRIDExtractor):
             # Process timeseries data
             timeseries = (
                 # Drop the lab values from the timeseries data
-                pl.scan_parquet(batch_paths, parallel="prefiltered")
+                pl.scan_parquet(batch_paths)
                 .filter(~pl.col("variableid").is_between(20000000, 25000000))
                 .pipe(
                     self._extract_timeseries_helper,

@@ -70,9 +70,7 @@ class EICUProcessor(EICUExtractor):
 
         # Load preexisting data if available
         if os.path.isfile(timeseries_path):
-            return pl.scan_parquet(
-                timeseries_path, parallel="prefiltered"
-            ).select(
+            return pl.scan_parquet(timeseries_path).select(
                 pl.col(self.index_cols).set_sorted(),
                 pl.exclude(self.index_cols),
             )
@@ -132,7 +130,7 @@ class EICUProcessor(EICUExtractor):
         # 2. Check for each ID if the time column is sorted
         print("eICU    - Checking sortedness of index columns...")
         timeseries_is_sorted = (
-            pl.scan_parquet(timeseries_path_unsorted, parallel="prefiltered")
+            pl.scan_parquet(timeseries_path_unsorted)
             .group_by(self.icu_stay_id_col, maintain_order=True)
             .agg(
                 pl.col(self.timeseries_time_col)

@@ -444,9 +444,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         print("MIMIC3  - Extracting patient height and weight...")
 
         if "parquet" in self.chartevents_path:
-            chartevents = pl.scan_parquet(
-                self.chartevents_path, parallel="prefiltered"
-            )
+            chartevents = pl.scan_parquet(self.chartevents_path)
         else:
             chartevents = pl.scan_csv(
                 self.chartevents_path,
@@ -710,9 +708,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
         if "parquet" in self.chartevents_path:
-            chartevents = pl.scan_parquet(
-                self.chartevents_path, parallel="prefiltered"
-            )
+            chartevents = pl.scan_parquet(self.chartevents_path)
         else:
             chartevents = pl.scan_csv(
                 self.chartevents_path,
@@ -999,9 +995,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
         if "parquet" in self.labevents_path:
-            labevents = pl.scan_parquet(
-                self.labevents_path, parallel="prefiltered"
-            )
+            labevents = pl.scan_parquet(self.labevents_path)
         else:
             labevents = pl.scan_csv(
                 self.labevents_path, infer_schema_length=10000
@@ -1154,9 +1148,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # Load correct inputevents_cv file
         if "parquet" in self.inputevents_cv_path:
-            inputevents_cv = pl.scan_parquet(
-                self.inputevents_cv_path, parallel="prefiltered"
-            )
+            inputevents_cv = pl.scan_parquet(self.inputevents_cv_path)
         else:
             inputevents_cv = pl.scan_csv(
                 self.inputevents_cv_path,
@@ -1185,9 +1177,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # Load correct inputevents_mv file
         if "parquet" in self.inputevents_mv_path:
-            inputevents_mv = pl.scan_parquet(
-                self.inputevents_mv_path, parallel="prefiltered"
-            )
+            inputevents_mv = pl.scan_parquet(self.inputevents_mv_path)
         else:
             inputevents_mv = pl.scan_csv(
                 self.inputevents_mv_path,
@@ -1447,9 +1437,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         #######################################################################
         # Load correct inputevents_mv file
         if "parquet" in self.inputevents_mv_path:
-            inputevents_mv = pl.scan_parquet(
-                self.inputevents_mv_path, parallel="prefiltered"
-            )
+            inputevents_mv = pl.scan_parquet(self.inputevents_mv_path)
         else:
             inputevents_mv = pl.scan_csv(
                 self.inputevents_mv_path,
@@ -1638,9 +1626,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         #######################################################################
         # Load correct inputevents_cv file
         if "parquet" in self.inputevents_cv_path:
-            inputevents_cv = pl.scan_parquet(
-                self.inputevents_cv_path, parallel="prefiltered"
-            )
+            inputevents_cv = pl.scan_parquet(self.inputevents_cv_path)
         else:
             inputevents_cv = pl.scan_csv(
                 self.inputevents_cv_path,
@@ -1971,9 +1957,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         print("MIMIC3  - Loading medication mapping files...")
 
         if "parquet" in self.prescriptions_path:
-            prescriptions = pl.scan_parquet(
-                self.prescriptions_path, parallel="prefiltered"
-            )
+            prescriptions = pl.scan_parquet(self.prescriptions_path)
         else:
             prescriptions = pl.scan_csv(self.prescriptions_path)
 
@@ -2429,9 +2413,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         print("MIMIC3  - Extracting notes...")
 
         if "parquet" in self.noteevents_path:
-            noteevents = pl.scan_parquet(
-                self.noteevents_path, parallel="prefiltered"
-            )
+            noteevents = pl.scan_parquet(self.noteevents_path)
         else:
             noteevents = pl.scan_csv(self.noteevents_path)
 

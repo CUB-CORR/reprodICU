@@ -493,9 +493,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         print("MIMIC4  - Extracting patient height and weight...")
 
         if "parquet" in self.chartevents_path:
-            chartevents = pl.scan_parquet(
-                self.chartevents_path, parallel="prefiltered"
-            )
+            chartevents = pl.scan_parquet(self.chartevents_path)
         else:
             chartevents = pl.scan_csv(
                 self.chartevents_path,
@@ -744,9 +742,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         if "parquet" in self.chartevents_path:
-            chartevents = pl.scan_parquet(
-                self.chartevents_path, parallel="prefiltered"
-            )
+            chartevents = pl.scan_parquet(self.chartevents_path)
         else:
             chartevents = pl.scan_csv(
                 self.chartevents_path,
@@ -1040,9 +1036,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         )
 
         if "parquet" in self.labevents_path:
-            labevents = pl.scan_parquet(
-                self.labevents_path, parallel="prefiltered"
-            )
+            labevents = pl.scan_parquet(self.labevents_path)
         else:
             labevents = pl.scan_csv(self.labevents_path)
 
@@ -1151,9 +1145,7 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         # Load correct inputevents file
         if "parquet" in self.inputevents_path:
-            inputevents = pl.scan_parquet(
-                self.inputevents_path, parallel="prefiltered"
-            )
+            inputevents = pl.scan_parquet(self.inputevents_path)
         else:
             inputevents = pl.scan_csv(
                 self.inputevents_path,
@@ -1468,9 +1460,7 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         # Load correct inputevents file
         if "parquet" in self.inputevents_path:
-            inputevents = pl.scan_parquet(
-                self.inputevents_path, parallel="prefiltered"
-            )
+            inputevents = pl.scan_parquet(self.inputevents_path)
         else:
             inputevents = pl.scan_csv(
                 self.inputevents_path,
@@ -1718,9 +1708,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         print("MIMIC4  - Loading medication mapping files...")
 
         if "parquet" in self.prescriptions_path:
-            prescriptions = pl.scan_parquet(
-                self.prescriptions_path, parallel="prefiltered"
-            )
+            prescriptions = pl.scan_parquet(self.prescriptions_path)
         else:
             prescriptions = pl.scan_csv(
                 self.prescriptions_path,
@@ -1844,14 +1832,12 @@ class MIMIC4Extractor(MIMIC4Paths):
         # region EMAR
         ########################################################################
         if "parquet" in self.emar_path:
-            emar = pl.scan_parquet(self.emar_path, parallel="prefiltered")
+            emar = pl.scan_parquet(self.emar_path)
         else:
             emar = pl.scan_csv(self.emar_path)
 
         if "parquet" in self.emar_detail_path:
-            emar_detail = pl.scan_parquet(
-                self.emar_detail_path, parallel="prefiltered"
-            )
+            emar_detail = pl.scan_parquet(self.emar_detail_path)
         else:
             emar_detail = pl.scan_csv(self.emar_detail_path)
 

@@ -405,7 +405,7 @@ class EICUExtractor(EICUPaths):
         lab_names_mapping = self.helpers.load_mapping(self.lab_mapping_path)
 
         if "parquet" in self.lab_path:
-            lab = pl.scan_parquet(self.lab_path, parallel="prefiltered")
+            lab = pl.scan_parquet(self.lab_path)
         else:
             lab = pl.scan_csv(self.lab_path)
 
@@ -547,7 +547,7 @@ class EICUExtractor(EICUPaths):
         )
 
         if "parquet" in self.lab_path:
-            lab = pl.scan_parquet(self.lab_path, parallel="prefiltered")
+            lab = pl.scan_parquet(self.lab_path)
         else:
             lab = pl.scan_csv(self.lab_path)
 
@@ -723,9 +723,7 @@ class EICUExtractor(EICUPaths):
         )
 
         if "parquet" in self.nurseCharting_path:
-            nurseCharting = pl.scan_parquet(
-                self.nurseCharting_path, parallel="prefiltered"
-            )
+            nurseCharting = pl.scan_parquet(self.nurseCharting_path)
         else:
             nurseCharting = pl.scan_csv(self.nurseCharting_path)
 
@@ -993,9 +991,7 @@ class EICUExtractor(EICUPaths):
         """
 
         if "parquet" in self.vitalPeriodic_path:
-            vitalPeriodic = pl.scan_parquet(
-                self.vitalPeriodic_path, parallel="prefiltered"
-            )
+            vitalPeriodic = pl.scan_parquet(self.vitalPeriodic_path)
         else:
             vitalPeriodic = pl.scan_csv(self.vitalPeriodic_path)
 
@@ -1043,9 +1039,7 @@ class EICUExtractor(EICUPaths):
         """
 
         if "parquet" in self.vitalAperiodic_path:
-            vitalAperiodic = pl.scan_parquet(
-                self.vitalAperiodic_path, parallel="prefiltered"
-            )
+            vitalAperiodic = pl.scan_parquet(self.vitalAperiodic_path)
         else:
             vitalAperiodic = pl.scan_csv(self.vitalAperiodic_path)
 

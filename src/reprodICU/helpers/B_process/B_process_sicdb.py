@@ -67,9 +67,7 @@ class SICdbProcessor(SICdbExtractor):
 
         if os.path.isfile(ts_float_path):
             # Load the preprocessed data
-            return pl.scan_parquet(
-                ts_float_path, parallel="prefiltered"
-            ).select(
+            return pl.scan_parquet(ts_float_path).select(
                 pl.col(self.index_cols).set_sorted(),
                 pl.exclude(self.index_cols),
             )
@@ -78,7 +76,7 @@ class SICdbProcessor(SICdbExtractor):
 
         # Create the raw timeseries parquet file if it doesn't exist
         (
-            pl.scan_parquet(self.data_float_m_path, parallel="prefiltered")
+            pl.scan_parquet(self.data_float_m_path)
             .select("CaseID", "Offset", "DataID", "Val")
             # Round values to 2 decimal places due to precision issues of IEEE 754 floats
             .with_columns(pl.col("Val").cast(float).round(2))
