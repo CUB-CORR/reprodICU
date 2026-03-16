@@ -3,7 +3,8 @@
 
 # Description: This script extracts data from HiRID source files and converts them into a structured format for harmonization.
 
-import os.path
+import os
+from pathlib import Path
 
 import polars as pl
 
@@ -258,10 +259,10 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
-        for file in os.listdir(self.timeseries_path):
+        for file in Path(self.timeseries_path).glob("*.parquet"):
             # Extract the data from the file
             data = (
-                pl.scan_parquet(self.timeseries_path + file)
+                pl.scan_parquet(file)
                 # Select the relevant columns
                 .select("patientid", "datetime", "value", "variableid")
                 # Rename the columns for consistency
@@ -357,10 +358,10 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
-        for file in os.listdir(self.timeseries_path):
+        for file in Path(self.timeseries_path).glob("*.parquet"):
             # Extract the data from the file
             data = (
-                pl.scan_parquet(self.timeseries_path + file)
+                pl.scan_parquet(file)
                 .select("patientid", "datetime", "variableid", "value")
                 .rename({"patientid": self.icu_stay_id_col})
                 .filter(pl.col("variableid").is_in([9990002, 9990004]))
@@ -643,10 +644,10 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Since each case has it's data in only one file, iterating over the
         # files allows for a more efficient processing of the data.
-        for file in os.listdir(self.timeseries_path):
-            print(f"Processing file {file}...", end="\r")
+        for file in Path(self.timeseries_path).glob("*.parquet"):
+            print(f"Processing file {os.path.basename(file)}...", end="\r")
             data = (
-                pl.scan_parquet(self.timeseries_path + file)
+                pl.scan_parquet(file)
                 .filter(pl.col("variableid").is_in(fluid_ids))
                 # Select the relevant columns
                 .select("patientid", "datetime", "variableid", "value")
@@ -762,10 +763,10 @@ class HiRIDExtractor(HiRIDPaths):
 
         # Since each case has it's data in only one file, iterating over the
         # files allows for a more efficient processing of the data.
-        for file in os.listdir(self.pharma_path):
-            print(f"Processing file {file}...", end="\r")
+        for file in Path(self.pharma_path).glob("*.parquet"):
+            print(f"Processing file {os.path.basename(file)}...", end="\r")
             data = (
-                pl.scan_parquet(self.pharma_path + file)
+                pl.scan_parquet(file)
                 .select(
                     "patientid",
                     "pharmaid",

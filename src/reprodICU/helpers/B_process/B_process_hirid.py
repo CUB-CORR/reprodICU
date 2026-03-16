@@ -8,6 +8,7 @@
 import glob
 import os
 import sys
+from pathlib import Path
 
 import polars as pl
 import time
@@ -52,7 +53,7 @@ class HiRIDProcessor(HiRIDExtractor):
             pl.LazyFrame: LazyFrame containing the LOINC data.
         """
         data = (
-            pl.scan_parquet(self.timeseries_path, parallel="prefiltered")
+            pl.scan_parquet(self.timeseries_path + "*.parquet", parallel="prefiltered")
             .select("variableid")
             .unique()
             .join(self._get_observation_variables(), on="variableid")
@@ -100,7 +101,7 @@ class HiRIDProcessor(HiRIDExtractor):
 
         # Since each case has its data in only one file, iterating over the files specifically
         # allows for a more efficient processing of the data.
-        files = os.listdir(self.timeseries_path)
+        files = sorted(list(Path(self.timeseries_path).glob("*.parquet")))
         total_files = len(files)
         batch_size = 10
         total_batches = (total_files + batch_size - 1) // batch_size
@@ -111,8 +112,7 @@ class HiRIDProcessor(HiRIDExtractor):
             start = time.time()
             index = str(i // batch_size).zfill(4)
 
-            batch_files = files[i : i + batch_size]
-            batch_paths = [self.timeseries_path + f for f in batch_files]
+            batch_paths = files[i : i + batch_size]
 
             # Process timeseries data
             timeseries = (
@@ -145,12 +145,17 @@ class HiRIDProcessor(HiRIDExtractor):
             avg = sum(times) / len(times)
             eta_min = int(avg * (total_batches - (i // batch_size) - 1) / 60 + 0.5) # fmt: skip
 
-            cases += timeseries.select(self.icu_stay_id_col).unique().collect().shape[0]
+            cases += (
+                timeseries.select(self.icu_stay_id_col)
+                .unique()
+                .collect()
+                .shape[0]
+            )
 
             sys.stdout.write("\033[K")  # Clear to the end of line
             print(
                 f"Processing batch {i//batch_size + 1:3.0f} of {total_batches} "
-                f"with {len(batch_files):4.0f} files ({cases:5.0f} cases) "
+                f"with {len(batch_paths):4.0f} files ({cases:5.0f} cases) "
                 f"(last: {elapsed:.2f}s, avg: {avg:.2f}s, ETA: {eta_min:d} min)",
                 end="\r",
             )
