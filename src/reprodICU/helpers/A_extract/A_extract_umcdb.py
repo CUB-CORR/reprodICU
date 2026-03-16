@@ -1223,7 +1223,7 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .alias(self.procedure_description_col),
             )
-            .drop(["start", "stop", "intime", "outtime"])
+            .drop("start", "stop", "intime", "outtime")
         )
 
     # endregion

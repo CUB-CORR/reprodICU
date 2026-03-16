@@ -296,7 +296,7 @@ class HiRIDExtractor(HiRIDPaths):
                     < pl.duration(hours=self.ADMISSION_WEIGHT_HEIGHT_CUTOFF),
                     pl.col("variableid").is_in(variables.values()),
                 )
-                .drop(["admissiontime", "valuedate"])
+                .drop("admissiontime", "valuedate")
             )
 
             # Append the data to the DataFrame

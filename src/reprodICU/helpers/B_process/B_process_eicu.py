@@ -110,7 +110,7 @@ class EICUProcessor(EICUExtractor):
                     pl.coalesce(col, col + "_nurse").alias(col)
                     for col in common_np
                 )
-                .drop([col + "_nurse" for col in common_np])
+                .drop(col + "_nurse" for col in common_np)
                 .join(
                     ts_resp,
                     on=self.index_cols,
