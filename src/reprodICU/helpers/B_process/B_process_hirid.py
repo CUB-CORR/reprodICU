@@ -245,25 +245,23 @@ class HiRIDProcessor(HiRIDExtractor):
                 component_col="variable",
             )
             .with_columns(pl.col("labstruct").struct.json_encode())
-            # Save extracted data before pivoting
-            .sink_parquet(ts_labs_path_unsorted)
-        )
-
-        # Batch pivot the data
-        batch_process_timeseries(
-            input_file=ts_labs_path_unsorted,
-            output_file=ts_labs_path,
-            tempfiles_path=self.precalc_path,
-            operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
-                df,
+            # Pivot the lab data
+            .pipe(
+                self.pivot_numeric_or_string,
                 dataset="HiRID_labs",
                 on_col="variable",
                 index_cols=self.index_cols,
                 string_col="labstruct",
-            ).sort(self.index_cols),
-            id_col=self.icu_stay_id_col,
-            delete_after=True,
+            )
+            # Save extracted data before pivoting
+            .sink_parquet(ts_labs_path_unsorted)
+        )
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
         )
         os.remove(ts_labs_path_unsorted)
 
