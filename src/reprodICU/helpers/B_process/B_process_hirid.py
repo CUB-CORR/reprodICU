@@ -69,7 +69,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 default=None,
             )
             .alias("LOINC_component")
-        )
+        ).unique()
 
     # region time series
     def process_timeseries(self) -> pl.LazyFrame:
