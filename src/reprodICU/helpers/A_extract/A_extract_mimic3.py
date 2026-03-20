@@ -932,6 +932,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .str.replace("/100 leukocytes", "/Leukocytes")
                 .str.replace("/100 erythrocytes", "/Erythrocytes")
             )
+            # fix singular bad mapping
+            .with_columns(
+                # original: Reticulocytes [#/volume] in Blood by Automated count
+                pl.when(pl.col("ITEMID") == 51283)
+                .then(pl.lit("Reticulocytes/Erythrocytes in Blood by Automated count"))
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL")
+            )
+            # Exclude total CO2, since it's neither pCO2 nor exactly HCO3-
+            .filter(~pl.col("LABEL").str.contains("Carbon dioxide, total"))
         ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("LABEL")
