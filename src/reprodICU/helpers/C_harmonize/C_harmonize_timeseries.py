@@ -310,16 +310,15 @@ class TimeseriesHarmonizer(GlobalVars):
 
         vitals = pl.LazyFrame()
         for ts_vitals in timeseries_vitals:
-            vitals_cols = ts_vitals.collect_schema().names()
-            vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols)) # fmt: skip
+            present_cols = [
+                col
+                for col in ts_vitals.collect_schema().names()
+                if col not in self.index_cols
+            ]
             ts_vitals = (
-                # Drop rows with all NaN values in vitals columns
-                ts_vitals.pipe(
-                    self.helpers.dropna,
-                    "all",
-                    vitals_cols_not_index,
-                    False,
-                )
+                ts_vitals
+                # Drop rows with all NaN values in columns
+                .pipe(self.helpers.dropna, present_cols)
                 # Convert columns to appropriate types
                 .cast(
                     {
@@ -327,52 +326,61 @@ class TimeseriesHarmonizer(GlobalVars):
                         self.timeseries_time_col: float,
                         **{
                             col: str if col in vitals_strs else float
-                            for col in vitals_cols_not_index
+                            for col in present_cols
                         },
                     }
-                ).select(*self.index_cols, *sorted(vitals_cols_not_index))
-                # assume uniqueness & sortedness (since we're just concatenating the data)
-                # .unique(self.index_cols)
-                # .sort(self.index_cols)
+                )
             )
 
             vitals = pl.concat([vitals, ts_vitals], how="diagonal_relaxed")
 
-        vitals_cols = vitals.collect_schema().names()
-        vitals_cols_not_index = list(set(vitals_cols) - set(self.index_cols))
-        vitals = vitals.with_columns(
+        vitals = (
+            vitals
+            # Add missing columns as null columns
+            .pipe(self._add_missing_cols, self.relevant_vital_values)
             # Sum Glasgow coma score components if total is missing
-            pl.coalesce(
-                (
-                    pl.col("Glasgow coma score total")
-                    if "Glasgow coma score total" in vitals_cols
-                    else None
-                ),
-                pl.sum_horizontal(
-                    [
-                        pl.when(pl.col(col) == 0)
-                        .then(None)
-                        .otherwise(pl.col(col))
-                        for col in [
-                            "Glasgow coma score eye opening",
-                            "Glasgow coma score motor",
-                            "Glasgow coma score verbal",
-                        ]
-                    ],
-                    ignore_nulls=False,
-                ),
-            ).alias("Glasgow coma score total"),
+            .with_columns(
+                pl.coalesce(
+                    pl.col("Glasgow coma score total"),
+                    pl.sum_horizontal(
+                        [
+                            pl.when(pl.col(col) == 0)
+                            .then(None)
+                            .otherwise(pl.col(col))
+                            for col in [
+                                "Glasgow coma score eye opening",
+                                "Glasgow coma score motor",
+                                "Glasgow coma score verbal",
+                            ]
+                        ],
+                        ignore_nulls=False,
+                    ),
+                ).alias("Glasgow coma score total")
+            )
             # Fix Temperature once more if value appears to be in Fahrenheit
-            pl.when(pl.col("Temperature").gt(60))
-            .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
-            .otherwise(pl.col("Temperature"))
-            .alias("Temperature"),
-        ).select(*self.index_cols, *sorted(vitals_cols_not_index))
+            .with_columns(
+                pl.when(pl.col("Temperature").gt(60))
+                .then(pl.col("Temperature").sub(32).mul(5).truediv(9))
+                .otherwise(pl.col("Temperature"))
+                .alias("Temperature"),
+            )
+            # Sort columns (index columns first, then sorted by name)
+            .pipe(self._sort_columns)
+        )
         # endregion
 
         # region labs
         labs = (
             pl.concat(timeseries_labs, how="diagonal_relaxed")
+            # Drop columns that were only used for conversion
+            .select(pl.exclude(*self.conversion_lab_LOINC_components))
+            # Convert structs saved as JSON strings back to structs
+            .pipe(
+                self.convert._decode_lab_structs,
+                cols_to_exclude=self.index_cols,
+            )
+            # Add missing columns as null columns
+            .pipe(self._add_missing_cols, self.relevant_lab_LOINC_components)
             # Convert columns to appropriate types
             .cast(
                 {
@@ -380,46 +388,30 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                 }
             )
-            .select(
-                *self.index_cols,
-                pl.exclude(
-                    *self.index_cols,
-                    *self.conversion_lab_LOINC_components,
-                ),
+            # Ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
+            .with_columns(
+                pl.col(col)
+                .struct.with_fields(
+                    pl.when(pl.field("value") > 1)
+                    .then(pl.field("value").truediv(100))
+                    .otherwise(pl.field("value"))
+                    .alias("value")
+                )
+                .alias(col)
+                for col in [
+                    "Basophils/leukocytes",
+                    "Eosinophils/leukocytes",
+                    "Lymphocytes/leukocytes",
+                    "Monocytes/leukocytes",
+                    "Neutrophils/leukocytes",
+                    "Neutrophils.band form/leukocytes",
+                    "Reticulocytes/Erythrocytes",
+                    "Neutrophils.segmented/leukocytes",
+                ]
             )
-            .pipe(
-                self.convert._decode_lab_structs,
-                cols_to_exclude=self.index_cols,
-            )
-            # assume uniqueness & sortedness (since we're just concatenating the data)
-            # .unique(self.index_cols)
-            # .sort(self.index_cols)
+            # Sort columns (index columns first, then sorted by name)
+            .pipe(self._sort_columns)
         )
-
-        labs_cols = labs.collect_schema().names()
-        labs_cols_not_index = list(set(labs_cols) - set(self.index_cols))
-        labs = labs.with_columns(
-            # ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
-            pl.col(col)
-            .struct.with_fields(
-                pl.when(pl.field("value") > 1)
-                .then(pl.field("value").truediv(100))
-                .otherwise(pl.field("value"))
-                .alias("value")
-            )
-            .alias(col)
-            for col in [
-                "Basophils/leukocytes",
-                "Eosinophils/leukocytes",
-                "Lymphocytes/leukocytes",
-                "Monocytes/leukocytes",
-                "Neutrophils/leukocytes",
-                "Neutrophils.band form/leukocytes",
-                "Reticulocytes/Erythrocytes",
-                "Neutrophils.segmented/leukocytes",
-            ]
-            if col in labs_cols
-        ).select(*self.index_cols, *sorted(labs_cols_not_index))
         # endregion
 
         # region respiratory
@@ -431,16 +423,15 @@ class TimeseriesHarmonizer(GlobalVars):
 
         resp = pl.LazyFrame()
         for ts_resp in timeseries_resp:
-            resp_cols = ts_resp.collect_schema().names()
-            resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
+            present_cols = [
+                col
+                for col in ts_resp.collect_schema().names()
+                if col not in self.index_cols
+            ]
             ts_resp = (
-                # Drop rows with all NaN values in vitals columns
-                ts_resp.pipe(
-                    self.helpers.dropna,
-                    "all",
-                    resp_cols_not_index,
-                    False,
-                )
+                ts_resp
+                # Drop rows with all NaN values in columns
+                .pipe(self.helpers.dropna, present_cols)
                 # Convert columns to appropriate types
                 .cast(
                     {
@@ -448,47 +439,42 @@ class TimeseriesHarmonizer(GlobalVars):
                         self.timeseries_time_col: float,
                         **{
                             col: str if col in resp_strs else float
-                            for col in resp_cols_not_index
+                            for col in present_cols
                         },
                     },
                     # silently fail on invalid values (i.e. don't raise an error)
                     strict=False,
                 )
-                # assume uniqueness & sortedness (since we're just concatenating the data)
-                # .unique(self.index_cols)
-                # .sort(self.index_cols)
             )
 
             resp = pl.concat([resp, ts_resp], how="diagonal_relaxed")
 
-        resp_cols = ts_resp.collect_schema().names()
-        resp_cols_not_index = list(set(resp_cols) - set(self.index_cols))
-        resp = resp.select(*self.index_cols, *sorted(resp_cols_not_index))
+        # Add missing columns as null columns
+        resp = resp.pipe(
+            self._add_missing_cols, self.relevant_respiratory_values
+        ).pipe(self._sort_columns)
         # endregion
 
         # region intakeoutput
-        inout = pl.concat(timeseries_inout, how="diagonal_relaxed")
-        inout_cols = inout.collect_schema().names()
-        inout_cols_not_index = list(set(inout_cols) - set(self.index_cols))
         inout = (
-            # Drop rows with all NaN values in vitals columns
-            inout.pipe(
+            pl.concat(timeseries_inout, how="diagonal_relaxed")
+            # Add missing columns as null columns
+            .pipe(self._add_missing_cols, self.relevant_intakeoutput_values)
+            # Drop rows with all NaN values in columns
+            .pipe(
                 self.helpers.dropna,
-                "all",
-                inout_cols_not_index,
-                False,
+                self.relevant_intakeoutput_values,
             )
             # Convert columns to appropriate types
             .cast(
                 {
                     self.global_icu_stay_id_col: str,
                     self.timeseries_time_col: float,
-                    **{col: float for col in inout_cols_not_index},
+                    **{col: float for col in self.relevant_intakeoutput_values},
                 }
-            ).select(*self.index_cols, *sorted(inout_cols_not_index))
-            # assume uniqueness & sortedness (since we're just concatenating the data)
-            # .unique(self.index_cols)
-            # .sort(self.index_cols)
+            )
+            # Sort columns (index columns first, then sorted by name)
+            .pipe(self._sort_columns)
         )
         # endregion
 
@@ -497,15 +483,14 @@ class TimeseriesHarmonizer(GlobalVars):
             "Continuous renal replacement therapy mode Renal replacement therapy circuit"
         ]
 
-        extracorporeal = pl.concat(timeseries_extra, how="diagonal_relaxed")
-        extracorporeal_cols = extracorporeal.collect_schema().names()
-        extracorporeal_cols_not_index = list(set(extracorporeal_cols) - set(self.index_cols)) # fmt: skip
         extracorporeal = (
-            extracorporeal.pipe(
+            pl.concat(timeseries_extra, how="diagonal_relaxed")
+            # Add missing columns as null columns
+            .pipe(self._add_missing_cols, self.relevant_extracorporeal_values)
+            # Drop rows with all NaN values in columns
+            .pipe(
                 self.helpers.dropna,
-                "all",
-                extracorporeal_cols_not_index,
-                False,
+                self.relevant_extracorporeal_values,
             )
             # Convert columns to appropriate types
             .cast(
@@ -514,13 +499,12 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                     **{
                         col: str if col in extracorporeal_strs else float
-                        for col in extracorporeal_cols_not_index
+                        for col in self.relevant_extracorporeal_values
                     },
                 }
-            ).select(*self.index_cols, *sorted(extracorporeal_cols_not_index))
-            # assume uniqueness & sortedness (since we're just concatenating the data)
-            # .unique(self.index_cols)
-            # .sort(self.index_cols)
+            )
+            # Sort columns (index columns first, then sorted by name)
+            .pipe(self._sort_columns)
         )
         # endregion
 
@@ -536,7 +520,6 @@ class TimeseriesHarmonizer(GlobalVars):
 
             if "labs" in timeseries:
                 print("reprodICU - Saving labs...")
-
                 labs.pipe(self._print_unique_cases, "labs").sink_parquet(
                     self.save_path + "timeseries_labs.parquet"
                 )
@@ -625,6 +608,22 @@ class TimeseriesHarmonizer(GlobalVars):
     # endregion
 
     # region helpers
+    # Add missing columns as null columns
+    def _add_missing_cols(
+        self, data: pl.LazyFrame, expected_cols: list
+    ) -> pl.LazyFrame:
+        cols = data.collect_schema().names()
+        return data.with_columns(
+            pl.lit(None).alias(col) for col in expected_cols if col not in cols
+        )
+
+    # Sort columns based on the expected order (index columns first, then sorted by name)
+    def _sort_columns(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """Sort columns based on the expected order (index columns first, then sorted by name)."""
+        cols = data.collect_schema().names()
+        sort = [col for col in cols if col not in self.index_cols]
+        return data.select(*self.index_cols, *sorted(sort))
+
     # Concatenate the IDs with the database name to create a global ID
     def _concat_helper(self, data: pl.LazyFrame, name: str) -> pl.LazyFrame:
         return data.with_columns(
