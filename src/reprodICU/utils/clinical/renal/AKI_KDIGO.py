@@ -605,7 +605,6 @@ def AKI_KDIGO(
             f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
         )
 
-
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
 
@@ -732,18 +731,26 @@ def AKI_KDIGO(
         .explode("timeframe")
         .select(STAY_KEY, pl.col("timeframe").cast(int))
         .sort(STAY_KEY, "timeframe")
-        .collect()
-        .lazy()
-    )
-
-    result = result.join(
-        urine_data, on=[STAY_KEY, "timeframe"], how="left"
-    ).join(
-        creatinine_per_frame.select(
-            STAY_KEY, "timeframe", "Creatinine AKI Stage"
-        ),
-        on=[STAY_KEY, "timeframe"],
-        how="left",
+        .join(
+            urine_data.select(
+                STAY_KEY,
+                "timeframe",
+                pl.col("uo_interval_ml").alias("UO ml/window"),
+                pl.col("uo_interval_ml_per_kg").alias("UO ml/kg/window"),
+            ),
+            on=[STAY_KEY, "timeframe"],
+            how="left",
+        )
+        .join(
+            creatinine_per_frame.select(
+                STAY_KEY,
+                "timeframe",
+                "Creatinine",
+                "Creatinine AKI Stage",
+            ),
+            on=[STAY_KEY, "timeframe"],
+            how="left",
+        )
     )
 
     for method_name, uo_method_df in uo_stages_dict.items():

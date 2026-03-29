@@ -429,6 +429,11 @@ def APACHE2(
 
     # region component scoring
     # 1. APS
+    time_col = (
+        "Days Relative to T_0"
+        if t_0_per_stay is not None
+        else "Days Relative to Admission"
+    )
     aps_tf = (
         APS(
             patient_information=patient_information,
@@ -439,7 +444,7 @@ def APACHE2(
             t_0_per_stay=t_0_per_stay,
             window_size=SECONDS_IN_1D,
         )
-        .filter(pl.col("Days Relative to T_0") == 1)
+        .filter(pl.col(time_col) == 1)
         .select(STAY_KEY, "T_0", "APS Score")
     )
 

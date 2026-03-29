@@ -207,9 +207,8 @@ class GlobalHelpers:
                 )
                 filename = f"conflicts_{dataset}_{string_col}_{datetime.now().strftime('%Y%m%d')}.parquet" # fmt: skip
                 if Path(filename).exists():
-                    existing_conflicts = pl.read_parquet(filename)
-                    conflicts = pl.concat([existing_conflicts, conflicts]).unique()
-                conflicts.write_parquet(filename)
+                    conflicts = pl.concat([pl.read_parquet(filename), conflicts]).unique() # fmt: skip
+                conflicts.sort(index_cols + [on_col]).write_parquet(filename)
                 print(f"Non-aggregated conflicting values saved to {filename}")
 
             df_str_pivoted = df_str.pivot(
