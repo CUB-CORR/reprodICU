@@ -72,7 +72,7 @@ def CKD_EPI_Creatinine_parameters(data: pl.LazyFrame) -> pl.LazyFrame:
 
     | Female                  | Male                    |
     |-------------------------|-------------------------|
-    | Scr ≤0.7   | Scr >0.7   | Scr ≤0.9   | Scr >0.9   |
+    | SCr ≤0.7   | SCr >0.7   | SCr ≤0.9   | SCr >0.9   |
     |-------------------------|-------------------------|
     | A =  0.7   | A =  0.7   | A =  0.9   | A =  0.9   |
     | B = -0.241 | B = -1.2   | B = -0.302 | B = -1.2   |
@@ -115,7 +115,7 @@ def CKD_EPI_Creatinine_Cystatin_parameters(data: pl.LazyFrame) -> pl.LazyFrame:
 
     |             Female                    | Male                      |
     |---------------------------------------|---------------------------|
-    |           | Scr ≤0.7    | Scr >0.7    | Scr ≤0.9    | Scr >0.9    |
+    |           | SCr ≤0.7    | SCr >0.7    | SCr ≤0.9    | SCr >0.9    |
     |---------------------------------------|---------------------------|
     | Scys ≤0.8 | A =  0.7    | A =  0.7    | A =  0.9    | A =  0.9    |
     |           | B = -0.219  | B = -0.544  | B = -0.144  | B = -0.544  |
@@ -252,6 +252,57 @@ def CKD_EPI(data: pl.LazyFrame, use_cystatin_c: bool = False) -> pl.LazyFrame:
     ).select(
         "Global ICU Stay ID", "estimated GFR (CKD-EPI Creatinine-Cystatin)"
     )
+
+
+# region reverse CKD-EPI
+def reverse_CKD_EPI_Creatinine(
+    data: pl.LazyFrame, target_egfr: float = 75
+) -> pl.LazyFrame:
+    """
+    Estimate creatinine from target eGFR using the reverse CKD-EPI Creatinine formula.
+
+    Reverses the CKD-EPI 2021 creatinine formula using the upper piecewise branch:
+    eGFR = 142 * ((SCr/A) ^ B) * (0.9938 ^ age) * female_factor
+
+    Valid physiological solutions fall on the upper branch (Scr > 0.7 for females, > 0.9 for males).
+    For each gender, computes:
+    K = eGFR / (142 * 0.9938^age * female_factor)
+
+    Then applies the upper branch formula:
+    - Female (Scr > 0.7): Scr = 0.7 * K^(1/-1.2)
+    - Male (Scr > 0.9): Scr = 0.9 * K^(1/-1.2)
+
+    Arguments
+    ---------
+        data : pl.LazyFrame
+            Input data frame containing gender and age columns.
+        target_egfr : float, optional
+            Target eGFR value to estimate creatinine for. Default: 75 mL/min/1.73m².
+
+    Returns
+    -------
+        pl.LazyFrame
+            Input data with additional columns:
+            - estimated Creatinine (CKD-EPI eGFR={target_egfr}): Estimated serum creatinine in mg/dL
+    """
+    # Calculate gender-specific factor and reference value A
+    F = (pl.when(pl.col(gender_col) == "Female").then(1.012).otherwise(1))
+    A = pl.when(pl.col(gender_col) == "Female").then(0.7).otherwise(0.9)
+
+    # Compute K = eGFR / (142 * 0.9938^age * F)
+    K = target_egfr / (142 * (0.9938 ** pl.col(age_col)) * F)
+
+    # Upper branch (valid solution): Scr = A * K^(1/-1.2)
+    estimated_scr = A * (K ** (1.0 / -1.2))
+
+    return data.with_columns(
+        estimated_scr.alias(
+            f"estimated Creatinine (CKD-EPI eGFR={target_egfr})"
+        )
+    )
+
+
+# endregion
 
 
 # region Cockcroft-Gault

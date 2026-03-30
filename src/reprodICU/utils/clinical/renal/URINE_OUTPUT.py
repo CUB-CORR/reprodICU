@@ -51,6 +51,7 @@ def URINE_OUTPUT(
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
+    weight_col: str = "Admission Weight (kg)",
 ) -> pl.LazyFrame:
     """
     Calculate urine output per time window from intake/output timeseries.
@@ -59,7 +60,7 @@ def URINE_OUTPUT(
     ---------
         patient_information : pl.LazyFrame, optional
             Patient/stay-level information; must contain Global ICU Stay ID and
-            Admission Weight (kg). Loaded automatically if None.
+            weight column specified by weight_col. Loaded automatically if None.
         timeseries_inout : pl.LazyFrame, optional
             Intake/output timeseries data. Loaded automatically if None.
         t_0 : int, optional
@@ -74,6 +75,9 @@ def URINE_OUTPUT(
             floor((time - T_0)/window_size).
         timeframe_name : str, optional
             Name for output timeframe column. Auto-generated if None.
+        weight_col : str, optional
+            Name of weight column in patient_information to use for per-kg calculations.
+            Defaults to "Admission Weight (kg)".
 
     Returns
     -------
@@ -82,7 +86,7 @@ def URINE_OUTPUT(
             - Global ICU Stay ID
             - timeframe (or custom name)
             - uo_interval_ml: Total urine output in ml for the window
-            - uo_interval_ml_per_kg: (optional) Urine output per kg body weight
+            - uo_interval_ml_per_kg: Urine output per kg body weight
     """
     # Load defaults if not provided
     if patient_information is None:
@@ -165,14 +169,15 @@ def URINE_OUTPUT(
     aggregated = (
         windowed.group_by(STAY_KEY, "timeframe")
         .agg(pl.sum("uo_window_ml").alias("uo_interval_ml"))
+        # Join with weight column from patient_information
         .join(
-            patient_information.select(STAY_KEY, "Admission Weight (kg)"),
+            patient_information.select(STAY_KEY, weight_col),
             on=STAY_KEY,
             how="left",
         )
         .with_columns(
-            pl.when(pl.col("Admission Weight (kg)") > 0)
-            .then(pl.col("uo_interval_ml") / pl.col("Admission Weight (kg)"))
+            pl.when(pl.col(weight_col) > 0)
+            .then(pl.col("uo_interval_ml") / pl.col(weight_col))
             .otherwise(None)
             .alias("uo_interval_ml_per_kg")
         )
