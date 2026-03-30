@@ -119,7 +119,7 @@ Creatinine:
   systems:
     - Blood
     - Serum or Plasma
-    - Urine
+    # - Urine
 Eosinophils/leukocytes:
   property: "Number Fraction"
   systems:
@@ -213,7 +213,7 @@ Leukocytes:
   property: "Number Concentration"
   systems:
     - Blood
-    - Urine
+    # - Urine
 Lipase:
   property: "Catalytic Concentration"
   systems:
@@ -314,7 +314,7 @@ Sodium:
     - Blood
     - Blood arterial
     - Serum or Plasma
-    - Urine
+    # - Urine
 Specific gravity:
   property: "Relative Density"
   systems:
