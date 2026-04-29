@@ -35,6 +35,7 @@ from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
+    _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
@@ -383,7 +384,6 @@ def qSOFA(
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
-    los_col = "ICU Length of Stay (days)"
 
     # Vitals
     vitals = _improve_vitals_quick(timeseries_vitals.lazy())
@@ -415,27 +415,7 @@ def qSOFA(
     )
 
     # union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", los_col)
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col(los_col)
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # assemble
     out = base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
@@ -577,7 +557,6 @@ def SOFA(
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
-    los_col = "ICU Length of Stay (days)"
 
     # Vitals
     vitals = _improve_vitals(timeseries_vitals.lazy())
@@ -775,34 +754,11 @@ def SOFA(
             )
             .alias("uo_daily_ml")
         )
-        .with_columns(
-            _uo_points(pl.col("uo_daily_ml")).alias("uo_points"),
-            pl.col("timeframe").cast(float),
-        )
+        .with_columns(_uo_points(pl.col("uo_daily_ml")).alias("uo_points"))
     )
 
     # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", los_col)
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col(los_col)
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
     out = base

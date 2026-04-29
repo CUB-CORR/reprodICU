@@ -32,6 +32,7 @@ import polars as pl
 
 from ...common import (
     _assign_timeframe,
+    _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
@@ -966,19 +967,7 @@ def AKI_KDIGO(
 
     # region 5. Join all data
     result = (
-        patient_information.select(STAY_KEY, "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                0,
-                (pl.col("ICU Length of Stay (days)").mul(SECONDS_IN_1D) + 1)
-                // window_size,
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe")
-        )
-        .explode("timeframe")
-        .select(STAY_KEY, pl.col("timeframe").cast(int))
+        _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
         .sort(STAY_KEY, "timeframe")
         .join(rrt, on=[STAY_KEY, "timeframe"], how="left")
         .join(

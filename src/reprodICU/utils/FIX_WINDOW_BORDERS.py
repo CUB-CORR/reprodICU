@@ -38,7 +38,8 @@ def FIX_WINDOW_BORDERS(
         )
         .drop(prefix + " Window Borders")
         .explode(
-            prefix + " Window Borders Start", prefix + " Window Borders End"
+            prefix + " Window Borders Start",
+            prefix + " Window Borders End",
         )
         .with_columns(
             (
@@ -53,6 +54,7 @@ def FIX_WINDOW_BORDERS(
             .alias(prefix + " Duration (windows)"),
             pl.col(prefix + " Window Borders Start")
             .floordiv(TIMEWINDOW_IN_SECONDS)
+            .cast(int)
             .alias("Window Relative to " + reference),
         )
         .drop(prefix + " Window Borders Start", prefix + " Window Borders End")

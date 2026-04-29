@@ -41,8 +41,38 @@ def _build_t0(
     )
 
 
+def _build_base_timeframes(
+    all_stays_t_0: pl.LazyFrame,
+    patient_information: pl.LazyFrame,
+    window_size: int,
+    los_col: str = "ICU Length of Stay (days)",
+) -> pl.LazyFrame:
+    all_stays_t_0 = _to_lazy(all_stays_t_0)
+
+    return (
+        all_stays_t_0.join(patient_information, on=STAY_KEY, how="left")
+        .select(STAY_KEY, "T_0", los_col)
+        .with_columns(
+            pl.int_ranges(
+                start=0,
+                end=(pl.col(los_col) * SECONDS_IN_1D - pl.col("T_0"))
+                .truediv(window_size)
+                .clip(lower_bound=0)
+                .ceil()
+                .add(1)
+                .cast(int),
+                step=1,
+            )
+            .alias("timeframe")
+        )
+        .explode("timeframe")
+        .unique()
+        .select(STAY_KEY, "T_0", "timeframe")
+    )
+
+
 def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
-    return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size)
+    return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size).cast(int)
 
 
 def _optional_time_bounds_filter(
@@ -219,7 +249,6 @@ def intervention_per_timeframe(
                 pl.col("timeframe_end").add(1),
                 step=1,
             )
-            .cast(pl.List(float))
             .alias("timeframe"),
         )
         .explode("timeframe")
@@ -346,6 +375,7 @@ __all__ = [
     # common utils
     "_to_lazy",
     "_build_t0",
+    "_build_base_timeframes",
     "_assign_timeframe",
     "_optional_time_bounds_filter",
     "_get_timeframe_name",

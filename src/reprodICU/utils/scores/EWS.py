@@ -25,6 +25,7 @@ import polars as pl
 
 from ..common import (
     _assign_timeframe,
+    _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
@@ -311,27 +312,7 @@ def EWS(
     # endregion
 
     # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
     return (
@@ -477,27 +458,7 @@ def MEWS(
     # endregion
 
     # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
     return (
@@ -730,27 +691,7 @@ def NEWS(
     # endregion
 
     # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
     return (
@@ -948,27 +889,7 @@ def NEWS2(
     # endregion
 
     # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
     return (
