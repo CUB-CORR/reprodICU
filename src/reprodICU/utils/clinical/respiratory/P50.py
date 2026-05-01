@@ -47,32 +47,38 @@ SECONDS_IN_4H = 4 * 60 * 60
 
 # region helpers
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    return labs.select(
-        STAY_KEY,
-        TIME_KEY,
-        pl.when(
-            pl.col("Oxygen")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood venous", "Blood"])
-            | pl.col("Oxygen").struct.field("system").is_null()
+    return (
+        labs
+        .filter(
+            pl.col("Oxygen").struct.field("system")
+            .eq_missing(pl.col("Oxygen saturation").struct.field("system")),
         )
-        .then(pl.col("Oxygen").struct.field("value"))
-        .otherwise(None)
-        .alias("pO2"),
-        pl.when(
-            pl.col("Oxygen saturation")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood venous", "Blood"])
-            | pl.col("Oxygen saturation").struct.field("system").is_null()
+        .select(
+            STAY_KEY,
+            TIME_KEY,
+            pl.when(
+                pl.col("Oxygen")
+                .struct.field("system")
+                .is_in(["Blood arterial", "Blood venous", "Blood"])
+                | pl.col("Oxygen").struct.field("system").is_null()
+            )
+            .then(pl.col("Oxygen").struct.field("value"))
+            .otherwise(None)
+            .alias("pO2"),
+            pl.when(
+                pl.col("Oxygen saturation")
+                .struct.field("system")
+                .is_in(["Blood arterial", "Blood venous", "Blood"])
+                | pl.col("Oxygen saturation").struct.field("system").is_null()
+            )
+            .then(pl.col("Oxygen saturation").struct.field("value"))
+            .otherwise(None)
+            .alias("sO2"),
         )
-        .then(pl.col("Oxygen saturation").struct.field("value"))
-        .otherwise(None)
-        .alias("sO2"),
-    ).filter(
-        pl.col("Oxygen").struct.field("system")
-        == pl.col("Oxygen saturation").struct.field("system"),
-        pl.col("pO2").is_between(20, 700),  # Physiologically valid range
-        pl.col("sO2").is_between(10, 100),  # Percentage range
+        .filter(
+            pl.col("pO2").is_between(20, 700),  # Physiologically valid range
+            pl.col("sO2").is_between(10, 100),  # Percentage range
+        )
     )
 
 
@@ -83,6 +89,7 @@ def P50(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
+    hill_coefficient: float = HILL_COEFFICIENT,
 ) -> pl.LazyFrame:
     """
     Calculate P50 (oxygen pressure at 50% hemoglobin saturation) timeseries from blood gas data.
@@ -147,7 +154,7 @@ def P50(
             .mul(
                 (100 - pl.col("sO2"))
                 .truediv(pl.col("sO2"))
-                .pow(1 / HILL_COEFFICIENT)
+                .pow(1 / hill_coefficient)
             )
             .alias("P50 (mmHg)")
         )
