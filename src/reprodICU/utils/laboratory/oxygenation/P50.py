@@ -48,9 +48,9 @@ SECONDS_IN_4H = 4 * 60 * 60
 # region helpers
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        labs
-        .filter(
-            pl.col("Oxygen").struct.field("system")
+        labs.filter(
+            pl.col("Oxygen")
+            .struct.field("system")
             .eq_missing(pl.col("Oxygen saturation").struct.field("system")),
         )
         .select(

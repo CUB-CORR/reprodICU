@@ -62,8 +62,7 @@ def _build_base_timeframes(
                 .add(1)
                 .cast(int),
                 step=1,
-            )
-            .alias("timeframe")
+            ).alias("timeframe")
         )
         .explode("timeframe")
         .unique()
@@ -248,8 +247,7 @@ def intervention_per_timeframe(
                 pl.col("timeframe_start"),
                 pl.col("timeframe_end").add(1),
                 step=1,
-            )
-            .alias("timeframe"),
+            ).alias("timeframe"),
         )
         .explode("timeframe")
         .with_columns(

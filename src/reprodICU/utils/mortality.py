@@ -110,8 +110,7 @@ def COMMON_MORTALITY_MEASURES(
                     - pl.col("Pre-ICU Length of Stay (days)")
                 )
                 .otherwise(None),
-            )
-            .alias("Mortality After ICU Admission Censor Cutoff (days)"),
+            ).alias("Mortality After ICU Admission Censor Cutoff (days)"),
         )
         .with_columns(
             pl.when(pl.col("Mortality After ICU Admission (days)") <= 0)
