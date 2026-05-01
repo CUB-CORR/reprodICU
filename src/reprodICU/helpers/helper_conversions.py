@@ -80,6 +80,9 @@ class UnitConversions(GlobalVars):
     def __init__(self):
         super().__init__()
 
+    def _empty_lab_struct(self) -> pl.Expr:
+        return pl.lit(None, dtype=self.labstructdtype)
+
     # CAVE: THIS ASSUMES WIDE FORMAT
     def convert_absolute_count_to_relative(
         self,
@@ -105,13 +108,7 @@ class UnitConversions(GlobalVars):
 
         if goal_itemcol not in data.collect_schema().names():
             data = data.with_columns(
-                pl.struct(
-                    value=pl.lit(None),
-                    system=pl.lit(None),
-                    method=pl.lit(None),
-                    time=pl.lit(None),
-                    LOINC=pl.lit(None),
-                )
+                self._empty_lab_struct()
                 .struct.json_encode()
                 .alias(goal_itemcol)
             )
@@ -157,35 +154,22 @@ class UnitConversions(GlobalVars):
                     ),
                     pl.struct(
                         value=pl.coalesce(
-                            pl.when(pl.col(goal_itemcol).is_not_null())
-                            .then(pl.col(goal_itemcol).struct.field("value"))
-                            .otherwise(None),
+                            pl.col(goal_itemcol).struct.field("value"),
                             pl.col("value"),
                         ),
                         system=pl.coalesce(
-                            pl.when(pl.col(goal_itemcol).is_not_null())
-                            .then(pl.col(goal_itemcol).struct.field("system"))
-                            .otherwise(None),
+                            pl.col(goal_itemcol).struct.field("system"),
                             pl.col("system"),
                         ),
                         method=pl.coalesce(
-                            pl.when(pl.col(goal_itemcol).is_not_null())
-                            .then(pl.col(goal_itemcol).struct.field("method"))
-                            .otherwise(None),
+                            pl.col(goal_itemcol).struct.field("method"),
                             pl.col("method"),
                         ),
                         time=pl.coalesce(
-                            pl.when(pl.col(goal_itemcol).is_not_null())
-                            .then(pl.col(goal_itemcol).struct.field("time"))
-                            .otherwise(None),
+                            pl.col(goal_itemcol).struct.field("time"),
                             pl.col("time"),
                         ),
-                        LOINC=pl.coalesce(
-                            pl.when(pl.col(goal_itemcol).is_not_null())
-                            .then(pl.col(goal_itemcol).struct.field("LOINC"))
-                            .otherwise(None),
-                            pl.lit(None),
-                        ),
+                        LOINC=pl.col(goal_itemcol).struct.field("LOINC"),
                     ).alias(goal_itemcol),
                 )
                 .pipe(

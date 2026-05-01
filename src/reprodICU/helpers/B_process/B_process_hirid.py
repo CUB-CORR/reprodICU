@@ -244,6 +244,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 struct_cols=["labstruct"],
                 component_col="variable",
             )
+            # JSON encode the structs for pivoting
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(

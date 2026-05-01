@@ -97,28 +97,21 @@ class GlobalHelpers:
     def dropna(
         self,
         data: pl.LazyFrame,
-        how: str = "any",
         subset_cols: Optional[Union[str, Sequence[str]]] = None,
-        verbose: bool = True,
+        how: str = "all",
+        verbose: bool = False,
     ) -> pl.LazyFrame:
         """
         Remove null and NaN values from polars DataFrame.
         Modified from https://stackoverflow.com/a/73978691
         """
 
-        if verbose:
-            print(
-                "Dropping null, NaN and empty string values from DataFrame"
-                + f" in columns {subset_cols}"
-                if subset_cols is not None
-                else "" + "..."
-            )
-
-        subset = pl.all() if subset_cols is None else pl.col(subset_cols)
+        subset = subset_cols or data.collect_schema().names()
         subset_is_na = (
-            subset.is_null()
-            | (subset.cast(str) == "NaN")
-            | (subset.cast(str) == "")
+            pl.col(subset_col).is_null()
+            | (pl.col(subset_col).cast(str) == "NaN")
+            | (pl.col(subset_col).cast(str) == "")
+            for subset_col in subset
         )
 
         if how == "any":
@@ -126,9 +119,17 @@ class GlobalHelpers:
         elif how == "all":
             result = data.filter(~pl.all_horizontal(subset_is_na))
         elif how == "onlynull":
-            result = data.filter(subset.is_not_null())
+            result = data.filter(col.is_not_null() for col in subset)
         else:
             raise ValueError(f"how must be either 'any' or 'all', got {how}")
+
+        # Report dropped rows if possible
+        if verbose:
+            # Try to get a lightweight row count for reporting (may evaluate lazily)
+            orig_count = data.select(pl.count().alias("__count")).collect().rows()[0][0]
+            new_count = result.select(pl.count().alias("__count")).collect().rows()[0][0]
+            dropped = orig_count - new_count
+            print(f"Dropped {dropped:9.0f} rows ({orig_count:10.0f} -> {new_count:10.0f}).")
 
         return result
 
