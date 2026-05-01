@@ -47,7 +47,7 @@ from ...common import (
     get_timeseries_vitals,
     get_ventilation,
 )
-from .PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
+from ...laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_6H = 6 * SECONDS_IN_1H

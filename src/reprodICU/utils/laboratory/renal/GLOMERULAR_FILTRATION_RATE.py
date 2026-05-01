@@ -52,7 +52,7 @@ import numpy as np
 import polars as pl
 
 from ...common import _to_lazy, get_patient_information, get_timeseries_labs
-from ..IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
+from ...clinical.IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
 
 age_col = "Admission Age (years)"
 height_col = "Admission Height (cm)"

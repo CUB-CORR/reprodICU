@@ -43,8 +43,8 @@ from ...common import (
     get_timeseries_labs,
     intervention_per_timeframe,
 )
+from ...laboratory.renal.CREATININE import reverse_CKD_EPI, reverse_MDRD
 from ..IDEAL_BODY_WEIGHT import IDEAL_BODY_WEIGHT_DEVINE
-from .CREATININE import reverse_CKD_EPI, reverse_MDRD
 from .URINE_OUTPUT import URINE_OUTPUT
 
 SECONDS_IN_1H = 60 * 60
