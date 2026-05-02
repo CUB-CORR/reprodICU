@@ -32,7 +32,6 @@ import polars as pl
 
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_base_timeframes,
@@ -49,6 +48,7 @@ from ..common import (
     get_ventilation,
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H

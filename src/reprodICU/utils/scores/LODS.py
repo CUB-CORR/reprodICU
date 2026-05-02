@@ -28,7 +28,6 @@ from typing import Optional
 import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
 from ..common import (
     _assign_timeframe,
     _build_base_timeframes,
@@ -43,6 +42,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
+from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 STAY_KEY = "Global ICU Stay ID"
 TIME_KEY = "Time Relative to Admission (seconds)"
