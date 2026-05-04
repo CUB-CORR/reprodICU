@@ -324,4 +324,4 @@ def SpO2_FiO2_RATIO(
     return sf_ratio
 
 
-___all__ = ["PaO2_FiO2_RATIO", "SpO2_FiO2_RATIO"]
+__all__ = ["PaO2_FiO2_RATIO", "SpO2_FiO2_RATIO"]

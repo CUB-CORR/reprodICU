@@ -121,7 +121,7 @@ def _calendar_day_from_admission(
     # Seconds from the start of admission day
     seconds_from_day_start = time_seconds + admission_seconds_into_day
     # Integer division by SECONDS_PER_DAY gives calendar day
-    return seconds_from_day_start.floordiv(SECONDS_PER_DAY)
+    return seconds_from_day_start.floordiv(SECONDS_PER_DAY).cast(int)
 
 
 def rhee_compute_lab_baselines(
@@ -884,7 +884,7 @@ def SEPSIS(
     t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
-    sofa_filter: str = "absolute",  # "absolute" or "delta" for SOFA criteria
+    sofa_filter: str = "delta",  # "absolute" or "delta" for SOFA criteria
 ) -> pl.LazyFrame:
     """Compute Sepsis-3 in long format from raw inputs.
 

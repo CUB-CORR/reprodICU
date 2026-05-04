@@ -425,7 +425,7 @@ class EICUExtractor(EICUPaths):
                     default=None,
                 )
             )
-        ) # fmt: skip
+        )
 
         LOINC_data = labs.select("labname").unique()
         labnames = LOINC_data.collect().to_series().to_list()

@@ -189,4 +189,4 @@ def MECHANICAL_POWER(
     return mechanical_power
 
 
-___all__ = ["MECHANICAL_POWER"]
+__all__ = ["MECHANICAL_POWER"]
