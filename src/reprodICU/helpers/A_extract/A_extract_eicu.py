@@ -410,7 +410,14 @@ class EICUExtractor(EICUPaths):
             lab = pl.scan_csv(self.lab_path)
 
         labs = (
-            lab.select("patientunitstayid", "labname", "labresultoffset", "labresult")
+            lab.select(
+                "patientunitstayid",
+                "labname",
+                "labresultoffset",
+                "labresult",
+                "labtypeid",
+                "labresultrevisedoffset",
+            )
             # Rename columns for consistency
             .rename(
                 {
@@ -474,6 +481,16 @@ class EICUExtractor(EICUPaths):
                     self.relevant_lab_LOINC_components
                 )
             )
+            # Change LOINC system "Blood" to "Blood arterial" if labtypeid = 7 (ABG)
+            .with_columns(
+                pl.when(
+                    pl.col("LOINC_system") == "Blood",
+                    pl.col("labtypeid") == 7,
+                )
+                .then(pl.lit("Blood arterial"))
+                .otherwise(pl.col("LOINC_system"))
+                .alias("LOINC_system")
+            )
             # Filter for systems of interest
             .filter(
                 pl.col("LOINC_system").is_in(
@@ -490,6 +507,22 @@ class EICUExtractor(EICUPaths):
             .filter(pl.col("labname").is_not_null())
             # Remove rows with empty lab results
             .filter(pl.col("labresult").is_not_null())
+            # Keep the result that was revised later (i.e. has higher labresultrevisedoffset)
+            .group_by(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "labname",
+                "LOINC_system",
+            )
+            .agg(
+                pl.col("labresult").sort_by("labresultrevisedoffset").last(),
+                pl.max(
+                    "LOINC_component",
+                    "LOINC_method",
+                    "LOINC_time",
+                    "LOINC_code",
+                ),
+            )
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
