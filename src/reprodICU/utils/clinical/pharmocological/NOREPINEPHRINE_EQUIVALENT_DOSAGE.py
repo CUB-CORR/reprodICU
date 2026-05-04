@@ -36,7 +36,7 @@ VASOPRESSORS_INOTROPES = [
     "methylene blue",  # 0.2 * dose in mg/kg/h
     "midodrine",  # 0.4 * dose in mcg/kg/min
     "norepinephrine",  # 1 * dose in mcg/kg/min
-    "phenylephrine",  # 100 * dose in mcg/kg/min
+    "phenylephrine",  # 0.06 * dose in mcg/kg/min
     "terlipressin",  # 10 * dose in mcg/h
     "vasopressin (USP)",  # 2.5 * dose in units/kg
 ]
@@ -58,7 +58,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
     - Methylene Blue: 0.2 × dose (mg/kg/h)
     - Midodrine: 0.4 × dose (mcg/kg/min)
     - Norepinephrine: 1 × dose (mcg/kg/min)
-    - Phenylephrine: 100 × dose (mcg/kg/min)
+    - Phenylephrine: 0.06 × dose (mcg/kg/min)
     - Terlipressin: 10 × dose (mcg/h)
     - Vasopressin (USP): 2.5 × dose (units/kg/min)
 
@@ -136,7 +136,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
             pl.col("Drug Ingredient") == "phenylephrine",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
         )
-        .then(pl.col("Drug Rate (fixed units)") * 100)
+        .then(pl.col("Drug Rate (fixed units)") * 0.06)
         .when(
             pl.col("Drug Ingredient") == "terlipressin",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
