@@ -375,12 +375,28 @@ Anion gap 4:
     - Blood arterial
     - Blood venous
     - Serum or Plasma
+Base deficit:
+  for_conversion: true
+  property: "Substance Concentration"
+  systems:
+    - Blood
 Fibrin D-dimer FEU: # for MIMIC-III / -IV
   for_conversion: true
   property: "Mass Concentration"
   systems:
     - Blood
     - Platelet poor plasma
+Urea:
+  for_conversion: true
+  property:
+    - Substance Concentration
+    - Mass Concentration
+  systems:
+    - Blood
+    - Serum or Plasma
+    - Urine
+# -----------------------------------------------
+# Blood cell counts and fractions, for conversion from % to absolute counts
 Basophils:
   for_conversion: true
   property: "Number Concentration"
@@ -454,12 +470,3 @@ Reticulocytes/100 erythrocytes:
   for_conversion: true
   systems:
     - Blood
-Urea:
-  for_conversion: true
-  property:
-    - Substance Concentration
-    - Mass Concentration
-  systems:
-    - Blood
-    - Serum or Plasma
-    - Urine

@@ -20,7 +20,7 @@ ANF/ANA:
 anion gap: Anion gap in Blood # anion_gap
 AST (SGOT): Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma # AST
 Base Deficit: Base deficit in Blood # NOTE: Later combined with base_excess into base_excess_deficit
-Base Excess: Base excess in Blood # NOTE: Later combined with base_deficit into base_excess_deficit
+Base Excess: Base excess in Blood by calculation # NOTE: Later combined with base_deficit into base_excess_deficit
 bedside glucose: Glucose [Mass/volume] in Blood # glucose_bedside
 bicarbonate: Bicarbonate [Moles/volume] in Blood # bicarbonate
 BNP: # BNP
