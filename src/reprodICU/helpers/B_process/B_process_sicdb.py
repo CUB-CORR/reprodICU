@@ -224,6 +224,13 @@ class SICdbConverter(UnitConverter):
                 structfield=structfield,
             )
             .pipe(
+                self.convert_g_dL_to_g_L,
+                itemid="Albumin",
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
                 self.convert_VitB12_pg_mL_to_pmol_L,
                 itemid="Cobalamin",
                 labelcol=labelcol,

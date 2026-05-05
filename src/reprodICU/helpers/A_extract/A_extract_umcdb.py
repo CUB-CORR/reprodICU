@@ -552,6 +552,9 @@ class UMCdbExtractor(UMCdbPaths):
             # -> now without "/100", kept for compatibility and conversion
             .str.replace("/100 leukocytes", "/Leukocytes")
             .str.replace("/100 erythrocytes", "/Erythrocytes")
+            # "Anion gap" with no method obselete in v20250827
+            # -> now "Anion gap in {system} by {Calculated.4Ions or calculation}"
+            .str.replace("Anion gap in Blood", "Anion gap in Blood by calculation")
         ) # fmt: skip
 
         LOINC_data = data.select("item").unique()

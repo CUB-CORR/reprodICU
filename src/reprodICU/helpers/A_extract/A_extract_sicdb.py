@@ -727,6 +727,9 @@ class SICdbExtractor(SICdbPaths):
                 # -> now without "/100", kept for compatibility and conversion
                 .str.replace("/100 leukocytes", "/Leukocytes")
                 .str.replace("/100 erythrocytes", "/Erythrocytes")
+                # "Anion gap 4" obselete in v20250827
+                # -> now "Anion gap in {system} by Calculated.4Ions"
+                .str.replace("Anion gap 4 in Arterial blood", "Anion gap in Arterial blood by Calculated.4Ions")
             )
         ) # fmt: skip
 
