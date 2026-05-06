@@ -34,18 +34,17 @@ TOTAL_CO2_COL = "Total CO2"
 
 # region helpers
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    blood_gas_systems = ["Blood arterial", "Blood", None]
     return labs.select(
         STAY_KEY,
         TIME_KEY,
-        pl.when(pl.col("pH").struct.field("system").is_in(blood_gas_systems))
+        pl.when(pl.col("pH").struct.field("system").str.contains("Blood"))
         .then(pl.col("pH").struct.field("value"))
         .otherwise(None)
         .alias("pH"),
         pl.when(
             pl.col("Carbon dioxide")
             .struct.field("system")
-            .is_in(blood_gas_systems)
+            .str.contains("Blood")
         )
         .then(pl.col("Carbon dioxide").struct.field("value"))
         .otherwise(None)
@@ -159,7 +158,7 @@ def STANDARD_BICARBONATE(
 ) -> pl.LazyFrame:
     """
     Calculate standard bicarbonate from blood-gas pH and pCO2 = 40mmHg.
-    
+
     HCO3-_std = 0.0307 × 40 × 10^(pH - 6.1)
 
     Arguments
@@ -247,7 +246,7 @@ def TOTAL_CO2(
 ) -> pl.LazyFrame:
     """
     Calculate total CO2 from blood-gas pH and pCO2.
-    
+
     tCO2 = HCO3- + (PaCO2 × 0.03)
 
     Arguments
