@@ -1,10 +1,7 @@
 itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100001,Glucose,Blood,Chemistry,2345-7,Glucose [Mass/volume] in Serum or Plasma
-100001,Glucose,Blood,Chemistry,2345-7,Glucose [Mass/volume] in Serum or Plasma
-100002,Creatinine,Blood,Chemistry,2160-0,Creatinine [Mass/volume] in Serum or Plasma
 100002,Creatinine,Blood,Chemistry,2160-0,Creatinine [Mass/volume] in Serum or Plasma
 100003,"Calcium, Total",Blood,Chemistry,17861-6,Calcium [Mass/volume] in Serum or Plasma
-100004,Urea Nitrogen,Blood,Chemistry,3094-0,Urea nitrogen [Mass/volume] in Serum or Plasma
 100004,Urea Nitrogen,Blood,Chemistry,3094-0,Urea nitrogen [Mass/volume] in Serum or Plasma
 100005,MCH,Blood,Hematology,785-6,MCH [Entitic mass] by Automated count
 100006,Hematocrit,Blood,Hematology,4544-3,Hematocrit [Volume Fraction] of Blood by Automated count
@@ -12,10 +9,7 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100008,RDW,Blood,Hematology,788-0,Erythrocyte distribution width [Ratio] by Automated count
 100009,Magnesium,Blood,Chemistry,19123-9,Magnesium [Mass/volume] in Serum or Plasma
 100010,Sodium,Blood,Chemistry,2951-2,Sodium [Moles/volume] in Serum or Plasma
-100010,Sodium,Blood,Chemistry,2951-2,Sodium [Moles/volume] in Serum or Plasma
 100011,Potassium,Blood,Chemistry,2823-3,Potassium [Moles/volume] in Serum or Plasma
-100011,Potassium,Blood,Chemistry,2823-3,Potassium [Moles/volume] in Serum or Plasma
-100012,Chloride,Blood,Chemistry,2075-0,Chloride [Moles/volume] in Serum or Plasma
 100012,Chloride,Blood,Chemistry,2075-0,Chloride [Moles/volume] in Serum or Plasma
 100013,Total CO2,Blood,Chemistry,2028-9,"Carbon dioxide, total [Moles/volume] in Serum or Plasma"
 100014,Platelet Count,Blood,Hematology,777-3,Platelets [#/volume] in Blood by Automated count
@@ -36,39 +30,30 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100029,Oxygen,Blood,Blood Gas,3150-0,Inhaled oxygen concentration
 100030,INR(PT),Blood,Hematology,6301-6,INR in Platelet poor plasma by Coagulation assay
 100031,Lactate,Blood,Blood Gas,32693-4,Lactate [Moles/volume] in Blood
-100031,Lactate,Blood,Blood Gas,2518-9,Lactate [Moles/volume] in Arterial blood
 100032,Asparate Aminotransferase (AST),Blood,Chemistry,1920-8,Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma
 100033,Alkaline Phosphatase,Blood,Chemistry,6768-6,Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma
-100034,PT,Blood,Hematology,5902-2,Prothrombin time (PT)
 100034,PT,Blood,Hematology,5902-2,Prothrombin time (PT)
 100035,Absolute Basophil Count,Blood,Hematology,704-7,Basophils [#/volume] in Blood by Automated count
 100036,Absolute Eosinophil Count,Blood,Hematology,711-2,Eosinophils [#/volume] in Blood by Automated count
 100037,Absolute Lymphocyte Count,Blood,Hematology,731-0,Lymphocytes [#/volume] in Blood by Automated count
-100037,Absolute Lymphocyte Count,Blood,Hematology,731-0,Lymphocytes [#/volume] in Blood by Automated count
 100038,Absolute Neutrophil Count,Blood,Hematology,751-8,Neutrophils [#/volume] in Blood by Automated count
 100039,Absolute Monocyte Count,Blood,Hematology,742-7,Monocytes [#/volume] in Blood by Automated count
-100040,Anion Gap,Blood,Chemistry,1863-0,Anion gap 4 in Serum or Plasma
 100040,Anion Gap,Blood,Chemistry,33037-3,Anion gap in Serum or Plasma
-100041,Anion Gap,Blood,Chemistry,1863-0,Anion gap 4 in Serum or Plasma
 100041,Anion Gap,Blood,Chemistry,33037-3,Anion gap in Serum or Plasma
 100042,Alanine Aminotransferase (ALT),Blood,Chemistry,1742-6,Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma
 100043,Nucleated Red Cells,Blood,Hematology,58413-6,Nucleated erythrocytes/100 leukocytes [Ratio] in Blood by Automated count
 100044,Free Calcium,Blood,Blood Gas,1994-3,Calcium.ionized [Moles/volume] in Blood
 100045,Glucose,Blood,Blood Gas,2339-0,Glucose [Mass/volume] in Blood
-100046,PTT,Blood,Hematology,3173-2,aPTT in Blood by Coagulation assay
 100046,PTT,Blood,Hematology,14979-9,aPTT in Platelet poor plasma by Coagulation assay
-100047,"Potassium, Whole Blood",Blood,Blood Gas,32713-0,Potassium [Moles/volume] in Arterial blood
 100047,"Potassium, Whole Blood",Blood,Blood Gas,6298-4,Potassium [Moles/volume] in Blood
 100048,"Fibrinogen, Functional",Blood,Hematology,3255-7,Fibrinogen [Mass/volume] in Platelet poor plasma by Coagulation assay
 100049,"Bilirubin, Direct",Blood,Chemistry,1968-7,Bilirubin.direct [Mass/volume] in Serum or Plasma
 100050,"Sodium, Whole Blood",Blood,Blood Gas,2947-0,Sodium [Moles/volume] in Blood
-100050,"Sodium, Whole Blood",Blood,Blood Gas,32717-1,Sodium [Moles/volume] in Arterial blood
 100052,Ferritin,Blood,Chemistry,2276-4,Ferritin [Mass/volume] in Serum or Plasma
 100053,C-Reactive Protein,Blood,Chemistry,1988-5,C reactive protein [Mass/volume] in Serum or Plasma
 100055,Lactate Dehydrogenase (LD),Blood,Chemistry,2532-0,Lactate dehydrogenase [Enzymatic activity/volume] in Serum or Plasma
 100056,Triglycerides,Blood,Chemistry,2571-8,Triglyceride [Mass/volume] in Serum or Plasma
 100057,Troponin T,Blood,Chemistry,6598-7,Troponin T.cardiac [Mass/volume] in Serum or Plasma
-100059,Troponin I,Blood,Chemistry,10839-9,Troponin I.cardiac [Mass/volume] in Serum or Plasma
 100059,Troponin I,Blood,Chemistry,10839-9,Troponin I.cardiac [Mass/volume] in Serum or Plasma
 100060,PEEP,Blood,Blood Gas,20077-4,Positive end expiratory pressure setting Ventilator
 100061,Specific Gravity,Urine,Hematology,5811-5,Specific gravity of Urine by Test strip
@@ -91,7 +76,6 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100080,Vitamin B12,Blood,Chemistry,2132-9,Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma
 100082,"Urine Casts, Other",Urine,Hematology,9842-6,Casts [#/area] in Urine sediment by Microscopy low power field
 100083,WBC,Urine,Hematology,5821-4,Leukocytes [#/area] in Urine sediment by Microscopy high power field
-100084,Folate,Blood,Chemistry,2284-8,Folate [Mass/volume] in Serum or Plasma
 100084,Folate,Blood,Chemistry,2284-8,Folate [Mass/volume] in Serum or Plasma
 100085,Creatine Kinase (CK),Blood,Chemistry,2157-6,Creatine kinase [Enzymatic activity/volume] in Serum or Plasma
 100086,"Cholesterol, HDL",Blood,Chemistry,2085-9,Cholesterol in HDL [Mass/volume] in Serum or Plasma
@@ -118,7 +102,7 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100121,"Glucose, Body Fluid",Other Body Fluid,Chemistry,2344-0,Glucose [Mass/volume] in Body fluid
 100122,25-OH Vitamin D,Blood,Chemistry,1989-3,25-hydroxyvitamin D3 [Mass/volume] in Serum or Plasma
 100123,Haptoglobin,Blood,Chemistry,4542-7,Haptoglobin [Mass/volume] in Serum or Plasma
-100124,Lymphs,Cerebrospinal Fluid,Hematology,26479-6,Lymphocytes/100 leukocytes in Cerebral spinal fluid
+100124,Lymphs,Cerebrospinal Fluid,Hematology,,
 100126,Salicylate,Blood,Chemistry,4024-6,Salicylates [Mass/volume] in Serum or Plasma
 100127,Monocytes,Cerebrospinal Fluid,Hematology,26486-1,Monocytes/100 leukocytes in Cerebral spinal fluid
 100128,Cortisol,Blood,Chemistry,2143-6,Cortisol [Mass/volume] in Serum or Plasma
@@ -157,7 +141,7 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100171,"CD4 Cells, Percent",Blood,Hematology,8123-2,CD3+CD4+ (T4 helper) cells/100 cells in Blood
 100172,CD4/CD8 Ratio,Blood,Hematology,54218-3,CD3+CD4+ (T4 helper) cells/CD3+CD8+ (T8 suppressor cells) cells [# Ratio] in Blood
 100173,"CD3 Cells, Percent",Blood,Hematology,8124-0,CD3 cells/100 cells in Blood
-100176,Reflex Confirmatory Hepatitis C Viral Load,Blood,Chemistry,11011-4,Hepatitis C virus RNA [Units/volume] (viral load) in Serum or Plasma by NAA with probe detection
+100176,Reflex Confirmatory Hepatitis C Viral Load,Blood,Chemistry,,
 100177,Cyclosporin,Blood,Chemistry,3520-4,cycloSPORINE [Mass/volume] in Blood
 100181,eAG,Blood,Chemistry,27353-2,Glucose mean value [Mass/volume] in Blood Estimated from glycated hemoglobin
 100184,Carcinoembyronic Antigen (CEA),Blood,Chemistry,2039-6,Carcinoembryonic Ag [Mass/volume] in Serum or Plasma
@@ -172,7 +156,6 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100197,Cellular Cast,Urine,Hematology,38995-7,Mixed cellular casts [#/area] in Urine sediment by Microscopy low power field
 100198,Human Chorionic Gonadotropin,Blood,Chemistry,19080-1,Choriogonadotropin [Units/volume] in Serum or Plasma
 100199,"Cholesterol, Body Fluid",Other Body Fluid,Chemistry,12183-0,Cholesterol [Mass/volume] in Body fluid
-100200,"Albumin, Urine",Urine,Chemistry,1753-3,Albumin [Presence] in Urine
 100200,"Albumin, Urine",Urine,Chemistry,14957-5,Microalbumin [Mass/volume] in Urine
 100201,"Glucose, Pleural",Pleural,Chemistry,2346-5,Glucose [Mass/volume] in Pleural fluid
 100202,Waxy Casts,Urine,Hematology,5819-8,Waxy casts [#/area] in Urine sediment by Microscopy low power field
@@ -195,16 +178,14 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100228,Free Kappa/Free Lambda Ratio,Blood,Chemistry,48378-4,Kappa light chains.free/Lambda light chains.free [Mass Ratio] in Serum
 100230,"Lactate Dehydrogenase, Ascites",Ascites,Chemistry,2531-2,Lactate dehydrogenase [Enzymatic activity/volume] in Peritoneal fluid
 100231,Immunofixation,Blood,Chemistry,25700-6,Immunofixation for Serum or Plasma
-100232,Anti-SARS-CoV-2 IgG,Blood,Chemistry,94563-4,SARS-CoV-2 (COVID-19) IgG Ab [Presence] in Serum or Plasma by Immunoassay
+100232,Anti-SARS-CoV-2 IgG,Blood,Chemistry,,
 100234,Amorphous Crystals,Urine,Hematology,60340-7,Crystals.amorphous [Presence] in Urine sediment by Light microscopy
 100236,Rapamycin,Blood,Chemistry,29247-4,Sirolimus [Mass/volume] in Blood
 100237,Free Lambda,Blood,Chemistry,33944-0,Lambda light chains.free [Mass/volume] in Serum or Plasma
 100238,"Tissue Transglutaminase Ab, IgA",Blood,Chemistry,31017-7,Tissue transglutaminase IgA Ab [Units/volume] in Serum
 100240,Lithium,Blood,Chemistry,14334-7,Lithium [Moles/volume] in Serum or Plasma
 100242,Influenza B by PCR,Other Body Fluid,Chemistry,40982-1,Influenza virus B RNA [Presence] in Specimen by NAA with probe detection
-100242,Influenza B by PCR,Other Body Fluid,Chemistry,40982-1,Influenza virus B RNA [Presence] in Specimen by NAA with probe detection
 100244,Influenza A H1,Other Body Fluid,Chemistry,49521-8,Influenza virus A H1 RNA [Presence] in Specimen by NAA with probe detection
-100246,Factor II,Blood,Hematology,3289-6,Prothrombin activity actual/normal in Platelet poor plasma by Coagulation assay
 100246,Factor II,Blood,Hematology,3289-6,Prothrombin activity actual/normal in Platelet poor plasma by Coagulation assay
 100248,"Cholesterol, LDL, Measured",Blood,Chemistry,18262-6,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay
 100249,"Calcium, Urine",Urine,Chemistry,17862-4,Calcium [Mass/volume] in Urine
@@ -216,7 +197,6 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100255,Ethylene Glycol,Blood,Chemistry,5646-5,"Ethylene glycol [Mass/volume] in Serum, Plasma or Blood"
 100256,Plasma Cells,Blood,Hematology,13047-6,Plasma cells/100 leukocytes in Blood
 100257,Toxoplasma IgG Ab Value,Blood,Chemistry,5388-4,Toxoplasma gondii IgG Ab [Units/volume] in Serum or Plasma by Immunoassay
-100262,pH,Urine,Chemistry,2756-5,pH of Urine
 100262,pH,Urine,Chemistry,2756-5,pH of Urine
 100264,"Monospot, Rapid Antigen",Blood,Chemistry,31418-7,Heterophile Ab [Presence] in Serum
 100265,Testosterone,Blood,Chemistry,2986-8,Testosterone [Mass/volume] in Serum or Plasma
@@ -236,7 +216,6 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100286,CoVIgGV,Blood,Chemistry,,
 100287,Calcium Oxalate Crystals,Urine,Hematology,5774-5,Calcium oxalate crystals [Presence] in Urine sediment by Light microscopy
 100289,Toxoplasma IgM Ab Value,Blood,Chemistry,5390-0,Toxoplasma gondii IgM Ab [Units/volume] in Serum by Immunoassay
-100292,Factor VIII,Blood,Hematology,3209-4,Coagulation factor VIII activity actual/normal in Platelet poor plasma by Coagulation assay
 100292,Factor VIII,Blood,Hematology,3209-4,Coagulation factor VIII activity actual/normal in Platelet poor plasma by Coagulation assay
 100299,"Joint Crystals, Birefringence",Joint Fluid,Hematology,5781-0,Crystals [type] in Synovial fluid by Light microscopy
 100300,Blasts,Cerebrospinal Fluid,Hematology,26447-3,Blasts/100 leukocytes in Cerebral spinal fluid
@@ -275,6 +254,5 @@ itemid,label,fluid,category,mapped_concept_code,mapped_concept_name
 100359,Hemogloblin S,Blood,Hematology,4625-0,Hemoglobin S/Hemoglobin.total in Blood
 100361,Hemoglobin C,Blood,Hematology,4563-3,Hemoglobin C/Hemoglobin.total in Blood
 100362,Cysteine Crystals,Urine,Hematology,5784-4,Cystine crystals [Presence] in Urine sediment by Light microscopy
-100363,Influenza A by PCR,Other Body Fluid,Chemistry,34487-9,Influenza virus A RNA [Presence] in Specimen by NAA with probe detection
 100363,Influenza A by PCR,Other Body Fluid,Chemistry,34487-9,Influenza virus A RNA [Presence] in Specimen by NAA with probe detection
 100364,Hemoglobin F,Blood,Hematology,4576-5,Hemoglobin F/Hemoglobin.total in Blood
