@@ -86,10 +86,8 @@ class SICdbExtractor(SICdbPaths):
                     "HeightOnAdmission": self.height_col,
                     "WeightOnAdmission": self.weight_col,
                     "ICD10Main": self.admission_diagnosis_col,
-                    "EstimatedSurvivalObservationTime": (
-                        self.mortality_after_cutoff_col
-                    ),
-                }
+                    "EstimatedSurvivalObservationTime": self.mortality_after_cutoff_col,
+                } # fmt: skip
             )
             .with_columns(
                 # Convert weight to kg from g
@@ -126,13 +124,9 @@ class SICdbExtractor(SICdbPaths):
                 pl.coalesce(
                     pl.when(pl.col("SurgicalAdmissionType") == 3124)  # Unknown
                     .then(None)
-                    .when(
-                        pl.col("SurgicalAdmissionType") == 3125
-                    )  # Urgent surgery
+                    .when(pl.col("SurgicalAdmissionType") == 3125)  # Urgent surgery
                     .then(pl.lit("Surgical"))
-                    .when(
-                        pl.col("SurgicalAdmissionType") == 3126
-                    )  # Elective surgery
+                    .when(pl.col("SurgicalAdmissionType") == 3126)  # Elective surgery
                     .then(pl.lit("Surgical"))
                     .when(pl.col("SurgicalAdmissionType") == 3127)  # No surgery
                     .then(pl.lit("Medical"))
@@ -142,7 +136,7 @@ class SICdbExtractor(SICdbPaths):
                     .replace_strict(self._extract_references("ReferringUnit"))
                     .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
                     .cast(self.admission_types_dtype),
-                ).alias(self.admission_type_col),
+                ).alias(self.admission_type_col), # fmt: skip
                 # Convert admission urgency to established dtype
                 pl.when(pl.col("AdmissionUrgency") == 3136)  # Unknown
                 .then(pl.lit("Unknown"))
@@ -193,11 +187,9 @@ class SICdbExtractor(SICdbPaths):
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
-                pl.duration(
-                    seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset")
-                )
+                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset"))
                 .truediv(pl.duration(days=1))
-                .alias(self.mortality_after_col),
+                .alias(self.mortality_after_col), # fmt: skip
                 # Get mortality after discharge cutoff
                 (
                     pl.when(self.mortality_after_cutoff_col == 3076)  # 6 Months

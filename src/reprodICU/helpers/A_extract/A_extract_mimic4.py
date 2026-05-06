@@ -203,7 +203,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 how="left",
                 coalesce=True,
             )
-            .join(patients, on=self.person_id_col, how="left", coalesce=True)
+            .join(
+                patients,
+                on=self.person_id_col,
+                how="left",
+                coalesce=True,
+            )
             .join(
                 self._extract_patient_height_weight(icustays),
                 on=self.icu_stay_id_col,
