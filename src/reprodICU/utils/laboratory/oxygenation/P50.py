@@ -57,9 +57,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
             STAY_KEY,
             TIME_KEY,
             pl.when(
-                pl.col("Oxygen")
-                .struct.field("system")
-                .is_in(["Blood arterial", "Blood venous", "Blood"])
+                pl.col("Oxygen").struct.field("system").str.contains("Blood")
                 | pl.col("Oxygen").struct.field("system").is_null()
             )
             .then(pl.col("Oxygen").struct.field("value"))
