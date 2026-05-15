@@ -91,6 +91,8 @@ def _normalize_tables(tables: Optional[List[str]]) -> List[str]:
             "diagnoses",
             "procedures",
             "medications",
+            "microbiology",
+            "notes",
             "timeseries",
         ]
     return tables

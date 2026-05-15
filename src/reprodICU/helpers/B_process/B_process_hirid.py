@@ -15,7 +15,6 @@ import time
 
 from ..A_extract.A_extract_hirid import HiRIDExtractor
 from ..helper import GlobalHelpers
-from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 

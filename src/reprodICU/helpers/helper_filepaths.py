@@ -462,6 +462,8 @@ class MIMIC4Paths(GlobalVars):
                 self.labevents_path,
                 self.inputevents_path,
                 self.prescriptions_path,
+                self.discharge_summaries_path,
+                self.radiology_reports_path,
             ]:
                 parquet_path = path.replace(".csv", ".parquet").replace(".gz", "") # fmt: skip
                 if not os.path.isfile(parquet_path):
@@ -473,6 +475,8 @@ class MIMIC4Paths(GlobalVars):
             self.labevents_path = mimic4_path + "hosp/labevents.parquet"
             self.inputevents_path = mimic4_path + "icu/inputevents.parquet"
             self.prescriptions_path = mimic4_path + "hosp/prescriptions.parquet"
+            self.discharge_summaries_path = mimic4_notes_path + "note/discharge.parquet"
+            self.radiology_reports_path = mimic4_notes_path + "note/radiology.parquet"
 
         # MIMIC-IV custom mapping paths
         # fmt: off

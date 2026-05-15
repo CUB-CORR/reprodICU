@@ -86,13 +86,9 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
             # Rename columns for clarity
             .rename(
                 {
-                    "Offset": (
-                        "Ventilation Start Relative to Admission (seconds)"
-                    ),
-                    "OffsetEnd": (
-                        "Ventilation End Relative to Admission (seconds)"
-                    ),
-                }
+                    "Offset": "Ventilation Start Relative to Admission (seconds)",
+                    "OffsetEnd": "Ventilation End Relative to Admission (seconds)"
+                } # fmt: skip
             )
             .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
             .collect()

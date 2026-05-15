@@ -1129,12 +1129,28 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - LABEL: Input/output measurement name.
                 - VALUENUM: Measurement value.
         """
+
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace_strict(
+                    self.omop.get_concept_names_from_ids(
+                        data.select(column_in).collect().to_series()
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
+                )
+                .alias(column_out)
+            )
+
         cv_input_label_to_concept = pl.scan_csv(
             self.cv_input_label_to_concept_path
         )
         cv_input_label_to_concept = (
             cv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         mv_input_label_to_concept = pl.scan_csv(
@@ -1142,13 +1158,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         mv_input_label_to_concept = (
             mv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         output_label_to_concept = pl.scan_csv(self.output_label_to_concept_path)
         output_label_to_concept = (
             output_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
 
@@ -1301,6 +1317,21 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         intimes = self.extract_patient_IDs()
 
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace(
+                    self.omop.get_concept_names_from_codes(
+                        data.select(column_in).collect().to_series().to_list()
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
+                )
+                .alias(column_out)
+            )
+
         microbiology_specimen_to_concept_mapping = (
             pl.scan_csv(self.microbiology_specimen_to_concept_path)
             .rename(
@@ -1314,17 +1345,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         org_name_to_concept_mapping = pl.scan_csv(self.org_name_to_concept_path)
         org_name_to_concept_mapping = (
             org_name_to_concept_mapping.rename({"org_name": "ORG_NAME"})
-            .pipe(self._mapping_from_codes, "snomed", self.micro_organism_col)
+            .pipe(_create_mapping, "snomed", self.micro_organism_col)
             .select("ORG_NAME", self.micro_organism_col)
         )
         atb_to_concept_mapping = pl.scan_csv(self.atb_to_concept_path)
         atb_to_concept_mapping = (
             atb_to_concept_mapping.rename({"ab_name": "AB_NAME"})
-            .pipe(
-                self._mapping_from_codes,
-                "concept_code",
-                self.micro_antibiotic_col,
-            )
+            .pipe(_create_mapping, "concept_code", self.micro_antibiotic_col)
             .select("AB_NAME", self.micro_antibiotic_col)
         )
 
@@ -1996,7 +2023,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.omop.get_concept_names_from_ids(
                         pl.read_csv(self.route_to_concept_path)[
                             "concept_id"
-                        ].to_list()
+                        ]
                     ),
                     default=None,
                 )
@@ -2137,8 +2164,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
-                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.f"),
+                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.f"),
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
@@ -2491,34 +2518,3 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
     # endregion
-
-    # region helper functions
-    def _mapping_from_codes(
-        self, data: pl.LazyFrame, column_in: str, column_out: str
-    ) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.col(column_in)
-            .replace_strict(
-                self.omop.get_concept_names_from_codes(
-                    data.select(column_in).collect().to_series().to_list()
-                ),
-                return_dtype=pl.String,
-                default=None,
-            )
-            .alias(column_out)
-        )
-
-    def _mapping_from_ids(
-        self, data: pl.LazyFrame, column_in: str, column_out: str
-    ) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.col(column_in)
-            .replace_strict(
-                self.omop.get_concept_names_from_ids(
-                    data.select(column_in).collect().to_series().to_list()
-                ),
-                return_dtype=pl.String,
-                default=None,
-            )
-            .alias(column_out)
-        )

@@ -152,7 +152,11 @@ class Vocabulary(OMOPPaths):
         """
 
         # ensure concept_codes are strings
-        concept_codes = [str(concept_code) for concept_code in concept_codes]
+        concept_codes = [
+            str(concept_code)
+            for concept_code in concept_codes
+            if concept_code is not None
+        ]
 
         concept_names = (
             self.CONCEPT.filter(pl.col("concept_code").is_in(concept_codes))
@@ -164,7 +168,7 @@ class Vocabulary(OMOPPaths):
         if not return_dict:
             return concept_names
 
-        dict(
+        return dict(
             zip(
                 concept_names.get_column("concept_code").to_list(),
                 concept_names.get_column("concept_name").to_list(),

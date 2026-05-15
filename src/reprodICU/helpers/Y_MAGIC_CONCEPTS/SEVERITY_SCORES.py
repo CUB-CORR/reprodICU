@@ -81,9 +81,14 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
         )
+        
+        if "parquet" in self.mimic3_paths.chartevents_path:
+            mimic3_chartevents = pl.scan_parquet(self.mimic3_paths.chartevents_path)
+        else:
+            mimic3_chartevents = pl.scan_csv(self.mimic3_paths.chartevents_path)
 
         mimic3_SEVERITY_SCORES = (
-            pl.scan_csv(self.mimic3_paths.chartevents_path)
+            mimic3_chartevents
             .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUENUM")
             # Filter for scores
             .filter(pl.col("ITEMID").is_in(mimic_SCORE_IDS))
@@ -120,9 +125,14 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
         )
+        
+        if "parquet" in self.mimic4_paths.chartevents_path:
+            mimic4_chartevents = pl.scan_parquet(self.mimic4_paths.chartevents_path)
+        else:
+            mimic4_chartevents = pl.scan_csv(self.mimic4_paths.chartevents_path)
 
         mimic4_SEVERITY_SCORES = (
-            pl.scan_csv(self.mimic4_paths.chartevents_path)
+            mimic4_chartevents
             .select("stay_id", "charttime", "itemid", "valuenum")
             # Filter for scores
             .filter(pl.col("itemid").is_in(mimic_SCORE_IDS))

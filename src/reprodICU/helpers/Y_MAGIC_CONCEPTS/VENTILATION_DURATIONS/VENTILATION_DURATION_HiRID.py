@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import polars as pl
 
@@ -45,9 +45,9 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
         vent_start_col = "Ventilation Start Relative to Admission (seconds)"
         vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
-        for file in os.listdir(self.hirid_paths.timeseries_path):
+        for file in Path(self.hirid_paths.timeseries_path).glob("*.parquet"):
             timeseries_AIRWAYTYPE = (
-                pl.scan_parquet(self.hirid_paths.timeseries_path + file)
+                pl.scan_parquet(file)
                 .select("datetime", "patientid", "value", "variableid")
                 .cast({"datetime": str, "patientid": str})
                 # Filter for ventilation IDs
@@ -87,7 +87,7 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
             )
 
             timeseries_VENTMODE = (
-                pl.scan_parquet(self.hirid_paths.timeseries_path + file)
+                pl.scan_parquet(str(file))
                 .select("datetime", "patientid", "value", "variableid")
                 .cast({"datetime": str, "patientid": str})
                 # Filter for ventilation IDs

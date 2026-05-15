@@ -118,9 +118,13 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
 
         # region MIMIC-III
         # print("MAGIC_CONCEPTS: Received ANY Antibiotics - MIMIC-III")
+        if "parquet" in self.mimic3_paths.prescriptions_path:
+            mimic3_prescriptions = pl.scan_parquet(self.mimic3_paths.prescriptions_path)
+        else:
+            mimic3_prescriptions = pl.scan_csv(self.mimic3_paths.prescriptions_path)
+
         mimic3_prescriptions = (
-            pl.scan_csv(self.mimic3_paths.prescriptions_path)
-            .select("ICUSTAY_ID", "DRUG")
+            mimic3_prescriptions.select("ICUSTAY_ID", "DRUG")
             # Filter for antibiotics
             .filter(
                 pl.col("DRUG")
@@ -130,8 +134,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "mimic"
                     ][0]["regex"],
                 )
-            )
-            .pipe(
+            ).pipe(
                 self._received_any_antibiotics_bool,
                 "mimic3-",
                 "ICUSTAY_ID",
@@ -139,9 +142,13 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             )
         )
 
+        if "parquet" in self.mimic3_paths.inputevents_mv_path:
+            mimic3_inputevents_mv = pl.scan_parquet(self.mimic3_paths.inputevents_mv_path)
+        else:
+            mimic3_inputevents_mv = pl.scan_csv(self.mimic3_paths.inputevents_mv_path)
+
         mimic3_inputevents_mv = (
-            pl.scan_csv(self.mimic3_paths.inputevents_mv_path)
-            .select("ICUSTAY_ID", "ITEMID")
+            mimic3_inputevents_mv.select("ICUSTAY_ID", "ITEMID")
             # Filter for antibiotics
             .filter(
                 pl.col("ITEMID").is_in(
@@ -149,8 +156,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "mimic"
                     ][1]["ids"],
                 )
-            )
-            .pipe(
+            ).pipe(
                 self._received_any_antibiotics_bool,
                 "mimic3-",
                 "ICUSTAY_ID",
@@ -185,9 +191,13 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         #     .pipe(self._received_any_antibiotics_bool, "mimic4-", "icustay_id", "drug")
         # )
 
+        if "parquet" in self.mimic4_paths.inputevents_path:
+            mimic4_inputevents = pl.scan_parquet(self.mimic4_paths.inputevents_path)
+        else:
+            mimic4_inputevents = pl.scan_csv(self.mimic4_paths.inputevents_path)
+
         mimic4_inputevents = (
-            pl.scan_csv(self.mimic4_paths.inputevents_path)
-            .select("stay_id", "itemid")
+            mimic4_inputevents.select("stay_id", "itemid")
             # Filter for antibiotics
             .filter(
                 pl.col("itemid").is_in(
@@ -195,8 +205,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "miiv"
                     ][1]["ids"],
                 )
-            )
-            .pipe(
+            ).pipe(
                 self._received_any_antibiotics_bool,
                 "mimic4-",
                 "stay_id",

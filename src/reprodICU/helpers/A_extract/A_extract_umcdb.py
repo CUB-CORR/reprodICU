@@ -712,18 +712,22 @@ class UMCdbExtractor(UMCdbPaths):
                 "itemid",
                 "registeredby",
             )
-            .join(INTIMES, on=self.icu_stay_id_col)
+            .join(
+                INTIMES.select(self.icu_stay_id_col, "intime"),
+                on=self.icu_stay_id_col,
+                how="left",
+            )
             .with_columns(
                 pl.duration(
                     milliseconds=(
-                        pl.col(self.timeseries_time_col) - pl.col("admittedat")
+                        pl.col(self.timeseries_time_col) - pl.col("intime")
                     )
                 )
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop("admittedat")
+            .drop("intime")
         )
 
         data_eye = (

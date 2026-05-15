@@ -2307,8 +2307,13 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         # DISCHARGE SUMMARIES
         # ----------------------------------------------------------------------
+        if "parquet" in self.discharge_summaries_path:
+            discharge_summaries = pl.scan_parquet(self.discharge_summaries_path)
+        else:
+            discharge_summaries = pl.scan_csv(self.discharge_summaries_path)
+        
         discharge_summaries = (
-            pl.scan_csv(self.discharge_summaries_path)
+            discharge_summaries
             .rename(
                 {
                     "subject_id": self.person_id_col,
@@ -2341,7 +2346,12 @@ class MIMIC4Extractor(MIMIC4Paths):
             .select("note_id", "field_value")
             .rename({"field_value": "addendum_note_id"})
         )
-        radiology = pl.scan_csv(self.radiology_reports_path)
+        
+        if "parquet" in self.radiology_reports_path:
+            radiology = pl.scan_parquet(self.radiology_reports_path)
+        else:
+            radiology = pl.scan_csv(self.radiology_reports_path)
+
         radiology = (
             radiology.filter(pl.col("note_type") == "RR")
             .join(radiology_exam_name, on="note_id", how="left")
