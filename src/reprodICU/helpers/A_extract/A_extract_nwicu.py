@@ -73,6 +73,18 @@ class NWICUExtractor(NWICUPaths):
                 self.person_id_col,
                 self.icu_length_of_stay_col,
                 "intime",
+                "outtime",
+            )
+            .with_columns(
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .sort(self.person_id_col, "intime")
+            .with_columns(
+                (
+                    pl.col("intime")
+                    - pl.col("outtime").shift(1).over(self.person_id_col)
+                ).alias("offset_to_prev")
             )
         )
 
@@ -487,18 +499,15 @@ class NWICUExtractor(NWICUPaths):
         IDs = self.extract_patient_IDs()
 
         return (
-            data.join(IDs, on=self.hospital_stay_id_col, how="left")
-            .with_columns(pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"))
+            data.join(IDs, on=self.person_id_col, how="left")
             .with_columns(
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
-            .drop("charttime", "intime")
-            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only data within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
-                pl.col("offset")
-                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
-                pl.col("offset")
-                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+                pl.col("charttime") < pl.col("outtime"),
+                (pl.col("offset") > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
             .with_columns(
                 pl.col("offset")
@@ -506,7 +515,13 @@ class NWICUExtractor(NWICUPaths):
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop(self.icu_length_of_stay_col)
+            .drop(
+                "charttime",
+                "intime",
+                "outtime",
+                "offset_to_prev",
+                self.icu_length_of_stay_col,
+            )
         )
 
     # region vitals
@@ -540,12 +555,12 @@ class NWICUExtractor(NWICUPaths):
                 self.chartevents_path,
                 schema_overrides={"value": str, "valuenum": float},
             )
-            .select("hadm_id", "itemid", "charttime", "valuenum")
+            .select("subject_id", "itemid", "charttime", "valuenum")
             # Rename columns for consistency
-            .rename({"hadm_id": self.hospital_stay_id_col})
+            .rename({"subject_id": self.person_id_col})
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
                 pl.col("itemid")
                 .replace_strict(vital_names_mapping, default=None)
                 .alias("label"),
@@ -660,12 +675,12 @@ class NWICUExtractor(NWICUPaths):
 
         return (
             pl.scan_csv(self.labevents_path)
-            .select("hadm_id", "itemid", "charttime", "valuenum")
+            .select("subject_id", "itemid", "charttime", "valuenum")
             # Rename columns for consistency
-            .rename({"hadm_id": self.hospital_stay_id_col})
+            .rename({"subject_id": self.person_id_col})
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(d_labitems_to_loinc_data, on="itemid", how="left")
@@ -734,9 +749,7 @@ class NWICUExtractor(NWICUPaths):
         """
         print("NWICU   - Extracting medications...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, "intime", self.icu_length_of_stay_col
-        )
+        intimes = self.extract_patient_IDs()
 
         NWICU_medication_mapping = (
             self.helpers.load_many_to_many_to_one_mapping(
@@ -892,7 +905,6 @@ class NWICUExtractor(NWICUPaths):
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("stoptime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
@@ -904,21 +916,24 @@ class NWICUExtractor(NWICUPaths):
                 .dt.total_seconds()
                 .alias(self.drug_end_col),
             )
-            # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only drugs within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
                 pl.col(self.drug_start_col)
                 < pl.duration(days=1).dt.total_seconds()
                 * pl.col(self.icu_length_of_stay_col),
-                pl.col(self.drug_start_col)
-                > pl.duration(
-                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                ).dt.total_seconds(),
+                (
+                    pl.col(self.drug_start_col)
+                    > -pl.col("offset_to_prev").dt.total_seconds()
+                )
+                | pl.col("offset_to_prev").is_null(),
             )
             .drop(
                 self.hospital_stay_id_col,
                 "starttime",
                 "stoptime",
                 "intime",
+                "outtime",
+                "offset_to_prev",
                 self.icu_length_of_stay_col,
             )
         )
@@ -1032,9 +1047,7 @@ class NWICUExtractor(NWICUPaths):
         """
         print("NWICU   - Extracting procedures...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, "intime"
-        )
+        intimes = self.extract_patient_IDs()
 
         d_items = pl.scan_csv(self.d_items_path).select("itemid", "label")
 
@@ -1061,7 +1074,6 @@ class NWICUExtractor(NWICUPaths):
             .with_columns(
                 pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
             .with_columns(
                 (pl.col("starttime") - pl.col("intime"))

@@ -27,6 +27,48 @@ class UMCdbExtractor(UMCdbPaths):
         self.MILLISECONDS_IN_1D = 24 * self.MILLISECONDS_IN_1H
         self.MILLISECONDS_IN_1Y = 365 * self.MILLISECONDS_IN_1D
 
+    # region intimes
+    # Extract ICU admission times with offset to previous ICU stay
+    def _extract_intimes(self) -> pl.LazyFrame:
+        """
+        Extract ICU admission times and compute offset from previous ICU stay.
+
+        Steps:
+            1. Read admissions data from parquet.
+            2. Select and rename admission times and identifiers.
+            3. Sort by patient and admission time.
+            4. Calculate offset in milliseconds from previous ICU admission.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {person_id_col}: Patient identifier.
+                - intime: ICU admission time (milliseconds since epoch).
+                - outtime: ICU discharge time (milliseconds since epoch).
+                - offset_to_prev: Milliseconds from previous ICU admission for same patient.
+        """
+        return (
+            pl.scan_parquet(self.admissions_path)
+            .select("admissionid", "patientid", "admittedat", "dischargedat")
+            .rename(
+                {
+                    "admissionid": self.icu_stay_id_col,
+                    "patientid": self.person_id_col,
+                    "admittedat": "intime",
+                    "dischargedat": "outtime",
+                }
+            )
+            .sort(self.person_id_col, "intime")
+            .with_columns(
+                (
+                    pl.col("intime")
+                    - pl.col("outtime").shift(1).over(self.person_id_col)
+                ).alias("offset_to_prev")
+            )
+        )
+
+    # endregion
+
     # region patient
     # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
@@ -485,40 +527,26 @@ class UMCdbExtractor(UMCdbPaths):
                 - Other columns from input data.
         """
 
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         return (
             data.join(intimes, on=self.icu_stay_id_col)
+            .with_columns(
+                (pl.col("measuredat") - pl.col("intime")).alias("offset")
+            )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("measuredat") < pl.col("outtime"),
-                pl.col("measuredat")
-                > (
-                    pl.col("intime")
-                    - pl.duration(
-                        days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).dt.total_milliseconds()
-                ),
+                (pl.col("offset") > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
             .with_columns(
-                pl.duration(
-                    milliseconds=(pl.col("measuredat") - pl.col("intime"))
-                )
+                pl.duration(milliseconds=pl.col("offset"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col),
             )
-            .drop("measuredat", "intime", "outtime")
+            .drop("measuredat", "intime", "outtime", "offset_to_prev")
         )
 
     # endregion
@@ -664,11 +692,7 @@ class UMCdbExtractor(UMCdbPaths):
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
-        INTIMES = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat")
-            .rename({"admissionid": self.icu_stay_id_col})
-        )
+        INTIMES = self._extract_intimes()
         REGISTEREDBY = {
             "ICV_Medisch Staflid": 1,
             "ICV_Medisch": 2,
@@ -859,17 +883,7 @@ class UMCdbExtractor(UMCdbPaths):
             self.drug_class_mapping_path
         )
 
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         drugitems = (
             pl.scan_parquet(self.drugitems_path)
@@ -1139,7 +1153,7 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col).is_not_null()
                 | pl.col(self.fluid_name_col).is_not_null()
             )
-            .drop("intime", "outtime")
+            .drop("intime", "outtime", "offset_to_prev")
         )
 
     # endregion
@@ -1168,18 +1182,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         print("UMCdb   - Extracting procedures...")
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("patientid", "admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "patientid": self.person_id_col,
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         procedureorderitems = (
             pl.scan_parquet(self.procedureorderitems_path)
@@ -1226,7 +1229,7 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .alias(self.procedure_description_col),
             )
-            .drop("start", "stop", "intime", "outtime")
+            .drop("start", "stop", "intime", "outtime", "offset_to_prev")
         )
 
     # endregion

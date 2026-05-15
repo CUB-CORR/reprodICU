@@ -79,6 +79,18 @@ class MIMIC4Extractor(MIMIC4Paths):
                 self.person_id_col,
                 self.icu_length_of_stay_col,
                 "intime",
+                "outtime",
+            )
+            .with_columns(
+                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .sort(self.person_id_col, "intime")
+            .with_columns(
+                (
+                    pl.col("intime")
+                    - pl.col("outtime").shift(1).over(self.person_id_col)
+                ).alias("offset_to_prev")
             )
         )
 
@@ -379,25 +391,20 @@ class MIMIC4Extractor(MIMIC4Paths):
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {specialty_col}: Specialty at ICU admission.
         """
-        IDs = self.extract_patient_IDs().select(
-            self.hospital_stay_id_col, self.icu_stay_id_col, "intime"
-        )
-
-        services = pl.scan_csv(self.services_path).rename(
-            {
-                "hadm_id": self.hospital_stay_id_col,
-                "curr_service": self.specialty_col,
-            }
-        )
+        IDs = self.extract_patient_IDs()
 
         return (
-            services.select(
-                self.hospital_stay_id_col, "transfertime", self.specialty_col
+            pl.scan_csv(self.services_path)
+            .select("subject_id", "transfertime", "curr_service")
+            .rename(
+                {
+                    "subject_id": self.person_id_col,
+                    "curr_service": self.specialty_col,
+                }
             )
-            .join(IDs, on=self.hospital_stay_id_col)
+            .join(IDs, on=self.person_id_col)
             .with_columns(
-                pl.col("transfertime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("transfertime").str.to_datetime("%Y-%m-%d %H:%M:%S")
             )
             # Get the most recent specialty
             .filter(
@@ -650,18 +657,15 @@ class MIMIC4Extractor(MIMIC4Paths):
         IDs = self.extract_patient_IDs()
 
         return (
-            data.join(IDs, on=self.hospital_stay_id_col, how="left")
-            .with_columns(pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"))
+            data.join(IDs, on=self.person_id_col, how="left")
             .with_columns(
                 (pl.col("charttime") - pl.col("intime")).alias("offset")
             )
-            .drop("charttime", "intime")
-            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only data within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
-                pl.col("offset")
-                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
-                pl.col("offset")
-                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+                pl.col("charttime") < pl.col("outtime"),
+                (pl.col("offset") > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
             .with_columns(
                 pl.col("offset")
@@ -669,7 +673,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop(self.icu_length_of_stay_col)
+            .drop(
+                "charttime",
+                "intime",
+                "outtime",
+                "offset_to_prev",
+                self.icu_length_of_stay_col,
+            )
         )
 
     # region vitals
@@ -757,12 +767,12 @@ class MIMIC4Extractor(MIMIC4Paths):
         return (
             chartevents
             # Select relevant columns
-            .select("hadm_id", "itemid", "charttime", "value", "valuenum")
+            .select("subject_id", "itemid", "charttime", "value", "valuenum")
             # Rename columns for consistency
-            .rename({"hadm_id": self.hospital_stay_id_col})
+            .rename({"subject_id": self.person_id_col})
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .pipe(self._compute_cam_icu)
@@ -827,9 +837,9 @@ class MIMIC4Extractor(MIMIC4Paths):
         Steps:
             1. Check for precomputed parquet file; load if available.
             2. Otherwise, filter data for each CAM-ICU component.
-            4. Join component scores and compute overall delirium status.
-            5. Group by patient/time and select first valid score.
-            6. Save result as parquet file for future reuse.
+            3. Join component scores and compute overall delirium status.
+            4. Group by patient/time and select first valid score.
+            5. Save result as parquet file for future reuse.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -1071,13 +1081,13 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         return (
             labevents.select(
-                "hadm_id", "specimen_id", "itemid", "charttime", "valuenum"
+                "subject_id", "specimen_id", "itemid", "charttime", "valuenum"
             )
             # Rename columns for consistency
-            .rename({"hadm_id": self.hospital_stay_id_col})
+            .rename({"subject_id": self.person_id_col})
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(d_labitems_to_loinc_data, on="itemid", how="left")
@@ -1174,7 +1184,7 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         inputevents = (
             inputevents.select(
-                "hadm_id",
+                "subject_id",
                 "storetime",
                 "ordercategoryname",
                 "amount",
@@ -1183,7 +1193,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             # rename columns for consistency
             .rename(
                 {
-                    "hadm_id": self.hospital_stay_id_col,
+                    "subject_id": self.person_id_col,
                     "storetime": "charttime",
                     "amount": "valuenum",
                     "ordercategoryname": "itemid",
@@ -1196,16 +1206,16 @@ class MIMIC4Extractor(MIMIC4Paths):
         outputevents = (
             pl.scan_csv(
                 self.outputevents_path, infer_schema_length=100000
-            ).select("hadm_id", "itemid", "charttime", "value")
+            ).select("subject_id", "itemid", "charttime", "value")
             # Rename columns for consistency
-            .rename({"hadm_id": self.hospital_stay_id_col, "value": "valuenum"})
+            .rename({"subject_id": self.person_id_col, "value": "valuenum"})
         )
 
         return (
             pl.concat([inputevents, outputevents], how="diagonal_relaxed")
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(outputevents_to_loinc_data, on="itemid", how="left")
@@ -1255,9 +1265,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         """
         print("MIMIC4  - Extracting microbiology...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, self.icu_length_of_stay_col, "intime"
-        )
+        intimes = self.extract_patient_IDs()
 
         def _create_mapping(
             data: pl.LazyFrame, column_in: str, column_out: str
@@ -1336,8 +1344,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .join(micro_antibiotic_mapping, on="ab_name", how="left")
             # Convert timestamps to datetime
             .with_columns(
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S")
             )
             .with_columns(
                 (pl.col("charttime") - pl.col("intime")).alias("offset"),
@@ -1349,20 +1356,25 @@ class MIMIC4Extractor(MIMIC4Paths):
                     pl.col("dilution_value"),
                 ).alias(self.micro_dilution_col),
             )
-            .drop("charttime", "intime")
-            # keep only microbiology within timeframe of icu stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only microbiology within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
                 pl.col("offset")
                 < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
-                pl.col("offset")
-                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+                (pl.col("offset") > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
             .with_columns(
                 (pl.col("offset").dt.total_seconds())
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop(self.icu_length_of_stay_col)
+            .drop(
+                "charttime",
+                "intime",
+                "outtime",
+                "offset_to_prev",
+                self.icu_length_of_stay_col,
+            )
             # remove rows with empty values
             .filter(
                 pl.col(self.timeseries_time_col).is_not_null(),
@@ -1406,9 +1418,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         """
         print("MIMIC4  - Extracting medications...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, "intime", self.icu_length_of_stay_col
-        )
+        intimes = self.extract_patient_IDs()
 
         # Load additional mappings
         mimic4_drug_administration_route_mapping = self.helpers.load_mapping(
@@ -1973,7 +1983,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
@@ -1985,21 +1994,24 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .dt.total_seconds()
                 .alias(self.drug_end_col),
             )
-            # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only drugs within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
                 pl.col(self.drug_start_col)
                 < pl.duration(days=1).dt.total_seconds()
                 * pl.col(self.icu_length_of_stay_col),
-                pl.col(self.drug_start_col)
-                > pl.duration(
-                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                ).dt.total_seconds(),
+                (
+                    pl.col(self.drug_start_col)
+                    > -pl.col("offset_to_prev").dt.total_seconds()
+                )
+                | pl.col("offset_to_prev").is_null(),
             )
             .drop(
                 self.hospital_stay_id_col,
                 "starttime",
                 "endtime",
                 "intime",
+                "outtime",
+                "offset_to_prev",
                 self.icu_length_of_stay_col,
             )
         )
@@ -2115,9 +2127,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         """
         print("MIMIC4  - Extracting procedures...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, "intime"
-        )
+        intimes = self.extract_patient_IDs()
 
         d_icd_procedures = pl.scan_csv(
             self.d_icd_procedures_path, schema_overrides={"icd_code": str}
@@ -2167,7 +2177,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             .with_columns(
                 pl.col("starttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
             .with_columns(
                 (pl.col("starttime") - pl.col("intime"))
@@ -2255,10 +2264,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .join(intimes, on=self.icu_stay_id_col, how="left")
             .join(proc_datetimeevents_data, on="itemid", how="left")
-            .with_columns(
-                pl.col("value").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
+            .with_columns(pl.col("value").str.to_datetime("%Y-%m-%d %H:%M:%S"))
             .with_columns(
                 (pl.col("value") - pl.col("intime"))
                 .dt.total_seconds()
