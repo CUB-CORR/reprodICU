@@ -205,8 +205,8 @@ def _platelet_points(platelets_value: pl.Expr) -> pl.Expr:
 def _gcs_points(
     gcs: pl.Expr,
     gcs_motor: pl.Expr,
-    sedation_flag: pl.Expr,
-    delirium_treatment_flag: pl.Expr,
+    sedation: pl.Expr,
+    delirium_treatment: pl.Expr,
 ) -> pl.Expr:
     """
     Glasgow Coma Scale
@@ -228,13 +228,13 @@ def _gcs_points(
     """
     return (
         # For sedated patients, use the last recorded GCS before sedation.
-        pl.when(sedation_flag)
+        pl.when(sedation)
         .then(None)
         .when(gcs.is_not_null())
         .then(
             # If receiving drug treatment for delirium (short- or long-term),
             # score 1 point even if GCS is 15.
-            pl.when(delirium_treatment_flag)
+            pl.when(delirium_treatment)
             .then(1)
             .when(gcs == 15)
             .then(0)
@@ -796,6 +796,23 @@ def SOFA2(
         timeframe_name, window_size, t_0, t_0_per_stay
     )
 
+    # Pre-compute ventilation flags per timeframe to avoid interval checking
+    # at every respiratory measurement
+    ventilation_tf = (
+        vent.filter(
+            ~pl.col("Ventilation Type").is_in(["other", "supplemental oxygen"])
+        )
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(
+            pl.lit(True).alias("ventilation"),
+            timeframe=(pl.col(vent_start_col) - pl.col("T_0"))
+            .floordiv(window_size)
+            .cast(int),
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.col("ventilation").max())
+    )
+
     # region respiratory (P/F ratio)
     resp_tf = (
         PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
@@ -812,15 +829,7 @@ def SOFA2(
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         # attach ventilation flag at measurement time using intervals
-        .join(
-            vent.filter(
-                ~pl.col("Ventilation Type").is_in(
-                    ["other", "supplemental oxygen"]
-                )
-            ).select(STAY_KEY, vent_start_col, vent_end_col),
-            on=STAY_KEY,
-            how="left",
-        )
+        .join(ventilation_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(
             resp.select(STAY_KEY, TIME_KEY, oxygen_delivery_col).drop_nulls(),
             on=[STAY_KEY, TIME_KEY],
@@ -828,23 +837,22 @@ def SOFA2(
             coalesce=True,
         )
         .with_columns(
-            pl.when(
-                pl.col(TIME_KEY) >= pl.col(vent_start_col),
-                pl.col(vent_end_col).is_null()
-                | (pl.col(TIME_KEY) < pl.col(vent_end_col)),
+            # Check for advanced respiratory support from oxygen delivery system
+            pl.col(oxygen_delivery_col)
+            .is_in(
+                [
+                    "Mechanical ventilator",
+                    "Continuous positive airway pressure/Bilevel positive airway pressure mask",
+                    "High flow oxygen nasal cannula",
+                ]
             )
-            .then(True)
-            .when(
-                pl.col(oxygen_delivery_col).is_in(
-                    [
-                        "Mechanical ventilator",
-                        "Continuous positive airway pressure/Bilevel positive airway pressure mask",
-                        "High flow oxygen nasal cannula",
-                    ]
-                )
+            .alias("ventilation_from_delivery")
+        )
+        .with_columns(
+            pl.coalesce(
+                pl.col("ventilation"), pl.col("ventilation_from_delivery")
             )
-            .then(True)
-            .otherwise(False)
+            .fill_null(False)
             .alias("ventilation")
         )
         .with_columns(
@@ -873,6 +881,20 @@ def SOFA2(
         )
     )
 
+    # Pre-compute RRT flags per timeframe to avoid interval checking at every
+    # lab measurement
+    rrt_tf = (
+        rrt.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(
+            pl.lit(True).alias("rrt"),
+            timeframe=(pl.col(rrt_start_col) - pl.col("T_0"))
+            .floordiv(window_size)
+            .cast(int),
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.col("rrt").max())
+    )
+
     # region labs (platelets, bilirubin, creatinine)
     labs_tf = (
         labs.select(
@@ -882,21 +904,8 @@ def SOFA2(
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         # attach rrt flag at measurement time using intervals
-        .join(
-            rrt.select(STAY_KEY, rrt_start_col, rrt_end_col),
-            STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            pl.when(
-                pl.col(TIME_KEY) >= pl.col(rrt_start_col),
-                pl.col(rrt_end_col).is_null()
-                | (pl.col(TIME_KEY) < pl.col(rrt_end_col)),
-            )
-            .then(True)
-            .otherwise(False)
-            .alias("rrt")
-        )
+        .join(rrt_tf, on=[STAY_KEY, "timeframe"], how="left")
+        .with_columns(pl.col("rrt").fill_null(False))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _platelet_points(pl.col(platelets_col))
@@ -915,45 +924,34 @@ def SOFA2(
     )
 
     # region vitals (GCS & MAP)
+    # Pre-compute sedation/delirium flags per timeframe to avoid expensive
+    # interval overlaps with every vital measurement
+    sedation_delirium_tf = (
+        meds.filter(
+            pl.col(drug_ingredient_col).is_in(SEDATION_DRUGS + DELIRIUM_DRUGS)
+        )
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(
+            pl.col(drug_ingredient_col).is_in(SEDATION_DRUGS).alias("sedation"),
+            pl.col(drug_ingredient_col).is_in(DELIRIUM_DRUGS).alias("delirium_treatment"),
+            timeframe=(pl.col(drug_start_col) - pl.col("T_0"))
+            .floordiv(window_size)
+            .cast(int),
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.col("sedation").max(), pl.col("delirium_treatment").max())
+    ) # fmt: skip
+
     vitals_tf = (
         vitals.select(STAY_KEY, TIME_KEY, gcs_col, gcs_motor_col, map_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         # attach sedation / delirium flag at measurement time using intervals
-        .join(
-            meds.filter(
-                pl.col(drug_ingredient_col).is_in(
-                    SEDATION_DRUGS + DELIRIUM_DRUGS
-                )
-            ).select(
-                STAY_KEY,
-                drug_ingredient_col,
-                drug_start_col,
-                drug_end_col,
-            ),
-            on=STAY_KEY,
-            how="left",
-        )
+        .join(sedation_delirium_tf, on=[STAY_KEY, "timeframe"], how="left")
         .with_columns(
-            pl.when(
-                pl.col(drug_ingredient_col).is_in(SEDATION_DRUGS),
-                pl.col(TIME_KEY) >= pl.col(drug_start_col),
-                pl.col(drug_end_col).is_null()
-                | (pl.col(TIME_KEY) < pl.col(drug_end_col)),
-            )
-            .then(True)
-            .otherwise(False)
-            .alias("sedation"),
-            pl.when(
-                pl.col(drug_ingredient_col).is_in(DELIRIUM_DRUGS),
-                pl.col(TIME_KEY) >= pl.col(drug_start_col),
-                pl.col(drug_end_col).is_null()
-                | (pl.col(TIME_KEY) < pl.col(drug_end_col)),
-            )
-            .then(True)
-            .otherwise(False)
-            .alias("delirium_treatment"),
+            pl.col("sedation").fill_null(False),
+            pl.col("delirium_treatment").fill_null(False),
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(
