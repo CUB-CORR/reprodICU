@@ -220,12 +220,24 @@ class ConfigManager:
 
 # region DatasetLoader
 class DatasetLoader:
-    """
-    Lazy-loads parquet datasets and concepts from configured paths.
+    """Lazy-loads clinical datasets and pre-computed concepts with caching.
 
-    Provides efficient lazy access to clinical datasets and pre-computed
-    concepts using Polars LazyFrame. Supports demo/full mode switching and
-    automatic caching for performance.
+    Provides efficient lazy access to Parquet-based datasets and concepts
+    using Polars LazyFrame (data not loaded into memory until needed).
+    Supports transparent demo/full mode switching and automatic caching.
+    
+    Datasets are organized into three categories:
+    - **Patient data**: demographics, diagnoses, procedures, medications, etc.
+    - **Timeseries data**: vitals, labs, respiratory, intake/output
+    - **Concepts**: pre-computed clinical scores and derived variables
+    
+    Access is unified through simple names (e.g., "vitals", "labs", "medications"),
+    which map to actual filenames via DATASET_MAPPING and CONCEPT_MAPPING.
+    
+    Example:
+        loader = DatasetLoader(config_manager)
+        vitals = loader.load_dataset("vitals")  # Returns LazyFrame
+        medications = loader.load_dataset("medications")
     """
 
     # Map attribute names to parquet filenames

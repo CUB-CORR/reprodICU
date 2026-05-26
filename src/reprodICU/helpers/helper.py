@@ -142,12 +142,47 @@ class GlobalHelpers:
         index_cols: list[str],
         numeric_col: Optional[str] = None,
         string_col: Optional[str] = None,
-        save_conflicts: bool = False,
+        save_conflicts: bool = True,
     ) -> pl.LazyFrame:
-        """
-        Pivot and aggregate: compute median of numeric_col, or first value of string_col.
-        At least one of numeric_col or string_col must be provided.
-        Result columns are cast to String.
+        """Pivot data with separate aggregation for numeric and string columns.
+        
+        Performs two independent pivots and combines results:
+        - Numeric values: pivoted with median aggregation
+        - String values: pivoted with first() aggregation (warns on non-unique)
+        
+        Arguments
+        ---------
+            data : pl.LazyFrame
+                Input data to pivot
+            dataset : str
+                Dataset name (used for conflict logging filename)
+            on_col : str
+                Column to pivot on (becomes column headers)
+            index_cols : list of str
+                Columns to use as index (row identifiers)
+            numeric_col : str, optional
+                Name of numeric column to aggregate with median
+            string_col : str, optional
+                Name of string column to aggregate with first()
+            save_conflicts : bool
+                If True, save non-unique string values to parquet file
+                for conflict review
+                
+        Returns
+        -------
+            pl.LazyFrame
+                Pivoted data with numeric and string columns combined.
+                All values cast to String type.
+                
+        Raises
+        ------
+            ValueError
+                If neither numeric_col nor string_col is provided
+                
+        Notes
+        -----
+            When string_col has non-unique values for a given (index, on_col) pair,
+            only the first value is kept, and the conflict is logged.
         """
         if numeric_col is None and string_col is None:
             raise ValueError(

@@ -40,20 +40,27 @@ def load_mapping(path: str) -> dict:
 def _normalize_datasets(
     datasets: Optional[List[str]], demo: bool = False
 ) -> List[str]:
-    """
-    Normalize dataset selection.
+    """Normalize dataset selection, expanding wildcards and demo mode.
+    
+    Converts None or "all" selection into explicit dataset list.
+    In demo mode, restricts to smaller subset for faster testing.
 
     Arguments
     ---------
         datasets : list or None
             None for "all", or list of specific datasets to process
         demo : bool
-            If True, restrict to demo-compatible datasets
+            If True, restrict to demo-compatible datasets (subset with smaller data)
 
     Returns
     -------
         list
             Dataset names to process
+            
+    Notes
+    -----
+        Demo datasets are selected for fast iteration during development.
+        Full mode processes all 7 databases: eICU, HiRID, MIMIC3, MIMIC4, NWICU, SICdb, UMCdb.
     """
     if datasets is None or (isinstance(datasets, list) and "all" in datasets):
         all_datasets = [
@@ -65,6 +72,7 @@ def _normalize_datasets(
             "SICdb",
             "UMCdb",
         ]
+        # Demo mode uses smaller dataset variants for rapid testing
         if demo:
             return ["eICU", "MIMIC3", "MIMIC4"]
         return all_datasets
@@ -99,13 +107,20 @@ def _normalize_tables(tables: Optional[List[str]]) -> List[str]:
 
 
 def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
-    """
-    Normalize timeseries selection.
+    """Normalize timeseries type selection, expanding wildcards.
+    
+    Converts None or "all" selection into explicit list of timeseries types
+    to extract from raw data.
 
     Arguments
     ---------
         timeseries : list or None
-            None for "all", or list of specific timeseries types
+            None for "all", or list of specific timeseries types:
+            "vitals" (heart rate, temperature, BP, etc.),
+            "labs" (lab measurements),
+            "respiratory" (ventilator parameters),
+            "inout" (intake/output records),
+            "extracorporeal" (ECMO, CRRT, etc.)
 
     Returns
     -------
@@ -115,6 +130,7 @@ def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
     if timeseries is None or (
         isinstance(timeseries, list) and "all" in timeseries
     ):
+        # Return all available timeseries types
         return ["vitals", "labs", "respiratory", "inout", "extracorporeal"]
     return timeseries
 
@@ -580,12 +596,13 @@ def build_timeseries(
     impute: bool = False,
     resample: Optional[int] = None,
 ) -> List[str]:
-    """
-    Build timeseries data from raw data sources.
+    """Build timeseries data from raw data sources.
 
-    Harmonizes vital signs, laboratory values, respiratory parameters, and
-    intake/output records across datasets. Applies optional winsorization,
-    imputation and resampling to standardize temporal resolution.
+    Orchestrates a multi-step pipeline:
+    1. Harmonize vital signs, labs, respiratory, and intake/output across datasets
+    2. Enhance intake/output with medication infusion data
+    3. Optionally winsorize lab data to clinically plausible ranges
+    4. Optionally impute and resample vital signs
 
     Arguments
     ---------
@@ -609,16 +626,8 @@ def build_timeseries(
     -------
         list
             List of output file paths created
-
-    Raises
-    ------
-        FileNotFoundError
-            If dataset files not found
-        ValueError
-            If invalid selection
-        RuntimeError
-            If processing fails
     """
+    # Initialize paths and configuration
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
