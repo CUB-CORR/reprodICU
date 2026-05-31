@@ -257,10 +257,8 @@ class NWICUExtractor(NWICUPaths):
                     pl.when(pl.col(self.mortality_hosp_col).cast(bool))
                     .then(pl.col("dischtime"))
                     .otherwise(pl.col("deathtime"))
-                    - pl.col("outtime")
+                    <= pl.col("outtime")
                 )
-                .truediv(pl.duration(hours=1))
-                .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
                 .cast(bool)
                 .fill_null(False)
                 .alias(self.mortality_icu_col),
@@ -268,16 +266,13 @@ class NWICUExtractor(NWICUPaths):
                 # NOTE: hospital_expire_flag is not reliable
                 pl.when(pl.col(self.mortality_hosp_col).cast(bool))
                 .then(pl.lit(True))
-                .otherwise(
-                    (pl.col("deathtime") - pl.col("dischtime"))
-                    .truediv(pl.duration(hours=1))
-                    .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
-                )
+                .otherwise(pl.col("deathtime") <= pl.col("dischtime"))
                 .cast(bool)
                 .fill_null(False)
                 .alias(self.mortality_hosp_col),
                 # Calculate mortality after discharge
-                (  # Prefer deathtime over dod if available
+                # Prefer deathtime over dod if available
+                (
                     pl.when(pl.col("deathtime").is_not_null())
                     .then(pl.col("deathtime"))
                     .otherwise(pl.col("dod"))

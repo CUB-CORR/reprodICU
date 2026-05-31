@@ -283,11 +283,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate admission time
                 pl.col("INTIME").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (pl.col("DEATHTIME") - pl.col("OUTTIME"))
-                .truediv(pl.duration(hours=1))
-                .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
-                .cast(bool)
-                # .fill_null(False)
+                (
+                    (pl.col("DEATHTIME") <= pl.col("OUTTIME"))
+                    & (pl.col(self.discharge_loc_col) == "DEAD/EXPIRED")
+                ).cast(bool)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
@@ -2021,9 +2020,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("concept_id")
                 .replace_strict(
                     self.omop.get_concept_names_from_ids(
-                        pl.read_csv(self.route_to_concept_path)[
-                            "concept_id"
-                        ]
+                        pl.read_csv(self.route_to_concept_path)["concept_id"]
                     ),
                     default=None,
                 )
@@ -2092,7 +2089,9 @@ class MIMIC3Extractor(MIMIC3Paths):
         # Map prescription labels to active ingredients for entries without NDCs
         prescriptions_ndcisnullzero_to_ingredient = {
             label: ingredients[concept_id]
-            for label, concept_id in prescriptions_ndcisnullzero_concept_ids.items()
+            for label, concept_id in (
+                prescriptions_ndcisnullzero_concept_ids.items()
+            )
             if concept_id in ingredients
         }
 

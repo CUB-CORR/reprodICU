@@ -300,11 +300,10 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Calculate admission time
                 pl.col("intime").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (pl.col("deathtime") - pl.col("outtime"))
-                .truediv(pl.duration(hours=1))
-                .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
-                .cast(bool)
-                # .fill_null(False)
+                (
+                    (pl.col("deathtime") <= pl.col("outtime"))
+                    & (pl.col(self.discharge_loc_col) == "DIED")
+                ).cast(bool)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
