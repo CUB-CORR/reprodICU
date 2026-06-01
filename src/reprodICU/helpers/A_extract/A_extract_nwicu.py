@@ -217,7 +217,7 @@ class NWICUExtractor(NWICUPaths):
                 # Calculate age in years at ICU admission
                 (pl.col("intime") - pl.col("dob"))
                 .dt.total_days()
-                .floordiv(365.25)
+                .floordiv(365)
                 .cast(int)
                 .alias(self.age_col),
                 # For admission year, assume average of the group

@@ -247,9 +247,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (
                     pl.col("INTIME").dt.date().dt.year()
                     - pl.col("DOB").dt.date().dt.year()
-                    - (  # -1 if birthday not yet reached this year
+                    # -1 if birthday not yet reached this year
+                    - (
                         (pl.col("INTIME").dt.month() < pl.col("DOB").dt.month())
-                        & (pl.col("INTIME").dt.day() < pl.col("DOB").dt.day())
+                        | (
+                            (pl.col("INTIME").dt.month() == pl.col("DOB").dt.month())
+                            & (pl.col("INTIME").dt.day() < pl.col("DOB").dt.day())
+                        ) # fmt: skip
                     ).cast(int)
                 ).alias(self.age_col),
             )
@@ -286,7 +290,8 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (
                     (pl.col("DEATHTIME") <= pl.col("OUTTIME"))
                     & (pl.col(self.discharge_loc_col) == "DEAD/EXPIRED")
-                ).cast(bool)
+                )
+                .cast(bool)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
