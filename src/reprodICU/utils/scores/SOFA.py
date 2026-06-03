@@ -59,21 +59,29 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 ################################################################################
 # region data helpers
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.with_columns(
-        pl.coalesce(
-            pl.col("Invasive mean arterial pressure"),
-            pl.col("Non-invasive mean arterial pressure"),
-            1 / 3 * pl.col("Invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-            1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-        ).alias("Mean arterial pressure"),
-    ).filter(
-        pl.col("Mean arterial pressure").is_finite(),
-        pl.any_horizontal(
-            "Mean arterial pressure",
-            "Glasgow coma score total",
-        ),
+    return (
+        vitals.with_columns(
+            pl.coalesce(
+                pl.col("Invasive mean arterial pressure"),
+                pl.col("Non-invasive mean arterial pressure"),
+                1 / 3 * pl.col("Invasive systolic arterial pressure")
+                + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
+                1 / 3 * pl.col("Non-invasive systolic arterial pressure")
+                + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
+            ).alias("Mean arterial pressure"),
+        )
+        .with_columns(
+            pl.when(pl.col("Mean arterial pressure").is_finite())
+            .then(pl.col("Mean arterial pressure"))
+            .otherwise(None)
+            .alias("Mean arterial pressure")
+        )
+        .filter(
+            pl.any_horizontal(
+                "Mean arterial pressure",
+                "Glasgow coma score total",
+            ),
+        )
     )
 
 
@@ -570,10 +578,9 @@ def SOFA(
     creatinine_col = "Creatinine"
     pf_ratio_col = "PaO2/FiO2 Ratio"
 
-    if ventilation is not None:
-        vent = ventilation.lazy()
-        vent_start_col = "Ventilation Start Relative to Admission (seconds)"
-        vent_end_col = "Ventilation End Relative to Admission (seconds)"
+    # Ventilation
+    vent = ventilation.lazy()
+    vent_start_col = "Ventilation Start Relative to Admission (seconds)"
 
     # Meds
     meds = medications.lazy()
@@ -596,7 +603,23 @@ def SOFA(
         timeframe_name, window_size, t_0, t_0_per_stay
     )
 
-    # Ventilation is handled in the respiratory section using start/end intervals
+    # Pre-compute ventilation flags per timeframe to avoid interval checking
+    # at every respiratory measurement
+    ventilation_tf = (
+        vent.filter(
+            ~pl.col("Ventilation Type").is_in(["other", "supplemental oxygen"])
+            | pl.col(STAY_KEY).str.starts_with("eicu") # eICU ventilation type is not readily available
+        )
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(
+            pl.lit(True).alias("ventilation"),
+            timeframe=(pl.col(vent_start_col) - pl.col("T_0"))
+            .floordiv(window_size)
+            .cast(int),
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.col("ventilation").max())
+    )
 
     # region respiratory (P/F ratio)
     resp_tf = (
@@ -606,27 +629,7 @@ def SOFA(
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         # attach ventilation flag at measurement time using intervals
-        .join(
-            vent.filter(
-                ~pl.col("Ventilation Type").is_in(
-                    ["other", "supplemental oxygen"]
-                )
-            ).select(STAY_KEY, vent_start_col, vent_end_col),
-            STAY_KEY,
-            how="left",
-        )
-        .with_columns(
-            pl.when(
-                pl.col(TIME_KEY) >= pl.col(vent_start_col),
-                pl.col(vent_end_col).is_null()
-                | (pl.col(TIME_KEY) < pl.col(vent_end_col)),
-            )
-            .then(True)
-            .otherwise(False)
-            .alias("ventilation")
-        )
-        .group_by(STAY_KEY, TIME_KEY, "timeframe", pf_ratio_col)
-        .agg(pl.max("ventilation"))
+        .join(ventilation_tf, on=[STAY_KEY, "timeframe"], how="left")
         .with_columns(
             _pf_ratio_points(
                 pl.col(pf_ratio_col).cast(pl.Float64),

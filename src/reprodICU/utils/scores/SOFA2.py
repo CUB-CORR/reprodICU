@@ -60,19 +60,29 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 ################################################################################
 # region data helpers
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.with_columns(
-        pl.coalesce(
-            pl.col("Invasive mean arterial pressure"),
-            pl.col("Non-invasive mean arterial pressure"),
-            1 / 3 * pl.col("Invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-            1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-        ).alias("Mean arterial pressure"),
-    ).filter(
-        pl.col("Mean arterial pressure").is_finite(),
-        pl.col("Glasgow coma score total").is_finite(),
-        pl.any_horizontal("Mean arterial pressure", "Glasgow coma score total"),
+    return (
+        vitals.with_columns(
+            pl.coalesce(
+                pl.col("Invasive mean arterial pressure"),
+                pl.col("Non-invasive mean arterial pressure"),
+                1 / 3 * pl.col("Invasive systolic arterial pressure")
+                + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
+                1 / 3 * pl.col("Non-invasive systolic arterial pressure")
+                + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
+            ).alias("Mean arterial pressure"),
+        )
+        .with_columns(
+            pl.when(pl.col("Mean arterial pressure").is_finite())
+            .then(pl.col("Mean arterial pressure"))
+            .otherwise(None)
+            .alias("Mean arterial pressure")
+        )
+        .filter(
+            pl.any_horizontal(
+                "Mean arterial pressure",
+                "Glasgow coma score total",
+            ),
+        )
     )
 
 
@@ -753,18 +763,15 @@ def SOFA2(
     # Ventilation
     vent = ventilation.lazy()
     vent_start_col = "Ventilation Start Relative to Admission (seconds)"
-    vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
     # RRT
     rrt = rrt.lazy()
     rrt_start_col = "Renal Replacement Therapy Start Relative to Admission (seconds)" # fmt: skip
-    rrt_end_col = "Renal Replacement Therapy End Relative to Admission (seconds)" # fmt: skip
 
     # Meds
     meds = medications.lazy()
     drug_ingredient_col = "Drug Ingredient"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
-    drug_end_col = "Drug End Relative to Admission (seconds)"
 
     SEDATION_DRUGS = [
         "amitriptyline", "doxepin", "nortriptyline", # tricyclic antidepressants
@@ -801,6 +808,7 @@ def SOFA2(
     ventilation_tf = (
         vent.filter(
             ~pl.col("Ventilation Type").is_in(["other", "supplemental oxygen"])
+            | pl.col(STAY_KEY).str.starts_with("eicu") # eICU ventilation type is not readily available
         )
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(
