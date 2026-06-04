@@ -9,7 +9,11 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import get_medications, get_patient_information
+from ...common import (
+    _validate_required_data,
+    get_medications,
+    get_patient_information,
+)
 from .ALIGNED_UNITS import ALIGNED_UNITS
 
 STAY_KEY = "Global ICU Stay ID"
@@ -22,11 +26,11 @@ SECONDS_IN_5MIN = (
 
 VASOPRESSORS = {
     # "vasopressor": (MIN_RATE, MAX_RATE),
-    "epinephrine": (0.005, 2),  # µg/kg/min
-    "norepinephrine": (0.001, 5),  # µg/kg/min
-    "phenylephrine": (0.05, 10),  # µg/kg/min
-    "vasopressin (USP)": (0.01, 1),  # U/min
-}
+    "epinephrine":       (0.005,  2),  # µg/kg/min
+    "norepinephrine":    (0.001,  5),  # µg/kg/min
+    "phenylephrine":     (0.05,  10),  # µg/kg/min
+    "vasopressin (USP)": (0.01,   1),  # U/min
+} # fmt: skip
 
 
 def VASOPRESSORS_BOOLEAN(
@@ -69,13 +73,7 @@ def VASOPRESSORS_BOOLEAN(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="VASOPRESSORS_BOOLEAN", required_data=required) # fmt: skip
 
     # Base frames
     patient_information = patient_information.lazy()

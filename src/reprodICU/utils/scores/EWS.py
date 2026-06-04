@@ -30,6 +30,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
@@ -77,15 +78,6 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.with_columns(
         extract_struct_value("Carbon dioxide").alias("paCO2")
     ).select(STAY_KEY, TIME_KEY, "paCO2")
-
-
-def _validate_data(required: dict) -> None:
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured or provide them explicitly."
-        )
 
 
 # endregion
@@ -217,12 +209,12 @@ def EWS(
     if timeseries_vitals is None:
         timeseries_vitals = get_timeseries_vitals()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+    }
+    _validate_required_data("EWS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
 
@@ -335,12 +327,12 @@ def MEWS(
     if timeseries_vitals is None:
         timeseries_vitals = get_timeseries_vitals()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+    }
+    _validate_required_data("MEWS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
 
@@ -490,13 +482,13 @@ def NEWS(
     if timeseries_resp is None:
         timeseries_resp = get_timeseries_respiratory()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_resp": timeseries_resp,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_resp": timeseries_resp,
+    }
+    _validate_required_data("NEWS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     resp = _improve_respiratory(timeseries_resp.lazy())
@@ -664,14 +656,14 @@ def NEWS2(
     if timeseries_labs is None:
         timeseries_labs = get_timeseries_labs()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_resp": timeseries_resp,
-            "timeseries_labs": timeseries_labs,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_labs": timeseries_labs,
+    }
+    _validate_required_data("NEWS2", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     resp = _improve_respiratory(timeseries_resp.lazy())

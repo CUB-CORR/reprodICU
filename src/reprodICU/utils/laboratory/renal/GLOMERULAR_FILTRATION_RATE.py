@@ -51,8 +51,13 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
-from ...common import _to_lazy, get_patient_information, get_timeseries_labs
 from ...clinical.IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
+from ...common import (
+    _to_lazy,
+    _validate_required_data,
+    get_patient_information,
+    get_timeseries_labs,
+)
 
 age_col = "Admission Age (years)"
 height_col = "Admission Height (cm)"
@@ -367,13 +372,7 @@ def ESTIMATED_GFR(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ESTIMATED_GFR: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="ESTIMATED_GFR", required_data=required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

@@ -23,6 +23,7 @@ from ...common import (
     _build_t0,
     _optional_time_bounds_filter,
     _to_lazy,
+    _validate_required_data,
     extract_struct_value,
     get_diagnoses,
     get_patient_information,
@@ -276,13 +277,7 @@ def MELD(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute MELD: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="MELD", required_data=required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"

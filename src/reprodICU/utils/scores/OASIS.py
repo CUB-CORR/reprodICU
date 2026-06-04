@@ -32,6 +32,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_intakeoutput,
     get_timeseries_vitals,
@@ -251,13 +252,7 @@ def OASIS(
         "timeseries_inout": timeseries_inout,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute OASIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("OASIS", required)
 
     # Strict original column names
     age_col = "Admission Age (years)"

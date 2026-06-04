@@ -39,6 +39,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     get_medications,
     get_patient_information,
     get_rrt,
@@ -619,13 +620,7 @@ def SOFA2(
         "ventilation": ventilation,
         "rrt": rrt,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SOFA-2: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("SOFA-2", required)
 
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"

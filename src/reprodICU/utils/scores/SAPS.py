@@ -29,6 +29,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     extract_struct_value,
     get_diagnoses,
     get_patient_information,
@@ -327,13 +328,7 @@ def SAPS2(
         "diagnoses": diagnoses,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SAPS-II: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("SAPS-II", required)
 
     vitals = _improve_vitals(timeseries_vitals)
     labs = _improve_labs(timeseries_labs)

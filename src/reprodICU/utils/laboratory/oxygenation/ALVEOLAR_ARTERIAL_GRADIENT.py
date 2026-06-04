@@ -5,6 +5,7 @@ import polars as pl
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
     get_timeseries_respiratory,
@@ -118,13 +119,7 @@ def PAO2(
         "timeseries_resp": timeseries_resp,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute PAO2: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="PAO2", required_data=required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"

@@ -34,6 +34,7 @@ import polars as pl
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -129,13 +130,7 @@ def P50(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute P50: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="P50", required_data=required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

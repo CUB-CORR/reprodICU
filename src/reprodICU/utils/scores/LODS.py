@@ -35,6 +35,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     extract_struct_value,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -75,18 +76,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     sources = ["Serum or Plasma", "Blood"]
     LABS    = ["Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets", "INR"] # fmt: skip
     return labs.with_columns(
-        extract_struct_value(lab, sources).alias(lab)
-        for lab in LABS
+        extract_struct_value(lab, sources).alias(lab) for lab in LABS
     ).select(STAY_KEY, TIME_KEY, *LABS)
-
-
-def _validate_data(required: dict) -> None:
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured or provide them explicitly."
-        )
 
 
 # endregion
@@ -289,16 +280,16 @@ def LODS(
     if ventilation is None:
         ventilation = get_ventilation()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_labs": timeseries_labs,
-            "timeseries_resp": timeseries_resp,
-            "timeseries_inout": timeseries_inout,
-            "ventilation": ventilation,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_inout": timeseries_inout,
+        "ventilation": ventilation,
+    }
+    _validate_required_data("LODS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     labs = _improve_labs(timeseries_labs.lazy())
@@ -506,15 +497,15 @@ def mLODS(
     if ventilation is None:
         ventilation = get_ventilation()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_labs": timeseries_labs,
-            "timeseries_resp": timeseries_resp,
-            "ventilation": ventilation,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "ventilation": ventilation,
+    }
+    _validate_required_data("mLODS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     labs = _improve_labs(timeseries_labs.lazy())

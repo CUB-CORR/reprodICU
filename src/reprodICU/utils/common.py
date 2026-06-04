@@ -106,6 +106,31 @@ def _get_timeframe_name(
     return f"{unit} Relative to {reference}"
 
 
+def _validate_required_data(
+    concept: str,
+    required_data: dict[str, Optional[pl.LazyFrame]],
+) -> None:
+    """
+    Ensure all required datasets/concepts are loaded before computing a concept.
+
+    Arguments
+    ---------
+        required_data : dict
+            Dictionary mapping dataset/concept names to their loaded LazyFrames
+            (or None if not loaded).
+
+    Raises
+    ------
+        ValueError if any required dataset/concept is missing.
+    """
+    missing = [name for name, data in required_data.items() if data is None]
+    if missing:
+        raise ValueError(
+            f"Cannot compute {concept}: Missing required datasets: {', '.join(missing)}. "
+            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
+        )
+
+
 # region dataset helpers
 def _load_dataset(dataset_name: str) -> Optional[pl.LazyFrame]:
     """
@@ -518,7 +543,6 @@ class ScoringTable:
 
 # endregion
 
-
 __all__ = [
     # common utils
     "_to_lazy",
@@ -527,6 +551,7 @@ __all__ = [
     "_assign_timeframe",
     "_optional_time_bounds_filter",
     "_get_timeframe_name",
+    "_validate_required_data",
     # dataset loaders
     "get_patient_information",
     "get_timeseries_vitals",

@@ -17,9 +17,15 @@ both ICD-9 and ICD-10 diagnosis codes.
 
 from typing import Optional
 
-from pycomorb import comorbidity
 import polars as pl
-from .common import _to_lazy, get_diagnoses, get_patient_information
+from pycomorb import comorbidity
+
+from .common import (
+    _to_lazy,
+    _validate_required_data,
+    get_diagnoses,
+    get_patient_information,
+)
 
 
 # region helpers
@@ -61,13 +67,7 @@ def _load_and_process_diagnoses(
         "diagnoses": diagnoses,
         "patient_information": patient_information,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot load comorbidity data: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="comorbidity data", required_data=required)
 
     diagnoses = _to_lazy(diagnoses)
     patient_information = _to_lazy(patient_information)

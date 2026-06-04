@@ -33,6 +33,7 @@ from pycomorb import CustomComorbidityIndex
 
 from ..common import (
     _to_lazy,
+    _validate_required_data,
     get_diagnoses,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -416,13 +417,7 @@ def APACHE2(
         "timeseries_resp": timeseries_resp,
         "diagnoses": diagnoses,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APACHE II: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(required)
 
     info = _to_lazy(patient_information)
     diag = _to_lazy(diagnoses)
@@ -536,13 +531,7 @@ def APACHE3(
         "diagnoses": diagnoses,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APACHE III: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("APACHE III", required)
 
     info = _to_lazy(patient_information)
     diag = _to_lazy(diagnoses)

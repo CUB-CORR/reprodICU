@@ -43,6 +43,7 @@ from ..common import (
     _assign_timeframe,
     _build_t0,
     _optional_time_bounds_filter,
+    _validate_required_data,
     get_medications,
     get_microbiology,
     get_patient_information,
@@ -982,13 +983,7 @@ def SEPSIS(
         "procedures": procedures,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SEPSIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("SEPSIS", required)
 
     # Inputs to Lazy
     patient_information = patient_information.lazy()
