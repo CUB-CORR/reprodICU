@@ -18,6 +18,7 @@ import polars as pl
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -26,7 +27,7 @@ from .BICARBONATE import _bicarbonate_from_paCO2_and_pH, _improve_labs
 STAY_KEY = "Global ICU Stay ID"
 TIME_KEY = "Time Relative to Admission (seconds)"
 
-BASE_EXCESS_COL = "Base excess"
+BASE_EXCESS_COL          = "Base excess"
 STANDARD_BASE_EXCESS_COL = "Standard base excess"
 
 
@@ -83,13 +84,7 @@ def BASE_EXCESS(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute BASE_EXCESS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="BASE_EXCESS", required_data=required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -139,7 +134,7 @@ def STANDARD_BASE_EXCESS(
 ) -> pl.LazyFrame:
     """
     Calculate standard base excess from blood-gas pH and pCO2.
-    
+
     Standard base excess is computed as 0.9287 × HCO3- + 13.77 × pH − 124.58.
 
     Arguments
@@ -171,13 +166,7 @@ def STANDARD_BASE_EXCESS(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute STANDARD_BASE_EXCESS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="STANDARD_BASE_EXCESS", required_data=required) # fmt: skip
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

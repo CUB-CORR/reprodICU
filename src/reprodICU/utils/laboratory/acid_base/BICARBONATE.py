@@ -20,6 +20,7 @@ import polars as pl
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -102,13 +103,7 @@ def BICARBONATE(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute BICARBONATE: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="BICARBONATE", required_data=required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -190,13 +185,7 @@ def STANDARD_BICARBONATE(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute STANDARD_BICARBONATE: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="STANDARD_BICARBONATE", required_data=required) # fmt: skip
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -278,13 +267,7 @@ def TOTAL_CO2(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute TOTAL_CO2: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="TOTAL_CO2", required_data=required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

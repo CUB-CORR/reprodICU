@@ -16,6 +16,7 @@ import polars as pl
 
 from ..common import (
     _to_lazy,
+    _validate_required_data,
     get_diagnoses,
     get_patient_information,
     get_procedures,
@@ -134,13 +135,7 @@ def ANGUS_SEPSIS(
         "patient_information": patient_information,
         "mechanical_ventilation": mechanical_ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot load Angus sepsis data: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("Angus sepsis", required)
 
     diagnoses = _to_lazy(diagnoses)
     procedures = _to_lazy(procedures)

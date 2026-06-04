@@ -39,6 +39,7 @@ import polars as pl
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_diagnoses,
     get_notes,
     get_patient_information,
@@ -104,13 +105,7 @@ def IMAGING_CRITERION(
         "patient_information": patient_information,
         "notes": notes,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute IMAGING_CRITERION: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("IMAGING_CRITERION", required)
 
     notes = _to_lazy(notes)
 
@@ -263,13 +258,7 @@ def RESPIRATORY_CRITERION(
         "timeseries_resp": timeseries_resp,
         "vent": vent,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ARDS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("RESPIRATORY_CRITERION", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_vitals = _to_lazy(timeseries_vitals)
@@ -503,13 +492,7 @@ def ARDS(
         "notes": notes,
         "vent": vent,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ARDS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("ARDS", required)
 
     patient_information = _to_lazy(patient_information)
     diagnoses = _to_lazy(diagnoses)

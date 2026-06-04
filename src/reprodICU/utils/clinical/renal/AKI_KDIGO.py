@@ -37,6 +37,7 @@ from ...common import (
     _get_timeframe_name,
     _optional_time_bounds_filter,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_rrt,
     get_timeseries_intakeoutput,
@@ -821,12 +822,7 @@ def AKI_KDIGO(
         "timeseries_inout": timeseries_inout,
         "renal_replacement_therapy": renal_replacement_therapy,
     }
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute AKI_KDIGO: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("AKI_KDIGO", required)
 
     # Ensure lazy frames
     patient_information = _to_lazy(patient_information)

@@ -1,14 +1,15 @@
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import polars as pl
 
 from ...common import (
     _build_t0,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
-    get_timeseries_vitals,
     get_timeseries_respiratory,
+    get_timeseries_vitals,
 )
 
 SECONDS_IN_4H = 4 * 60 * 60
@@ -143,13 +144,7 @@ def PaO2_FiO2_RATIO(
         "timeseries_resp": timeseries_resp,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute PaO2_FiO2_RATIO: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="PaO2_FiO2_RATIO", required_data=required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -261,13 +256,7 @@ def SpO2_FiO2_RATIO(
         "timeseries_resp": timeseries_resp,
         "timeseries_vitals": timeseries_vitals,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SpO2_FiO2_RATIO: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="SpO2_FiO2_RATIO", required_data=required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"

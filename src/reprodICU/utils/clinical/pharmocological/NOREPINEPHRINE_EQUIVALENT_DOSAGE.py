@@ -21,7 +21,11 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import get_medications, get_patient_information
+from ...common import (
+    _validate_required_data,
+    get_medications,
+    get_patient_information,
+)
 from .ALIGNED_UNITS import ALIGNED_UNITS
 
 SECONDS_IN_1H = 60 * 60
@@ -93,13 +97,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="NOREPINEPHRINE_EQUIVALENT_DOSAGE", required_data=required) # fmt: skip
 
     # Base frames
     patient_information = patient_information.lazy()

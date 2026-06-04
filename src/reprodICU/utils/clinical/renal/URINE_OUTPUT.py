@@ -6,6 +6,7 @@ from ...common import (
     _build_t0,
     _optional_time_bounds_filter,
     _to_lazy,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_intakeoutput,
 )
@@ -99,13 +100,7 @@ def URINE_OUTPUT(
         "patient_information": patient_information,
         "timeseries_inout": timeseries_inout,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute URINE_OUTPUT: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("URINE_OUTPUT", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"

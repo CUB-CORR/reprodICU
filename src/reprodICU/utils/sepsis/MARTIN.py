@@ -13,7 +13,7 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, get_diagnoses
+from ..common import _to_lazy, _validate_required_data, get_diagnoses
 
 
 # region Martin Sepsis
@@ -44,13 +44,7 @@ def MARTIN_SEPSIS(diagnoses: Optional[pl.LazyFrame] = None) -> pl.LazyFrame:
 
     # Validate data is available
     required = {"diagnoses": diagnoses}
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot load sepsis data: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("Martin sepsis", required)
 
     diagnoses = _to_lazy(diagnoses)
 

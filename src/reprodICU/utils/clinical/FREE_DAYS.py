@@ -27,10 +27,11 @@ import polars as pl
 
 from ..common import (
     _to_lazy,
-    get_patient_information,
+    _validate_required_data,
     get_medications,
-    get_ventilation,
+    get_patient_information,
     get_rrt,
+    get_ventilation,
 )
 from ..mortality import COMMON_MORTALITY_MEASURES
 
@@ -375,13 +376,7 @@ def VENTILATOR_FREE_DAYS(
         "patient_information": patient_information,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VENTILATOR_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="VENTILATOR_FREE_DAYS", required_data=required) # fmt: skip
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
@@ -492,13 +487,7 @@ def RENAL_REPLACEMENT_THERAPY_FREE_DAYS(
         "patient_information": patient_information,
         "rrt": rrt,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute RENAL_REPLACEMENT_THERAPY_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="RENAL_REPLACEMENT_THERAPY_FREE_DAYS", required_data=required) # fmt: skip
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
@@ -569,13 +558,7 @@ def VASOPRESSOR_FREE_DAYS(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VASOPRESSOR_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data(concept="VASOPRESSOR_FREE_DAYS", required_data=required) # fmt: skip
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)

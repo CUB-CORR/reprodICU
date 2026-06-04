@@ -39,6 +39,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     extract_struct_value,
     get_medications,
     get_patient_information,
@@ -306,13 +307,7 @@ def qSOFA(
         "patient_information": patient_information,
         "timeseries_vitals": timeseries_vitals,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SOFA: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("qSOFA", required)
 
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"
@@ -479,13 +474,7 @@ def SOFA(
         "medications": medications,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute SOFA: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("SOFA", required)
 
     # Strict original column names
     STAY_KEY = "Global ICU Stay ID"

@@ -33,6 +33,7 @@ from ..common import (
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    _validate_required_data,
     extract_struct_value,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -358,13 +359,7 @@ def APS(
         "timeseries_labs": timeseries_labs,
         "timeseries_resp": timeseries_resp,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("APS", required)
 
     vitals = _improve_vitals(timeseries_vitals)
     labs = _improve_labs(timeseries_labs)
@@ -849,13 +844,7 @@ def APS3(
         "timeseries_inout": timeseries_inout,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APS3: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("APS3", required)
 
     vitals = _improve_vitals(timeseries_vitals)
     labs = _improve_labs(timeseries_labs)
