@@ -33,6 +33,7 @@ import polars as pl
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -49,61 +50,12 @@ from ..common import (
 )
 from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
+from .SOFA import _improve_labs, _improve_vitals, _map_points
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
 SECONDS_IN_1W = 7 * SECONDS_IN_1D
-
-
-################################################################################
-################################################################################
-# region data helpers
-def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return (
-        vitals.with_columns(
-            pl.coalesce(
-                pl.col("Invasive mean arterial pressure"),
-                pl.col("Non-invasive mean arterial pressure"),
-                1 / 3 * pl.col("Invasive systolic arterial pressure")
-                + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-                1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-                + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-            ).alias("Mean arterial pressure"),
-        )
-        .with_columns(
-            pl.when(pl.col("Mean arterial pressure").is_finite())
-            .then(pl.col("Mean arterial pressure"))
-            .otherwise(None)
-            .alias("Mean arterial pressure")
-        )
-        .filter(
-            pl.any_horizontal(
-                "Mean arterial pressure",
-                "Glasgow coma score total",
-            ),
-        )
-    )
-
-
-def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    return labs.with_columns(
-        pl.col("Platelets").struct.field("value").alias("Platelets"),
-        pl.when(
-            pl.col("Creatinine")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Creatinine").struct.field("value"))
-        .alias("Creatinine"),
-        pl.when(
-            pl.col("Bilirubin")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Bilirubin").struct.field("value"))
-        .alias("Bilirubin"),
-    ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin"))
 
 
 ################################################################################
@@ -188,27 +140,13 @@ def _sf_ratio_points(sf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
 
 # region hemostasis
 def _platelet_points(platelets_value: pl.Expr) -> pl.Expr:
-    """
-    Platelets, ×10^3/µL
-    >150       0
-     101-150  +1
-      81-100  +2    # cutoff changed from 50 to 80 in SOFA-2
-      51- 80  +3    # cutoff changed from 20 to 50 in SOFA-2
-    <=50      +4
-    """
-    return (
-        pl.when(platelets_value > 150)
-        .then(0)
-        .when(platelets_value.is_between(100, 150, closed="right"))
-        .then(1)
-        .when(platelets_value.is_between(80, 100, closed="right"))
-        .then(2)
-        .when(platelets_value.is_between(50, 80, closed="right"))
-        .then(3)
-        .when(platelets_value <= 50)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Platelets (×10^3/µL) | Points
+        ( 150, None, "neither", 0),  # >150 ................. 0
+        ( 100,  150, "right",   1),  #  101-150               1
+        (  80,  100, "right",   2),  #   81-100               2
+        (  50,   80, "right",   3),  #   51-80                3
+        (None,   50, "right",   4),  #  ≤50                   4
+    ]).to_expr(platelets_value) # fmt: skip
 
 
 # region brain
@@ -238,67 +176,41 @@ def _gcs_points(
     """
     return (
         # For sedated patients, use the last recorded GCS before sedation.
-        pl.when(sedation)
-        .then(None)
+        pl.when(sedation).then(None)
         .when(gcs.is_not_null())
         .then(
             # If receiving drug treatment for delirium (short- or long-term),
             # score 1 point even if GCS is 15.
-            pl.when(delirium_treatment)
-            .then(1)
-            .when(gcs == 15)
-            .then(0)
-            .when(gcs.is_between(13, 14))
-            .then(1)
-            .when(gcs.is_between(9, 12))
-            .then(2)
-            .when(gcs.is_between(6, 8))
-            .then(3)
-            .when(gcs < 6)
-            .then(4)
+            pl.when(delirium_treatment).then(1)
+              .when(gcs == 15).then(0)
+              .when(gcs.is_between(13, 14)).then(1)
+              .when(gcs.is_between( 9, 12)).then(2)
+              .when(gcs.is_between( 6,  8)).then(3)
+              .when(gcs < 6).then(4)
         )
         # When not possible to evaluate the 3 domains of GCS, use the best
         # achieved score in the motor-scale domain
         .when(gcs_motor.is_not_null())
         .then(
-            pl.when(gcs_motor == 6)
-            .then(0)
-            .when(gcs_motor == 5)
-            .then(1)
-            .when(gcs_motor == 4)
-            .then(2)
-            .when(gcs_motor == 3)
-            .then(3)
-            .when(gcs_motor <= 2)
-            .then(4)
+            pl.when(gcs_motor == 6).then(0)
+              .when(gcs_motor == 5).then(1)
+              .when(gcs_motor == 4).then(2)
+              .when(gcs_motor == 3).then(3)
+              .when(gcs_motor <= 2).then(4)
         )
         .otherwise(None)
-    )
+    ) # fmt: skip
 
 
 # region liver
 def _bilirubin_points(bili: pl.Expr) -> pl.Expr:
-    """
-    Bilirubine, mg/dL (μmol/L)
-    <= 1.2 (<= 20.6)     0
-    <= 3.0 (<= 51.3)    +1  # cutoff changed from 2.0 to 3.0 in SOFA-2
-    <= 6.0 (<=102.6)    +2
-    <=12.0 (<=205.2)    +3
-     >12.0 (> 205.2)    +4
-    """
-    return (
-        pl.when(bili <= 1.2)
-        .then(0)
-        .when(bili.is_between(1.2, 3.0, closed="right"))
-        .then(1)
-        .when(bili.is_between(3.0, 6.0, closed="right"))
-        .then(2)
-        .when(bili.is_between(6.0, 12.0, closed="right"))
-        .then(3)
-        .when(bili >= 12.0)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Bilirubin (mg/dL) | Points
+        (None,  1.2, "right",   0),  #  ≤1.2 ............. 0
+        ( 1.2,  3.0, "right",   1),  #   1.2- 3.0          1
+        ( 3.0,  6.0, "right",   2),  #   3.0- 6.0          2
+        ( 6.0, 12.0, "right",   3),  #   6.0-12.0          3
+        (12.0, None, "neither", 4),  # >12.0               4
+    ]).to_expr(bili) # fmt: skip
 
 
 # region kidney
@@ -325,18 +237,13 @@ def _creatinine_points(crea: pl.Expr, rrt: pl.Expr) -> pl.Expr:
       receiving RRT until RRT use is terminated.
     """
     return (
-        pl.when(crea <= 1.2)
-        .then(0)
-        .when(crea.is_between(1.2, 2.0, closed="right"))
-        .then(1)
-        .when(crea.is_between(2.0, 3.5, closed="right"))
-        .then(2)
-        .when(crea > 3.5)
-        .then(3)
-        .when(rrt)
-        .then(4)
-        .otherwise(None)
-    )
+        pl.when(crea <= 1.2).then(0)
+          .when(crea.is_between(1.2, 2.0, closed="right")).then(1)
+          .when(crea.is_between(2.0, 3.5, closed="right")).then(2)
+          .when(crea > 3.5).then(3)
+          .when(rrt).then(4)
+          .otherwise(None)
+    ) # fmt: skip
 
 
 def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
@@ -392,23 +299,13 @@ def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         # 3 points: <0.5 mL/kg/h for >12h
         .when(pl.col("uo_12h_avg") < 0.5).then(3)
         # 2 points: <0.5 mL/kg/h for 6-12h
-        .when(pl.col("uo_6h_avg") < 0.5)
-        .then(2)
+        .when(pl.col("uo_6h_avg") < 0.5).then(2)
         .otherwise(None)
         .alias("uo_points"),
-    )
+    ) # fmt: skip
 
 
 # region cardiovascular
-def _map_points(map_val: pl.Expr) -> pl.Expr:
-    """
-    Mean Arterial Pressure (MAP), mmHg
-    >=70 mmHg    0
-     <70 mmHg   +1
-    """
-    return pl.when(map_val < 70).then(1).otherwise(0)
-
-
 def _vasopressor_points(
     dopamine: pl.Expr,
     dobutamine: pl.Expr,
@@ -477,33 +374,25 @@ def _vasopressor_points(
         # Dopamine as sole agent: special cutoffs per spec
         pl.when(dopamine_only)
         .then(
-            pl.when(dopamine <= 20)
-            .then(2)
-            .when(dopamine <= 40)
-            .then(3)
-            .otherwise(4)
+            pl.when(dopamine <= 20).then(2)
+              .when(dopamine <= 40).then(3)
+              .otherwise(4)
         )
         # High-dose vasopressor: always 4 points
-        .when(nor_epi_sum > 0.4)
-        .then(4)
+        .when(nor_epi_sum > 0.4).then(4)
         # Medium-dose vasopressor with other agent: 4 points
-        .when((nor_epi_sum > 0.2) & has_other_agent)
-        .then(4)
+        .when((nor_epi_sum > 0.2) & has_other_agent).then(4)
         # Medium-dose vasopressor alone: 3 points
-        .when(nor_epi_sum > 0.2)
-        .then(3)
+        .when(nor_epi_sum > 0.2).then(3)
         # Low-dose vasopressor with other agent: 3 points
-        .when((nor_epi_sum > 0) & has_other_agent)
-        .then(3)
+        .when((nor_epi_sum > 0) & has_other_agent).then(3)
         # Low-dose vasopressor alone: 2 points
-        .when(nor_epi_sum > 0)
-        .then(2)
+        .when(nor_epi_sum > 0).then(2)
         # Any other vasoactive agent: 2 points
-        .when(has_any_agent)
-        .then(2)
+        .when(has_any_agent).then(2)
         # No vasoactive agents: 0 points
         .otherwise(0)
-    )
+    ) # fmt: skip
 
 
 ###################

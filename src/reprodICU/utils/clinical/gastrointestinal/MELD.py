@@ -23,6 +23,7 @@ from ...common import (
     _build_t0,
     _optional_time_bounds_filter,
     _to_lazy,
+    extract_struct_value,
     get_diagnoses,
     get_patient_information,
     get_rrt,
@@ -296,18 +297,10 @@ def MELD(
     all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
 
     # Filter and prepare lab data
+    LABS = ["Creatinine", "Bilirubin", "INR", "Sodium", "Glucose"]
     lab_data = (
         timeseries_labs.filter(
-            pl.any_horizontal(
-                pl.col(col).is_not_null()
-                for col in [
-                    "Creatinine",
-                    "Bilirubin",
-                    "INR",
-                    "Sodium",
-                    "Glucose",
-                ]
-            )
+            pl.any_horizontal(pl.col(col).is_not_null() for col in LABS)
         )
         .join(all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
@@ -332,53 +325,19 @@ def MELD(
 
     # Extract lab values from structs
     lab_data = lab_data.with_columns(
-        pl.when(
-            pl.col("Creatinine")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Creatinine").struct.field("value"))
-        .alias("Creatinine"),
-        pl.when(
-            pl.col("Bilirubin")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Bilirubin").struct.field("value"))
-        .alias("Bilirubin"),
-        pl.when(
-            pl.col("INR")
-            .struct.field("system")
-            .str.contains_any(["plasma", "Blood"])
-        )
-        .then(pl.col("INR").struct.field("value"))
-        .alias("INR"),
-        pl.when(
-            pl.col("Sodium")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Sodium").struct.field("value"))
-        .alias("Sodium"),
-        pl.when(
-            pl.col("Glucose")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Glucose").struct.field("value"))
-        .alias("Glucose"),
+        extract_struct_value("Creatinine", ["Serum or Plasma", "Blood"]).alias("Creatinine"),
+        extract_struct_value("Bilirubin",  ["Serum or Plasma", "Blood"]).alias("Bilirubin"),
+        extract_struct_value("INR",        ["Serum or Plasma", "Blood"]).alias("INR"),
+        extract_struct_value("Sodium",     ["Serum or Plasma", "Blood"]).alias("Sodium"),
+        extract_struct_value("Glucose",    ["Serum or Plasma", "Blood"]).alias("Glucose"),
     ).select(
         STAY_KEY,
         TIME_KEY,
         "timeframe",
         "T_0",
         "Time Relative to T_0 (seconds)",
-        "Creatinine",
-        "Bilirubin",
-        "INR",
-        "Sodium",
-        "Glucose",
-    )
+        *LABS
+    ) # fmt: skip
 
     # Aggregate labs to worst per timeframe
     lab_per_frame = lab_data.group_by(STAY_KEY, "timeframe", "T_0").agg(
