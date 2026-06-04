@@ -38,6 +38,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
+from ..core import BLOOD_PRESSURES
 
 STAY_KEY = "Global ICU Stay ID"
 TIME_KEY = "Time Relative to Admission (seconds)"
@@ -50,23 +51,16 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 ################################################################################
 ################################################################################
 # region helpers
-
-
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.with_columns(
-        pl.coalesce(
-            pl.col("Invasive mean arterial pressure"),
-            pl.col("Non-invasive mean arterial pressure"),
-            1 / 3 * pl.col("Invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-            1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-        ).alias("Mean arterial pressure"),
-    ).with_columns(
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"MAP": "Mean arterial pressure"})
+        .with_columns(
         pl.when(pl.col("Mean arterial pressure").is_finite())
         .then(pl.col("Mean arterial pressure"))
         .otherwise(None)
         .alias("Mean arterial pressure")
+        )
     )
 
 
