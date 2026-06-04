@@ -400,7 +400,8 @@ def DROP_IMPLAUSIBLE_VALUES(
 def extract_struct_value(
     col_name: str,
     allowed_systems: Optional[List[str]] = None,
-    include_none: bool = True,
+    include_none_source: bool = True,
+    exact_match: bool = False,
 ) -> pl.Expr:
     """
     Extract numeric value from measurement struct column.
@@ -415,9 +416,12 @@ def extract_struct_value(
         allowed_systems : list of str, optional
             Filter to only these specimen systems. If None, accept all systems.
             Examples: ["Serum", "Blood"], ["Arterial", "Mixed venous"]
-        include_none : bool, default True
+        include_none_source : bool, default True
             If True, preserve None values in result.
             If False, filter out rows where value is None.
+        exact_match : bool, default False
+            If True, system must exactly match one of allowed_systems.
+            If False, system can contain allowed_systems as substring (case-insensitive).
 
     Returns
     -------
@@ -433,19 +437,26 @@ def extract_struct_value(
         expr = extract_struct_value("Platelets")
 
         # Extract without None values
-        expr = extract_struct_value("Sodium", include_none=False)
+        expr = extract_struct_value("Sodium", include_none_source=False)
+
+        # Extract with exact system match
+        expr = extract_struct_value("pH", ["Blood"], exact_match=True)
     """
-    value_expr = pl.col(col_name).struct.field("value")
+    struct = pl.col(col_name).struct
+    value  = struct.field("value")
 
     if allowed_systems:
-        system_expr = pl.col(col_name).struct.field("system")
-        system_filter = system_expr.str.contains_any(allowed_systems)
-        expr = pl.when(system_filter).then(value_expr).otherwise(None)
-    else:
-        expr = value_expr
+        system = struct.field("system")
+        match_expr = (
+            system.is_in(allowed_systems)
+            if exact_match
+            else system.str.contains_any(allowed_systems)
+        )
+        
+        if include_none_source:
+            match_expr = match_expr | system.is_null()
 
-    if not include_none:
-        expr = expr.filter(pl.col(col_name).is_not_null())
+        expr = pl.when(match_expr).then(value).otherwise(None)
 
     return expr
 

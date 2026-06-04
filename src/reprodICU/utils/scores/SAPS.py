@@ -89,7 +89,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     LABS    = ["Sodium", "Potassium", "Urea nitrogen", "Bilirubin", "Leukocytes", "Bicarbonate"] # fmt: skip
     return (
         labs.with_columns(
-            extract_struct_value(col, sources).alias(col) for col in LABS
+            extract_struct_value(col, sources, exact_match=True).alias(col)
+            for col in LABS
         )
         .filter(pl.any_horizontal(pl.col(col).is_finite() for col in LABS))
         .select(STAY_KEY, TIME_KEY, *LABS)

@@ -76,7 +76,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     sources = ["Serum or Plasma", "Blood"]
     LABS    = ["Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets", "INR"] # fmt: skip
     return labs.with_columns(
-        extract_struct_value(lab, sources).alias(lab) for lab in LABS
+        extract_struct_value(lab, sources, exact_match=True).alias(lab)
+        for lab in LABS
     ).select(STAY_KEY, TIME_KEY, *LABS)
 
 
