@@ -35,6 +35,7 @@ from ...common import (
     _build_t0,
     _to_lazy,
     _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -57,22 +58,12 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         .select(
             STAY_KEY,
             TIME_KEY,
-            pl.when(
-                pl.col("Oxygen").struct.field("system").str.contains("Blood")
-                | pl.col("Oxygen").struct.field("system").is_null()
-            )
-            .then(pl.col("Oxygen").struct.field("value"))
-            .otherwise(None)
-            .alias("pO2"),
-            pl.when(
-                pl.col("Oxygen saturation")
-                .struct.field("system")
-                .is_in(["Blood arterial", "Blood venous", "Blood"])
-                | pl.col("Oxygen saturation").struct.field("system").is_null()
-            )
-            .then(pl.col("Oxygen saturation").struct.field("value"))
-            .otherwise(None)
-            .alias("sO2"),
+            extract_struct_value("Oxygen", ["Blood"]).alias("pO2"),
+            extract_struct_value(
+                "Oxygen saturation",
+                ["Blood arterial", "Blood venous", "Blood"],
+                exact_match=True,
+            ).alias("sO2"),
         )
         .filter(
             pl.col("pO2").is_between(20, 700),  # Physiologically valid range

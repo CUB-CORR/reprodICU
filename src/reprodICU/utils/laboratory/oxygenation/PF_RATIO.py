@@ -6,6 +6,7 @@ from ...common import (
     _build_t0,
     _to_lazy,
     _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
     get_timeseries_respiratory,
@@ -66,15 +67,9 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.select(
         "Global ICU Stay ID",
         "Time Relative to Admission (seconds)",
-        pl.when(
-            pl.col("Oxygen")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood"])
-            | pl.col("Oxygen").struct.field("system").is_null()
-        )
-        .then(pl.col("Oxygen").struct.field("value"))
-        .otherwise(None)
-        .alias("Oxygen in Arterial blood"),
+        extract_struct_value(
+            "Oxygen", ["Blood arterial", "Blood"], exact_match=True
+        ).alias("Oxygen in Arterial blood"),
     ).drop_nulls("Oxygen in Arterial blood")
 
 

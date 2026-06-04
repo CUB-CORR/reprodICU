@@ -55,6 +55,7 @@ from ...clinical.IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
 from ...common import (
     _to_lazy,
     _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -321,13 +322,9 @@ def _improve_labs(timeseries_labs: pl.LazyFrame) -> pl.LazyFrame:
     return timeseries_labs.select(
         "Global ICU Stay ID",
         "Time Relative to Admission (seconds)",
-        pl.when(
-            pl.col("Creatinine").struct.field("system").eq("Serum or Plasma")
-            | pl.col("Creatinine").struct.field("system").is_null()
-        )
-        .then(pl.col("Creatinine").struct.field("value"))
-        .otherwise(None)
-        .alias("Creatinine"),
+        extract_struct_value(
+            "Creatinine", ["Serum or Plasma"], exact_match=True
+        ).alias("Creatinine"),
     ).drop_nulls("Creatinine")
 
 

@@ -38,6 +38,7 @@ from ...common import (
     _optional_time_bounds_filter,
     _to_lazy,
     _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_rrt,
     get_timeseries_intakeoutput,
@@ -279,15 +280,14 @@ def _prepare_creatinine(
 
     # Extract creatinine data (filter for serum/plasma, non-null)
     creatinine_data = (
-        timeseries_labs.filter(
-            pl.col("Creatinine").struct.field("value").is_not_null(),
-            pl.col("Creatinine").struct.field("system") == "Serum or Plasma",
-        )
-        .select(
+        timeseries_labs.select(
             STAY_KEY,
             TIME_KEY,
-            pl.col("Creatinine").struct.field("value").alias("Creatinine"),
+            extract_struct_value(
+                "Creatinine", ["Serum or Plasma"], exact_match=True
+            ).alias("Creatinine"),
         )
+        .drop_nulls("Creatinine")
         .sort(STAY_KEY, TIME_KEY)
     )
 
