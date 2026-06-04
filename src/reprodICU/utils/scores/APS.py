@@ -96,8 +96,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     ] # fmt: skip
     return (
         labs.with_columns(
-            extract_struct_value(col, allowed_systems=sources).alias(col)
-            for col in LABS
+            extract_struct_value(lab, sources, exact_match=True).alias(lab)
+            for lab in LABS
         )
         .filter(pl.any_horizontal(pl.col(col).is_finite() for col in LABS))
         .select(STAY_KEY, TIME_KEY, *LABS)
