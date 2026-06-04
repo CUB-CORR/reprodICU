@@ -21,6 +21,7 @@ from ...common import (
     _build_t0,
     _to_lazy,
     _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
 )
@@ -38,18 +39,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.select(
         STAY_KEY,
         TIME_KEY,
-        pl.when(pl.col("pH").struct.field("system").str.contains("Blood"))
-        .then(pl.col("pH").struct.field("value"))
-        .otherwise(None)
-        .alias("pH"),
-        pl.when(
-            pl.col("Carbon dioxide")
-            .struct.field("system")
-            .str.contains("Blood")
-        )
-        .then(pl.col("Carbon dioxide").struct.field("value"))
-        .otherwise(None)
-        .alias("pCO2"),
+        extract_struct_value("pH", ["Blood"]).alias("pH"),
+        extract_struct_value("Carbon dioxide", ["Blood"]).alias("pCO2"),
     ).drop_nulls(["pH", "pCO2"])
 
 
