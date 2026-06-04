@@ -162,6 +162,14 @@ class SICdbProcessor(SICdbExtractor):
                 struct_cols=["labstruct"],
                 component_col="LaboratoryName",
             )
+            # Manually sort specific lab tests into the correct order for pivoting
+            # - keep all other orders untouched
+            # - prefer "BE ecf (BGA)" (ID 669) over "BE (B) (BGA)" (ID 668)
+            .sort(
+                pl.when(pl.col("LaboratoryID") == 669)
+                .then(0)
+                .otherwise(1)
+            )
             # JSON encode the structs for pivoting
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data

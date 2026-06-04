@@ -325,15 +325,22 @@ class UMCdbExtractor(UMCdbPaths):
                 "value",
                 "valueid",
                 "measuredat",
+                "registeredat",
                 "registeredby",
+                pl.concat_str(
+                    pl.col("itemid").cast(str),
+                    pl.col("valueid").cast(str),
+                    separator="-",
+                ).alias("itemvalueid"),
             )
             .rename({"admissionid": self.icu_stay_id_col})
             .join(self._extract_list_references(), on="itemid", how="left")
+            .join(self._extract_listvalue_references(), on="itemvalueid", how="left")
             .pipe(self._extract_timeseries_helper)
             # Fix the values for RASS and NRS
             .with_columns(
                 pl.when(pl.col("item") == "Numeric Pain Rating Scale")
-                .then(pl.col("valueid"))
+                .then(pl.col("valueid") - 1)
                 .when(pl.col("item") == "Richmond Agitation-Sedation Scale")
                 .then(5 - pl.col("valueid"))
                 .otherwise(pl.col("value"))
@@ -342,42 +349,19 @@ class UMCdbExtractor(UMCdbPaths):
             # Fix the values for the mapped listitems
             .with_columns(
                 pl.when(pl.col("item") == "Heart rate rhythm")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.HEART_RHYTHM_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Oxygen delivery system")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Ventilation mode Ventilator")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.VENTILATOR_MODE_MAP, default=None
-                    )
-                )
-                .when(
-                    pl.col("item")
-                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
-                )
-                .then(
-                    pl.col("value").replace_strict(
-                        self.RRT_MODE_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Confusion Assessment Method")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.DELIRIUM_MAP, default=None
-                    )
-                )
+                  .then(pl.col("itemvalue").replace_strict(self.HEART_RHYTHM_MAP, default=None))
+                  .when(pl.col("item") == "Oxygen delivery system")
+                  .then(pl.col("itemvalue").replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None))
+                  .when(pl.col("item") == "Ventilation mode Ventilator")
+                  .then(pl.col("itemvalue").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
+                  .when(pl.col("item") == "Continuous renal replacement therapy mode Renal replacement therapy circuit")
+                  .then(pl.col("itemvalue").replace_strict(self.RRT_MODE_MAP, default=None))
+                  .when(pl.col("item") == "Confusion Assessment Method")
+                  .then(pl.col("itemvalue").replace_strict(self.DELIRIUM_MAP, default=None))
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
-        )
+        ) # fmt: skip
 
         gcs = self._compute_gcs(listitems).unpivot(
             index=self.index_cols, variable_name="item", value_name="value"
@@ -1544,7 +1528,7 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract the information from the listitems_XXX.usagi.csv file
     def _extract_list_references(self) -> pl.LazyFrame:
         """
-        Extract and process list item references from CSV mapping files.
+        Extract and process list item references from CSV mapping file.
 
         Steps:
             1. Reads two CSV files containing list items mappings.
@@ -1560,13 +1544,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return (
-            pl.concat(
-                [
-                    pl.read_csv(self.listitems_item_mapping_path),
-                    pl.read_csv(self.listitems_value_mapping_path),
-                ],
-                how="diagonal_relaxed",
-            )
+            pl.read_csv(self.listitems_item_mapping_path)
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
@@ -1591,6 +1569,35 @@ class UMCdbExtractor(UMCdbPaths):
             .drop_nulls("sourceCode")
             .unique()
             .rename({"sourceCode": "itemid", "conceptName": "item"})
+            .lazy()
+        )
+
+    def _extract_listvalue_references(self) -> pl.LazyFrame:
+        """
+        Extract and process list value references from CSV mapping file.
+
+        Steps:
+            1. Reads two CSV files containing list items mappings.
+            2. Concatenates the dataframes using a relaxed diagonal join.
+            3. Selects and casts "sourceCode" to int and maps it to "item".
+            4. Applies replacement mappings to standardize the concept names.
+            5. Drops null values and duplicates.
+
+        Returns:
+            pl.LazyFrame: A LazyFrame containing:
+                - "itemvalueid": Listvalue item identifier.
+                - "itemvalue": Standardized listvalue item name.
+        """
+
+        return (
+            pl.read_csv(self.listitems_value_mapping_path)
+            # .filter(pl.col("equivalence") == "EQUAL")
+            .select("sourceCode", "conceptName")
+            .cast({"sourceCode": str}, strict=False)
+            .filter(pl.col("conceptName").ne("Unmapped"))
+            .drop_nulls("sourceCode")
+            .unique()
+            .rename({"sourceCode": "itemvalueid", "conceptName": "itemvalue"})
             .lazy()
         )
 

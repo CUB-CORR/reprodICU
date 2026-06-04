@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------
+# ECG rhythm findings
+# mapped to SNOMED "Electrocardiogram finding"
+# https://athena.ohdsi.org/search-terms/terms/4117134
+
 "ECG: idioventricular rhythm": # 4138336
   # HiRID
   - Kammerrhythm
@@ -16,14 +21,13 @@
 "ECG: atrial fibrillation": # 4064452
   # HiRID
   - AF
-  - Atrial fibrillation
   - Vhfli
+  # HiRID / UMCdb
+  - Atrial fibrillation
   # MIMIC-III
   - Atrial Fib
   # MIMIC-III / MIMIC-IV
   - AF (Atrial Fibrillation)
-  # UMCdb
-  - Atrial fibrillation
 
 "EKG: atrial flutter": # 4065288
   # HiRID
@@ -41,6 +45,7 @@
   # MIMIC-III / MIMIC-IV
   - MAT (Multifocal atrial tachycardia)
   # UMCdb
+  - Atrial tachycardia
   - Atrial paroxysmal tachycardia
   - Paroxysmal atrial tachycardia with block
 
@@ -73,15 +78,18 @@
   # UMCdb
   - Second degree atrioventricular block
 
-"ECG: partial atrioventricular block - 2:1": [] # 4065290 # UMCdb
-"ECG: partial atrioventricular block - 3:1": [] # 4064458 # UMCdb
+"ECG: partial atrioventricular block - 2:1": [] # 4065290
+  # UMCdb -> same name
+"ECG: partial atrioventricular block - 3:1": [] # 4064458
+  # UMCdb -> same name
 
 "ECG: Mobitz type II atrioventricular block": # 4064458
-  - High degree second degree atrioventricular block
   # MIMIC-III
   - 2nd AVB/Mobitz I
   # MIMIC-III / MIMIC-IV
   - "2nd AV M2 (Second degree AV Block - Mobitz 2) "
+  # UMCdb
+  - High degree second degree atrioventricular block
 
 "EKG: complete atrioventricular block": # 4064874
   # HiRID
@@ -126,11 +134,7 @@
   - AV Paced
   - V Paced
   # UMCdb
-  - Dual chamber asynchronous
-  - Dual chamber demand
   - Rhythm from artificial pacing
-  - Ventricular asynchronous
-  - Ventricular demand
 
 "ECG: premature atrial contractions": # 4141030
   # UMCdb
@@ -159,7 +163,6 @@
   # MIMIC-III / MIMIC-IV
   - SR (Sinus Rhythm)
   # UMCdb
-  - NSR
   - Normal sinus rhythm
 
 "ECG: sinus arrhythmia": # 4141820
@@ -193,7 +196,6 @@
   # MIMIC-III / MIMIC-IV
   - "ST (Sinus Tachycardia) "
   # UMCdb
-  - Sinus Tac
   - Sinus tachycardia
 
 "ECG: partial sinoatrial block": # 4065289
@@ -206,7 +208,6 @@
   # MIMIC-III / MIMIC-IV
   - SVT (Supra Ventricular Tachycardia)
   # UMCdb
-  - Atrial tachycardia
   - Supraventricular tachycardia
 
 "EKG: ventricular arrhythmia": # 4064453
@@ -232,25 +233,42 @@
   # UMCdb
   - Ventricular tachycardia
 
-Other (not listed): # 45883627 # LOINC
-  # HiRID
-  - siehe PD Spez.Rhyth
+
+# ------------------------------------------------------------------------------
+# ECG waveform findings
+
+"Wide QRS complex": [] # 4321877
+  # UMCdb -> same name
+
+"Prolonged QT interval": [] # 4008859
+  # UMCdb -> same name
+
+"ST segment depression": [] # 4095285
+  # UMCdb -> same name
+
+"ST segment elevation": [] # 4295129
+  # UMCdb -> same name
+
+
+# ------------------------------------------------------------------------------
+# Other ECG findings
+
+"Wandering atrial pacemaker": # 4111551
   # MIMIC-III
-  - Comment
-  - Other/Remarks
+  - WAP
+  # MIMIC-III / MIMIC-IV
+  - "WAP (Wandering atrial pacemaker)"
 
 
 
-# UMCdb
-# Prolonged QT interval
-# ST segment depression
-# ST segment elevation
-# Wide QRS complex
+# HiRID
+# - siehe PD Spez.Rhyth
 
 # MIMIC-III
-# Wand.Atrial Pace
-# Comment # Cardiac Rhythm
-# Gallop # Cardiac Rhythm
+# - Comment
+# - Other/Remarks
 
-# MIMIC-III / MIMIC-IV
-# WAP (Wandering atrial pacemaker)
+# MIMIC-III
+# - Wand.Atrial Pace
+# - Comment
+# - Gallop
