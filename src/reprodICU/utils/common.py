@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import polars as pl
 
@@ -369,6 +369,156 @@ def DROP_IMPLAUSIBLE_VALUES(
     return _plausible_values(obj, columns, column_config, mode="drop")
 
 
+# region struct extraction utilities
+
+
+def extract_struct_value(
+    col_name: str,
+    allowed_systems: Optional[List[str]] = None,
+    include_none: bool = True,
+) -> pl.Expr:
+    """
+    Extract numeric value from measurement struct column.
+
+    Handles struct columns containing 'system' and 'value' fields.
+    Optionally filters by specimen system (Serum, Blood, Plasma, CSF, etc.).
+
+    Arguments
+    ---------
+        col_name : str
+            Name of struct column to extract from
+        allowed_systems : list of str, optional
+            Filter to only these specimen systems. If None, accept all systems.
+            Examples: ["Serum", "Blood"], ["Arterial", "Mixed venous"]
+        include_none : bool, default True
+            If True, preserve None values in result.
+            If False, filter out rows where value is None.
+
+    Returns
+    -------
+        pl.Expr
+            Expression that extracts the value (filtered if systems specified)
+
+    Examples
+    --------
+        # Extract creatinine allowing only serum/blood specimens
+        expr = extract_struct_value("Creatinine", ["Serum", "Blood"])
+
+        # Extract platelets from any specimen
+        expr = extract_struct_value("Platelets")
+
+        # Extract without None values
+        expr = extract_struct_value("Sodium", include_none=False)
+    """
+    value_expr = pl.col(col_name).struct.field("value")
+
+    if allowed_systems:
+        system_expr = pl.col(col_name).struct.field("system")
+        system_filter = system_expr.str.contains_any(allowed_systems)
+        expr = pl.when(system_filter).then(value_expr).otherwise(None)
+    else:
+        expr = value_expr
+
+    if not include_none:
+        expr = expr.filter(pl.col(col_name).is_not_null())
+
+    return expr
+
+
+# endregion
+
+
+# region scoring utilities
+
+
+class ScoringTable:
+    """
+    Map numeric value ranges to clinical severity points with closure control.
+
+    Implements range-based scoring where intervals map to integer points.
+    Each range specifies lower/upper bounds and closure type to handle
+    complex threshold logic accurately.
+
+    Attributes
+    ----------
+        ranges : List[Tuple[float, float, str, int]]
+            List of (lower, upper, closed, points) tuples defining scoring ranges.
+            closed: "left" [lower, upper), "right" (lower, upper], "both" [lower, upper],
+            or "neither" (lower, upper).
+
+    Examples
+    --------
+        # Score with multiple ranges and different closure types
+        scores = ScoringTable([          # Heart rate (bpm) | Points
+            (None,   33, "neither", 4),  #  <33               4
+            (  33,   88, "left",    0),  #   33- 88 ......... 0
+            (  89,  106, "left",    1),  #   89-106           1
+            ( 107,  125, "right",   3),  #  107-125           3
+            ( 125, None, "neither", 6),  # >125               6
+        ])
+
+        df = data.with_columns(
+            scores.to_expr(pl.col("HeartRate")).alias("HR_Points")
+        )
+    """
+
+    def __init__(self, ranges: List[Tuple[float, float, str, int]]):
+        """
+        Initialize scoring table with explicit ranges and closure types.
+
+        Arguments
+        ---------
+            ranges : List[Tuple[float, float, str, int]]
+                List of (lower, upper, closed, points) defining scoring intervals.
+                Closure types:
+                - "left":    [lower, upper) - includes lower, excludes upper
+                - "right":   (lower, upper] - excludes lower, includes upper
+                - "both":    [lower, upper] - includes both
+                - "neither": (lower, upper) - excludes both
+        """
+        self.ranges = ranges
+
+    def to_expr(self, col: pl.Expr) -> pl.Expr:
+        """Convert scoring table to Polars when/then/otherwise expression."""
+        expr = None
+        for lower, upper, closed, points in self.ranges:
+            if lower is None or upper is None:
+                # Handle infinite boundaries
+                if lower is None:
+                    condition = col < upper  # (-∞, upper)
+                else:
+                    condition = col > lower  # (lower, ∞)
+            else:
+                # Finite interval with specified closure
+                if closed == "left":
+                    condition = col.is_between(lower, upper, closed="left")
+                elif closed == "right":
+                    condition = col.is_between(lower, upper, closed="right")
+                elif closed == "both":
+                    condition = col.is_between(lower, upper, closed="both")
+                elif closed == "neither":
+                    condition = col.is_between(lower, upper, closed="neither")
+                else:
+                    raise ValueError(f"Unknown closure type: {closed}")
+
+            if expr is None:
+                expr = pl.when(condition).then(points)
+            else:
+                expr = expr.when(condition).then(points)
+
+        return expr.otherwise(None)
+
+    def __repr__(self) -> str:
+        """Return descriptive representation."""
+        ranges_str = ", ".join(
+            f"({l},{u}:{c})→{p}" for l, u, c, p in self.ranges
+        )
+        return f"ScoringTable([{ranges_str}])"
+
+
+# endregion
+
+
 __all__ = [
     # common utils
     "_to_lazy",
@@ -391,6 +541,9 @@ __all__ = [
     # concept loaders
     "get_ventilation",
     "get_rrt",
+    # measurement utilities
+    "extract_struct_value",
+    "ScoringTable",
     # data cleaning
     "CLIP_PLAUSIBLE_VALUES",
     "DROP_IMPLAUSIBLE_VALUES",

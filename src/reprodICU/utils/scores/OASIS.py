@@ -26,6 +26,7 @@ import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -73,214 +74,92 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 ################################################################################
 # region pre-ICU LOS
 def _pre_icu_los_points(pre_los: pl.Expr) -> pl.Expr:
-    """
-    Pre-ICU length of stay points (in days)
-
-    <0.17 hours         5
-     0.17-  4.94 hours  4
-     4.94- 24    hours  3
-    24.01-311.8  hours  2
-    >311.8 hours        1
-    """
     pre_los_hours = pre_los * 24
-    return (
-        pl.when(pre_los_hours < 0.17)
-        .then(5)
-        .when(pre_los_hours.is_between(0.17, 4.94, closed="right"))
-        .then(4)
-        .when(pre_los_hours.is_between(4.94, 24, closed="right"))
-        .then(3)
-        .when(pre_los_hours.is_between(24, 311.8, closed="right"))
-        .then(2)
-        .when(pre_los_hours > 311.8)
-        .then(1)
-        .otherwise(None)
-    )
+    return ScoringTable([                # Pre-ICU length of stay (hours) | Points
+        (  None,   0.17, "neither", 5),  # <0.17             5
+        (  0.17,   4.94, "right",   4),  #  0.17-  4.94      4
+        (  4.94,  24   , "right",   3),  #  4.94- 24         3
+        ( 24   , 311.8 , "right",   2),  # 24.  -311.8       2
+        (311.8 ,   None, "neither", 1),  #      >311.8       1
+    ]).to_expr(pre_los_hours) # fmt: skip
 
 
 # region age
 def _age_points(age: pl.Expr) -> pl.Expr:
-    """
-    Age in years
-
-    <24 years     0
-     24-53 years  3
-     54-77 years  6
-     78-89 years  9
-    >89 years     7
-    """
-    return (
-        pl.when(age < 24)
-        .then(0)
-        .when(age.is_between(24, 53, closed="left"))
-        .then(3)
-        .when(age.is_between(54, 77, closed="left"))
-        .then(6)
-        .when(age.is_between(78, 89, closed="right"))
-        .then(9)
-        .when(age > 89)
-        .then(7)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Age (years) | Points
+        (None,   24, "neither", 0),  # <24 ......... 0
+        (  24,   53, "left",    3),  #  24-53        3
+        (  54,   77, "left",    6),  #  54-77        6
+        (  78,   89, "right",   9),  #  78-89        9
+        (  89, None, "neither", 7),  # >89           7
+    ]).to_expr(age) # fmt: skip
 
 
 # region GCS
 def _gcs_points(gcs: pl.Expr) -> pl.Expr:
-    """
-    Glasgow Coma Scale
-
-     3- 7  10
-     8-13   5
-    14      3
-    15      0
-    """
-    return (
-        pl.when(gcs < 8)
-        .then(10)
-        .when(gcs.is_between(8, 13, closed="right"))
-        .then(5)
-        .when(gcs == 14)
-        .then(3)
-        .when(gcs == 15)
-        .then(0)
-        .otherwise(None)
-    )
+    return ScoringTable([           # Glasgow Coma Scale | Points
+        (None,  8, "neither", 10),  # <8                   10
+        (   8, 13, "right",    5),  #  8-13                 5 
+        (  14, 14, "both",     3),  #    14                 3
+        (  15, 15, "both",     0),  #    15 ............... 0
+    ]).to_expr(gcs) # fmt: skip
 
 
 # region heart rate
 def _hr_points(hr: pl.Expr) -> pl.Expr:
-    """
-    Heart rate in bpm
-
-     <33 bpm      4
-      33- 88 bpm  0
-      89-106 bpm  1
-     107-125 bpm  3
-    >125 bpm      6
-    """
-    return (
-        pl.when(hr < 33)
-        .then(4)
-        .when(hr.is_between(33, 88, closed="left"))
-        .then(0)
-        .when(hr.is_between(89, 106, closed="left"))
-        .then(1)
-        .when(hr.is_between(107, 125, closed="right"))
-        .then(3)
-        .when(hr > 125)
-        .then(6)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Heart rate (bpm) | Points
+        (None,   33, "neither", 4),  #  <33               4
+        (  33,   88, "left",    0),  #   33- 88 ......... 0
+        (  89,  106, "left",    1),  #   89-106           1
+        ( 107,  125, "right",   3),  #  107-125           3
+        ( 125, None, "neither", 6),  # >125               6
+    ]).to_expr(hr) # fmt: skip
 
 
 # region MAP
 def _map_points(map: pl.Expr) -> pl.Expr:
-    """
-    Mean Arterial Pressure in mmHg
-
-     <20.65 mmHg         4
-      20.65- 50.99 mmHg  3
-      51.00- 61.32 mmHg  2
-      61.33-143.44 mmHg  0
-    >143.44 mmHg         3
-    """
-    return (
-        pl.when(map < 20.65)
-        .then(4)
-        .when(map.is_between(20.65, 51.00, closed="left"))
-        .then(3)
-        .when(map.is_between(51.00, 61.32, closed="left"))
-        .then(2)
-        .when(map.is_between(61.33, 143.44, closed="right"))
-        .then(0)
-        .when(map > 143.44)
-        .then(3)
-        .otherwise(None)
-    )
+    return ScoringTable([                # Mean Arterial Pressure (mmHg) | Points
+        (  None,  20.65, "neither", 4),  #  <20.65                         4
+        ( 20.65,  51.00, "left",    3),  #   20.65- 50.99                  3
+        ( 51.00,  61.32, "left",    2),  #   51.00- 61.32                  2
+        ( 61.33, 143.44, "right",   0),  #   61.33-143.44 ................ 0
+        (143.44,   None, "neither", 3),  # >143.44                         3
+    ]).to_expr(map) # fmt: skip
 
 
 # region respiratory rate
 def _rr_points(rr: pl.Expr) -> pl.Expr:
-    """
-    Respiratory rate in bpm
-
-    <6 bpm     10
-     6-12 bpm   1
-    13-22 bpm   0
-    23-30 bpm   1
-    31-44 bpm   6
-    >44 bpm     9
-    """
-    return (
-        pl.when(rr < 6)
-        .then(10)
-        .when(rr.is_between(6, 12, closed="right"))
-        .then(1)
-        .when(rr.is_between(13, 22, closed="right"))
-        .then(0)
-        .when(rr.is_between(23, 30, closed="right"))
-        .then(1)
-        .when(rr.is_between(31, 44, closed="right"))
-        .then(6)
-        .when(rr > 44)
-        .then(9)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Respiratory rate (bpm) | Points
+        (None,    6, "neither", 10),  #  <6                      10
+        (   6,   12, "right",    1),  #   6-12                    1
+        (  13,   22, "right",    0),  #  13-22 .................. 0
+        (  23,   30, "right",    1),  #  23-30                    1
+        (  31,   44, "right",    6),  #  31-44                    6
+        (  44, None, "neither",  9),  # >44                       9
+    ]).to_expr(rr) # fmt: skip
 
 
 # region temperature
 def _temperature_points(temp: pl.Expr) -> pl.Expr:
-    """
-    Temperature in Celsius
-
-    <33.22 °C        3
-     33.22-35.93 °C  4
-     35.94-36.39 °C  2
-     36.40-36.88 °C  0
-     36.89-39.88 °C  2
-    >39.88 °C        6
-    """
-    return (
-        pl.when(temp < 33.22)
-        .then(3)
-        .when(temp.is_between(33.22, 35.93, closed="right"))
-        .then(4)
-        .when(temp.is_between(35.94, 36.39, closed="right"))
-        .then(2)
-        .when(temp.is_between(36.40, 36.88, closed="right"))
-        .then(0)
-        .when(temp.is_between(36.89, 39.88, closed="right"))
-        .then(2)
-        .when(temp >= 39.88)
-        .then(6)
-        .otherwise(None)
-    )
+    return ScoringTable([              # Temperature (°C) | Points
+        ( None, 33.22, "neither", 3),  # <33.22.            3
+        (33.22, 35.93, "right",   4),  #  33.22-35.93       4
+        (35.94, 36.39, "right",   2),  #  35.94-36.39       2
+        (36.40, 36.88, "right",   0),  #  36.40-36.88 ..... 0
+        (36.89, 39.88, "right",   2),  #  36.89-39.88       2
+        (39.88,  None, "neither", 6),  # ≥39.88             6
+    ]).to_expr(temp) # fmt: skip
 
 
 # region urine output
 def _urine_output_points(uo_ml: pl.Expr) -> pl.Expr:
-    """
-    Urine output in mL/24h
-
-    < 671 mL/24h           10
-      671 to <1427 mL/24h   5
-     1427 to <2544 mL/24h   1
-     2544 to <6896 mL/24h   0
-    >6896 mL/24h            4
-    """
-    return (
-        pl.when(uo_ml < 671)
-        .then(10)
-        .when(uo_ml.is_between(671, 1427, closed="left"))
-        .then(5)
-        .when(uo_ml.is_between(1427, 2544, closed="left"))
-        .then(1)
-        .when(uo_ml.is_between(2544, 6896, closed="left"))
-        .then(0)
-        .when(uo_ml >= 6896)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Urine output (mL/24h) | Points
+        (None,  671, "neither", 10),  #  <671                   10
+        ( 671, 1427, "left",     5),  #   671-1426               5
+        (1427, 2544, "left",     1),  #  1427-2543               1
+        (2544, 6896, "left",     0),  #  2544-6895 ............. 0
+        (6896, None, "neither",  4),  # ≥6896                    4
+    ]).to_expr(uo_ml) # fmt: skip
 
 
 # region ventilation

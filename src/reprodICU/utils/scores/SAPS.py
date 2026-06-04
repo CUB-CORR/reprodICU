@@ -23,11 +23,13 @@ import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    extract_struct_value,
     get_diagnoses,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -82,17 +84,11 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    sources = ["Serum or Plasma", "Blood", "Blood arterial", None]
-    LABS = [
-        "Sodium", "Potassium", "Urea nitrogen", "Bilirubin", "Leukocytes",
-        "Bicarbonate",
-    ] # fmt: skip
+    sources = ["Serum or Plasma", "Blood", "Blood arterial"]
+    LABS    = ["Sodium", "Potassium", "Urea nitrogen", "Bilirubin", "Leukocytes", "Bicarbonate"] # fmt: skip
     return (
         labs.with_columns(
-            pl.when(pl.col(col).struct.field("system").is_in(sources))
-            .then(pl.col(col).struct.field("value"))
-            .alias(col)
-            for col in LABS
+            extract_struct_value(col, sources).alias(col) for col in LABS
         )
         .filter(pl.any_horizontal(pl.col(col).is_finite() for col in LABS))
         .select(STAY_KEY, TIME_KEY, *LABS)
@@ -108,254 +104,114 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def _age_points_saps2(age: pl.Expr) -> pl.Expr:
-    """
-    Age (years)
-    <40           0
-     40-59        7
-     60-69       12
-     70-74       15
-     75-79       16
-      >=80       18
-    """
-    return (
-        pl.when(age < 40)
-        .then(0)
-        .when(age.is_between(40, 60, closed="left"))
-        .then(7)
-        .when(age.is_between(60, 70, closed="left"))
-        .then(12)
-        .when(age.is_between(70, 75, closed="left"))
-        .then(15)
-        .when(age.is_between(75, 80, closed="left"))
-        .then(16)
-        .when(age >= 80)
-        .then(18)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Age (years) | Points
+        (None,   40, "neither", 0),  # <40 .......... 0
+        (  40,   60, "left",    7),  #  40-59         7
+        (  60,   70, "left",   12),  #  60-69        12
+        (  70,   75, "left",   15),  #  70-74        15
+        (  75,   80, "left",   16),  #  75-79        16
+        (  80, None, "left",   18),  # ≥80           18
+    ]).to_expr(age) # fmt: skip
 
 
 def _hr_points_saps2(hr: pl.Expr) -> pl.Expr:
-    """
-    Heart Rate (bpm)
-    <40         11
-     40- 69      2
-     70-119      0
-    120-159      4
-      >=160      7
-    """
-    return (
-        pl.when(hr < 40)
-        .then(11)
-        .when(hr.is_between(40, 70, closed="left"))
-        .then(2)
-        .when(hr.is_between(70, 120, closed="left"))
-        .then(0)
-        .when(hr.is_between(120, 160, closed="left"))
-        .then(4)
-        .when(hr >= 160)
-        .then(7)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Heart rate (bpm) | Points
+        (None,   40, "neither", 11),  #  <40               11
+        (  40,   70, "left",     2),  #   40- 69            2
+        (  70,  120, "left",     0),  #   70-119 .......... 0
+        ( 120,  160, "left",     4),  #  120-159            4
+        ( 160, None, "left",     7),  # ≥160                7
+    ]).to_expr(hr) # fmt: skip
 
 
 def _sbp_points_saps2(sbp: pl.Expr) -> pl.Expr:
-    """
-    Systolic Arterial Pressure (mmHg)
-    <70         13
-     70- 99      5
-    100-199      0
-      >=200      2
-    """
-    return (
-        pl.when(sbp < 70)
-        .then(13)
-        .when(sbp.is_between(70, 100, closed="left"))
-        .then(5)
-        .when(sbp.is_between(100, 200, closed="left"))
-        .then(0)
-        .when(sbp >= 200)
-        .then(2)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Systolic blood pressure (mmHg) | Points
+        (None,   70, "neither", 13),  #  <70                             13
+        (  70,  100, "left",     5),  #   70- 99                          5
+        ( 100,  200, "left",     0),  #  100-199 ........................ 0
+        ( 200, None, "left",     2),  # ≥200                              2
+    ]).to_expr(sbp) # fmt: skip
 
 
 def _temp_points_saps2(temp: pl.Expr) -> pl.Expr:
-    """
-    Temperature (°C)
-     <39.0       0
-    >=39.0       3
-    """
-    return (
-        pl.when(temp < 39.0).then(0).when(temp >= 39.0).then(3).otherwise(None)
-    )
+    return ScoringTable([            # Temperature (°C) | Points
+        (None, 39.0, "neither", 0),  # <39.0 ............ 0
+        (39.0, None, "left",    3),  # ≥39.0              3
+    ]).to_expr(temp) # fmt: skip
 
 
 def _pao2fio2_points_saps2(paf: pl.Expr) -> pl.Expr:
-    """
-    PaO2/FiO2 ratio (mmHg)
-    <100        11
-     100-199     9
-       >=200     6
-    """
-    return (
-        pl.when(paf < 100)
-        .then(11)
-        .when(paf.is_between(100, 200, closed="left"))
-        .then(9)
-        .when(paf >= 200)
-        .then(6)
-        .otherwise(0)
-    )
+    return ScoringTable([             # PaO2/FiO2 ratio | Points
+        (None,  100, "neither", 11),  # <100              11
+        ( 100,  200, "left",     9),  #  100-199           9
+        ( 200, None, "left",     6),  # ≥200               6
+    ]).to_expr(paf) # fmt: skip
 
 
 def _uo_points_saps2(uo_l_day: pl.Expr) -> pl.Expr:
-    """
-    Urine Output (L/day)
-    <0.5         11
-     0.5-0.99     4
-       >=1.0      0
-    """
-    return (
-        pl.when(uo_l_day < 0.5)
-        .then(11)
-        .when(uo_l_day.is_between(0.5, 1.0, closed="left"))
-        .then(4)
-        .when(uo_l_day >= 1.0)
-        .then(0)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Urine output (L/day) | Points
+        (None,  0.5, "neither", 11),  # <0.5                   11
+        ( 0.5,  1.0, "left",     4),  #  0.5-0.99               4
+        ( 1.0, None, "left",     0),  # ≥1.0 .................. 0
+    ]).to_expr(uo_l_day) # fmt: skip
 
 
 def _bun_points_saps2(bun: pl.Expr) -> pl.Expr:
-    """
-    Serum urea nitrogen (mg/dL)
-    <28          0
-     28-83       6
-      >=84      10
-    """
-    return (
-        pl.when(bun < 28)
-        .then(0)
-        .when(bun.is_between(28, 84, closed="left"))
-        .then(6)
-        .when(bun >= 84)
-        .then(10)
-        .otherwise(None)
-    )
+    return ScoringTable([             # BUN (mg/dL) | Points
+        (None,   28, "neither", 0),   # <28 .......... 0
+        (  28,   84, "left",    6),   #  28-83         6
+        (  84, None, "left",   10),   # ≥84           10
+    ]).to_expr(bun) # fmt: skip
 
 
 def _wbc_points_saps2(wbc: pl.Expr) -> pl.Expr:
-    """
-    WBC (10^3/µL)
-    <1.0         12
-     1.0-19.9     0
-       >=20.0     3
-    """
-    return (
-        pl.when(wbc < 1.0)
-        .then(12)
-        .when(wbc.is_between(1, 20, closed="left"))
-        .then(0)
-        .when(wbc >= 20)
-        .then(3)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Leukocytes (10^9/L) | Points
+        (None,  1.0, "neither", 12),  #  <1.0                 12
+        ( 1.0, 20.0, "left",     0),  #   1.0-19.9 ........... 0
+        (20.0, None, "left",     3),  # ≥20.0                  3
+    ]).to_expr(wbc) # fmt: skip
 
 
 def _sodium_points_saps2(na: pl.Expr) -> pl.Expr:
-    """
-    Serum Sodium (mEq/L)
-    <125          5
-     125-144      0
-       >=145      1
-    """
-    return (
-        pl.when(na < 125)
-        .then(5)
-        .when(na.is_between(125, 145, closed="left"))
-        .then(0)
-        .when(na >= 145)
-        .then(1)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Sodium (mmol/L) | Points
+        (None,  125, "neither", 5),  # <125              5
+        ( 125,  145, "left",    0),  #  125-144 ........ 0
+        ( 145, None, "left",    1),  # ≥145              1
+    ]).to_expr(na) # fmt: skip
 
 
 def _potassium_points_saps2(k: pl.Expr) -> pl.Expr:
-    """
-    Serum Potassium (mEq/L)
-    <3.0         3
-     3.0-4.9     0
-       >=5.0     3
-    """
-    return (
-        pl.when(k < 3.0)
-        .then(3)
-        .when(k.is_between(3.0, 5.0, closed="left"))
-        .then(0)
-        .when(k >= 5.0)
-        .then(3)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Potassium (mmol/L) | Points
+        (None,  3.0, "neither", 3),  # <3.0                 3
+        ( 3.0,  5.0, "left",    0),  #  3.0-4.9 ........... 0
+        ( 5.0, None, "left",    3),  # ≥5.0                 3
+    ]).to_expr(k) # fmt: skip
 
 
 def _bicarbonate_points_saps2(hco3: pl.Expr) -> pl.Expr:
-    """
-    Serum Bicarbonate (mEq/L)
-    <15         6
-     15-19      3
-      >=20      0
-    """
-    return (
-        pl.when(hco3 < 15)
-        .then(6)
-        .when(hco3.is_between(15, 20, closed="left"))
-        .then(3)
-        .when(hco3 >= 20)
-        .then(0)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Bicarbonate (mmol/L) | Points
+        (None,   15, "neither", 6),  # <15                    6
+        (  15,   20, "left",    3),  #  15-19                 3
+        (  20, None, "left",    0),  # ≥20 .................. 0
+    ]).to_expr(hco3) # fmt: skip
 
 
 def _bilirubin_points_saps2(bili: pl.Expr) -> pl.Expr:
-    """
-    Bilirubin (mg/dL)
-    <4.0          0
-     4.0-5.9      4
-       >=6.0      9
-    """
-    return (
-        pl.when(bili < 4.0)
-        .then(0)
-        .when(bili.is_between(4.0, 6.0, closed="left"))
-        .then(4)
-        .when(bili >= 6.0)
-        .then(9)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Bilirubin (mg/dL) | Points
+        (None,  4.0, "neither", 0),  # <4.0 .............. 0
+        ( 4.0,  6.0, "left",    4),  #  4.0-5.9            4
+        ( 6.0, None, "left",    9),  # ≥6.0                9
+    ]).to_expr(bili) # fmt: skip
 
 
 def _gcs_points_saps2(gcs: pl.Expr) -> pl.Expr:
-    """
-    Glasgow Coma Scale
-    <6          26
-     6- 8       13
-     9-10        7
-    11-13        5
-    14-15        0
-    """
-    return (
-        pl.when(gcs < 6)
-        .then(26)
-        .when(gcs.is_between(6, 9, closed="left"))
-        .then(13)
-        .when(gcs.is_between(9, 11, closed="left"))
-        .then(7)
-        .when(gcs.is_between(11, 14, closed="left"))
-        .then(5)
-        .when(gcs >= 14)
-        .then(0)
-        .otherwise(None)
-    )
+    return ScoringTable([           # Glasgow Coma Scale | Points
+        (None,  6, "neither", 26),  # <6                   26
+        (   6,  9, "left",    13),  #  6- 8                13
+        (   9, 11, "left",     7),  #  9-10                 7
+        (  11, 14, "left",     5),  # 11-13                 5
+        (  14, 16, "left",     0),  # 14-15 ............... 0
+    ]).to_expr(gcs) # fmt: skip
 
 
 # endregion

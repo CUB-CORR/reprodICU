@@ -33,11 +33,13 @@ import polars as pl
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
     _optional_time_bounds_filter,
+    extract_struct_value,
     get_medications,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -102,22 +104,10 @@ def _improve_vitals_quick(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.with_columns(
-        pl.col("Platelets").struct.field("value").alias("Platelets"),
-        pl.when(
-            pl.col("Creatinine")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Creatinine").struct.field("value"))
-        .alias("Creatinine"),
-        pl.when(
-            pl.col("Bilirubin")
-            .struct.field("system")
-            .str.contains_any(["Serum", "Blood"])
-        )
-        .then(pl.col("Bilirubin").struct.field("value"))
-        .alias("Bilirubin"),
-    ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin"))
+        extract_struct_value("Platelets").alias("Platelets"),
+        extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
+        extract_struct_value("Bilirubin",  ["Serum", "Blood"]).alias("Bilirubin"),
+    ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin")) # fmt: skip
 
 
 ################################################################################
@@ -178,116 +168,58 @@ def _sf_ratio_points(pf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
 
 
 def _platelet_points(platelets_value: pl.Expr) -> pl.Expr:
-    """
-    Platelets, ×10^3/µL
-    ≥150       0
-     100-149  +1
-      50- 99  +2
-      20- 49  +3
-     <20      +4
-    """
-    return (
-        pl.when(platelets_value >= 150)
-        .then(0)
-        .when(platelets_value.is_between(100, 150, closed="left"))
-        .then(1)
-        .when(platelets_value.is_between(50, 100, closed="left"))
-        .then(2)
-        .when(platelets_value.is_between(20, 50, closed="left"))
-        .then(3)
-        .when(platelets_value < 20)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Platelets (×10^3/µL) | Points
+        ( 150, None, "left",    0),  # ≥150 ................. 0
+        ( 100,  150, "left",    1),  #  100-149               1
+        (  50,  100, "left",    2),  #   50- 99               2
+        (  20,   50, "left",    3),  #   20- 49               3
+        (None,   20, "neither", 4),  #  <20                   4
+    ]).to_expr(platelets_value) # fmt: skip
 
 
 def _gcs_points(gcs: pl.Expr) -> pl.Expr:
-    """
-    Glasgow Coma Scale
-    15      0
-    13-14  +1
-    10-12  +2
-     6- 9  +3
-    <6     +4
-    """
-    return (
-        pl.when(gcs == 15)
-        .then(0)
-        .when(gcs.is_between(13, 14))
-        .then(1)
-        .when(gcs.is_between(10, 12))
-        .then(2)
-        .when(gcs.is_between(6, 9))
-        .then(3)
-        .when(gcs < 6)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Glasgow Coma Scale | Points
+        (  15, None, "left",    0),  # 15 ................. 0
+        (  13,   15, "left",    1),  # 13-14                1
+        (  10,   13, "left",    2),  # 10-12                2
+        (   6,   10, "left",    3),  #  6- 9                3
+        (None,    6, "neither", 4),  # <6                   4
+    ]).to_expr(gcs) # fmt: skip
 
 
 def _bilirubin_points(bili: pl.Expr) -> pl.Expr:
-    """
-    Bilirubine, mg/dL (μmol/L)
-     <1.2      (<20)       0
-      1.2–1.9   (20- 32)  +1
-      2.0–5.9   (33-101)  +2
-      6.0–11.9 (102-204)  +3
-    ≥12.0         (>204)  +4
-    """
-    return (
-        pl.when(bili < 1.2)
-        .then(0)
-        .when(bili.is_between(1.2, 2.0, closed="left"))
-        .then(1)
-        .when(bili.is_between(2.0, 6.0, closed="left"))
-        .then(2)
-        .when(bili.is_between(6.0, 12.0, closed="left"))
-        .then(3)
-        .when(bili >= 12.0)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Bilirubin (mg/dL) | Points
+        (None,  1.2, "neither", 0),  #  <1.2 ............. 0
+        ( 1.2,  2.0, "left",    1),  #   1.2- 1.9          1
+        ( 2.0,  6.0, "left",    2),  #   2.0- 5.9          2
+        ( 6.0, 12.0, "left",    3),  #   6.0-11.9          3
+        (12.0, None, "left",    4),  # ≥12.0               4
+    ]).to_expr(bili) # fmt: skip
 
 
 def _creatinine_points(crea: pl.Expr) -> pl.Expr:
-    """
-    Creatinine, mg/dL (μmol/L)
-    <1.2        (<110)   0
-     1.2–1.9 (110-170)  +1
-     2.0–3.4 (171-299)  +2
-     3.5–4.9 (300-440)  +3
-    ≥5.0        (>440)  +4
-    """
-    return (
-        pl.when(crea < 1.2)
-        .then(0)
-        .when(crea.is_between(1.2, 2.0, closed="left"))
-        .then(1)
-        .when(crea.is_between(2.0, 3.5, closed="left"))
-        .then(2)
-        .when(crea.is_between(3.5, 5.0, closed="left"))
-        .then(3)
-        .when(crea >= 5.0)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Creatinine (mg/dL) | Points
+        (None,  1.2, "neither", 0),  # <1.2 ............... 0
+        ( 1.2,  2.0, "left",    1),  #  1.2-1.9             1
+        ( 2.0,  3.5, "left",    2),  #  2.0-3.4             2
+        ( 3.5,  5.0, "left",    3),  #  3.5-4.9             3
+        ( 5.0, None, "left",    4),  # ≥5.0                 4
+    ]).to_expr(crea) # fmt: skip
 
 
 def _uo_points(uo_ml: pl.Expr) -> pl.Expr:
-    """
-    Urine output, mL/day
-    <500 mL/day  +3
-    <200 mL/day  +4
-    """
-    return pl.when(uo_ml < 200).then(4).when(uo_ml < 500).then(3).otherwise(0)
+    return ScoringTable([            # Urine output (mL/day) | Points
+        (None,  200, "neither", 4),  # <200                    4
+        ( 200,  500, "left",    3),  #  200-499                3
+        ( 500, None, "left",    0),  # ≥500 .................. 0
+    ]).to_expr(uo_ml) # fmt: skip
 
 
 def _map_points(map_val: pl.Expr) -> pl.Expr:
-    """
-    Mean Arterial Pressure (MAP), mmHg
-    <70 mmHg  +1
-    """
-    return pl.when(map_val < 70).then(1).otherwise(0)
+    return ScoringTable([            # Mean Arterial Pressure (mmHg) | Points
+        (None,   70, "neither", 1),  # <70                             1
+        (  70, None, "left",    0),  # ≥70 ........................... 0
+    ]).to_expr(map_val) # fmt: skip
 
 
 def _vasopressor_points(
