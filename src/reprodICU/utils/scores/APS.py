@@ -42,6 +42,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
+from ..core import BLOOD_PRESSURES
 from ..laboratory.oxygenation.ALVEOLAR_ARTERIAL_GRADIENT import Aa_GRADIENT
 
 STAY_KEY = "Global ICU Stay ID"
@@ -59,16 +60,8 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        vitals.with_columns(
-            pl.coalesce(
-                pl.col("Invasive mean arterial pressure"),
-                pl.col("Non-invasive mean arterial pressure"),
-                1 / 3 * pl.col("Invasive systolic arterial pressure")
-                + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-                1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-                + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-            ).alias("Mean arterial pressure"),
-        )
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"MAP": "Mean arterial pressure"})
         .filter(
             pl.any_horizontal(
                 pl.col(col).is_finite()
