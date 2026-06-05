@@ -302,8 +302,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Calculate ICU mortality
                 (
                     (pl.col("deathtime") <= pl.col("outtime"))
-                    & (pl.col(self.discharge_loc_col) == "DIED")
-                ).cast(bool)
+                    | (
+                        (pl.col("dischtime") <= pl.col("outtime"))
+                        & (pl.col(self.discharge_loc_col) == "DIED")
+                    )
+                )
+                .cast(bool)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),

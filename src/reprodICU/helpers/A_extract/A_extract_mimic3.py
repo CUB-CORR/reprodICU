@@ -289,7 +289,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate ICU mortality
                 (
                     (pl.col("DEATHTIME") <= pl.col("OUTTIME"))
-                    & (pl.col(self.discharge_loc_col) == "DEAD/EXPIRED")
+                    | (
+                        (pl.col("DISCHTIME") <= pl.col("OUTTIME"))
+                        & (pl.col(self.discharge_loc_col) == "DEAD/EXPIRED")
+                    )
                 )
                 .cast(bool)
                 .alias(self.mortality_icu_col),
