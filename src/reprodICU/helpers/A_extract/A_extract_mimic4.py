@@ -300,14 +300,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Calculate admission time
                 pl.col("intime").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (
-                    (pl.col("deathtime") <= pl.col("outtime"))
-                    | (
-                        (pl.col("dischtime") <= pl.col("outtime"))
-                        & (pl.col(self.discharge_loc_col) == "DIED")
-                    )
+                pl.when(pl.col("deathtime") <= pl.col("outtime"))
+                .then(True)
+                .when(
+                    pl.col("dischtime") <= pl.col("outtime"),
+                    pl.col(self.discharge_loc_col) == "DIED",
                 )
-                .cast(bool)
+                .then(True)
+                .otherwise(False)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
@@ -2349,7 +2349,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             .select("note_id", "field_value")
             .rename({"field_value": "addendum_note_id"})
         )
-        
+
         if "parquet" in self.radiology_reports_path:
             radiology = pl.scan_parquet(self.radiology_reports_path)
         else:

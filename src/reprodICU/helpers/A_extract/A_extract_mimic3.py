@@ -287,14 +287,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate admission time
                 pl.col("INTIME").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (
-                    (pl.col("DEATHTIME") <= pl.col("OUTTIME"))
-                    | (
-                        (pl.col("DISCHTIME") <= pl.col("OUTTIME"))
-                        & (pl.col(self.discharge_loc_col) == "DEAD/EXPIRED")
-                    )
+                pl.when(pl.col("DEATHTIME") <= pl.col("OUTTIME"))
+                .then(True)
+                .when(
+                    pl.col("DISCHTIME") <= pl.col("OUTTIME"),
+                    pl.col(self.discharge_loc_col) == "DEAD/EXPIRED",
                 )
-                .cast(bool)
+                .then(True)
+                .otherwise(False)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
