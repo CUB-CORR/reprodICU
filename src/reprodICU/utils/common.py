@@ -444,6 +444,7 @@ def extract_struct_value(
     """
     struct = pl.col(col_name).struct
     value  = struct.field("value")
+    expr   = value
 
     if allowed_systems:
         system = struct.field("system")
