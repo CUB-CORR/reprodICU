@@ -4,7 +4,7 @@
 # MIMIC-IV:  admissions table -> discharge_location column
 # NWICU:     admissions table -> discharge_location column
 # SICdb:     cases table -> DischargeUnit column
-# UMCdb:     admissions table -> destination column
+# UMCdb:     admissions table -> destination column -> manual exploration has shown that the destination column IDs correspond to the listitem_values of 10472 "Ontslagbestemming" (Discharge destination)
 
 Hospital:
   # eICU-CRD
@@ -12,6 +12,8 @@ Hospital:
   - Other Hospital
   - Other Internal
   # MIMIC-III
+  - DISC-TRAN CANCER/CHLDRN H
+  - DISC-TRAN TO FEDERAL HC
   - LONG TERM CARE HOSPITAL
   - SHORT TERM HOSPITAL
   # MIMIC-IV
@@ -19,6 +21,7 @@ Hospital:
   - HEALTHCARE FACILITY
   # NWICU
   - ADMITTED TO L&D
+  - CANCER CENTER OR CHILDREN'S HOSPITAL
   - CRITICAL ACCESS HOSPITAL
   - LONG-TERM ACUTE CARE HOSPITAL (LTAC)
   - PLANNED READMISSION - DC/TRANSFERRED TO LONG-TERM ACUTE CARE HOSPITAL (LTAC)
@@ -46,6 +49,45 @@ Hospital:
   - RCU
   - Unfallchirurgie
   - Urologie
+  # UMCdb
+  - "2" # Afdeling ander ziekenhuis - Department of another hospital
+  - "8"  # VU department ICVC
+  - "9"  # VU department ICAR
+  - "10" # VU department ICVI
+  - "12" # VU department INEO
+  - "13" # VU department ISNY
+  - "14" # VU SCAR department
+  - "15" # VU department SCCH
+  - "16" # VU department MICV
+  - "17" # VU department SNCH
+  - "18" # VU VCAR department
+  - "19" # VU department VCCH
+  - "20" # VU VEKV department
+  - "21" # VU VGAS department
+  - "22" # VU VGYN department
+  - "23" # VU VHEM department
+  - "25" # VU VHON department
+  - "26" # VU VINW department
+  - "27" # VU department VKCH
+  - "29" # VU VKNO department
+  - "31" # VU VLON department
+  - "32" # VU VNCH department
+  - "33" # VU UNEU department
+  - "35" # VU department VOBS
+  - "36" # VU department VONI
+  - "37" # VU department VOOG
+  - "38" # VU department VORT
+  - "40" # VU VTRA department
+  - "41" # VU department VVAT
+  - "42" # VU VVER department
+  - "44" # VU department DUHP
+  - "45" # VU VNCO department
+  - "46" # VU department VIG1
+  - "47" # VU department VIG2
+  - "48" # VU department VTRF
+  - "49" # VU department VKKB_
+  - "50" # VU VKKC department
+  - "51" # VU department VMPU
 Home:
   # eICU-CRD
   - Home
@@ -64,6 +106,8 @@ Home:
   - SHELTER
   # SICdb
   - Nach Hause
+  # UMCdb
+  - "5" # Huis - Home
 Death:
   - death
   # eICU-CRD
@@ -78,6 +122,8 @@ Death:
   - GIFT OF HOPE / STILL A PATIENT
   # SICdb
   - Pathologie # ???
+  # UMCdb
+  - Overleden # IDs 6/7: Mortuarium met / zonder obductie - Mortuary with / without autopsy
 Hospice:
   # MIMIC-III
   - HOSPICE-HOME
@@ -94,6 +140,8 @@ Other ICU:
   - ICU
   - Other ICU
   - Other ICU (CABG)
+  # UMCdb
+  - "4" # CCU/ICU ander ziekenhuis - CCU/ICU other hospital
 Operating Room:
   # eICU-CRD
   - Operating Room
@@ -145,59 +193,14 @@ Other:
   # eICU-CRD
   - Other
   - Other External
-  # MIMIC-III
-  - DISC-TRAN CANCER/CHLDRN H
-  - DISC-TRAN TO FEDERAL HC
   # MIMIC-III / MIMIC-IV
   - OTHER FACILITY
   # NWICU
-  - CANCER CENTER OR CHILDREN'S HOSPITAL
   - PLANNED READMISSION - DC/TRANSFERRED TO OTHER TYPE OF HEALTHCARE INSTITUTION
   - DESIGNATED DISASTER ALTERNATIVE CARE SITE
   - ED DISMISSED-NEVER ARRIVED
-  # UMCdb specific ward numbers
-  - "1"
-  - "2"
-  - "3"
-  - "4"
-  - "5"
-  - "8"
-  - "9"
-  - "10"
-  - "12"
-  - "13"
-  - "14"
-  - "15"
-  - "16"
-  - "17"
-  - "18"
-  - "19"
-  - "20"
-  - "21"
-  - "22"
-  - "23"
-  - "25"
-  - "26"
-  - "27"
-  - "29"
-  - "31"
-  - "32"
-  - "33"
-  - "35"
-  - "36"
-  - "37"
-  - "38"
-  - "40"
-  - "41"
-  - "42"
-  - "44"
-  - "45"
-  - "46"
-  - "47"
-  - "48"
-  - "49"
-  - "50"
-  - "51"
+  # UMCdb
+  - "3" # Anders
 Against Medical Advice:
   # MIMIC-III
   - LEFT AGAINST MEDICAL ADVI
@@ -211,3 +214,5 @@ Unknown:
   - Unknown
   - unknown
   - ""
+  # UMCdb
+  - "1" # .Vul in
