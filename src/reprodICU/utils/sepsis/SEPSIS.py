@@ -55,6 +55,7 @@ from ..common import (
     get_ventilation,
 )
 from ..scores.SOFA import SOFA
+from .SIRS import SIRS
 
 # seconds constants
 SECONDS_PER_HOUR = 60 * 60
@@ -885,7 +886,7 @@ def SEPSIS(
     t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
-    sofa_filter: str = "delta",  # "absolute" or "delta" for SOFA criteria
+    organ_failure_criterion: str = "delta",  # "absolute" or "delta" for SOFA criteria, "sirs" for SIRS criteria
 ) -> pl.LazyFrame:
     """Compute Sepsis-3 in long format from raw inputs.
 
@@ -935,10 +936,11 @@ def SEPSIS(
             floor((time - T_0)/window_size).
         timeframe_unit : str, optional
             Semantic only; output column remains a numeric timeframe.
-        sofa_filter : str, optional
+        organ_failure_criterion : str, optional
             "absolute" (default) applies SOFA criteria to raw scores; "delta" applies
             to change from baseline. Baseline is defined as the lowest score in the
             24h prior to suspicion time (Seymour) or antibiotic escalation (Shah).
+            "sirs" applies SIRS criteria instead of SOFA.
 
     Returns
     -------
@@ -985,6 +987,11 @@ def SEPSIS(
     }
     _validate_required_data("SEPSIS", required)
 
+    if organ_failure_criterion not in ("absolute", "delta", "sirs"):
+        raise ValueError(
+            f"organ_failure_criterion must be 'absolute', 'delta', or 'sirs', got {organ_failure_criterion!r}"
+        )
+
     # Inputs to Lazy
     patient_information = patient_information.lazy()
     medications = medications.lazy()
@@ -1002,30 +1009,29 @@ def SEPSIS(
     )
 
     # region SOFA
-    SOFA_FILTER = (
-        pl.col("sofa_score") >= 2
-        if sofa_filter == "absolute"
-        else pl.col("sofa_increase_delta") >= 2
-    )
+    ORGAN_FAILURE_CRITERION = {
+        "absolute": pl.col("sofa_score") >= 2,
+        "delta":    pl.col("sofa_increase_delta") >= 2,
+        "sirs":     pl.col("sirs_criteria_fulfilled"),
+    }[organ_failure_criterion] # fmt: skip
 
     # SOFA from raw inputs (long format)
-    SOFA_SCORE = SOFA(
-        patient_information,
-        timeseries_vitals,
-        timeseries_labs,
-        timeseries_resp,
-        timeseries_inout,
-        medications,
-        ventilation,
-        t_0=t_0,
-        t_1=t_1,
-        window_size=window_size,
-        t_0_per_stay=t_0_per_stay,
-        timeframe_name="timeframe",
-    )
-    # Aggregate per timeframe (worst-within-window)
     sofa_base = (
-        SOFA_SCORE.select(
+        SOFA(
+            patient_information,
+            timeseries_vitals,
+            timeseries_labs,
+            timeseries_resp,
+            timeseries_inout,
+            medications,
+            ventilation,
+            t_0=t_0,
+            t_1=t_1,
+            window_size=window_size,
+            t_0_per_stay=t_0_per_stay,
+            timeframe_name="timeframe",
+        )
+        .select(
             STAY_KEY,
             "timeframe",
             pl.col("SOFA Score").alias("sofa_score"),
@@ -1061,6 +1067,27 @@ def SEPSIS(
 
     lactate_timeline = (
         lactate_long(ALL_STAYS_T0, timeseries_labs, window_size=window_size)
+        .collect()
+        .lazy()
+    )
+
+    # region SIRS
+    sirs_base = (
+        SIRS(
+            patient_information,
+            timeseries_vitals,
+            timeseries_labs,
+            t_0=t_0,
+            t_1=t_1,
+            window_size=window_size,
+            t_0_per_stay=t_0_per_stay,
+            timeframe_name="timeframe",
+        )
+        .select(
+            STAY_KEY,
+            "timeframe",
+            pl.col("SIRS Criteria fulfilled").alias("sirs_criteria_fulfilled"),
+        )
         .collect()
         .lazy()
     )
@@ -1124,6 +1151,19 @@ def SEPSIS(
         .lazy()
     )
 
+    # Seymour: SIRS-based onset
+    onset_candidates_sirs = (
+        suspicion_numbered.join(sirs_base, on=STAY_KEY, how="inner")
+        .filter(
+            pl.col("timeframe") >= pl.col("baseline_timeframe"),
+            pl.col("timeframe") <= pl.col("end_timeframe"),
+            pl.col("sirs_criteria_fulfilled"),
+        )
+        .group_by(STAY_KEY, "suspicion_number")
+        .agg(onset_timeframe=pl.min("timeframe"))
+    )
+
+    # Seymour: SOFA-based onset (absolute or delta)
     # Baseline SOFA score at the baseline_timeframe
     suspicion_numbered_baseline_sofa = suspicion_numbered.join(
         sofa_base, on=STAY_KEY, how="inner"
@@ -1138,7 +1178,7 @@ def SEPSIS(
     )
 
     # First timeframe within [baseline_timeframe, end_timeframe] where SOFA >= baseline + 2
-    onset_candidates = (
+    onset_candidates_sofa = (
         suspicion_numbered_baseline_sofa.filter(
             pl.col("timeframe") >= pl.col("baseline_timeframe"),
             pl.col("timeframe") <= pl.col("end_timeframe"),
@@ -1152,9 +1192,16 @@ def SEPSIS(
             sofa_increase_delta=pl.col("sofa_score")
             - pl.col("baseline_sofa_score")
         )
-        .filter(SOFA_FILTER)
+        .filter(ORGAN_FAILURE_CRITERION)
         .group_by(STAY_KEY, "suspicion_number")
         .agg(onset_timeframe=pl.min("timeframe"))
+    )
+
+    # Select based on criterion
+    onset_candidates = (
+        onset_candidates_sirs
+        if organ_failure_criterion == "sirs"
+        else onset_candidates_sofa
     )
 
     # Label SEPSIS/SHOCK at onset timeframe
@@ -1259,11 +1306,25 @@ def SEPSIS(
         end_timeframe_abx=pl.col("abx_suspicion_timeframe") + pl.lit(win_fwd),
     )
 
+    # Shah: SIRS-based onset
+    onset_candidates_abx_sirs = (
+        abx_suspicion_numbered.join(sirs_base, on=STAY_KEY, how="inner")
+        .filter(
+            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
+            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
+            pl.col("sirs_criteria_fulfilled"),
+        )
+        .group_by(STAY_KEY, "suspicion_number")
+        .agg(onset_timeframe_abx=pl.min("timeframe"))
+    )
+
+    # Shah: SOFA-based onset (absolute or delta)
     # Baseline SOFA at antibiotic-anchored baseline timeframe
     abx_suspicion_numbered_baseline_sofa = abx_suspicion_numbered.join(
         sofa_base, on=STAY_KEY, how="inner"
     )
 
+    # First timeframe in [baseline, end] where SOFA >= baseline + 2
     baseline_scores_abx = (
         abx_suspicion_numbered_baseline_sofa.filter(
             pl.col("timeframe") == pl.col("baseline_timeframe_abx")
@@ -1272,8 +1333,7 @@ def SEPSIS(
         .agg(baseline_sofa_score_abx=pl.max("sofa_score"))
     )
 
-    # First timeframe in [baseline, end] where SOFA >= baseline + 2
-    onset_candidates_abx = (
+    onset_candidates_abx_sofa = (
         abx_suspicion_numbered_baseline_sofa.filter(
             pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
             pl.col("timeframe") <= pl.col("end_timeframe_abx"),
@@ -1290,6 +1350,13 @@ def SEPSIS(
         .filter(pl.col("sofa_increase_delta_abx") >= 2)
         .group_by(STAY_KEY, "suspicion_number")
         .agg(onset_timeframe_abx=pl.min("timeframe"))
+    )
+
+    # Select based on criterion
+    onset_candidates_abx = (
+        onset_candidates_abx_sirs
+        if organ_failure_criterion == "sirs"
+        else onset_candidates_abx_sofa
     )
 
     # Determine SEPSIS_ABX vs SHOCK using same shock criteria
