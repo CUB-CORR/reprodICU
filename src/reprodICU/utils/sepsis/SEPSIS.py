@@ -1,6 +1,19 @@
 """
 SEPSIS: compute Sepsis-3 in long format directly from raw inputs.
 
+Sepsis is defined as:
+- suspected infection (culture+antibiotic pair / antibiotic escalation) AND
+- organ dysfunction (SOFA ≥2 / SOFA increase ≥2 from baseline / SIRS criteria / Rhee organ dysfunction criteria)
+
+Septic shock is defined as:
+- sepsis AND
+- hypotension requiring vasopressors to maintain MAP ≥65 mmHg AND
+- serum lactate >2 mmol/L despite adequate fluid resuscitation
+
+To operationalize this definition, hypotension requiring vasopressor support is
+approximated by vasopressor infusion (SOFA CV ≥2). Adequate fluid resuscitation
+is assumed for ICU patients.
+
 Output columns per row:
 - Global ICU Stay ID
 - timeframe (0-indexed integer window)
@@ -712,7 +725,7 @@ def rhee_organ_dysfunction(
     patient_information: pl.LazyFrame,
     timeseries_labs: pl.LazyFrame,
     ventilation: pl.LazyFrame,
-    cv_ge3_timeline: pl.LazyFrame,
+    cv_ge2_timeline: pl.LazyFrame,
     lactate_timeline: pl.LazyFrame,
     *,
     window_size: int,
@@ -720,7 +733,7 @@ def rhee_organ_dysfunction(
     """Detect organ dysfunction markers per Rhee criteria.
 
     Returns timeframe with any of:
-    - Vasopressor (cv_ge3)
+    - Vasopressor (cv_ge2) - vasopressor infusion is assumed to indicate hypotension requiring support
     - Mechanical ventilation ≥2 continuous calendar days
     - Creatinine increase ≥0.5 from baseline (excluding ESRD)
     - Bilirubin ≥2.0 and 100% increase from baseline
@@ -733,7 +746,7 @@ def rhee_organ_dysfunction(
         patient_information: Contains admission time, LOS, diagnoses
         timeseries_labs: Lab timeseries
         ventilation: Ventilation intervals
-        cv_ge3_timeline: Pre-computed vasopressor timeline
+        cv_ge2_timeline: Pre-computed vasopressor timeline
         lactate_timeline: Pre-computed lactate timeline
         window_size: Window size in seconds
 
@@ -745,7 +758,7 @@ def rhee_organ_dysfunction(
     labs = timeseries_labs.lazy()
 
     # Vasopressor (pre-computed)
-    vaso_tf = cv_ge3_timeline.filter(pl.col("cv_ge3")).select(
+    vaso_tf = cv_ge2_timeline.filter(pl.col("cv_ge2")).select(
         STAY_KEY, "timeframe", pl.lit(True).alias("dysfunction")
     )
 
@@ -1041,26 +1054,27 @@ def SEPSIS(
         .lazy()
     )
 
-    cv_ge3_timeline = (
+    # vasopressor infusion is assumed to indicate hypotension requiring support
+    cv_ge2_timeline = (
         sofa_base.select(
             STAY_KEY,
             "timeframe",
-            (pl.col("cardiovascular_points") >= 3).alias("cv_ge3"),
+            (pl.col("cardiovascular_points") >= 2).alias("cv_ge2"),
         )
         .with_columns(
-            prev_cv=pl.col("cv_ge3")
+            prev_cv=pl.col("cv_ge2")
             .shift(1)
             .over(STAY_KEY, order_by="timeframe")
         )
         .with_columns(
             pl.when(
-                pl.col("cv_ge3") & pl.col("prev_cv").fill_null(False).not_()
+                pl.col("cv_ge2") & pl.col("prev_cv").fill_null(False).not_()
             )
             .then(True)
             .otherwise(False)
             .alias("cv_start"),
         )
-        .select(STAY_KEY, "timeframe", "cv_ge3", "cv_start")
+        .select(STAY_KEY, "timeframe", "cv_ge2", "cv_start")
         .collect()
         .lazy()
     )
@@ -1205,10 +1219,10 @@ def SEPSIS(
     )
 
     # Label SEPSIS/SHOCK at onset timeframe
-    cv_at_onset = cv_ge3_timeline.select(
+    cv_at_onset = cv_ge2_timeline.select(
         STAY_KEY,
         "timeframe",
-        pl.col("cv_ge3").alias("cv_ge3_onset"),
+        pl.col("cv_ge2").alias("cv_ge2_onset"),
     )
     lactate_at_onset = lactate_timeline.select(
         STAY_KEY,
@@ -1230,7 +1244,7 @@ def SEPSIS(
         )
         .with_columns(
             (
-                pl.col("cv_ge3_onset").fill_null(False)
+                pl.col("cv_ge2_onset").fill_null(False)
                 & pl.col("lactate_ge2_onset").fill_null(False)
             ).alias("shock_onset")
         )
@@ -1360,10 +1374,10 @@ def SEPSIS(
     )
 
     # Determine SEPSIS_ABX vs SHOCK using same shock criteria
-    cv_at_onset_abx = cv_ge3_timeline.select(
+    cv_at_onset_abx = cv_ge2_timeline.select(
         STAY_KEY,
         "timeframe",
-        pl.col("cv_ge3").alias("cv_ge3_onset_abx"),
+        pl.col("cv_ge2").alias("cv_ge2_onset_abx"),
     )
     lactate_at_onset_abx = lactate_timeline.select(
         STAY_KEY,
@@ -1385,7 +1399,7 @@ def SEPSIS(
         )
         .with_columns(
             shock_onset_abx=(
-                pl.col("cv_ge3_onset_abx").fill_null(False)
+                pl.col("cv_ge2_onset_abx").fill_null(False)
                 & pl.col("lactate_ge2_onset_abx").fill_null(False)
             )
         )
@@ -1408,7 +1422,7 @@ def SEPSIS(
         "end_timeframe",
     )
     vaso_starts = (
-        cv_ge3_timeline.join(suspicion_windows, on=STAY_KEY, how="inner")
+        cv_ge2_timeline.join(suspicion_windows, on=STAY_KEY, how="inner")
         .filter(
             pl.col("timeframe") >= pl.col("baseline_timeframe"),
             pl.col("timeframe") <= pl.col("end_timeframe"),
@@ -1452,7 +1466,7 @@ def SEPSIS(
         "end_timeframe_abx",
     )
     vaso_starts_abx = (
-        cv_ge3_timeline.join(abx_suspicion_windows, on=STAY_KEY, how="inner")
+        cv_ge2_timeline.join(abx_suspicion_windows, on=STAY_KEY, how="inner")
         .filter(
             pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
             pl.col("timeframe") <= pl.col("end_timeframe_abx"),
@@ -1537,7 +1551,7 @@ def SEPSIS(
         patient_information,
         timeseries_labs,
         ventilation,
-        cv_ge3_timeline,
+        cv_ge2_timeline,
         lactate_timeline,
         window_size=window_size,
     )
