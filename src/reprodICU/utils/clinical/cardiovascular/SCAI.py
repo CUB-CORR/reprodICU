@@ -44,6 +44,7 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    _validate_required_data,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -195,6 +196,15 @@ def SCAI(
         timeseries_labs = get_timeseries_labs()
     if medications is None:
         medications = get_medications()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "medications": medications,
+    }
+    _validate_required_data("SCAI", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_vitals = _to_lazy(timeseries_vitals)

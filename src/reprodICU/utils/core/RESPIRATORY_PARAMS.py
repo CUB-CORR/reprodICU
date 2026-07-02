@@ -2,7 +2,11 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, get_timeseries_respiratory
+from ..common import (
+    _to_lazy,
+    _validate_required_data,
+    get_timeseries_respiratory,
+)
 
 
 def RESPIRATORY_PARAMS(
@@ -42,6 +46,12 @@ def RESPIRATORY_PARAMS(
     # Load defaults if not provided
     if timeseries_respiratory is None:
         timeseries_respiratory = get_timeseries_respiratory()
+
+    # Validate all required data is available
+    required = {
+        "timeseries_respiratory": timeseries_respiratory,
+    }
+    _validate_required_data("RESPIRATORY_PARAMS", required)
 
     timeseries_respiratory = _to_lazy(timeseries_respiratory)
 

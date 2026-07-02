@@ -13,6 +13,7 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    _validate_required_data,
     _build_t0,
     _to_lazy,
     get_patient_information,
@@ -145,6 +146,14 @@ def RESPIRATORY_FAILURE(
         timeseries_vitals = get_timeseries_vitals()
     if timeseries_labs is None:
         timeseries_labs = get_timeseries_labs()
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+    }
+    _validate_required_data("RESPIRATORY_FAILURE", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"

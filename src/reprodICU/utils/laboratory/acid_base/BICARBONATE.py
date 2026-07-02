@@ -94,7 +94,7 @@ def BICARBONATE(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="BICARBONATE", required_data=required)
+    _validate_required_data("BICARBONATE", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -176,7 +176,7 @@ def STANDARD_BICARBONATE(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="STANDARD_BICARBONATE", required_data=required) # fmt: skip
+    _validate_required_data("STANDARD_BICARBONATE", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -258,7 +258,7 @@ def TOTAL_CO2(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="TOTAL_CO2", required_data=required)
+    _validate_required_data("TOTAL_CO2", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

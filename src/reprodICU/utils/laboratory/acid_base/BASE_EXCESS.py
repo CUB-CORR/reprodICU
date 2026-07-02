@@ -84,7 +84,7 @@ def BASE_EXCESS(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="BASE_EXCESS", required_data=required)
+    _validate_required_data("BASE_EXCESS", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
@@ -166,7 +166,7 @@ def STANDARD_BASE_EXCESS(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="STANDARD_BASE_EXCESS", required_data=required) # fmt: skip
+    _validate_required_data("STANDARD_BASE_EXCESS", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

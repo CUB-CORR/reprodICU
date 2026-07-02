@@ -417,7 +417,7 @@ def APACHE2(
         "timeseries_resp": timeseries_resp,
         "diagnoses": diagnoses,
     }
-    _validate_required_data(required)
+    _validate_required_data("APACHE II", required)
 
     info = _to_lazy(patient_information)
     diag = _to_lazy(diagnoses)

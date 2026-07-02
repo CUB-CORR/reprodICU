@@ -67,7 +67,7 @@ def _load_and_process_diagnoses(
         "diagnoses": diagnoses,
         "patient_information": patient_information,
     }
-    _validate_required_data(concept="comorbidity data", required_data=required)
+    _validate_required_data("comorbidity data", required)
 
     diagnoses = _to_lazy(diagnoses)
     patient_information = _to_lazy(patient_information)

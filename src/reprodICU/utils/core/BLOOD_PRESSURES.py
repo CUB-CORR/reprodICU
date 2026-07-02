@@ -2,7 +2,11 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, get_timeseries_vitals
+from ..common import (
+    _to_lazy,
+    _validate_required_data,
+    get_timeseries_vitals,
+)
 
 
 def BLOOD_PRESSURES(
@@ -32,6 +36,12 @@ def BLOOD_PRESSURES(
     # Load defaults if not provided
     if timeseries_vitals is None:
         timeseries_vitals = get_timeseries_vitals()
+
+    # Validate all required data is available
+    required = {
+        "timeseries_vitals": timeseries_vitals,
+    }
+    _validate_required_data("BLOOD_PRESSURES", required)
 
     timeseries_vitals = _to_lazy(timeseries_vitals)
 

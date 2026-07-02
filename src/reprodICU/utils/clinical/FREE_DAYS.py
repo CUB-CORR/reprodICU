@@ -376,7 +376,7 @@ def VENTILATOR_FREE_DAYS(
         "patient_information": patient_information,
         "ventilation": ventilation,
     }
-    _validate_required_data(concept="VENTILATOR_FREE_DAYS", required_data=required) # fmt: skip
+    _validate_required_data("VENTILATOR_FREE_DAYS", required_data=required) # fmt: skip
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
@@ -487,7 +487,7 @@ def RENAL_REPLACEMENT_THERAPY_FREE_DAYS(
         "patient_information": patient_information,
         "rrt": rrt,
     }
-    _validate_required_data(concept="RENAL_REPLACEMENT_THERAPY_FREE_DAYS", required_data=required) # fmt: skip
+    _validate_required_data("RENAL_REPLACEMENT_THERAPY_FREE_DAYS", required)
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
@@ -558,7 +558,7 @@ def VASOPRESSOR_FREE_DAYS(
         "patient_information": patient_information,
         "medications": medications,
     }
-    _validate_required_data(concept="VASOPRESSOR_FREE_DAYS", required_data=required) # fmt: skip
+    _validate_required_data("VASOPRESSOR_FREE_DAYS", required)
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)

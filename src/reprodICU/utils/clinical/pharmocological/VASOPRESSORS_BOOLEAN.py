@@ -73,7 +73,7 @@ def VASOPRESSORS_BOOLEAN(
         "patient_information": patient_information,
         "medications": medications,
     }
-    _validate_required_data(concept="VASOPRESSORS_BOOLEAN", required_data=required) # fmt: skip
+    _validate_required_data("VASOPRESSORS_BOOLEAN", required)
 
     # Base frames
     patient_information = patient_information.lazy()

@@ -108,7 +108,7 @@ def PAO2(
         "timeseries_resp": timeseries_resp,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="PAO2", required_data=required)
+    _validate_required_data("PAO2", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -211,6 +211,14 @@ def Aa_GRADIENT(
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
+
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_labs": timeseries_labs,
+    }
+    _validate_required_data("Aa_GRADIENT", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

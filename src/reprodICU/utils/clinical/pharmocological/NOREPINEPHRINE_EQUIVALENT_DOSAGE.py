@@ -97,7 +97,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
         "patient_information": patient_information,
         "medications": medications,
     }
-    _validate_required_data(concept="NOREPINEPHRINE_EQUIVALENT_DOSAGE", required_data=required) # fmt: skip
+    _validate_required_data("NOREPINEPHRINE_EQUIVALENT_DOSAGE", required)
 
     # Base frames
     patient_information = patient_information.lazy()

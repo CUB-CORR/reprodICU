@@ -142,7 +142,7 @@ def MECHANICAL_POWER(
         "patient_information": patient_information,
         "timeseries_resp": timeseries_resp,
     }
-    _validate_required_data(concept="MECHANICAL_POWER", required_data=required)
+    _validate_required_data("MECHANICAL_POWER", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_resp = _to_lazy(timeseries_resp)

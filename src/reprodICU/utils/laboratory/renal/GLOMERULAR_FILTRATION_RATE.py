@@ -369,7 +369,7 @@ def ESTIMATED_GFR(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="ESTIMATED_GFR", required_data=required)
+    _validate_required_data("ESTIMATED_GFR", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

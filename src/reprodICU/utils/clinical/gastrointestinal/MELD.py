@@ -277,7 +277,7 @@ def MELD(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="MELD", required_data=required)
+    _validate_required_data("MELD", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -320,11 +320,11 @@ def MELD(
 
     # Extract lab values from structs
     lab_data = lab_data.with_columns(
-        extract_struct_value("Creatinine", ["Serum or Plasma", "Blood"]).alias("Creatinine"),
-        extract_struct_value("Bilirubin",  ["Serum or Plasma", "Blood"]).alias("Bilirubin"),
-        extract_struct_value("INR",        ["Serum or Plasma", "Blood"]).alias("INR"),
-        extract_struct_value("Sodium",     ["Serum or Plasma", "Blood"]).alias("Sodium"),
-        extract_struct_value("Glucose",    ["Serum or Plasma", "Blood"]).alias("Glucose"),
+        extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
+        extract_struct_value("Bilirubin",  ["Serum", "Blood"]).alias("Bilirubin"),
+        extract_struct_value("INR",        ["Serum", "Blood"]).alias("INR"),
+        extract_struct_value("Sodium",     ["Serum", "Blood"]).alias("Sodium"),
+        extract_struct_value("Glucose",    ["Serum", "Blood"]).alias("Glucose"),
     ).select(
         STAY_KEY,
         TIME_KEY,

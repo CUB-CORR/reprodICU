@@ -121,7 +121,7 @@ def P50(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="P50", required_data=required)
+    _validate_required_data("P50", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

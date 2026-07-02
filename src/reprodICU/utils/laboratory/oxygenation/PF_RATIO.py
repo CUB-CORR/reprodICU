@@ -139,7 +139,7 @@ def PaO2_FiO2_RATIO(
         "timeseries_resp": timeseries_resp,
         "timeseries_labs": timeseries_labs,
     }
-    _validate_required_data(concept="PaO2_FiO2_RATIO", required_data=required)
+    _validate_required_data("PaO2_FiO2_RATIO", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
@@ -251,7 +251,7 @@ def SpO2_FiO2_RATIO(
         "timeseries_resp": timeseries_resp,
         "timeseries_vitals": timeseries_vitals,
     }
-    _validate_required_data(concept="SpO2_FiO2_RATIO", required_data=required)
+    _validate_required_data("SpO2_FiO2_RATIO", required)
 
     STAY_KEY = "Global ICU Stay ID"
     TIME_KEY = "Time Relative to Admission (seconds)"
