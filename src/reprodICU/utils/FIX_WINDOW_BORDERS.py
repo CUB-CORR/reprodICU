@@ -14,48 +14,63 @@ def FIX_WINDOW_BORDERS(
 ) -> pl.LazyFrame:
     DATA = _to_lazy(DATA)
     suffix = f"{reference} ({unit})"
+    start_col = prefix + " Start Relative to " + suffix
+    end_col = prefix + " End Relative to " + suffix
+    window_col = "Window Relative to " + reference
+
     return (
         DATA.with_columns(
             pl.int_ranges(
-                -(
-                    pl.col(prefix + " Start Relative to " + suffix)
-                    // -TIMEWINDOW_IN_SECONDS
+                pl.col(start_col) // TIMEWINDOW_IN_SECONDS,
+                (pl.col(end_col) - 1) // TIMEWINDOW_IN_SECONDS + 1,
+            ).alias(window_col)
+        )
+        .explode(window_col)
+        .with_columns(
+            (
+                pl.min_horizontal(
+                    pl.col(end_col), (pl.col(window_col) + 1) * TIMEWINDOW_IN_SECONDS
                 )
-                * TIMEWINDOW_IN_SECONDS,
-                pl.col(prefix + " End Relative to " + suffix),
-                TIMEWINDOW_IN_SECONDS,
-            ).alias(prefix + " Window Borders")
+                - pl.max_horizontal(
+                    pl.col(start_col), pl.col(window_col) * TIMEWINDOW_IN_SECONDS
+                )
+            ).alias(prefix + " Duration (seconds)")
         )
         .with_columns(
-            pl.concat_list(
-                pl.col(prefix + " Start Relative to " + suffix),
-                pl.col(prefix + " Window Borders"),
-            ).alias(prefix + " Window Borders Start"),
-            pl.concat_list(
-                pl.col(prefix + " Window Borders"),
-                pl.col(prefix + " End Relative to " + suffix),
-            ).alias(prefix + " Window Borders End"),
-        )
-        .drop(prefix + " Window Borders")
-        .explode(
-            prefix + " Window Borders Start",
-            prefix + " Window Borders End",
-        )
-        .with_columns(
-            (
-                pl.col(prefix + " Window Borders End")
-                - pl.col(prefix + " Window Borders Start")
-            ).alias(prefix + " Duration (seconds)"),
-            (
-                pl.col(prefix + " Window Borders End")
-                - pl.col(prefix + " Window Borders Start")
-            )
-            .truediv(TIMEWINDOW_IN_SECONDS)
+            (pl.col(prefix + " Duration (seconds)") / TIMEWINDOW_IN_SECONDS)
             .alias(prefix + " Duration (windows)"),
-            pl.col(prefix + " Window Borders Start")
-            .floordiv(TIMEWINDOW_IN_SECONDS)
-            .cast(int)
-            .alias("Window Relative to " + reference),
+            pl.col(window_col).cast(int),
         )
-        .drop(prefix + " Window Borders Start", prefix + " Window Borders End")
+    ) # fmt: skip
+
+
+def PROJECT_TO_WINDOWS(
+    DATA: pl.LazyFrame,
+    group_cols: list[str],
+    value_col: str,
+    TIMEWINDOW_IN_SECONDS: int = SECONDS_IN_1H,
+    prefix: str = "Drug",
+    reference: str = "T_0",
+    unit: str = "seconds",
+) -> pl.LazyFrame:
+    """Project interval values onto a regular window grid.
+
+    Redistributes each interval's value to windows proportional to overlap duration.
+    Returns columns: group_cols..., "Window Relative to {reference}",
+    "{prefix} Projection Sum", "{prefix} Duration (windows)".
+    """
+    window_col = "Window Relative to " + reference
+    exploded = FIX_WINDOW_BORDERS(DATA, TIMEWINDOW_IN_SECONDS, prefix, reference, unit)
+
+    return (
+        exploded.group_by(*group_cols, window_col)
+        .agg(
+            (pl.col(value_col) * pl.col(prefix + " Duration (seconds)"))
+            .sum()
+            .alias(prefix + " Projection Sum"),
+            pl.col(prefix + " Duration (windows)")
+            .sum()
+            .alias(prefix + " Duration (windows)"),
+        )
+        .sort(*group_cols, window_col)
     )

@@ -54,6 +54,7 @@ import yaml
 
 from ..common import (
     _assign_timeframe,
+    _build_base_timeframes,
     _build_t0,
     _optional_time_bounds_filter,
     _validate_required_data,
@@ -161,13 +162,10 @@ def rhee_compute_lab_baselines(
         - baseline_{lab_name} for each lab in lab_columns
         - admission_seconds_into_day (for downstream calendar day calculations)
     """
-    all_stays = all_stays.lazy()
-    patient_info = patient_information.lazy()
-    labs = timeseries_labs.lazy()
 
     # Get admission time and LOS
     stays_with_time = all_stays.join(
-        patient_info.select(
+        patient_information.select(
             STAY_KEY, "Admission Time (24h)", "ICU Length of Stay (days)"
         ),
         on=STAY_KEY,
@@ -177,7 +175,7 @@ def rhee_compute_lab_baselines(
     # Define baseline period: day -30 to day of discharge
     # Need to calculate calendar day for each lab measurement
     labs_with_day = (
-        labs.select(STAY_KEY, TIME_KEY, *lab_columns)
+        timeseries_labs.select(STAY_KEY, TIME_KEY, *lab_columns)
         .join(stays_with_time, on=STAY_KEY, how="inner")
         .with_columns(
             calendar_day=_calendar_day_from_admission(
@@ -237,9 +235,6 @@ def cultures(
     - positive_culture (bool or null)
     - type ("reported" | "requested")
     """
-
-    microbiology = microbiology.lazy()
-    procedures = procedures.lazy()
 
     reported_cultures = (
         microbiology.group_by(STAY_KEY, TIME_KEY)
@@ -306,7 +301,7 @@ def cultures(
 
     return pl.concat(
         [reported_cultures, requested_cultures], how="diagonal_relaxed"
-    )
+    ).sort(STAY_KEY, "culture_time")
 
 
 # endregion cultures
@@ -327,12 +322,11 @@ def antibiotics(
     - Drug End Relative to Admission (seconds)
     """
 
-    medications = medications.lazy()
     antibiotic_ranks = _read_antibiotic_ranks()
     if prescriptions is not None:
         medications = pl.concat([medications, prescriptions], how="vertical")
 
-    abx = (
+    return (
         medications.filter(
             pl.col("Drug Ingredient").is_in(list(antibiotic_ranks.keys())),
             ~pl.col("Drug Name").is_in(
@@ -358,29 +352,27 @@ def antibiotics(
             "Drug Start Relative to Admission (seconds)",
             "Drug End Relative to Admission (seconds)",
         )
+        # AmsterdamUMCdb: exclude common prophylaxis patterns
+        .filter(
+            ~(
+                (pl.col(STAY_KEY).str.starts_with("umcdb-"))
+                & (pl.col("Drug Ingredient") == "cefotaxime")
+                & (
+                    pl.col("Drug End Relative to Admission (seconds)")
+                    < (4 * SECONDS_PER_DAY)
+                )
+            ),
+            ~(
+                (pl.col(STAY_KEY).str.starts_with("umcdb-"))
+                & (pl.col("Drug Ingredient") == "vancomycin")
+                & (
+                    pl.col("Drug End Relative to Admission (seconds)")
+                    < (1 * SECONDS_PER_DAY)
+                )
+            ),
+        )
+        .sort(STAY_KEY, "Drug Start Relative to Admission (seconds)")
     )
-
-    # AmsterdamUMCdb: exclude common prophylaxis patterns
-    abx = abx.filter(
-        ~(
-            (pl.col(STAY_KEY).str.starts_with("umcdb-"))
-            & (pl.col("Drug Ingredient") == "cefotaxime")
-            & (
-                pl.col("Drug End Relative to Admission (seconds)")
-                < (4 * SECONDS_PER_DAY)
-            )
-        ),
-        ~(
-            (pl.col(STAY_KEY).str.starts_with("umcdb-"))
-            & (pl.col("Drug Ingredient") == "vancomycin")
-            & (
-                pl.col("Drug End Relative to Admission (seconds)")
-                < (1 * SECONDS_PER_DAY)
-            )
-        ),
-    )
-
-    return abx
 
 
 # endregion antibiotics
@@ -403,16 +395,16 @@ def suspected_infection(
     We anchor suspected_time to the first of the pair and map to timeframe.
     """
 
-    all_stays_t0 = all_stays_t0.lazy()
-    CULT = cultures(microbiology, procedures)
-    ABX = antibiotics(medications)
-
-    # Attach T_0
-    cult = CULT.join(all_stays_t0, on=STAY_KEY, how="inner").sort(
-        STAY_KEY, "culture_time"
-    )
-    abx = ABX.join(all_stays_t0, on=STAY_KEY, how="inner").sort(
-        STAY_KEY, "Drug Start Relative to Admission (seconds)"
+    # re-sort after the join: join_asof needs sorted input, and a join can reorder rows
+    CULT = (
+        cultures(microbiology, procedures)
+        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        .sort(STAY_KEY, "culture_time")
+    )  # fmt: skip
+    ABX = (
+        antibiotics(medications)
+        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        .sort(STAY_KEY, "Drug Start Relative to Admission (seconds)")
     )
 
     # Do not apply timeframe-based bounds on raw seconds columns here; bounds are applied
@@ -421,8 +413,8 @@ def suspected_infection(
     # Culture-first: antibiotic within 72h after culture
     # Use asof forward join per stay.
     culture_first = (
-        cult.join_asof(
-            abx,
+        CULT.join_asof(
+            ABX,
             left_on="culture_time",
             right_on="Drug Start Relative to Admission (seconds)",
             by=STAY_KEY,
@@ -442,8 +434,8 @@ def suspected_infection(
 
     # Antibiotic-first: culture within 24h after antibiotic
     antibiotic_first = (
-        abx.join_asof(
-            cult,
+        ABX.join_asof(
+            CULT,
             left_on="Drug Start Relative to Admission (seconds)",
             right_on="culture_time",
             by=STAY_KEY,
@@ -456,20 +448,15 @@ def suspected_infection(
         )
         .select(
             STAY_KEY,
-            pl.col("Drug Start Relative to Admission (seconds)").alias(
-                "suspected_time"
-            ),
+            pl.col("Drug Start Relative to Admission (seconds)").alias("suspected_time"),
             "T_0",
         )
-    )
-
-    suspected = pl.concat(
-        [culture_first, antibiotic_first], how="diagonal_relaxed"
-    )
+    ) # fmt: skip
 
     # Map to timeframe and mark presence
     return (
-        suspected.with_columns(
+        pl.concat([culture_first, antibiotic_first], how="diagonal_relaxed")
+        .with_columns(
             timeframe=_assign_timeframe("suspected_time", window_size)
         )
         .group_by(STAY_KEY, "timeframe")
@@ -502,12 +489,11 @@ def antibiotic_escalation(
     - For the first timeframe with any antibiotics, mark escalation True.
     """
 
-    all_stays_t0 = all_stays_t0.lazy()
-    ABX = antibiotics(medications).join(all_stays_t0, on=STAY_KEY, how="inner")
-
     # Attribution timeframe using (start + 12h)
-    abx_tf = (
-        ABX.with_columns(
+    return (
+        antibiotics(medications)
+        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(
             considered_start=(
                 pl.col("Drug Start Relative to Admission (seconds)")
                 + TWELVE_HOURS
@@ -521,11 +507,8 @@ def antibiotic_escalation(
             rank_n=pl.len(),
             intravenous=pl.sum("intravenous"),
         )
-    )
-
-    # Collapse to top rank per timeframe
-    top = (
-        abx_tf.with_columns(
+        # Collapse to top rank per timeframe
+        .with_columns(
             rank_max=pl.max("antibiotic_rank").over(STAY_KEY, "timeframe")
         )
         .filter(pl.col("antibiotic_rank") == pl.col("rank_max"))
@@ -536,11 +519,8 @@ def antibiotic_escalation(
             intravenous=pl.sum("intravenous"),
         )
         .with_columns(present=pl.lit(True))
-    )
-
-    # Escalation via shift over stay ordered by timeframe
-    return (
-        top.with_columns(
+        # Escalation via shift over stay ordered by timeframe
+        .with_columns(
             prev_rank=pl.col("antibiotic_rank")
             .shift(1)
             .over(STAY_KEY, order_by="timeframe"),
@@ -582,11 +562,8 @@ def lactate_long(
 ) -> pl.LazyFrame:
     """Compute per timeframe whether lactate >= 2 mmol/L."""
 
-    all_stays_t0 = all_stays_t0.lazy()
-    labs = timeseries_labs.lazy()
-
     return (
-        labs.select(STAY_KEY, TIME_KEY, "Lactate")
+        timeseries_labs.select(STAY_KEY, TIME_KEY, "Lactate")
         .filter(pl.col("Lactate").struct.field("system").str.contains("Blood"))
         .with_columns(pl.col("Lactate").struct.field("value").alias("Lactate"))
         .drop_nulls("Lactate")
@@ -628,11 +605,8 @@ def rhee_consecutive_antibiotics(
         - timeframe: The timeframe when 4th consecutive day is reached
         - abx_day_4_reached: Boolean marker
     """
-    all_stays_t0 = all_stays_t0.lazy()
-    patient_information = patient_information.lazy()
 
-    # Attach T_0 and admission time to antibiotics
-    abx = (
+    return (
         antibiotics(medications)
         .join(all_stays_t0, on=STAY_KEY, how="inner")
         .join(
@@ -653,11 +627,8 @@ def rhee_consecutive_antibiotics(
             )
         )
         .filter(pl.col("calendar_day") >= 0)
-    )
-
-    # Daily coverage: IV on day 0, any antibiotic on subsequent days
-    daily = (
-        abx.group_by(STAY_KEY, "calendar_day")
+        # Daily coverage: IV on day 0, any antibiotic on subsequent days
+        .group_by(STAY_KEY, "calendar_day")
         .agg(
             pl.first("Admission Time (seconds)"),
             iv_count=pl.sum("intravenous"),
@@ -671,11 +642,8 @@ def rhee_consecutive_antibiotics(
         )
         .filter(pl.col("has_coverage"))
         .sort(STAY_KEY, "calendar_day")
-    )
-
-    # Check for 4 consecutive days via shift
-    consec = (
-        daily.with_columns(
+        # Check for 4 consecutive days via shift
+        .with_columns(
             day_plus_1=pl.col("calendar_day")
             .shift(-1)
             .over(STAY_KEY, order_by="calendar_day"),
@@ -694,11 +662,8 @@ def rhee_consecutive_antibiotics(
             )
         )
         .filter(pl.col("four_consecutive"))
-    )
-
-    # First qualifying sequence per stay, map day 4 to timeframe
-    result = (
-        consec.group_by(STAY_KEY)
+        # First qualifying sequence per stay, map day 4 to timeframe
+        .group_by(STAY_KEY)
         .agg(
             pl.col("Admission Time (seconds)").sort_by("calendar_day").first(),
             first_day=pl.min("calendar_day"),
@@ -711,12 +676,11 @@ def rhee_consecutive_antibiotics(
                 - pl.col("T_0")
             ).floordiv(window_size),
         )
-    )
-
-    return result.select(
-        STAY_KEY,
-        "timeframe",
-        pl.lit(True).alias("abx_day_4_reached"),
+        .select(
+            STAY_KEY,
+            "timeframe",
+            pl.lit(True).alias("abx_day_4_reached"),
+        )
     )
 
 
@@ -753,9 +717,6 @@ def rhee_organ_dysfunction(
     Returns:
         LazyFrame with Global ICU Stay ID, timeframe, and organ_dysfunction flag
     """
-    all_stays_t0 = all_stays_t0.lazy()
-    patient_info = patient_information.lazy()
-    labs = timeseries_labs.lazy()
 
     # Vasopressor (pre-computed)
     vaso_tf = cv_ge2_timeline.filter(pl.col("cv_ge2")).select(
@@ -769,10 +730,9 @@ def rhee_organ_dysfunction(
 
     # Mechanical ventilation ≥2 continuous calendar days
     vent = (
-        ventilation.lazy()
-        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        ventilation.join(all_stays_t0, on=STAY_KEY, how="inner")
         .join(
-            patient_info.select(STAY_KEY, "Admission Time (24h)"),
+            patient_information.select(STAY_KEY, "Admission Time (24h)"),
             on=STAY_KEY,
             how="left",
         )
@@ -810,8 +770,8 @@ def rhee_organ_dysfunction(
     # Lab-based criteria with baselines
     baselines = rhee_compute_lab_baselines(
         all_stays_t0.select(STAY_KEY),
-        patient_info,
-        labs,
+        patient_information,
+        timeseries_labs,
         lab_columns=["Creatinine", "Bilirubin", "Platelets", "INR"],
         baseline_mode={
             "Creatinine": "min",
@@ -824,7 +784,7 @@ def rhee_organ_dysfunction(
     # Attach T_0 and baselines, extract struct values, filter to analysis window
     LABS = ["Creatinine", "Bilirubin", "Platelets", "INR"]
     labs_base = (
-        labs.select(STAY_KEY, TIME_KEY, *LABS)
+        timeseries_labs.select(STAY_KEY, TIME_KEY, *LABS)
         .join(all_stays_t0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0"))
         .join(baselines, on=STAY_KEY, how="inner")
@@ -898,18 +858,22 @@ def SEPSIS(
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
-    timeframe_unit: str = "Hours",  # semantics only; output timeframe is numeric
-    organ_failure_criterion: str = "delta",  # "absolute" or "delta" for SOFA criteria, "sirs" for SIRS criteria
+    timeframe_unit: str = "Hours",
+    organ_failure_criterion: str = "delta",
+    anchors: set[str] | None = None,
 ) -> pl.LazyFrame:
-    """Compute Sepsis-3 in long format from raw inputs.
+    """Compute Sepsis-3 labels in long format from raw inputs.
 
-    Produces three separate labels per timeframe:
+    Produces separate labels per timeframe:
     - SEPSIS: Seymour-anchored on earliest culture+antibiotic pair, requiring an
       acute SOFA increase (≥2) within [-48h, +24h] of suspicion time.
     - SEPSIS_ABX: Shah-anchored on earliest antibiotic escalation (with IV),
       applying same SOFA delta and shock rules.
     - SEPSIS_RHEE: Rhee-anchored on blood culture + ≥4 consecutive antibiotic days
       + ≥1 organ dysfunction marker within ±2 days of culture.
+
+    Computation is selective: only requested anchors are computed, and intermediate
+    tables remain lazy until final collection. This prevents wasted work on unused labels.
 
     All data parameters are optional and will be automatically loaded from the
     package datasets if not provided. This makes it convenient for quick analysis
@@ -950,10 +914,15 @@ def SEPSIS(
         timeframe_unit : str, optional
             Semantic only; output column remains a numeric timeframe.
         organ_failure_criterion : str, optional
-            "absolute" (default) applies SOFA criteria to raw scores; "delta" applies
+            "absolute" applies SOFA criteria to raw scores; "delta" (default) applies
             to change from baseline. Baseline is defined as the lowest score in the
             24h prior to suspicion time (Seymour) or antibiotic escalation (Shah).
             "sirs" applies SIRS criteria instead of SOFA.
+        anchors : set[str], optional
+            Which onset anchors to compute: {"seymour", "shah", "rhee"}.
+            Defaults to all three. Specify a subset to skip unnecessary computation.
+            Example: anchors={"seymour"} skips Shah and Rhee logic, and skips SOFA
+            computation if organ_failure_criterion="sirs".
 
     Returns
     -------
@@ -1001,15 +970,19 @@ def SEPSIS(
     _validate_required_data("SEPSIS", required)
 
     if organ_failure_criterion not in ("absolute", "delta", "sirs"):
-        raise ValueError(
-            f"organ_failure_criterion must be 'absolute', 'delta', or 'sirs', got {organ_failure_criterion!r}"
-        )
+        raise ValueError(f"organ_failure_criterion must be 'absolute', 'delta', or 'sirs', got {organ_failure_criterion!r}") # fmt: skip
 
-    # Inputs to Lazy
-    patient_information = patient_information.lazy()
-    medications = medications.lazy()
+    if anchors is None:
+        anchors = {"seymour", "shah", "rhee"}
+    invalid = anchors - {"seymour", "shah", "rhee"}
+    if invalid:
+        raise ValueError(f"anchors must be subset of {{'seymour', 'shah', 'rhee'}}, got invalid: {invalid}")  # fmt: skip
+
+    compute_seymour = "seymour" in anchors
+    compute_shah = "shah" in anchors
+    compute_rhee = "rhee" in anchors
+
     if prescriptions is not None:
-        prescriptions = prescriptions.lazy()
         medications = pl.concat([medications, prescriptions], how="vertical")
 
     ALL_STAYS = patient_information.select(STAY_KEY)
@@ -1024,37 +997,49 @@ def SEPSIS(
     # region SOFA
     ORGAN_FAILURE_CRITERION = {
         "absolute": pl.col("sofa_score") >= 2,
-        "delta":    pl.col("sofa_increase_delta") >= 2,
-        "sirs":     pl.col("sirs_criteria_fulfilled"),
-    }[organ_failure_criterion] # fmt: skip
+        "delta": pl.col("sofa_increase_delta") >= 2,
+        "sirs": pl.col("sirs_criteria_fulfilled"),
+    }[organ_failure_criterion]
 
-    # SOFA from raw inputs (long format)
-    sofa_base = (
-        SOFA(
-            patient_information,
-            timeseries_vitals,
-            timeseries_labs,
-            timeseries_resp,
-            timeseries_inout,
-            medications,
-            ventilation,
-            t_0=t_0,
-            t_1=t_1,
-            window_size=window_size,
-            t_0_per_stay=t_0_per_stay,
-            timeframe_name="timeframe",
-        )
-        .select(
-            STAY_KEY,
-            "timeframe",
-            pl.col("SOFA Score").alias("sofa_score"),
-            pl.col("Cardiovascular").alias("cardiovascular_points"),
-        )
-        .collect()
-        .lazy()
-    )
+    sofa_base = SOFA(
+        patient_information,
+        timeseries_vitals,
+        timeseries_labs,
+        timeseries_resp,
+        timeseries_inout,
+        medications,
+        ventilation,
+        t_0=t_0,
+        t_1=t_1,
+        window_size=window_size,
+        t_0_per_stay=t_0_per_stay,
+        timeframe_name="timeframe",
+    ).select(
+        STAY_KEY,
+        "timeframe",
+        pl.col("SOFA Score").alias("sofa_score"),
+        pl.col("Cardiovascular").alias("cardiovascular_points"),
+    ).collect().lazy()  # materialize once: referenced many times below
 
-    # vasopressor infusion is assumed to indicate hypotension requiring support
+    sirs_base = SIRS(
+        patient_information,
+        timeseries_vitals,
+        timeseries_labs,
+        t_0=t_0,
+        t_1=t_1,
+        window_size=window_size,
+        t_0_per_stay=t_0_per_stay,
+        timeframe_name="timeframe",
+    ).select(
+        STAY_KEY,
+        "timeframe",
+        pl.col("SIRS Criteria fulfilled").alias("sirs_criteria_fulfilled"),
+    ).collect().lazy()  # materialize once: referenced many times below
+
+    lactate_timeline = lactate_long(
+        ALL_STAYS_T0, timeseries_labs, window_size=window_size
+    ).collect().lazy()  # materialize once: referenced many times below
+
     cv_ge2_timeline = (
         sofa_base.select(
             STAY_KEY,
@@ -1065,59 +1050,30 @@ def SEPSIS(
             prev_cv=pl.col("cv_ge2")
             .shift(1)
             .over(STAY_KEY, order_by="timeframe")
-        )
-        .with_columns(
-            pl.when(
-                pl.col("cv_ge2") & pl.col("prev_cv").fill_null(False).not_()
-            )
-            .then(True)
-            .otherwise(False)
-            .alias("cv_start"),
-        )
-        .select(STAY_KEY, "timeframe", "cv_ge2", "cv_start")
-        .collect()
-        .lazy()
-    )
-
-    lactate_timeline = (
-        lactate_long(ALL_STAYS_T0, timeseries_labs, window_size=window_size)
-        .collect()
-        .lazy()
-    )
-
-    # region SIRS
-    sirs_base = (
-        SIRS(
-            patient_information,
-            timeseries_vitals,
-            timeseries_labs,
-            t_0=t_0,
-            t_1=t_1,
-            window_size=window_size,
-            t_0_per_stay=t_0_per_stay,
-            timeframe_name="timeframe",
+            .fill_null(False),
         )
         .select(
             STAY_KEY,
             "timeframe",
-            pl.col("SIRS Criteria fulfilled").alias("sirs_criteria_fulfilled"),
+            "cv_ge2",
+            pl.when(pl.col("cv_ge2") & ~pl.col("prev_cv"))
+            .then(True)
+            .otherwise(False)
+            .alias("cv_start"),
         )
-        .collect()
-        .lazy()
-    )
+    ).collect().lazy()  # materialize once: referenced many times below
 
     # region Sepsis-3
     # Earliest suspicion per Seymour (earliest culture-antibiotic pair)
-    suspicion_by_timeframe = suspected_infection(
-        ALL_STAYS_T0,
-        medications,
-        microbiology,
-        procedures,
-        window_size=window_size,
-    )
-
     suspicion_numbered = (
-        suspicion_by_timeframe.filter(pl.col("suspected_infection"))
+        suspected_infection(
+            ALL_STAYS_T0,
+            medications,
+            microbiology,
+            procedures,
+            window_size=window_size,
+        )
+        .filter(pl.col("suspected_infection"))
         # no new suspicion if [-48h, +24h] includes the previous suspicion time
         #   -> timeframe less than 48h after previous suspicion time
         .with_columns(
@@ -1161,55 +1117,117 @@ def SEPSIS(
             end_timeframe=pl.col("suspicion_timeframe")
             + pl.lit(int((24 * SECONDS_PER_HOUR) // window_size)),
         )
-        .collect()
-        .lazy()
     )
 
-    # Seymour: SIRS-based onset
-    onset_candidates_sirs = (
-        suspicion_numbered.join(sirs_base, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe"),
-            pl.col("timeframe") <= pl.col("end_timeframe"),
-            pl.col("sirs_criteria_fulfilled"),
+    # region Shah
+    # Antibiotic-anchored Sepsis (SEPSIS_ABX per Shah et al.)
+    abx_suspicion_numbered = (
+        antibiotic_escalation(
+            ALL_STAYS_T0,
+            medications,
+            window_size=window_size,
         )
+        .sort(STAY_KEY, "timeframe")
+        .filter(pl.col("antibiotic_escalation"))
+        # no new suspicion if [-48h, +24h] includes the previous suspicion time
+        #   -> timeframe less than 72h after previous suspicion time
+        .with_columns(
+            pl.struct(
+                pl.col(STAY_KEY),
+                pl.col("timeframe").le(
+                    pl.col("timeframe")
+                    .shift(1)
+                    .over(
+                        partition_by=STAY_KEY,
+                        order_by="timeframe",
+                    )
+                    .fill_null(-999)
+                    .add(72)
+                ),
+            )
+            .rle_id()
+            .alias("suspicion_number")
+        )
+        .group_by(STAY_KEY, "suspicion_number")
+        .agg(abx_suspicion_timeframe=pl.min("timeframe"))
+        .join(ALL_STAYS_T0_LOS, on=STAY_KEY, how="inner")
+        .with_columns(
+            max_tf_by_los=(
+                (pl.col(los_col) * pl.lit(SECONDS_PER_DAY))
+                .sub(pl.col("T_0"))
+                .floordiv(window_size)
+                .cast(pl.Int64)
+            )
+        )
+        .filter(
+            pl.col(los_col).is_null()
+            | (pl.col("abx_suspicion_timeframe") <= pl.col("max_tf_by_los"))
+        )
+    )
+
+    sirs_true = sirs_base.filter(pl.col("sirs_criteria_fulfilled")).select(
+        STAY_KEY, "timeframe"
+    )
+    onset_candidates_sirs = (
+        suspicion_numbered.sort(STAY_KEY, "baseline_timeframe")
+        .join_asof(
+            sirs_true.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
+        )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(onset_timeframe=pl.min("timeframe"))
     )
 
-    # Seymour: SOFA-based onset (absolute or delta)
-    # Baseline SOFA score at the baseline_timeframe
-    suspicion_numbered_baseline_sofa = suspicion_numbered.join(
-        sofa_base, on=STAY_KEY, how="inner"
+    # Seymour: SOFA-based onset (bounded explode to avoid stay-only join blowup)
+    # Get baseline SOFA score via exact equi-join on baseline_timeframe
+    baseline_scores = suspicion_numbered.join(
+        sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
+        left_on=[STAY_KEY, "baseline_timeframe"],
+        right_on=[STAY_KEY, "timeframe"],
+        how="left",
+    ).select(
+        STAY_KEY,
+        "suspicion_number",
+        pl.col("sofa_score").alias("baseline_sofa_score"),
     )
 
-    baseline_scores = (
-        suspicion_numbered_baseline_sofa.filter(
-            pl.col("timeframe") == pl.col("baseline_timeframe")
+    # Explode to bounded candidate range (end_timeframe - baseline_timeframe, typically ~72-97 hours at 1h window_size)
+    # instead of joining full stay × all timeframes
+    candidates = (
+        suspicion_numbered.with_columns(
+            candidate_timeframe=pl.int_ranges(
+                pl.col("baseline_timeframe"), pl.col("end_timeframe") + 1
+            )
         )
-        .group_by(STAY_KEY, "suspicion_number")
-        .agg(baseline_sofa_score=pl.max("sofa_score"))
-    )
-
-    # First timeframe within [baseline_timeframe, end_timeframe] where SOFA >= baseline + 2
-    onset_candidates_sofa = (
-        suspicion_numbered_baseline_sofa.filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe"),
-            pl.col("timeframe") <= pl.col("end_timeframe"),
-        )
+        .explode("candidate_timeframe")
         .join(
-            baseline_scores,
+            baseline_scores.select(
+                STAY_KEY, "suspicion_number", "baseline_sofa_score"
+            ),
             on=[STAY_KEY, "suspicion_number"],
             how="inner",
+        )
+        .join(
+            sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
+            left_on=[STAY_KEY, "candidate_timeframe"],
+            right_on=[STAY_KEY, "timeframe"],
+            how="left",
         )
         .with_columns(
             sofa_increase_delta=pl.col("sofa_score")
             - pl.col("baseline_sofa_score")
         )
         .filter(ORGAN_FAILURE_CRITERION)
-        .group_by(STAY_KEY, "suspicion_number")
-        .agg(onset_timeframe=pl.min("timeframe"))
     )
+
+    onset_candidates_sofa = candidates.group_by(
+        STAY_KEY, "suspicion_number"
+    ).agg(onset_timeframe=pl.min("candidate_timeframe"))
 
     # Select based on criterion
     onset_candidates = (
@@ -1258,56 +1276,6 @@ def SEPSIS(
         )
     )
 
-    # region Shah
-    # Antibiotic-anchored Sepsis (SEPSIS_ABX per Shah et al.)
-    abx_escalation_tf = antibiotic_escalation(
-        ALL_STAYS_T0,
-        medications,
-        window_size=window_size,
-    )
-
-    # Earliest timeframe with antibiotic escalation
-    abx_suspicion_numbered = (
-        abx_escalation_tf.sort(STAY_KEY, "timeframe")
-        .filter(pl.col("antibiotic_escalation"))
-        # no new suspicion if [-48h, +24h] includes the previous suspicion time
-        #   -> timeframe less than 72h after previous suspicion time
-        .with_columns(
-            pl.struct(
-                pl.col(STAY_KEY),
-                pl.col("timeframe").le(
-                    pl.col("timeframe")
-                    .shift(1)
-                    .over(
-                        partition_by=STAY_KEY,
-                        order_by="timeframe",
-                    )
-                    .fill_null(-999)
-                    .add(72)
-                ),
-            )
-            .rle_id()
-            .alias("suspicion_number")
-        )
-        .group_by(STAY_KEY, "suspicion_number")
-        .agg(abx_suspicion_timeframe=pl.min("timeframe"))
-        .join(ALL_STAYS_T0_LOS, on=STAY_KEY, how="inner")
-        .with_columns(
-            max_tf_by_los=(
-                (pl.col(los_col) * pl.lit(SECONDS_PER_DAY))
-                .sub(pl.col("T_0"))
-                .floordiv(window_size)
-                .cast(pl.Int64)
-            )
-        )
-        .filter(
-            pl.col(los_col).is_null()
-            | (pl.col("abx_suspicion_timeframe") <= pl.col("max_tf_by_los"))
-        )
-        .collect()
-        .lazy()
-    )
-
     win_back = int((48 * SECONDS_PER_HOUR) // window_size)
     win_fwd = int((24 * SECONDS_PER_HOUR) // window_size)
 
@@ -1320,51 +1288,67 @@ def SEPSIS(
         end_timeframe_abx=pl.col("abx_suspicion_timeframe") + pl.lit(win_fwd),
     )
 
-    # Shah: SIRS-based onset
+    # Shah: SIRS-based onset (join_asof to avoid stay-only join blowup)
     onset_candidates_abx_sirs = (
-        abx_suspicion_numbered.join(sirs_base, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
-            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
-            pl.col("sirs_criteria_fulfilled"),
+        abx_suspicion_numbered.sort(STAY_KEY, "baseline_timeframe_abx")
+        .join_asof(
+            sirs_true.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe_abx",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
         )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe_abx"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(onset_timeframe_abx=pl.min("timeframe"))
     )
 
-    # Shah: SOFA-based onset (absolute or delta)
-    # Baseline SOFA at antibiotic-anchored baseline timeframe
-    abx_suspicion_numbered_baseline_sofa = abx_suspicion_numbered.join(
-        sofa_base, on=STAY_KEY, how="inner"
+    # Shah: SOFA-based onset (bounded explode to avoid stay-only join blowup)
+    # Get baseline SOFA score via exact equi-join on baseline_timeframe_abx
+    baseline_scores_abx = abx_suspicion_numbered.join(
+        sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
+        left_on=[STAY_KEY, "baseline_timeframe_abx"],
+        right_on=[STAY_KEY, "timeframe"],
+        how="left",
+    ).select(
+        STAY_KEY,
+        "suspicion_number",
+        pl.col("sofa_score").alias("baseline_sofa_score_abx"),
     )
 
-    # First timeframe in [baseline, end] where SOFA >= baseline + 2
-    baseline_scores_abx = (
-        abx_suspicion_numbered_baseline_sofa.filter(
-            pl.col("timeframe") == pl.col("baseline_timeframe_abx")
+    # Explode to bounded candidate range
+    candidates_abx = (
+        abx_suspicion_numbered.with_columns(
+            candidate_timeframe=pl.int_ranges(
+                pl.col("baseline_timeframe_abx"),
+                pl.col("end_timeframe_abx") + 1,
+            )
         )
-        .group_by(STAY_KEY, "suspicion_number")
-        .agg(baseline_sofa_score_abx=pl.max("sofa_score"))
-    )
-
-    onset_candidates_abx_sofa = (
-        abx_suspicion_numbered_baseline_sofa.filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
-            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
-        )
+        .explode("candidate_timeframe")
         .join(
-            baseline_scores_abx,
+            baseline_scores_abx.select(
+                STAY_KEY, "suspicion_number", "baseline_sofa_score_abx"
+            ),
             on=[STAY_KEY, "suspicion_number"],
             how="inner",
+        )
+        .join(
+            sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
+            left_on=[STAY_KEY, "candidate_timeframe"],
+            right_on=[STAY_KEY, "timeframe"],
+            how="left",
         )
         .with_columns(
             sofa_increase_delta_abx=pl.col("sofa_score")
             - pl.col("baseline_sofa_score_abx")
         )
         .filter(pl.col("sofa_increase_delta_abx") >= 2)
-        .group_by(STAY_KEY, "suspicion_number")
-        .agg(onset_timeframe_abx=pl.min("timeframe"))
     )
+
+    onset_candidates_abx_sofa = candidates_abx.group_by(
+        STAY_KEY, "suspicion_number"
+    ).agg(onset_timeframe_abx=pl.min("candidate_timeframe"))
 
     # Select based on criterion
     onset_candidates_abx = (
@@ -1421,23 +1405,41 @@ def SEPSIS(
         "baseline_timeframe",
         "end_timeframe",
     )
+
+    # Seymour shock: find first vasopressor start in [baseline, end] (join_asof to avoid blowup)
+    cv_starts = cv_ge2_timeline.filter(pl.col("cv_start")).select(
+        STAY_KEY, "timeframe"
+    )
     vaso_starts = (
-        cv_ge2_timeline.join(suspicion_windows, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe"),
-            pl.col("timeframe") <= pl.col("end_timeframe"),
-            pl.col("cv_start"),
+        suspicion_windows.sort(STAY_KEY, "baseline_timeframe")
+        .join_asof(
+            cv_starts.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
         )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(vasopressor_start_timeframe=pl.min("timeframe"))
     )
+
+    # Seymour shock: find first lactate >=2 in [baseline, end] (join_asof to avoid blowup)
+    lactate_high = lactate_timeline.filter(pl.col("lactate_ge2")).select(
+        STAY_KEY, "timeframe"
+    )
     lactate_first = (
-        lactate_timeline.filter(pl.col("lactate_ge2"))
-        .join(suspicion_windows, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe"),
-            pl.col("timeframe") <= pl.col("end_timeframe"),
+        suspicion_windows.sort(STAY_KEY, "baseline_timeframe")
+        .join_asof(
+            lactate_high.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
         )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(lactate_timeframe=pl.min("timeframe"))
     )
@@ -1465,23 +1467,35 @@ def SEPSIS(
         "baseline_timeframe_abx",
         "end_timeframe_abx",
     )
+
+    # Shah shock: find first vasopressor start in [baseline, end] (join_asof to avoid blowup)
     vaso_starts_abx = (
-        cv_ge2_timeline.join(abx_suspicion_windows, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
-            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
-            pl.col("cv_start"),
+        abx_suspicion_windows.sort(STAY_KEY, "baseline_timeframe_abx")
+        .join_asof(
+            cv_starts.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe_abx",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
         )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe_abx"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(vasopressor_start_timeframe_abx=pl.min("timeframe"))
     )
+
+    # Shah shock: find first lactate >=2 in [baseline, end] (join_asof to avoid blowup)
     lactate_first_abx = (
-        lactate_timeline.filter(pl.col("lactate_ge2"))
-        .join(abx_suspicion_windows, on=STAY_KEY, how="inner")
-        .filter(
-            pl.col("timeframe") >= pl.col("baseline_timeframe_abx"),
-            pl.col("timeframe") <= pl.col("end_timeframe_abx"),
+        abx_suspicion_windows.sort(STAY_KEY, "baseline_timeframe_abx")
+        .join_asof(
+            lactate_high.sort(STAY_KEY, "timeframe"),
+            left_on="baseline_timeframe_abx",
+            right_on="timeframe",
+            by=STAY_KEY,
+            strategy="forward",
         )
+        .filter(pl.col("timeframe") <= pl.col("end_timeframe_abx"))
+        .select(STAY_KEY, "suspicion_number", "timeframe")
         .group_by(STAY_KEY, "suspicion_number")
         .agg(lactate_timeframe_abx=pl.min("timeframe"))
     )
@@ -1506,7 +1520,6 @@ def SEPSIS(
     # region Rhee
     # EHR Clinical Surveillance Definition (Rhee et al.)
     # Blood culture + ≥4 consecutive antibiotic days + organ dysfunction within ±2 calendar days
-
     stay_time_ref = (
         ALL_STAYS_T0.join(
             patient_information.select(STAY_KEY, "Admission Time (24h)"),
@@ -1603,7 +1616,8 @@ def SEPSIS(
 
     # Existence checks within +/- 2 calendar days using nearest asof matches.
     onset_labels_rhee = (
-        cult_days.join_asof(
+        cult_days.sort(STAY_KEY, "culture_calendar_day")
+        .join_asof(
             abx_days,
             left_on="culture_calendar_day",
             right_on="abx_calendar_day",
@@ -1611,6 +1625,7 @@ def SEPSIS(
             strategy="nearest",
             tolerance=2,
         )
+        .sort(STAY_KEY, "culture_calendar_day")
         .join_asof(
             organ_days,
             left_on="culture_calendar_day",
@@ -1685,27 +1700,23 @@ def SEPSIS(
         how="diagonal_relaxed",
     ).unique()
 
-    base = ALL_STAYS_T0.join(tf_union, on=STAY_KEY, how="left")
+    cols = [STAY_KEY, "timeframe", "T_0"]
+    if compute_seymour:
+        cols.append("SEPSIS")
+    if compute_shah:
+        cols.append("SEPSIS_ABX")
+    if compute_rhee:
+        cols.append("SEPSIS_RHEE")
 
     return (
-        # fmt: off
-        base.join(sepsis_events,      on=[STAY_KEY, "timeframe"], how="left")
-        .join(sepsis_abx_events,      on=[STAY_KEY, "timeframe"], how="left")
+        ALL_STAYS_T0.join(tf_union, on=STAY_KEY, how="left")
+        .join(sepsis_events,     on=[STAY_KEY, "timeframe"], how="left")
+        .join(sepsis_abx_events, on=[STAY_KEY, "timeframe"], how="left")
         .join(onset_labels_rhee, on=[STAY_KEY, "timeframe"], how="left")
-        # fmt: on
-        .select(
-            STAY_KEY,
-            "timeframe",
-            "SEPSIS",
-            "SEPSIS_ABX",
-            "SEPSIS_RHEE",
-            "T_0",
-        )
-        .filter(
-            *_optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
+        .select(*cols)
+        .filter(*_optional_time_bounds_filter("timeframe", window_size, t_0, t_1))
         .unique()
-        .sort(STAY_KEY, "timeframe")  # stable order
+        .sort(STAY_KEY, "timeframe")
     )
 
 

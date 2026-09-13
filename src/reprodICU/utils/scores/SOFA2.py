@@ -49,9 +49,9 @@ from ..common import (
     get_timeseries_vitals,
     get_ventilation,
 )
-from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
-from .SOFA import _improve_labs, _improve_vitals, _map_points
+from .SOFA import _improve_labs, _improve_vitals, _map_points, _organ_score_forward_fill
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_4H = 4 * SECONDS_IN_1H
@@ -270,39 +270,44 @@ def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     """
     STAY_KEY = "Global ICU Stay ID"
 
-    return uo_df.with_columns(
-        # Calculate rolling averages over lookback windows
-        pl.col("uo_interval_ml_per_kg")
-        .rolling_mean(window_size=6, center=False)
-        .over(STAY_KEY, order_by="timeframe")
-        .alias("uo_6h_avg"),
-        pl.col("uo_interval_ml_per_kg")
-        .rolling_mean(window_size=12, center=False)
-        .over(STAY_KEY, order_by="timeframe")
-        .alias("uo_12h_avg"),
-        pl.col("uo_interval_ml_per_kg")
-        .rolling_mean(window_size=24, center=False)
-        .over(STAY_KEY, order_by="timeframe")
-        .alias("uo_24h_avg"),
-        # Check for anuria in lookback windows
-        (pl.col("uo_interval_ml_per_kg") == 0)
-        .cast(int)
-        .rolling_sum(window_size=12, center=False)
-        .over(STAY_KEY, order_by="timeframe")
-        .alias("anuria_hours_12h"),
-    ).select(
-        STAY_KEY,
-        "timeframe",
-        # 4 points: <0.3 mL/kg/h for >24h
-        pl.when(pl.col("uo_24h_avg") < 0.3).then(4)
-        # 4 points: anuria for >12h
-        .when(pl.col("anuria_hours_12h") > 12).then(4)
-        # 3 points: <0.5 mL/kg/h for >12h
-        .when(pl.col("uo_12h_avg") < 0.5).then(3)
-        # 2 points: <0.5 mL/kg/h for 6-12h
-        .when(pl.col("uo_6h_avg") < 0.5).then(2)
-        .otherwise(None)
-        .alias("uo_points"),
+    return (
+        uo_df.sort(STAY_KEY, "timeframe")
+        .with_columns(
+            # Calculate rolling averages over lookback windows using time-based windows
+            # (6i = trailing 6 hours by timeframe index, not row count)
+            pl.col("uo_interval_ml_per_kg")
+            .rolling_mean_by("timeframe", window_size="6i")
+            .over(STAY_KEY)
+            .alias("uo_6h_avg"),
+            pl.col("uo_interval_ml_per_kg")
+            .rolling_mean_by("timeframe", window_size="12i")
+            .over(STAY_KEY)
+            .alias("uo_12h_avg"),
+            pl.col("uo_interval_ml_per_kg")
+            .rolling_mean_by("timeframe", window_size="24i")
+            .over(STAY_KEY)
+            .alias("uo_24h_avg"),
+            # Check for anuria in lookback windows
+            (pl.col("uo_interval_ml_per_kg") == 0)
+            .cast(int)
+            .rolling_sum_by("timeframe", window_size="12i")
+            .over(STAY_KEY)
+            .alias("anuria_hours_12h"),
+        )
+        .select(
+            STAY_KEY,
+            "timeframe",
+            # 4 points: <0.3 mL/kg/h for >24h
+            pl.when(pl.col("uo_24h_avg") < 0.3).then(4)
+            # 4 points: anuria for >12h
+            .when(pl.col("anuria_hours_12h") > 12).then(4)
+            # 3 points: <0.5 mL/kg/h for >12h
+            .when(pl.col("uo_12h_avg") < 0.5).then(3)
+            # 2 points: <0.5 mL/kg/h for 6-12h
+            .when(pl.col("uo_6h_avg") < 0.5).then(2)
+            .otherwise(None)
+            .alias("uo_points"),
+        )
     ) # fmt: skip
 
 
@@ -466,33 +471,29 @@ def get_vasopressor_points(
         )
     )
 
-    # Attribute to timeframe using FIX_WINDOW_BORDERS
-    vp_tf = FIX_WINDOW_BORDERS(
+    vp_agg = PROJECT_TO_WINDOWS(
         vp_tf,
+        group_cols=[STAY_KEY, drug_ingredient_col, "T_0"],
+        value_col=drug_rate_col,
         TIMEWINDOW_IN_SECONDS=window_size,
         prefix="Drug",
         reference="T_0",
         unit="seconds",
-    ).with_columns(
-        pl.col("Window Relative to T_0").alias("timeframe"),
-        pl.col(drug_rate_col)
-        .mul(pl.col("Drug Duration (windows)"))
-        .alias("time-weighted Rate"),
     )
 
     if t_1 is not None:
-        vp_tf = vp_tf.filter(
-            pl.col("timeframe")
+        vp_agg = vp_agg.filter(
+            pl.col("Window Relative to T_0")
             < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size) + 1)
         )
 
     return (
-        vp_tf.group_by(STAY_KEY, "timeframe")
+        vp_agg.group_by(STAY_KEY, "Window Relative to T_0")
         .agg(
             pl.when(pl.col(drug_ingredient_col) == agent)
             .then(
-                pl.sum("time-weighted Rate").truediv(
-                    pl.sum("Drug Duration (windows)")
+                pl.col("Drug Projection Sum").sum().truediv(
+                    pl.col("Drug Duration (windows)").sum()
                 )
             )
             .otherwise(0)
@@ -502,7 +503,7 @@ def get_vasopressor_points(
         )
         .select(
             STAY_KEY,
-            "timeframe",
+            pl.col("Window Relative to T_0").alias("timeframe"),
             _vasopressor_points(
                 *[pl.col(agent) for agent in VASOACTIVE_AGENTS]  # ABC-sorted
             ).alias("vasopressor_points"),
@@ -705,31 +706,16 @@ def SOFA2(
         .agg(pl.col("ventilation").max())
     )
 
-    # region respiratory (P/F ratio)
-    resp_tf = (
-        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
-        .select(STAY_KEY, TIME_KEY, pf_ratio_col)
-        .join(
-            SpO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
-            .select(STAY_KEY, TIME_KEY, sf_ratio_col)
-            .filter(pl.col(sf_ratio_col).is_not_null()),
-            on=[STAY_KEY, TIME_KEY],
-            how="outer",
-            coalesce=True,
-        )
+    # region respiratory (P/F ratio & SpO2/FiO2 ratio)
+    # Pre-aggregate to per-window before joining: avoids expensive outer joins on raw timestamps
+    # across independently-sampled sources (labs: daily, vitals: minutely, devices: variable)
+    oxygen_delivery_tf = (
+        resp.select(STAY_KEY, TIME_KEY, oxygen_delivery_col)
+        .drop_nulls()
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
-        # attach ventilation flag at measurement time using intervals
-        .join(ventilation_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .join(
-            resp.select(STAY_KEY, TIME_KEY, oxygen_delivery_col).drop_nulls(),
-            on=[STAY_KEY, TIME_KEY],
-            how="outer",
-            coalesce=True,
-        )
         .with_columns(
-            # Check for advanced respiratory support from oxygen delivery system
             pl.col(oxygen_delivery_col)
             .is_in(
                 [
@@ -740,6 +726,18 @@ def SOFA2(
             )
             .alias("ventilation_from_delivery")
         )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.col("ventilation_from_delivery").max())
+    )
+
+    pf_tf = (
+        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        .select(STAY_KEY, TIME_KEY, pf_ratio_col)
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ventilation_tf, on=[STAY_KEY, "timeframe"], how="left")
+        .join(oxygen_delivery_tf, on=[STAY_KEY, "timeframe"], how="left")
         .with_columns(
             pl.coalesce(
                 pl.col("ventilation"), pl.col("ventilation_from_delivery")
@@ -750,23 +748,44 @@ def SOFA2(
         .with_columns(
             _pf_ratio_points(
                 pl.col(pf_ratio_col).cast(pl.Float64),
-                pl.col("ventilation").fill_null(False),
-            ).alias("pf_points"),
-            _sf_ratio_points(
-                pl.col(sf_ratio_col).cast(pl.Float64),
-                pl.col("ventilation").fill_null(False),
-            ).alias("sf_points"),
+                pl.col("ventilation"),
+            ).alias("pf_points")
         )
         .group_by(STAY_KEY, "timeframe")
-        .agg(
-            pl.max("pf_points").alias("pf_ratio_points"),
-            pl.max("sf_points").alias("sf_ratio_points"),
+        .agg(pl.max("pf_points").alias("pf_ratio_points"))
+    )
+
+    sf_tf = (
+        SpO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        .select(STAY_KEY, TIME_KEY, sf_ratio_col)
+        .filter(pl.col(sf_ratio_col).is_not_null())
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ventilation_tf, on=[STAY_KEY, "timeframe"], how="left")
+        .join(oxygen_delivery_tf, on=[STAY_KEY, "timeframe"], how="left")
+        .with_columns(
+            pl.coalesce(
+                pl.col("ventilation"), pl.col("ventilation_from_delivery")
+            )
+            .fill_null(False)
+            .alias("ventilation")
         )
+        .with_columns(
+            _sf_ratio_points(
+                pl.col(sf_ratio_col).cast(pl.Float64),
+                pl.col("ventilation"),
+            ).alias("sf_points")
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(pl.max("sf_points").alias("sf_ratio_points"))
+    )
+
+    resp_tf = (
+        pf_tf.join(sf_tf, on=[STAY_KEY, "timeframe"], how="full", coalesce=True)
         .select(
             STAY_KEY,
             "timeframe",
-            # Use the arterial oxygen saturation (SpO2) to FIO2 ratio only when
-            # the PaO2:FIO2 ratio is unavailable
             pl.coalesce(
                 pl.col("pf_ratio_points"), pl.col("sf_ratio_points")
             ).alias("respiratory_points"),
@@ -873,7 +892,7 @@ def SOFA2(
         timeseries_inout=timeseries_inout,
         t_0=t_0,
         t_0_per_stay=t_0_per_stay,
-        window_size=SECONDS_IN_1H,  # Return hourly values
+        window_size=SECONDS_IN_1H,
     )
     # Apply rolling window assessment to compute urine output points
     # Aggregate back to day-level for integration with SOFA-2 daily scores
@@ -886,45 +905,19 @@ def SOFA2(
         .agg(pl.max("uo_points").alias("uo_points"))
     )
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    out = base
+    out = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
     for part in [resp_tf, labs_tf, vitals_tf, vp_tf, uo_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     if forward_fill:
-        out = out.with_columns(
-            # forward-fill within stay at most 6 hours
-            pl.col(
-                "respiratory_points",
-                "gcs_points",
-                "map_points",
-                "vasopressor_points",
-            )
-            .forward_fill((window_size // SECONDS_IN_1H) * 6)
-            .over(partition_by=STAY_KEY, order_by="timeframe"),
-            # forward-fill within stay at most a week
-            pl.col(
-                "platelet_points",
-                "bilirubin_points",
-                "creatinine_points",
-            )
-            .forward_fill((window_size // SECONDS_IN_1H) * 168)
-            .over(partition_by=STAY_KEY, order_by="timeframe"),
-            # make urine output persistent for 24h
-            pl.col("uo_points")
-            .forward_fill()
-            .backward_fill()
-            .over(
-                partition_by=[
-                    STAY_KEY,
-                    pl.col("timeframe").floordiv(
-                        (window_size // SECONDS_IN_1H) * 24
-                    ),
-                ],
-            ),
+        out = _organ_score_forward_fill(
+            out,
+            fast_cols=["respiratory_points", "gcs_points", "map_points", "vasopressor_points"],
+            slow_cols=["platelet_points", "bilirubin_points", "creatinine_points"],
+            uo_col="uo_points",
+            window_size=window_size,
+            stay_key=STAY_KEY,
         )
 
     return (

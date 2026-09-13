@@ -50,7 +50,7 @@ from ..common import (
     get_ventilation,
 )
 from ..core import BLOOD_PRESSURES
-from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
@@ -373,6 +373,36 @@ def qSOFA(
     )
 
 
+def _organ_score_forward_fill(
+    out: pl.LazyFrame,
+    *,
+    fast_cols: list[str],
+    slow_cols: list[str],
+    uo_col: str,
+    window_size: int,
+    stay_key: str = "Global ICU Stay ID",
+) -> pl.LazyFrame:
+    """
+    Apply forward-fill to organ score columns with different time horizons.
+
+    Fast columns (6h): PF/respiratory, GCS, MAP, vasopressor points.
+    Slow columns (1 week): platelet, bilirubin, creatinine points.
+    Urine output (24h): persistent within day, reset daily.
+    """
+    return out.with_columns(
+        pl.col(*fast_cols)
+        .forward_fill((window_size // SECONDS_IN_1H) * 6)
+        .over(partition_by=stay_key, order_by="timeframe"),
+        pl.col(*slow_cols)
+        .forward_fill((window_size // SECONDS_IN_1H) * 168)
+        .over(partition_by=stay_key, order_by="timeframe"),
+        pl.col(uo_col)
+        .forward_fill()
+        .backward_fill()
+        .over(partition_by=[stay_key, pl.col("timeframe").floordiv((window_size // SECONDS_IN_1H) * 24)]),
+    ) # fmt: skip
+
+
 ################################################################################
 ################################################################################
 # region SOFA
@@ -590,7 +620,6 @@ def SOFA(
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe
-    # Attribute to timeframe using FIX_WINDOW_BORDERS (window-based attribution like VIS.py)
     meds_tf = (
         meds.filter(pl.col(drug_ingredient_col).is_in(VASOACTIVE_AGENTS))
         .pipe(ALIGNED_UNITS, patient_information=patient_information)
@@ -606,33 +635,30 @@ def SOFA(
         )
     )
 
-    meds_tf = FIX_WINDOW_BORDERS(
+    meds_agg = PROJECT_TO_WINDOWS(
         meds_tf,
+        group_cols=[STAY_KEY, drug_ingredient_col, "T_0"],
+        value_col="Drug Rate (fixed units)",
         TIMEWINDOW_IN_SECONDS=window_size,
         prefix="Drug",
         reference="T_0",
         unit="seconds",
-    ).with_columns(
-        pl.col("Window Relative to T_0").alias("timeframe"),
-        (
-            pl.col("Drug Rate (fixed units)")
-            * pl.col("Drug Duration (windows)")
-        ).alias("time-weighted Rate"),
     )
 
     if t_1 is not None:
-        meds_tf = meds_tf.filter(
-            pl.col("timeframe")
+        meds_agg = meds_agg.filter(
+            pl.col("Window Relative to T_0")
             < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(window_size) + 1)
         )
 
     meds_tf = (
-        meds_tf.group_by(STAY_KEY, "timeframe")
+        meds_agg
+        .group_by(STAY_KEY, "Window Relative to T_0")
         .agg(
             pl.when(pl.col(drug_ingredient_col) == agent)
             .then(
-                pl.sum("time-weighted Rate").truediv(
-                    pl.sum("Drug Duration (windows)")
+                pl.col("Drug Projection Sum").sum().truediv(
+                    pl.col("Drug Duration (windows)").sum()
                 )
             )
             .otherwise(0)
@@ -642,7 +668,7 @@ def SOFA(
         )
         .select(
             STAY_KEY,
-            "timeframe",
+            pl.col("Window Relative to T_0").alias("timeframe"),
             _vasopressor_points(
                 *[pl.col(agent) for agent in VASOACTIVE_AGENTS]  # ABC-sorted
             ).alias("vasopressor_points"),
@@ -674,45 +700,19 @@ def SOFA(
         .with_columns(_uo_points(pl.col("uo_daily_ml")).alias("uo_points"))
     )
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    out = base
+    out = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
     for part in [resp_tf, labs_tf, vitals_tf, meds_tf, uo_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     if forward_fill:
-        out = out.with_columns(
-            # forward-fill within stay at most 6 hours
-            pl.col(
-                "pf_ratio_points",
-                "gcs_points",
-                "map_points",
-                "vasopressor_points",
-            )
-            .forward_fill((window_size // SECONDS_IN_1H) * 6)
-            .over(partition_by=STAY_KEY, order_by="timeframe"),
-            # forward-fill within stay at most a week
-            pl.col(
-                "platelet_points",
-                "bilirubin_points",
-                "creatinine_points",
-            )
-            .forward_fill((window_size // SECONDS_IN_1H) * 168)
-            .over(partition_by=STAY_KEY, order_by="timeframe"),
-            # make urine output persistent for 24h
-            pl.col("uo_points")
-            .forward_fill()
-            .backward_fill()
-            .over(
-                partition_by=[
-                    STAY_KEY,
-                    pl.col("timeframe").floordiv(
-                        (window_size // SECONDS_IN_1H) * 24
-                    ),
-                ],
-            ),
+        out = _organ_score_forward_fill(
+            out,
+            fast_cols=["pf_ratio_points", "gcs_points", "map_points", "vasopressor_points"],
+            slow_cols=["platelet_points", "bilirubin_points", "creatinine_points"],
+            uo_col="uo_points",
+            window_size=window_size,
+            stay_key=STAY_KEY,
         )
 
     return (

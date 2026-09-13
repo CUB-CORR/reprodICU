@@ -30,7 +30,7 @@ from ..common import (
     get_medications,
     get_patient_information,
 )
-from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
 
 STAY_KEY = "Global ICU Stay ID"
 
@@ -210,28 +210,31 @@ def VIS(
         .alias("VIS Component"),
     ) # fmt: skip
 
-    # Fix window borders
-    medications = FIX_WINDOW_BORDERS(
-        medications, TIMEWINDOW_IN_SECONDS=SECONDS_IN_1H
-    ).rename(
-        {
-            "Window Relative to T_0": "Hour Relative to T_0",
-            "Drug Duration (windows)": "Drug Duration (hours)",
-        }
+    meds_agg = PROJECT_TO_WINDOWS(
+        medications,
+        group_cols=[STAY_KEY, "Drug Ingredient", "T_0"],
+        value_col="VIS Component",
+        TIMEWINDOW_IN_SECONDS=SECONDS_IN_1H,
+        prefix="Drug",
+        reference="T_0",
+        unit="seconds",
+    ).with_columns(
+        pl.col("Window Relative to T_0").alias("Hour Relative to T_0"),
     )
 
-    # Calculate VIS per hour
-    vis = (
-        medications.group_by(
-            STAY_KEY, "Hour Relative to T_0", "Drug Ingredient"
+    if t_1 is not None:
+        meds_agg = meds_agg.filter(
+            pl.col("Hour Relative to T_0")
+            < (pl.lit(int(t_1)).sub(pl.col("T_0")).floordiv(SECONDS_IN_1H) + 1)
         )
-        .agg(
-            pl.col("VIS Component")
-            .mul(pl.col("Drug Duration (hours)"))
-            .sum()
-            .truediv(pl.sum("Drug Duration (hours)"))
-            .alias("VIS Component"),
-            pl.col("T_0").first(),
+
+    # Calculate VIS per hour: sum each drug's own time-weighted average contribution
+    vis = (
+        meds_agg
+        .with_columns(
+            pl.col("Drug Projection Sum")
+            .truediv(pl.col("Drug Duration (windows)"))
+            .alias("VIS Component")
         )
         .group_by(STAY_KEY, "Hour Relative to T_0")
         .agg(

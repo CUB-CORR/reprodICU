@@ -10,7 +10,7 @@ from ...common import (
     get_patient_information,
     get_timeseries_intakeoutput,
 )
-from ...FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
+from ...FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
 
 SECONDS_IN_1MIN = 60
 SECONDS_IN_1H = 60 * SECONDS_IN_1MIN
@@ -137,14 +137,7 @@ def URINE_OUTPUT(
         .drop("prev_time", "uo_start")
     ) # fmt: skip
 
-    windowed = FIX_WINDOW_BORDERS(
-        urine,
-        TIMEWINDOW_IN_SECONDS=window_size,
-        prefix="Urine",
-        reference="T_0",
-        unit="seconds",
-    ).with_columns(
-        pl.col("Window Relative to T_0").alias("timeframe"),
+    urine_with_rate = urine.with_columns(
         pl.when(
             pl.col("Urine End Relative to T_0 (seconds)")
             <= pl.col("Urine Start Relative to T_0 (seconds)")
@@ -152,18 +145,30 @@ def URINE_OUTPUT(
         .then(pl.col("Urine output"))
         .otherwise(
             pl.col("Urine output")
-            * pl.col("Urine Duration (seconds)")
             / (
                 pl.col("Urine End Relative to T_0 (seconds)")
                 - pl.col("Urine Start Relative to T_0 (seconds)")
             )
         )
-        .alias("uo_window_ml"),
+        .alias("urine_rate_ml_per_sec"),
+    )
+
+    windowed = PROJECT_TO_WINDOWS(
+        urine_with_rate,
+        group_cols=[STAY_KEY],
+        value_col="urine_rate_ml_per_sec",
+        TIMEWINDOW_IN_SECONDS=window_size,
+        prefix="Urine",
+        reference="T_0",
+        unit="seconds",
+    ).select(
+        STAY_KEY,
+        pl.col("Window Relative to T_0").alias("timeframe"),
+        pl.col("Urine Projection Sum").alias("uo_interval_ml"),
     )
 
     aggregated = (
-        windowed.group_by(STAY_KEY, "timeframe")
-        .agg(pl.sum("uo_window_ml").alias("uo_interval_ml"))
+        windowed
         # Join with weight column from patient_information
         .join(
             patient_information.select(STAY_KEY, weight_col),

@@ -259,26 +259,38 @@ def SIRS(
     )
 
     # region respiratory rate criterion
-    resp_tf = (
-        labs.select(STAY_KEY, TIME_KEY, paco2_col)
-        .drop_nulls(paco2_col)
-        .join(
-            vitals.select(STAY_KEY, TIME_KEY, rr_col).drop_nulls(rr_col),
-            on=[STAY_KEY, TIME_KEY],
-            how="outer",
-            coalesce=True,
-        )
+    # RR (vitals) and PaCO2 (labs) computed separately, then ORed per window
+    rr_ge20_tf = (
+        vitals.select(STAY_KEY, TIME_KEY, rr_col)
+        .drop_nulls(rr_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
-        .agg(
-            _rr_criterion(
-                pl.col(rr_col).cast(pl.Float64),
-                pl.col(paco2_col).cast(pl.Float64),
+        .agg((pl.col(rr_col).cast(pl.Float64) > 20).max().alias("rr_ge20"))
+    )
+
+    paco2_lt32_tf = (
+        labs.select(STAY_KEY, TIME_KEY, paco2_col)
+        .drop_nulls(paco2_col)
+        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .group_by(STAY_KEY, "timeframe")
+        .agg((pl.col(paco2_col).cast(pl.Float64) < 32).max().alias("paco2_lt32"))
+    )
+
+    resp_tf = (
+        rr_ge20_tf.join(paco2_lt32_tf, on=[STAY_KEY, "timeframe"], how="full", coalesce=True)
+        .select(
+            STAY_KEY,
+            "timeframe",
+            pl.when(
+                (pl.col("rr_ge20").fill_null(False)) | (pl.col("paco2_lt32").fill_null(False))
             )
-            .max()
-            .alias("rr_criterion")
+            .then(1)
+            .otherwise(0)
+            .alias("rr_criterion"),
         )
     )
 
@@ -299,11 +311,8 @@ def SIRS(
         )
     )
 
-    # region union of all (stay, timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    out = base
+    out = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
     for part in [temp_tf, hr_tf, resp_tf, wbc_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 

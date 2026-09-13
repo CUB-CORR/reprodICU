@@ -65,7 +65,6 @@ def _build_base_timeframes(
             ).alias("timeframe")
         )
         .explode("timeframe")
-        .unique()
         .select(STAY_KEY, "T_0", "timeframe")
     )
 
@@ -554,6 +553,7 @@ class ScoringTable:
 
 
 # endregion
+
 
 __all__ = [
     # common utils

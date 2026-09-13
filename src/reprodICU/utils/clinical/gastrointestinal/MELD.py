@@ -20,6 +20,7 @@ import polars as pl
 
 from ...common import (
     _assign_timeframe,
+    _build_base_timeframes,
     _build_t0,
     _optional_time_bounds_filter,
     _to_lazy,
@@ -287,9 +288,10 @@ def MELD(
     rrt_data = _to_lazy(rrt_data) if rrt_data is not None else None
     diagnoses = _to_lazy(diagnoses) if diagnoses is not None else None
 
-    # Build T_0
+    # Build T_0 and base timeframes
     all_stays = patient_information.select(STAY_KEY)
     all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    base = _build_base_timeframes(all_stays_t0, patient_information, window_size)
 
     # Filter and prepare lab data
     LABS = ["Creatinine", "Bilirubin", "INR", "Sodium", "Glucose"]
@@ -398,8 +400,8 @@ def MELD(
     if diagnoses is not None:
         etiology_per_patient = _determine_liver_etiology(diagnoses)
 
-    # Combine all data
-    result = lab_per_frame
+    # Combine all data starting from base timeframes, then join available data
+    result = base.join(lab_per_frame, on=[STAY_KEY, "timeframe"], how="left")
 
     if rrt_status_per_frame is not None:
         result = result.join(
