@@ -108,7 +108,7 @@ def _admission_time_to_seconds(data: pl.LazyFrame) -> pl.LazyFrame:
             .add(pl.col("Admission Time (24h)").dt.minute().mul(60))
             .add(pl.col("Admission Time (24h)").dt.second())  # seconds
         )
-        .cast(pl.Int64)
+        .cast(int)
         .alias("Admission Time (seconds)")
     )
 
@@ -182,7 +182,7 @@ def rhee_compute_lab_baselines(
                 pl.col(TIME_KEY),
                 pl.col("Admission Time (seconds)"),
             ),
-            discharge_day=pl.col("ICU Length of Stay (days)").cast(pl.Int32),
+            discharge_day=pl.col("ICU Length of Stay (days)").cast(int),
         )
     )
 
@@ -340,8 +340,10 @@ def antibiotics(
             pl.col("Drug Ingredient")
             .replace(antibiotic_ranks)
             .alias("antibiotic_rank"),
+            # unknown route (e.g. SICdb, NWICU) is assumed intravenous
             (pl.col("Drug Administration Route") == "intravenous")
-            .cast(pl.Int8)
+            .fill_null(True)
+            .cast(int)
             .alias("intravenous"),
         )
         .select(
@@ -477,34 +479,41 @@ def antibiotic_escalation(
     """Antibiotic escalation per timeframe (Shah et al.).
 
     Rules:
-    - Consider an antibiotic "on" in timeframe k if drug_start + 12h falls into k.
+    - An antibiotic is "on" in every timeframe from its start to its end + 12h
+      (point doses without a usable end: start + 12h + 12h).
     - For each timeframe, compute:
-        rank_max = max antibiotic_rank
-        rank_max_n = number of antibiotics at rank_max
-        intravenous_n = count of intravenous administrations
-    - Escalation at k if:
-        (rank_max_k > rank_max_{k-1}) OR
-        (rank_max_k == rank_max_{k-1} AND rank_max_n_k > rank_max_n_{k-1})
-      and intravenous_n_k > 0.
-    - For the first timeframe with any antibiotics, mark escalation True.
+        antibiotic_rank = max antibiotic_rank
+        antibiotic_rank_n = number of distinct antibiotics at antibiotic_rank
+        intravenous = count of intravenous administrations
+    - Escalation at k if intravenous_k > 0 and
+        (nothing was on at k-1 OR
+         antibiotic_rank_k > antibiotic_rank_{k-1} OR
+         (antibiotic_rank_k == antibiotic_rank_{k-1} AND
+          antibiotic_rank_n_k > antibiotic_rank_n_{k-1})).
     """
+    start = "Drug Start Relative to Admission (seconds)"
+    end = "Drug End Relative to Admission (seconds)"
 
-    # Attribution timeframe using (start + 12h)
     return (
         antibiotics(medications)
         .join(all_stays_t0, on=STAY_KEY, how="inner")
+        # Attribution timeframes: from start to (end + 12h)
         .with_columns(
-            considered_start=(
-                pl.col("Drug Start Relative to Admission (seconds)")
-                + TWELVE_HOURS
+            considered_end=pl.when(pl.col(end) > pl.col(start))
+            .then(pl.col(end))
+            .otherwise(pl.col(start) + TWELVE_HOURS)
+            + TWELVE_HOURS
+        )
+        .with_columns(
+            timeframe=pl.int_ranges(
+                _assign_timeframe(start, window_size),
+                _assign_timeframe("considered_end", window_size) + 1,
             )
         )
-        .with_columns(
-            timeframe=_assign_timeframe("considered_start", window_size)
-        )
+        .explode("timeframe")
         .group_by(STAY_KEY, "timeframe", "antibiotic_rank")
         .agg(
-            rank_n=pl.len(),
+            rank_n=pl.n_unique("Drug Ingredient"),
             intravenous=pl.sum("intravenous"),
         )
         # Collapse to top rank per timeframe
@@ -518,7 +527,6 @@ def antibiotic_escalation(
             antibiotic_rank_n=pl.sum("rank_n"),
             intravenous=pl.sum("intravenous"),
         )
-        .with_columns(present=pl.lit(True))
         # Escalation via shift over stay ordered by timeframe
         .with_columns(
             prev_rank=pl.col("antibiotic_rank")
@@ -527,21 +535,23 @@ def antibiotic_escalation(
             prev_rank_n=pl.col("antibiotic_rank_n")
             .shift(1)
             .over(STAY_KEY, order_by="timeframe"),
+            prev_timeframe=pl.col("timeframe")
+            .shift(1)
+            .over(STAY_KEY, order_by="timeframe"),
         )
         .with_columns(
-            pl.when(pl.col("present") & pl.col("prev_rank").is_null())
-            .then(True)
-            .otherwise(
+            (
                 (
-                    (pl.col("antibiotic_rank") > pl.col("prev_rank"))
+                    pl.col("prev_rank").is_null()
+                    | (pl.col("timeframe") - pl.col("prev_timeframe") > 1)
+                    | (pl.col("antibiotic_rank") > pl.col("prev_rank"))
                     | (
                         (pl.col("antibiotic_rank") == pl.col("prev_rank"))
                         & (pl.col("antibiotic_rank_n") > pl.col("prev_rank_n"))
                     )
                 )
                 & (pl.col("intravenous") > 0)
-            )
-            .alias("antibiotic_escalation")
+            ).alias("antibiotic_escalation")
         )
         .select(STAY_KEY, "timeframe", "antibiotic_escalation")
         .sort(STAY_KEY, "timeframe")
@@ -603,6 +613,7 @@ def rhee_consecutive_antibiotics(
         LazyFrame with columns:
         - Global ICU Stay ID
         - timeframe: The timeframe when 4th consecutive day is reached
+        - abx_first_day: Calendar day on which the 4-day course starts
         - abx_day_4_reached: Boolean marker
     """
 
@@ -619,13 +630,24 @@ def rhee_consecutive_antibiotics(
             pl.col("Drug Start Relative to Admission (seconds)")
             >= pl.col("T_0")
         )
-        # Calendar day from admission for each antibiotic start
+        # Calendar days from admission covered by each antibiotic administration
         .with_columns(
-            calendar_day=_calendar_day_from_admission(
-                pl.col("Drug Start Relative to Admission (seconds)"),
-                pl.col("Admission Time (seconds)"),
+            calendar_day=pl.int_ranges(
+                _calendar_day_from_admission(
+                    pl.col("Drug Start Relative to Admission (seconds)"),
+                    pl.col("Admission Time (seconds)"),
+                ),
+                _calendar_day_from_admission(
+                    pl.max_horizontal(
+                        pl.col("Drug Start Relative to Admission (seconds)"),
+                        pl.col("Drug End Relative to Admission (seconds)"),
+                    ),
+                    pl.col("Admission Time (seconds)"),
+                )
+                + 1,
             )
         )
+        .explode("calendar_day")
         .filter(pl.col("calendar_day") >= 0)
         # Daily coverage: IV on day 0, any antibiotic on subsequent days
         .group_by(STAY_KEY, "calendar_day")
@@ -679,6 +701,7 @@ def rhee_consecutive_antibiotics(
         .select(
             STAY_KEY,
             "timeframe",
+            pl.col("first_day").alias("abx_first_day"),
             pl.lit(True).alias("abx_day_4_reached"),
         )
     )
@@ -1156,7 +1179,7 @@ def SEPSIS(
                 (pl.col(los_col) * pl.lit(SECONDS_PER_DAY))
                 .sub(pl.col("T_0"))
                 .floordiv(window_size)
-                .cast(pl.Int64)
+                .cast(int)
             )
         )
         .filter(
@@ -1340,10 +1363,10 @@ def SEPSIS(
             how="left",
         )
         .with_columns(
-            sofa_increase_delta_abx=pl.col("sofa_score")
+            sofa_increase_delta=pl.col("sofa_score")
             - pl.col("baseline_sofa_score_abx")
         )
-        .filter(pl.col("sofa_increase_delta_abx") >= 2)
+        .filter(ORGAN_FAILURE_CRITERION)
     )
 
     onset_candidates_abx_sofa = candidates_abx.group_by(
