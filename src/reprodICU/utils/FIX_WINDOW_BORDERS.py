@@ -1,3 +1,5 @@
+from typing import Optional
+
 import polars as pl
 
 from .common import _to_lazy
@@ -74,3 +76,21 @@ def PROJECT_TO_WINDOWS(
         )
         .sort(*group_cols, window_col)
     )
+
+
+def TIME_WEIGHTED_MEAN_RATE(
+    window_size: int,
+    prefix: str = "Drug",
+    where: Optional[pl.Expr] = None,
+) -> pl.Expr:
+    """Mean rate while infused in a window, from the output of PROJECT_TO_WINDOWS.
+
+    sum(rate x seconds) / seconds infused, over the rows (optionally only those
+    where `where` holds); 0 if there are none.
+    """
+    projection = pl.col(prefix + " Projection Sum")
+    duration = pl.col(prefix + " Duration (windows)")
+    if where is not None:
+        projection = projection.filter(where)
+        duration = duration.filter(where)
+    return (projection.sum() / (duration.sum() * window_size)).fill_nan(0)
