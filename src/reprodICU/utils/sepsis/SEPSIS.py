@@ -938,8 +938,9 @@ def SEPSIS(
             Semantic only; output column remains a numeric timeframe.
         organ_failure_criterion : str, optional
             "absolute" applies SOFA criteria to raw scores; "delta" (default) applies
-            to change from baseline. Baseline is defined as the lowest score in the
-            24h prior to suspicion time (Seymour) or antibiotic escalation (Shah).
+            to change from baseline. Baseline is the lowest score in the 24h before
+            the window [-48h, +24h] around suspicion time (Seymour) or antibiotic
+            escalation (Shah), or 0 if the window starts at the beginning of the stay.
             "sirs" applies SIRS criteria instead of SOFA.
         anchors : set[str], optional
             Which onset anchors to compute: {"seymour", "shah", "rhee"}.
@@ -1206,35 +1207,31 @@ def SEPSIS(
         .agg(onset_timeframe=pl.min("timeframe"))
     )
 
-    # Seymour: SOFA-based onset (bounded explode to avoid stay-only join blowup)
-    # Get baseline SOFA score via exact equi-join on baseline_timeframe
-    baseline_scores = suspicion_numbered.join(
-        sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
-        left_on=[STAY_KEY, "baseline_timeframe"],
-        right_on=[STAY_KEY, "timeframe"],
-        how="left",
-    ).select(
-        STAY_KEY,
-        "suspicion_number",
-        pl.col("sofa_score").alias("baseline_sofa_score"),
+    # Baseline SOFA: lowest score in the 24h before a timeframe (null at stay start -> 0)
+    sofa_pre_24h_min = (
+        pl.col("sofa_score")
+        .rolling_min(window_size=max(1, SECONDS_PER_DAY // window_size), min_samples=1)
+        .shift(1)
+        .over(STAY_KEY, order_by="timeframe")
+        .alias("baseline_sofa_score")
     )
 
+    # Seymour: SOFA-based onset (bounded explode to avoid stay-only join blowup)
     # Explode to bounded candidate range (end_timeframe - baseline_timeframe, typically ~72-97 hours at 1h window_size)
     # instead of joining full stay × all timeframes
     candidates = (
-        suspicion_numbered.with_columns(
+        suspicion_numbered.join(
+            sofa_base.select(STAY_KEY, "timeframe", sofa_pre_24h_min),
+            left_on=[STAY_KEY, "baseline_timeframe"],
+            right_on=[STAY_KEY, "timeframe"],
+            how="left",
+        )
+        .with_columns(
             candidate_timeframe=pl.int_ranges(
                 pl.col("baseline_timeframe"), pl.col("end_timeframe") + 1
             )
         )
         .explode("candidate_timeframe")
-        .join(
-            baseline_scores.select(
-                STAY_KEY, "suspicion_number", "baseline_sofa_score"
-            ),
-            on=[STAY_KEY, "suspicion_number"],
-            how="inner",
-        )
         .join(
             sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
             left_on=[STAY_KEY, "candidate_timeframe"],
@@ -1243,7 +1240,7 @@ def SEPSIS(
         )
         .with_columns(
             sofa_increase_delta=pl.col("sofa_score")
-            - pl.col("baseline_sofa_score")
+            - pl.col("baseline_sofa_score").fill_null(0)
         )
         .filter(ORGAN_FAILURE_CRITERION)
     )
@@ -1328,34 +1325,21 @@ def SEPSIS(
     )
 
     # Shah: SOFA-based onset (bounded explode to avoid stay-only join blowup)
-    # Get baseline SOFA score via exact equi-join on baseline_timeframe_abx
-    baseline_scores_abx = abx_suspicion_numbered.join(
-        sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
-        left_on=[STAY_KEY, "baseline_timeframe_abx"],
-        right_on=[STAY_KEY, "timeframe"],
-        how="left",
-    ).select(
-        STAY_KEY,
-        "suspicion_number",
-        pl.col("sofa_score").alias("baseline_sofa_score_abx"),
-    )
-
     # Explode to bounded candidate range
     candidates_abx = (
-        abx_suspicion_numbered.with_columns(
+        abx_suspicion_numbered.join(
+            sofa_base.select(STAY_KEY, "timeframe", sofa_pre_24h_min),
+            left_on=[STAY_KEY, "baseline_timeframe_abx"],
+            right_on=[STAY_KEY, "timeframe"],
+            how="left",
+        )
+        .with_columns(
             candidate_timeframe=pl.int_ranges(
                 pl.col("baseline_timeframe_abx"),
                 pl.col("end_timeframe_abx") + 1,
             )
         )
         .explode("candidate_timeframe")
-        .join(
-            baseline_scores_abx.select(
-                STAY_KEY, "suspicion_number", "baseline_sofa_score_abx"
-            ),
-            on=[STAY_KEY, "suspicion_number"],
-            how="inner",
-        )
         .join(
             sofa_base.select(STAY_KEY, "timeframe", "sofa_score"),
             left_on=[STAY_KEY, "candidate_timeframe"],
@@ -1364,7 +1348,7 @@ def SEPSIS(
         )
         .with_columns(
             sofa_increase_delta=pl.col("sofa_score")
-            - pl.col("baseline_sofa_score_abx")
+            - pl.col("baseline_sofa_score").fill_null(0)
         )
         .filter(ORGAN_FAILURE_CRITERION)
     )
