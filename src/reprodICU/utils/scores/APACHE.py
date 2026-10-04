@@ -836,7 +836,6 @@ def APACHE4_hospital_mortality(
             .pipe(_APACHE_diagnostic_category_weight, "IV")
             .alias("APACHE diagnostic category weight"),
         )
-        .sink_parquet("apache4_mortality_debug.parquet")
         .select(
             STAY_KEY,
             "APS3 Score",
