@@ -51,7 +51,7 @@ from ...common import (
 from ...laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
-SECONDS_IN_6H = 6 * SECONDS_IN_1H
+SECONDS_IN_4H = 4 * SECONDS_IN_1H
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 STAY_KEY = "Global ICU Stay ID"
@@ -204,6 +204,8 @@ def RESPIRATORY_CRITERION(
     - P/F ratio <= 300 or S/F ratio <= 315
       AND
     - PEEP >= 5 cm H2O
+    Both gates must have been met within 4 hours of each other; the first time
+    both are open is reported (P/F, S/F and PEEP are the paired qualifying values).
 
     Arguments
     ---------
@@ -290,7 +292,6 @@ def RESPIRATORY_CRITERION(
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
             t_0=None,
-            tolerance=SECONDS_IN_6H,
             fio2_type=fio2_type,
         )
         sf = SpO2_FiO2_RATIO(
@@ -298,7 +299,6 @@ def RESPIRATORY_CRITERION(
             timeseries_resp=timeseries_resp,
             timeseries_vitals=timeseries_vitals,
             t_0=None,
-            tolerance=SECONDS_IN_6H,
             fio2_type=fio2_type,
         )
 
@@ -362,7 +362,7 @@ def RESPIRATORY_CRITERION(
         .select(*NONINVASIVE_O2_RATIOS.collect_schema().names())
     )
 
-    CRITERION = (
+    O2_GATE = (
         pl.concat(
             [
                 INVASIVE_VENT_O2_RATIOS,
@@ -377,15 +377,46 @@ def RESPIRATORY_CRITERION(
             pl.col("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").min(),
             pl.exclude("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").max(),
         )
-        .join(PEEP, on=[STAY_KEY, TIME_KEY], how="left")
         .filter(
             (pl.col("PaO2/FiO2 Ratio") <= 300)
             | (
                 pl.col("SpO2/FiO2 Ratio") <= 315
                 if not pf_ratio_only
-                else pl.lit(True)
-            ),
-            pl.col("PEEP") >= 5,
+                else pl.lit(False)
+            )
+        )
+    )
+
+    PEEP_GATE = (
+        PEEP.filter(pl.col("PEEP") >= 5)
+        .group_by(STAY_KEY, TIME_KEY)
+        .agg(pl.col("PEEP").max())
+    )
+
+    # Onset = first time both gates were met within 4 h (the later gate's time)
+    CRITERION = (
+        pl.concat(
+            [O2_GATE.select(STAY_KEY, TIME_KEY), PEEP_GATE.select(STAY_KEY, TIME_KEY)]
+        )
+        .unique()
+        .sort(TIME_KEY)
+        .join_asof(
+            O2_GATE.sort(TIME_KEY),
+            on=TIME_KEY,
+            by=STAY_KEY,
+            tolerance=SECONDS_IN_4H,
+        )
+        .join_asof(
+            PEEP_GATE.sort(TIME_KEY),
+            on=TIME_KEY,
+            by=STAY_KEY,
+            tolerance=SECONDS_IN_4H,
+        )
+        .filter(
+            pl.col("PEEP").is_not_null(),
+            pl.coalesce("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").is_not_null(),
+            pl.col("Ventilation End").is_null()
+            | (pl.col(TIME_KEY) <= pl.col("Ventilation End")),
         )
     )
 
@@ -462,6 +493,7 @@ def ARDS(
             - Ventilation Start
             - Ventilation End
             - Ventilation Type
+            - PaO2/FiO2 Ratio, SpO2/FiO2 Ratio, PEEP (values at ARDS onset)
     """
 
     # region load datasets
@@ -580,9 +612,9 @@ def ARDS(
     # --------------------------------------------------------------------------
     ARDS_COHORT = (
         RESPIRATORY_DATA.join_asof(
-            BILATERAL_INFILTRATES,
-            left_on=TIME_KEY,
-            right_on=TIME_KEY,
+            # both carry the time relative to T_0
+            BILATERAL_INFILTRATES.drop("Time Relative to T_0 (seconds)", strict=False),
+            on=TIME_KEY,
             by=STAY_KEY,
             strategy="nearest",
             tolerance=SECONDS_IN_1D,
@@ -606,6 +638,10 @@ def ARDS(
                 "Ventilation End",
                 "Ventilation Type",
             ).min(),
+            # qualifying values at onset
+            pl.col("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio", "PEEP")
+            .filter(pl.col(TIME_KEY) == pl.min(TIME_KEY))
+            .min(),
         )
     )
 
