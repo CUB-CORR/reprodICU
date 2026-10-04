@@ -18,6 +18,7 @@ from .neurological.GCS import GCS_NT_CARRY_FORWARD, GCS_TO_AVPU
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.HYDROCORTISONE_EQUIVALENT_DOSAGE import HYDROCORTISONE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.VASOPRESSORS_BOOLEAN import VASOPRESSORS_BOOLEAN
+from .renal.AKI_FB import AKI_FB
 from .renal.AKI_KDIGO import AKI_KDIGO
 from .renal.URINE_OUTPUT import URINE_OUTPUT
 from .respiratory.ARDS import ARDS
@@ -47,6 +48,7 @@ __all__ = [
     "HYDROCORTISONE_EQUIVALENT_DOSAGE",
     "VASOPRESSORS_BOOLEAN",
     # renal
+    "AKI_FB",
     "AKI_KDIGO",
     "URINE_OUTPUT",
     # respiratory
