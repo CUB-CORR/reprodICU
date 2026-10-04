@@ -293,7 +293,7 @@ class MedicationHarmonizer(GlobalVars):
                 .str.replace("µ", "mc")
                 .str.replace("grams", "g")
                 .str.replace("mEQ", "mEq")
-                .str.replace("mEq\.", "mEq")
+                .str.replace(r"mEq\.", "mEq")
                 .alias(self.drug_amount_unit_col),
             )
             # remove units if amount is null

@@ -2000,7 +2000,7 @@ class EICUExtractor(EICUPaths):
         return treatment.with_columns(
             # TODO: make less hacky
             pl.col(self.procedure_description_col)
-            .str.replace_all("\|", " - ")
+            .str.replace_all(r"\|", " - ")
             .str.to_titlecase()
             .str.replace_many(
                 {

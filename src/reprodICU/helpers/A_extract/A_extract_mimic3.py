@@ -1574,7 +1574,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .str.replace("grams", "g")
                 .str.replace("hour", "hr")
                 .str.replace("mL", "ml")
-                .str.replace("mEq\.", "mEq")
+                .str.replace(r"mEq\.", "mEq")
                 .str.replace("units", "U"),
                 # Add a column to indicate if the drug is continuous
                 pl.col("ORDERCATEGORYDESCRIPTION")

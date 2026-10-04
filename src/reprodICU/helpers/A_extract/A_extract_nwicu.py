@@ -791,7 +791,7 @@ class NWICUExtractor(NWICUPaths):
                 .str.replace("grams", "g")
                 .str.replace("hour", "hr")
                 .str.replace("mL", "ml")
-                .str.replace("mEq\.", "mEq")
+                .str.replace(r"mEq\.", "mEq")
                 .str.replace("units", "U")
                 .str.replace("µ", "mc"),
                 # Mark rows with rates, not amounts

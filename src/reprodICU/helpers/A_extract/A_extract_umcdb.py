@@ -171,7 +171,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.icu_time_rel_to_first_col),
                 # for age, weight, height and year, assume average of the group
                 pl.col("agegroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -180,7 +180,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.age_col),
                 pl.col("weightgroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -189,7 +189,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.weight_col),
                 pl.col("heightgroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -198,7 +198,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.height_col),
                 pl.col("admissionyeargroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),

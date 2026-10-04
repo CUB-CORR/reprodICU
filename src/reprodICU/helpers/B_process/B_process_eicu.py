@@ -542,7 +542,7 @@ class EICUProcessor(EICUExtractor):
             self.extract_diagnoses()
             # Remove the dots from the ICD codes.
             .with_columns(
-                pl.col(self.diagnosis_icd_code_col).str.replace_all("\.", "")
+                pl.col(self.diagnosis_icd_code_col).str.replace_all(r"\.", "")
             )
             # Determine the ICD version of the diagnoses.
             .with_columns(
