@@ -8,7 +8,7 @@ This module implements several comorbidity indices based on diagnosis data:
 
 Output depends on the function:
 - Comorbidity scores (default): Numeric scores representing disease burden
-- Comorbidity categories (return_categories=True): Categorical risk levels
+- Comorbidity categories (return_categories=True): One indicator column per comorbidity category
 
 The module automatically loads diagnosis and patient information data from
 the reprodICU database if not provided explicitly. All functions support
@@ -110,8 +110,9 @@ def ELIXHAUSER(
 
     Returns
     -------
-        pd.DataFrame
-            Comorbidity scores or categories with Global ICU Stay ID as index.
+        pl.DataFrame
+            One row per Global ICU Stay ID with the score column "Elixhauser Comorbidity Index",
+            or, with return_categories=True, one boolean column per comorbidity category.
     """
     return comorbidity(
         score="elixhauser",
@@ -144,8 +145,9 @@ def CHARLSON(
 
     Returns
     -------
-        pd.DataFrame
-            Comorbidity scores or categories with Global ICU Stay ID as index.
+        pl.DataFrame
+            One row per Global ICU Stay ID with the score column "Charlson Age-Comorbidity Score",
+            or, with return_categories=True, one boolean column per comorbidity category.
     """
     return comorbidity(
         score="charlson",
@@ -157,7 +159,7 @@ def CHARLSON(
         icd_version="icd9_10",
         icd_version_col="Diagnosis ICD Code Version (source)",
         return_categories=return_categories,
-    ).drop("Charlson Comorbidity Score")
+    ).drop("Charlson Comorbidity Index")  # keep the age-adjusted "Charlson Age-Comorbidity Score"
 
 
 def GAGNE(
@@ -179,8 +181,9 @@ def GAGNE(
 
     Returns
     -------
-        pd.DataFrame
-            Comorbidity scores or categories with Global ICU Stay ID as index.
+        pl.DataFrame
+            One row per Global ICU Stay ID with the score column "Combined Comorbidity Score",
+            or, with return_categories=True, one boolean column per comorbidity category.
     """
     return comorbidity(
         score="combined",
