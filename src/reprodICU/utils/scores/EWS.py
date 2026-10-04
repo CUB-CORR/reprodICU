@@ -23,6 +23,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.neurological.GCS import GCS_TO_AVPU
 from ..common import (
     ScoringTable,
     _assign_timeframe,
@@ -88,30 +89,18 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
 
 def _avpu_points_standard(gcs: pl.Expr) -> pl.Expr:
     """
-    GCS to AVPU mapping. Used by EWS and MEWS.
+    GCS to AVPU points. Used by EWS and MEWS.
 
     GCS       AVPU          Points
-    15        Alert         0
-    13-14     Voice         1
-     9-12     Pain          2
-     3- 8     Unresponsive  3
+    14-15     Alert         0
+    10-13     Voice         1
+     7- 9     Pain          2
+     3- 6     Unresponsive  3
 
-    Source:
-    Kelly CA, Upex A, Bateman DN.
-    Comparison of consciousness level assessment in the poisoned patient using the alert/verbal/painful/unresponsive scale and the Glasgow Coma Scale.
-    Ann Emerg Med. 2004 Aug;44(2):108-13.
-    doi: 10.1016/j.annemergmed.2004.03.028. PMID: 15278081.
+    Source: see GCS_TO_AVPU.
     """
-    return (
-        pl.when(gcs == 15)
-        .then(0)
-        .when(gcs.is_between(13, 14))
-        .then(1)
-        .when(gcs.is_between(9, 12))
-        .then(2)
-        .when(gcs.is_between(3, 8))
-        .then(3)
-        .otherwise(None)
+    return GCS_TO_AVPU(gcs).replace_strict(
+        {"A": 0, "V": 1, "P": 2, "U": 3}, default=None
     )
 
 
