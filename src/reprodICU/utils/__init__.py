@@ -1,10 +1,11 @@
-from . import clinical, comorbidity, core, laboratory, mortality, scores, sepsis
+from . import admission, clinical, comorbidity, core, laboratory, mortality, scores, sepsis
 
 __all__ = [
     "scores",
     "clinical",
     "sepsis",
     "mortality",
+    "admission",
     "comorbidity",
     "core",
     "laboratory",
