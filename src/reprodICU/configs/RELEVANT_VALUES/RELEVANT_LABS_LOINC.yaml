@@ -45,6 +45,7 @@ Base excess:
   systems:
     - Blood
     - Blood arterial
+    - Extracellular fluid
 Basophils/leukocytes:
   property: "Number Fraction"
   systems:
