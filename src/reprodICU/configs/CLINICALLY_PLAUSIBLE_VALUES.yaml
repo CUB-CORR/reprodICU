@@ -96,7 +96,7 @@ Glasgow coma score eye opening:
   max: 4
 
 Glasgow coma score verbal:
-  min: 1
+  min: 0  # 0 = not testable (NT), e.g. intubated
   max: 5
 
 Glasgow coma score motor:

@@ -30,6 +30,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
@@ -169,7 +170,8 @@ def _gcs_points(
     - For sedated patients, use the last recorded GCS before sedation. If the
       previous GCS is unknown, score 0.
     - When not possible to evaluate the 3 domains of GCS, use the best
-      achieved score in the motor-scale domain.
+      achieved score in the motor-scale domain (the total is null when the
+      verbal score is not testable, NT = 0, e.g. intubated; not imputed).
     - If receiving drug treatment for delirium (short- or long-term), score 1
       point even if GCS is 15. For relevant drugs, see the International
       Management of Pain, Agitation, and Delirium in Adult Patients in the ICU
@@ -183,11 +185,11 @@ def _gcs_points(
             # If receiving drug treatment for delirium (short- or long-term),
             # score 1 point even if GCS is 15.
             pl.when(delirium_treatment).then(1)
-              .when(gcs == 15).then(0)
-              .when(gcs.is_between(13, 14)).then(1)
-              .when(gcs.is_between( 9, 12)).then(2)
-              .when(gcs.is_between( 6,  8)).then(3)
-              .when(gcs < 6).then(4)
+              .when(gcs >= 15).then(0)
+              .when(gcs >= 13).then(1)
+              .when(gcs >=  9).then(2)
+              .when(gcs >=  6).then(3)
+              .when(gcs <   6).then(4)
         )
         # When not possible to evaluate the 3 domains of GCS, use the best
         # achieved score in the motor-scale domain
@@ -631,6 +633,7 @@ def SOFA2(
     vitals = _improve_vitals(timeseries_vitals.lazy())
     map_col = "Mean arterial pressure"
     gcs_col = "Glasgow coma score total"
+    gcs_verbal_col = "Glasgow coma score verbal"
     gcs_motor_col = "Glasgow coma score motor"
     sf_ratio_col = "SpO2/FiO2 Ratio"
 
@@ -657,6 +660,7 @@ def SOFA2(
     meds = medications.lazy()
     drug_ingredient_col = "Drug Ingredient"
     drug_start_col = "Drug Start Relative to Admission (seconds)"
+    drug_end_col = "Drug End Relative to Admission (seconds)"
 
     SEDATION_DRUGS = [
         "amitriptyline", "doxepin", "nortriptyline", # tricyclic antidepressants
@@ -845,16 +849,20 @@ def SOFA2(
         .with_columns(
             pl.col(drug_ingredient_col).is_in(SEDATION_DRUGS).alias("sedation"),
             pl.col(drug_ingredient_col).is_in(DELIRIUM_DRUGS).alias("delirium_treatment"),
-            timeframe=(pl.col(drug_start_col) - pl.col("T_0"))
-            .floordiv(window_size)
-            .cast(int),
+            # every timeframe from the start to the end of the administration
+            timeframe=pl.int_ranges(
+                (pl.col(drug_start_col) - pl.col("T_0")).floordiv(window_size).cast(int),
+                (pl.max_horizontal(drug_start_col, drug_end_col) - pl.col("T_0"))
+                .floordiv(window_size).cast(int) + 1,
+            ),
         )
+        .explode("timeframe")
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.col("sedation").max(), pl.col("delirium_treatment").max())
     ) # fmt: skip
 
     vitals_tf = (
-        vitals.select(STAY_KEY, TIME_KEY, gcs_col, gcs_motor_col, map_col)
+        vitals.select(STAY_KEY, TIME_KEY, gcs_col, gcs_verbal_col, gcs_motor_col, map_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
@@ -874,8 +882,11 @@ def SOFA2(
             )
             .max()
             .alias("gcs_points"),
+            # not testable (intubated) or sedated: pre-sedation GCS
+            ((pl.col(gcs_verbal_col) == 0) | pl.col("sedation")).any().alias("gcs_nt"),
             _map_points(pl.col(map_col)).max().alias("map_points"),
         )
+        .pipe(GCS_NT_CARRY_FORWARD, "gcs_points", "gcs_nt")
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe

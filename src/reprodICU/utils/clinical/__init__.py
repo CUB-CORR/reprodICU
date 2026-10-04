@@ -14,6 +14,7 @@ from .IDEAL_BODY_WEIGHT import (
 
 from .cardiovascular.SCAI import SCAI
 from .gastrointestinal.MELD import MELD
+from .neurological.GCS import GCS_NT_CARRY_FORWARD
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.HYDROCORTISONE_EQUIVALENT_DOSAGE import HYDROCORTISONE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.VASOPRESSORS_BOOLEAN import VASOPRESSORS_BOOLEAN
@@ -38,6 +39,8 @@ __all__ = [
     "SCAI",
     # gastrointestinal
     "MELD",
+    # neurological
+    "GCS_NT_CARRY_FORWARD",
     # pharmacological
     "NOREPINEPHRINE_EQUIVALENT_DOSAGE",
     "HYDROCORTISONE_EQUIVALENT_DOSAGE",

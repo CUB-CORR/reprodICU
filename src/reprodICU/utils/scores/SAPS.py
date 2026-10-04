@@ -21,6 +21,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
     ScoringTable,
@@ -80,6 +81,7 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
             "Systolic blood pressure",
             "Temperature",
             "Glasgow coma score total",
+            "Glasgow coma score verbal",
         )
     )
 
@@ -356,7 +358,9 @@ def SAPS2(
             _gcs_points_saps2(pl.col("Glasgow coma score total"))
             .max()
             .alias("gcs_pts"),
+            (pl.col("Glasgow coma score verbal") == 0).any().alias("gcs_nt"),
         )
+        .pipe(GCS_NT_CARRY_FORWARD, "gcs_pts", "gcs_nt")
     )
 
     labs_tf = (

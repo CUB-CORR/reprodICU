@@ -853,11 +853,19 @@ class EICUExtractor(EICUPaths):
                 how="vertical",
             )
             .with_columns(
+                # GCS total "unable to score" is not testable: verbal 0, no total
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "GCS Total",
+                    pl.col("nursingchartvalue").str.starts_with("Unable"),
+                )
+                .then(pl.lit("Verbal"))
+                .otherwise(pl.col("nursingchartcelltypevalname"))
+                .alias("nursingchartcelltypevalname"),
                 pl.col("nursingchartvalue")
                 # Replace "Unable to score due to medication" values with 0
                 .replace("Unable to score due to medication", 0)
                 # Replace empty strings with None
-                .replace("", None)
+                .replace("", None),
             )
             .with_columns(
                 pl.col("nursingchartvalue")

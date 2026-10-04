@@ -25,6 +25,7 @@ from typing import Optional
 
 import polars as pl
 
+from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
     ScoringTable,
@@ -383,7 +384,9 @@ def APS(
             _hr_points_aps(pl.col("Heart rate")).max().alias("hr_pts"),
             _rr_points_aps(pl.col("Respiratory rate")).max().alias("rr_pts"),
             _gcs_points_aps(pl.col("Glasgow coma score total")).max().alias("gcs_pts"),
+            (pl.col("Glasgow coma score verbal") == 0).any().alias("gcs_nt"),
         )
+        .pipe(GCS_NT_CARRY_FORWARD, "gcs_pts", "gcs_nt")
     ) # fmt: skip
 
     labs_tf = (
@@ -732,6 +735,7 @@ def _gcs_points_aps3(eyes: pl.Expr, motor: pl.Expr, verbal: pl.Expr) -> pl.Expr:
     Glasgow Coma Scale (APACHE III version)
     Table based on eyes, motor, and verbal components.
     """
+    eyes, motor, verbal = (c.cast(pl.Int64) for c in (eyes, motor, verbal))
     return (
         pl.when(eyes == 1)
         .then(
@@ -891,7 +895,10 @@ def APS3(
                 pl.col("Glasgow coma score motor"),
                 pl.col("Glasgow coma score verbal"),
             ).max().alias("gcs_pts"),
+            (pl.col("Glasgow coma score verbal") == 0).any().alias("gcs_nt"),
         )
+        # no motor fallback: the APACHE III table needs the verbal score
+        .pipe(GCS_NT_CARRY_FORWARD, "gcs_pts", "gcs_nt")
     ) # fmt: skip
 
     labs_tf = (

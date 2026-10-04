@@ -771,10 +771,10 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("Glasgow coma score verbal"),
             )
             # handle the special case where the value is <1, which corresponds
-            # to intubated patients (assign score 1)
+            # to intubated patients (unable to assess: 0, not 1)
             .with_columns(
                 pl.when(pl.col("Glasgow coma score verbal") < 1)
-                .then(1)
+                .then(0)
                 .otherwise(pl.col("Glasgow coma score verbal"))
                 .alias("Glasgow coma score verbal")
             )

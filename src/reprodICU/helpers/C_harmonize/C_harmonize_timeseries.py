@@ -341,7 +341,10 @@ class TimeseriesHarmonizer(GlobalVars):
             # Sum Glasgow coma score components if total is missing
             .with_columns(
                 pl.coalesce(
-                    pl.col("Glasgow coma score total"),
+                    # verbal 0 = not testable (NT): drop a charted total
+                    pl.when(pl.col("Glasgow coma score verbal") == 0)
+                    .then(None)
+                    .otherwise(pl.col("Glasgow coma score total")),
                     pl.sum_horizontal(
                         [
                             pl.when(pl.col(col) == 0)

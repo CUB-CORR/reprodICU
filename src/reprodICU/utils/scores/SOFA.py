@@ -31,6 +31,7 @@ from typing import Optional
 import polars as pl
 
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
+from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
     ScoringTable,
@@ -472,6 +473,8 @@ def SOFA(
         Jones, A. E., Trzeciak, S., & Kline, J. A. (2009). The Sequential Organ Failure Assessment score for predicting outcome in patients with severe sepsis and evidence of hypoperfusion at the time of emergency department presentation. Critical Care Medicine, 37(5), 1649–1654. doi:10.1097/CCM.0b013e31819def97
             * source of the substitution:
                 Pandharipande PP, Sanders N, Jacques P, et al. Calculating SOFA scores when arterial blood gasses are not available: Validating SpO2/FIO2 ratios for imputing PaO2/FIO2 ratios in the SOFA scores. Crit Care Med. 2006;34:A1.
+    - CNS of patients with a not testable verbal GCS (verbal 0, e.g. intubated) carries the last assessed GCS forward, or GCS 15 if there is none, following (Proposal 1):
+        Lambden S, Laterre PF, Levy MM, Francois B. The SOFA score-development, utility and challenges of accurate assessment in clinical trials. Crit Care. 2019 Nov 27;23(1):374. doi: 10.1186/s13054-019-2663-7. PMID: 31775846; PMCID: PMC6880479.
 
     Returns
     -------
@@ -514,6 +517,7 @@ def SOFA(
     vitals = _improve_vitals(timeseries_vitals.lazy())
     map_col = "Mean arterial pressure"
     gcs_col = "Glasgow coma score total"
+    gcs_verbal_col = "Glasgow coma score verbal"
 
     # Labs
     labs = _improve_labs(timeseries_labs.lazy())
@@ -608,15 +612,17 @@ def SOFA(
 
     # region vitals (GCS & MAP)
     vitals_tf = (
-        vitals.select(STAY_KEY, TIME_KEY, gcs_col, map_col)
+        vitals.select(STAY_KEY, TIME_KEY, gcs_col, gcs_verbal_col, map_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _gcs_points(pl.col(gcs_col)).max().alias("gcs_points"),
+            (pl.col(gcs_verbal_col) == 0).any().alias("gcs_nt"),
             _map_points(pl.col(map_col)).max().alias("map_points"),
         )
+        .pipe(GCS_NT_CARRY_FORWARD, "gcs_points", "gcs_nt")
     )
 
     # region medications (vasoactive) -> doses in mcg/kg/min per timeframe

@@ -781,6 +781,14 @@ class MIMIC4Extractor(MIMIC4Paths):
             .pipe(self._compute_cam_icu)
             .join(meas_chartevents_main_data, on="itemid", how="left")
             .with_columns(
+                # Verbal GCS of intubated patients is unable to assess (0, not 1)
+                pl.when(
+                    pl.col("label") == "Glasgow coma score verbal",
+                    pl.col("value") == "No Response-ETT",
+                )
+                .then(0)
+                .otherwise(pl.col("valuenum"))
+                .alias("valuenum"),
                 pl.when(pl.col("label") == "Heart rate rhythm")
                 .then(
                     pl.col("value").replace_strict(
