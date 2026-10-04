@@ -2322,25 +2322,21 @@ class MIMIC4Extractor(MIMIC4Paths):
             discharge_summaries = pl.scan_parquet(self.discharge_summaries_path)
         else:
             discharge_summaries = pl.scan_csv(self.discharge_summaries_path)
-        
-        discharge_summaries = (
-            discharge_summaries
-            .rename(
-                {
-                    "subject_id": self.person_id_col,
-                    "hadm_id": self.hospital_stay_id_col,
-                    "text": self.note_text_col,
-                }
-            )
-            .select(
-                self.person_id_col,
-                self.hospital_stay_id_col,
-                # use "storetime" for actual entry as charttime refers to discharge date only
-                pl.col("storetime").alias("charttime"),
-                pl.lit("Discharge summary").alias(self.note_category_col),
-                pl.lit(None).alias(self.note_description_col),
-                self.note_text_col,
-            )
+
+        discharge_summaries = discharge_summaries.rename(
+            {
+                "subject_id": self.person_id_col,
+                "hadm_id": self.hospital_stay_id_col,
+                "text": self.note_text_col,
+            }
+        ).select(
+            self.person_id_col,
+            self.hospital_stay_id_col,
+            # use "storetime" for actual entry as charttime refers to discharge date only
+            pl.col("storetime").alias("charttime"),
+            pl.lit("Discharge summary").alias(self.note_category_col),
+            pl.lit(None).alias(self.note_description_col),
+            self.note_text_col,
         )
 
         # RADIOLOGY REPORTS
