@@ -699,16 +699,16 @@ class SICdbExtractor(SICdbPaths):
             .drop_nulls("LOINC_long")
             # NOTE: fixing wrong unit / label mappings in the reference table
             .with_columns(
-                pl.when(pl.col("ReferenceGlobalID") == 227).then("Monocytes/Leukocytes in Blood") # is relative, not absolute
-                  .when(pl.col("ReferenceGlobalID") == 235).then("Protein S actual/normal in Platelet poor plasma by Chromogenic method") # Protein S, not Protein C
-                  .when(pl.col("ReferenceGlobalID") == 296).then("Basophils [#/volume] in Blood by Manual count") # is absolute, not relative
-                  .when(pl.col("ReferenceGlobalID") == 300).then("Eosinophils [#/volume] in Blood by Manual count") # is absolute, not relative
-                  .when(pl.col("ReferenceGlobalID") == 303).then("Lymphocytes [#/volume] in Blood by Manual count") # is absolute, not relative
-                  .when(pl.col("ReferenceGlobalID") == 306).then("Monocytes [#/volume] in Blood by Manual count") # is absolute, not relative
-                  .when(pl.col("ReferenceGlobalID") == 559).then("pH of Urine") # not Thyrotropin
-                  .when(pl.col("ReferenceGlobalID") == 669).then("Base excess in Extracellular fluid by calculation") # is "BE ecf (BGA)"
-                  .when(pl.col("ReferenceGlobalID") == 699).then("Oxygen [Partial pressure] in Mixed venous blood") # see ReferenceDescription
-                  .when(pl.col("ReferenceGlobalID") == 700).then("pH of Mixed venous blood") # see ReferenceDescription
+                pl.when(pl.col("ReferenceGlobalID") == 227).then(pl.lit("Monocytes/Leukocytes in Blood")) # is relative, not absolute
+                  .when(pl.col("ReferenceGlobalID") == 235).then(pl.lit("Protein S actual/normal in Platelet poor plasma by Chromogenic method")) # Protein S, not Protein C
+                  .when(pl.col("ReferenceGlobalID") == 296).then(pl.lit("Basophils [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 300).then(pl.lit("Eosinophils [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 303).then(pl.lit("Lymphocytes [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 306).then(pl.lit("Monocytes [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 559).then(pl.lit("pH of Urine")) # not Thyrotropin
+                  .when(pl.col("ReferenceGlobalID") == 669).then(pl.lit("Base excess in Extracellular fluid by calculation")) # is "BE ecf (BGA)"
+                  .when(pl.col("ReferenceGlobalID") == 699).then(pl.lit("Oxygen [Partial pressure] in Mixed venous blood")) # see ReferenceDescription
+                  .when(pl.col("ReferenceGlobalID") == 700).then(pl.lit("pH of Mixed venous blood")) # see ReferenceDescription
                 .otherwise(
                     pl.col("LOINC_long").replace(
                         {
