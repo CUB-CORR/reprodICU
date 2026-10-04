@@ -21,6 +21,7 @@
 
 # 1: Narrow-spectrum antibiotics
 amoxicillin: 1
+ampicillin: 1
 cefazolin: 1
 doxycycline: 1
 ethambutol: 1
@@ -45,6 +46,7 @@ trimethoprim: 1
 # 2: Broad-spectrum antibiotics
 amikacin: 2
 amoxicillin / clavulanate: 2
+ampicillin / sulbactam: 2
 azithromycin: 2
 cefotaxime: 2
 ceftriaxone: 2
@@ -62,6 +64,7 @@ ofloxacin: 2
 silver sulfadiazine: 2
 
 # 3: Extended-spectrum antibiotics
+cefepime: 3
 ceftazidime: 3
 ertapenem: 3
 gentamicin: 3

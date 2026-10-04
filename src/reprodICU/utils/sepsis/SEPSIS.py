@@ -61,6 +61,7 @@ from ..common import (
     get_medications,
     get_microbiology,
     get_patient_information,
+    get_prescriptions,
     get_procedures,
     get_timeseries_intakeoutput,
     get_timeseries_labs,
@@ -917,7 +918,7 @@ def SEPSIS(
         medications : pl.LazyFrame, optional
             Medications data. Loaded automatically if None.
         prescriptions : pl.LazyFrame, optional
-            Medication prescriptions; concatenated to medications if provided.
+            Medication prescriptions; concatenated to medications. Loaded automatically if None.
         microbiology : pl.LazyFrame, optional
             Microbiology results. Loaded automatically if None.
         procedures : pl.LazyFrame, optional
@@ -972,6 +973,8 @@ def SEPSIS(
         timeseries_inout = get_timeseries_intakeoutput()
     if medications is None:
         medications = get_medications()
+    if prescriptions is None:
+        prescriptions = get_prescriptions()
     if microbiology is None:
         microbiology = get_microbiology()
     if procedures is None:
