@@ -847,6 +847,12 @@ class UMCdbExtractor(UMCdbPaths):
                 - {drug_admin_type_col}: Administration type.
         """
 
+        medications_path = self.precalc_path + "UMCdb_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("UMCdb   - Extracting medications...")
 
         # Extract medication mappings by building a chain of references
@@ -1076,7 +1082,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        return (
+        medications = (
             pl.concat(
                 [
                     drugitems_with_solutionitem,
@@ -1143,6 +1149,10 @@ class UMCdbExtractor(UMCdbPaths):
             )
             .drop("intime", "outtime", "offset_to_prev")
         )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

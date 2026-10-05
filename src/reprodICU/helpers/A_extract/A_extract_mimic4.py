@@ -1427,6 +1427,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_patient_weight_col}: Patient weight used for dosing.
         """
+
+        medications_path = self.precalc_path + "MIMIC4_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("MIMIC4  - Extracting medications...")
 
         intimes = self.extract_patient_IDs()
@@ -1987,7 +1994,7 @@ class MIMIC4Extractor(MIMIC4Paths):
 
         # region COMBINED
         ########################################################################
-        return (
+        medications = (
             pl.concat(
                 [inputevents, prescriptions, emar], how="diagonal_relaxed"
             )
@@ -2026,6 +2033,10 @@ class MIMIC4Extractor(MIMIC4Paths):
                 self.icu_length_of_stay_col,
             )
         )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

@@ -742,6 +742,13 @@ class NWICUExtractor(NWICUPaths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_admin_type_col}: Administration type.
         """
+
+        medications_path = self.precalc_path + "NWICU_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("NWICU   - Extracting medications...")
 
         intimes = self.extract_patient_IDs()
@@ -895,7 +902,7 @@ class NWICUExtractor(NWICUPaths):
 
         # region COMBINED
         ########################################################################
-        return (
+        medications = (
             pl.concat([prescriptions, emar], how="diagonal_relaxed")
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
@@ -932,6 +939,10 @@ class NWICUExtractor(NWICUPaths):
                 self.icu_length_of_stay_col,
             )
         )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

@@ -4,6 +4,8 @@
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
+import os
+
 import polars as pl
 
 from ..helper import GlobalHelpers
@@ -1266,6 +1268,13 @@ class EICUExtractor(EICUPaths):
                 - {drug_patient_weight_col}: Patient weight used for dosing.
                 - {drug_admin_route_col}: Administration route.
         """
+
+        medications_path = self.precalc_path + "EICU_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("eICU    - Extracting medications...")
 
         eicu_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
@@ -1589,7 +1598,11 @@ class EICUExtractor(EICUPaths):
         )
 
         # Concatenate the medication tables
-        return pl.concat([infusiondrug, medication], how="diagonal_relaxed")
+        medications = pl.concat([infusiondrug, medication], how="diagonal_relaxed")
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

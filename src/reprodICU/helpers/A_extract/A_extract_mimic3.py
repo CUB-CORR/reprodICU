@@ -1473,6 +1473,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_patient_weight_col}: Patient weight used for dosing.
         """
+
+        medications_path = self.precalc_path + "MIMIC3_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("MIMIC3  - Extracting medications...")
 
         intimes = self.extract_patient_IDs()
@@ -2201,7 +2208,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # region RETURN
         #######################################################################
-        return (
+        medications = (
             pl.concat([inputevents, prescriptions], how="diagonal_relaxed")
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
@@ -2237,6 +2244,11 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.icu_length_of_stay_col,
             )
         )
+
+        # collect instead of sink_parquet: streaming sums floats in a run-dependent order
+        medications.collect().write_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

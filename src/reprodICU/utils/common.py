@@ -196,8 +196,8 @@ def get_timeseries_respiratory() -> Optional[pl.LazyFrame]:
 
 
 def get_timeseries_intakeoutput() -> Optional[pl.LazyFrame]:
-    """Load timeseries intake/output dataset from reprodICU."""
-    return _load_dataset("timeseries_intakeoutput")
+    """Load timeseries intake/output dataset (with infusion volumes and fluid balance) from reprodICU."""
+    return _load_dataset("timeseries_intakeoutput_balanced")
 
 
 def get_medications() -> Optional[pl.LazyFrame]:

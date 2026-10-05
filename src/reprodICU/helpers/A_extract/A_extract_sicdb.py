@@ -5,6 +5,8 @@
 # in a structured format for further processing and harmonization.
 
 
+import os
+
 import polars as pl
 
 from ..helper import GlobalHelpers
@@ -463,11 +465,18 @@ class SICdbExtractor(SICdbPaths):
                 - {drug_admin_type_col}: Administration type.
                 - {drug_continuous_col}: Continuous administration flag.
         """
+
+        medications_path = self.precalc_path + "SICdb_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("SICdb   - Extracting medications...")
 
         offsets = self._get_offsets()
 
-        return (
+        medications = (
             pl.scan_csv(self.medication_path)
             .select(
                 "id",
@@ -564,6 +573,10 @@ class SICdbExtractor(SICdbPaths):
                 "OffsetDrugEnd",
             )
         )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 
