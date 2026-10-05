@@ -1761,6 +1761,19 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # Order of the CareVue events. Windows depend on the row order and group_by
+        # keeps it within each group, so the events are sorted once before every
+        # group_by and first() then takes the earliest non-null value of a group.
+        # The order has to be total, so that the result does not depend on how the
+        # rows arrive: events of an admin share the same minute (rate vs. amount
+        # events, drug vs. fluid items), each column of the key is needed for that.
+        cv_sort_cols = [
+            "CHARTTIME",
+            self.drug_mixture_admin_id_col,
+            "ITEMID",
+            self.drug_rate_col,
+        ]
+
         # select all inputevents that only represent fluids within the same LINKORDERID
         inputevents_cv_fluids_only = (
             inputevents_cv.with_columns(
@@ -1776,7 +1789,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.col("CHARTTIME")
                 .shift(1)
-                .over(self.drug_mixture_id_col, order_by="CHARTTIME")
+                .over(self.drug_mixture_id_col, order_by=cv_sort_cols)
                 # fill empty first with nearest previous full hour
                 # -> "For volumes, the CHARTTIME will correspond to an end time."
                 .fill_null(
@@ -1799,10 +1812,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .alias(self.fluid_rate_col)
             )
+            # sorted so that first() below takes the earliest value of each group
+            .sort(cv_sort_cols)
             .group_by(self.drug_mixture_id_col, self.drug_mixture_admin_id_col)
             .agg(
                 *[
-                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.fluid_rate_col,
@@ -1823,17 +1838,19 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # select all other inputevents
         # Split into two dataframes for drug and fluid components
+        # -> sorted at the end, so that first() in the group_bys below takes the
+        # earliest value of each group
         inputevents_cv_mixtures = inputevents_cv.with_columns(
             pl.col(self.drug_rate_col, self.drug_rate_unit_col)
             .forward_fill()
             .backward_fill()
-            .over(self.drug_mixture_admin_id_col),
+            .over(self.drug_mixture_admin_id_col, order_by=cv_sort_cols),
         ).filter(
             pl.col(self.drug_amount_unit_col)
             .ne_missing("ml")
             .any()
             .over(self.drug_mixture_id_col)
-        )
+        ).sort(cv_sort_cols)
 
         # Group by mixture ID and rate continuity
         inputevents_cv_mixtures = (
@@ -1842,7 +1859,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .agg(
                 *[
-                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.drug_continuous_col,
@@ -1863,7 +1880,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .agg(
                     *[
-                        pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                        pl.col(column).drop_nulls().first()
                         for column in [
                             "ITEMID",
                             self.drug_rate_col,
@@ -1903,6 +1920,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # Only merge rows with the same items, otherwise fluids get mislabeled
+        merge_keys = [self.drug_mixture_id_col, "ITEMID", "ITEMID_FLUID"]
+        # Total order for deterministic fills, run-length ids and first()
+        sort_cols = ["STARTTIME", "ENDTIME", self.drug_mixture_admin_id_col]
         inputevents_cv_combined = (
             pl.concat(
                 [inputevents_cv_fluids_only, inputevents_cv_mixtures],
@@ -1922,22 +1943,30 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 # NOTE: Sometimes there is a singular hour for which only a volume, but no rate is given.
                 # Visual inspection of the data shows that these are continuous infusions with the constant rate as before and after.
-                # -> forward fill and backward fill the drug rate
-                pl.col(self.drug_rate_col)
+                # -> forward fill and backward fill the rate, its units and the items
+                pl.col(
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
+                    self.fluid_rate_col,
+                    "ITEMID",
+                    "ITEMID_FLUID",
+                )
                 .forward_fill()
                 .backward_fill()
-                .over(self.drug_mixture_id_col, order_by="STARTTIME"),
+                .over(self.drug_mixture_id_col, order_by=sort_cols),
             )
             .with_columns(
                 pl.struct([self.drug_rate_col, self.fluid_rate_col])
                 .rle_id()
-                .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                .over(merge_keys, order_by=sort_cols)
                 .alias("has_same_rate")
             )
-            .group_by(self.drug_mixture_id_col, "has_same_rate")
+            # sorted so that first() below takes the earliest value of each group
+            .sort(sort_cols)
+            .group_by(*merge_keys, "has_same_rate")
             .agg(
                 *[
-                    pl.col(column).sort_by("STARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.drug_mixture_admin_id_col,
@@ -1948,8 +1977,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.drug_rate_col,
                         self.drug_rate_unit_col,
                         self.fluid_rate_col,
-                        "ITEMID",
-                        "ITEMID_FLUID",
                     ]
                 ],
                 pl.col("STARTTIME").min().alias("STARTTIME"),

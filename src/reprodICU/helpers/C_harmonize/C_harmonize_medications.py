@@ -216,6 +216,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
+                        pl.col(self.drug_end_col) > pl.col(self.drug_start_col),
                         pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()
@@ -241,6 +242,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
+                        pl.col(self.drug_end_col) > pl.col(self.drug_start_col),
                         pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()

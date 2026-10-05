@@ -58,6 +58,8 @@ def ALIGNED_UNITS(
         pl.col("Drug Rate").is_null(),
         pl.col("Drug Rate Unit").is_null(),
         pl.col("Drug Amount").is_not_null(),
+        pl.col("Drug End Relative to Admission (seconds)")
+        > pl.col("Drug Start Relative to Admission (seconds)"),
         pl.col("Drug Amount Unit").is_in(
             ["g", "mg", "mcg", "U", "IE", "units"]
         ),
