@@ -390,17 +390,19 @@ def _organ_score_forward_fill(
     Slow columns (1 week): platelet, bilirubin, creatinine points.
     Urine output (24h): persistent within day, reset daily.
     """
+    # Convert the horizons from hours to windows
+    windows_per_day = max(1, SECONDS_IN_1D // window_size)
     return out.with_columns(
         pl.col(*fast_cols)
-        .forward_fill((window_size // SECONDS_IN_1H) * 6)
+        .forward_fill((6 * SECONDS_IN_1H) // window_size)
         .over(partition_by=stay_key, order_by="timeframe"),
         pl.col(*slow_cols)
-        .forward_fill((window_size // SECONDS_IN_1H) * 168)
+        .forward_fill(SECONDS_IN_1W // window_size)
         .over(partition_by=stay_key, order_by="timeframe"),
         pl.col(uo_col)
         .forward_fill()
         .backward_fill()
-        .over(partition_by=[stay_key, pl.col("timeframe").floordiv((window_size // SECONDS_IN_1H) * 24)]),
+        .over(partition_by=[stay_key, pl.col("timeframe").floordiv(windows_per_day)]),
     ) # fmt: skip
 
 
