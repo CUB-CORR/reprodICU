@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-07
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -455,7 +455,8 @@ class SICdbExtractor(SICdbPaths):
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {drug_mixture_admin_id_col}: Medication event identifier.
                 - {drug_name_col}: Medication name.
-                - {drug_ingredient_col}: Active drug ingredient.
+                - {drug_ingredient_col}: Active drug ingredient (or combination).
+                - {drug_name_OMOP_col}: OMOP-mapped medication name.
                 - {drug_amount_col}: Drug amount.
                 - {drug_amount_unit_col}: Amount unit.
                 - {drug_rate_col}: Administration rate.
@@ -788,24 +789,25 @@ class SICdbExtractor(SICdbPaths):
         )
 
     # Extract the information from the SICdb.usagi.csv file
-    def _extract_drug_references(self) -> dict:
+    def _extract_drug_references(self) -> pl.DataFrame:
         """
-        Extract and process drug references from CSV mapping files.
-        """
+        Extract the OMOP drug name and the ingredient of each drug ID.
 
-        return (
+        The drug name is the mapped concept if it is a drug (Clinical Drug Form,
+        Clinical Drug ...), else null. A drug ID can have several rows (one per
+        ingredient of a combination product); the ingredients of all rows are
+        named as one combination, e.g. "piperacillin / tazobactam".
+        """
+        rows = (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "SICdb.usagi.csv")
             .filter(pl.col("conceptName") != "Unmapped")
-            .select("sourceCode", "conceptName")
+            .select("sourceCode", "conceptId", "conceptName")
             .drop_nulls("sourceCode")
             .unique()
-            .rename(
-                {
-                    "sourceCode": "DrugID",
-                    "conceptName": self.drug_ingredient_col,
-                }
-            )
         )
+        return self.omop.get_drug_references(
+            rows, ["sourceCode"], self.drug_ingredient_col, self.drug_name_OMOP_col
+        ).rename({"sourceCode": "DrugID"})
 
     # endregion
 
