@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -1456,13 +1456,41 @@ class MIMIC4Extractor(MIMIC4Paths):
         ########################################################################
         inputevents_to_rxnorm_data = (
             pl.scan_csv(self.inputevents_to_rxnorm_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
+            .select(
+                "itemid (omop_source_code)",
+                "ordercategorydescription",
+                "omop_concept_name",
+                "inputevents_row_count",
+            )
             .rename(
                 {
                     "itemid (omop_source_code)": "itemid",
                     "omop_concept_name": "label_OMOP",
                 }
             )
+            # Keep the most used name per item and order category
+            .sort(
+                "inputevents_row_count", "label_OMOP", descending=[True, False]
+            )
+            .unique(
+                ["itemid", "ordercategorydescription"],
+                keep="first",
+                maintain_order=True,
+            )
+            .drop("inputevents_row_count")
+        )
+        # Fix missing mapping: ketamine "Drug Push" has no row in the file
+        inputevents_to_rxnorm_data = pl.concat(
+            [
+                inputevents_to_rxnorm_data,
+                pl.LazyFrame(
+                    {
+                        "itemid": [221712],
+                        "ordercategorydescription": ["Drug Push"],
+                        "label_OMOP": ["ketamine Injectable Solution"],
+                    }
+                ),
+            ]
         )
 
         # Extract medication mappings by building a chain of references
@@ -1585,7 +1613,6 @@ class MIMIC4Extractor(MIMIC4Paths):
                 # Add a column to indicate the administration type
                 pl.lit("given").alias(self.drug_admin_type_col),
             )
-            .drop("ordercategorydescription")
         )
 
         # specifically handle certain medications differently
@@ -1730,9 +1757,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                 how="left",
                 suffix="_fluid",
             )
-            .join(inputevents_to_rxnorm_data, on="itemid", how="left")
+            .join(
+                inputevents_to_rxnorm_data,
+                on=["itemid", "ordercategorydescription"],
+                how="left",
+            )
             .join(itemid_to_ingredient, on="itemid", how="left")
-            .drop("itemid", "itemid_fluid")
+            .drop("itemid", "itemid_fluid", "ordercategorydescription")
             # Rename columns for consistency
             .rename(
                 {
@@ -1800,26 +1831,10 @@ class MIMIC4Extractor(MIMIC4Paths):
             [str(x).zfill(11) for x in ndc_codes]
         )
 
-        # 3. Get active ingredients for all medication concept IDs
-        ingredients = self.omop.get_ingredient(list(ndc_to_rxnorm.values()))
-        rxnorm_names = self.omop.get_concept_names_from_ids(
-            list(ndc_to_rxnorm.values())
+        # 3. Map NDC codes to active ingredients and standardized drug names
+        ndc_to_ingredient, ndc_to_drugname = self.omop.get_ingredient_and_name(
+            ndc_to_rxnorm
         )
-
-        # 5. Create final mappings from codes to ingredients and names
-        # Map NDC codes to active ingredients
-        ndc_to_ingredient = {
-            ndc: ingredients[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in ingredients
-        }
-
-        # Map NDC codes to standardized drug names
-        ndc_to_drugname = {
-            ndc: rxnorm_names[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in rxnorm_names
-        }
 
         prescriptions = (
             prescriptions.select(
