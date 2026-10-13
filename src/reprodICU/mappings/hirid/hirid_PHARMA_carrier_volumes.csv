@@ -1,0 +1,90 @@
+# Volume that a HiRID pharma entry adds to the saline/colloid counter reading (30005075 / 30005080) at the same instant; drugs not listed add 0.
+# ml: fixed ml; ml_per_ml: ml per ml of the entry's own volume (fluidamount_calc); ml_per_dose: ml per unit of dose; per_infusion: take the ratio per infusion, ml_per_ml is the fallback.
+# dose_from, dose_unit: the row with the highest dose_from <= the entry's dose applies (empty = any dose). Used in HiRIDProcessor.process_medications.
+# Derived from pharma_records x observation_tables (re-derive for other HiRID releases); injections (*-inj) add 0, drugs without a consistent volume are not listed.
+# instants, exact_share, control_hits: how often the rule links the drug's entries to a reading, and the same count with the pharma times shifted by 1 h (control).
+pharmaid,drug_name,ml,ml_per_ml,ml_per_dose,per_infusion,dose_from,dose_unit,instants,exact_share,control_hits
+1000300,Cepimex,50.0,,,false,,,14063,0.93,21
+405,Tazobac 2 g inf,50.0,,,false,,,13651,0.922,17
+189,Vancocin  Amp 500 mg,100.0,,,false,,,8320,0.878,121
+1000274,Augmentin 1.2 Inj Lsg,100.0,,,false,,,7652,0.943,68
+1000424,Meronem 1g,100.0,,,false,,,7556,0.954,90
+1000812,Augmentin 2.2 Inf Lsg,100.0,,,false,,,4772,0.96,34
+190,Zovirax inf 250 mg,100.0,,,false,,,2689,0.864,34
+190,Zovirax inf 250 mg,250.0,,,false,700.0,mg,2689,0.864,34
+1000756,Keppra 500 mg Amp. i.v,100.0,,,false,,,2659,0.962,23
+1000273,Clamoxyl Inj Lsg,100.0,,,false,,,2045,0.97,28
+1000825,Cefepime 2g Amp.,50.0,,,false,,,1720,0.906,3
+1000321,Dalacin C Phosphat Inj Lsg 300 mg,100.0,,,false,,,1195,0.972,10
+1000494,Protamin 1000 Inj Lsg,100.0,,,false,,,1170,0.905,34
+1000518,Tienam 500 mg,100.0,,,false,,,715,0.933,3
+186,Rimactan inf 300 mg,100.0,,,false,,,655,0.936,19
+1000352,Floxapen Inj Lsg,100.0,,,false,,,649,0.903,20
+1000363,Garamycin,100.0,,,false,,,641,0.953,11
+1000837,Piperacillin-Tazobactam 2.25 Inj Lsg,100.0,,,false,,,596,0.705,6
+1000829,Dalacin C 600 Phosphat Amp.,100.0,,,false,,,574,0.92,16
+1000618,Cancidas 50 mg,250.0,,,false,,,564,0.941,2
+1000318,Klacid Amp 500 mg,250.0,,,false,,,464,0.638,5
+27,Cyklokapron inj 100 mg/ml,100.0,,,false,,,405,0.827,13
+1000362,Cymevene 500 mg,100.0,,,false,,,307,0.671,11
+1000791,Erythrocin Inf Lsg,100.0,,,false,,,268,0.59,33
+1000299,Kefzol Inj Lsg,100.0,,,false,,,238,0.912,2
+1000335,Vibravenös Inj Lsg 100 mg 5 ml,100.0,,,false,,,226,0.876,6
+1001101,Ilomedin 20 ug/ml Inf Lsg,0.25,,,false,,,177,0.616,0
+1000302,Fortam 1 g Inj Lsg,30.0,,,false,,,175,0.88,0
+1000617,Cancidas 70 mg,250.0,,,false,,,122,0.959,1
+1000284,Penicillin G 1 Mio,100.0,,,false,,,121,0.893,4
+1000519,Obracin 80 mg,100.0,,,false,,,109,0.945,3
+1000433,Solu Medrol 125 mg,100.0,,,false,,,109,0.881,1
+1000830,Fortam 2g Inj Lsg,30.0,,,false,,,74,0.757,0
+1001098,Co-Amoxi 2.2g Inf Lsg,100.0,,,false,,,70,0.971,3
+1000434,Solumedrol 500 mg,100.0,,,false,,,65,0.769,6
+1000929,Mephameson Inj Lsg 8mg/ml,100.0,,,false,,,32,1.0,0
+15,Insulin Actrapid inj 100 U/ml,,99.0,,false,,,1081770,0.997,167
+1000724,Insulin NovoRapid,,99.0,,true,,,650509,0.996,84
+1000396,Kalium Chlorid 15% 10 ml,,3.0,,true,,,165624,0.975,33
+1000728,Catapresan 25µg /ml Perfusor,,5.0,,false,,,140508,0.992,13
+1000847,Dexdor Inf. Lsg,,11.5,,false,,,82960,0.987,6
+1000836,Kalium Phosphat für Perfusor,,1.0,,true,,,52934,0.983,9
+1000421,Magnesium Sulfat 50% 10 ml,,25.0,,true,,,49399,0.92,254
+1000395,Kalium Phosphat,,1.0,,true,,,47574,0.98,10
+1000080,K-Cl conc,,50.0,,true,,,46210,0.865,3
+1000478,Phenhydan Inf Lsg 750 mg,,10.0,,true,,,43949,0.987,6
+1000706,Euphyllin N Perfusor,,0.6,,true,,,41576,0.996,2
+1000546,NaCl 2.5%,,1.0,,false,,,30158,0.99,13
+1000416,Thyrotardin 100 ug,,9.0,,false,,,23529,0.989,6
+1000082,K-Pi conc,,12.5,,true,,,13269,0.799,0
+1000705,Ultiva Inj Lsg,,19.0,,true,,,13152,0.974,0
+1000404,Refludan Trockensubst 50 mg,,24.0,,true,,,10767,0.993,0
+1000605,Novalgin inj lös 50% 2 ml,,50.0,,true,,,9552,0.842,85
+1001049,Dexdor Inf. Lsg,,11.5,,false,,,8129,0.999,0
+1000386,Ilomedin Inj Lsg 50ug/2.5 ml,,22.5,,true,,,7895,0.983,9
+1000741,Fentanyl Perf,,4.0,,true,,,7301,0.932,1
+1000793,Glypressin Inj Lsg,,3.0,,true,,,3137,0.984,0
+1000276,ATG Fresenius 100mg/5 ml,,250.0,,true,,,2302,0.86,6
+410,,,5.0,,false,,,2285,0.967,0
+1000763,Ebrantil Inj Lsg,,1.5,,false,,,2193,0.983,0
+1001059,Thyroxin TS Amp 500 ug/5ml,,9.0,,false,,,1781,0.99,0
+1000441,Corotrop Inj Lsg 1mg/ml 10 ml,,1.0,,false,,,1568,0.867,2
+1000263,Actilyse,,4.0,,true,,,968,0.959,0
+1000400,Ketalar Inj Lsg 500 mg/10 ml,,1.0,,true,,,824,0.961,0
+1000452,Narcan Inj Lsg,,49.0,,true,,,766,0.983,0
+1001010,Cyklokapron Infusion,,0.125,,true,,,575,0.784,0
+112,Vasopressin inj 20 U/ml,,19.0,,true,,,383,0.914,0
+1000232,Furosemide 10 mg/ml inj,,12.5,,false,,,343,0.924,0
+442,Rivotril 0.5 mg/ml,,23.0,,false,,,303,0.531,0
+1000070,Mg-Sulfat conc,,7.81,,false,,,275,0.575,0
+1000857,Ketalar Perfusor,,9.0,,false,,,269,1.0,0
+230,Phenhydan inj 50 mg/ml 5 ml,,33.3,,false,,,226,0.96,0
+1000431,Solu Medrol Stechamp 1g,,3.77,,true,,,210,0.871,0
+1000540,,,4.0,,false,,,149,0.611,0
+1000606,Simdax inf,,49.0,,false,,,148,0.676,1
+1000090,NaCl conc Amp 14.5%,,5.0,,true,,,134,0.94,0
+1000266,PK-Merz 500 ml,,1.0,,true,,,124,0.952,0
+1001013,Ecalta Amp 100 mg,,3.33,,false,,,93,0.882,4
+1000814,Intratect 10g Inf Lsg,,1.0,,false,,,82,0.939,0
+1000809,Voltaren Inf Lsg,,33.3,,false,,,77,0.844,2
+1001070,Grafalon Inf Lsg,,100.0,,true,,,68,0.985,0
+202,Pentothal 1g Inf Lsg,,,40.0,false,,,8654,0.903,1
+1000841,Argatra Inf Lsg,,,1.0,false,,,877,1.0,0
+1000614,ReoPro,,,34.7,false,,,811,0.938,0
