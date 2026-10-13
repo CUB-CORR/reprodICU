@@ -222,6 +222,7 @@ class HiRIDPaths(GlobalVars):
         self.apache_mapping_path = self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml" # fmt: skip
         self.drug_administration_route_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_drug_administration_route.yaml" # fmt: skip
         self.drug_class_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_drug_class.yaml" # fmt: skip
+        self.carrier_volumes_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_carrier_volumes.csv" # fmt: skip
 
 
 # endregion
