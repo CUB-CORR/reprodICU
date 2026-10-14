@@ -45,6 +45,12 @@ Gagne (combined comorbidity score):
   A combined comorbidity score predicted mortality in elderly patients better than existing scores.
   J Clin Epidemiol. 2011 Jul;64(7):749-59.
   doi: 10.1016/j.jclinepi.2010.10.004. PMID: 21208778; PMCID: PMC3100405.
+  ICD-9-CM codes combine the Charlson conditions as mapped by Romano et al. 1993
+  and the Elixhauser conditions as mapped by Quan et al. 2005 (see above).
+- Romano PS, Roos LL, Jollis JG.
+  Adapting a clinical comorbidity index for use with ICD-9-CM administrative data: differing perspectives.
+  J Clin Epidemiol. 1993 Oct;46(10):1075-9; discussion 1081-90.
+  doi: 10.1016/0895-4356(93)90103-8. PMID: 8410092.
 - Sun JW, Rogers JR, Her Q, Welch EC, Panozzo CA, Toh S, Gagne JJ.
   Adaptation and Validation of the Combined Comorbidity Score for ICD-10-CM.
   Med Care. 2017 Dec;55(12):1046-1051.
