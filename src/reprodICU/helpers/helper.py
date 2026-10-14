@@ -20,28 +20,34 @@ class GlobalHelpers:
 
     # region mapping helpers
     def load_mapping(self, path: str) -> dict:
+        """Load a YAML mapping file."""
         with open(path, "r") as f:
             return yaml.safe_load(f)
 
     def load_mapping_keys(self, path: str) -> list:
+        """Get all top-level keys of a mapping file."""
         mapping = self.load_mapping(path)
         return list(mapping.keys())
 
     def load_mapping_true_keys(self, path: str) -> list:
+        """Get the keys of a mapping file whose value is truthy."""
         mapping = self.load_mapping(path)
         return list(k for k, v in mapping.items() if v)
 
     def load_mapping_subkeys(self, path: str, key: str) -> dict:
+        """Map each key of a mapping file to its `key` subkey (entries without it are left out)."""
         mapping = self.load_mapping(path)
         return {
             k: v.get(key) for k, v in mapping.items() if v.get(key) is not None
         }
 
     def load_many_to_one_mapping(self, path: str) -> dict:
+        """Invert a mapping of lists, e.g. {A: [x, y], B: [z]} -> {x: A, y: A, z: B}."""
         mapping = self.load_mapping(path)
         return {v: k for k, vs in mapping.items() for v in vs}
 
     def load_many_to_one_mapping_incl_keys(self, path: str) -> dict:
+        """Like load_many_to_one_mapping, but each key also maps to itself."""
         mapping1 = {
             v: k
             for k, vs in self.load_mapping(path).items()
@@ -54,18 +60,29 @@ class GlobalHelpers:
     def load_many_to_many_to_one_mapping(
         self, path: str, database: str, DEBUG: bool = False
     ) -> dict:
+        """Invert a mapping of per-database lists, e.g.
+        {A: {db1: [x, y], db2: [z]}} -> {x: A, y: A} for database "db1".
+
+        Raises:
+            ValueError: If an item is listed under more than one key.
+        """
         mapping = self.load_mapping(path)
         return_dict = {}
         for key, value in mapping.items():
             if DEBUG:
                 print(key, value)
-            return_dict.update({v: key for v in value[database]})
+            for v in value[database]:
+                if return_dict.setdefault(v, key) != key:
+                    raise ValueError(
+                        f"{v!r} is listed under {return_dict[v]!r} and {key!r} in {path}"
+                    )
         return return_dict
 
     # region time conversion
     def _convert_time_to_days_float(
         self, data: pl.LazyFrame, col_name: str, base_unit: str = "minutes"
-    ):
+    ) -> pl.LazyFrame:
+        """Convert a time column from `base_unit` ("hours", "minutes" or "seconds") to days."""
         assert base_unit in ["hours", "minutes", "seconds"]
         if base_unit == "hours":
             divided_by = 24
@@ -81,6 +98,7 @@ class GlobalHelpers:
     def _convert_time_to_seconds_float(
         self, data: pl.LazyFrame, col_name: str, base_unit: str = "minutes"
     ) -> pl.LazyFrame:
+        """Convert a time column from `base_unit` ("hours", "minutes" or "seconds") to seconds."""
         assert base_unit in ["hours", "minutes", "seconds"]
         if base_unit == "hours":
             multplicator = 60 * 60
@@ -101,9 +119,14 @@ class GlobalHelpers:
         how: str = "all",
         verbose: bool = False,
     ) -> pl.LazyFrame:
-        """
-        Remove null and NaN values from polars DataFrame.
-        Modified from https://stackoverflow.com/a/73978691
+        """Remove null, NaN and empty-string values (modified from
+        https://stackoverflow.com/a/73978691).
+
+        Arguments:
+            subset_cols: Columns to check (default: all).
+            how: "all" or "any" drops rows where all or any subset_cols are
+                null, "onlynull" where subset_cols contain null.
+            verbose: Print the count of dropped rows.
         """
 
         subset = subset_cols or data.collect_schema().names()
@@ -144,45 +167,20 @@ class GlobalHelpers:
         string_col: Optional[str] = None,
         save_conflicts: bool = True,
     ) -> pl.LazyFrame:
-        """Pivot data with separate aggregation for numeric and string columns.
-        
-        Performs two independent pivots and combines results:
-        - Numeric values: pivoted with median aggregation
-        - String values: pivoted with first() aggregation (warns on non-unique)
-        
-        Arguments
-        ---------
-            data : pl.LazyFrame
-                Input data to pivot
-            dataset : str
-                Dataset name (used for conflict logging filename)
-            on_col : str
-                Column to pivot on (becomes column headers)
-            index_cols : list of str
-                Columns to use as index (row identifiers)
-            numeric_col : str, optional
-                Name of numeric column to aggregate with median
-            string_col : str, optional
-                Name of string column to aggregate with first()
-            save_conflicts : bool
-                If True, save non-unique string values to parquet file
-                for conflict review
-                
-        Returns
-        -------
-            pl.LazyFrame
-                Pivoted data with numeric and string columns combined.
-                All values cast to String type.
-                
-        Raises
-        ------
-            ValueError
-                If neither numeric_col nor string_col is provided
-                
-        Notes
-        -----
-            When string_col has non-unique values for a given (index, on_col) pair,
-            only the first value is kept, and the conflict is logged.
+        """Pivot numeric values (median) and string values (first) separately and
+        combine them, all cast to String.
+
+        Arguments:
+            dataset: Dataset name (for the conflict file name).
+            on_col: Column to pivot on.
+            index_cols: Row identifier columns.
+            numeric_col: Numeric value column.
+            string_col: String value column. Non-unique values per (index, on_col)
+                are warned about, and only the first is kept.
+            save_conflicts: Save the non-unique string records to a parquet file.
+
+        Raises:
+            ValueError: If neither numeric_col nor string_col is given.
         """
         if numeric_col is None and string_col is None:
             raise ValueError(
