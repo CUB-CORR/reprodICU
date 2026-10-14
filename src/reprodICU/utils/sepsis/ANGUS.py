@@ -1,8 +1,10 @@
 # based on: https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/sepsis/angus.sql
 # based on: https://github.com/alistairewj/mimic-iv-aline-study/blob/main/sql/angus_sepsis.sql
 
-# Angus et al, 2001. Epidemiology of severe sepsis in the United States
-# http://www.ncbi.nlm.nih.gov/pubmed/11445675
+# Derek C. Angus, Walter T. Linde-Zwirble, Jeffrey Lidicker, Gilles Clermont, Joseph Carcillo, and Michael R. Pinsky.
+# Epidemiology of severe sepsis in the United States: analysis of incidence, outcome, and associated costs of care.
+# Crit Care Med, 29(7):1303-1310, Jul 2001.
+# doi: 10.1097/00003246-200107000-00002. PMID: 11445675.
 
 # Case selection and definitions
 # To identify cases with severe sepsis, we selected all acute care

@@ -12,7 +12,43 @@ Output depends on the function:
 
 The module automatically loads diagnosis and patient information data from
 the reprodICU database if not provided explicitly. All functions support
-both ICD-9 and ICD-10 diagnosis codes.
+both ICD-9 and ICD-10 diagnosis codes. The indices are computed with pycomorb.
+
+SOURCES
+-------
+Elixhauser (Quan code mapping, van Walraven weights):
+- Elixhauser A, Steiner C, Harris DR, Coffey RM.
+  Comorbidity measures for use with administrative data.
+  Med Care. 1998 Jan;36(1):8-27.
+  doi: 10.1097/00005650-199801000-00004. PMID: 9431328.
+- Quan H, Sundararajan V, Halfon P, Fong A, Burnand B, Luthi JC, Saunders LD, Beck CA, Feasby TE, Ghali WA.
+  Coding algorithms for defining comorbidities in ICD-9-CM and ICD-10 administrative data.
+  Med Care. 2005 Nov;43(11):1130-9.
+  doi: 10.1097/01.mlr.0000182534.19832.83. PMID: 16224307.
+- van Walraven C, Austin PC, Jennings A, Quan H, Forster AJ.
+  A modification of the Elixhauser comorbidity measures into a point system for hospital death using administrative data.
+  Med Care. 2009 Jun;47(6):626-33.
+  doi: 10.1097/MLR.0b013e31819432e5. PMID: 19433995.
+
+Charlson (Quan code mapping):
+- Charlson ME, Pompei P, Ales KL, MacKenzie CR.
+  A new method of classifying prognostic comorbidity in longitudinal studies: development and validation.
+  J Chronic Dis. 1987;40(5):373-83.
+  doi: 10.1016/0021-9681(87)90171-8. PMID: 3558716.
+- Quan H, Sundararajan V, Halfon P, Fong A, Burnand B, Luthi JC, Saunders LD, Beck CA, Feasby TE, Ghali WA.
+  Coding algorithms for defining comorbidities in ICD-9-CM and ICD-10 administrative data.
+  Med Care. 2005 Nov;43(11):1130-9.
+  doi: 10.1097/01.mlr.0000182534.19832.83. PMID: 16224307.
+
+Gagne (combined comorbidity score):
+- Gagne JJ, Glynn RJ, Avorn J, Levin R, Schneeweiss S.
+  A combined comorbidity score predicted mortality in elderly patients better than existing scores.
+  J Clin Epidemiol. 2011 Jul;64(7):749-59.
+  doi: 10.1016/j.jclinepi.2010.10.004. PMID: 21208778; PMCID: PMC3100405.
+- Sun JW, Rogers JR, Her Q, Welch EC, Panozzo CA, Toh S, Gagne JJ.
+  Adaptation and Validation of the Combined Comorbidity Score for ICD-10-CM.
+  Med Care. 2017 Dec;55(12):1046-1051.
+  doi: 10.1097/MLR.0000000000000824. PMID: 29087983.
 """
 
 from typing import Optional
