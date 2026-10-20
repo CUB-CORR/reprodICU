@@ -56,7 +56,7 @@ from ..common import (
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     get_medications,
     get_microbiology,
@@ -1724,7 +1724,7 @@ def SEPSIS(
         .join(sepsis_abx_events, on=[STAY_KEY, "timeframe"], how="left")
         .join(onset_labels_rhee, on=[STAY_KEY, "timeframe"], how="left")
         .select(*cols)
-        .filter(*_optional_time_bounds_filter("timeframe", window_size, t_0, t_1))
+        .filter(*_optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1))
         .unique()
         .sort(STAY_KEY, "timeframe")
     )

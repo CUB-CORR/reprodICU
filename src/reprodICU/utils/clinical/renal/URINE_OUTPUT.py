@@ -4,7 +4,7 @@ import polars as pl
 
 from ...common import (
     _build_t0,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _to_lazy,
     _validate_required_data,
     get_patient_information,
@@ -196,7 +196,7 @@ def URINE_OUTPUT(
     ]
 
     return aggregated.filter(
-        _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+        _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
     ).select(select_cols)
 
 

@@ -27,7 +27,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     get_medications,
     get_patient_information,
@@ -243,7 +243,7 @@ def VIS(
         _build_base_timeframes(ALL_STAYS_T0, patient_information, SECONDS_IN_1H)
         .rename({"timeframe": "Hour Relative to T_0"})
         .filter(
-            _optional_time_bounds_filter(
+            _optional_timeframe_bounds_filter(
                 "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
             )
         )

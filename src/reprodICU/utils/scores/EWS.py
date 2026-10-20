@@ -30,7 +30,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
@@ -237,7 +237,7 @@ def EWS(
     return (
         base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .select(
             STAY_KEY,
@@ -355,7 +355,7 @@ def MEWS(
     return (
         base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .select(
             STAY_KEY,
@@ -525,7 +525,7 @@ def NEWS(
         base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .select(
             STAY_KEY,
@@ -711,7 +711,7 @@ def NEWS2(
         base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .select(
             STAY_KEY,

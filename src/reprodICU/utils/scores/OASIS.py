@@ -31,7 +31,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -391,7 +391,7 @@ def OASIS(
     return (
         out.join(patient_scores, on=STAY_KEY, how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .with_columns(
             pl.sum_horizontal(

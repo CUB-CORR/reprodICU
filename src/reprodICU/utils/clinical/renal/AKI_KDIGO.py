@@ -35,7 +35,7 @@ from ...common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _to_lazy,
     _validate_required_data,
     extract_struct_value,
@@ -874,7 +874,7 @@ def AKI_KDIGO(
     )
 
     # Apply optional time bounds
-    for cond in _optional_time_bounds_filter(
+    for cond in _optional_timeframe_bounds_filter(
         "timeframe",
         window_size,
         t_0 // window_size if t_0 is not None else None,

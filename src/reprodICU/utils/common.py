@@ -73,18 +73,15 @@ def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
     return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size).cast(int)
 
 
-def _optional_time_bounds_filter(
-    time_col: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
+def _optional_timeframe_bounds_filter(
+    timeframe_col: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
 ) -> list[pl.Expr]:
+    # timeframe_col is the window index from T_0, t_1 is on the admission clock
     conds: list[pl.Expr] = []
     if t_0 is not None:
-        conds.append(
-            pl.col(time_col) >= pl.lit(int(t_0)).floordiv(window_size).sub(1)
-        )
+        conds.append(pl.col(timeframe_col) >= -1)
     if t_1 is not None:
-        conds.append(
-            pl.col(time_col) < pl.lit(int(t_1)).floordiv(window_size).add(1)
-        )
+        conds.append(pl.col(timeframe_col) <= (int(t_1) - int(t_0 or 0)) // window_size)
     return conds
 
 
@@ -561,7 +558,7 @@ __all__ = [
     "_build_t0",
     "_build_base_timeframes",
     "_assign_timeframe",
-    "_optional_time_bounds_filter",
+    "_optional_timeframe_bounds_filter",
     "_get_timeframe_name",
     "_validate_required_data",
     # dataset loaders

@@ -29,7 +29,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_diagnoses,
@@ -458,7 +458,7 @@ def SAPS2(
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .with_columns(
             pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
