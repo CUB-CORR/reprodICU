@@ -110,7 +110,18 @@ def MARTIN_SEPSIS(diagnoses: Optional[pl.LazyFrame] = None) -> pl.LazyFrame:
             ).alias("neurologic"),
         )
         .group_by("Global ICU Stay ID")
-        .agg(pl.all().sum().cast(bool))
+        .agg(
+            pl.col(
+                "sepsis",
+                "respiratory",
+                "cardiovascular",
+                "renal",
+                "hepatic",
+                "hematologic",
+                "metabolic",
+                "neurologic",
+            ).any()
+        )
         .with_columns(
             pl.any_horizontal(
                 pl.col("respiratory"),

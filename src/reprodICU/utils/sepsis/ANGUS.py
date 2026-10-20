@@ -190,6 +190,9 @@ def ANGUS_SEPSIS(
         .with_columns(pl.lit(True).alias("Mechanical Ventilation"))
     )
 
+    icd9 = pl.col("Diagnosis ICD-9 Code")
+    icd10 = pl.col("Diagnosis ICD-10 Code")
+
     return (
         diagnoses.join(
             pl.concat(
@@ -201,74 +204,43 @@ def ANGUS_SEPSIS(
             coalesce=True,
         )
         .with_columns(
+            pl.col("Mechanical Ventilation").fill_null(False),
             # Check for infection
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
             .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 3)
-                    .is_in(ANGUS_ICD9_3_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 4)
-                    .is_in(ANGUS_ICD9_4_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 5)
-                    .is_in(ANGUS_ICD9_5_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_INFECTION_CODES
+                pl.any_horizontal(
+                    icd9.str.slice(0, 3).is_in(ANGUS_ICD9_3_DIGIT_INFECTION_CODES),
+                    icd9.str.slice(0, 4).is_in(ANGUS_ICD9_4_DIGIT_INFECTION_CODES),
+                    icd9.str.slice(0, 5).is_in(ANGUS_ICD9_5_DIGIT_INFECTION_CODES),
                 )
             )
+            .otherwise(icd10.is_in(ANGUS_ICD10_INFECTION_CODES))
             .alias("Infection"),
             # Check for organ dysfunction
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
             .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 3)
-                    .is_in(ANGUS_ICD9_3_DIGIT_DYSFUNCTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 4)
-                    .is_in(ANGUS_ICD9_4_DIGIT_DYSFUNCTION_CODES)
-                )
-                .then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_DYSFUNCTION_CODES
+                pl.any_horizontal(
+                    icd9.str.slice(0, 3).is_in(ANGUS_ICD9_3_DIGIT_DYSFUNCTION_CODES),
+                    icd9.str.slice(0, 4).is_in(ANGUS_ICD9_4_DIGIT_DYSFUNCTION_CODES),
                 )
             )
+            .otherwise(icd10.is_in(ANGUS_ICD10_DYSFUNCTION_CODES))
             .alias("Organ Dysfunction"),
             # Check for explicit sepsis
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
-            .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code").is_in(
-                        ANGUS_ICD9_EXPLICIT_SEPSIS
-                    )
-                ).then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_EXPLICIT_SEPSIS
-                )
-            )
+            .then(icd9.is_in(ANGUS_ICD9_EXPLICIT_SEPSIS))
+            .otherwise(icd10.is_in(ANGUS_ICD10_EXPLICIT_SEPSIS))
             .alias("Explicit Sepsis"),
         )
         .group_by("Global ICU Stay ID")
-        .agg(pl.all().sum().cast(bool))
+        .agg(
+            pl.col(
+                "Infection",
+                "Organ Dysfunction",
+                "Explicit Sepsis",
+                "Mechanical Ventilation",
+            ).any()
+        )
         .with_columns(
             pl.when(pl.col("Explicit Sepsis"))
             .then(True)
