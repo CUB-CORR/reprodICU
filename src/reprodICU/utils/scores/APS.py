@@ -19,6 +19,12 @@ SOURCES
   The APACHE III prognostic system. Risk prediction of hospital mortality for critically ill hospitalized adults.
   Chest. 1991 Dec;100(6):1619-36.
   doi: 10.1378/chest.100.6.1619. PMID: 1959406.
+
+NOTES
+-----
+- The APS III point tables follow the "Calculation of APS Score" sheet of sources/scores/APACHE/APACHE IV Calculations (unlocked).xlsx
+  (cross-checked with sources/scores/APACHE/APACHE III.html). Before they were corrected, several of them (hematocrit, WBC, the sodium
+  band edges) had been taken from APACHE II, and others matched neither APACHE III nor the sources.
 """
 
 from typing import Optional
@@ -28,6 +34,8 @@ import polars as pl
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    FILTER_NOT_NULL,
+    NULL_NON_FINITE,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -44,7 +52,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
-from ..core import BLOOD_PRESSURES
+from ..core import BLOOD_PRESSURES, RESPIRATORY_PARAMS
 from ..laboratory.oxygenation.ALVEOLAR_ARTERIAL_GRADIENT import Aa_GRADIENT
 
 STAY_KEY = "Global ICU Stay ID"
@@ -64,15 +72,13 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
     return (
         BLOOD_PRESSURES(timeseries_vitals=vitals)
         .rename({"MAP": "Mean arterial pressure"})
-        .filter(
-            pl.any_horizontal(
-                pl.col(col).is_finite()
-                for col in [
-                    "Heart rate", "Mean arterial pressure", "Respiratory rate",
-                    "Temperature", "Glasgow coma score total",
-                ] # fmt: skip
-            )
-        )
+        .pipe(
+            FILTER_NOT_NULL,
+            [
+                "Heart rate", "Mean arterial pressure", "Respiratory rate",
+                "Temperature", "Glasgow coma score total",
+            ],
+        ) # fmt: skip
         .select(
             STAY_KEY,
             TIME_KEY,
@@ -100,28 +106,16 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
             extract_struct_value(lab, sources, exact_match=True).alias(lab)
             for lab in LABS
         )
-        .filter(pl.any_horizontal(pl.col(col).is_finite() for col in LABS))
+        .pipe(NULL_NON_FINITE)
+        .pipe(FILTER_NOT_NULL, LABS)
         .select(STAY_KEY, TIME_KEY, *LABS)
     )
 
 
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2")
-        )
-        .with_columns(
-            pl.when(pl.col("FiO2").is_between(0, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2")
-        )
-        .filter(pl.col("FiO2").is_finite())
+        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        .pipe(FILTER_NOT_NULL, ["FiO2"])
         .select(STAY_KEY, TIME_KEY, "FiO2")
     )
 
@@ -150,10 +144,10 @@ def _temp_points_aps(temp: pl.Expr) -> pl.Expr:
 def _map_points_aps(map_val: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Mean Arterial Pressure (mmHg) | Points
         ( 160, None, "left",    4),  # ≥160                            4
-        ( 130,  160, "left",    2),  #  130-159                        2
-        ( 110,  130, "left",    0),  #  110-129 ...................... 0
-        (  70,  110, "left",    2),  #   70-109                        2
-        (  50,   70, "left",    3),  #   50- 69                        3
+        ( 130,  160, "left",    3),  #  130-159                        3
+        ( 110,  130, "left",    2),  #  110-129                        2
+        (  70,  110, "left",    0),  #   70-109 ...................... 0
+        (  50,   70, "left",    2),  #   50- 69                        2
         (None,   50, "neither", 4),  #  <50                            4
     ]).to_expr(map_val) # fmt: skip
 
@@ -177,7 +171,7 @@ def _rr_points_aps(rr: pl.Expr) -> pl.Expr:
         (  25,   35, "left",    1),  #  25-34                   1
         (  12,   25, "left",    0),  #  12-24 ................. 0
         (  10,   12, "left",    1),  #  10-11                   1
-        (   6,   10, "left",    3),  #   6- 9                   3
+        (   6,   10, "left",    2),  #   6- 9                   2
         (None,    6, "neither", 4),  #  <6                      4
     ]).to_expr(rr) # fmt: skip
 
@@ -425,7 +419,7 @@ def APS(
             labs.select(STAY_KEY, TIME_KEY, "Oxygen")
             .filter(pl.col("Oxygen").is_not_null()),
             on=[STAY_KEY, TIME_KEY],
-            how="outer",
+            how="full",
         )
         .join_asof(
             resp_tf.select(STAY_KEY, TIME_KEY, "FiO2"),
@@ -484,7 +478,7 @@ def APS(
 def _hr_points_aps3(hr: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Heart rate (bpm) | Points
         ( 155, None, "left",    17),  # ≥155              17
-        ( 140,  155, "left",    14),  # 140-154           14
+        ( 140,  155, "left",    13),  # 140-154           13
         ( 120,  140, "left",     7),  # 120-139            7
         ( 110,  120, "left",     5),  # 110-119            5
         ( 100,  110, "left",     1),  # 100-109            1
@@ -496,22 +490,23 @@ def _hr_points_aps3(hr: pl.Expr) -> pl.Expr:
 
 def _map_points_aps3(map_val: pl.Expr) -> pl.Expr:
     return ScoringTable([             # MAP (mmHg) | Points
-        ( 140, None, "left",    10),  # ≥140              10
-        ( 130,  140, "left",     7),  # 130-139            7
-        ( 120,  130, "left",     6),  # 120-129            6
-        ( 100,  120, "left",     4),  # 100-119            4
-        (  80,  100, "left",     0),  # 80- 99 ..........  0
-        (  70,   80, "left",     6),  # 70- 79             6
-        (  60,   70, "left",     7),  # 60- 69             7
-        (  40,   60, "left",    15),  # 40- 59            15
-        (None,   40, "neither", 23),  # <40               23
+        ( 140, None, "left",    10),  # ≥140         10
+        ( 130,  140, "left",     9),  # 130-139       9
+        ( 120,  130, "left",     7),  # 120-129       7
+        ( 100,  120, "left",     4),  # 100-119       4
+        (  80,  100, "left",     0),  # 80- 99 ...... 0
+        (  70,   80, "left",     6),  # 70- 79        6
+        (  60,   70, "left",     7),  # 60- 69        7
+        (  40,   60, "left",    15),  # 40- 59       15
+        (None,   40, "neither", 23),  # <40          23
     ]).to_expr(map_val) # fmt: skip
 
 
 def _temp_points_aps3(temp: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Temperature (°C) | Points
         (40.0, None, "left",     4),  # ≥40.0               4
-        (35.0, 40.0, "left",     0),  #  35.0-39.9 ........ 0
+        (36.0, 40.0, "left",     0),  #  36.0-39.9 ........ 0
+        (35.0, 36.0, "left",     2),  #  35.0-35.9          2
         (34.0, 35.0, "left",     8),  #  34.0-34.9          8
         (33.5, 34.0, "left",    13),  #  33.5-33.9         13
         (33.0, 33.5, "left",    16),  #  33.0-33.4         16
@@ -523,27 +518,27 @@ def _rr_points_aps3(rr: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
     """
     Respiratory Rate, bpm
     ≥50         +18
-     35-49      +11
-     30-34       +9
-     25-29       +6
+     40-49      +11
+     35-39       +9
+     25-34       +6
      14-24        0
-    (if ventilated, 6-13 is 0)
      12-13       +7
       6-11       +8
      <6         +17
+    (if ventilated, 6-12 is 0)
     """
     return (
         pl.when(rr >= 50)
         .then(18)
-        .when(rr.is_between(35, 50, closed="left"))
+        .when(rr.is_between(40, 50, closed="left"))
         .then(11)
-        .when(rr.is_between(30, 35, closed="left"))
+        .when(rr.is_between(35, 40, closed="left"))
         .then(9)
-        .when(rr.is_between(25, 30, closed="left"))
+        .when(rr.is_between(25, 35, closed="left"))
         .then(6)
         .when(rr.is_between(14, 25, closed="left"))
         .then(0)
-        .when(ventilated & rr.is_between(6, 14, closed="left"))
+        .when(ventilated & rr.is_between(6, 13, closed="left"))
         .then(0)
         .when(rr.is_between(12, 14, closed="left"))
         .then(7)
@@ -603,88 +598,88 @@ def _oxygenation_points_aps3(
 
 def _hct_points_aps3(hct: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Hematocrit (%) | Points
-        (50.0, None, "left",     3),  # ≥50.0                3
-        (41.0, 50.0, "left",     0),  # 41.0-49.9 .........  0
-        (None, 41.0, "neither",  3),  # <41.0                3
+        (50.0, None, "left",     3),  # ≥50.0            3
+        (41.0, 50.0, "left",     0),  # 41.0-49.9 ...... 0
+        (None, 41.0, "neither",  3),  # <41.0            3
     ]).to_expr(hct) # fmt: skip
 
 
 def _wbc_points_aps3(wbc: pl.Expr) -> pl.Expr:
     return ScoringTable([             # WBC (10^9/L) | Points
-        (25.0, None, "left",     5),  # ≥25.0               5
-        (20.0, 25.0, "left",     1),  # 20.0-24.9           1
-        ( 3.0, 20.0, "left",     0),  # 3.0-19.9 .........  0
-        ( 1.0,  3.0, "left",     5),  # 1.0-2.9             5
-        (None,  1.0, "neither", 19),  # <1.0               19
+        (25.0, None, "left",     5),  # ≥25.0           5
+        (20.0, 25.0, "left",     1),  # 20.0-24.9       1
+        ( 3.0, 20.0, "left",     0),  # 3.0-19.9 ...... 0
+        ( 1.0,  3.0, "left",     5),  # 1.0-2.9         5
+        (None,  1.0, "neither", 19),  # <1.0           19
     ]).to_expr(wbc) # fmt: skip
 
 
 def _creatinine_points_aps3(crea: pl.Expr) -> pl.Expr:
-    return ScoringTable([             # Creatinine without ARF (mg/dL) | Points
-        (1.95, None, "left",     7),  # ≥1.95               7
-        ( 1.5, 1.95, "left",     4),  # 1.5-1.94            4
-        ( 0.5,  1.5, "left",     0),  # 0.5-1.4 ..........  0
-        (None,  0.5, "neither",  3),  # <0.5                3
+    return ScoringTable([             # Creatinine w/o ARF (mg/dL) | Points
+        (1.95, None, "left",     7),  # ≥1.95                        7
+        ( 1.5, 1.95, "left",     4),  # 1.5-1.94                     4
+        ( 0.5,  1.5, "left",     0),  # 0.5-1.4 .................... 0
+        (None,  0.5, "neither",  3),  # <0.5                         3
     ]).to_expr(crea) # fmt: skip
 
 
 def _uo_points_aps3(uo_l_day: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Urine output (L/day) | Points
-        ( 4.0, None, "left",     1),  # ≥4.0                 1
-        ( 2.0,  4.0, "left",     0),  # 2.0-3.99 ..........  0
-        ( 1.5,  2.0, "left",     4),  # 1.5-1.99             4
-        ( 0.9,  1.5, "left",     5),  # 0.9-1.49             5
-        ( 0.6,  0.9, "left",     7),  # 0.6-0.89             7
-        ( 0.4,  0.6, "left",     8),  # 0.4-0.59             8
-        (None,  0.4, "neither", 15),  # <0.4                15
+        ( 4.0, None, "left",     1),  # ≥4.0                    1
+        ( 2.0,  4.0, "left",     0),  # 2.0-3.99 .............. 0
+        ( 1.5,  2.0, "left",     4),  # 1.5-1.99                4
+        ( 0.9,  1.5, "left",     5),  # 0.9-1.49                5
+        ( 0.6,  0.9, "left",     7),  # 0.6-0.89                7
+        ( 0.4,  0.6, "left",     8),  # 0.4-0.59                8
+        (None,  0.4, "neither", 15),  # <0.4                   15
     ]).to_expr(uo_l_day) # fmt: skip
 
 
 def _bun_points_aps3(bun: pl.Expr) -> pl.Expr:
     return ScoringTable([             # BUN (mg/dL) | Points
-        (80.0, None, "left",    12),  # ≥80            12
-        (40.0, 80.0, "left",     8),  # 40-79           8
-        (20.0, 40.0, "left",     6),  # 20-39           6
-        (17.0, 20.0, "left",     2),  # 17-19           2
-        (None, 17.0, "neither",  0),  # <17 ..........  0
+        (80.0, None, "left",    12),  # ≥80           12
+        (40.0, 80.0, "left",    11),  # 40-79         11
+        (20.0, 40.0, "left",     7),  # 20-39          7
+        (17.0, 20.0, "left",     2),  # 17-19          2
+        (None, 17.0, "neither",  0),  # <17 .......... 0
     ]).to_expr(bun) # fmt: skip
 
 
 def _sodium_points_aps3(na: pl.Expr) -> pl.Expr:
     return ScoringTable([               # Sodium (mmol/L) | Points
-        (155.0,  None, "left",     4),  # ≥155                4
-        (135.0, 155.0, "left",     0),  # 135-154 ..........  0
-        (120.0, 135.0, "left",     2),  # 120-134             2
-        ( None, 120.0, "neither",  3),  # <120                3
+        (155.0,  None, "left",     4),  # ≥155              4
+        (135.0, 155.0, "left",     0),  # 135-154 ......... 0
+        (120.0, 135.0, "left",     2),  # 120-134           2
+        ( None, 120.0, "neither",  3),  # <120              3
     ]).to_expr(na) # fmt: skip
 
 
 def _albumin_points_aps3(alb: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Albumin (g/dL) | Points
-        ( 4.5, None, "left",     4),  # ≥4.5                4
-        ( 2.5,  4.5, "left",     0),  # 2.5-4.4 ..........  0
-        ( 2.0,  2.5, "left",     6),  # 2.0-2.4             6
-        (None,  2.0, "neither", 11),  # <2.0               11
+        ( 4.5, None, "left",     4),  # ≥4.5              4
+        ( 2.5,  4.5, "left",     0),  # 2.5-4.4 ......... 0
+        ( 2.0,  2.5, "left",     6),  # 2.0-2.4           6
+        (None,  2.0, "neither", 11),  # <2.0             11
     ]).to_expr(alb) # fmt: skip
 
 
 def _bilirubin_points_aps3(bili: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Bilirubin (mg/dL) | Points
-        ( 8.0, None, "left",    16),  # ≥8.0            16
-        ( 5.0,  8.0, "left",     8),  # 5.0-7.9          8
-        ( 3.0,  5.0, "left",     6),  # 3.0-4.9          6
-        ( 2.0,  3.0, "left",     5),  # 2.0-2.9          5
-        (None,  2.0, "neither",  0),  # <2.0 ..........  0
+        ( 8.0, None, "left",    16),  # ≥8.0                16
+        ( 5.0,  8.0, "left",     8),  # 5.0-7.9              8
+        ( 3.0,  5.0, "left",     6),  # 3.0-4.9              6
+        ( 2.0,  3.0, "left",     5),  # 2.0-2.9              5
+        (None,  2.0, "neither",  0),  # <2.0 ............... 0
     ]).to_expr(bili) # fmt: skip
 
 
 def _glucose_points_aps3(glu: pl.Expr) -> pl.Expr:
     return ScoringTable([               # Glucose (mg/dL) | Points
-        (350.0,  None, "left",     5),  # ≥350               5
-        (200.0, 350.0, "left",     3),  # 200-349            3
-        ( 60.0, 200.0, "left",     0),  # 60-199 ..........  0
-        ( 40.0,  60.0, "left",     9),  # 40- 59             9
-        ( None,  40.0, "neither",  8),  # <40                8
+        (350.0,  None, "left",     5),  # ≥350              5
+        (200.0, 350.0, "left",     3),  # 200-349           3
+        ( 60.0, 200.0, "left",     0),  # 60-199 .......... 0
+        ( 40.0,  60.0, "left",     9),  # 40- 59            9
+        ( None,  40.0, "neither",  8),  # <40               8
     ]).to_expr(glu) # fmt: skip
 
 
@@ -914,7 +909,7 @@ def APS3(
             _albumin_points_aps3(pl.col("Albumin")).max().alias("alb_pts"),
             _bilirubin_points_aps3(pl.col("Bilirubin")).max().alias("bili_pts"),
             _glucose_points_aps3(pl.col("Glucose")).max().alias("glu_pts"),
-            _acid_base_points_aps3(pl.col("pH"), pl.col("Oxygen")).max().alias("ab_pts"),
+            _acid_base_points_aps3(pl.col("pH"), pl.col("Carbon dioxide")).max().alias("ab_pts"),
         )
     ) # fmt: skip
 

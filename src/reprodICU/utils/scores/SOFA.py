@@ -30,10 +30,11 @@ from typing import Optional
 
 import polars as pl
 
-from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
+from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    FILTER_NOT_NULL,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -51,7 +52,7 @@ from ..common import (
     get_ventilation,
 )
 from ..core import BLOOD_PRESSURES
-from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS, TIME_WEIGHTED_MEAN_RATE
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
@@ -67,33 +68,15 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
     return (
         BLOOD_PRESSURES(timeseries_vitals=vitals)
         .rename({"MAP": "Mean arterial pressure"})
-        .with_columns(
-            pl.when(pl.col("Mean arterial pressure").is_finite())
-            .then(pl.col("Mean arterial pressure"))
-            .otherwise(None)
-            .alias("Mean arterial pressure")
-        )
-        .filter(
-            pl.any_horizontal(
-                "Mean arterial pressure",
-                "Glasgow coma score total",
-            ),
-        )
+        .pipe(FILTER_NOT_NULL, ["Mean arterial pressure", "Glasgow coma score total"])
     )
 
 
 def _improve_vitals_quick(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.with_columns(
-        pl.coalesce(
-            pl.col("Invasive systolic arterial pressure"),
-            pl.col("Non-invasive systolic arterial pressure"),
-        ).alias("Systolic arterial pressure"),
-    ).filter(
-        pl.any_horizontal(
-            "Systolic arterial pressure",
-            "Respiratory rate",
-            "Glasgow coma score total",
-        ),
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"SBP": "Systolic arterial pressure"})
+        .pipe(FILTER_NOT_NULL, ["Systolic arterial pressure", "Respiratory rate", "Glasgow coma score total"])
     )
 
 
@@ -102,7 +85,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         extract_struct_value("Platelets").alias("Platelets"),
         extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
         extract_struct_value("Bilirubin",  ["Serum", "Blood"]).alias("Bilirubin"),
-    ).filter(pl.any_horizontal("Platelets", "Creatinine", "Bilirubin")) # fmt: skip
+    ).pipe(FILTER_NOT_NULL, ["Platelets", "Creatinine", "Bilirubin"])
 
 
 ################################################################################
@@ -573,7 +556,13 @@ def SOFA(
 
     # region respiratory (P/F ratio)
     resp_tf = (
-        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        PaO2_FiO2_RATIO(
+            patient_information=patient_information,
+            timeseries_resp=timeseries_resp,
+            timeseries_labs=timeseries_labs,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+        )
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
@@ -663,14 +652,9 @@ def SOFA(
         meds_agg
         .group_by(STAY_KEY, "Window Relative to T_0")
         .agg(
-            pl.when(pl.col(drug_ingredient_col) == agent)
-            .then(
-                pl.col("Drug Projection Sum").sum().truediv(
-                    pl.col("Drug Duration (windows)").sum()
-                )
+            TIME_WEIGHTED_MEAN_RATE(
+                window_size, where=pl.col(drug_ingredient_col) == agent
             )
-            .otherwise(0)
-            .max()
             .alias(agent)
             for agent in VASOACTIVE_AGENTS
         )

@@ -6,7 +6,7 @@ Output columns per row:
 - T_0 (seconds from admission used as reference)
 - timeframe (0-indexed integer window)
 - LODS Score or mLODS Score (sum of component points)
-- Component points (GCS, heart rate, systolic BP, P/F ratio, BUN, creatinine, urine output, WBC, bilirubin, platelets, INR)
+- Component points (GCS, heart rate, systolic BP, P/F ratio, BUN, creatinine, urine output, WBC, bilirubin, platelets, prothrombin time)
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 Worst-within-window aggregation is applied per component.
@@ -45,6 +45,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
+from ..core import BLOOD_PRESSURES
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 STAY_KEY = "Global ICU Stay ID"
@@ -60,21 +61,22 @@ SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.select(
-        STAY_KEY,
-        TIME_KEY,
-        "Heart rate",
-        pl.coalesce(
-            "Invasive systolic arterial pressure",
-            "Non-invasive systolic arterial pressure",
-        ).alias("Systolic arterial pressure"),
-        "Glasgow coma score total",
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"SBP": "Systolic arterial pressure"})
+        .select(
+            STAY_KEY,
+            TIME_KEY,
+            "Heart rate",
+            "Systolic arterial pressure",
+            "Glasgow coma score total",
+        )
     )
 
 
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     sources = ["Serum or Plasma", "Blood"]
-    LABS    = ["Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets", "INR"] # fmt: skip
+    LABS    = ["Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets", "Prothrombin time (PT)"] # fmt: skip
     return labs.with_columns(
         extract_struct_value(lab, sources, exact_match=True).alias(lab)
         for lab in LABS
@@ -90,12 +92,11 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
 
 
 def _gcs_points_lods(gcs: pl.Expr) -> pl.Expr:
-    return ScoringTable([          # Glasgow Coma Scale | Points
-        (  14, 15, "both",    0),  # 14-15 .............. 0
-        (   9, 13, "both",    1),  #  9-13                1
-        (   6,  8, "both",    2),  #  6- 8                2
-        (   4,  5, "both",    3),  #  4- 5                3
-        (None,  4, "neither", 4),  #    <4                4
+    return ScoringTable([            # Glasgow Coma Scale | Points
+        (  14, None, "left",    0),  # 14-15 .............. 0
+        (   9,   14, "left",    1),  #  9-13                1
+        (   6,    9, "left",    3),  #  6- 8                3
+        (None,    6, "neither", 5),  #  3- 5                5
     ]).to_expr(gcs) # fmt: skip
 
 
@@ -103,77 +104,69 @@ def _pf_ratio_points_lods(pf: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
     """
     PaO2/FiO2 ratio, mmHg
 
-    Any      and NOT mechanically ventilated  0
-    ≥250     and mechanically ventilated     +1
-     150-249 and mechanically ventilated     +2
-      50-149 and mechanically ventilated     +3
-     <50     and mechanically ventilated     +4
+    Any  and NOT mechanically ventilated or on CPAP   0
+    ≥150 and     mechanically ventilated or on CPAP  +1
+    <150 and     mechanically ventilated or on CPAP  +3
     """
     return (
         pl.when(~ventilated)
         .then(0)
-        .when(pf >= 250)
+        .when(pf >= 150)
         .then(1)
-        .when(pf.is_between(150, 250, closed="left"))
-        .then(2)
-        .when(pf.is_between(50, 150, closed="left"))
+        .when(pf < 150)
         .then(3)
-        .when(pf < 50)
-        .then(4)
         .otherwise(None)
     )
 
 
 def _hr_points_lods(hr: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Heart rate (bpm) | Points
-        (None,   30, "neither", 3),  #  <30               3
+        (None,   30, "neither", 5),  #  <30               5
         (  30,  140, "left",    0),  #   30-139 ......... 0
-        ( 140,  160, "left",    1),  #  140-159           1
-        ( 160, None, "left",    2),  # ≥160               2
+        ( 140, None, "left",    1),  # ≥140               1
     ]).to_expr(hr) # fmt: skip
 
 
 def _sbp_points_lods(sbp: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Systolic blood pressure (mmHg) | Points
-        (None,   40, "neither", 3),   #  <40                             3
-        (  40,   70, "left",    2),   #   40- 69                         2
+        (None,   40, "neither", 5),   #  <40                             5
+        (  40,   70, "left",    3),   #   40- 69                         3
         (  70,   90, "left",    1),   #   70- 89                         1
         (  90,  240, "left",    0),   #   90-239 ....................... 0
         ( 240,  270, "left",    1),   #  240-269                         1
-        ( 270, None, "left",    2),   # ≥270                             2
+        ( 270, None, "left",    3),   # ≥270                             3
     ]).to_expr(sbp) # fmt: skip
 
 
 def _bun_points_lods(bun: pl.Expr) -> pl.Expr:
-    urea = bun / 0.467
-    return ScoringTable([            # Urea (mmol/L) | Points
-        (None,    6, "neither", 0),  #  <6 ........... 0
-        (   6,   10, "left",    1),  #   6- 9.9        1
-        (  10,   20, "left",    2),  #  10-19.9        2
-        (  20, None, "left",    3),  # ≥20             3
-    ]).to_expr(urea) # fmt: skip
+    return ScoringTable([            # Urea nitrogen (mg/dL) | Points
+        (None,   17, "neither", 0),  # <17 ................... 0
+        (  17,   28, "left",    1),  #  17-<28                 1
+        (  28,   56, "left",    3),  #  28-<56                 3
+        (  56, None, "left",    5),  # ≥56                     5
+    ]).to_expr(bun) # fmt: skip
 
 
 def _creatinine_points_lods(crea: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Creatinine (mg/dL) | Points
         (None,  1.2, "neither", 0),  # <1.2 ............... 0
-        ( 1.2,  1.6, "both",    1),  #  1.2-1.6             1
-        ( 1.6, None, "neither", 2),  # >1.6                 2
+        ( 1.2,  1.6, "left",    1),  #  1.2-1.59            1
+        ( 1.6, None, "left",    3),  # ≥1.6                 3
     ]).to_expr(crea) # fmt: skip
 
 
 def _uo_points_lods(uo_l_day: pl.Expr) -> pl.Expr:
     return ScoringTable([              # Urine output (L/day) | Points
-        (None,   0.5,  "neither", 2),  # <0.5                   2
-        ( 0.5,   0.75, "left",    1),  #  0.5 -0.74             1
+        (None,   0.5,  "neither", 5),  # <0.5                   5
+        ( 0.5,   0.75, "left",    3),  #  0.5 -0.74             3
         ( 0.75, 10,    "left",    0),  #  0.75-9.99 ........... 0
-        (10,    None,  "left",    1),  # ≥10                    1
+        (10,    None,  "left",    3),  # ≥10                    3
     ]).to_expr(uo_l_day) # fmt: skip
 
 
 def _wbc_points_lods(wbc: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Leukocytes (10^9/L) | Points
-        (None,  1.0, "neither", 2),  #  <1.0                 2
+        (None,  1.0, "neither", 3),  #  <1.0                 3
         ( 1.0,  2.5, "left",    1),  #   1.0- 2.4            1
         ( 2.5,  50,  "left",    0),  #   2.5-49.9 .......... 0
         (50,   None, "left",    1),  # ≥50.                  1
@@ -183,8 +176,7 @@ def _wbc_points_lods(wbc: pl.Expr) -> pl.Expr:
 def _bilirubin_points_lods(bili: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Bilirubin (mg/dL) | Points
         (None,  2.0, "neither", 0),  # <2.0 .............. 0
-        ( 2.0,  4.0, "both",    1),  #  2.0-4.0            1
-        ( 4.0, None, "neither", 2),  # >4.0                2
+        ( 2.0, None, "left",    1),  # ≥2.0                1
     ]).to_expr(bili) # fmt: skip
 
 
@@ -195,11 +187,31 @@ def _platelet_points_lods(plt: pl.Expr) -> pl.Expr:
     ]).to_expr(plt) # fmt: skip
 
 
-def _inr_points_lods(inr: pl.Expr) -> pl.Expr:
-    return ScoringTable([            # INR (ratio) | Points
-        (None, 0.25, "neither", 1),  # <0.25         1
-        (0.25, None, "left",    0),  # ≥0.25 ....... 0
-    ]).to_expr(inr) # fmt: skip
+def _pt_points_lods(pt: pl.Expr) -> pl.Expr:
+    # more than 3 s above the standard (about 12 s)
+    return ScoringTable([            # Prothrombin time (s) | Points
+        (None,   15, "right",   0),  # ≤15 .................. 0
+        (  15, None, "neither", 1),  # >15                    1
+    ]).to_expr(pt) # fmt: skip
+
+
+def _organ_system_score(columns: list[str]) -> pl.Expr:
+    """Sum over the organ systems of the highest points of their variables (those among `columns`)."""
+    # organ systems of Table 5: a system scores its most severe variable
+    ORGAN_SYSTEMS = [
+        ["gcs_points"],
+        ["hr_points", "sbp_points"],
+        ["bun_points", "creatinine_points", "uo_points"],
+        ["pf_ratio_points"],
+        ["wbc_points", "platelet_points"],
+        ["bilirubin_points", "pt_points"],
+    ]
+
+    return pl.sum_horizontal(
+        pl.max_horizontal(*[pl.col(c) for c in system if c in columns])
+        for system in ORGAN_SYSTEMS
+        if any(c in columns for c in system)
+    )
 
 
 # endregion
@@ -265,7 +277,7 @@ def LODS(
             - LODS Score
             - Component points (gcs_points, hr_points, sbp_points, pf_ratio_points,
               bun_points, creatinine_points, uo_points, wbc_points, bilirubin_points,
-              platelet_points, inr_points)
+              platelet_points, pt_points)
     """
     # region data loading
     if patient_information is None:
@@ -341,7 +353,9 @@ def LODS(
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
-            _bun_points_lods(pl.col("Urea nitrogen")).max().alias("bun_points"),
+            _bun_points_lods(pl.col("Urea nitrogen"))
+            .max()
+            .alias("bun_points"),
             _creatinine_points_lods(pl.col("Creatinine"))
             .max()
             .alias("creatinine_points"),
@@ -352,7 +366,9 @@ def LODS(
             _platelet_points_lods(pl.col("Platelets"))
             .max()
             .alias("platelet_points"),
-            _inr_points_lods(pl.col("INR")).max().alias("inr_points"),
+            _pt_points_lods(pl.col("Prothrombin time (PT)"))
+            .max()
+            .alias("pt_points"),
         )
     )
 
@@ -409,9 +425,7 @@ def LODS(
             _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "LODS Score"
-            )
+            _organ_system_score(out.collect_schema().names()).alias("LODS Score")
         )
         .select(
             STAY_KEY,
@@ -606,9 +620,7 @@ def mLODS(
             _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
         )
         .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "mLODS Score"
-            )
+            _organ_system_score(out.collect_schema().names()).alias("mLODS Score")
         )
         .select(
             STAY_KEY,

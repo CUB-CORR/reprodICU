@@ -50,7 +50,7 @@ from ..common import (
     get_timeseries_vitals,
     get_ventilation,
 )
-from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS, TIME_WEIGHTED_MEAN_RATE
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 from .SOFA import _improve_labs, _improve_vitals, _map_points, _organ_score_forward_fill
 
@@ -97,7 +97,7 @@ def _pf_ratio_points(pf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
         .then(1)
         .when(pf_ratio.is_between(75, 150, closed="right") & ventilated)
         .then(3)
-        .when((pf_ratio < 75) & ventilated)
+        .when((pf_ratio <= 75) & ventilated)
         .then(4)
         # ensure this is the last condition checked to not override other tiers
         .when(pf_ratio.is_between(0, 225, closed="right"))
@@ -131,7 +131,7 @@ def _sf_ratio_points(sf_ratio: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
         .then(1)
         .when(sf_ratio.is_between(120, 200, closed="right") & ventilated)
         .then(3)
-        .when((sf_ratio < 120) & ventilated)
+        .when((sf_ratio <= 120) & ventilated)
         .then(4)
         # ensure this is the last condition checked to not override other tiers
         .when(sf_ratio.is_between(0, 250, closed="right"))
@@ -240,11 +240,11 @@ def _creatinine_points(crea: pl.Expr, rrt: pl.Expr) -> pl.Expr:
       receiving RRT until RRT use is terminated.
     """
     return (
-        pl.when(crea <= 1.2).then(0)
+        pl.when(rrt).then(4)
+          .when(crea <= 1.2).then(0)
           .when(crea.is_between(1.2, 2.0, closed="right")).then(1)
           .when(crea.is_between(2.0, 3.5, closed="right")).then(2)
           .when(crea > 3.5).then(3)
-          .when(rrt).then(4)
           .otherwise(None)
     ) # fmt: skip
 
@@ -253,9 +253,9 @@ def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     """
     Urine output
     <0.5 mL/kg/h for 6–12 h     +2
-    <0.5 mL/kg/h for  >12 h     +3
-    <0.3 mL/kg/h for  >24 h
-       or anuria for  >12 h     +4
+    <0.5 mL/kg/h for  ≥12 h     +3
+    <0.3 mL/kg/h for  ≥24 h
+       or anuria for  ≥12 h     +4
 
     Arguments
     ---------
@@ -275,20 +275,15 @@ def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     return (
         uo_df.sort(STAY_KEY, "timeframe")
         .with_columns(
-            # Calculate rolling averages over lookback windows using time-based windows
-            # (6i = trailing 6 hours by timeframe index, not row count)
-            pl.col("uo_interval_ml_per_kg")
-            .rolling_mean_by("timeframe", window_size="6i")
-            .over(STAY_KEY)
-            .alias("uo_6h_avg"),
-            pl.col("uo_interval_ml_per_kg")
-            .rolling_mean_by("timeframe", window_size="12i")
-            .over(STAY_KEY)
-            .alias("uo_12h_avg"),
-            pl.col("uo_interval_ml_per_kg")
-            .rolling_mean_by("timeframe", window_size="24i")
-            .over(STAY_KEY)
-            .alias("uo_24h_avg"),
+            # trailing means by timeframe index (6i = 6 hours, not 6 rows);
+            # null unless the whole window has output
+            *[
+                pl.col("uo_interval_ml_per_kg")
+                .rolling_mean_by("timeframe", window_size=f"{h}i", min_samples=h)
+                .over(STAY_KEY)
+                .alias(f"uo_{h}h_avg")
+                for h in (6, 12, 24)
+            ],
             # Check for anuria in lookback windows
             (pl.col("uo_interval_ml_per_kg") == 0)
             .cast(int)
@@ -299,11 +294,11 @@ def _uo_points(uo_df: pl.LazyFrame) -> pl.LazyFrame:
         .select(
             STAY_KEY,
             "timeframe",
-            # 4 points: <0.3 mL/kg/h for >24h
+            # 4 points: <0.3 mL/kg/h for >=24h
             pl.when(pl.col("uo_24h_avg") < 0.3).then(4)
-            # 4 points: anuria for >12h
-            .when(pl.col("anuria_hours_12h") > 12).then(4)
-            # 3 points: <0.5 mL/kg/h for >12h
+            # 4 points: anuria for >=12h
+            .when(pl.col("anuria_hours_12h") >= 12).then(4)
+            # 3 points: <0.5 mL/kg/h for >=12h
             .when(pl.col("uo_12h_avg") < 0.5).then(3)
             # 2 points: <0.5 mL/kg/h for 6-12h
             .when(pl.col("uo_6h_avg") < 0.5).then(2)
@@ -356,7 +351,7 @@ def _vasopressor_points(
       - 4 points, less than 40 mm Hg
     """
     # Extract helper expressions for clarity
-    nor_epi_sum = norepinephrine + epinephrine
+    nor_epi_sum = norepinephrine.fill_null(0) + epinephrine.fill_null(0)
     dopamine_only = dopamine.is_not_null() & pl.all_horizontal(
         dobutamine.is_null(),
         epinephrine.is_null(),
@@ -364,11 +359,13 @@ def _vasopressor_points(
         phenylephrine.is_null(),
         vasopressin.is_null(),
     )
+    # a rate of 0 is an agent not being given
     has_other_agent = pl.any_horizontal(
-        dobutamine.is_not_null(),
-        phenylephrine.is_not_null(),
-        vasopressin.is_not_null(),
-    )
+        dopamine > 0,
+        dobutamine > 0,
+        phenylephrine > 0,
+        vasopressin > 0,
+    ).fill_null(False)
     has_any_agent = pl.any_horizontal(
         dopamine.is_not_null(),
         dobutamine.is_not_null(),
@@ -492,14 +489,9 @@ def get_vasopressor_points(
     return (
         vp_agg.group_by(STAY_KEY, "Window Relative to T_0")
         .agg(
-            pl.when(pl.col(drug_ingredient_col) == agent)
-            .then(
-                pl.col("Drug Projection Sum").sum().truediv(
-                    pl.col("Drug Duration (windows)").sum()
-                )
+            TIME_WEIGHTED_MEAN_RATE(
+                window_size, where=pl.col(drug_ingredient_col) == agent
             )
-            .otherwise(0)
-            .max()
             .alias(agent)
             for agent in VASOACTIVE_AGENTS
         )
@@ -735,7 +727,13 @@ def SOFA2(
     )
 
     pf_tf = (
-        PaO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        PaO2_FiO2_RATIO(
+            patient_information=patient_information,
+            timeseries_resp=timeseries_resp,
+            timeseries_labs=timeseries_labs,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+        )
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
@@ -760,7 +758,13 @@ def SOFA2(
     )
 
     sf_tf = (
-        SpO2_FiO2_RATIO(t_0=t_0, t_0_per_stay=t_0_per_stay)
+        SpO2_FiO2_RATIO(
+            patient_information=patient_information,
+            timeseries_resp=timeseries_resp,
+            timeseries_vitals=timeseries_vitals,
+            t_0=t_0,
+            t_0_per_stay=t_0_per_stay,
+        )
         .select(STAY_KEY, TIME_KEY, sf_ratio_col)
         .filter(pl.col(sf_ratio_col).is_not_null())
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
@@ -818,8 +822,8 @@ def SOFA2(
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
-        # attach rrt flag at measurement time using intervals
-        .join(rrt_tf, on=[STAY_KEY, "timeframe"], how="left")
+        # attach the rrt flag; a window with RRT but no lab still scores
+        .join(rrt_tf, on=[STAY_KEY, "timeframe"], how="full", coalesce=True)
         .with_columns(pl.col("rrt").fill_null(False))
         .group_by(STAY_KEY, "timeframe")
         .agg(

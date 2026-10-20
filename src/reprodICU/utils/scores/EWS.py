@@ -38,6 +38,7 @@ from ..common import (
     get_timeseries_respiratory,
     get_timeseries_vitals,
 )
+from ..core import BLOOD_PRESSURES, RESPIRATORY_PARAMS
 
 STAY_KEY = "Global ICU Stay ID"
 TIME_KEY = "Time Relative to Admission (seconds)"
@@ -50,28 +51,27 @@ SECONDS_IN_1D = 24 * SECONDS_IN_1H
 ################################################################################
 # region common helpers
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.select(
-        STAY_KEY,
-        TIME_KEY,
-        "Respiratory rate",
-        "Temperature",
-        pl.coalesce(
-            "Invasive systolic arterial pressure",
-            "Non-invasive systolic arterial pressure",
-        ).alias("Systolic arterial pressure"),
-        "Heart rate",
-        "Glasgow coma score total",
-        "Peripheral oxygen saturation",
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"SBP": "Systolic arterial pressure"})
+        .select(
+            STAY_KEY,
+            TIME_KEY,
+            "Respiratory rate",
+            "Temperature",
+            "Systolic arterial pressure",
+            "Heart rate",
+            "Glasgow coma score total",
+            "Peripheral oxygen saturation",
+        )
     )
 
 
 def _improve_respiratory(resp: pl.LazyFrame) -> pl.LazyFrame:
-    return resp.select(
-        STAY_KEY,
-        TIME_KEY,
-        pl.col("Oxygen gas flow Oxygen delivery system").alias(
-            "Supplemental oxygen"
-        ),
+    return (
+        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        .rename({"LPM": "Supplemental oxygen"})
+        .select(STAY_KEY, TIME_KEY, "Supplemental oxygen")
     )
 
 
@@ -121,12 +121,12 @@ def _avpu_points_news(gcs: pl.Expr) -> pl.Expr:
 
 
 def _rr_points_ews(rr: pl.Expr) -> pl.Expr:
-    return ScoringTable([          # Respiratory rate (bpm) | Points
-        (None,    8, "right", 2),  #  ≤8                      2
-        (   8,   14, "right", 0),  #   9-14 ................. 0
-        (  14,   20, "right", 1),  #  15-20                   1
-        (  20,   29, "right", 2),  #  21-29                   2
-        (  30, None, "left",  3),  # ≥30                      3
+    return ScoringTable([            # Respiratory rate (bpm) | Points
+        (None,    8, "right",   2),  #  ≤8                      2
+        (   8,   14, "right",   0),  #   9-14 ................. 0
+        (  14,   20, "right",   1),  #  15-20                   1
+        (  20,   30, "neither", 2),  #  21-29                   2
+        (  30, None, "left",    3),  # ≥30                      3
     ]).to_expr(rr) # fmt: skip
 
 
@@ -683,7 +683,8 @@ def NEWS2(
     resp_tf = (
         vitals.select(STAY_KEY, TIME_KEY, "Peripheral oxygen saturation")
         .drop_nulls()
-        .join(resp.drop_nulls(), on=[STAY_KEY, TIME_KEY], how="left")
+        # oxygen given at another time than a saturation reading counts as well
+        .join(resp.drop_nulls(), on=[STAY_KEY, TIME_KEY], how="full", coalesce=True)
         .join(labs.drop_nulls(), on=[STAY_KEY, TIME_KEY], how="left")
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
