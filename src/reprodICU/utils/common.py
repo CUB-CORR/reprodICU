@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import polars as pl
+import polars.selectors as cs
 
 from ..config import ConfigManager
 
@@ -390,9 +391,21 @@ def DROP_IMPLAUSIBLE_VALUES(
     return _plausible_values(obj, columns, column_config, mode="drop")
 
 
+def NULL_NON_FINITE(
+    data: Union[pl.LazyFrame, pl.DataFrame],
+) -> Union[pl.LazyFrame, pl.DataFrame]:
+    """Set non-finite values (NaN, +-inf) of all float columns to null."""
+    return data.with_columns(pl.when(cs.float().is_finite()).then(cs.float()))
+
+
+def FILTER_NOT_NULL(
+    data: Union[pl.LazyFrame, pl.DataFrame], columns: List[str]
+) -> Union[pl.LazyFrame, pl.DataFrame]:
+    """Keep the rows with a value in at least one of the columns."""
+    return data.filter(pl.any_horizontal(pl.col(columns).is_not_null()))
+
+
 # region struct extraction utilities
-
-
 def extract_struct_value(
     col_name: str,
     allowed_systems: Optional[List[str]] = None,
@@ -577,4 +590,6 @@ __all__ = [
     # data cleaning
     "CLIP_PLAUSIBLE_VALUES",
     "DROP_IMPLAUSIBLE_VALUES",
+    "NULL_NON_FINITE",
+    "FILTER_NOT_NULL",
 ]
