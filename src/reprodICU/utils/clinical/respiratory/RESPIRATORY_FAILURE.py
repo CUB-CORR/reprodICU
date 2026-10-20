@@ -13,6 +13,7 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    FILTER_NOT_NULL,
     _validate_required_data,
     _build_t0,
     _to_lazy,
@@ -69,11 +70,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         .then(pl.col("Oxygen saturation").struct.field("value"))
         .otherwise(None)
         .alias("SaO2"),
-    ).filter(
-        pl.any_horizontal(
-            pl.col(col).is_not_null() for col in ["PaO2", "PaCO2", "pH", "SaO2"]
-        )
-    )
+    ).pipe(FILTER_NOT_NULL, ["PaO2", "PaCO2", "pH", "SaO2"])
 
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
