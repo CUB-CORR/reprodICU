@@ -56,6 +56,7 @@ from ...common import (
     get_timeseries_labs,
     get_timeseries_vitals,
 )
+from ...core import BLOOD_PRESSURES
 from ...scores.SOFA2 import get_vasopressor_points
 
 # seconds constants
@@ -220,17 +221,13 @@ def SCAI(
 
     # region vitals (SBP, MAP, HR)
     vitals_tf = (
-        timeseries_vitals.select(
+        BLOOD_PRESSURES(timeseries_vitals=timeseries_vitals)
+        .rename({"SBP": "Systolic arterial pressure", "MAP": "Mean arterial pressure"})
+        .select(
             STAY_KEY,
             TIME_KEY,
-            pl.coalesce(
-                "Invasive systolic arterial pressure",
-                "Non-invasive systolic arterial pressure",
-            ).alias("Systolic arterial pressure"),
-            pl.coalesce(
-                "Invasive mean arterial pressure",
-                "Non-invasive mean arterial pressure",
-            ).alias("Mean arterial pressure"),
+            "Systolic arterial pressure",
+            "Mean arterial pressure",
             "Heart rate",
         )
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")

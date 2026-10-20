@@ -23,42 +23,27 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    FILTER_NOT_NULL,
     _build_t0,
     _to_lazy,
     _validate_required_data,
     get_patient_information,
     get_timeseries_respiratory,
 )
+from ...core import RESPIRATORY_PARAMS
 
-SECONDS_IN_6H = 60 * 60
+SECONDS_IN_6H = 6 * 60 * 60
 STAY_KEY = "Global ICU Stay ID"
 TIME_KEY = "Time Relative to Admission (seconds)"
 
 
 # region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
-    columns = ["VT", "Pplat", "PIP", "PEEP"]
+    columns = ["TV", "Pplat", "PIP", "PEEP"]
     return (
-        resp.select(
-            STAY_KEY,
-            TIME_KEY,
-            pl.max_horizontal(
-                "Tidal volume setting Ventilator",
-                "Tidal volume.spontaneous --on ventilator",
-                "Tidal volume.spontaneous+mechanical --on ventilator",
-            ).alias("VT"),
-            pl.col(
-                "Pressure.plateau Respiratory system airway --on ventilator"
-            ).alias("Pplat"),
-            pl.col(
-                "Pressure.max Respiratory system airway --on ventilator"
-            ).alias("PIP"),
-            pl.max_horizontal(
-                "Positive end expiratory pressure setting Ventilator",
-                "PEEP Respiratory system",
-            ).alias("PEEP"),
-        )
-        .filter(pl.any_horizontal(pl.col(col).is_not_null() for col in columns))
+        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        .select(STAY_KEY, TIME_KEY, *columns)
+        .pipe(FILTER_NOT_NULL, columns)
         .sort(STAY_KEY, TIME_KEY)
         .with_columns(
             pl.when(pl.col(col).is_not_null())
@@ -142,9 +127,9 @@ def STATIC_COMPLIANCE(
     timeseries_resp = _improve_resp(timeseries_resp)
 
     static_compliance = timeseries_resp.with_columns(
-        (pl.col("VT") / (pl.col("Pplat") - pl.col("PEEP"))).alias(
-            "Static Compliance (mL/cm H2O)"
-        )
+        pl.when(pl.col("Pplat") > pl.col("PEEP"))
+        .then(pl.col("TV") / (pl.col("Pplat") - pl.col("PEEP")))
+        .alias("Static Compliance (mL/cm H2O)")
     ).select(STAY_KEY, TIME_KEY, "Static Compliance (mL/cm H2O)")
 
     if (t_0 != 0) or (t_0_per_stay is not None):
@@ -219,9 +204,9 @@ def DYNAMIC_COMPLIANCE(
     timeseries_resp = _improve_resp(timeseries_resp)
 
     dynamic_compliance = timeseries_resp.with_columns(
-        (pl.col("VT") / (pl.col("PIP") - pl.col("PEEP"))).alias(
-            "Dynamic Compliance (mL/cm H2O)"
-        )
+        pl.when(pl.col("PIP") > pl.col("PEEP"))
+        .then(pl.col("TV") / (pl.col("PIP") - pl.col("PEEP")))
+        .alias("Dynamic Compliance (mL/cm H2O)")
     ).select(STAY_KEY, TIME_KEY, "Dynamic Compliance (mL/cm H2O)")
 
     if (t_0 != 0) or (t_0_per_stay is not None):

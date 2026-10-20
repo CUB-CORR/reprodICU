@@ -3,6 +3,7 @@ from typing import Optional
 import polars as pl
 
 from ..common import (
+    NULL_NON_FINITE,
     _to_lazy,
     _validate_required_data,
     get_timeseries_respiratory,
@@ -56,7 +57,8 @@ def RESPIRATORY_PARAMS(
     timeseries_respiratory = _to_lazy(timeseries_respiratory)
 
     return (
-        timeseries_respiratory.with_columns(
+        timeseries_respiratory.pipe(NULL_NON_FINITE)
+        .with_columns(
             pl.max_horizontal(
                 "Tidal volume setting Ventilator",
                 "Tidal volume.spontaneous --on ventilator",

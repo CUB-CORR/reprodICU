@@ -24,12 +24,14 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    FILTER_NOT_NULL,
     _build_t0,
     _to_lazy,
     _validate_required_data,
     get_patient_information,
     get_timeseries_respiratory,
 )
+from ...core import RESPIRATORY_PARAMS
 
 SECONDS_IN_6H = 6 * 60 * 60
 STAY_KEY = "Global ICU Stay ID"
@@ -38,44 +40,11 @@ TIME_KEY = "Time Relative to Admission (seconds)"
 
 # region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
-    columns = ["VT", "RR", "Pplat", "PIP", "PEEP", "FiO2"]
+    columns = ["TV", "RR", "Pplat", "PIP", "PEEP", "FiO2"]
     return (
-        resp.select(
-            "Global ICU Stay ID",
-            "Time Relative to Admission (seconds)",
-            pl.max_horizontal(
-                "Tidal volume setting Ventilator",
-                "Tidal volume.spontaneous --on ventilator",
-                "Tidal volume.spontaneous+mechanical --on ventilator",
-            ).alias("VT"),
-            pl.max_horizontal(
-                "Breath rate setting Ventilator",
-                "Breath rate spontaneous and mechanical --on ventilator",
-            ).alias("RR"),
-            pl.col(
-                "Pressure.plateau Respiratory system airway --on ventilator"
-            ).alias("Pplat"),
-            pl.col(
-                "Pressure.max Respiratory system airway --on ventilator"
-            ).alias("PIP"),
-            pl.max_horizontal(
-                "Positive end expiratory pressure setting Ventilator",
-                "PEEP Respiratory system",
-            ).alias("PEEP"),
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2"),
-        )
-        .with_columns(
-            pl.when(pl.col("FiO2").is_between(0, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2"),
-        )
-        .filter(pl.any_horizontal(pl.col(col).is_not_null() for col in columns))
+        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        .select(STAY_KEY, TIME_KEY, *columns)
+        .pipe(FILTER_NOT_NULL, columns)
         .sort(STAY_KEY, TIME_KEY)
         .with_columns(
             pl.when(pl.col(col).is_not_null())
@@ -156,13 +125,13 @@ def MECHANICAL_POWER(
     # MP (in J/minutes) = 0.098 x V_T (in Liters) x RR x (Ppeak - 0.5 x DP)
     mechanical_power = (
         timeseries_resp.with_columns(
-            pl.col("VT").truediv(1000).alias("VT_Liters"),
-            (pl.col("PIP") - pl.col("PEEP")).alias("DP"),  # Driving Pressure
+            pl.col("TV").truediv(1000).alias("TV_Liters"),
+            (pl.col("Pplat") - pl.col("PEEP")).alias("DP"),  # Driving Pressure
         )
         .with_columns(
             (
                 0.098
-                * pl.col("VT_Liters")
+                * pl.col("TV_Liters")
                 * pl.col("RR")
                 * (pl.col("PIP") - 0.5 * pl.col("DP"))
             ).alias("Mechanical Power (J/min)")

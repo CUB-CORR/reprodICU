@@ -3,6 +3,7 @@ from typing import Optional
 import polars as pl
 
 from ..common import (
+    NULL_NON_FINITE,
     _to_lazy,
     _validate_required_data,
     get_timeseries_vitals,
@@ -45,7 +46,7 @@ def BLOOD_PRESSURES(
 
     timeseries_vitals = _to_lazy(timeseries_vitals)
 
-    return timeseries_vitals.with_columns(
+    return timeseries_vitals.pipe(NULL_NON_FINITE).with_columns(
         pl.coalesce(
             pl.col("Invasive systolic arterial pressure"),
             pl.col("Non-invasive systolic arterial pressure"),

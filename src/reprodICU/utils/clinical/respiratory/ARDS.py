@@ -48,6 +48,7 @@ from ...common import (
     get_timeseries_vitals,
     get_ventilation,
 )
+from ...core import RESPIRATORY_PARAMS
 from ...laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 SECONDS_IN_1H = 60 * 60
@@ -274,14 +275,7 @@ def RESPIRATORY_CRITERION(
 
     # region ventilator parameters
     # --------------------------------------------------------------------------
-    PEEP = timeseries_resp.select(
-        STAY_KEY,
-        TIME_KEY,
-        pl.max_horizontal(
-            "Positive end expiratory pressure setting Ventilator",
-            "PEEP Respiratory system",
-        ).alias("PEEP"),
-    )
+    PEEP = RESPIRATORY_PARAMS(timeseries_respiratory=timeseries_resp).select(STAY_KEY, TIME_KEY, "PEEP")
 
     # region O2 ratios
     # --------------------------------------------------------------------------
