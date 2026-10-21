@@ -375,14 +375,14 @@ def ADT(patient_information: pl.LazyFrame) -> pl.LazyFrame:
             .cast(str)
             .replace_strict(
                 {
-                    "Cardiac": "mixed_cardiac_icu",
-                    "Neurological": "mixed_neuro_icu",
-                    "Neonatal": "general_icu",
-                    "Medical": "medical_icu",
-                    "Medical-Surgical": "general_icu",
-                    "Pediatric": "general_icu",
-                    "Surgical": "surgical_icu",
-                    "Trauma": "surgical_icu",
+                    "Cardiac intensive care unit": "mixed_cardiac_icu",
+                    "Neurological intensive care unit": "mixed_neuro_icu",
+                    "Neonatal intensive care unit": "general_icu",
+                    "Medical intensive care unit": "medical_icu",
+                    "Intensive care unit": "general_icu",
+                    "Pediatric intensive care unit": "general_icu",
+                    "Surgical intensive care unit": "surgical_icu",
+                    "Trauma intensive care unit": "surgical_icu",
                 },
                 default="general_icu",
             )
