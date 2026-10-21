@@ -151,7 +151,7 @@ class PatientInformationCleaner(GlobalVars):
                 # less than approx. 15 minutes
                 pl.col(self.icu_length_of_stay_col).le(0.01)
                 # or no data available
-                | pl.any_horizontal(self.data_availability_cols)
+                | (pl.sum_horizontal(self.data_availability_cols) == 0)
             )
             .then(True)
             .otherwise(False)
