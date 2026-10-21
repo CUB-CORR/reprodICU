@@ -143,7 +143,10 @@ def P50(
             .alias("P50 (mmHg)")
         )
         .with_columns(
-            pl.when(pl.col("P50 (mmHg)").is_finite())
+            pl.when(
+                pl.col("P50 (mmHg)").is_finite(),
+                pl.col("P50 (mmHg)") > 0
+            )
             .then(pl.col("P50 (mmHg)"))
             .otherwise(None)
             .alias("P50 (mmHg)")

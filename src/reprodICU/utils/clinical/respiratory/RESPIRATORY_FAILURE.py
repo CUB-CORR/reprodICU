@@ -172,7 +172,7 @@ def RESPIRATORY_FAILURE(
         timeseries_labs.join(
             timeseries_vitals,
             on=[STAY_KEY, TIME_KEY],
-            how="outer",
+            how="full",
             coalesce=True,
         )
         .with_columns(
