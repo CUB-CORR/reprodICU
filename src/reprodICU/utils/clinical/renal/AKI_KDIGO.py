@@ -372,6 +372,116 @@ def _creatinine_stage_points(
 
 ################################################################################
 ################################################################################
+# region resolution and AKD tracking
+def _compute_aki_resolution(
+    creatinine_data: pl.LazyFrame,
+    creatinine_col: str = "Creatinine",
+    baseline_col: str = "SCr Baseline",
+) -> pl.LazyFrame:
+    """
+    Compute AKI resolution status per timeframe.
+
+    Definitions:
+    - Full Resolution: SCr ≤1.2× baseline within 7 days of Stage ≥1
+    - Partial Resolution: 1.2× baseline < SCr < 1.5× baseline within 7 days
+    - No Resolution: SCr ≥1.5× baseline within 7 days
+
+    Returns:
+        LazyFrame with columns per timeframe:
+        - Global ICU Stay ID
+        - timeframe
+        - AKI Resolution Status (Full | Partial | None | Pending)
+        - Days from AKI Onset
+        - Days to Resolution (if resolved)
+    """
+    # Step 1: Find AKI onset (first timeframe where any AKI stage ≥1)
+    aki_onset = (
+        creatinine_data.filter(pl.col("Overall KDIGO AKI Stage").ge(1))
+        .group_by(STAY_KEY)
+        .agg(pl.col(TIMEFRAME_KEY).min().alias("AKI_Onset_Timeframe"))
+    )
+
+    # Step 2: Join AKI onset to all data
+    data_with_onset = creatinine_data.join(
+        aki_onset, on=STAY_KEY, how="left"
+    ).with_columns(
+        pl.when(pl.col("AKI_Onset_Timeframe").is_not_null())
+        .then(pl.col(TIMEFRAME_KEY) - pl.col("AKI_Onset_Timeframe"))
+        .otherwise(None)
+        .alias("Days_Since_AKI_Onset")
+    )
+
+    # Step 3: Calculate resolution within 7-day (7 timeframe) window post-AKI
+    result = (
+        data_with_onset.with_columns(
+            # Calculate SCr ratio to baseline
+            (pl.col(creatinine_col) / pl.col(baseline_col)).alias("SCr_Ratio"),
+            # Determine if within 7-day resolution window
+            pl.when(
+                pl.col("Days_Since_AKI_Onset").is_not_null(),
+                pl.col("Days_Since_AKI_Onset") >= 0,
+                pl.col("Days_Since_AKI_Onset") <= 7,
+            )
+            .then(True)
+            .otherwise(False)
+            .alias("In_Resolution_Window"),
+        )
+        .with_columns(
+            # Determine resolution status
+            pl.when(pl.col("AKI_Onset_Timeframe").is_null())
+            .then(pl.lit(None))  # No AKI occurred
+            .when(pl.col("In_Resolution_Window") & pl.col("SCr_Ratio").le(1.2))
+            .then(pl.lit("Full Resolution"))
+            .when(
+                pl.col("In_Resolution_Window"),
+                pl.col("SCr_Ratio").gt(1.2),
+                pl.col("SCr_Ratio").lt(1.5),
+            )
+            .then(pl.lit("Partial Resolution"))
+            .when(pl.col("In_Resolution_Window") & pl.col("SCr_Ratio").ge(1.5))
+            .then(pl.lit("No Resolution"))
+            .when(
+                pl.col("Days_Since_AKI_Onset").is_not_null(),
+                pl.col("Days_Since_AKI_Onset") >= 0,
+                pl.col("Days_Since_AKI_Onset") < 7,
+            )
+            .then(pl.lit("Pending"))
+            .otherwise(None)
+            .alias("AKI Resolution Status"),
+        )
+        .with_columns(
+            # Days from AKI onset (only if AKI occurred)
+            pl.when(pl.col("AKI_Onset_Timeframe").is_not_null())
+            .then(pl.col("Days_Since_AKI_Onset"))
+            .otherwise(None)
+            .alias("Days from AKI Onset"),
+            # Days to resolution (when resolution first achieved)
+            pl.when(
+                pl.col("AKI Resolution Status").is_in(
+                    ["Full Resolution", "Partial Resolution"]
+                )
+            )
+            .then(pl.col("Days_Since_AKI_Onset"))
+            .otherwise(None)
+            .alias("Days to Resolution"),
+        )
+        .select(
+            STAY_KEY,
+            TIMEFRAME_KEY,
+            "AKI Resolution Status",
+            "Days from AKI Onset",
+            "Days to Resolution",
+        )
+    )
+
+    return result
+
+
+# endregion
+
+
+################################################################################
+################################################################################
 # region UO consecutive
 def _uo_consecutive_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
     """
@@ -738,6 +848,7 @@ def AKI_KDIGO(
     consecutive: bool = True,
     any_period: bool = False,
     fixed_block: bool = False,
+    include_resolution: bool = False,
 ) -> pl.LazyFrame:
     """
     Compute KDIGO-based Acute Kidney Injury (AKI) stages in long format.
@@ -794,6 +905,8 @@ def AKI_KDIGO(
             Include AKI stages based on any-period rolling UO criteria. Default: False.
         fixed_block : bool, optional
             Include AKI stages based on fixed-block UO criteria. Default: False.
+        include_resolution : bool, optional
+            Include AKI resolution and AKD tracking. Only used when version="2026". Default: False.
         include_criteria : bool, optional
             Include intermediate criteria columns in output. Default: False.
         include_intermediate_stages : bool, optional
@@ -809,6 +922,7 @@ def AKI_KDIGO(
             - Creatinine AKI Stage (0-3)
             - UO Consecutive/Any Period/Fixed Block AKI Stage (if method enabled)
             - Overall KDIGO AKI Stage (max across all methods)
+            - AKI Resolution / AKD Status (if version="2026" and include_resolution=True)
 
     Raises
     ------
@@ -1015,6 +1129,19 @@ def AKI_KDIGO(
     result = result.with_columns(
         pl.max_horizontal(*stage_cols).alias("Overall KDIGO AKI Stage")
     ).sort(STAY_KEY, "timeframe")
+
+    # Add resolution and AKD tracking if requested (version 2026 only)
+    if version == "2026" and include_resolution:
+        resolution_data = _compute_aki_resolution(
+            result, creatinine_col="Creatinine", baseline_col="SCr Baseline"
+        )
+        result = result.join(
+            resolution_data, on=[STAY_KEY, "timeframe"], how="left"
+        )
+
+    result = result.filter(
+        _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
+    )
 
     # Rename timeframe column if needed
     if timeframe_name != "timeframe":
