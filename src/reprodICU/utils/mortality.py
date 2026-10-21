@@ -24,7 +24,12 @@ import polars as pl
 
 from .common import _to_lazy, get_patient_information
 
-__all__ = ["COMMON_MORTALITY_MEASURES"]
+__all__ = ["COMMON_MORTALITY_MEASURES", "MORTALITY_WITHIN_DAYS"]
+
+
+def MORTALITY_WITHIN_DAYS(days: int) -> pl.Expr:
+    """Flag for death within `days` days after ICU admission (needs "Mortality After ICU Admission (days)")."""
+    return (pl.col("Mortality After ICU Admission (days)") <= days).alias(f"Mortality {days} Days After ICU Admission")
 
 
 def COMMON_MORTALITY_MEASURES(
@@ -119,26 +124,7 @@ def COMMON_MORTALITY_MEASURES(
             .alias("Mortality After ICU Admission (days)")
         )
         .with_columns(
-            (pl.col("Mortality After ICU Admission (days)") <= 7).alias(
-                "Mortality 7 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 28).alias(
-                "Mortality 28 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 30).alias(
-                "Mortality 30 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 90).alias(
-                "Mortality 90 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 180).alias(
-                "Mortality 180 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 360).alias(
-                "Mortality 360 Days After ICU Admission"
-            ),
-            (pl.col("Mortality After ICU Admission (days)") <= 365).alias(
-                "Mortality 1 Year After ICU Admission"
-            ),
+            *[MORTALITY_WITHIN_DAYS(days) for days in (7, 28, 30, 90, 180, 360)],
+            MORTALITY_WITHIN_DAYS(365).alias("Mortality 1 Year After ICU Admission"),
         )
     )
