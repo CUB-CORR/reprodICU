@@ -1647,7 +1647,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.diagnosis_discharge_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="full")
             # Convert columns to appropriate data types
             .with_columns(
                 # Split diagnosis codes by comma and rename column
@@ -1865,7 +1865,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.procedure_discharge_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="full")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.procedure_start_col,

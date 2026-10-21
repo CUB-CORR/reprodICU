@@ -398,7 +398,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                     "CURR_SERVICE": self.specialty_col,
                 }
             )
-            .join(IDs, on=self.person_id_col, how="outer")
+            .join(IDs, on=self.person_id_col, how="full")
             .with_columns(
                 pl.col("TRANSFERTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
             )

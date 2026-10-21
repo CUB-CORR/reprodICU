@@ -688,7 +688,7 @@ class reprodICUPaths:
 
         config = config_manager.load_config("PATHS.yaml", user_override=True)
         for key, value in config.items():
-            setattr(self, key, str(value))
+            setattr(self, key, None if value is None else str(value))
 
     def validate_paths(self) -> list:
         """
@@ -701,7 +701,7 @@ class reprodICUPaths:
         """
         missing_paths = []
         for key, value in self.__dict__.items():
-            if not Path(value).exists():
+            if value is not None and not Path(value).exists():  # unset is not missing
                 missing_paths.append((key, value))
         return missing_paths
 

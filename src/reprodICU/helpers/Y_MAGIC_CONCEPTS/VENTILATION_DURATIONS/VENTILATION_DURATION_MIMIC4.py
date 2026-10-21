@@ -151,7 +151,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .join(
                 CHARTEVENTS_OXYGEN_DELIVERY.select("subject_id", "charttime"),
                 on=["subject_id", "charttime"],
-                how="outer",
+                how="full",
                 coalesce=True,
             )
             .unique()
