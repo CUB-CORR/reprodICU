@@ -194,12 +194,12 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.mortality_after_col), # fmt: skip
                 # Get mortality after discharge cutoff
                 (
-                    pl.when(self.mortality_after_cutoff_col == 3076)  # 6 Months
+                    pl.when(pl.col(self.mortality_after_cutoff_col) == 3076)  # 6 Months
                     .then(pl.duration(days=180))
-                    .when(self.mortality_after_cutoff_col == 3077)  # 1 Year
+                    .when(pl.col(self.mortality_after_cutoff_col) == 3077)  # 1 Year
                     .then(pl.duration(days=365))
                     .otherwise(pl.duration(days=365))  # Default to 1 year
-                    - pl.duration(seconds=pl.col("TimeOfStay"))
+                    - pl.duration(seconds=pl.col("TimeOfStay") - pl.col("ICUOffset"))
                 )
                 .truediv(pl.duration(days=1))
                 .cast(int)
@@ -658,17 +658,24 @@ class SICdbExtractor(SICdbPaths):
                 {
                     "PatientID": self.person_id_col,
                     "CaseID": self.icu_stay_id_col,
-                    "Offset": self.procedure_start_col,
-                    "OffsetEnd": self.procedure_end_col,
                 }
             )
+            .join(self._get_offsets(), on=self.icu_stay_id_col)
             .with_columns(
+                # Fix time offsets
+                (pl.col("Offset") - pl.col("CaseOffset")).alias(
+                    self.procedure_start_col
+                ),
+                (pl.col("OffsetEnd") - pl.col("CaseOffset")).alias(
+                    self.procedure_end_col
+                ),
                 pl.col("DataID")
                 .replace(
                     self.load_mapping(self.device_mapping_path), default=None
                 )
                 .alias(self.procedure_description_col),
             )
+            .drop("Offset", "OffsetEnd", "CaseOffset", "TimeOfStay")
         )
 
     # region mappers
@@ -807,29 +814,31 @@ class SICdbExtractor(SICdbPaths):
         """
         Compute time offsets for cases.
 
+        All SICdb offsets count from the start of the case, so the time
+        relative to ICU admission is Offset - ICUOffset.
+        OffsetAfterFirstAdmission is the offset of a readmission from the first
+        admission of the patient and is not part of it.
+
         Steps:
             1. Read offset components from cases CSV.
             2. Rename CaseID to standardized name.
-            3. Compute CaseOffset as sum of ICUOffset and OffsetAfterFirstAdmission.
+            3. Compute CaseOffset (ICUOffset) and TimeOfStay relative to it.
 
         Returns:
             pl.LazyFrame: Columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - CaseOffset: Computed offset value.
-                - TimeOfStay: Total ICU stay duration.
+                - CaseOffset: ICU admission offset (seconds).
+                - TimeOfStay: End of the ICU stay relative to ICU admission.
         """
         return (
             pl.scan_csv(self.cases_path)
-            .select(
-                "CaseID", "ICUOffset", "OffsetAfterFirstAdmission", "TimeOfStay"
-            )
+            .select("CaseID", "ICUOffset", "TimeOfStay")
             .rename({"CaseID": self.icu_stay_id_col})
             .with_columns(
-                (pl.col("OffsetAfterFirstAdmission") + pl.col("ICUOffset"))
-                .cast(float)
-                .alias("CaseOffset")
+                pl.col("ICUOffset").cast(float).alias("CaseOffset"),
+                (pl.col("TimeOfStay") - pl.col("ICUOffset")).alias("TimeOfStay"),
             )
-            .drop("ICUOffset", "OffsetAfterFirstAdmission")
+            .drop("ICUOffset")
         )
 
     def _get_timeseries_mapping(self) -> pl.LazyFrame:

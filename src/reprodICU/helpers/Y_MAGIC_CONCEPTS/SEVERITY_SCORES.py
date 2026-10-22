@@ -32,7 +32,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 - APACHE III: Acute Physiology and Chronic Health Evaluation III score.  (MIMIC-III, MIMIC-IV, UMCdb)
                 - APACHE IV: Acute Physiology and Chronic Health Evaluation IV score. (eICU, UMCdb)
                 - APS III: Acute Physiology Score III. (eICU, MIMIC-III, MIMIC-IV)
-                - SOFA: Sequential Organ Failure Assessment. (MIMIC-III, MIMIC-IV)
+                - SOFA: Sequential Organ Failure Assessment. (MIMIC-III, MIMIC-IV, SICdb)
                 - SAPS II: Simplified Acute Physiology Score II. (UMCdb)
                 - SAPS III: Simplified Acute Physiology Score III. (SICdb)
         """
@@ -162,15 +162,34 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
 
         # region SICdb
         print("MAGIC_CONCEPTS: Severity Scores - SICdb")
-        sicdb_SEVERITY_SCORES = (
-            pl.scan_csv(self.sicdb_paths.cases_path)
-            .select("CaseID", "saps3")
+        sicdb_cases = pl.scan_csv(self.sicdb_paths.cases_path)
+
+        sicdb_SAPS3 = (
+            sicdb_cases.select("CaseID", "saps3")
             .rename({"saps3": "SAPS III"})
             .with_columns(
                 pl.lit(0).alias("Time Relative to Admission (seconds)")
             )
-            .pipe(self._add_global_id_stay_id, "sicdb", "CaseID")
         )
+
+        # SOFA: one value per 24 hours, the first at ICU admission
+        sicdb_SOFA = (
+            pl.scan_csv(self.sicdb_paths.data_float_h_path, infer_schema_length=10000)
+            .filter(pl.col("DataID") == 3139)
+            .select("CaseID", "Offset", pl.col("Val").alias("SOFA"))
+            .join(sicdb_cases.select("CaseID", "ICUOffset"), on="CaseID")
+            # Make offset (from the start of the case) relative to admission
+            .with_columns(
+                (pl.col("Offset") - pl.col("ICUOffset")).alias(
+                    "Time Relative to Admission (seconds)"
+                )
+            )
+            .select("CaseID", "Time Relative to Admission (seconds)", "SOFA")
+        )
+
+        sicdb_SEVERITY_SCORES = pl.concat(
+            [sicdb_SAPS3, sicdb_SOFA], how="diagonal_relaxed"
+        ).pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
 
         # endregion
 

@@ -52,7 +52,8 @@ class SICdbProcessor(SICdbExtractor):
 
         Steps:
             1. Check for preprocessed numeric timeseries file; load if available.
-            2. Extract raw timeseries data from {data_float_m_path}.
+            2. Extract raw timeseries data from {data_float_m_path} and the
+               hours without rawdata from {data_float_h_path}.
             3. Process in batches of 500 patients: extract, pivot, and filter measurements.
             4. Combine all batches and save sorted result.
 
@@ -74,10 +75,22 @@ class SICdbProcessor(SICdbExtractor):
 
         print("SICdb   - Preparing raw timeseries data...")
 
+        # Hours without rawdata only exist in the hourly table
+        cols = ["CaseID", "Offset", "DataID", "Val"]
+        minutely = pl.scan_parquet(self.data_float_m_path).select(cols)
+        hourly = (
+            pl.scan_csv(
+                self.data_float_h_path,
+                infer_schema_length=10000,
+                schema_overrides={"rawdata": pl.String},
+            )
+            .filter(pl.col("rawdata").is_null())
+            .select(cols)
+        )
+
         # Create the raw timeseries parquet file if it doesn't exist
         (
-            pl.scan_parquet(self.data_float_m_path)
-            .select("CaseID", "Offset", "DataID", "Val")
+            pl.concat([minutely, hourly], how="vertical_relaxed")
             # Round values to 2 decimal places due to precision issues of IEEE 754 floats
             .with_columns(pl.col("Val").cast(float).round(2))
             .rename({"CaseID": self.icu_stay_id_col})

@@ -39,6 +39,8 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
             .filter(pl.col("OffsetEnd").le(pl.col("TimeOfStay")))
             # Filter for ventilation IDs
             .filter(pl.col("DataID").is_in([720, 3043]))
+            # Make offsets (from the start of the case) relative to admission
+            .with_columns(pl.col("Offset", "OffsetEnd") - pl.col("ICUOffset"))
             .with_columns(
                 pl.col("DataID")
                 .cast(str)

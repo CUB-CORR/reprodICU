@@ -32,8 +32,21 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
             "CaseID", "ICUOffset"
         )
 
+        # Hours without rawdata only exist in the hourly table
+        cols = ["CaseID", "Offset", "DataID", "Val"]
+        minutely = pl.scan_parquet(self.sicdb_paths.data_float_m_path).select(cols)
+        hourly = (
+            pl.scan_csv(
+                self.sicdb_paths.data_float_h_path,
+                infer_schema_length=10000,
+                schema_overrides={"rawdata": pl.String},
+            )
+            .filter(pl.col("rawdata").is_null())
+            .select(cols)
+        )
+
         RENAL_REPLACEMENT_THERAPY_DURATION = (
-            pl.scan_parquet(self.sicdb_paths.data_float_m_path)
+            pl.concat([minutely, hourly], how="vertical_relaxed")
             .join(ADMISSION_TIMES, on="CaseID", how="left")
             # Filter for RRT IDs
             .filter(

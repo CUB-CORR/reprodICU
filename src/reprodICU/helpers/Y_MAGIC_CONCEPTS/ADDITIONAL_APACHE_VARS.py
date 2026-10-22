@@ -157,7 +157,7 @@ class ADDITIONAL_APACHE_VARS(MAGIC_CONCEPTS):
             .with_columns(
                 pl.lit(0).alias("Time Relative to Admission (seconds)")
             )
-            .pipe(self._add_global_id_stay_id, "sicdb", "CaseID")
+            .pipe(self._add_global_id_stay_id, "sicdb-", "CaseID")
         )
 
         # endregion
