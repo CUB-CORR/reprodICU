@@ -510,7 +510,7 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
             )
             .unique()
             .group_by("patientunitstayid", "cplitemoffset")
-            .agg(pl.count().alias("num"))
+            .agg(pl.len().alias("num"))
             # ventilation_721
             .filter(pl.col("num") == 1)
             .select("patientunitstayid", "cplitemoffset")

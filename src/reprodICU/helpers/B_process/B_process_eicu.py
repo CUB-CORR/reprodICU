@@ -485,13 +485,13 @@ class EICUProcessor(EICUExtractor):
         # Extract and combine periodic and aperiodic data
         self.extract_and_combine_periodics().sink_parquet(ts_period_path_unsorted) # fmt: skip
 
-        # Batch process: cast to float and deduplicate
+        # Batch process: sort
         batch_process_timeseries(
             input_file=ts_period_path_unsorted,
             output_file=ts_period_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: df.unique(self.index_cols).sort(self.index_cols),
+            method=lambda df: df.sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )

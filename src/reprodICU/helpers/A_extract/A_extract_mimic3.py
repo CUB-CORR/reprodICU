@@ -13,6 +13,13 @@ from ..helper_filepaths import MIMIC3Paths
 from ..helper_OMOP import Vocabulary
 
 
+# Rows flagged as erroneous, see mimic-code mimic-iii/concepts/pivot/pivoted_vital.sql:19
+NOT_ERROR = pl.col("ERROR").cast(int, strict=False).ne_missing(1)
+
+# Superseded orders, see mimic-code mimic-iii/concepts/severityscores/sofa.sql:117
+# (inputevents_mv) and pivot/pivoted_invasive_lines.sql:169 (procedureevents_mv)
+NOT_REWRITTEN = pl.col("STATUSDESCRIPTION") != "Rewritten"
+
 class MIMIC3Extractor(MIMIC3Paths):
     def __init__(self, paths, DEMO=False):
         super().__init__(paths, DEMO)
@@ -495,7 +502,8 @@ class MIMIC3Extractor(MIMIC3Paths):
         DAILY_WEIGHT_IDS = [763, 3580, 3581, 3693, 224639]
 
         height_weight = (
-            chartevents.select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
+            chartevents.filter(NOT_ERROR)
+            .select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
             # Rename columns for consistency
             .rename({"ICUSTAY_ID": self.icu_stay_id_col})
             .filter(pl.col("ITEMID").is_in(KEEPIDS))
@@ -736,7 +744,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         return (
-            chartevents
+            chartevents.filter(NOT_ERROR)
             # Select relevant columns
             .select("SUBJECT_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUENUM")
             # Rename columns for consistency
@@ -1242,7 +1250,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         inputevents_mv = (
-            inputevents_mv.select(
+            inputevents_mv.filter(NOT_REWRITTEN)
+            .select(
                 "SUBJECT_ID",
                 "ITEMID",
                 "STORETIME",
@@ -1523,7 +1532,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         inputevents_mv = (
-            inputevents_mv.select(
+            inputevents_mv.filter(NOT_REWRITTEN)
+            .select(
                 "ICUSTAY_ID",
                 "STARTTIME",
                 "ENDTIME",
@@ -2381,6 +2391,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         procedureevents_mv = (
             pl.scan_csv(self.procedureevents_mv_path)
+            .filter(NOT_REWRITTEN)
             .rename(
                 {
                     "SUBJECT_ID": self.person_id_col,
@@ -2462,6 +2473,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         datetimeevents = (
             pl.scan_csv(self.datetimeevents_path)
+            .filter(NOT_ERROR)
             .rename(
                 {
                     "SUBJECT_ID": self.person_id_col,

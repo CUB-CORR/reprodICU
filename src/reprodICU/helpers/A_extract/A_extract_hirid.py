@@ -614,7 +614,7 @@ class HiRIDExtractor(HiRIDPaths):
         # Filter for the relevant observation variables
         # Observation   30005075    Infusion of saline solution	cummulative
         # Observation   30005080    Intravenous fluid colloid administration
-        # -> both are cumulative variables and reset at midnight
+        # -> both are cumulative variables and reset at noon
         # to calculate the infusion rate, we need to calculate the difference
         # between the current and the previous value
         fluid_ids = [
@@ -654,47 +654,38 @@ class HiRIDExtractor(HiRIDPaths):
                 pl.lit("intravenous").alias(self.drug_admin_route_col),
                 pl.lit(True).alias(self.drug_continuous_col),
             )
-            # Calculate the difference between the current and the previous
-            # value, store each timestamp in a separate column
+            # Previous record of each counter (the first one starts at admission with 0)
+            .sort(self.icu_stay_id_col, self.fluid_group_col, "datetime", "value")
             .with_columns(
                 pl.col("datetime")
                 .shift(1)
-                .over(
-                    self.icu_stay_id_col,
-                    self.fluid_group_col,
-                    order_by=["datetime", "value"],
-                )
+                .over(self.icu_stay_id_col, self.fluid_group_col)
+                .fill_null(pl.min_horizontal("admissiontime", "datetime"))
                 .alias("prev_datetime"),
+                pl.col("value")
+                .shift(1)
+                .over(self.icu_stay_id_col, self.fluid_group_col)
+                .fill_null(0)
+                .alias("prev_value"),
             )
             .with_columns(
-                # Check if dates are different (midnight crossed)
+                (pl.col("datetime") - pl.col("prev_datetime"))
+                .dt.total_seconds()
+                .alias("seconds"),
+                # A decrease after 12:00 is the daily reset, other decreases are corrections
                 pl.when(
-                    pl.col("datetime").dt.date()
-                    != pl.col("prev_datetime").dt.date()
+                    pl.col("value") < pl.col("prev_value"),
+                    (pl.col("datetime") - pl.duration(hours=12)).dt.date()
+                    != (pl.col("prev_datetime") - pl.duration(hours=12)).dt.date(),
                 )
-                # If midnight crossed, use current value (assuming reset to 0)
                 .then(pl.col("value"))
-                # Otherwise calculate difference from previous value
-                .otherwise(
-                    pl.col("value").sub(
-                        pl.col("value")
-                        .shift(1)
-                        .over(
-                            self.icu_stay_id_col,
-                            self.fluid_group_col,
-                            order_by=["datetime", "value"],
-                        )
-                    )
-                ).alias(self.fluid_amount_col),
+                .otherwise(pl.col("value") - pl.col("prev_value"))
+                .alias(self.fluid_amount_col),
             )
             # Calculate the rate
             .with_columns(
-                (
-                    pl.col(self.fluid_amount_col)
-                    / pl.col("datetime")
-                    .sub(pl.col("prev_datetime"))
-                    .dt.total_seconds()
-                )
+                pl.when(pl.col("seconds") > 0)
+                .then(pl.col(self.fluid_amount_col) / pl.col("seconds"))
                 .round_sig_figs(2)
                 .alias(self.fluid_rate_col)
             )

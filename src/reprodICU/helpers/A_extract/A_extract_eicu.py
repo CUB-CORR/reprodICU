@@ -1122,9 +1122,8 @@ class EICUExtractor(EICUPaths):
         Steps:
             1. Extract periodic vital sign data.
             2. Extract aperiodic vital sign data.
-            3. Concatenate both datasets diagonally (with relaxed schema).
-            4. Group by patient and time to aggregate first available value.
-            5. Rename columns based on periodic measurement mapping.
+            3. Full join both datasets on patient and time (unique, disjoint columns).
+            4. Rename columns based on periodic measurement mapping.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -1139,7 +1138,12 @@ class EICUExtractor(EICUPaths):
         aperiodic = self.extract_timeseries_aperiodic()
 
         return (
-            pl.concat([periodic, aperiodic], how="diagonal_relaxed")
+            periodic.join(
+                aperiodic,
+                on=[self.icu_stay_id_col, self.timeseries_time_col],
+                how="full",
+                coalesce=True,
+            )
             .rename(periodic_mapping)
             .select(
                 [self.icu_stay_id_col, self.timeseries_time_col]
