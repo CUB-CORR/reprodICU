@@ -211,7 +211,7 @@ class SICdbExtractor(SICdbPaths):
                 # Create empty HospitalStayID column
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Convert admission diagnosis to APACHE group
-                pl.col(self.admission_diagnosis_col).replace(
+                pl.col(self.admission_diagnosis_col).replace_strict(
                     diagnosis_mapping_dict, default=None
                 ),
             )
@@ -670,7 +670,7 @@ class SICdbExtractor(SICdbPaths):
                     self.procedure_end_col
                 ),
                 pl.col("DataID")
-                .replace(
+                .replace_strict(
                     self.load_mapping(self.device_mapping_path), default=None
                 )
                 .alias(self.procedure_description_col),

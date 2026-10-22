@@ -1127,11 +1127,11 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.drug_name_OMOP_col),
                 # Replace drug administration routes
                 pl.col("ordercategory")
-                .replace(umcdb_drug_administration_route_mapping, default=None)
+                .replace_strict(umcdb_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),
                 # Replace drug classes
                 pl.col("ordercategory")
-                .replace(umcdb_drug_class_mapping, default=None)
+                .replace_strict(umcdb_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
                 # Replace solution items with standardized names
                 pl.col(self.fluid_name_col)

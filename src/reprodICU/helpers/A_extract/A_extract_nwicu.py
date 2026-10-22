@@ -791,7 +791,7 @@ class NWICUExtractor(NWICUPaths):
                 .cast(self.drug_admin_type_dtype)
                 .alias(self.drug_admin_type_col),
                 pl.col("route")
-                .replace(nwicu_drug_administration_route_mapping, default=None)
+                .replace_strict(nwicu_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),
                 # Rename units
                 pl.col(self.drug_amount_unit_col)

@@ -1049,7 +1049,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .rename({"SUBJECT_ID": self.person_id_col})
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("VALUE").replace(self.lab_specimen_map, default=None),
+                pl.col("VALUE").replace_strict(self.lab_specimen_map, default=None),
             )
             .pipe(self.extract_timeseries_helper)
         )
@@ -1337,7 +1337,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         ) -> pl.LazyFrame:
             return data.with_columns(
                 pl.col(column_in)
-                .replace(
+                .replace_strict(
                     self.omop.get_concept_names_from_codes(
                         data.select(column_in).collect().to_series().to_list()
                     ),
@@ -1574,7 +1574,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 pl.col("ORDERCATEGORYNAME")
-                .replace(mimic3_drug_class_mapping, default=None)
+                .replace_strict(mimic3_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
                 # Rename units
                 pl.col(self.drug_rate_unit_col)

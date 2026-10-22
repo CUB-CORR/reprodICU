@@ -1086,7 +1086,7 @@ class MIMIC4Extractor(MIMIC4Paths):
             labevents.filter(pl.col("itemid") == SPECIMEN_ID)
             .select("specimen_id", "value")
             .with_columns(
-                pl.col("value").replace(self.lab_specimen_map, default=None)
+                pl.col("value").replace_strict(self.lab_specimen_map, default=None)
             )
         )
 
@@ -1283,7 +1283,7 @@ class MIMIC4Extractor(MIMIC4Paths):
         ) -> pl.LazyFrame:
             return data.with_columns(
                 pl.col(column_in)
-                .replace(
+                .replace_strict(
                     self.omop.get_concept_names_from_ids(
                         data.select(column_in).collect().to_series().to_list()
                     ),
@@ -1565,10 +1565,10 @@ class MIMIC4Extractor(MIMIC4Paths):
             )
             .with_columns(
                 pl.col("ordercategoryname")
-                .replace(mimic4_drug_administration_route_mapping, default=None)
+                .replace_strict(mimic4_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),
                 pl.col("ordercategoryname")
-                .replace(mimic4_drug_class_mapping, default=None)
+                .replace_strict(mimic4_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
                 # Rename units
                 pl.col(self.drug_rate_unit_col)

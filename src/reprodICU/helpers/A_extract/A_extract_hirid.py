@@ -289,7 +289,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "%Y-%m-%d %H:%M:%S%.9f"
                     ),
                     # Replace the variableid with the corresponding variable name
-                    pl.col("variableid").replace(variables, default=None),
+                    pl.col("variableid").replace_strict(variables, default=None),
                 )
                 # Filter for variables of interest within the cutoff time
                 .filter(
@@ -376,10 +376,10 @@ class HiRIDExtractor(HiRIDPaths):
             .agg(pl.col("value").first())
             .with_columns(
                 pl.col("value")
-                .replace(hirid_diagnosis_mapping, default=None)
+                .replace_strict(hirid_diagnosis_mapping, default=None)
                 .alias(self.admission_diagnosis_col),
                 pl.col("value")
-                .replace(hirid_specialty_mapping, default=None)
+                .replace_strict(hirid_specialty_mapping, default=None)
                 .alias(self.specialty_col),
             )
             .select(
