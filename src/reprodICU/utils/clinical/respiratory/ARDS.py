@@ -138,20 +138,26 @@ def IMAGING_CRITERION(
         & pl.col("Note Text (fixed)").str.contains("bilateral")
     )  # fmt: skip
 
+    # each definition reads the notes its authors selected
+    NETO_NOTES    = pl.col("Note Description").str.to_lowercase().str.contains("chest")  # `description ilike '%chest%'``
+    QIAN_NOTES    = pl.col("Note Text").str.contains("CHEST")  # `text LIKE '%CHEST%'`` is case-sensitive
+    PENSIER_NOTES = pl.col("Note Text").str.to_lowercase().str.contains("chest")
+
     if definition_source == "Neto":
-        imaging_expr = NETO_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (NETO_NOTES & NETO_PATTERN).alias("Bilateral Infiltrates")
     elif definition_source == "Qian":
-        imaging_expr = QIAN_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (QIAN_NOTES & QIAN_PATTERN).alias("Bilateral Infiltrates")
     elif definition_source == "Pensier":
-        imaging_expr = PENSIER_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (PENSIER_NOTES & PENSIER_PATTERN).alias("Bilateral Infiltrates")
     else:
-        imaging_expr = (NETO_PATTERN | QIAN_PATTERN | PENSIER_PATTERN).alias("Bilateral Infiltrates")  # fmt: skip
+        imaging_expr = (
+            (NETO_NOTES & NETO_PATTERN) 
+            | (QIAN_NOTES & QIAN_PATTERN) 
+            | (PENSIER_NOTES & PENSIER_PATTERN)
+        ).alias("Bilateral Infiltrates")
 
     BILATERAL_INFILTRATES = (
-        notes.filter(
-            pl.col("Note Category") == "Radiology",
-            pl.col("Note Text").str.to_lowercase().str.contains("chest"),
-        )
+        notes.filter(pl.col("Note Category") == "Radiology")
         .with_columns(
             pl.col("Note Text")
             .str.replace_all(r"\n", " ")

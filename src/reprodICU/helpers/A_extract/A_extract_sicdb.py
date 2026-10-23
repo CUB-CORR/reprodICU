@@ -810,7 +810,7 @@ class SICdbExtractor(SICdbPaths):
     # endregion
 
     # region timehelper
-    def _get_offsets(self) -> float:
+    def _get_offsets(self) -> pl.LazyFrame:
         """
         Compute time offsets for cases.
 
