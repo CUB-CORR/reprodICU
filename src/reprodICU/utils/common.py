@@ -7,6 +7,8 @@ from ..config import ConfigManager
 STAY_KEY = "Global ICU Stay ID"
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
+# default lower time bound (seconds from admission) of the concepts; None = unbounded
+T_MINUS1_DEFAULT = -30 * SECONDS_IN_1D
 
 # Load config for plausible values
 _config = ConfigManager()
@@ -47,6 +49,13 @@ def _build_base_timeframes(
     window_size: int,
     los_col: str = "ICU Length of Stay (days)",
 ) -> pl.LazyFrame:
+    """
+    One row per stay and window, dense from ICU admission to the end of the stay.
+
+    Timeframes are floor((time - T_0)/window_size). T_0 is only the reference, so the
+    first window is the one containing ICU admission (negative for T_0 > 0). Windows
+    before it are added where data exists with `_add_sparse_timeframes`.
+    """
     all_stays_t_0 = _to_lazy(all_stays_t_0)
 
     return (
@@ -54,7 +63,8 @@ def _build_base_timeframes(
         .select(STAY_KEY, "T_0", los_col)
         .with_columns(
             pl.int_ranges(
-                start=0,
+                # dense from the window containing ICU admission; T_0 is only the reference
+                start=(-pl.col("T_0")).truediv(window_size).floor().cast(int),
                 end=(pl.col(los_col) * SECONDS_IN_1D - pl.col("T_0"))
                 .truediv(window_size)
                 .clip(lower_bound=0)
@@ -69,21 +79,106 @@ def _build_base_timeframes(
     )
 
 
+def _add_sparse_timeframes(
+    base: pl.LazyFrame, *parts: pl.LazyFrame
+) -> pl.LazyFrame:
+    """
+    Add the timeframes before the dense range of `base` that hold data.
+
+    `_build_base_timeframes` is dense from the window containing ICU admission.
+    Windows before it exist only where one of the `parts` (frames with
+    Global ICU Stay ID and timeframe) has a row, which keeps the frame small for
+    long pre-ICU histories.
+    """
+    start = base.group_by(STAY_KEY).agg(
+        pl.col("timeframe").min().alias("_start"), pl.col("T_0").first()
+    )
+    extra = (
+        pl.concat(
+            [_to_lazy(p).select(STAY_KEY, "timeframe") for p in parts],
+            how="vertical_relaxed",
+        )
+        .drop_nulls()
+        .unique()
+        .join(start, on=STAY_KEY, how="inner")
+        .filter(pl.col("timeframe") < pl.col("_start"))
+        .select(STAY_KEY, "T_0", "timeframe")
+    )
+    return pl.concat([base, extra], how="vertical_relaxed")
+
+
+def _null_if_incomplete_pre_icu(
+    score: pl.Expr, components: pl.Expr, window_size: int
+) -> pl.Expr:
+    """
+    Null `score` before ICU admission unless every column of `components` has a value.
+
+    Missing components count as normal inside the stay, but the windows before the
+    dense range exist only where some input has data, so a missing component there
+    means the score cannot be assessed. Needs `T_0` and `timeframe` columns.
+    """
+    pre_icu = pl.col("timeframe") < (-pl.col("T_0")).floordiv(window_size)
+    return (
+        pl.when(pre_icu & pl.any_horizontal(components.is_null()))
+        .then(None)
+        .otherwise(score)
+    )
+
+
+def _sum_points(window_size: int) -> pl.Expr:
+    """Sum of all points columns, null for incomplete windows before ICU admission."""
+    points = pl.exclude(STAY_KEY, "T_0", "timeframe")
+    return _null_if_incomplete_pre_icu(pl.sum_horizontal(points), points, window_size)
+
+
 def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
     return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size).cast(int)
 
 
 def _optional_time_bounds_filter(
-    time_col: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
+    time_col: str,
+    window_size: int,
+    t_0: Optional[int],
+    t_1: Optional[int],
+    t0_col: str = "T_0",
+    t_minus1: Optional[int] = None,
 ) -> list[pl.Expr]:
-    conds: list[pl.Expr] = []
-    if t_0 is not None:
+    """
+    Predicates restricting timeframes to the range of interest.
+
+    The timeframe column is relative to each stay's T_0, floor((time - T_0)/window_size),
+    while `t_minus1` and `t_1` are in seconds from admission. The frame therefore needs a
+    T_0 column. T_0 is only the reference of the timeframes and never cuts the range.
+
+    Arguments
+    ---------
+        time_col : str
+            Timeframe column (relative to T_0).
+        window_size : int
+            Timeframe width in seconds.
+        t_0 : int, optional
+            Reference time of the timeframes; unused here, kept for call compatibility.
+        t_1 : int, optional
+            If given, keep the windows starting before t_1 (seconds from admission).
+        t0_col : str
+            Column with the T_0 of each stay (seconds from admission).
+        t_minus1 : int, optional
+            If given, keep the windows ending after t_minus1 (seconds from admission,
+            may be negative to reach back before ICU admission).
+
+    Returns
+    -------
+        list of pl.Expr to pass to `.filter()`
+    """
+    # never empty: some callers pass the list itself to `.filter()`, where [] is a null mask
+    conds: list[pl.Expr] = [pl.lit(True)]
+    if t_minus1 is not None:
         conds.append(
-            pl.col(time_col) >= pl.lit(int(t_0)).floordiv(window_size).sub(1)
+            (pl.col(time_col) + 1) * window_size + pl.col(t0_col) > int(t_minus1)
         )
     if t_1 is not None:
         conds.append(
-            pl.col(time_col) < pl.lit(int(t_1)).floordiv(window_size).add(1)
+            pl.col(time_col) * window_size + pl.col(t0_col) < int(t_1)
         )
     return conds
 
@@ -533,7 +628,7 @@ class ScoringTable:
                 elif closed == "both":
                     condition = col.is_between(lower, upper, closed="both")
                 elif closed == "neither":
-                    condition = col.is_between(lower, upper, closed="neither")
+                    condition = col.is_between(lower, upper, closed="none")
                 else:
                     raise ValueError(f"Unknown closure type: {closed}")
 

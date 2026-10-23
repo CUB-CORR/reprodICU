@@ -3,7 +3,9 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    T_MINUS1_DEFAULT,
     _build_t0,
+    _optional_time_bounds_filter,
     _to_lazy,
     _validate_required_data,
     get_patient_information,
@@ -15,7 +17,6 @@ SECONDS_IN_1MIN = 60
 SECONDS_IN_1H = 60 * SECONDS_IN_1MIN
 SECONDS_IN_12H = 12 * SECONDS_IN_1H
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
@@ -48,11 +49,11 @@ def URINE_OUTPUT(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
     weight_col: str = "Admission Weight (kg)",
-    context_windows: int = 1,
 ) -> pl.LazyFrame:
     """
     Calculate urine output per time window from intake/output timeseries.
@@ -71,7 +72,11 @@ def URINE_OUTPUT(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission). Windows starting
-            after t_1 (relative to each stay's T_0) are dropped.
+            at or after t_1 (relative to each stay's T_0) are dropped.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -80,9 +85,6 @@ def URINE_OUTPUT(
         weight_col : str, optional
             Name of weight column in patient_information to use for per-kg calculations.
             Defaults to "Admission Weight (kg)".
-        context_windows : int, optional
-            Number of windows before T_0 (timeframe < 0) to keep, e.g. as history for
-            rolling criteria. Default: 1.
 
     Returns
     -------
@@ -120,7 +122,6 @@ def URINE_OUTPUT(
 
     urine = (
         inout.join(all_stays_t0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .sort(STAY_KEY, TIME_KEY)
         .with_columns(
             pl.col(TIME_KEY)
@@ -199,13 +200,12 @@ def URINE_OUTPUT(
         "uo_interval_ml_per_kg",
     ]
 
-    # timeframe is relative to each stay's T_0, t_1 is relative to admission
-    window_start = pl.col("timeframe") * window_size + pl.col("T_0")
     return (
         aggregated.join(all_stays_t0, on=STAY_KEY, how="left")
         .filter(
-            pl.col("timeframe") >= -context_windows,
-            window_start <= t_1 if t_1 is not None else pl.lit(True),
+            *_optional_time_bounds_filter(
+                "timeframe", window_size, None, t_1, t_minus1=t_minus1
+            )
         )
         .select(select_cols)
     )

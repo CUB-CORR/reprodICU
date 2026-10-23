@@ -25,6 +25,9 @@ import polars as pl
 
 from ..clinical.neurological.GCS import GCS_TO_AVPU
 from ..common import (
+    _sum_points,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -167,6 +170,7 @@ def EWS(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -235,18 +239,19 @@ def EWS(
 
     # region assemble
     return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+        _add_sparse_timeframes(base, vitals_tf)
+        .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .select(
             STAY_KEY,
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "EWS Score"
             ),
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name),
+            pl.all().exclude(STAY_KEY, "T_0", "timeframe", timeframe_name),
         )
         .sort(STAY_KEY, timeframe_name)
     )
@@ -285,6 +290,7 @@ def MEWS(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -353,18 +359,19 @@ def MEWS(
 
     # region assemble
     return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+        _add_sparse_timeframes(base, vitals_tf)
+        .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .select(
             STAY_KEY,
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "MEWS Score"
             ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
+            pl.exclude(STAY_KEY, "T_0", "timeframe", timeframe_name),
         )
         .sort(STAY_KEY, timeframe_name)
     )
@@ -437,6 +444,7 @@ def NEWS(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -522,19 +530,20 @@ def NEWS(
 
     # region assemble
     return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+        _add_sparse_timeframes(base, vitals_tf, resp_tf)
+        .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .select(
             STAY_KEY,
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "NEWS Score"
             ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
+            pl.exclude(STAY_KEY, "T_0", "timeframe", timeframe_name),
         )
         .sort(STAY_KEY, timeframe_name)
     )
@@ -608,6 +617,7 @@ def NEWS2(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -708,19 +718,20 @@ def NEWS2(
 
     # region assemble
     return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
+        _add_sparse_timeframes(base, vitals_tf, resp_tf)
+        .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .select(
             STAY_KEY,
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "NEWS2 Score"
             ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
+            pl.exclude(STAY_KEY, "T_0", "timeframe", timeframe_name),
         )
         .sort(STAY_KEY, timeframe_name)
     )

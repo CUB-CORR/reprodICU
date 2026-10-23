@@ -28,6 +28,9 @@ from typing import Optional
 import polars as pl
 
 from ..common import (
+    _null_if_incomplete_pre_icu,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -41,7 +44,6 @@ from ..common import (
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
 ################################################################################
@@ -142,6 +144,7 @@ def SIRS(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     forward_fill: bool = True,
@@ -169,6 +172,10 @@ def SIRS(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -237,7 +244,6 @@ def SIRS(
         vitals.select(STAY_KEY, TIME_KEY, temp_col)
         .drop_nulls(temp_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
@@ -252,7 +258,6 @@ def SIRS(
         vitals.select(STAY_KEY, TIME_KEY, hr_col)
         .drop_nulls(hr_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(_hr_criterion(pl.col(hr_col)).max().alias("hr_criterion"))
@@ -264,7 +269,6 @@ def SIRS(
         vitals.select(STAY_KEY, TIME_KEY, rr_col)
         .drop_nulls(rr_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg((pl.col(rr_col).cast(pl.Float64) > 20).max().alias("rr_ge20"))
@@ -274,7 +278,6 @@ def SIRS(
         labs.select(STAY_KEY, TIME_KEY, paco2_col)
         .drop_nulls(paco2_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg((pl.col(paco2_col).cast(pl.Float64) < 32).max().alias("paco2_lt32"))
@@ -298,7 +301,6 @@ def SIRS(
     wbc_tf = (
         labs.select(STAY_KEY, TIME_KEY, wbc_col, bands_col)
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
@@ -312,33 +314,48 @@ def SIRS(
     )
 
     # region assemble
-    out = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
+    out = _add_sparse_timeframes(_build_base_timeframes(ALL_STAYS_T0, patient_information, window_size), temp_tf, hr_tf, resp_tf, wbc_tf)
     for part in [temp_tf, hr_tf, resp_tf, wbc_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     if forward_fill:
+        # carried indefinitely within the stay, but not from before ICU admission
+        icu_start = (-pl.col("T_0")).floordiv(window_size)
         out = out.with_columns(
-            pl.col(
+            pl.when(
+                pl.col(col).is_null()
+                & pl.when(pl.col(col).is_not_null())
+                .then(pl.col("timeframe"))
+                .forward_fill()
+                .ge(icu_start)
+            )
+            .then(pl.col(col).forward_fill())
+            .otherwise(pl.col(col))
+            .over(partition_by=STAY_KEY, order_by="timeframe")
+            .alias(col)
+            for col in (
                 "temperature_criterion",
                 "hr_criterion",
                 "rr_criterion",
                 "wbc_criterion",
             )
-            .forward_fill()
-            .over(partition_by=STAY_KEY, order_by="timeframe")
         )
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .with_columns(
-            pl.sum_horizontal(
+            _null_if_incomplete_pre_icu(
+                pl.sum_horizontal(
                 pl.col("temperature_criterion"),
                 pl.col("hr_criterion"),
                 pl.col("rr_criterion"),
                 pl.col("wbc_criterion"),
                 ignore_nulls=True,
+            ),
+                pl.col(["temperature_criterion", "hr_criterion", "rr_criterion", "wbc_criterion"]),
+                window_size,
             )
             .ge(2)
             .alias("SIRS Criteria fulfilled")

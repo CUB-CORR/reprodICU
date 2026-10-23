@@ -24,6 +24,8 @@ import polars as pl
 
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS_VIS
 from ..common import (
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
@@ -47,6 +49,7 @@ def VIS(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_name: str = None,
     aggregation: str = "mean",
@@ -88,6 +91,10 @@ def VIS(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day); must be a multiple
             of 3600. Window index is floor((time - T_0)/window_size).
@@ -240,11 +247,14 @@ def VIS(
 
     # All hours of the stay (no vasoactives = VIS 0), aggregated per window
     vis = (
-        _build_base_timeframes(ALL_STAYS_T0, patient_information, SECONDS_IN_1H)
+        _add_sparse_timeframes(
+            _build_base_timeframes(ALL_STAYS_T0, patient_information, SECONDS_IN_1H),
+            hourly_vis.rename({"Hour Relative to T_0": "timeframe"}),
+        )
         .rename({"timeframe": "Hour Relative to T_0"})
         .filter(
             _optional_time_bounds_filter(
-                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
+                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1, t_minus1=t_minus1
             )
         )
         .join(hourly_vis, on=[STAY_KEY, "Hour Relative to T_0"], how="left")

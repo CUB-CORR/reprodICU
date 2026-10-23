@@ -53,6 +53,7 @@ import polars as pl
 import yaml
 
 from ..common import (
+    T_MINUS1_DEFAULT,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -629,7 +630,7 @@ def rhee_consecutive_antibiotics(
         .pipe(_admission_time_to_seconds)
         .filter(
             pl.col("Drug Start Relative to Admission (seconds)")
-            >= pl.col("T_0")
+            >= 0
         )
         # Calendar days from admission covered by each antibiotic administration
         .with_columns(
@@ -763,7 +764,7 @@ def rhee_organ_dysfunction(
         .pipe(_admission_time_to_seconds)
         .filter(
             pl.col("Ventilation Start Relative to Admission (seconds)")
-            >= pl.col("T_0")
+            >= 0
         )
     )
 
@@ -810,7 +811,7 @@ def rhee_organ_dysfunction(
     labs_base = (
         timeseries_labs.select(STAY_KEY, TIME_KEY, *LABS)
         .join(all_stays_t0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0"))
+        .filter(pl.col(TIME_KEY) >= 0)
         .join(baselines, on=STAY_KEY, how="inner")
         .with_columns(
             pl.col(col).struct.field("value").alias(col) for col in LABS
@@ -881,9 +882,11 @@ def SEPSIS(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",
     organ_failure_criterion: str = "delta",
+    baseline_source: str = "icu",
     anchors: set[str] | None = None,
 ) -> pl.LazyFrame:
     """Compute Sepsis-3 labels in long format from raw inputs.
@@ -932,6 +935,10 @@ def SEPSIS(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 3600 = 1 hour). Window index is
             floor((time - T_0)/window_size).
@@ -943,6 +950,12 @@ def SEPSIS(
             the window [-48h, +24h] around suspicion time (Seymour) or antibiotic
             escalation (Shah), or 0 if the window starts at the beginning of the stay.
             "sirs" applies SIRS criteria instead of SOFA.
+        baseline_source : str, optional
+            Where the "delta" baseline SOFA may come from. "icu" (default) uses only
+            the ICU stay and counts values measured before ICU admission as missing
+            (as mimic-code). "pre_icu" also takes the lowest SOFA before ICU
+            admission (back to t_minus1) as baseline for the whole stay, so chronic
+            dysfunction is not counted as new. Only used with organ_failure_criterion="delta".
         anchors : set[str], optional
             Which onset anchors to compute: {"seymour", "shah", "rhee"}.
             Defaults to all three. Specify a subset to skip unnecessary computation.
@@ -999,6 +1012,9 @@ def SEPSIS(
     if organ_failure_criterion not in ("absolute", "delta", "sirs"):
         raise ValueError(f"organ_failure_criterion must be 'absolute', 'delta', or 'sirs', got {organ_failure_criterion!r}") # fmt: skip
 
+    if baseline_source not in ("icu", "pre_icu"):
+        raise ValueError(f"baseline_source must be 'icu' or 'pre_icu', got {baseline_source!r}") # fmt: skip
+
     if anchors is None:
         anchors = {"seymour", "shah", "rhee"}
     invalid = anchors - {"seymour", "shah", "rhee"}
@@ -1038,6 +1054,8 @@ def SEPSIS(
         ventilation,
         t_0=t_0,
         t_1=t_1,
+        t_minus1=0,  # dense from ICU admission; the onset logic rolls over rows
+        _carry_pre_icu=False,
         window_size=window_size,
         t_0_per_stay=t_0_per_stay,
         timeframe_name="timeframe",
@@ -1054,6 +1072,7 @@ def SEPSIS(
         timeseries_labs,
         t_0=t_0,
         t_1=t_1,
+        t_minus1=0,  # dense from ICU admission; the onset logic rolls over rows
         window_size=window_size,
         t_0_per_stay=t_0_per_stay,
         timeframe_name="timeframe",
@@ -1216,8 +1235,35 @@ def SEPSIS(
         .rolling_min(window_size=max(1, SECONDS_PER_DAY // window_size), min_samples=1)
         .shift(1)
         .over(STAY_KEY, order_by="timeframe")
-        .alias("baseline_sofa_score")
     )
+    if baseline_source == "pre_icu":
+        # ... and the lowest SOFA before ICU admission
+        sofa_pre_icu_min = (
+            SOFA(
+                patient_information,
+                timeseries_vitals,
+                timeseries_labs,
+                timeseries_resp,
+                timeseries_inout,
+                medications,
+                ventilation,
+                t_0=t_0,
+                t_1=0,
+                t_minus1=t_minus1,
+                window_size=window_size,
+                t_0_per_stay=t_0_per_stay,
+                timeframe_name="timeframe",
+            )
+            .join(ALL_STAYS_T0, on=STAY_KEY)
+            .filter(pl.col("timeframe") < (-pl.col("T_0")).floordiv(window_size))
+            .group_by(STAY_KEY)
+            .agg(pl.col("SOFA Score").min().alias("pre_icu_sofa_min"))
+        )
+        sofa_base = sofa_base.join(sofa_pre_icu_min, on=STAY_KEY, how="left")
+        sofa_pre_24h_min = pl.min_horizontal(
+            sofa_pre_24h_min, pl.col("pre_icu_sofa_min")
+        )
+    sofa_pre_24h_min = sofa_pre_24h_min.alias("baseline_sofa_score")
 
     # Seymour: SOFA-based onset (bounded explode to avoid stay-only join blowup)
     # Explode to bounded candidate range (end_timeframe - baseline_timeframe, typically ~72-97 hours at 1h window_size)
@@ -1724,7 +1770,7 @@ def SEPSIS(
         .join(sepsis_abx_events, on=[STAY_KEY, "timeframe"], how="left")
         .join(onset_labels_rhee, on=[STAY_KEY, "timeframe"], how="left")
         .select(*cols)
-        .filter(*_optional_time_bounds_filter("timeframe", window_size, t_0, t_1))
+        .filter(*_optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1))
         .unique()
         .sort(STAY_KEY, "timeframe")
     )

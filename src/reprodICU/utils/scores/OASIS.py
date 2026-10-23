@@ -26,6 +26,9 @@ import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    _null_if_incomplete_pre_icu,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -46,7 +49,6 @@ TIME_KEY = "Time Relative to Admission (seconds)"
 
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
 ################################################################################
@@ -191,6 +193,7 @@ def OASIS(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_name: str = None,
 ) -> pl.LazyFrame:
@@ -219,6 +222,10 @@ def OASIS(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -319,7 +326,6 @@ def OASIS(
             temp_col,
         )
         .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .with_columns(
             _gcs_points(pl.col(gcs_col)).alias("gcs_points"),
@@ -382,7 +388,7 @@ def OASIS(
     base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
-    out = base
+    out = _add_sparse_timeframes(base, vitals_scores, ventilation_scores, urine_scores)
     for part in [vitals_scores, ventilation_scores, urine_scores]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
@@ -391,10 +397,11 @@ def OASIS(
     return (
         out.join(patient_scores, on=STAY_KEY, how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .with_columns(
-            pl.sum_horizontal(
+            _null_if_incomplete_pre_icu(
+                pl.sum_horizontal(
                 "age_points",
                 "pre_icu_los_points",
                 "elective_surgery_points",
@@ -406,6 +413,9 @@ def OASIS(
                 "ventilation_points",
                 "urine_output_points",
                 ignore_nulls=True,
+            ),
+                pl.col(["age_points", "pre_icu_los_points", "elective_surgery_points", "gcs_points", "hr_points", "map_points", "rr_points", "temperature_points", "ventilation_points", "urine_output_points"]),
+                window_size,
             ).alias("OASIS Score")
         )
         .select(

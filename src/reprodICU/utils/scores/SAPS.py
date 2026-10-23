@@ -24,6 +24,9 @@ import polars as pl
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    _sum_points,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -290,6 +293,7 @@ def SAPS2(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -452,16 +456,18 @@ def SAPS2(
     base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
-    out = base.join(static_pts, on=STAY_KEY, how="left")
+    out = _add_sparse_timeframes(
+        base, vitals_tf, labs_tf, pf_ratio, uo_tf
+    ).join(static_pts, on=STAY_KEY, how="left")
     for part in [vitals_tf, labs_tf, pf_ratio, uo_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "SAPS-II Score"
             )
         )
@@ -470,7 +476,7 @@ def SAPS2(
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
             "SAPS-II Score",
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name, "SAPS-II Score"),
+            pl.all().exclude(STAY_KEY, "T_0", "timeframe", timeframe_name, "SAPS-II Score"),
         )
     )
 

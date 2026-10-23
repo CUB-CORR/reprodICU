@@ -38,10 +38,12 @@ import polars as pl
 
 from ...admission import COMMON_ADMISSION_CATEGORIES
 from ...common import (
+    T_MINUS1_DEFAULT,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
+    _optional_time_bounds_filter,
     _to_lazy,
     _validate_required_data,
     extract_struct_value,
@@ -142,6 +144,7 @@ def AKI_FB(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
@@ -186,6 +189,10 @@ def AKI_FB(
         t_1 : int, optional
             Optional upper time bound (seconds from admission); timeframes starting at
             or after it are dropped.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -247,10 +254,12 @@ def AKI_FB(
         patient_information.select(STAY_KEY), t_0_per_stay, t_0
     )
     base = _build_base_timeframes(all_stays_t0, patient_information, window_size)
-    if t_1 is not None:
-        base = base.filter(
-            pl.col("T_0") + pl.col("timeframe") * window_size < t_1
+    # the score is defined from the day of diagnosis (timeframe 0) onwards
+    base = base.filter(pl.col("timeframe") >= 0).filter(
+        *_optional_time_bounds_filter(
+            "timeframe", window_size, t_0, t_1, t_minus1=t_minus1
         )
+    )
     timeframe_name = _get_timeframe_name(
         timeframe_name, window_size, t_0, t_0_per_stay
     )

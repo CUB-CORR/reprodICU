@@ -29,6 +29,9 @@ import polars as pl
 
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
+    _sum_points,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -219,6 +222,7 @@ def LODS(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -250,6 +254,10 @@ def LODS(
             Ignored when t_0_per_stay is provided.
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         timeframe_name : str, optional
@@ -400,16 +408,16 @@ def LODS(
     base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
-    out = base
+    out = _add_sparse_timeframes(base, vitals_tf, labs_tf, resp_tf, uo_tf)
     for part in [vitals_tf, labs_tf, resp_tf, uo_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "LODS Score"
             )
         )
@@ -418,7 +426,7 @@ def LODS(
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
             "LODS Score",
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name, "LODS Score"),
+            pl.all().exclude(STAY_KEY, "T_0", "timeframe", timeframe_name, "LODS Score"),
         )
         .sort(STAY_KEY, timeframe_name)
     )
@@ -440,6 +448,7 @@ def mLODS(
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -470,6 +479,10 @@ def mLODS(
             Ignored when t_0_per_stay is provided.
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         timeframe_name : str, optional
@@ -597,16 +610,16 @@ def mLODS(
     base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
 
     # region assemble
-    out = base
+    out = _add_sparse_timeframes(base, vitals_tf, labs_tf, resp_tf)
     for part in [vitals_tf, labs_tf, resp_tf]:
         out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
         )
         .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
+            _sum_points(window_size).alias(
                 "mLODS Score"
             )
         )
@@ -615,7 +628,7 @@ def mLODS(
             "T_0",
             pl.col("timeframe").alias(timeframe_name),
             "mLODS Score",
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name, "mLODS Score"),
+            pl.all().exclude(STAY_KEY, "T_0", "timeframe", timeframe_name, "mLODS Score"),
         )
         .sort(STAY_KEY, timeframe_name)
     )

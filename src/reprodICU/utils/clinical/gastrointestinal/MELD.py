@@ -19,6 +19,8 @@ from typing import Optional
 import polars as pl
 
 from ...common import (
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -194,6 +196,7 @@ def MELD(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
+    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",
     timeframe_name: Optional[str] = None,
@@ -239,6 +242,10 @@ def MELD(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
+        t_minus1 : int, optional
+            Optional lower time bound (seconds from admission, may be negative);
+            timeframes ending at or before it are dropped. Defaults to 30 days before
+            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -308,17 +315,14 @@ def MELD(
                 "Time Relative to T_0 (seconds)"
             ),
         )
-        .filter(pl.col("Time Relative to T_0 (seconds)") >= 0)
     )
 
     # Apply optional time bounds
-    for cond in _optional_time_bounds_filter(
-        "timeframe",
-        window_size,
-        t_0 // window_size if t_0 is not None else None,
-        t_1 // window_size if t_1 is not None else None,
-    ):
-        lab_data = lab_data.filter(cond)
+    lab_data = lab_data.filter(
+        *_optional_time_bounds_filter(
+            "timeframe", window_size, t_0, t_1, t_minus1=t_minus1
+        )
+    )
 
     # Extract lab values from structs
     lab_data = lab_data.with_columns(
@@ -401,7 +405,9 @@ def MELD(
         etiology_per_patient = _determine_liver_etiology(diagnoses)
 
     # Combine all data starting from base timeframes, then join available data
-    result = base.join(lab_per_frame, on=[STAY_KEY, "timeframe"], how="left")
+    result = _add_sparse_timeframes(base, lab_per_frame).join(
+        lab_per_frame, on=[STAY_KEY, "timeframe"], how="left"
+    )
 
     if rrt_status_per_frame is not None:
         result = result.join(
