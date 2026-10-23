@@ -4,7 +4,6 @@ import polars as pl
 
 from ...common import (
     _build_t0,
-    _optional_time_bounds_filter,
     _to_lazy,
     _validate_required_data,
     get_patient_information,
@@ -53,6 +52,7 @@ def URINE_OUTPUT(
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
     weight_col: str = "Admission Weight (kg)",
+    context_windows: int = 1,
 ) -> pl.LazyFrame:
     """
     Calculate urine output per time window from intake/output timeseries.
@@ -70,7 +70,8 @@ def URINE_OUTPUT(
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
+            Optional upper time bound (seconds from admission). Windows starting
+            after t_1 (relative to each stay's T_0) are dropped.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -79,6 +80,9 @@ def URINE_OUTPUT(
         weight_col : str, optional
             Name of weight column in patient_information to use for per-kg calculations.
             Defaults to "Admission Weight (kg)".
+        context_windows : int, optional
+            Number of windows before T_0 (timeframe < 0) to keep, e.g. as history for
+            rolling criteria. Default: 1.
 
     Returns
     -------
@@ -195,9 +199,16 @@ def URINE_OUTPUT(
         "uo_interval_ml_per_kg",
     ]
 
-    return aggregated.filter(
-        _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-    ).select(select_cols)
+    # timeframe is relative to each stay's T_0, t_1 is relative to admission
+    window_start = pl.col("timeframe") * window_size + pl.col("T_0")
+    return (
+        aggregated.join(all_stays_t0, on=STAY_KEY, how="left")
+        .filter(
+            pl.col("timeframe") >= -context_windows,
+            window_start <= t_1 if t_1 is not None else pl.lit(True),
+        )
+        .select(select_cols)
+    )
 
 
 __all__ = ["URINE_OUTPUT"]
