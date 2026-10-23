@@ -46,7 +46,7 @@ from ..base import (
 )
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_RATE
 from ..common import (
     ScoringTable,
     _validate_required_data,
@@ -883,8 +883,8 @@ def SOFA2(
         window_size=window.window_size,
     )
 
-    # region urine output (refactored to call URINE_OUTPUT)
-    uo_base = URINE_OUTPUT(
+    # region urine output (hourly rates)
+    uo_base = URINE_OUTPUT_RATE(
         patient_information=patient_information,
         timeseries_inout=timeseries_inout,
         t_0=window.t_0,

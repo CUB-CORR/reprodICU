@@ -40,7 +40,7 @@ from ..base import (
     intervention_per_timeframe,
     with_windows,
 )
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_VOLUME
 from ..common import (
     ScoringTable,
     _validate_required_data,
@@ -377,7 +377,7 @@ def LODS(
     )
 
     uo_tf = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_VOLUME(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
             t_0=window.t_0,

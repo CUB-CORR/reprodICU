@@ -64,7 +64,7 @@ from ...common import (
 )
 from ...laboratory.renal.CREATININE import reverse_CKD_EPI, reverse_MDRD
 from ..IDEAL_BODY_WEIGHT import IDEAL_BODY_WEIGHT_DEVINE
-from .URINE_OUTPUT import URINE_OUTPUT
+from .URINE_OUTPUT import URINE_OUTPUT_RATE
 
 HOSPITAL_KEY = "Global Hospital Stay ID"
 HOSPITAL_TIME_KEY = "Time Relative to Hospital Admission (seconds)"
@@ -644,7 +644,8 @@ def _uo_stages(
         )
         if fixed_block:
             full &= (hour + 1) % n == 0
-        return full, window_expr("_key", f"{n}i")
+        # rounded: a rolling sum of 7.2 can come out as 7.199999999999999
+        return full, window_expr("_key", f"{n}i").round(6)
 
     (full6, v6), (full12, v12), (full24, v24) = window(6), window(12), window(24)
     limit_1, limit_2, limit_3 = limits
@@ -723,8 +724,8 @@ def AKI_KDIGO(
     *,
     version: str = "2012",
     weight_type: str = "ideal",
-    consecutive: bool = True,
-    any_period: bool = False,
+    consecutive: bool = False,
+    any_period: bool = True,
     fixed_block: bool = False,
     include_resolution: bool = False,
     hindsight_baseline: bool = False,
@@ -766,9 +767,9 @@ def AKI_KDIGO(
         weight_type : str, optional
             "ideal" (Devine formula) or "actual". Only used when version="2026". Default: "ideal".
         consecutive : bool, optional
-            Include AKI stages based on consecutive hourly UO criteria. Default: True.
+            Include AKI stages based on consecutive hourly UO criteria. Default: False.
         any_period : bool, optional
-            Include AKI stages based on any-period rolling UO criteria. Default: False.
+            Include AKI stages based on any-period rolling UO criteria (mean over the window, as in corr-vars). Default: True.
         fixed_block : bool, optional
             Include AKI stages based on fixed-block UO criteria. Default: False.
         include_resolution : bool, optional
@@ -927,7 +928,7 @@ def AKI_KDIGO(
 
     # region 3.5. Prepare urine output data
     urine_data = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_RATE(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
             t_0=window.t_0,

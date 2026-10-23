@@ -58,7 +58,9 @@ from ..base import (
     STAY_KEY,
     TIME_KEY,
     Window,
+    _admission_time_to_seconds,
     _assign_timeframe,
+    _calendar_day_from_admission,
     _window_context,
     with_windows,
 )
@@ -91,56 +93,6 @@ def _read_antibiotic_ranks() -> dict[str, int]:
         data = yaml.safe_load(f) or {}
     # Expect mapping { ingredient (str): rank (int) }
     return {str(k): int(v) for k, v in data.items()}
-
-
-def _admission_time_to_seconds(data: pl.LazyFrame) -> pl.LazyFrame:
-    """Extract seconds since midnight from a pl.Time column.
-
-    Returns
-    -------
-        Expression yielding seconds since midnight (0-86399)
-
-    Example: 14:30:00 -> 14*3600 + 30*60 = 52200 seconds
-    """
-    return data.with_columns(
-        (pl.col("Admission Time (24h)") - pl.time(0, 0, 0))
-        .dt.total_seconds()
-        .fill_null(0)  # Default to midnight if missing
-        .cast(pl.Int64)
-        .alias("Admission Time (seconds)")
-    )
-
-
-def _calendar_day_from_admission(
-    time_seconds: pl.Expr, admission_seconds_into_day: pl.Expr
-) -> pl.Expr:
-    """Compute calendar day number from admission given admission time.
-
-    Calendar day 0 is the day of admission (from midnight to next midnight).
-    Takes into account the admission time within that day.
-
-    Arguments
-    ---------
-        time_seconds : pl.Expr
-            Time relative to admission in seconds
-        admission_seconds_into_day : pl.Expr
-            Seconds from midnight to admission time (0-86399)
-
-    Returns
-    -------
-        Calendar day index (0 = admission day, 1 = next day, -1 = day before, etc.)
-
-    Examples
-    --------
-        Admission at 14:00 (50400 seconds into day)
-        - time=-3600 (1h before admission = 13:00) -> day 0 (same calendar day)
-        - time=-39600 (11h before admission = 03:00) -> day -1 (previous calendar day)
-        - time=36000 (10h after admission = 00:00 next day) -> day 1
-    """
-    # Seconds from the start of admission day
-    seconds_from_day_start = time_seconds + admission_seconds_into_day
-    # Integer division by SECONDS_IN_1D gives calendar day
-    return seconds_from_day_start.floordiv(SECONDS_IN_1D).cast(int)
 
 
 def rhee_compute_lab_baselines(

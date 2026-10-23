@@ -46,7 +46,7 @@ from ..base import (
     with_windows,
 )
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_VOLUME
 from ..common import (
     FILTER_NOT_NULL,
     NULL_NON_FINITE,
@@ -959,7 +959,7 @@ def APS3(
 
     # Urine output (scaled to 24h)
     uo_tf = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_VOLUME(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
             t_0=window.t_0,

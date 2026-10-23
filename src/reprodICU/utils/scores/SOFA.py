@@ -46,7 +46,7 @@ from ..base import (
 )
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_VOLUME
 from ..common import (
     FILTER_NOT_NULL,
     ScoringTable,
@@ -648,9 +648,9 @@ def SOFA(
         )
     )
 
-    # region urine output (refactored to call URINE_OUTPUT)
+    # region urine output (daily totals)
     uo_tf = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_VOLUME(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
             t_0=window.t_0,

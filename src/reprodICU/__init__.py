@@ -172,7 +172,7 @@ def __dir__() -> list:
         "DatasetLoader",
         "reprodICUPaths",
         # Submodules (namespaced access)
-        "utils",  # utils.scores.SOFA, utils.clinical.URINE_OUTPUT, etc.
+        "utils",  # utils.scores.SOFA, utils.clinical.URINE_OUTPUT_VOLUME, etc.
         "interfaces",  # interfaces.convert_to_omop, interfaces.convert_to_clif
         "build",  # build.build_patient_information, build.build_all
         "convert",  # convert.convert_to_omop, convert.convert_to_clif
