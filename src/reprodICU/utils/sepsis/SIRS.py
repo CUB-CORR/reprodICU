@@ -4,7 +4,7 @@ SIRS: compute SIRS in long format directly from raw inputs.
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - Temperature criterion (1 if <36°C or >38°C, 0 otherwise)
 - Heart rate criterion (1 if >90 bpm, 0 otherwise)
 - Respiratory rate criterion (1 if >20 bpm or PaCO2 <32 mmHg, 0 otherwise)
@@ -27,22 +27,25 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
+    _assign_timeframe,
+    _finalize,
+    _null_if_incomplete_pre_icu,
+    _window_context,
+    with_windows,
+)
 from ..common import (
     FILTER_NOT_NULL,
-    _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
     _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
     get_timeseries_vitals,
 )
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
+from ..scores.SOFA import _forward_fill_within
 
 
 ################################################################################
@@ -132,18 +135,14 @@ def _wbc_criterion(wbc: pl.Expr, bands: pl.Expr) -> pl.Expr:
 
 
 # region SIRS
+@with_windows
 def SIRS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     forward_fill: bool = True,
-    timeframe_name: str = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute SIRS criteria with automatic dataset loading.
@@ -160,22 +159,8 @@ def SIRS(
             Timeseries vitals data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Timeseries labs data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Semantic only; output column remains a numeric timeframe.
         forward_fill : bool, optional
             Whether to forward-fill values within windows. Defaults to True.
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
 
     Sources
     -------
@@ -207,8 +192,6 @@ def SIRS(
     _validate_required_data("SIRS", required)
 
     # Strict original column names
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
 
     # Vitals columns
     vitals = timeseries_vitals.lazy()
@@ -224,19 +207,14 @@ def SIRS(
 
     # Base frames
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # region temperature criterion
     temp_tf = (
         vitals.select(STAY_KEY, TIME_KEY, temp_col)
         .drop_nulls(temp_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _temperature_criterion(pl.col(temp_col))
@@ -249,9 +227,8 @@ def SIRS(
     hr_tf = (
         vitals.select(STAY_KEY, TIME_KEY, hr_col)
         .drop_nulls(hr_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(_hr_criterion(pl.col(hr_col)).max().alias("hr_criterion"))
     )
@@ -261,9 +238,8 @@ def SIRS(
     rr_ge20_tf = (
         vitals.select(STAY_KEY, TIME_KEY, rr_col)
         .drop_nulls(rr_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg((pl.col(rr_col).cast(pl.Float64) > 20).max().alias("rr_ge20"))
     )
@@ -271,9 +247,8 @@ def SIRS(
     paco2_lt32_tf = (
         labs.select(STAY_KEY, TIME_KEY, paco2_col)
         .drop_nulls(paco2_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg((pl.col(paco2_col).cast(pl.Float64) < 32).max().alias("paco2_lt32"))
     )
@@ -295,9 +270,8 @@ def SIRS(
     # region white blood cells criterion
     wbc_tf = (
         labs.select(STAY_KEY, TIME_KEY, wbc_col, bands_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _wbc_criterion(
@@ -310,48 +284,42 @@ def SIRS(
     )
 
     # region assemble
-    out = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
-    for part in [temp_tf, hr_tf, resp_tf, wbc_tf]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
+    out = _assemble(ctx, temp_tf, hr_tf, resp_tf, wbc_tf)
 
     if forward_fill:
+        # carried indefinitely within the stay, but not from before ICU admission
         out = out.with_columns(
-            pl.col(
-                "temperature_criterion",
-                "hr_criterion",
-                "rr_criterion",
-                "wbc_criterion",
+            _forward_fill_within(
+                ["temperature_criterion", "hr_criterion", "rr_criterion", "wbc_criterion"],
+                max_windows=2**62,
+                stay_key=STAY_KEY,
+                icu_start=(-pl.col("T_0")).floordiv(window.window_size),
             )
-            .forward_fill()
-            .over(partition_by=STAY_KEY, order_by="timeframe")
         )
 
-    return (
-        out.filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .with_columns(
-            pl.sum_horizontal(
+    return _finalize(
+        out.with_columns(
+            _null_if_incomplete_pre_icu(
+                pl.sum_horizontal(
                 pl.col("temperature_criterion"),
                 pl.col("hr_criterion"),
                 pl.col("rr_criterion"),
                 pl.col("wbc_criterion"),
                 ignore_nulls=True,
+            ),
+                pl.col(["temperature_criterion", "hr_criterion", "rr_criterion", "wbc_criterion"]),
+                window.window_size,
             )
             .ge(2)
             .alias("SIRS Criteria fulfilled")
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "SIRS Criteria fulfilled",
-            pl.col("temperature_criterion").alias("SIRS Temperature Criterion"),
-            pl.col("hr_criterion").alias("SIRS Heart rate Criterion"),
-            pl.col("rr_criterion").alias("SIRS Respiratory rate Criterion"),
-            pl.col("wbc_criterion").alias("SIRS WBC Criterion"),
-        )
-        .sort(STAY_KEY, timeframe_name)
+        ),
+        ctx,
+        "SIRS Criteria fulfilled",
+        pl.col("temperature_criterion").alias("SIRS Temperature Criterion"),
+        pl.col("hr_criterion").alias("SIRS Heart rate Criterion"),
+        pl.col("rr_criterion").alias("SIRS Respiratory rate Criterion"),
+        pl.col("wbc_criterion").alias("SIRS WBC Criterion"),
+        rest=False,
     )
 
 

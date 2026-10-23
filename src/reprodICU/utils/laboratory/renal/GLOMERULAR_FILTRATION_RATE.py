@@ -51,9 +51,11 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
+from ...base import (
+    _to_lazy,
+)
 from ...clinical.IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
 from ...common import (
-    _to_lazy,
     _validate_required_data,
     extract_struct_value,
     get_patient_information,

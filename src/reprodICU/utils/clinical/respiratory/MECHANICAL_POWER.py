@@ -23,26 +23,30 @@ from typing import Optional
 
 import polars as pl
 
+from ...base import (
+    Reference,
+    SECONDS_IN_6H,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
+    _to_lazy,
+    with_reference_time,
+)
 from ...common import (
     FILTER_NOT_NULL,
-    _build_t0,
-    _to_lazy,
     _validate_required_data,
     get_patient_information,
     get_timeseries_respiratory,
 )
 from ...core import RESPIRATORY_PARAMS
 
-SECONDS_IN_6H = 6 * 60 * 60
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
 
 # region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     columns = ["TV", "RR", "Pplat", "PIP", "PEEP", "FiO2"]
     return (
-        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        RESPIRATORY_PARAMS(timeseries_resp=resp)
         .select(STAY_KEY, TIME_KEY, *columns)
         .pipe(FILTER_NOT_NULL, columns)
         .sort(STAY_KEY, TIME_KEY)
@@ -70,12 +74,12 @@ def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
 
 
 # region mechanical power
+@with_reference_time
 def MECHANICAL_POWER(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate mechanical power timeseries from respiratory timeseries.
@@ -86,11 +90,6 @@ def MECHANICAL_POWER(
             Patient/stay-level information. Loaded automatically if None.
         timeseries_resp : pl.LazyFrame, optional
             Respiratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -115,10 +114,7 @@ def MECHANICAL_POWER(
 
     patient_information = _to_lazy(patient_information)
     timeseries_resp = _to_lazy(timeseries_resp)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_resp = _improve_resp(timeseries_resp)
 
@@ -139,16 +135,7 @@ def MECHANICAL_POWER(
         .select(STAY_KEY, TIME_KEY, "Mechanical Power (J/min)")
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        mechanical_power = (
-            mechanical_power.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    mechanical_power = _relative_to_t0(mechanical_power, all_stays_t0, ref)
 
     return mechanical_power
 

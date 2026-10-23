@@ -2,9 +2,7 @@ from typing import Optional
 
 import polars as pl
 
-from .common import _to_lazy
-
-SECONDS_IN_1H = 60 * 60
+from .base import SECONDS_IN_1H, _to_lazy
 
 
 def FIX_WINDOW_BORDERS(

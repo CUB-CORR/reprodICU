@@ -2,16 +2,18 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    _to_lazy,
+)
 from ..common import (
     NULL_NON_FINITE,
-    _to_lazy,
     _validate_required_data,
     get_timeseries_respiratory,
 )
 
 
 def RESPIRATORY_PARAMS(
-    timeseries_respiratory: Optional[pl.LazyFrame] = None,
+    timeseries_resp: Optional[pl.LazyFrame] = None,
 ) -> pl.LazyFrame:
     """
     Coalesce invasive and non-invasive blood pressure measurements into a unified timeseries with columns:
@@ -28,7 +30,7 @@ def RESPIRATORY_PARAMS(
     MAP = (SBP + 2 * DBP) / 3
 
     Parameters:
-        timeseries_respiratory : pl.LazyFrame, optional
+        timeseries_resp : pl.LazyFrame, optional
             Respiratory parameters timeseries data. Loaded automatically if None.
 
     Returns
@@ -45,19 +47,19 @@ def RESPIRATORY_PARAMS(
             - `LPM`: Oxygen flow in liters per minute (LPM)
     """
     # Load defaults if not provided
-    if timeseries_respiratory is None:
-        timeseries_respiratory = get_timeseries_respiratory()
+    if timeseries_resp is None:
+        timeseries_resp = get_timeseries_respiratory()
 
     # Validate all required data is available
     required = {
-        "timeseries_respiratory": timeseries_respiratory,
+        "timeseries_resp": timeseries_resp,
     }
     _validate_required_data("RESPIRATORY_PARAMS", required)
 
-    timeseries_respiratory = _to_lazy(timeseries_respiratory)
+    timeseries_resp = _to_lazy(timeseries_resp)
 
     return (
-        timeseries_respiratory.pipe(NULL_NON_FINITE)
+        timeseries_resp.pipe(NULL_NON_FINITE)
         .with_columns(
             pl.max_horizontal(
                 "Tidal volume setting Ventilator",

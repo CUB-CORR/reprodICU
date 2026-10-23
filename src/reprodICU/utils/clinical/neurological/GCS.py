@@ -27,9 +27,7 @@ SOURCES
 
 import polars as pl
 
-from ...common import _to_lazy
-
-STAY_KEY = "Global ICU Stay ID"
+from ...base import STAY_KEY, _to_lazy
 
 
 def GCS_NT_CARRY_FORWARD(

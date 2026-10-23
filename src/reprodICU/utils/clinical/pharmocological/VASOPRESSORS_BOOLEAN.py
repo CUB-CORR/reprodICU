@@ -9,20 +9,21 @@ from typing import Optional
 
 import polars as pl
 
+from ...base import (
+    SECONDS_IN_1MIN,
+    STAY_KEY,
+)
 from ...common import (
     _validate_required_data,
     get_medications,
     get_patient_information,
 )
 from .ALIGNED_UNITS import ALIGNED_UNITS
-
-STAY_KEY = "Global ICU Stay ID"
 START_KEY = "Drug Start Relative to Admission (seconds)"
 END_KEY = "Drug End Relative to Admission (seconds)"
 
-SECONDS_IN_5MIN = (
-    5 * 60
-)  # grace period to allow for minor gaps in continuous infusions
+# grace period to allow for minor gaps in continuous infusions
+GRACE_PERIOD = 5 * SECONDS_IN_1MIN
 
 VASOPRESSORS = {
     # "vasopressor": (MIN_RATE, MAX_RATE),
@@ -113,7 +114,7 @@ def VASOPRESSORS_BOOLEAN(
                     partition_by=[STAY_KEY, "Drug Ingredient"],
                     order_by=START_KEY,
                 )
-                + SECONDS_IN_5MIN
+                + GRACE_PERIOD
             )
             .fill_null(True)
             .alias("Starts at previous end"),

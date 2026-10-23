@@ -16,8 +16,10 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import (
+from ..base import (
     _to_lazy,
+)
+from ..common import (
     _validate_required_data,
     get_diagnoses,
     get_patient_information,
@@ -88,7 +90,7 @@ def ANGUS_SEPSIS(
     diagnoses: Optional[pl.LazyFrame] = None,
     procedures: Optional[pl.LazyFrame] = None,
     patient_information: Optional[pl.LazyFrame] = None,
-    mechanical_ventilation: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
 ) -> pl.LazyFrame:
     """
     Calculate Angus sepsis classification from diagnosis and procedure codes.
@@ -107,7 +109,7 @@ def ANGUS_SEPSIS(
             Procedure data. Loaded automatically if None.
         patient_information : pl.LazyFrame, optional
             Patient/stay-level information. Loaded automatically if None.
-        mechanical_ventilation : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Mechanical ventilation concept data. Loaded automatically if None.
 
     Returns
@@ -127,22 +129,22 @@ def ANGUS_SEPSIS(
         procedures = get_procedures()
     if patient_information is None:
         patient_information = get_patient_information()
-    if mechanical_ventilation is None:
-        mechanical_ventilation = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
         "diagnoses": diagnoses,
         "procedures": procedures,
         "patient_information": patient_information,
-        "mechanical_ventilation": mechanical_ventilation,
+        "ventilation": ventilation,
     }
     _validate_required_data("Angus sepsis", required)
 
     diagnoses = _to_lazy(diagnoses)
     procedures = _to_lazy(procedures)
     patient_information = _to_lazy(patient_information)
-    mechanical_ventilation = _to_lazy(mechanical_ventilation)
+    ventilation = _to_lazy(ventilation)
 
     IDs = patient_information.select(
         "Global Person ID", "Global Hospital Stay ID", "Global ICU Stay ID"
@@ -177,7 +179,7 @@ def ANGUS_SEPSIS(
     )
 
     MECHANICAL_VENTILATION = (
-        mechanical_ventilation.filter(
+        ventilation.filter(
             pl.col("Ventilation Type").is_in(
                 ["invasive ventilation", "tracheostomy"]
             ),

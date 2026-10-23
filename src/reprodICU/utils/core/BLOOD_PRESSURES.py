@@ -2,9 +2,11 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    _to_lazy,
+)
 from ..common import (
     NULL_NON_FINITE,
-    _to_lazy,
     _validate_required_data,
     get_timeseries_vitals,
 )

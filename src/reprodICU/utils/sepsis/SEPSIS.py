@@ -16,7 +16,7 @@ is assumed for ICU patients.
 
 Output columns per row:
 - Global ICU Stay ID
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - SEPSIS      (Seymour-anchored on culture+antibiotic pair) -> "SEPSIS" | "SHOCK"
 - SEPSIS_ABX  (Shah-anchored on antibiotic escalation)      -> "SEPSIS" | "SHOCK"
 - SEPSIS_RHEE (Rhee EHR surveillance definition)            -> "SEPSIS"
@@ -52,10 +52,19 @@ from typing import Optional
 import polars as pl
 import yaml
 
-from ..common import (
+from ..base import (
+    SECONDS_IN_1D,
+    SECONDS_IN_1H,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _admission_time_to_seconds,
     _assign_timeframe,
-    _build_t0,
-    _optional_timeframe_bounds_filter,
+    _calendar_day_from_admission,
+    _window_context,
+    with_windows,
+)
+from ..common import (
     _validate_required_data,
     get_medications,
     get_microbiology,
@@ -72,13 +81,9 @@ from ..scores.SOFA import SOFA
 from .SIRS import SIRS
 
 # seconds constants
-SECONDS_PER_HOUR = 60 * 60
-SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
-TWELVE_HOURS = 12 * SECONDS_PER_HOUR
+TWELVE_HOURS = 12 * SECONDS_IN_1H
 
 # strict time column name used across helpers
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 
 
 # region helpers
@@ -90,50 +95,6 @@ def _read_antibiotic_ranks() -> dict[str, int]:
     return {str(k): int(v) for k, v in data.items()}
 
 
-def _admission_time_to_seconds(data: pl.LazyFrame) -> pl.LazyFrame:
-    """Extract seconds since midnight from a pl.Time column.
-
-    Returns:
-        Expression yielding seconds since midnight (0-86399)
-
-    Example: 14:30:00 -> 14*3600 + 30*60 = 52200 seconds
-    """
-    return data.with_columns(
-        (pl.col("Admission Time (24h)") - pl.time(0, 0, 0))
-        .dt.total_seconds()
-        .fill_null(0)  # Default to midnight if missing
-        .cast(pl.Int64)
-        .alias("Admission Time (seconds)")
-    )
-
-
-def _calendar_day_from_admission(
-    time_seconds: pl.Expr, admission_seconds_into_day: pl.Expr
-) -> pl.Expr:
-    """Compute calendar day number from admission given admission time.
-
-    Calendar day 0 is the day of admission (from midnight to next midnight).
-    Takes into account the admission time within that day.
-
-    Args:
-        time_seconds: Time relative to admission in seconds
-        admission_seconds_into_day: Seconds from midnight to admission time (0-86399)
-
-    Returns:
-        Calendar day index (0 = admission day, 1 = next day, -1 = day before, etc.)
-
-    Example:
-        Admission at 14:00 (50400 seconds into day)
-        - time=-3600 (1h before admission = 13:00) -> day 0 (same calendar day)
-        - time=-39600 (11h before admission = 03:00) -> day -1 (previous calendar day)
-        - time=36000 (10h after admission = 00:00 next day) -> day 1
-    """
-    # Seconds from the start of admission day
-    seconds_from_day_start = time_seconds + admission_seconds_into_day
-    # Integer division by SECONDS_PER_DAY gives calendar day
-    return seconds_from_day_start.floordiv(SECONDS_PER_DAY).cast(int)
-
-
 def rhee_compute_lab_baselines(
     all_stays: pl.LazyFrame,
     patient_information: pl.LazyFrame,
@@ -143,14 +104,21 @@ def rhee_compute_lab_baselines(
 ) -> pl.LazyFrame:
     """Compute baseline lab values from day -30 to end of stay per Rhee criteria.
 
-    Args:
-        all_stays: DataFrame with Global ICU Stay ID
-        patient_information: Contains admission time and LOS
-        timeseries_labs: Time series lab data
-        lab_columns: List of lab column names to compute baselines for
-        baseline_mode: Dict mapping lab name to aggregation mode ("min" or "max")
+    Arguments
+    ---------
+        all_stays : pl.LazyFrame
+            DataFrame with Global ICU Stay ID
+        patient_information : pl.LazyFrame
+            Contains admission time and LOS
+        timeseries_labs : pl.LazyFrame
+            Time series lab data
+        lab_columns : list[str]
+            List of lab column names to compute baselines for
+        baseline_mode : dict[str, str]
+            Dict mapping lab name to aggregation mode ("min" or "max")
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - baseline_{lab_name} for each lab in lab_columns
@@ -355,7 +323,7 @@ def antibiotics(
                 & (pl.col("Drug Ingredient") == "cefotaxime")
                 & (
                     pl.col("Drug End Relative to Admission (seconds)")
-                    < (4 * SECONDS_PER_DAY)
+                    < (4 * SECONDS_IN_1D)
                 )
             ),
             ~(
@@ -363,7 +331,7 @@ def antibiotics(
                 & (pl.col("Drug Ingredient") == "vancomycin")
                 & (
                     pl.col("Drug End Relative to Admission (seconds)")
-                    < (1 * SECONDS_PER_DAY)
+                    < (1 * SECONDS_IN_1D)
                 )
             ),
         )
@@ -415,7 +383,7 @@ def suspected_infection(
             right_on="Drug Start Relative to Admission (seconds)",
             by=STAY_KEY,
             strategy="forward",
-            tolerance=72 * SECONDS_PER_HOUR,
+            tolerance=72 * SECONDS_IN_1H,
         )
         .filter(
             pl.col("Drug Start Relative to Admission (seconds)").is_not_null(),
@@ -436,7 +404,7 @@ def suspected_infection(
             right_on="culture_time",
             by=STAY_KEY,
             strategy="forward",
-            tolerance=24 * SECONDS_PER_HOUR,
+            tolerance=24 * SECONDS_IN_1H,
         )
         .filter(
             pl.col("Drug Start Relative to Admission (seconds)").is_not_null(),
@@ -596,13 +564,19 @@ def rhee_consecutive_antibiotics(
 
     Returns timeframe of the 4th day when criterion is met.
 
-    Args:
-        all_stays_t0: Stays with T_0 reference times
-        patient_information: Contains "Admission Time (24h)" and "ICU Length of Stay (days)"
-        medications: Medication administrations
-        window_size: Window size in seconds
+    Arguments
+    ---------
+        all_stays_t0 : pl.LazyFrame
+            Stays with T_0 reference times
+        patient_information : pl.LazyFrame
+            Contains "Admission Time (24h)" and "ICU Length of Stay (days)"
+        medications : pl.LazyFrame
+            Medication administrations
+        window_size : int
+            Window size in seconds
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - timeframe: The timeframe when 4th consecutive day is reached
@@ -621,7 +595,7 @@ def rhee_consecutive_antibiotics(
         .pipe(_admission_time_to_seconds)
         .filter(
             pl.col("Drug Start Relative to Admission (seconds)")
-            >= pl.col("T_0")
+            >= 0
         )
         # Calendar days from admission covered by each antibiotic administration
         .with_columns(
@@ -686,7 +660,7 @@ def rhee_consecutive_antibiotics(
         )
         .with_columns(
             timeframe=(
-                (pl.col("first_day") + 3) * pl.lit(SECONDS_PER_DAY)
+                (pl.col("first_day") + 3) * pl.lit(SECONDS_IN_1D)
                 - pl.col("Admission Time (seconds)")
                 - pl.col("T_0")
             ).floordiv(window_size),
@@ -721,16 +695,25 @@ def rhee_organ_dysfunction(
     - INR >1.5 and ≥0.5 increase from baseline (excluding warfarin)
     - Lactate ≥2.0 mmol/L
 
-    Args:
-        all_stays_t0: Stays with T_0
-        patient_information: Contains admission time, LOS, diagnoses
-        timeseries_labs: Lab timeseries
-        ventilation: Ventilation intervals
-        cv_ge2_timeline: Pre-computed vasopressor timeline
-        lactate_timeline: Pre-computed lactate timeline
-        window_size: Window size in seconds
+    Arguments
+    ---------
+        all_stays_t0 : pl.LazyFrame
+            Stays with T_0
+        patient_information : pl.LazyFrame
+            Contains admission time, LOS, diagnoses
+        timeseries_labs : pl.LazyFrame
+            Lab timeseries
+        ventilation : pl.LazyFrame
+            Ventilation intervals
+        cv_ge2_timeline : pl.LazyFrame
+            Pre-computed vasopressor timeline
+        lactate_timeline : pl.LazyFrame
+            Pre-computed lactate timeline
+        window_size : int
+            Window size in seconds
 
-    Returns:
+    Returns
+    -------
         LazyFrame with Global ICU Stay ID, timeframe, and organ_dysfunction flag
     """
 
@@ -755,7 +738,7 @@ def rhee_organ_dysfunction(
         .pipe(_admission_time_to_seconds)
         .filter(
             pl.col("Ventilation Start Relative to Admission (seconds)")
-            >= pl.col("T_0")
+            >= 0
         )
     )
 
@@ -802,7 +785,7 @@ def rhee_organ_dysfunction(
     labs_base = (
         timeseries_labs.select(STAY_KEY, TIME_KEY, *LABS)
         .join(all_stays_t0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0"))
+        .filter(pl.col(TIME_KEY) >= 0)
         .join(baselines, on=STAY_KEY, how="inner")
         .with_columns(
             pl.col(col).struct.field("value").alias(col) for col in LABS
@@ -858,6 +841,7 @@ def rhee_organ_dysfunction(
 
 
 # region main sepsis long
+@with_windows(window_size=SECONDS_IN_1H)
 def SEPSIS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -870,13 +854,10 @@ def SEPSIS(
     procedures: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_PER_HOUR,
-    timeframe_unit: str = "Hours",
     organ_failure_criterion: str = "delta",
+    baseline_source: str = "icu",
     anchors: set[str] | None = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """Compute Sepsis-3 labels in long format from raw inputs.
 
@@ -917,24 +898,18 @@ def SEPSIS(
             Procedures data. Loaded automatically if None.
         ventilation : pl.LazyFrame, optional
             Ventilation data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size : int, optional
-            Timeframe width in seconds (default: 3600 = 1 hour). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Semantic only; output column remains a numeric timeframe.
         organ_failure_criterion : str, optional
             "absolute" applies SOFA criteria to raw scores; "delta" (default) applies
             to change from baseline. Baseline is the lowest score in the 24h before
             the window [-48h, +24h] around suspicion time (Seymour) or antibiotic
             escalation (Shah), or 0 if the window starts at the beginning of the stay.
             "sirs" applies SIRS criteria instead of SOFA.
+        baseline_source : str, optional
+            Where the "delta" baseline SOFA may come from. "icu" (default) uses only
+            the ICU stay and counts values measured before ICU admission as missing
+            (as mimic-code). "pre_icu" also takes the lowest SOFA before ICU
+            admission (back to t_minus1) as baseline for the whole stay, so chronic
+            dysfunction is not counted as new. Only used with organ_failure_criterion="delta".
         anchors : set[str], optional
             Which onset anchors to compute: {"seymour", "shah", "rhee"}.
             Defaults to all three. Specify a subset to skip unnecessary computation.
@@ -947,7 +922,7 @@ def SEPSIS(
             One row per (stay, timeframe) with columns:
             - Global ICU Stay ID
             - T_0 (seconds)
-            - timeframe (0-indexed integer window)
+            - timeframe (integer window index counted from T_0)
             - SEPSIS (Seymour onset): "SEPSIS" | "SHOCK" | null
             - SEPSIS_ABX (Shah onset): "SEPSIS" | "SHOCK" | null
             - SEPSIS_RHEE (Rhee onset): "SEPSIS" | null
@@ -991,6 +966,9 @@ def SEPSIS(
     if organ_failure_criterion not in ("absolute", "delta", "sirs"):
         raise ValueError(f"organ_failure_criterion must be 'absolute', 'delta', or 'sirs', got {organ_failure_criterion!r}") # fmt: skip
 
+    if baseline_source not in ("icu", "pre_icu"):
+        raise ValueError(f"baseline_source must be 'icu' or 'pre_icu', got {baseline_source!r}") # fmt: skip
+
     if anchors is None:
         anchors = {"seymour", "shah", "rhee"}
     invalid = anchors - {"seymour", "shah", "rhee"}
@@ -1004,10 +982,9 @@ def SEPSIS(
     if prescriptions is not None:
         medications = pl.concat([medications, prescriptions], how="vertical")
 
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    ctx = _window_context(patient_information, window)
     los_col = "ICU Length of Stay (days)"
-    ALL_STAYS_T0_LOS = ALL_STAYS_T0.join(
+    ALL_STAYS_T0_LOS = ctx.all_stays_t0.join(
         patient_information.select(STAY_KEY, los_col),
         on=STAY_KEY,
         how="left",
@@ -1028,10 +1005,12 @@ def SEPSIS(
         timeseries_inout,
         medications,
         ventilation,
-        t_0=t_0,
-        t_1=t_1,
-        window_size=window_size,
-        t_0_per_stay=t_0_per_stay,
+        t_0=window.t_0,
+        t_1=window.t_1,
+        t_minus1=0,  # dense from ICU admission; the onset logic rolls over rows
+        _fill_from_pre_icu=False,
+        window_size=window.window_size,
+        t_0_per_stay=window.t_0_per_stay,
         timeframe_name="timeframe",
     ).select(
         STAY_KEY,
@@ -1044,10 +1023,11 @@ def SEPSIS(
         patient_information,
         timeseries_vitals,
         timeseries_labs,
-        t_0=t_0,
-        t_1=t_1,
-        window_size=window_size,
-        t_0_per_stay=t_0_per_stay,
+        t_0=window.t_0,
+        t_1=window.t_1,
+        t_minus1=0,  # dense from ICU admission; the onset logic rolls over rows
+        window_size=window.window_size,
+        t_0_per_stay=window.t_0_per_stay,
         timeframe_name="timeframe",
     ).select(
         STAY_KEY,
@@ -1056,7 +1036,7 @@ def SEPSIS(
     ).collect().lazy()  # materialize once: referenced many times below
 
     lactate_timeline = lactate_long(
-        ALL_STAYS_T0, timeseries_labs, window_size=window_size
+        ctx.all_stays_t0, timeseries_labs, window_size=window.window_size
     ).collect().lazy()  # materialize once: referenced many times below
 
     cv_ge2_timeline = (
@@ -1086,11 +1066,11 @@ def SEPSIS(
     # Earliest suspicion per Seymour (earliest culture-antibiotic pair)
     suspicion_numbered = (
         suspected_infection(
-            ALL_STAYS_T0,
+            ctx.all_stays_t0,
             medications,
             microbiology,
             procedures,
-            window_size=window_size,
+            window_size=window.window_size,
         )
         .filter(pl.col("suspected_infection"))
         # no new suspicion if [-48h, +24h] includes the previous suspicion time
@@ -1117,9 +1097,9 @@ def SEPSIS(
         .join(ALL_STAYS_T0_LOS, on=STAY_KEY, how="inner")
         .with_columns(
             max_tf_by_los=(
-                (pl.col(los_col) * pl.lit(SECONDS_PER_DAY))
+                (pl.col(los_col) * pl.lit(SECONDS_IN_1D))
                 .sub(pl.col("T_0"))
-                .floordiv(window_size)
+                .floordiv(window.window_size)
             )
         )
         # suspicion must fall within ICU stay bounds when LOS is available
@@ -1131,10 +1111,10 @@ def SEPSIS(
             baseline_timeframe=pl.max_horizontal(
                 pl.lit(0),
                 pl.col("suspicion_timeframe")
-                - pl.lit(int((48 * SECONDS_PER_HOUR) // window_size)),
+                - pl.lit(int((48 * SECONDS_IN_1H) // window.window_size)),
             ),
             end_timeframe=pl.col("suspicion_timeframe")
-            + pl.lit(int((24 * SECONDS_PER_HOUR) // window_size)),
+            + pl.lit(int((24 * SECONDS_IN_1H) // window.window_size)),
         )
     )
 
@@ -1142,9 +1122,9 @@ def SEPSIS(
     # Antibiotic-anchored Sepsis (SEPSIS_ABX per Shah et al.)
     abx_suspicion_numbered = (
         antibiotic_escalation(
-            ALL_STAYS_T0,
+            ctx.all_stays_t0,
             medications,
-            window_size=window_size,
+            window_size=window.window_size,
         )
         .sort(STAY_KEY, "timeframe")
         .filter(pl.col("antibiotic_escalation"))
@@ -1172,9 +1152,9 @@ def SEPSIS(
         .join(ALL_STAYS_T0_LOS, on=STAY_KEY, how="inner")
         .with_columns(
             max_tf_by_los=(
-                (pl.col(los_col) * pl.lit(SECONDS_PER_DAY))
+                (pl.col(los_col) * pl.lit(SECONDS_IN_1D))
                 .sub(pl.col("T_0"))
-                .floordiv(window_size)
+                .floordiv(window.window_size)
                 .cast(int)
             )
         )
@@ -1205,14 +1185,41 @@ def SEPSIS(
     # Baseline SOFA: lowest score in the 24h before a timeframe (null at stay start -> 0)
     sofa_pre_24h_min = (
         pl.col("sofa_score")
-        .rolling_min(window_size=max(1, SECONDS_PER_DAY // window_size), min_samples=1)
+        .rolling_min(window_size=max(1, SECONDS_IN_1D // window.window_size), min_samples=1)
         .shift(1)
         .over(STAY_KEY, order_by="timeframe")
-        .alias("baseline_sofa_score")
     )
+    if baseline_source == "pre_icu":
+        # ... and the lowest SOFA before ICU admission
+        sofa_pre_icu_min = (
+            SOFA(
+                patient_information,
+                timeseries_vitals,
+                timeseries_labs,
+                timeseries_resp,
+                timeseries_inout,
+                medications,
+                ventilation,
+                t_0=window.t_0,
+                t_minus1=window.t_minus1,
+                t_1=0,
+                window_size=window.window_size,
+                t_0_per_stay=window.t_0_per_stay,
+                timeframe_name="timeframe",
+            )
+            .join(ctx.all_stays_t0, on=STAY_KEY)
+            .filter(pl.col("timeframe") < (-pl.col("T_0")).floordiv(window.window_size))
+            .group_by(STAY_KEY)
+            .agg(pl.col("SOFA Score").min().alias("pre_icu_sofa_min"))
+        )
+        sofa_base = sofa_base.join(sofa_pre_icu_min, on=STAY_KEY, how="left")
+        sofa_pre_24h_min = pl.min_horizontal(
+            sofa_pre_24h_min, pl.col("pre_icu_sofa_min")
+        )
+    sofa_pre_24h_min = sofa_pre_24h_min.alias("baseline_sofa_score")
 
     # Seymour: SOFA-based onset (bounded explode to avoid stay-only join blowup)
-    # Explode to bounded candidate range (end_timeframe - baseline_timeframe, typically ~72-97 hours at 1h window_size)
+    # Explode to bounded candidate range (end_timeframe - baseline_timeframe, typically ~72-97 hours at 1h window.window_size)
     # instead of joining full stay × all timeframes
     candidates = (
         suspicion_numbered.join(
@@ -1291,8 +1298,8 @@ def SEPSIS(
         )
     )
 
-    win_back = int((48 * SECONDS_PER_HOUR) // window_size)
-    win_fwd = int((24 * SECONDS_PER_HOUR) // window_size)
+    win_back = int((48 * SECONDS_IN_1H) // window.window_size)
+    win_fwd = int((24 * SECONDS_IN_1H) // window.window_size)
 
     # Baseline and end windows relative to antibiotic-only suspicion
     abx_suspicion_numbered = abx_suspicion_numbered.with_columns(
@@ -1521,7 +1528,7 @@ def SEPSIS(
     # EHR Clinical Surveillance Definition (Rhee et al.)
     # Blood culture + ≥4 consecutive antibiotic days + organ dysfunction within ±2 calendar days
     stay_time_ref = (
-        ALL_STAYS_T0.join(
+        ctx.all_stays_t0.join(
             patient_information.select(STAY_KEY, "Admission Time (24h)"),
             on=STAY_KEY,
             how="left",
@@ -1535,7 +1542,7 @@ def SEPSIS(
         cultures(microbiology, procedures)
         .join(stay_time_ref, on=STAY_KEY, how="inner")
         .with_columns(
-            timeframe=_assign_timeframe("culture_time", window_size),
+            timeframe=_assign_timeframe("culture_time", window.window_size),
             culture_calendar_day=_calendar_day_from_admission(
                 pl.col("culture_time"),
                 pl.col("Admission Time (seconds)"),
@@ -1552,21 +1559,21 @@ def SEPSIS(
 
     # Get antibiotics that meet 4-day consecutive criterion
     rhee_abx_tf = rhee_consecutive_antibiotics(
-        ALL_STAYS_T0,
+        ctx.all_stays_t0,
         patient_information,
         medications,
-        window_size=window_size,
+        window_size=window.window_size,
     )
 
     # Get organ dysfunction markers
     rhee_organ_dysfunction_tf = rhee_organ_dysfunction(
-        ALL_STAYS_T0,
+        ctx.all_stays_t0,
         patient_information,
         timeseries_labs,
         ventilation,
         cv_ge2_timeline,
         lactate_timeline,
-        window_size=window_size,
+        window_size=window.window_size,
     )
 
     # Calculate calendar days for organ dysfunction
@@ -1574,7 +1581,7 @@ def SEPSIS(
         rhee_organ_dysfunction_tf.join(stay_time_ref, on=STAY_KEY, how="inner")
         .with_columns(
             organ_calendar_day=_calendar_day_from_admission(
-                (pl.col("timeframe") * window_size) + pl.col("T_0"),
+                (pl.col("timeframe") * window.window_size) + pl.col("T_0"),
                 pl.col("Admission Time (seconds)"),
             )
         )
@@ -1697,17 +1704,17 @@ def SEPSIS(
     if compute_rhee:
         cols.append("SEPSIS_RHEE")
 
+    # bound first: polars 2.0 pushes a filter on T_0 and timeframe below the first join if it comes after the later ones
     return (
-        ALL_STAYS_T0.join(tf_union, on=STAY_KEY, how="left")
+        tf_union.join(ctx.all_stays_t0, on=STAY_KEY, how="left")
+        .filter(*ctx.bounds)
         .join(sepsis_events,     on=[STAY_KEY, "timeframe"], how="left")
         .join(sepsis_abx_events, on=[STAY_KEY, "timeframe"], how="left")
         .join(onset_labels_rhee, on=[STAY_KEY, "timeframe"], how="left")
         .select(*cols)
-        .filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
         .unique()
-        .sort(STAY_KEY, "timeframe")
+        .rename({"timeframe": ctx.name})
+        .sort(STAY_KEY, ctx.name)
     )
 
 

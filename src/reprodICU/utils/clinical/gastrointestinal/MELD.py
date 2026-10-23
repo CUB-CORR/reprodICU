@@ -24,14 +24,20 @@ from typing import Literal, Optional
 
 import polars as pl
 
+from ...base import (
+    SECONDS_IN_1W,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
+    _assign_timeframe,
+    _finalize,
+    _to_lazy,
+    _window_context,
+    with_windows,
+)
 from ...common import (
     FILTER_NOT_NULL,
-    _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
-    _to_lazy,
     _validate_required_data,
     extract_struct_value,
     get_diagnoses,
@@ -40,12 +46,6 @@ from ...common import (
     get_timeseries_labs,
 )
 
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_7D = 7 * SECONDS_IN_1D
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 
 
 ################################################################################
@@ -146,7 +146,7 @@ def _recent_rrt_per_timeframe(
         base.join(rrt.select(STAY_KEY, start, end, hours), on=STAY_KEY)
         .filter(
             pl.col(start) <= window_end,
-            pl.col(end) >= window_end - SECONDS_IN_7D,
+            pl.col(end) >= window_end - SECONDS_IN_1W,
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(((pl.len() >= 2) | (pl.col(hours).sum() >= 24)).alias("Had Recent RRT"))
@@ -299,19 +299,15 @@ def _calculate_meld3_score(
 ################################################################################
 ################################################################################
 # region MELD main function
+@with_windows
 def MELD(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
-    rrt_data: Optional[pl.LazyFrame] = None,
+    rrt: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_unit: str = "Days",
-    timeframe_name: Optional[str] = None,
     version: Literal["MELD", "MELD-Na", "MELD 3.0"] = "MELD-Na",
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute MELD (Model for End-Stage Liver Disease) scores in long format from raw inputs.
@@ -334,26 +330,12 @@ def MELD(
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data with creatinine, bilirubin, INR, sodium, glucose measurements.
             Loaded automatically if None.
-        rrt_data : pl.LazyFrame, optional
+        rrt : pl.LazyFrame, optional
             Renal Replacement Therapy data for dialysis status determination.
             Loaded automatically if None.
         diagnoses : pl.LazyFrame, optional
             Diagnosis data for liver disease etiology determination.
             Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Semantic unit for timeframe (default: "Days"). Does not affect calculation.
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
         version : {"MELD", "MELD-Na", "MELD 3.0"}, optional
             Formula to use (default: "MELD-Na").
 
@@ -374,13 +356,16 @@ def MELD(
             - Had Recent RRT (boolean)
             - Liver Disease Etiology
     """
+    if version not in ("MELD", "MELD-Na", "MELD 3.0"):
+        raise ValueError(f"version must be 'MELD', 'MELD-Na' or 'MELD 3.0', got {version!r}")
+
     # Load defaults if not provided
     if patient_information is None:
         patient_information = get_patient_information()
     if timeseries_labs is None:
         timeseries_labs = get_timeseries_labs()
-    if rrt_data is None:
-        rrt_data = get_rrt()
+    if rrt is None:
+        rrt = get_rrt()
     if diagnoses is None:
         diagnoses = get_diagnoses()
 
@@ -394,20 +379,14 @@ def MELD(
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
 
-    # Build T_0 and base timeframes
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay, t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
+    ctx = _window_context(patient_information, window)
 
     # region component data
     labs = _improve_labs(timeseries_labs, albumin=version == "MELD 3.0")
     lab_names = [c for c in labs.collect_schema().names() if c not in (STAY_KEY, TIME_KEY)]
     labs_tf = (
-        labs.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        labs.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             # the worst is the highest value, except for albumin
@@ -416,9 +395,9 @@ def MELD(
         )
     )
 
-    out = base.join(labs_tf, on=[STAY_KEY, "timeframe"], how="left")
-    if rrt_data is not None:
-        rrt_tf = _recent_rrt_per_timeframe(_to_lazy(rrt_data), base, window_size)
+    out = _assemble(ctx, labs_tf)
+    if rrt is not None:
+        rrt_tf = _recent_rrt_per_timeframe(_to_lazy(rrt), ctx.base, ctx.window_size)
         out = out.join(rrt_tf, on=[STAY_KEY, "timeframe"], how="left")
     else:
         out = out.with_columns(pl.lit(None, dtype=pl.Boolean).alias("Had Recent RRT"))
@@ -471,20 +450,14 @@ def MELD(
         )
     # endregion
 
-    return (
-        out.filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            score.alias("MELD Score"),
-            *lab_names,
-            "Had Recent RRT",
-            "Liver Disease Etiology",
-        )
-        .sort(STAY_KEY, timeframe_name)
+    return _finalize(
+        out,
+        ctx,
+        score.alias("MELD Score"),
+        *lab_names,
+        "Had Recent RRT",
+        "Liver Disease Etiology",
+        rest=False,
     )
 
 

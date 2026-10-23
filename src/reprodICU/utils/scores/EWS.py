@@ -4,7 +4,7 @@ EWS: compute Early Warning Scores (EWS, MEWS, NEWS, NEWS2) in long format direct
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - [Score Name] Score (sum of component points)
 - Component points (respiratory rate, heart rate, systolic BP, temperature, GCS, SpO2, supplemental oxygen)
 
@@ -23,14 +23,20 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
+    _assign_timeframe,
+    _finalize,
+    _sum_points,
+    _window_context,
+    with_windows,
+)
 from ..clinical.neurological.GCS import GCS_TO_AVPU
 from ..common import (
     ScoringTable,
-    _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
@@ -39,12 +45,6 @@ from ..common import (
     get_timeseries_vitals,
 )
 from ..core import BLOOD_PRESSURES, RESPIRATORY_PARAMS
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 
 ################################################################################
@@ -69,7 +69,7 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 def _improve_respiratory(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+        RESPIRATORY_PARAMS(timeseries_resp=resp)
         .rename({"LPM": "Supplemental oxygen"})
         .select(STAY_KEY, TIME_KEY, "Supplemental oxygen")
     )
@@ -160,15 +160,12 @@ def _hr_points_ews(hr: pl.Expr) -> pl.Expr:
     ]).to_expr(hr) # fmt: skip
 
 
+@with_windows
 def EWS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute Early Warning Score (EWS) in long format.
@@ -176,21 +173,21 @@ def EWS(
     Output columns:
     - Global ICU Stay ID
     - T_0 (seconds from admission used as reference)
-    - timeframe (0-indexed integer window)
+    - timeframe (integer window index counted from T_0)
     - EWS Score (sum of component points)
     - Component points: rr_points, temp_points, sbp_points, hr_points, avpu_points
 
-    Args:
-        patient_information: Patient information LazyFrame.
-        timeseries_vitals: Vital signs LazyFrame.
-        window_size: Size of the timeframe window in seconds (default: 24h).
-        t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
-        t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
-        timeframe_name: Custom name for the timeframe column (optional).
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information LazyFrame.
+        timeseries_vitals : pl.LazyFrame, optional
+            Vital signs LazyFrame.
 
-    Returns:
-        pl.LazyFrame: EWS scores in long format.
+    Returns
+    -------
+        pl.LazyFrame
+            EWS scores in long format.
     """
     # region data loading
     if patient_information is None:
@@ -208,17 +205,13 @@ def EWS(
     vitals = _improve_vitals(timeseries_vitals.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
     # endregion
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _rr_points_ews(pl.col("Respiratory rate")).max().alias("rr_points"),
@@ -230,25 +223,12 @@ def EWS(
     ) # fmt: skip
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "EWS Score"
-            ),
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf)
+    return _finalize(
+        out.with_columns(_sum_points(ctx.window_size).alias("EWS Score")),
+        ctx,
+        "EWS Score",
     )
 
 
@@ -278,15 +258,12 @@ def _temp_points_mews(temp: pl.Expr) -> pl.Expr:
     ]).to_expr(temp) # fmt: skip
 
 
+@with_windows
 def MEWS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute Modified Early Warning Score (MEWS) in long format.
@@ -294,21 +271,21 @@ def MEWS(
     Output columns:
     - Global ICU Stay ID
     - T_0 (seconds from admission used as reference)
-    - timeframe (0-indexed integer window)
+    - timeframe (integer window index counted from T_0)
     - MEWS Score (sum of component points)
     - Component points: rr_points, temp_points, sbp_points, hr_points, avpu_points
 
-    Args:
-        patient_information: Patient information LazyFrame.
-        timeseries_vitals: Vital signs LazyFrame.
-        window_size: Size of the timeframe window in seconds (default: 24h).
-        t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
-        t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
-        timeframe_name: Custom name for the timeframe column (optional).
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information LazyFrame.
+        timeseries_vitals : pl.LazyFrame, optional
+            Vital signs LazyFrame.
 
-    Returns:
-        pl.LazyFrame: MEWS scores in long format.
+    Returns
+    -------
+        pl.LazyFrame
+            MEWS scores in long format.
     """
     # region data loading
     if patient_information is None:
@@ -326,17 +303,13 @@ def MEWS(
     vitals = _improve_vitals(timeseries_vitals.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
     # endregion
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _rr_points_mews(pl.col("Respiratory rate")).max().alias("rr_points"),
@@ -348,25 +321,12 @@ def MEWS(
     ) # fmt: skip
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "MEWS Score"
-            ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf)
+    return _finalize(
+        out.with_columns(_sum_points(ctx.window_size).alias("MEWS Score")),
+        ctx,
+        "MEWS Score",
     )
 
 
@@ -429,16 +389,13 @@ def _hr_points_news(hr: pl.Expr) -> pl.Expr:
     ]).to_expr(hr) # fmt: skip
 
 
+@with_windows
 def NEWS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute National Early Warning Score (NEWS) in long format.
@@ -446,22 +403,23 @@ def NEWS(
     Output columns:
     - Global ICU Stay ID
     - T_0 (seconds from admission used as reference)
-    - timeframe (0-indexed integer window)
+    - timeframe (integer window index counted from T_0)
     - NEWS Score (sum of component points)
     - Component points: rr_points, spo2_points, suppo2_points, temp_points, sbp_points, hr_points, avpu_points
 
-    Args:
-        patient_information: Patient information LazyFrame.
-        timeseries_vitals: Vital signs LazyFrame.
-        timeseries_resp: Respiratory LazyFrame (for supplemental oxygen).
-        window_size: Size of the timeframe window in seconds (default: 24h).
-        t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
-        t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
-        timeframe_name: Custom name for the timeframe column (optional).
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information LazyFrame.
+        timeseries_vitals : pl.LazyFrame, optional
+            Vital signs LazyFrame.
+        timeseries_resp : pl.LazyFrame, optional
+            Respiratory LazyFrame (for supplemental oxygen).
 
-    Returns:
-        pl.LazyFrame: NEWS scores in long format.
+    Returns
+    -------
+        pl.LazyFrame
+            NEWS scores in long format.
     """
     # region data loading
     if patient_information is None:
@@ -483,17 +441,13 @@ def NEWS(
     resp = _improve_respiratory(timeseries_resp.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
     # endregion
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _rr_points_mews(pl.col("Respiratory rate")).max().alias("rr_points"),
@@ -506,8 +460,8 @@ def NEWS(
     ) # fmt: skip
 
     resp_tf = (
-        resp.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        resp.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _suppo2_points_news(pl.col("Supplemental oxygen"))
@@ -517,26 +471,12 @@ def NEWS(
     )
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "NEWS Score"
-            ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf, resp_tf)
+    return _finalize(
+        out.with_columns(_sum_points(ctx.window_size).alias("NEWS Score")),
+        ctx,
+        "NEWS Score",
     )
 
 
@@ -599,17 +539,14 @@ def _spo2_points_news2(
     )
 
 
+@with_windows
 def NEWS2(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute National Early Warning Score 2 (NEWS2) in long format.
@@ -617,23 +554,25 @@ def NEWS2(
     Output columns:
     - Global ICU Stay ID
     - T_0 (seconds from admission used as reference)
-    - timeframe (0-indexed integer window)
+    - timeframe (integer window index counted from T_0)
     - NEWS2 Score (sum of component points)
     - Component points: rr_points, spo2_points, suppo2_points, temp_points, sbp_points, hr_points, avpu_points
 
-    Args:
-        patient_information: Patient information LazyFrame.
-        timeseries_vitals: Vital signs LazyFrame.
-        timeseries_resp: Respiratory LazyFrame (for supplemental oxygen).
-        timeseries_labs: Labs LazyFrame (for paCO2).
-        window_size: Size of the timeframe window in seconds (default: 24h).
-        t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
-        t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
-        timeframe_name: Custom name for the timeframe column (optional).
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient information LazyFrame.
+        timeseries_vitals : pl.LazyFrame, optional
+            Vital signs LazyFrame.
+        timeseries_resp : pl.LazyFrame, optional
+            Respiratory LazyFrame (for supplemental oxygen).
+        timeseries_labs : pl.LazyFrame, optional
+            Labs LazyFrame (for paCO2).
 
-    Returns:
-        pl.LazyFrame: NEWS2 scores in long format.
+    Returns
+    -------
+        pl.LazyFrame
+            NEWS2 scores in long format.
     """
     # region data loading
     if patient_information is None:
@@ -659,17 +598,13 @@ def NEWS2(
     labs = _improve_labs(timeseries_labs.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
     # endregion
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _rr_points_mews(pl.col("Respiratory rate")).max().alias("rr_points"),
@@ -686,8 +621,8 @@ def NEWS2(
         # oxygen given at another time than a saturation reading counts as well
         .join(resp.drop_nulls(), on=[STAY_KEY, TIME_KEY], how="full", coalesce=True)
         .join(labs.drop_nulls(), on=[STAY_KEY, TIME_KEY], how="left")
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _spo2_points_news2(
@@ -704,26 +639,12 @@ def NEWS2(
     )
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    return (
-        base.join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
-        .filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "NEWS2 Score"
-            ),
-            pl.exclude(STAY_KEY, "T_0", timeframe_name),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf, resp_tf)
+    return _finalize(
+        out.with_columns(_sum_points(ctx.window_size).alias("NEWS2 Score")),
+        ctx,
+        "NEWS2 Score",
     )
 
 

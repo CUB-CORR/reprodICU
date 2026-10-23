@@ -13,9 +13,10 @@ from typing import Optional
 
 import polars as pl
 
+from ...base import (
+    STAY_KEY,
+)
 from ...common import get_patient_information
-
-STAY_KEY = "Global ICU Stay ID"
 WEIGHT_COL = "Admission Weight (kg)"
 
 

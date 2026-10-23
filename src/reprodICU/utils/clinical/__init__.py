@@ -22,7 +22,7 @@ from .pharmocological.HYDROCORTISONE_EQUIVALENT_DOSAGE import HYDROCORTISONE_EQU
 from .pharmocological.VASOPRESSORS_BOOLEAN import VASOPRESSORS_BOOLEAN
 from .renal.AKI_FB import AKI_FB
 from .renal.AKI_KDIGO import AKI_KDIGO
-from .renal.URINE_OUTPUT import URINE_OUTPUT
+from .renal.URINE_OUTPUT import URINE_OUTPUT_RATE, URINE_OUTPUT_VOLUME
 from .respiratory.ARDS import ARDS
 from .respiratory.COMPLIANCE import DYNAMIC_COMPLIANCE, STATIC_COMPLIANCE
 from .respiratory.MECHANICAL_POWER import MECHANICAL_POWER
@@ -54,7 +54,8 @@ __all__ = [
     # renal
     "AKI_FB",
     "AKI_KDIGO",
-    "URINE_OUTPUT",
+    "URINE_OUTPUT_RATE",
+    "URINE_OUTPUT_VOLUME",
     # respiratory
     "ARDS",
     "MECHANICAL_POWER",

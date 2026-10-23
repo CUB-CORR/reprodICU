@@ -26,7 +26,8 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import DROP_IMPLAUSIBLE_VALUES, _to_lazy, get_patient_information
+from ..base import _to_lazy
+from ..common import DROP_IMPLAUSIBLE_VALUES, get_patient_information
 
 height_col = "Admission Height (cm)"
 weight_col = "Admission Weight (kg)"

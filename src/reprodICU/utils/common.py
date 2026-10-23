@@ -5,102 +5,29 @@ import polars.selectors as cs
 
 from ..config import ConfigManager
 
-STAY_KEY = "Global ICU Stay ID"
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
+# the windowing helpers moved to base.py; re-exported for the modules that still import them from here
+from .base import (  # noqa: F401
+    SECONDS_IN_1D,
+    SECONDS_IN_1H,
+    STAY_KEY,
+    T_MINUS1_DEFAULT,
+    _add_sparse_timeframes,
+    _assign_timeframe,
+    _build_base_timeframes,
+    _build_t0,
+    _get_timeframe_name,
+    _null_if_incomplete_pre_icu,
+    _optional_timeframe_bounds_filter,
+    _sum_points,
+    _to_lazy,
+    intervention_per_timeframe,
+)
 
 # Load config for plausible values
 _config = ConfigManager()
 CIV = _config.load_config(
     "CLINICALLY_PLAUSIBLE_VALUES.yaml", user_override=True
 )
-
-
-def _to_lazy(frame) -> pl.LazyFrame:
-    return frame if isinstance(frame, pl.LazyFrame) else frame.lazy()
-
-
-# region time helpers
-def _build_t0(
-    all_stays: pl.LazyFrame,
-    t_0_per_stay: Optional[pl.LazyFrame],
-    t_0: Optional[int],
-) -> pl.LazyFrame:
-    all_stays = _to_lazy(all_stays)
-
-    if t_0_per_stay is not None:
-        t_0_per_stay = _to_lazy(t_0_per_stay)
-        return (
-            all_stays.select(STAY_KEY)
-            .join(t_0_per_stay.select(STAY_KEY, "T_0"), STAY_KEY, how="left")
-            .with_columns(pl.col("T_0").fill_null(0).cast(pl.Int64))
-        )
-
-    t0_val = 0 if t_0 is None else int(t_0)
-    return all_stays.select(
-        STAY_KEY, pl.lit(t0_val).cast(pl.Int64).alias("T_0")
-    )
-
-
-def _build_base_timeframes(
-    all_stays_t_0: pl.LazyFrame,
-    patient_information: pl.LazyFrame,
-    window_size: int,
-    los_col: str = "ICU Length of Stay (days)",
-) -> pl.LazyFrame:
-    all_stays_t_0 = _to_lazy(all_stays_t_0)
-
-    return (
-        all_stays_t_0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", los_col)
-        .with_columns(
-            pl.int_ranges(
-                start=0,
-                end=(pl.col(los_col) * SECONDS_IN_1D - pl.col("T_0"))
-                .truediv(window_size)
-                .clip(lower_bound=0)
-                .ceil()
-                .add(1)
-                .cast(int),
-                step=1,
-            ).alias("timeframe")
-        )
-        .explode("timeframe")
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
-
-
-def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
-    return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size).cast(int)
-
-
-def _optional_timeframe_bounds_filter(
-    timeframe_col: str, window_size: int, t_0: Optional[int], t_1: Optional[int]
-) -> list[pl.Expr]:
-    # timeframe_col is the window index from T_0, t_1 is on the admission clock
-    conds: list[pl.Expr] = []
-    if t_0 is not None:
-        conds.append(pl.col(timeframe_col) >= -1)
-    if t_1 is not None:
-        conds.append(pl.col(timeframe_col) <= (int(t_1) - int(t_0 or 0)) // window_size)
-    return conds
-
-
-def _get_timeframe_name(
-    timeframe_name: Optional[str],
-    window_size: int,
-    t_0: int,
-    t_0_per_stay: Optional[pl.LazyFrame],
-) -> str:
-    if timeframe_name is not None:
-        return timeframe_name
-    unit = (
-        "Days"
-        if window_size == SECONDS_IN_1D
-        else "Hours" if window_size == SECONDS_IN_1H else "Windows"
-    )
-    reference = "T_0" if t_0 != 0 or t_0_per_stay is not None else "Admission"
-    return f"{unit} Relative to {reference}"
 
 
 def _validate_required_data(
@@ -135,10 +62,13 @@ def _load_dataset(dataset_name: str) -> Optional[pl.LazyFrame]:
 
     Avoids circular imports by importing reprodICU only when needed.
 
-    Args:
-        dataset_name: Name of the dataset (e.g., 'patient_information', 'timeseries_vitals')
+    Arguments
+    ---------
+        dataset_name : str
+            Name of the dataset (e.g., 'patient_information', 'timeseries_vitals')
 
-    Returns:
+    Returns
+    -------
         pl.LazyFrame if dataset exists, None otherwise
     """
     import reprodICU
@@ -157,10 +87,13 @@ def _load_concept(concept_name: str) -> Optional[pl.LazyFrame]:
 
     Avoids circular imports by importing reprodICU only when needed.
 
-    Args:
-        concept_name: Name of the concept (e.g., 'ventilation', 'rrt')
+    Arguments
+    ---------
+        concept_name : str
+            Name of the concept (e.g., 'ventilation', 'rrt')
 
-    Returns:
+    Returns
+    -------
         pl.LazyFrame if concept exists, None otherwise
     """
     import reprodICU
@@ -238,51 +171,6 @@ def get_rrt() -> Optional[pl.LazyFrame]:
     return _load_concept("RENAL_REPLACEMENT_THERAPY_DURATION")
 
 
-# region timeframe helpers
-def intervention_per_timeframe(
-    data: pl.LazyFrame,
-    patient_information: pl.LazyFrame,
-    start_col: str,
-    end_col: str,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    window_size: int = SECONDS_IN_1H,
-) -> pl.LazyFrame:
-    """Determine whether an intervention was active in each timeframe per stay."""
-
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    return (
-        data.select(STAY_KEY, start_col, end_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(
-            (pl.col(start_col) - pl.col("T_0")).alias("start_rel"),
-            (pl.col(end_col) - pl.col("T_0")).alias("end_rel"),
-        )
-        .with_columns(
-            timeframe_start=pl.col("start_rel").floordiv(window_size),
-            timeframe_end=pl.col("end_rel").floordiv(window_size),
-        )
-        .select(
-            STAY_KEY,
-            pl.int_ranges(
-                pl.col("timeframe_start"),
-                pl.col("timeframe_end").add(1),
-                step=1,
-            ).alias("timeframe"),
-        )
-        .explode("timeframe")
-        .with_columns(
-            pl.when(pl.col("timeframe").is_not_null())
-            .then(True)
-            .otherwise(False)
-            .alias("intervention"),
-        )
-        .group_by(STAY_KEY, "timeframe")
-        .agg(pl.max("intervention"))
-    )
-
-
 # region data cleaning
 def _plausible_values(
     obj: Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str],
@@ -357,14 +245,20 @@ def CLIP_PLAUSIBLE_VALUES(
 
     Can be used as a dataframe pipe or an expression pipe.
 
-    Arguments:
-        obj: Input LazyFrame, DataFrame, Expr, or column name.
-        columns: Optional list of columns to clean (if obj is a dataframe)
-                 or the name to use for config lookup (if obj is an expression).
-        column_config: Dictionary specifying min and max values for each column.
+    Arguments
+    ---------
+        obj : Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str]
+            Input LazyFrame, DataFrame, Expr, or column name.
+        columns : Union[str, List[str]], optional
+            Optional list of columns to clean (if obj is a dataframe)
+            or the name to use for config lookup (if obj is an expression).
+        column_config : Dict[str, Any]
+            Dictionary specifying min and max values for each column.
 
-    Returns:
-        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]: Clipped data or clipping expression.
+    Returns
+    -------
+        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]
+            Clipped data or clipping expression.
     """
     return _plausible_values(obj, columns, column_config, mode="clip")
 
@@ -379,14 +273,20 @@ def DROP_IMPLAUSIBLE_VALUES(
 
     Can be used as a dataframe pipe or an expression pipe.
 
-    Arguments:
-        obj: Input LazyFrame, DataFrame, Expr, or column name.
-        columns: Optional list of columns to clean (if obj is a dataframe)
-                 or the name to use for config lookup (if obj is an expression).
-        column_config: Dictionary specifying min and max values for each column.
+    Arguments
+    ---------
+        obj : Union[pl.LazyFrame, pl.DataFrame, pl.Expr, str]
+            Input LazyFrame, DataFrame, Expr, or column name.
+        columns : Union[str, List[str]], optional
+            Optional list of columns to clean (if obj is a dataframe)
+            or the name to use for config lookup (if obj is an expression).
+        column_config : Dict[str, Any]
+            Dictionary specifying min and max values for each column.
 
-    Returns:
-        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]: Cleaned data or cleaning expression.
+    Returns
+    -------
+        Union[pl.LazyFrame, pl.DataFrame, pl.Expr]
+            Cleaned data or cleaning expression.
     """
     return _plausible_values(obj, columns, column_config, mode="drop")
 
