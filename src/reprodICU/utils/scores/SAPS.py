@@ -21,20 +21,25 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    SECONDS_IN_1D,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
+    _assign_timeframe,
+    _finalize,
+    _sum_points,
+    _window_context,
+    intervention_per_timeframe,
+    with_windows,
+)
 from ..clinical.neurological.GCS import GCS_NT_CARRY_FORWARD
 from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
 from ..common import (
-    _sum_points,
-    T_MINUS1_DEFAULT,
-    _add_sparse_timeframes,
     FILTER_NOT_NULL,
     NULL_NON_FINITE,
     ScoringTable,
-    _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_diagnoses,
@@ -44,17 +49,9 @@ from ..common import (
     get_timeseries_respiratory,
     get_timeseries_vitals,
     get_ventilation,
-    intervention_per_timeframe,
 )
 from ..core import BLOOD_PRESSURES
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
 ################################################################################
@@ -230,12 +227,16 @@ def _chronic_disease_points_saps2(diagnoses: pl.LazyFrame) -> pl.LazyFrame:
     - Hematologic malignancy: 10 points (Lymphoma, Acute Leukemia, Multiple Myeloma)
     - Metastatic cancer: 9 points (Proven by surgery, CT scan, or other method)
 
-    Args:
-        diagnoses (pl.LazyFrame): Standardized diagnoses table.
+    Arguments
+    ---------
+        diagnoses : pl.LazyFrame
+            Standardized diagnoses table.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {STAY_KEY}: Global ICU Stay ID.
+    Returns
+    -------
+        pl.LazyFrame
+            Contains columns:
+            - Global ICU Stay ID
             - chronic_pts: Points for chronic disease.
     """
     # AIDS: B20–B24
@@ -280,6 +281,7 @@ def _admission_type_points_saps2(
 
 ################################################################################
 ################################################################################
+@with_windows
 def SAPS2(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -289,12 +291,7 @@ def SAPS2(
     diagnoses: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute Simplified Acute Physiology Score II (SAPS II) with automatic dataset loading.
@@ -302,6 +299,23 @@ def SAPS2(
     All data parameters are optional and will be automatically loaded from the
     package datasets if not provided. This makes it convenient for quick analysis
     while maintaining flexibility for custom data.
+
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vital signs. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries laboratory values. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Timeseries intake/output data. Loaded automatically if None.
+        diagnoses : pl.LazyFrame, optional
+            Diagnoses (ICD codes). Loaded automatically if None.
+        ventilation : pl.LazyFrame, optional
+            Ventilation episodes with start and end. Loaded automatically if None.
 
     Returns
     -------
@@ -340,17 +354,13 @@ def SAPS2(
     labs = _improve_labs(timeseries_labs)
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # region component scoring
     # 1. Physiological Points
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _hr_points_saps2(pl.col("Heart rate")).max().alias("hr_pts"),
@@ -367,8 +377,8 @@ def SAPS2(
     )
 
     labs_tf = (
-        labs.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        labs.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _bun_points_saps2(pl.col("Urea nitrogen")).max().alias("bun_pts"),
@@ -394,9 +404,9 @@ def SAPS2(
             patient_information,
             start_col="Ventilation Start Relative to Admission (seconds)",
             end_col="Ventilation End Relative to Admission (seconds)",
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            window_size=window.window_size,
         )
         .rename({"intervention": "ventilated"})
     )
@@ -406,11 +416,11 @@ def SAPS2(
             patient_information=patient_information,
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .join(vent_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(pl.col("ventilated"))
         .group_by(STAY_KEY, "timeframe")
@@ -426,14 +436,15 @@ def SAPS2(
         URINE_OUTPUT(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            window_size=window.window_size,
+            timeframe_name="timeframe",
         )
         .with_columns(
             uo_l_day=pl.col("uo_interval_ml")
             .truediv(1000)
-            .mul(SECONDS_IN_1D / window_size)
+            .mul(SECONDS_IN_1D / window.window_size)
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(_uo_points_saps2(pl.col("uo_l_day")).max().alias("uo_pts"))
@@ -452,32 +463,12 @@ def SAPS2(
         .with_columns(pl.col("chronic_pts").fill_null(0))
     )
 
-    # region union of all (stay,timeframe)
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # region assemble
-    out = _add_sparse_timeframes(
-        base, vitals_tf, labs_tf, pf_ratio, uo_tf
-    ).join(static_pts, on=STAY_KEY, how="left")
-    for part in [vitals_tf, labs_tf, pf_ratio, uo_tf]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
-
-    return (
-        out.filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
-        )
-        .with_columns(
-            _sum_points(window_size).alias(
-                "SAPS-II Score"
-            )
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "SAPS-II Score",
-            pl.all().exclude(STAY_KEY, "T_0", "timeframe", timeframe_name, "SAPS-II Score"),
-        )
+    out = _assemble(ctx, vitals_tf, labs_tf, pf_ratio, uo_tf, stay_parts=[static_pts])
+    return _finalize(
+        out.with_columns(_sum_points(ctx.window_size).alias("SAPS-II Score")),
+        ctx,
+        "SAPS-II Score",
     )
 
 

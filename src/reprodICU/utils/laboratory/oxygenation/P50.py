@@ -31,20 +31,22 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    Reference,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
 )
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 HILL_COEFFICIENT = 2.711
-
-SECONDS_IN_4H = 4 * 60 * 60
 
 
 # region helpers
@@ -73,13 +75,13 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
 
 
 # region P50
+@with_reference_time
 def P50(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     hill_coefficient: float = HILL_COEFFICIENT,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate P50 (oxygen pressure at 50% hemoglobin saturation) timeseries from blood gas data.
@@ -96,12 +98,8 @@ def P50(
             Patient/stay-level information. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
+        hill_coefficient : float, optional
+            Hill coefficient n of the oxygen dissociation curve. Defaults to 2.711.
 
     Returns
     -------
@@ -126,10 +124,7 @@ def P50(
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_labs = _improve_labs(timeseries_labs)
 
@@ -155,16 +150,7 @@ def P50(
         .select(STAY_KEY, TIME_KEY, "P50 (mmHg)")
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        p50 = (
-            p50.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    p50 = _relative_to_t0(p50, all_stays_t0, ref)
 
     return p50
 

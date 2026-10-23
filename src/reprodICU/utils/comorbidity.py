@@ -62,8 +62,10 @@ from typing import Optional
 import polars as pl
 from pycomorb import comorbidity
 
-from .common import (
+from .base import (
     _to_lazy,
+)
+from .common import (
     _validate_required_data,
     get_diagnoses,
     get_patient_information,

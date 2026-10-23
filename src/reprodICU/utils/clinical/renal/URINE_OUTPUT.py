@@ -2,22 +2,25 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    T_MINUS1_DEFAULT,
-    FILTER_NOT_NULL,
+from ...base import (
+    SECONDS_IN_12H,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
     _build_t0,
+    _get_timeframe_name,
     _optional_timeframe_bounds_filter,
     _to_lazy,
+    with_windows,
+)
+from ...common import (
+    FILTER_NOT_NULL,
     _validate_required_data,
     get_patient_information,
     get_timeseries_intakeoutput,
 )
 from ...FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS
 
-SECONDS_IN_1MIN = 60
-SECONDS_IN_1H = 60 * SECONDS_IN_1MIN
-SECONDS_IN_12H = 12 * SECONDS_IN_1H
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
@@ -44,18 +47,13 @@ def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
     )
 
 
+@with_windows
 def URINE_OUTPUT(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_inout: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
-    timeframe_name: Optional[str] = None,
     weight_col: str = "Admission Weight (kg)",
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Calculate urine output per time window from intake/output timeseries.
@@ -67,24 +65,6 @@ def URINE_OUTPUT(
             weight column specified by weight_col. Loaded automatically if None.
         timeseries_inout : pl.LazyFrame, optional
             Intake/output timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_minus1 : int, optional
-            Optional lower time bound (seconds from admission, may be negative);
-            timeframes ending at or before it are dropped. Defaults to 30 days before
-            admission; None keeps everything.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission). Windows starting
-            at or after t_1 (relative to each stay's T_0) are dropped.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
         weight_col : str, optional
             Name of weight column in patient_information to use for per-kg calculations.
             Defaults to "Admission Weight (kg)".
@@ -111,15 +91,10 @@ def URINE_OUTPUT(
     }
     _validate_required_data("URINE_OUTPUT", required)
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
-
     patient_information = _to_lazy(patient_information)
     timeseries_inout = _to_lazy(timeseries_inout)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
 
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _build_t0(patient_information.select(STAY_KEY), window.t_0_per_stay, window.t_0)
 
     inout = _improve_inout(timeseries_inout)
 
@@ -165,7 +140,7 @@ def URINE_OUTPUT(
         urine_with_rate,
         group_cols=[STAY_KEY],
         value_col="urine_rate_ml_per_sec",
-        TIMEWINDOW_IN_SECONDS=window_size,
+        TIMEWINDOW_IN_SECONDS=window.window_size,
         prefix="Urine",
         reference="T_0",
         unit="seconds",
@@ -191,26 +166,16 @@ def URINE_OUTPUT(
         )
     )
 
-    if timeframe_name is not None:
-        aggregated = aggregated.with_columns(
-            pl.col("timeframe").alias(timeframe_name)
-        )
-
-    select_cols = [
-        STAY_KEY,
-        "timeframe" if timeframe_name is None else timeframe_name,
-        "uo_interval_ml",
-        "uo_interval_ml_per_kg",
-    ]
-
+    name = _get_timeframe_name(window.timeframe_name, window.window_size, window.t_0, window.t_0_per_stay)
     return (
         aggregated.join(all_stays_t0, on=STAY_KEY, how="left")
         .filter(
             *_optional_timeframe_bounds_filter(
-                "timeframe", window_size, t_minus1=t_minus1, t_1=t_1
+                "timeframe", window.window_size, t_minus1=window.t_minus1, t_1=window.t_1
             )
         )
-        .select(select_cols)
+        .select(STAY_KEY, pl.col("timeframe").alias(name), "uo_interval_ml", "uo_interval_ml_per_kg")
+        .sort(STAY_KEY, name)
     )
 
 

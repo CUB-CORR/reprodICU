@@ -44,7 +44,8 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
-from ...common import _to_lazy, get_patient_information
+from ...base import _to_lazy
+from ...common import get_patient_information
 
 age_col = "Admission Age (years)"
 gender_col = "Gender"

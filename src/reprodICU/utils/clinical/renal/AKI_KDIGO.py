@@ -4,7 +4,7 @@ AKI_KDIGO: compute KDIGO-based Acute Kidney Injury stages in long format directl
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - Creatinine AKI Stage (0-3 based on KDIGO creatinine criteria)
 - UO Consecutive AKI Stage (0-3 based on consecutive urine output method, if enabled)
 - UO Any Period AKI Stage (0-3 based on any period urine output method, if enabled)
@@ -36,39 +36,36 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    FILTER_NOT_NULL,
-    NULL_NON_FINITE,
-    T_MINUS1_DEFAULT,
+from ...base import (
+    SECONDS_IN_12H,
+    SECONDS_IN_1D,
+    SECONDS_IN_1H,
+    SECONDS_IN_1W,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
     _add_sparse_timeframes,
     _assign_timeframe,
     _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
     _to_lazy,
+    _window_context,
+    intervention_per_timeframe,
+    with_windows,
+)
+from ...common import (
+    FILTER_NOT_NULL,
+    NULL_NON_FINITE,
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
     get_rrt,
     get_timeseries_intakeoutput,
     get_timeseries_labs,
-    intervention_per_timeframe,
 )
 from ...laboratory.renal.CREATININE import reverse_CKD_EPI, reverse_MDRD
 from ..IDEAL_BODY_WEIGHT import IDEAL_BODY_WEIGHT_DEVINE
 from .URINE_OUTPUT import URINE_OUTPUT
 
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_12H = 12 * SECONDS_IN_1H
-SECONDS_IN_48H = 48 * SECONDS_IN_1H
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_7D = 7 * SECONDS_IN_1D
-SECONDS_IN_8D = 8 * SECONDS_IN_1D
-SECONDS_IN_365D = 365 * SECONDS_IN_1D
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 HOSPITAL_KEY = "Global Hospital Stay ID"
 HOSPITAL_TIME_KEY = "Time Relative to Hospital Admission (seconds)"
 PRE_ICU_COL = "Pre-ICU Length of Stay (days)"
@@ -92,13 +89,15 @@ def _prepare_creatinine_baseline_2012(
     Inputs are keyed by hospital stay on the hospital clock, as in
     `_prepare_creatinine_baseline_2026`.
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global Hospital Stay ID
         - SCr Baseline: Serum creatinine baseline value
         - SCr Baseline source: Where baseline came from (measurement or estimate)
 
-    Notes:
+    Notes
+    -----
         MDRD estimation assumes normal kidney function (eGFR=75) if no prior data exists.
         This is a conservative assumption for patients without documented baseline.
     """
@@ -106,7 +105,7 @@ def _prepare_creatinine_baseline_2012(
     # Using absolute distance to time=0 (admission) to find closest measurement
     prior_data = (
         creatinine_data.filter(
-            pl.col(HOSPITAL_TIME_KEY).is_between(-SECONDS_IN_7D, SECONDS_IN_12H)
+            pl.col(HOSPITAL_TIME_KEY).is_between(-SECONDS_IN_1W, SECONDS_IN_12H)
         )
         .group_by(HOSPITAL_KEY)
         .agg(
@@ -165,25 +164,32 @@ def _prepare_creatinine_baseline_2026(
 
     Implements the baseline hierarchy, the first available step wins:
 
-    1. **Outpatient measurement**: Median of values 8-365 days pre-admission
-    2. **Admission measurement**: Value closest to admission (within ±12 hours).
+    1. Outpatient measurement: Median of values more than 7 days and up to 365 days
+       pre-admission ("8-365 days" counted in whole days)
+    2. Admission measurement: Value closest to admission (within ±12 hours).
        A reference only after this window, see `_creatinine_stage_points`.
-    3. **Lowest inpatient value** (only if `hindsight_baseline`): Lowest value of the
+    3. Lowest inpatient value (only if `hindsight_baseline`): Lowest value of the
        admission before the first RRT, including values after the AKI. Uses
        measurements after the time being staged and KDIGO considers it less desirable.
-    4. **CKD-EPI estimate**: Creatinine at eGFR=75 mL/min/1.73m² if no measurement exists
+    4. CKD-EPI estimate: Creatinine at eGFR=75 mL/min/1.73m² if no measurement exists
 
     The baseline belongs to the hospital stay: admission is hospital admission and all
     inputs are on the hospital clock (see `_prepare_creatinine`).
 
-    Args:
-        creatinine_data: LazyFrame with columns [Global Hospital Stay ID, Time Relative to Hospital Admission (seconds), Creatinine]
-        patient_information: LazyFrame with Global Hospital Stay ID, age and gender
-        rrt_start: LazyFrame with columns [Global Hospital Stay ID, first_rrt_start]
+    Arguments
+    ---------
+        creatinine_data : pl.LazyFrame
+            LazyFrame with columns [Global Hospital Stay ID, Time Relative to Hospital Admission (seconds), Creatinine]
+        patient_information : pl.LazyFrame
+            LazyFrame with Global Hospital Stay ID, age and gender
+        rrt_start : pl.LazyFrame, optional
+            LazyFrame with columns [Global Hospital Stay ID, first_rrt_start]
             (required if `hindsight_baseline`)
-        hindsight_baseline: Include step 3
+        hindsight_baseline : bool
+            Include step 3
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global Hospital Stay ID
         - SCr Baseline: Serum creatinine baseline value
@@ -193,9 +199,10 @@ def _prepare_creatinine_baseline_2026(
         pl.col(HOSPITAL_TIME_KEY).is_between(-SECONDS_IN_12H, SECONDS_IN_12H)
     )
     sources = [
-        # STEP 1: Median of outpatient creatinine 8-365 days before admission
+        # STEP 1: Median of outpatient creatinine more than 7 days and up to 365 days before admission
+        # (the day count starts at 7 days before admission, so no value falls between this step and the 7 days before admission)
         creatinine_data.filter(
-            pl.col(HOSPITAL_TIME_KEY).is_between(-SECONDS_IN_365D, -SECONDS_IN_8D)
+            pl.col(HOSPITAL_TIME_KEY).is_between(-365 * SECONDS_IN_1D, -SECONDS_IN_1W, closed="left")
         )
         .group_by(HOSPITAL_KEY)
         .agg(pl.col("Creatinine").median().alias("SCr Baseline"))
@@ -268,12 +275,15 @@ def _prepare_creatinine_48h_baseline(
     KDIGO measures a rise of ≥0.3 mg/dL against the lowest value of the preceding
     48 hours (including the measurement itself).
 
-    Args:
-        creatinine_data: LazyFrame sorted by hospital stay and time, one row per
+    Arguments
+    ---------
+        creatinine_data : pl.LazyFrame
+            LazyFrame sorted by hospital stay and time, one row per
             (hospital stay, time), with columns [Global Hospital Stay ID,
             Time Relative to Hospital Admission (seconds), Creatinine]
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global Hospital Stay ID
         - Time Relative to Hospital Admission (seconds)
@@ -281,7 +291,7 @@ def _prepare_creatinine_48h_baseline(
     """
     return creatinine_data.rolling(
         index_column=HOSPITAL_TIME_KEY,
-        period=f"{SECONDS_IN_48H}i",
+        period=f"{48 * SECONDS_IN_1H}i",
         group_by=HOSPITAL_KEY,
         closed="both",
     ).agg(pl.col("Creatinine").min().alias("48-hour SCr Baseline"))
@@ -291,11 +301,14 @@ def _hospital_clock(patient_information: pl.LazyFrame) -> pl.LazyFrame:
     """
     Map every ICU stay to its hospital stay and the hospital clock.
 
-    Args:
-        patient_information: LazyFrame with Global ICU Stay ID and, if available,
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame
+            LazyFrame with Global ICU Stay ID and, if available,
             Global Hospital Stay ID and Pre-ICU Length of Stay (days)
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - Global Hospital Stay ID (the ICU stay itself if unknown)
@@ -337,15 +350,22 @@ def _prepare_creatinine(
     For version 2012: Calculates 7-day and 48-hour rolling SCr Baseline values.
     For version 2026: Uses KDIGO 2026 established baseline hierarchy and 48-hour rolling baseline.
 
-    Args:
-        timeseries_labs: LazyFrame with creatinine struct data
-        patient_information: LazyFrame with patient demographics
-        version: KDIGO version ("2012" or "2026")
-        rrt_start: LazyFrame with columns [Global ICU Stay ID, first_rrt_start]
+    Arguments
+    ---------
+        timeseries_labs : pl.LazyFrame
+            LazyFrame with creatinine struct data
+        patient_information : pl.LazyFrame, optional
+            LazyFrame with patient demographics
+        version : str
+            KDIGO version ("2012" or "2026")
+        rrt_start : pl.LazyFrame, optional
+            LazyFrame with columns [Global ICU Stay ID, first_rrt_start]
             (version 2026 with `hindsight_baseline`)
-        hindsight_baseline: Allow the lowest inpatient value as baseline (version 2026)
+        hindsight_baseline : bool
+            Allow the lowest inpatient value as baseline (version 2026)
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - Time Relative to Admission (seconds)
@@ -447,13 +467,18 @@ def _creatinine_stage_points(
     - Stage 2: ≥2× baseline
     - Stage 3: ≥3× baseline OR increase to ≥4 mg/dL
 
-    Args:
-        creatinine: Current creatinine value expression
-        baseline: SCr Baseline (from KDIGO 2026 hierarchy or 7-day rolling window);
+    Arguments
+    ---------
+        creatinine : pl.Expr
+            Current creatinine value expression
+        baseline : pl.Expr
+            SCr Baseline (from KDIGO 2026 hierarchy or 7-day rolling window);
             null if it is not yet a valid reference
-        baseline_48h: Lowest creatinine of the preceding 48 hours (absolute rise criterion)
+        baseline_48h : pl.Expr
+            Lowest creatinine of the preceding 48 hours (absolute rise criterion)
 
-    Returns:
+    Returns
+    -------
         Integer (0-3) representing AKI stage, or None if neither baseline is available.
     """
     return (
@@ -503,14 +528,20 @@ def _compute_aki_resolution(
     The status is null if no creatinine was measured after the onset. Resolution
     uses follow-up measurements and is therefore only assigned from the onset on.
 
-    Args:
-        aki_data: LazyFrame with columns [Global ICU Stay ID, timeframe,
+    Arguments
+    ---------
+        aki_data : pl.LazyFrame
+            LazyFrame with columns [Global ICU Stay ID, timeframe,
             Overall KDIGO AKI Stage, Creatinine, SCr Baseline]
-        window_size: Timeframe width in seconds
-        creatinine_col: Name of the creatinine column
-        baseline_col: Name of the baseline column
+        window_size : int
+            Timeframe width in seconds
+        creatinine_col : str
+            Name of the creatinine column
+        baseline_col : str
+            Name of the baseline column
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - timeframe
@@ -532,7 +563,7 @@ def _compute_aki_resolution(
         )
         .filter(
             pl.col("_days").gt(0),
-            pl.col("_days").le(SECONDS_IN_7D / SECONDS_IN_1D),
+            pl.col("_days").le(SECONDS_IN_1W / SECONDS_IN_1D),
             pl.col("_ratio").is_not_null(),
         )
         .group_by(STAY_KEY)
@@ -582,14 +613,21 @@ def _uo_stages(
     means a complete 6h window without a criterion met. The stage is attached to the
     last hour of the window. Anuria (no urine for 12h) is stage 3.
 
-    Args:
-        uo_df: LazyFrame with columns [Global ICU Stay ID, timeframe (hourly), uo_interval_ml_per_kg]
-        column: Name of the output stage column
-        window_agg: "max" (every hour below limit) or "sum" (total below limit)
-        limits: Stage 1 (6h), 2 (12h) and 3 (24h) thresholds on the window aggregate
-        fixed_block: Only evaluate windows aligned to T_0 (hours 0-5, 6-11, ...)
+    Arguments
+    ---------
+        uo_df : pl.LazyFrame
+            LazyFrame with columns [Global ICU Stay ID, timeframe (hourly), uo_interval_ml_per_kg]
+        column : str
+            Name of the output stage column
+        window_agg : str
+            "max" (every hour below limit) or "sum" (total below limit)
+        limits : tuple[float, float, float]
+            Stage 1 (6h), 2 (12h) and 3 (24h) thresholds on the window aggregate
+        fixed_block : bool
+            Only evaluate windows aligned to T_0 (hours 0-5, 6-11, ...)
 
-    Returns:
+    Returns
+    -------
         LazyFrame with columns:
         - Global ICU Stay ID
         - timeframe (hourly window, last hour of the UO window)
@@ -676,26 +714,21 @@ def _uo_fixed_block_stages(uo_df: pl.LazyFrame) -> pl.LazyFrame:
 ################################################################################
 ################################################################################
 # region KDIGO AKI main function (unified with version support)
+@with_windows
 def AKI_KDIGO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     timeseries_inout: Optional[pl.LazyFrame] = None,
-    renal_replacement_therapy: Optional[pl.LazyFrame] = None,
+    rrt: Optional[pl.LazyFrame] = None,
     *,
     version: str = "2012",
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_unit: str = "Days",
-    timeframe_name: Optional[str] = None,
     weight_type: str = "ideal",
     consecutive: bool = True,
     any_period: bool = False,
     fixed_block: bool = False,
     include_resolution: bool = False,
     hindsight_baseline: bool = False,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute KDIGO-based Acute Kidney Injury (AKI) stages in long format.
@@ -714,7 +747,7 @@ def AKI_KDIGO(
 
     KDIGO 2026 Enhancements (when version="2026"):
     - Optional ideal body weight (Devine formula) for UO thresholds
-    - Optional AKI resolution and AKD tracking
+    - Optional AKI resolution (KDIGO 2026 Table 10, within 7 days of the onset)
 
     Arguments
     ---------
@@ -726,30 +759,10 @@ def AKI_KDIGO(
             Timeseries lab values including Creatinine. Loaded automatically if None.
         timeseries_inout : pl.LazyFrame, optional
             Intake/output timeseries data. Loaded automatically if None.
-        renal_replacement_therapy : pl.LazyFrame, optional
+        rrt : pl.LazyFrame, optional
             RRT timeseries data. Loaded automatically if None.
         version : str, optional
             "2012" (default) or "2026". Controls baseline strategy and feature availability.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_minus1 : int, optional
-            Optional lower time bound (seconds from admission, may be negative);
-            timeframes ending at or before it are dropped. Defaults to 30 days before
-            admission; None keeps everything.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission); timeframes starting at
-            or after it are dropped.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Name of the time unit for documentation. Default: "Days".
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
         weight_type : str, optional
             "ideal" (Devine formula) or "actual". Only used when version="2026". Default: "ideal".
         consecutive : bool, optional
@@ -766,10 +779,6 @@ def AKI_KDIGO(
             the admission (before RRT), including post-AKI values" as baseline when no
             outpatient or admission value exists. Allows retrospective AKI diagnosis, but
             uses measurements after the time being staged (hindsight). Default: False.
-        include_criteria : bool, optional
-            Include intermediate criteria columns in output. Default: False.
-        include_intermediate_stages : bool, optional
-            Include intermediate boolean stage columns. Default: False.
 
     Returns
     -------
@@ -808,15 +817,15 @@ def AKI_KDIGO(
         timeseries_labs = get_timeseries_labs()
     if timeseries_inout is None:
         timeseries_inout = get_timeseries_intakeoutput()
-    if renal_replacement_therapy is None:
-        renal_replacement_therapy = get_rrt()
+    if rrt is None:
+        rrt = get_rrt()
 
     # Validate all required data is available
     required = {
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
         "timeseries_inout": timeseries_inout,
-        "renal_replacement_therapy": renal_replacement_therapy,
+        "rrt": rrt,
     }
     _validate_required_data("AKI_KDIGO", required)
 
@@ -824,24 +833,24 @@ def AKI_KDIGO(
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
     timeseries_inout = _to_lazy(timeseries_inout)
-    renal_replacement_therapy = _to_lazy(renal_replacement_therapy)
+    rrt = _to_lazy(rrt)
 
     # Renal Replacement Therapy (RRT) staging: Stage 3 if RRT received during timeframe
     rrt = (
-        renal_replacement_therapy.pipe(
+        rrt.pipe(
             intervention_per_timeframe,
             patient_information,
             start_col="Renal Replacement Therapy Start Relative to Admission (seconds)",
             end_col="Renal Replacement Therapy End Relative to Admission (seconds)",
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            window_size=window.window_size,
         )
         .cast({"timeframe": int})
         .select(STAY_KEY, "timeframe", pl.lit(3).alias("RRT AKI Stage"))
     )
 
-    first_rrt_start = renal_replacement_therapy.group_by(STAY_KEY).agg(
+    first_rrt_start = rrt.group_by(STAY_KEY).agg(
         pl.col(
             "Renal Replacement Therapy Start Relative to Admission (seconds)"
         )
@@ -850,11 +859,7 @@ def AKI_KDIGO(
     )
 
     # region 1. Build T_0
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay, t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # region 2. Prepare creatinine data
     creatinine_data = _prepare_creatinine(
@@ -867,9 +872,9 @@ def AKI_KDIGO(
 
     # Join with T_0 and assign timeframes
     creatinine_data = (
-        creatinine_data.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        creatinine_data.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
-            _assign_timeframe(TIME_KEY, window_size)
+            _assign_timeframe(TIME_KEY, window.window_size)
             .cast(int)
             .alias("timeframe"),
             (pl.col(TIME_KEY) - pl.col("T_0")).alias(
@@ -878,8 +883,8 @@ def AKI_KDIGO(
         )
     )
 
-    if t_1 is not None:
-        creatinine_data = creatinine_data.filter(pl.col(TIME_KEY) < t_1)
+    if window.t_1 is not None:
+        creatinine_data = creatinine_data.filter(pl.col(TIME_KEY) < window.t_1)
 
     # Aggregate to worst per timeframe
     creatinine_per_frame = (
@@ -925,20 +930,21 @@ def AKI_KDIGO(
         URINE_OUTPUT(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            t_minus1=t_minus1,
-            t_1=t_1,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            t_minus1=window.t_minus1,
+            t_1=window.t_1,
             window_size=SECONDS_IN_1H,
+            timeframe_name="timeframe",
             weight_col=weight_col,
         )
         # Keep hourly data for UO staging calculations
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .cast({"timeframe": int})
     )
-    if t_1 is not None:
+    if window.t_1 is not None:
         urine_data = urine_data.filter(
-            pl.col("timeframe") * SECONDS_IN_1H + pl.col("T_0") < t_1
+            pl.col("timeframe") * SECONDS_IN_1H + pl.col("T_0") < window.t_1
         )
 
     # region 4. Calculate UO-based AKI stages (on hourly data)
@@ -960,7 +966,7 @@ def AKI_KDIGO(
         uo_stages_dict[method_name] = (
             uo_method_df.with_columns(
                 (pl.col("timeframe") * SECONDS_IN_1H)
-                .floordiv(window_size)
+                .floordiv(window.window_size)
                 .cast(int)
                 .alias("windowly_timeframe")
             )
@@ -973,7 +979,7 @@ def AKI_KDIGO(
     # region 5. Join all data
     urine_per_window = urine_data.group_by(
         STAY_KEY,
-        pl.col("timeframe").mul(SECONDS_IN_1H).floordiv(window_size),
+        pl.col("timeframe").mul(SECONDS_IN_1H).floordiv(window.window_size),
     ).agg(
         pl.col("uo_interval_ml").sum().alias("UO ml/window"),
         pl.col("uo_interval_ml_per_kg").sum().alias("UO ml/kg/window"),
@@ -987,7 +993,7 @@ def AKI_KDIGO(
     )
     result = (
         _add_sparse_timeframes(
-            _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size),
+            _build_base_timeframes(ctx.all_stays_t0, patient_information, window.window_size),
             rrt,
             urine_per_window,
             creatinine_stages,
@@ -1013,23 +1019,19 @@ def AKI_KDIGO(
         pl.max_horizontal(*stage_cols).alias("Overall KDIGO AKI Stage")
     ).sort(STAY_KEY, "timeframe")
 
-    # Add resolution and AKD tracking if requested (version 2026 only)
+    # Add the AKI resolution if requested (version 2026 only)
     if version == "2026" and include_resolution:
-        resolution_data = _compute_aki_resolution(result, window_size)
+        resolution_data = _compute_aki_resolution(result, window.window_size)
         result = result.join(
             resolution_data, on=[STAY_KEY, "timeframe"], how="left"
         )
 
-    result = result.filter(
-        *_optional_timeframe_bounds_filter(
-            "timeframe", window_size, t_minus1=t_minus1, t_1=t_1
-        )
-    )
+    result = result.filter(*ctx.bounds)
 
     # Rename timeframe column if needed
-    if timeframe_name != "timeframe":
+    if ctx.name != "timeframe":
         result = result.with_columns(
-            pl.col("timeframe").alias(timeframe_name)
+            pl.col("timeframe").alias(ctx.name)
         ).drop("timeframe")
 
     return result

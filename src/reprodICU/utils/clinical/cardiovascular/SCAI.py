@@ -4,7 +4,7 @@ SCAI: compute SCAI cardiogenic shock stages in long format directly from raw inp
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - SCAI Stage (A-E, where E is worst)
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
@@ -43,16 +43,20 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    T_MINUS1_DEFAULT,
-    _add_sparse_timeframes,
-    _validate_required_data,
+from ...base import (
+    SECONDS_IN_1H,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
     _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
+    _finalize,
     _to_lazy,
+    _window_context,
+    with_windows,
+)
+from ...common import (
+    _validate_required_data,
     get_medications,
     get_patient_information,
     get_timeseries_labs,
@@ -61,13 +65,7 @@ from ...common import (
 from ...core import BLOOD_PRESSURES
 from ...scores.SOFA2 import get_vasopressor_points
 
-# seconds constants
-SECONDS_PER_HOUR = 60 * 60
-SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
-
 # strict time column name used across helpers
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 
 # SCAI stages as Polars Enum
 SCAI_STAGES = pl.Enum(["A", "B", "C", "D", "E"])
@@ -144,18 +142,14 @@ def _vasopressors_stage_expr() -> pl.Expr:
 # endregion staging helpers
 
 
+@with_windows(window_size=SECONDS_IN_1H)
 def SCAI(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     medications: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_PER_HOUR,
-    timeframe_unit: str = "Hours",
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute SCAI cardiogenic shock stages with automatic dataset loading.
@@ -174,24 +168,6 @@ def SCAI(
             Timeseries labs data. Loaded automatically if None.
         medications : pl.LazyFrame, optional
             Medications data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_minus1 : int, optional
-            Optional lower time bound (seconds from admission, may be negative);
-            timeframes ending at or before it are dropped. Defaults to 30 days before
-            admission; None keeps everything.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission); timeframes starting at
-            or after it are dropped.
-        window_size : int, optional
-            Timeframe width in seconds (default: 3600 = 1 hour). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Semantic only; output column remains a numeric timeframe.
 
     Returns
     -------
@@ -221,12 +197,7 @@ def SCAI(
     timeseries_labs = _to_lazy(timeseries_labs)
     medications = _to_lazy(medications)
 
-    # Build T_0
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_unit, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # region vitals (SBP, MAP, HR)
     vitals_tf = (
@@ -239,9 +210,9 @@ def SCAI(
             "Mean arterial pressure",
             "Heart rate",
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
-            _assign_timeframe(TIME_KEY, window_size).alias("timeframe"),
+            _assign_timeframe(TIME_KEY, window.window_size).alias("timeframe"),
             _vitals_stage_expr().alias("vitals_stage"),
         )
         .group_by(STAY_KEY, "timeframe")
@@ -262,9 +233,9 @@ def SCAI(
         .select(
             STAY_KEY, TIME_KEY, "Lactate", "Creatinine", "pH", "Base excess"
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
-            _assign_timeframe(TIME_KEY, window_size).alias("timeframe"),
+            _assign_timeframe(TIME_KEY, window.window_size).alias("timeframe"),
             _labs_stage_expr().alias("labs_stage"),
         )
         .group_by(STAY_KEY, "timeframe")
@@ -276,10 +247,10 @@ def SCAI(
         get_vasopressor_points(
             medications,
             patient_information,
-            ALL_STAYS_T0,
-            t_minus1=t_minus1,
-            t_1=t_1,
-            window_size=window_size,
+            ctx.all_stays_t0,
+            t_minus1=window.t_minus1,
+            t_1=window.t_1,
+            window_size=window.window_size,
         )
         .select(STAY_KEY, "timeframe", "vasopressor_points")
         .with_columns(pl.col("vasopressor_points").fill_null(0))
@@ -288,32 +259,20 @@ def SCAI(
         .agg(pl.col("vasopressors_stage").max())
     )
 
-    # Base frames
-    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size) # fmt: skip
-
     # Assemble all staging components
-    out = _add_sparse_timeframes(base, vitals_tf, labs_tf, vp_tf)
-    for part in [vitals_tf, labs_tf, vp_tf]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
+    out = _assemble(ctx, vitals_tf, labs_tf, vp_tf)
 
-    return (
-        out.filter(
-            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
-        )
-        .with_columns(
+    return _finalize(
+        out.with_columns(
             pl.max_horizontal(
                 pl.col("vitals_stage"),
                 pl.col("labs_stage"),
                 pl.col("vasopressors_stage"),
             ).alias("SCAI Stage")
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "SCAI Stage",
-        )
-        .sort(STAY_KEY, timeframe_name)
+        ),
+        ctx,
+        "SCAI Stage",
+        rest=False,
     )
 
 

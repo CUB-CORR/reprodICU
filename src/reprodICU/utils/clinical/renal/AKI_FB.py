@@ -5,7 +5,7 @@ after the diagnosis of acute kidney injury (AKI) in critically ill adults.
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference; intended to be the AKI onset)
-- timeframe (0-indexed integer window; 0 = day of AKI diagnosis)
+- timeframe (integer window index counted from T_0; 0 = day of AKI diagnosis)
 - AKI-FB Risk Score (0-61)
 - The components the score is built from
 
@@ -36,16 +36,22 @@ from typing import Optional
 
 import polars as pl
 
+from ...base import (
+    SECONDS_IN_1H,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
+    _assign_timeframe,
+    _finalize,
+    _to_lazy,
+    _window_context,
+    intervention_per_timeframe,
+    with_windows,
+)
 from ...admission import COMMON_ADMISSION_CATEGORIES
 from ...common import (
     NULL_NON_FINITE,
-    T_MINUS1_DEFAULT,
-    _assign_timeframe,
-    _build_base_timeframes,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_timeframe_bounds_filter,
-    _to_lazy,
     _validate_required_data,
     extract_struct_value,
     get_medications,
@@ -53,18 +59,11 @@ from ...common import (
     get_timeseries_intakeoutput,
     get_timeseries_labs,
     get_ventilation,
-    intervention_per_timeframe,
 )
 from ...sepsis.SEPSIS import SEPSIS
 from ..pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import (
     NOREPINEPHRINE_EQUIVALENT_DOSAGE,
 )
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 DRUG_START_KEY = "Drug Start Relative to Admission (seconds)"
 DRUG_END_KEY = "Drug End Relative to Admission (seconds)"
 
@@ -134,6 +133,7 @@ def _calculate_aki_fb_score(
 ################################################################################
 ################################################################################
 # region AKI-FB main function
+@with_windows
 def AKI_FB(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
@@ -142,13 +142,7 @@ def AKI_FB(
     ventilation: Optional[pl.LazyFrame] = None,
     sepsis: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute the AKI-FB risk score in long format from raw inputs.
@@ -182,26 +176,6 @@ def AKI_FB(
         sepsis : pl.LazyFrame, optional
             Output of SEPSIS (Seymour anchor) computed relative to admission (t_0=0) with
             window_size=3600. Computed automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides (AKI onset) with columns [Global ICU Stay ID, T_0].
-        t_minus1 : int, optional
-            Optional lower time bound (seconds from admission, may be negative);
-            timeframes ending at or before it are dropped. Defaults to 30 days before
-            admission; None keeps everything.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission); timeframes starting at
-            or after it are dropped.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_unit : str, optional
-            Semantic unit for timeframe (default: "Days"). Does not affect calculation.
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
 
     Returns
     -------
@@ -251,20 +225,7 @@ def AKI_FB(
     medications = _to_lazy(medications)
     ventilation = _to_lazy(ventilation)
 
-    # Build T_0 and base timeframes
-    all_stays_t0 = _build_t0(
-        patient_information.select(STAY_KEY), t_0_per_stay, t_0
-    )
-    base = _build_base_timeframes(all_stays_t0, patient_information, window_size)
-    # the score is defined from the day of diagnosis (timeframe 0) onwards
-    base = base.filter(pl.col("timeframe") >= 0).filter(
-        *_optional_timeframe_bounds_filter(
-            "timeframe", window_size, t_minus1=t_minus1, t_1=t_1
-        )
-    )
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # Trauma admission (static per stay)
     trauma = (
@@ -283,12 +244,13 @@ def AKI_FB(
             ventilation=ventilation,
             t_0=0,
             window_size=SECONDS_IN_1H,
+            timeframe_name="timeframe",
             anchors={"seymour"},
         )
     sepsis_before_t0 = (
         _to_lazy(sepsis)
         .filter(pl.col("SEPSIS").is_not_null())
-        .join(all_stays_t0, on=STAY_KEY, how="inner")
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .filter(pl.col("timeframe") * SECONDS_IN_1H <= pl.col("T_0"))
         .sort(STAY_KEY, "timeframe")
         .group_by(STAY_KEY)
@@ -298,9 +260,9 @@ def AKI_FB(
 
     # Worst laboratory values per timeframe
     labs = (
-        timeseries_labs.join(all_stays_t0, on=STAY_KEY, how="inner")
+        timeseries_labs.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
-            _assign_timeframe(TIME_KEY, window_size).alias("timeframe"),
+            _assign_timeframe(TIME_KEY, window.window_size).alias("timeframe"),
             extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
             extract_struct_value("Lactate", ["Blood", "Plasma", "Serum"]).alias("Lactate"),
         )
@@ -313,8 +275,8 @@ def AKI_FB(
     # Fluid balance per timeframe
     fluid_balance = (
         timeseries_inout.pipe(NULL_NON_FINITE)
-        .join(all_stays_t0, on=STAY_KEY, how="inner")
-        .with_columns(_assign_timeframe(TIME_KEY, window_size).alias("timeframe"))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(_assign_timeframe(TIME_KEY, window.window_size).alias("timeframe"))
         .filter(pl.col("timeframe") >= 0)
         .group_by(STAY_KEY, "timeframe")
         .agg(
@@ -354,23 +316,25 @@ def AKI_FB(
         ),
     }  # fmt: skip
 
-    # Combine all components starting from base timeframes
-    keys = [STAY_KEY, "timeframe"]
-    result = base.join(labs, on=keys, how="left").join(fluid_balance, on=keys, how="left")
+    # Combine all components
+    windows = [labs, fluid_balance]
     for name, (data, start_col, end_col) in interventions.items():
-        active = intervention_per_timeframe(
-            data,
-            patient_information,
-            start_col=start_col,
-            end_col=end_col,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
-        ).select(STAY_KEY, pl.col("timeframe").cast(int), pl.col("intervention").alias(name))  # fmt: skip
-        result = result.join(active, on=keys, how="left")
+        windows.append(
+            intervention_per_timeframe(
+                data,
+                patient_information,
+                start_col=start_col,
+                end_col=end_col,
+                t_0=window.t_0,
+                t_0_per_stay=window.t_0_per_stay,
+                window_size=window.window_size,
+            ).select(STAY_KEY, pl.col("timeframe").cast(int), pl.col("intervention").alias(name))  # fmt: skip
+        )
     result = (
-        result.join(trauma, on=STAY_KEY, how="left")
-        .join(sepsis_before_t0, on=STAY_KEY, how="left")
+        _assemble(ctx, *windows, stay_parts=[trauma, sepsis_before_t0])
+        # the score is defined from the day of diagnosis (timeframe 0) onwards, and from ICU admission if that is later:
+        # no windows before the dense range, which _assemble adds wherever an input has data
+        .filter(pl.col("timeframe") >= pl.max_horizontal(0, (-pl.col("T_0")).floordiv(window.window_size)))
         .with_columns(pl.col(*interventions, "Post-Trauma Admission").fill_null(False))
     )
 
@@ -391,25 +355,21 @@ def AKI_FB(
     )
 
     # Final output
-    return (
-        result.with_columns(pl.col("timeframe").alias(timeframe_name))
-        .sort(STAY_KEY, "timeframe")
-        .select(
-            STAY_KEY,
-            "T_0",
-            timeframe_name,
-            "AKI-FB Risk Score",
-            "Post-Trauma Admission",
-            "Sepsis Before T_0",
-            "Creatinine",
-            "Fluid Balance",
-            "Ventilated",
-            "Norepinephrine Use",
-            "High-Dose Norepinephrine Use",
-            "Lactate",
-            "Blood Product Transfusion",
-            "Nutrition Support",
-        )
+    return _finalize(
+        result,
+        ctx,
+        "AKI-FB Risk Score",
+        "Post-Trauma Admission",
+        "Sepsis Before T_0",
+        "Creatinine",
+        "Fluid Balance",
+        "Ventilated",
+        "Norepinephrine Use",
+        "High-Dose Norepinephrine Use",
+        "Lactate",
+        "Blood Product Transfusion",
+        "Nutrition Support",
+        rest=False,
     )
 
 

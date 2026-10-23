@@ -1,13 +1,8 @@
 """
 NEE: compute Norepinephrine Equivalent Dose from raw inputs in long format.
 
-Output columns per row:
-- Global ICU Stay ID
-- T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
-- Norepinephrine Equivalent Dose (mcg/kg/min)
-
-Time is in seconds. Windows determined by floor((time - T_0)/window_size).
+One row per medication administration (drug interval) with the dose converted to a
+norepinephrine equivalent in mcg/kg/min. Times are in seconds from ICU admission.
 
 Sources
 -------
@@ -27,9 +22,6 @@ from ...common import (
     get_patient_information,
 )
 from .ALIGNED_UNITS import ALIGNED_UNITS
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 VASOPRESSORS_INOTROPES = [
     "angiotensin II",  # 0.0025 * dose in ng/kg/min
@@ -78,7 +70,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
     Returns
     -------
         pl.LazyFrame
-            One row per (stay, timeframe) with columns:
+            One row per medication administration with columns:
             - Global ICU Stay ID
             - Drug Start Relative to Admission (seconds)
             - Drug End Relative to Admission (seconds)

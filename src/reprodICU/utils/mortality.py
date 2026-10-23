@@ -22,7 +22,8 @@ from typing import Optional
 
 import polars as pl
 
-from .common import _to_lazy, get_patient_information
+from .base import _to_lazy
+from .common import get_patient_information
 
 __all__ = ["COMMON_MORTALITY_MEASURES", "MORTALITY_WITHIN_DAYS"]
 

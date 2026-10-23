@@ -31,8 +31,14 @@ from typing import Optional
 import polars as pl
 from pycomorb import CustomComorbidityIndex
 
-from ..common import (
+from ..base import (
+    Reference,
+    SECONDS_IN_1D,
+    STAY_KEY,
     _to_lazy,
+    with_reference_time,
+)
+from ..common import (
     _validate_required_data,
     get_diagnoses,
     get_patient_information,
@@ -44,12 +50,7 @@ from ..common import (
 )
 from ..comorbidity import _load_and_process_diagnoses
 from .APS import APS, APS3
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 ICD_COL = "Diagnosis ICD-10 Code"
-
-SECONDS_IN_1D = 86400
 
 
 # region age points
@@ -366,6 +367,7 @@ def _apache3_comorbidity_points(
 ################################################################################
 ################################################################################
 # region APACHE2
+@with_reference_time
 def APACHE2(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -373,8 +375,7 @@ def APACHE2(
     timeseries_resp: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Acute Physiology And Chronic Health Evaluation II (APACHE II).
@@ -387,9 +388,24 @@ def APACHE2(
         3. Calculate Chronic Health Points based on diagnoses and "Admission Type".
         4. Assemble components and sum to get the final APACHE II score.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {stay_id_col}: Unique identifier for the ICU stay.
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vital signs. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries laboratory values. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        diagnoses : pl.LazyFrame, optional
+            Diagnoses (ICD codes). Loaded automatically if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Contains columns:
+            - Global ICU Stay ID
             - T_0: Reference time for the stay.
             - APACHE II Score.
             - Component points (APS Score, age_points, history_points)
@@ -421,22 +437,18 @@ def APACHE2(
 
     # region component scoring
     # 1. APS
-    time_col = (
-        "Days Relative to T_0"
-        if t_0_per_stay is not None
-        else "Days Relative to Admission"
-    )
     aps_tf = (
         APS(
             patient_information=patient_information,
             timeseries_vitals=timeseries_vitals,
             timeseries_labs=timeseries_labs,
             timeseries_resp=timeseries_resp,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
             window_size=SECONDS_IN_1D,
+            timeframe_name="timeframe",
         )
-        .filter(pl.col(time_col) == 0)
+        .filter(pl.col("timeframe") == 0)
         .select(STAY_KEY, "T_0", "APS Score")
     )
 
@@ -477,6 +489,7 @@ def APACHE2(
 ################################################################################
 ################################################################################
 # region APACHE3
+@with_reference_time
 def APACHE3(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -486,8 +499,7 @@ def APACHE3(
     diagnoses: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Acute Physiology And Chronic Health Evaluation III (APACHE III).
@@ -500,9 +512,28 @@ def APACHE3(
         3. Calculate Comorbidity Points based on diagnoses.
         4. Assemble components and sum to get the final APACHE III score.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {stay_id_col}: Unique identifier for the ICU stay.
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vital signs. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries laboratory values. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Timeseries intake/output data. Loaded automatically if None.
+        diagnoses : pl.LazyFrame, optional
+            Diagnoses (ICD codes). Loaded automatically if None.
+        ventilation : pl.LazyFrame, optional
+            Ventilation episodes with start and end. Loaded automatically if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Contains columns:
+            - Global ICU Stay ID
             - T_0: Reference time for the stay.
             - APACHE III Score.
             - Component points (APS3 Score, age_points, comorbidity_points)
@@ -547,11 +578,12 @@ def APACHE3(
             timeseries_resp=timeseries_resp,
             timeseries_inout=timeseries_inout,
             ventilation=ventilation,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
             window_size=SECONDS_IN_1D,
+            timeframe_name="timeframe",
         )
-        .filter(pl.col("Days Relative to Admission") == 0)
+        .filter(pl.col("timeframe") == 0)
         .select(STAY_KEY, "T_0", "APS3 Score")
     )
 
@@ -615,6 +647,7 @@ def _APACHE2_mortality(
     return odds / (1 + odds)
 
 
+@with_reference_time
 def APACHE2_mortality(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -622,8 +655,7 @@ def APACHE2_mortality(
     timeseries_resp: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate predicted mortality rate from APACHE II score.
@@ -638,8 +670,8 @@ def APACHE2_mortality(
             timeseries_labs=timeseries_labs,
             timeseries_resp=timeseries_resp,
             diagnoses=diagnoses,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
         )
         .join(
             patient_information.select(
@@ -780,6 +812,7 @@ def _APACHE4_hospital_mortality(
     return odds / (1 + odds)
 
 
+@with_reference_time
 def APACHE4_hospital_mortality(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -789,8 +822,7 @@ def APACHE4_hospital_mortality(
     diagnoses: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate predicted mortality rate from APACHE IV score.
@@ -810,10 +842,11 @@ def APACHE4_hospital_mortality(
             timeseries_resp=timeseries_resp,
             timeseries_inout=timeseries_inout,
             ventilation=ventilation,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
+            timeframe_name="timeframe",
         )
-        .filter(pl.col("Days Relative to Admission") == 0)  # first 24 h
+        .filter(pl.col("timeframe") == 0)  # first 24 h
         .join(
             patient_information.select(
                 STAY_KEY,

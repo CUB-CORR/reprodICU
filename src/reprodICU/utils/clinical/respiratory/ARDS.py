@@ -36,9 +36,18 @@ from typing import Literal, Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    Reference,
+    SECONDS_IN_1D,
+    SECONDS_IN_4H,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
     _validate_required_data,
     get_diagnoses,
     get_notes,
@@ -51,22 +60,15 @@ from ...common import (
 from ...core import RESPIRATORY_PARAMS
 from ...laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_4H = 4 * SECONDS_IN_1H
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
 
 # region IMAGING_CRITERION
+@with_reference_time
 def IMAGING_CRITERION(
     patient_information: Optional[pl.LazyFrame] = None,
     notes: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     definition_source: Literal["Qian", "Neto", "Pensier", "any"] = "Qian",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Detect bilateral infiltrates in chest imaging reports.
@@ -77,12 +79,6 @@ def IMAGING_CRITERION(
             Patient/stay-level information. Loaded automatically if None.
         notes : pl.LazyFrame, optional
             Clinical notes data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         definition_source : str, optional
             Choice of definition for detecting bilateral infiltrates in chest
             imaging reports. Can be 'Qian', 'Neto', 'Pensier', or 'any'.
@@ -111,10 +107,7 @@ def IMAGING_CRITERION(
 
     notes = _to_lazy(notes)
 
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # Neto et al. 2018
     NETO_PATTERN = (
@@ -175,31 +168,22 @@ def IMAGING_CRITERION(
         ) # fmt: skip
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        BILATERAL_INFILTRATES = (
-            BILATERAL_INFILTRATES.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    BILATERAL_INFILTRATES = _relative_to_t0(BILATERAL_INFILTRATES, all_stays_t0, ref)
 
     return BILATERAL_INFILTRATES
 
 
 # region RESPIRATORY_CRITERION
+@with_reference_time
 def RESPIRATORY_CRITERION(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
-    vent: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     pf_ratio_only: bool = False,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Identify periods meeting respiratory criteria:
@@ -219,14 +203,8 @@ def RESPIRATORY_CRITERION(
             Laboratory timeseries data. Loaded automatically if None.
         timeseries_resp : pl.LazyFrame, optional
             Respiratory timeseries data. Loaded automatically if None.
-        vent : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Ventilation timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional
             If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False.
 
@@ -252,8 +230,8 @@ def RESPIRATORY_CRITERION(
         timeseries_labs = get_timeseries_labs()
     if timeseries_resp is None:
         timeseries_resp = get_timeseries_respiratory()
-    if vent is None:
-        vent = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
@@ -261,7 +239,7 @@ def RESPIRATORY_CRITERION(
         "timeseries_vitals": timeseries_vitals,
         "timeseries_labs": timeseries_labs,
         "timeseries_resp": timeseries_resp,
-        "vent": vent,
+        "ventilation": ventilation,
     }
     _validate_required_data("RESPIRATORY_CRITERION", required)
 
@@ -269,15 +247,12 @@ def RESPIRATORY_CRITERION(
     timeseries_vitals = _to_lazy(timeseries_vitals)
     timeseries_labs = _to_lazy(timeseries_labs)
     timeseries_resp = _to_lazy(timeseries_resp)
-    vent = _to_lazy(vent)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    ventilation = _to_lazy(ventilation)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # region ventilator parameters
     # --------------------------------------------------------------------------
-    PEEP = RESPIRATORY_PARAMS(timeseries_respiratory=timeseries_resp).select(STAY_KEY, TIME_KEY, "PEEP")
+    PEEP = RESPIRATORY_PARAMS(timeseries_resp=timeseries_resp).select(STAY_KEY, TIME_KEY, "PEEP")
 
     # region O2 ratios
     # --------------------------------------------------------------------------
@@ -306,7 +281,7 @@ def RESPIRATORY_CRITERION(
     # region ventilation
     # --------------------------------------------------------------------------
     VENTILATION = (
-        vent.rename(
+        ventilation.rename(
             {
                 "Ventilation Start Relative to Admission (seconds)": "Ventilation Start",
                 "Ventilation End Relative to Admission (seconds)": "Ventilation End",
@@ -416,21 +391,13 @@ def RESPIRATORY_CRITERION(
         )
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        CRITERION = (
-            CRITERION.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    CRITERION = _relative_to_t0(CRITERION, all_stays_t0, ref)
 
     return CRITERION
 
 
 # region ARDS
+@with_reference_time
 def ARDS(
     patient_information: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
@@ -438,12 +405,11 @@ def ARDS(
     timeseries_labs: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     notes: Optional[pl.LazyFrame] = None,
-    vent: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     pf_ratio_only: bool = False,
     definition_source: Literal["Qian", "Neto", "Pensier", "any"] = "Qian",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Identify ARDS cases using the New Global Definition of ARDS.
@@ -466,14 +432,8 @@ def ARDS(
             Respiratory timeseries data. Loaded automatically if None.
         notes : pl.LazyFrame, optional
             Clinical notes data. Loaded automatically if None.
-        vent : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Ventilation timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional
             If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False
         definition_source : str, optional
@@ -508,8 +468,8 @@ def ARDS(
         timeseries_resp = get_timeseries_respiratory()
     if notes is None:
         notes = get_notes()
-    if vent is None:
-        vent = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
@@ -519,7 +479,7 @@ def ARDS(
         "timeseries_labs": timeseries_labs,
         "timeseries_resp": timeseries_resp,
         "notes": notes,
-        "vent": vent,
+        "ventilation": ventilation,
     }
     _validate_required_data("ARDS", required)
 
@@ -529,11 +489,9 @@ def ARDS(
     timeseries_labs = _to_lazy(timeseries_labs)
     timeseries_resp = _to_lazy(timeseries_resp)
     notes = _to_lazy(notes)
-    vent = _to_lazy(vent)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
+    ventilation = _to_lazy(ventilation)
     all_stays = patient_information.select(STAY_KEY).unique()
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # region ICD / APACHE
     # --------------------------------------------------------------------------
@@ -589,8 +547,8 @@ def ARDS(
     BILATERAL_INFILTRATES = IMAGING_CRITERION(
         patient_information=patient_information,
         notes=notes,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
+        t_0=ref.t_0,
+        t_0_per_stay=ref.t_0_per_stay,
         definition_source=definition_source,
     )
 
@@ -599,9 +557,9 @@ def ARDS(
         timeseries_vitals=timeseries_vitals,
         timeseries_labs=timeseries_labs,
         timeseries_resp=timeseries_resp,
-        vent=vent,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
+        ventilation=ventilation,
+        t_0=ref.t_0,
+        t_0_per_stay=ref.t_0_per_stay,
         pf_ratio_only=pf_ratio_only,
     )
 
@@ -642,7 +600,7 @@ def ARDS(
         )
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
+    if (ref.t_0 != 0) or (ref.t_0_per_stay is not None):
         ARDS_COHORT = ARDS_COHORT.join(
             all_stays_t0, on=STAY_KEY, how="inner"
         ).select(

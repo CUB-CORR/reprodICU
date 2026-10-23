@@ -26,8 +26,12 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import (
+from ..base import (
+    SECONDS_IN_1D,
+    STAY_KEY,
     _to_lazy,
+)
+from ..common import (
     _validate_required_data,
     get_medications,
     get_patient_information,
@@ -35,11 +39,6 @@ from ..common import (
     get_ventilation,
 )
 from ..mortality import COMMON_MORTALITY_MEASURES, MORTALITY_WITHIN_DAYS
-
-SECONDS_IN_1D = 24 * 60 * 60
-SECONDS_IN_1H = 60 * 60
-
-STAY_KEY = "Global ICU Stay ID"
 
 SUCCESSFUL_EXTUBATION_GAP_SECONDS = 48 * 60 * 60
 VASOPRESSOR_MEDICATIONS = [

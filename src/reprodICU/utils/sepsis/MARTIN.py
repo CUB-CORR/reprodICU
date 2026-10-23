@@ -13,7 +13,8 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, _validate_required_data, get_diagnoses
+from ..base import _to_lazy
+from ..common import _validate_required_data, get_diagnoses
 
 
 # region Martin Sepsis

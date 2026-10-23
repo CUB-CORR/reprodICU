@@ -2,9 +2,17 @@ from typing import Literal, Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    Reference,
+    SECONDS_IN_4H,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
@@ -13,8 +21,6 @@ from ...common import (
     get_timeseries_vitals,
 )
 from ...core import RESPIRATORY_PARAMS
-
-SECONDS_IN_4H = 4 * 60 * 60
 pf_ratio_col = "PaO2/FiO2 Ratio"
 sf_ratio_col = "SpO2/FiO2 Ratio"
 
@@ -24,7 +30,7 @@ def _improve_resp(
     resp: pl.LazyFrame,
     fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
 ) -> pl.LazyFrame:
-    resp = RESPIRATORY_PARAMS(timeseries_respiratory=resp)
+    resp = RESPIRATORY_PARAMS(timeseries_resp=resp)
 
     VENT_FIO2 = pl.col("FiO2")
     FLOW_FIO2 = pl.col("LPM").mul(3).add(21).clip(upper_bound=100)
@@ -73,15 +79,15 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 
 # region PaO2/FiO2 Ratio
+@with_reference_time
 def PaO2_FiO2_RATIO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     tolerance: Optional[int] = SECONDS_IN_4H,
     fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate PaO2/FiO2 ratio timeseries from respiratory and laboratory timeseries.
@@ -94,12 +100,6 @@ def PaO2_FiO2_RATIO(
             Respiratory timeseries data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         tolerance : int, optional
             Join tolerance in seconds. Default is 4 hours.
         fio2_type : str, optional
@@ -130,16 +130,10 @@ def PaO2_FiO2_RATIO(
     }
     _validate_required_data("PaO2_FiO2_RATIO", required)
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
-
     patient_information = _to_lazy(patient_information)
     timeseries_resp = _to_lazy(timeseries_resp)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_resp = _improve_resp(timeseries_resp, fio2_type=fio2_type)
     timeseries_labs = _improve_labs(timeseries_labs)
@@ -171,30 +165,21 @@ def PaO2_FiO2_RATIO(
         .select(STAY_KEY, TIME_KEY, pf_ratio_col)
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        pf_ratio = (
-            pf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    pf_ratio = _relative_to_t0(pf_ratio, all_stays_t0, ref)
 
     return pf_ratio
 
 
 # region SpO2/FiO2 Ratio
+@with_reference_time
 def SpO2_FiO2_RATIO(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     tolerance: Optional[int] = SECONDS_IN_4H,
     fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate SpO2/FiO2 ratio timeseries from respiratory and vital signs timeseries.
@@ -207,12 +192,6 @@ def SpO2_FiO2_RATIO(
             Respiratory timeseries data. Loaded automatically if None.
         timeseries_vitals : pl.LazyFrame, optional
             Vital signs timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         tolerance : int, optional
             Join tolerance in seconds. Default is 4 hours.
         fio2_type : str, optional
@@ -243,16 +222,10 @@ def SpO2_FiO2_RATIO(
     }
     _validate_required_data("SpO2_FiO2_RATIO", required)
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
-
     patient_information = _to_lazy(patient_information)
     timeseries_resp = _to_lazy(timeseries_resp)
     timeseries_vitals = _to_lazy(timeseries_vitals)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_resp = _improve_resp(timeseries_resp, fio2_type=fio2_type)
     timeseries_vitals = _improve_vitals(timeseries_vitals)
@@ -284,16 +257,7 @@ def SpO2_FiO2_RATIO(
         .select(STAY_KEY, TIME_KEY, sf_ratio_col)
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        sf_ratio = (
-            sf_ratio.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    sf_ratio = _relative_to_t0(sf_ratio, all_stays_t0, ref)
 
     return sf_ratio
 

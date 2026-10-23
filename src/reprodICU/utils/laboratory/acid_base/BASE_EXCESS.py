@@ -15,17 +15,21 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    Reference,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
     _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
 )
 from .BICARBONATE import _bicarbonate_from_paCO2_and_pH, _improve_labs
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 
 BASE_EXCESS_COL          = "Base excess"
 STANDARD_BASE_EXCESS_COL = "Standard base excess"
@@ -45,12 +49,12 @@ def _standard_base_excess_from_bicarbonate_and_pH(
 
 
 # region BASE_EXCESS
+@with_reference_time
 def BASE_EXCESS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate base excess from blood-gas pH and pCO2.
@@ -61,12 +65,6 @@ def BASE_EXCESS(
             Patient/stay-level information. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -89,10 +87,7 @@ def BASE_EXCESS(
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_labs = _improve_labs(timeseries_labs)
 
@@ -111,27 +106,18 @@ def BASE_EXCESS(
         .select(STAY_KEY, TIME_KEY, BASE_EXCESS_COL)
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        base_excess = (
-            base_excess.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    base_excess = _relative_to_t0(base_excess, all_stays_t0, ref)
 
     return base_excess
 
 
 # region STANDARD_BASE_EXCESS
+@with_reference_time
 def STANDARD_BASE_EXCESS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate standard base excess from blood-gas pH and pCO2.
@@ -144,12 +130,6 @@ def STANDARD_BASE_EXCESS(
             Patient/stay-level information. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Timeframes count from it; it never cuts the range. Ignored when
-            t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -172,10 +152,7 @@ def STANDARD_BASE_EXCESS(
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_labs = _improve_labs(timeseries_labs)
 
@@ -195,16 +172,7 @@ def STANDARD_BASE_EXCESS(
         .select(STAY_KEY, TIME_KEY, STANDARD_BASE_EXCESS_COL)
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        standard_base_excess = (
-            standard_base_excess.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    standard_base_excess = _relative_to_t0(standard_base_excess, all_stays_t0, ref)
 
     return standard_base_excess
 
