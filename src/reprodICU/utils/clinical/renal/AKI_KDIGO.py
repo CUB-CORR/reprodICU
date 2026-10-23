@@ -843,9 +843,7 @@ def AKI_KDIGO(
             patient_information,
             start_col="Renal Replacement Therapy Start Relative to Admission (seconds)",
             end_col="Renal Replacement Therapy End Relative to Admission (seconds)",
-            t_0=window.t_0,
-            t_0_per_stay=window.t_0_per_stay,
-            window_size=window.window_size,
+            window=window,
         )
         .cast({"timeframe": int})
         .select(STAY_KEY, "timeframe", pl.lit(3).alias("RRT AKI Stage"))

@@ -325,9 +325,7 @@ def AKI_FB(
                 patient_information,
                 start_col=start_col,
                 end_col=end_col,
-                t_0=window.t_0,
-                t_0_per_stay=window.t_0_per_stay,
-                window_size=window.window_size,
+                window=window,
             ).select(STAY_KEY, pl.col("timeframe").cast(int), pl.col("intervention").alias(name))  # fmt: skip
         )
     result = (

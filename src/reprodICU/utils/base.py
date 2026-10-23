@@ -208,17 +208,14 @@ def intervention_per_timeframe(
     patient_information: pl.LazyFrame,
     start_col: str,
     end_col: str,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    window_size: int = SECONDS_IN_1H,
+    window: "Window",
 ) -> pl.LazyFrame:
     """Determine whether an intervention was active in each timeframe per stay."""
-
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
+    all_stays_t0 = _reference_t0(patient_information, window)
+    window_size = window.window_size
     return (
         data.select(STAY_KEY, start_col, end_col)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .join(all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
             (pl.col(start_col) - pl.col("T_0")).alias("start_rel"),
             (pl.col(end_col) - pl.col("T_0")).alias("end_rel"),
@@ -236,12 +233,7 @@ def intervention_per_timeframe(
             ).alias("timeframe"),
         )
         .explode("timeframe")
-        .with_columns(
-            pl.when(pl.col("timeframe").is_not_null())
-            .then(True)
-            .otherwise(False)
-            .alias("intervention"),
-        )
+        .with_columns(pl.col("timeframe").is_not_null().alias("intervention"))
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.max("intervention"))
     )
@@ -250,7 +242,7 @@ def intervention_per_timeframe(
 # region decorators for the time arguments
 @dataclass(frozen=True)
 class Reference:
-    """The reference time of a concept: one scalar for all stays, or one per stay."""
+    """The reference time of a concept: a scalar, or one per stay."""
 
     t_0: Optional[int] = 0
     t_0_per_stay: Optional[pl.LazyFrame] = None
@@ -261,7 +253,7 @@ class Reference:
 
 @dataclass(frozen=True)
 class Window(Reference):
-    """The reference time and the windows of a concept; see `with_windows` for the meaning of the fields."""
+    """The reference time and the windows of a concept, see `with_windows`."""
 
     t_minus1: Optional[int] = T_MINUS1_DEFAULT
     t_1: Optional[int] = None
@@ -286,97 +278,97 @@ def _check_int(name, value, optional=True):
         raise ValueError(f"{name} must be an integer number of seconds, got {value!r}")
 
 
-# name, annotation, default, description (the lines of the docstring entry)
+# The arguments the decorators add: name, annotation, default, the type and the
+# description for the docstring
 _T_0 = (
     "t_0",
     Optional[int],
     0,
-    "Scalar reference time (seconds from admission). Defaults to 0 (admission). Ignored when t_0_per_stay is provided.",
-)
-_T_0_WINDOWS = (
-    "t_0",
-    Optional[int],
-    0,
-    "Scalar reference time (seconds from admission). Defaults to 0 (admission). Timeframes count from it; it never cuts the range. Ignored when t_0_per_stay is provided.",
+    "int",
+    "Scalar reference time (seconds from admission). Timeframes count from it, "
+    "it never cuts the range. Ignored when t_0_per_stay is provided.",
 )
 _T_0_PER_STAY = (
     "t_0_per_stay",
     Optional[pl.LazyFrame],
     None,
+    "pl.LazyFrame",
     "Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].",
 )
 _T_MINUS1 = (
     "t_minus1",
     Optional[int],
     T_MINUS1_DEFAULT,
-    "Optional lower time bound (seconds from admission, may be negative); timeframes ending at or before it are dropped. Defaults to 30 days before admission; None keeps everything.",
+    "int",
+    "Lower time bound (seconds from admission, may be negative). Timeframes "
+    "ending at or before it are dropped. Defaults to 30 days before "
+    "admission, None keeps everything.",
 )
 _T_1 = (
     "t_1",
     Optional[int],
     None,
-    "Optional upper time bound (seconds from admission); timeframes starting at or after it are dropped.",
+    "int",
+    "Upper time bound (seconds from admission). Timeframes starting at or "
+    "after it are dropped.",
 )
 _TIMEFRAME_NAME = (
     "timeframe_name",
     Optional[str],
     None,
-    "Name for output timeframe column. Auto-generated if None.",
+    "str",
+    "Name of the timeframe column. Generated from the window size if None.",
 )
 
 
-def _window_size_param(window_size):
-    width = {SECONDS_IN_1D: "1 day", SECONDS_IN_1H: "1 hour"}.get(window_size)
-    default = f"{window_size}" + (f" = {width}" if width else "")
-    return (
-        "window_size",
-        int,
-        window_size,
-        f"Timeframe width in seconds (default: {default}). Window index is floor((time - T_0)/window_size).",
-    )
-
-
 def _document(doc, params):
-    """The docstring with an entry for each of the params at the end of its Arguments section."""
+    """Add an entry for each of `params` to the Arguments of `doc`."""
     lines = (doc or "").split("\n")
-    returns = next(
-        (i for i, line in enumerate(lines) if line.strip() == "Returns" and i + 1 < len(lines) and set(lines[i + 1].strip()) == {"-"}),
-        None,
-    )
-    indent = len(lines[returns]) - len(lines[returns].lstrip()) if returns is not None else 4
-    at = returns if returns is not None else len(lines)
-    while at > 0 and lines[at - 1].strip() == "":
-        at -= 1
+    returns = [i for i, line in enumerate(lines) if line.strip() == "Returns"]
+    end = returns[0] if returns else len(lines)
+    indent = len(lines[end]) - len(lines[end].lstrip()) if returns else 4
+    while end > 0 and not lines[end - 1].strip():
+        end -= 1
+
     entries = []
-    for name, annotation, _, text in params:
-        kind = "pl.LazyFrame" if annotation is Optional[pl.LazyFrame] else "str" if annotation is Optional[str] else "int"
-        entries += [" " * (indent + 4) + f"{name} : {kind}, optional", *_wrapped(text, indent + 8)]
-    if not any(line.strip() == "Arguments" for line in lines):
-        entries = ["", " " * indent + "Arguments", " " * indent + "---------", *entries]
-    return "\n".join(lines[:at] + entries + lines[at:])
-
-
-def _wrapped(text, indent, width=88):
-    return textwrap.wrap(text, width=width, initial_indent=" " * indent, subsequent_indent=" " * indent)
+    if "Arguments" not in [line.strip() for line in lines]:
+        entries = ["", " " * indent + "Arguments", " " * indent + "-" * 9]
+    for name, _, _, kind, text in params:
+        entries.append(" " * (indent + 4) + f"{name} : {kind}, optional")
+        entries += textwrap.wrap(
+            text,
+            width=80,
+            initial_indent=" " * (indent + 8),
+            subsequent_indent=" " * (indent + 8),
+        )
+    return "\n".join(lines[:end] + entries + lines[end:])
 
 
 def _inject(func, kind, params, make):
-    """Give `func` the keyword-only params and pass their values to it as one `kind` object (`ref` or `window`)."""
+    """
+    Give `func` the keyword-only `params` and pass their values to it as one
+    object, built by `make`, in its keyword-only argument `kind`.
+    """
     signature = inspect.signature(func)
     own = [p for p in signature.parameters.values() if p.name != kind]
-    injected = [
-        inspect.Parameter(name, inspect.Parameter.KEYWORD_ONLY, default=default, annotation=annotation)
-        for name, annotation, default, _ in params
+    added = [
+        inspect.Parameter(
+            name,
+            inspect.Parameter.KEYWORD_ONLY,
+            default=default,
+            annotation=annotation,
+        )
+        for name, annotation, default, _, _ in params
     ]
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if kind in kwargs:
             raise TypeError(f"{func.__name__}() got an unexpected keyword argument '{kind}'")
-        values = {name: kwargs.pop(name, default) for name, _, default, _ in params}
+        values = {p[0]: kwargs.pop(p[0], p[2]) for p in params}
         return func(*args, **kwargs, **{kind: make(**values)})
 
-    wrapper.__signature__ = signature.replace(parameters=own + injected)
+    wrapper.__signature__ = signature.replace(parameters=own + added)
     wrapper.__doc__ = _document(func.__doc__, params)
     return wrapper
 
@@ -385,20 +377,40 @@ def with_reference_time(func):
     """
     Give an event-level concept the keyword arguments `t_0` and `t_0_per_stay`.
 
-    The decorated function declares a keyword-only `ref` and reads `ref.t_0`, `ref.t_0_per_stay`;
-    callers see (and the docstring documents) the two arguments.
+    The decorated function takes a keyword-only `ref` (a `Reference`) and reads
+    the two values from it. Callers see, and the docstring documents, the two
+    arguments.
     """
     return _inject(func, "ref", [_T_0, _T_0_PER_STAY], Reference)
 
 
 def with_windows(func=None, *, window_size=SECONDS_IN_1D):
     """
-    Give a windowed concept the keyword arguments `t_0`, `t_0_per_stay`, `t_minus1`, `t_1`, `window_size`, `timeframe_name`.
+    Give a windowed concept the keyword arguments `t_0`, `t_0_per_stay`,
+    `t_minus1`, `t_1`, `window_size` and `timeframe_name`.
 
-    The decorated function declares a keyword-only `window` (a `Window`) and reads the values from it;
-    callers see (and the docstring documents) the six arguments. `window_size` is the default width.
+    The decorated function takes a keyword-only `window` (a `Window`) and reads
+    the values from it. Callers see, and the docstring documents, the six
+    arguments. `window_size` is their default width.
     """
-    params = [_T_0_WINDOWS, _T_0_PER_STAY, _T_MINUS1, _T_1, _window_size_param(window_size), _TIMEFRAME_NAME]
+    width = {SECONDS_IN_1D: " = 1 day", SECONDS_IN_1H: " = 1 hour"}
+    window_size_param = (
+        "window_size",
+        int,
+        window_size,
+        "int",
+        f"Timeframe width in seconds (default: {window_size}"
+        f"{width.get(window_size, '')}). The window index is "
+        "floor((time - T_0) / window_size).",
+    )
+    params = [
+        _T_0,
+        _T_0_PER_STAY,
+        _T_MINUS1,
+        _T_1,
+        window_size_param,
+        _TIMEFRAME_NAME,
+    ]
 
     def decorate(f):
         return _inject(f, "window", params, Window)

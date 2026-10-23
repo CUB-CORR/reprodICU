@@ -864,9 +864,7 @@ def APS3(
             patient_information,
             start_col="Ventilation Start Relative to Admission (seconds)",
             end_col="Ventilation End Relative to Admission (seconds)",
-            t_0=window.t_0,
-            t_0_per_stay=window.t_0_per_stay,
-            window_size=window.window_size,
+            window=window,
         )
         .rename({"intervention": "ventilated"})
     )
