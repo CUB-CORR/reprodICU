@@ -172,9 +172,9 @@ class X2_Winsorizer:
 
             # Do normal winsorization for non-struct columns
             if column_dtypes_dict[winsorization_column] != pl.Struct:
-                data = getattr(
-                    X2_Winsorizer, f"winsorize_{winsorization_method}"
-                )(data, [winsorization_column], **kwargs)
+                data = getattr(self, f"winsorize_{winsorization_method}")(
+                    data, [winsorization_column], **kwargs
+                )
 
             # 1. Unnest the struct column
             # 2. Create a new column for each combination of system and method

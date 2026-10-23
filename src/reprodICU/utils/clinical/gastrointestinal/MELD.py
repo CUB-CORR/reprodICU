@@ -1,29 +1,35 @@
 """
 Model for End-Stage Liver Disease (MELD) score: predict survival in end-stage liver disease.
 
-This module implements MELD score calculation including serum sodium adjustment.
+This module implements the variants of the MELD score used by the OPTN:
+- MELD (2002): creatinine, bilirubin and INR.
+- MELD-Na (2016): adds an adjustment for serum sodium.
+- MELD 3.0: adds sex and albumin, new coefficients and interaction terms, and lowers the creatinine cap from 4.0 to 3.0 mg/dL.
 MELD is a prognostic score used to predict short-term mortality risk in patients with
-chronic liver disease or cirrhosis, calculated using INR, bilirubin, and creatinine,
-with optional adjustment for serum sodium.
+chronic liver disease or cirrhosis.
 
 References:
 - Kamath PS, Wiesner RH, Malinchoc M, Kremers W, Therneau TM, Kosberg CL, D'Amico G, Dickson ER, Kim WR.
   A model to predict survival in patients with end-stage liver disease.
   Hepatology. 2001 Feb;33(2):464-70.
-- OPTN MELD Serum Sodium Policy Changes (January 2016):
-  https://optn.transplant.hrsa.gov/news/meld-serum-sodium-policy-changes/
+- OPTN. Improving Liver Allocation: MELD, PELD, Status 1A, Status 1B. Notice of OPTN Policy and Guidance Changes (policy 9.1.D: MELD Score).
+  https://www.hrsa.gov/sites/default/files/hrsa/optn/policy-guid-change_impr-liv-alloc-meld-peld-sta-1a-sta-1b_liv.pdf
+- Kim WR, Mannalithara A, Heimbach JK, Kamath PS, Asrani SK, Biggins SW, Wood NL, Gentry SE, Kwong AJ.
+  MELD 3.0: The Model for End-Stage Liver Disease Updated for the Modern Era.
+  Gastroenterology. 2021 Dec;161(6):1887-1895.e4. doi: 10.1053/j.gastro.2021.08.050.
+  Epub 2021 Sep 3. PMID: 34481845; PMCID: PMC8608337.
 """
 
-from typing import Optional
+from typing import Literal, Optional
 
 import polars as pl
 
 from ...common import (
-    T_MINUS1_DEFAULT,
-    _add_sparse_timeframes,
+    FILTER_NOT_NULL,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
+    _get_timeframe_name,
     _optional_time_bounds_filter,
     _to_lazy,
     _validate_required_data,
@@ -37,6 +43,9 @@ from ...common import (
 SECONDS_IN_1H = 60 * 60
 SECONDS_IN_1D = 24 * SECONDS_IN_1H
 SECONDS_IN_7D = 7 * SECONDS_IN_1D
+
+STAY_KEY = "Global ICU Stay ID"
+TIME_KEY = "Time Relative to Admission (seconds)"
 
 
 ################################################################################
@@ -81,9 +90,7 @@ def _determine_liver_etiology(diagnoses: pl.LazyFrame) -> pl.LazyFrame:
             DataFrame with etiology classification
     """
     filter_str = r"(?i)liver|hepatic|cirrhosis"
-    cholestatic_str = (
-        r"(?i)cholestatic|primary biliary|primary sclerosing|biliary cirrhosis"
-    )
+    cholestatic_str = r"(?i)cholestatic|primary biliary|primary sclerosing|biliary cirrhosis" # fmt: skip
     alcoholic_str = r"(?i)alcoholic|alcohol|ethanol"
 
     return (
@@ -110,63 +117,109 @@ def _determine_liver_etiology(diagnoses: pl.LazyFrame) -> pl.LazyFrame:
     ) # fmt: skip
 
 
+def _improve_labs(labs: pl.LazyFrame, albumin: bool = False) -> pl.LazyFrame:
+    LABS = ["Creatinine", "Bilirubin", "INR", "Sodium", "Glucose"]
+    if albumin:
+        LABS.append("Albumin")
+    return (
+        labs.with_columns(
+            extract_struct_value(lab, ["Serum", "Blood"]).alias(lab)
+            for lab in LABS
+        )
+        .pipe(FILTER_NOT_NULL, LABS)
+        .select(STAY_KEY, TIME_KEY, *LABS)
+    )
+
+
+def _recent_rrt_per_timeframe(
+    rrt: pl.LazyFrame, base: pl.LazyFrame, window_size: int
+) -> pl.LazyFrame:
+    """
+    Whether a patient had dialysis in the 7 days up to the end of each timeframe:
+    2 or more treatments, or 24 hours or more of CVVHD.
+    """
+    start = "Renal Replacement Therapy Start Relative to Admission (seconds)"
+    end   = "Renal Replacement Therapy End Relative to Admission (seconds)"
+    hours = "Renal Replacement Therapy Duration (hours)"
+    window_end = (pl.col("timeframe") + 1) * window_size + pl.col("T_0")
+    return (
+        base.join(rrt.select(STAY_KEY, start, end, hours), on=STAY_KEY)
+        .filter(
+            pl.col(start) <= window_end,
+            pl.col(end) >= window_end - SECONDS_IN_7D,
+        )
+        .group_by(STAY_KEY, "timeframe")
+        .agg(((pl.len() >= 2) | (pl.col(hours).sum() >= 24)).alias("Had Recent RRT"))
+    )
+
+
+def _creatinine_for_meld(
+    creatinine_expr: pl.Expr, rrt_status_expr: pl.Expr, cap: float
+) -> pl.Expr:
+    """Creatinine of at least 1.0 and at most `cap`; `cap` for patients on dialysis."""
+    return (
+        pl.when((creatinine_expr.clip(1.0, None) > cap) | rrt_status_expr)
+        .then(cap)
+        .otherwise(creatinine_expr.clip(1.0, None))
+    )
+
+
 def _calculate_meld_score(
+    creatinine_expr: pl.Expr,
+    bilirubin_expr: pl.Expr,
+    inr_expr: pl.Expr,
+    rrt_status_expr: pl.Expr,
+) -> pl.Expr:
+    """
+    Calculate the original MELD score (2002) from laboratory values.
+
+    MELD = 10 * round(0.957 * ln(creatinine) + 0.378 * ln(bilirubin) + 1.120 * ln(INR) + 0.643, 1)
+
+    - Laboratory values less than 1.0 are set to 1.0
+    - Creatinine is capped at 4.0 mg/dL and set to 4.0 mg/dL for patients on dialysis
+      (2+ treatments in past week or 24+ hours CVVHD)
+    - Maximum MELD score is 40
+    """
+    creatinine = _creatinine_for_meld(creatinine_expr, rrt_status_expr, 4.0)
+    return (
+        (
+            0.957 * creatinine.log()
+            + 0.378 * bilirubin_expr.clip(1.0, None).log()
+            + 1.120 * inr_expr.clip(1.0, None).log()
+            + 0.643
+        )
+        .round(1)
+        .mul(10)
+        .clip(None, 40)
+    )
+
+
+def _calculate_meld_na_score(
     creatinine_expr: pl.Expr,
     bilirubin_expr: pl.Expr,
     inr_expr: pl.Expr,
     sodium_expr: pl.Expr,
     glucose_expr: pl.Expr,
     rrt_status_expr: pl.Expr,
-    etiology_expr: pl.Expr,
 ) -> pl.Expr:
     """
-    Calculate MELD score based on laboratory values.
+    Calculate the MELD-Na score (2016) from laboratory values.
 
-    MELD formula:
-    Initial MELD(i) = 0.957 * ln(creatinine) + 0.378 * ln(bilirubin) + 1.120 * ln(INR) + 0.643
+    Initial MELD(i) is the original MELD score (see `_calculate_meld_score`),
+    on the 6-40 scale. For MELD(i) > 11:
+    MELD-Na = MELD(i) + 1.32*(137-Na) - [0.033*MELD(i)*(137-Na)]
 
-    For MELD > 11 with sodium adjustment:
-    MELD = MELD(i) + 1.32*(137-Na) – [0.033*MELD(i)*(137-Na)]
-
-    Special considerations:
-    - Laboratory values less than 1.0 are set to 1.0
-    - Creatinine is capped at 4.0 mg/dL
-    - Creatinine is set to 4.0 mg/dL for patients on dialysis
     - Sodium values are limited to range 125-137 mmol/L
     - Maximum MELD score is 40
 
     Returns
     -------
         pl.Expr
-            MELD score
+            MELD-Na score
     """
-    # Apply minimum values and adjustments
-    creatinine_adj = (
-        pl.when((creatinine_expr.clip(1.0, None) > 4.0) | rrt_status_expr)
-        .then(4.0)
-        .otherwise(creatinine_expr.clip(1.0, None))
-    )
-
-    bilirubin_adj = bilirubin_expr.clip(1.0, None)
-    inr_adj = inr_expr.clip(1.0, None)
+    meld_initial = _calculate_meld_score(creatinine_expr, bilirubin_expr, inr_expr, rrt_status_expr) # fmt: skip
     sodium_adj = _adjust_sodium_for_glucose(sodium_expr, glucose_expr).clip(125, 137) # fmt: skip
 
-    # Etiology coefficient
-    etiology_coeff = (
-        pl.when(etiology_expr.is_in(["cholestatic", "alcoholic"]))
-        .then(0)
-        .otherwise(1)
-    )
-
-    # Calculate initial MELD
-    meld_initial = (
-        0.957 * creatinine_adj.log()
-        + 0.378 * bilirubin_adj.log()
-        + 1.120 * inr_adj.log()
-        + 0.643  # * etiology_coeff not included in updated version
-    )
-
-    # Apply sodium adjustment for MELD > 11
     meld_final = (
         pl.when(meld_initial > 11)
         .then(
@@ -177,8 +230,67 @@ def _calculate_meld_score(
         .otherwise(meld_initial)
     )
 
-    # Round to tenth decimal place, multiply by 10, and cap at 40
-    return meld_final.round(1).mul(10).clip(None, 40)
+    return meld_final.round(0).clip(None, 40)
+
+
+def _calculate_meld3_score(
+    creatinine_expr: pl.Expr,
+    bilirubin_expr: pl.Expr,
+    inr_expr: pl.Expr,
+    sodium_expr: pl.Expr,
+    glucose_expr: pl.Expr,
+    rrt_status_expr: pl.Expr,
+    albumin_expr: pl.Expr,
+    female_expr: pl.Expr,
+    age_expr: pl.Expr,
+) -> pl.Expr:
+    """
+    Calculate the MELD 3.0 score from laboratory values, sex and age.
+
+    MELD =   1.33 (if female)
+           + 4.56 ln(bilirubin)
+           + 0.82 (137-Na)
+           - 0.24 (137-Na) ln(bilirubin)
+           + 9.09 ln(INR)
+           + 11.14 ln(creatinine)
+           + 1.85 (3.5-albumin)
+           - 1.83 (3.5-albumin) ln(creatinine)
+           + 6
+
+    For candidates at least 12 and less than 18 years old, the sex term is dropped and
+    the constant is 7.33. There is no MELD score under 12 years (PELD instead).
+
+    - Bilirubin, INR and creatinine less than 1.0 are set to 1.0
+    - Creatinine is capped at 3.0 mg/dL and set to 3.0 mg/dL for patients on dialysis
+    - Sodium values are limited to range 125-137 mmol/L
+    - Albumin values are limited to range 1.5-3.5 g/dL
+    - The score is limited to range 6-40 and rounded to the nearest whole number
+
+    Returns
+    -------
+        pl.Expr
+            MELD 3.0 score
+    """
+    creatinine = _creatinine_for_meld(creatinine_expr, rrt_status_expr, 3.0)
+    bilirubin = bilirubin_expr.clip(1.0, None)
+    sodium = _adjust_sodium_for_glucose(sodium_expr, glucose_expr).clip(125, 137)
+    albumin = albumin_expr.clip(1.5, 3.5)
+
+    score = (
+        4.56 * bilirubin.log()
+        + 0.82 * (137 - sodium)
+        - 0.24 * (137 - sodium) * bilirubin.log()
+        + 9.09 * inr_expr.clip(1.0, None).log()
+        + 11.14 * creatinine.log()
+        + 1.85 * (3.5 - albumin)
+        - 1.83 * (3.5 - albumin) * creatinine.log()
+    )
+    return (
+        pl.when(age_expr >= 18).then(score + 6 + 1.33 * female_expr.cast(int))
+          .when(age_expr >= 12).then(score + 7.33)
+        .clip(6, 40)
+        .round(0)
+    ) # fmt: skip
 
 
 # endregion
@@ -196,30 +308,23 @@ def MELD(
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     t_1: Optional[int] = None,
-    t_minus1: Optional[int] = T_MINUS1_DEFAULT,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",
     timeframe_name: Optional[str] = None,
+    version: Literal["MELD", "MELD-Na", "MELD 3.0"] = "MELD-Na",
 ) -> pl.LazyFrame:
     """
     Compute MELD (Model for End-Stage Liver Disease) scores in long format from raw inputs.
 
     The MELD score is used to estimate disease severity, determine prognosis, and prioritize
-    patients for liver transplantation. This implementation follows the 2016 update which
-    includes sodium adjustment.
+    patients for liver transplantation. `version` selects the formula: "MELD" (2002),
+    "MELD-Na" (2016, with sodium adjustment; default) or "MELD 3.0" (with sex and albumin).
+    See `_calculate_meld_score`, `_calculate_meld_na_score` and
+    `_calculate_meld3_score` for the formulas and special considerations.
 
-    MELD Formula:
-    Initial MELD(i) = 0.957 × ln(creatinine) + 0.378 × ln(bilirubin) + 1.120 × ln(INR) + 0.643
-
-    For MELD > 11 with sodium adjustment:
-    MELD = MELD(i) + 1.32×(137-Na) - [0.033×MELD(i)×(137-Na)]
-
-    Special considerations:
-    - Laboratory values less than 1.0 are set to 1.0
-    - Creatinine is capped at 4.0 mg/dL
-    - Creatinine is set to 4.0 mg/dL for patients on dialysis (2+ treatments in past week or 24+ hours CVVHD)
-    - Sodium values are limited to range 125-137 mmol/L
-    - Maximum MELD score is 40
+    MELD 3.0 needs the albumin lab and the Gender and Admission Age (years) of the patient
+    information. The admission age stands in for the age at registration (at least 18: adult
+    formula, 12 to 17: adolescent formula, under 12: no score).
 
     Arguments
     ---------
@@ -242,10 +347,6 @@ def MELD(
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         t_1 : int, optional
             Optional upper time bound (seconds from admission) for filtering inputs.
-        t_minus1 : int, optional
-            Optional lower time bound (seconds from admission, may be negative);
-            timeframes ending at or before it are dropped. Defaults to 30 days before
-            admission; None keeps everything.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -253,6 +354,8 @@ def MELD(
             Semantic unit for timeframe (default: "Days"). Does not affect calculation.
         timeframe_name : str, optional
             Name for output timeframe column. Auto-generated if None.
+        version : {"MELD", "MELD-Na", "MELD 3.0"}, optional
+            Formula to use (default: "MELD-Na").
 
     Returns
     -------
@@ -267,6 +370,7 @@ def MELD(
             - INR
             - Sodium (mmol/L)
             - Glucose (mg/dL)
+            - Albumin (g/dL; MELD 3.0 only)
             - Had Recent RRT (boolean)
             - Liver Disease Etiology
     """
@@ -287,174 +391,101 @@ def MELD(
     }
     _validate_required_data("MELD", required)
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
-
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
-    rrt_data = _to_lazy(rrt_data) if rrt_data is not None else None
-    diagnoses = _to_lazy(diagnoses) if diagnoses is not None else None
 
     # Build T_0 and base timeframes
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
-    base = _build_base_timeframes(all_stays_t0, patient_information, window_size)
-
-    # Filter and prepare lab data
-    LABS = ["Creatinine", "Bilirubin", "INR", "Sodium", "Glucose"]
-    lab_data = (
-        timeseries_labs.filter(
-            pl.any_horizontal(pl.col(col).is_not_null() for col in LABS)
-        )
-        .join(all_stays_t0, on=STAY_KEY, how="inner")
-        .with_columns(
-            _assign_timeframe(TIME_KEY, window_size)
-            .cast(int)
-            .alias("timeframe"),
-            (pl.col(TIME_KEY) - pl.col("T_0")).alias(
-                "Time Relative to T_0 (seconds)"
-            ),
-        )
+    ALL_STAYS = patient_information.select(STAY_KEY)
+    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay, t_0)
+    timeframe_name = _get_timeframe_name(
+        timeframe_name, window_size, t_0, t_0_per_stay
     )
+    base = _build_base_timeframes(ALL_STAYS_T0, patient_information, window_size)
 
-    # Apply optional time bounds
-    lab_data = lab_data.filter(
-        *_optional_time_bounds_filter(
-            "timeframe", window_size, t_0, t_1, t_minus1=t_minus1
+    # region component data
+    labs = _improve_labs(timeseries_labs, albumin=version == "MELD 3.0")
+    lab_names = [c for c in labs.collect_schema().names() if c not in (STAY_KEY, TIME_KEY)]
+    labs_tf = (
+        labs.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .group_by(STAY_KEY, "timeframe")
+        .agg(
+            # the worst is the highest value, except for albumin
+            pl.col(lab_names).exclude("Albumin").max(),
+            *([pl.col("Albumin").min()] if "Albumin" in lab_names else []),
         )
     )
 
-    # Extract lab values from structs
-    lab_data = lab_data.with_columns(
-        extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
-        extract_struct_value("Bilirubin",  ["Serum", "Blood"]).alias("Bilirubin"),
-        extract_struct_value("INR",        ["Serum", "Blood"]).alias("INR"),
-        extract_struct_value("Sodium",     ["Serum", "Blood"]).alias("Sodium"),
-        extract_struct_value("Glucose",    ["Serum", "Blood"]).alias("Glucose"),
-    ).select(
-        STAY_KEY,
-        TIME_KEY,
-        "timeframe",
-        "T_0",
-        "Time Relative to T_0 (seconds)",
-        *LABS
-    ) # fmt: skip
-
-    # Aggregate labs to worst per timeframe
-    lab_per_frame = lab_data.group_by(STAY_KEY, "timeframe", "T_0").agg(
-        # Take most recent (worst) values per timeframe
-        pl.col("Creatinine").max(),
-        pl.col("Bilirubin").max(),
-        pl.col("INR").max(),
-        pl.col("Sodium").max(),
-        pl.col("Glucose").max(),
-    )
-
-    # Get RRT status for each timeframe (check if patient had recent RRT at end of timeframe)
-    rrt_status_per_frame = None
+    out = base.join(labs_tf, on=[STAY_KEY, "timeframe"], how="left")
     if rrt_data is not None:
-        # For each timeframe, check RRT status at the end of that timeframe
-        timeframe_end_times = (
-            lab_per_frame.select(STAY_KEY, "timeframe", "T_0")
-            .with_columns(
-                pl.col("timeframe")
-                .add(1)
-                .mul(window_size)
-                .add(pl.col("T_0"))
-                .alias("timeframe_end")
-            )
-            .select(STAY_KEY, "timeframe", "timeframe_end")
-        )
-
-        rrt_status_per_frame = (
-            timeframe_end_times.join(
-                rrt_data.select(
-                    STAY_KEY,
-                    "Renal Replacement Therapy Start Relative to Admission (seconds)",
-                    "Renal Replacement Therapy End Relative to Admission (seconds)",
-                    "Renal Replacement Therapy Duration (hours)",
-                ),
-                on=STAY_KEY,
-                how="left",
-            )
-            .filter(
-                pl.col("Renal Replacement Therapy Start Relative to Admission (seconds)")
-                <= pl.col("timeframe_end"),
-                pl.col("Renal Replacement Therapy End Relative to Admission (seconds)")
-                >= (pl.col("timeframe_end") - SECONDS_IN_7D),
-            )
-            .group_by(STAY_KEY, "timeframe")
-            .agg(
-                pl.len().alias("rrt_count"),
-                pl.col("Renal Replacement Therapy Duration (hours)")
-                .sum()
-                .alias("rrt_duration_hours"),
-            )
-            .with_columns(
-                (
-                    (pl.col("rrt_count") >= 2)
-                    | (pl.col("rrt_duration_hours") >= 24)
-                ).alias("Had Recent RRT")
-            )
-            .select(STAY_KEY, "timeframe", "Had Recent RRT")
-        ) # fmt: skip
-
-    # Get liver disease etiology (static per patient)
-    etiology_per_patient = None
+        rrt_tf = _recent_rrt_per_timeframe(_to_lazy(rrt_data), base, window_size)
+        out = out.join(rrt_tf, on=[STAY_KEY, "timeframe"], how="left")
+    else:
+        out = out.with_columns(pl.lit(None, dtype=pl.Boolean).alias("Had Recent RRT"))
     if diagnoses is not None:
-        etiology_per_patient = _determine_liver_etiology(diagnoses)
-
-    # Combine all data starting from base timeframes, then join available data
-    result = _add_sparse_timeframes(base, lab_per_frame).join(
-        lab_per_frame, on=[STAY_KEY, "timeframe"], how="left"
-    )
-
-    if rrt_status_per_frame is not None:
-        result = result.join(
-            rrt_status_per_frame, on=[STAY_KEY, "timeframe"], how="left"
+        etiology = _determine_liver_etiology(_to_lazy(diagnoses))
+        out = out.join(etiology, on=STAY_KEY, how="left")
+    else:
+        out = out.with_columns(
+            pl.lit(None, dtype=pl.String).alias("Liver Disease Etiology")
         )
-
-    if etiology_per_patient is not None:
-        result = result.join(etiology_per_patient, on=STAY_KEY, how="left")
-
-    # Fill missing values
-    result = result.with_columns(
+    out = out.with_columns(
         pl.col("Had Recent RRT").fill_null(False),
         pl.col("Liver Disease Etiology").fill_null("other"),
     )
+    # endregion
 
-    # Calculate MELD score
-    result = result.with_columns(
-        _calculate_meld_score(
+    # region score
+    if version == "MELD 3.0":
+        out = out.join(
+            patient_information.select(STAY_KEY, "Gender", "Admission Age (years)"),
+            on=STAY_KEY,
+            how="left",
+        )
+        score = _calculate_meld3_score(
             pl.col("Creatinine"),
             pl.col("Bilirubin"),
             pl.col("INR"),
             pl.col("Sodium"),
             pl.col("Glucose"),
             pl.col("Had Recent RRT"),
-            pl.col("Liver Disease Etiology"),
-        ).alias("MELD Score")
+            pl.col("Albumin"),
+            pl.col("Gender") == "Female",
+            pl.col("Admission Age (years)"),
+        )
+    elif version == "MELD":
+        score = _calculate_meld_score(
+            pl.col("Creatinine"),
+            pl.col("Bilirubin"),
+            pl.col("INR"),
+            pl.col("Had Recent RRT"),
+        )
+    else:
+        score = _calculate_meld_na_score(
+            pl.col("Creatinine"),
+            pl.col("Bilirubin"),
+            pl.col("INR"),
+            pl.col("Sodium"),
+            pl.col("Glucose"),
+            pl.col("Had Recent RRT"),
+        )
+    # endregion
+
+    return (
+        out.filter(
+            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
+        )
+        .select(
+            STAY_KEY,
+            "T_0",
+            pl.col("timeframe").alias(timeframe_name),
+            score.alias("MELD Score"),
+            *lab_names,
+            "Had Recent RRT",
+            "Liver Disease Etiology",
+        )
+        .sort(STAY_KEY, timeframe_name)
     )
-
-    # Handle timeframe naming
-    if timeframe_name is not None:
-        result = result.with_columns(pl.col("timeframe").alias(timeframe_name))
-
-    select_cols = [
-        STAY_KEY,
-        "T_0",
-        "timeframe" if timeframe_name is None else timeframe_name,
-        "MELD Score",
-        "Creatinine",
-        "Bilirubin",
-        "INR",
-        "Sodium",
-        "Glucose",
-        "Had Recent RRT",
-        "Liver Disease Etiology",
-    ]
-
-    return result.sort(STAY_KEY, "timeframe").select(select_cols)
 
 
 # endregion

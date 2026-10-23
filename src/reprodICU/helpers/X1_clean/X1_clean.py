@@ -120,7 +120,8 @@ class X1_Cleaner:
             # Remove invalid magnesium values
             pl.when(pl.col("magnesium") == 999999.0)
             .then(None)
-            .otherwise(pl.col("magnesium")),
+            .otherwise(pl.col("magnesium"))
+            .alias("magnesium"),
             # Remove invalid monocytes values
             pl.when(pl.col("monocytes") == 999999.0)
             .then(None)

@@ -31,6 +31,7 @@ from ..common import (
     _null_if_incomplete_pre_icu,
     T_MINUS1_DEFAULT,
     _add_sparse_timeframes,
+    FILTER_NOT_NULL,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
@@ -62,12 +63,9 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         )
         .then(pl.col("Carbon dioxide").struct.field("value"))
         .alias("Carbon dioxide"),
-    ).filter(
-        pl.any_horizontal(
-            "Leukocytes",
-            "Neutrophils.band form/leukocytes",
-            "Carbon dioxide",
-        )
+    ).pipe(
+        FILTER_NOT_NULL,
+        ["Leukocytes", "Neutrophils.band form/leukocytes", "Carbon dioxide"],
     )
 
 

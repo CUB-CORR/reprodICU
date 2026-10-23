@@ -55,7 +55,6 @@ import yaml
 from ..common import (
     T_MINUS1_DEFAULT,
     _assign_timeframe,
-    _build_base_timeframes,
     _build_t0,
     _optional_time_bounds_filter,
     _validate_required_data,
@@ -101,16 +100,10 @@ def _admission_time_to_seconds(data: pl.LazyFrame) -> pl.LazyFrame:
     Example: 14:30:00 -> 14*3600 + 30*60 = 52200 seconds
     """
     return data.with_columns(
-        pl.when(pl.col("Admission Time (24h)").is_null())
-        .then(pl.lit(0))  # Default to midnight if missing
-        .otherwise(
-            pl.col("Admission Time (24h)")
-            .dt.hour()
-            .mul(3600)
-            .add(pl.col("Admission Time (24h)").dt.minute().mul(60))
-            .add(pl.col("Admission Time (24h)").dt.second())  # seconds
-        )
-        .cast(int)
+        (pl.col("Admission Time (24h)") - pl.time(0, 0, 0))
+        .dt.total_seconds()
+        .fill_null(0)  # Default to midnight if missing
+        .cast(pl.Int64)
         .alias("Admission Time (seconds)")
     )
 
@@ -340,7 +333,7 @@ def antibiotics(
         )
         .with_columns(
             pl.col("Drug Ingredient")
-            .replace(antibiotic_ranks)
+            .replace_strict(antibiotic_ranks, return_dtype=pl.Int64)
             .alias("antibiotic_rank"),
             # unknown route (e.g. SICdb, NWICU) is assumed intravenous
             (pl.col("Drug Administration Route") == "intravenous")
@@ -566,14 +559,13 @@ def antibiotic_escalation(
 # endregion helpers
 
 
-# region lactate >= 2mmol/L
+# region lactate > 2mmol/L
 def lactate_long(
     all_stays_t0: pl.LazyFrame,
     timeseries_labs: pl.LazyFrame,
     window_size: int,
 ) -> pl.LazyFrame:
-    """Compute per timeframe whether lactate >= 2 mmol/L."""
-
+    """Compute per timeframe whether lactate > 2 mmol/L (Sepsis-3 septic shock)."""
     return (
         timeseries_labs.select(STAY_KEY, TIME_KEY, "Lactate")
         .filter(pl.col("Lactate").struct.field("system").str.contains("Blood"))
@@ -583,8 +575,8 @@ def lactate_long(
         .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(max_lactate=pl.max("Lactate").cast(pl.Float64))
-        .with_columns((pl.col("max_lactate") >= 2.0).alias("lactate_ge2"))
-        .select(STAY_KEY, "timeframe", "lactate_ge2")
+        .with_columns((pl.col("max_lactate") > 2.0).alias("lactate_gt2"))
+        .select(STAY_KEY, "timeframe", "lactate_gt2")
     )
 
 
@@ -748,8 +740,8 @@ def rhee_organ_dysfunction(
         STAY_KEY, "timeframe", pl.lit(True).alias("dysfunction")
     )
 
-    # Lactate ≥2.0 (pre-computed)
-    lact_tf = lactate_timeline.filter(pl.col("lactate_ge2")).select(
+    # Lactate >2.0 (pre-computed)
+    lact_tf = lactate_timeline.filter(pl.col("lactate_gt2")).select(
         STAY_KEY, "timeframe", pl.lit(True).alias("dysfunction")
     )
 
@@ -1314,7 +1306,7 @@ def SEPSIS(
     lactate_at_onset = lactate_timeline.select(
         STAY_KEY,
         "timeframe",
-        pl.col("lactate_ge2").alias("lactate_ge2_onset"),
+        pl.col("lactate_gt2").alias("lactate_gt2_onset"),
     )
     onset_labels = (
         onset_candidates.join(
@@ -1332,7 +1324,7 @@ def SEPSIS(
         .with_columns(
             (
                 pl.col("cv_ge2_onset").fill_null(False)
-                & pl.col("lactate_ge2_onset").fill_null(False)
+                & pl.col("lactate_gt2_onset").fill_null(False)
             ).alias("shock_onset")
         )
         .select(
@@ -1422,7 +1414,7 @@ def SEPSIS(
     lactate_at_onset_abx = lactate_timeline.select(
         STAY_KEY,
         "timeframe",
-        pl.col("lactate_ge2").alias("lactate_ge2_onset_abx"),
+        pl.col("lactate_gt2").alias("lactate_gt2_onset_abx"),
     )
     onset_labels_abx = (
         onset_candidates_abx.join(
@@ -1440,7 +1432,7 @@ def SEPSIS(
         .with_columns(
             shock_onset_abx=(
                 pl.col("cv_ge2_onset_abx").fill_null(False)
-                & pl.col("lactate_ge2_onset_abx").fill_null(False)
+                & pl.col("lactate_gt2_onset_abx").fill_null(False)
             )
         )
         .select(
@@ -1482,9 +1474,7 @@ def SEPSIS(
     )
 
     # Seymour shock: find first lactate >=2 in [baseline, end] (join_asof to avoid blowup)
-    lactate_high = lactate_timeline.filter(pl.col("lactate_ge2")).select(
-        STAY_KEY, "timeframe"
-    )
+    lactate_high = lactate_timeline.filter(pl.col("lactate_gt2")).select(STAY_KEY, "timeframe")
     lactate_first = (
         suspicion_windows.sort(STAY_KEY, "baseline_timeframe")
         .join_asof(
@@ -1625,19 +1615,7 @@ def SEPSIS(
         window_size=window_size,
     )
 
-    # Calculate calendar days for antibiotics and organ dysfunction
-    rhee_abx_with_day = (
-        rhee_abx_tf.join(stay_time_ref, on=STAY_KEY, how="inner")
-        .with_columns(
-            # Convert timeframe back to seconds, then to calendar day
-            abx_calendar_day=_calendar_day_from_admission(
-                (pl.col("timeframe") * window_size) + pl.col("T_0"),
-                pl.col("Admission Time (seconds)"),
-            )
-        )
-        .select(STAY_KEY, "timeframe", "abx_calendar_day")
-    )
-
+    # Calculate calendar days for organ dysfunction
     rhee_organ_with_day = (
         rhee_organ_dysfunction_tf.join(stay_time_ref, on=STAY_KEY, how="inner")
         .with_columns(
@@ -1660,7 +1638,8 @@ def SEPSIS(
         .sort(STAY_KEY, "culture_calendar_day")
     )
     abx_days = (
-        rhee_abx_with_day.select(STAY_KEY, "abx_calendar_day")
+        # compared with the culture: the first day of the course
+        rhee_abx_tf.select(STAY_KEY, pl.col("abx_first_day").alias("abx_calendar_day"))
         .unique()
         .sort(STAY_KEY, "abx_calendar_day")
     )

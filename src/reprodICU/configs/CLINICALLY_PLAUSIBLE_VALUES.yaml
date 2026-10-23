@@ -134,10 +134,6 @@ Bicarbonate:
   min: 0
   max: 50
 
-Hemoglobin:
-  min: 2
-  max: 25
-
 Oxygen saturation:
   min: 0
   max: 100

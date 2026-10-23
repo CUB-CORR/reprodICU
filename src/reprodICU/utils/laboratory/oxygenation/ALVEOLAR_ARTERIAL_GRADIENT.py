@@ -11,6 +11,7 @@ from ...common import (
     get_timeseries_labs,
     get_timeseries_respiratory,
 )
+from ...core import RESPIRATORY_PARAMS
 
 SECONDS_IN_4H = 4 * 60 * 60
 
@@ -25,21 +26,11 @@ Aa_gradient_col = "Alveolar-arterial oxygen Partial pressure difference"
 # region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2")
-        )
+        RESPIRATORY_PARAMS(timeseries_respiratory=resp)
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2"),
+            "FiO2",
         )
         .drop_nulls("FiO2")
     )

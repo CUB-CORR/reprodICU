@@ -58,12 +58,6 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
     return (
         BLOOD_PRESSURES(timeseries_vitals=vitals)
         .rename({"MAP": "Mean arterial pressure"})
-        .with_columns(
-        pl.when(pl.col("Mean arterial pressure").is_finite())
-        .then(pl.col("Mean arterial pressure"))
-        .otherwise(None)
-        .alias("Mean arterial pressure")
-        )
     )
 
 
@@ -74,8 +68,8 @@ def _pre_icu_los_points(pre_los: pl.Expr) -> pl.Expr:
     pre_los_hours = pre_los * 24
     return ScoringTable([                # Pre-ICU length of stay (hours) | Points
         (  None,   0.17, "neither", 5),  # <0.17             5
-        (  0.17,   4.94, "right",   4),  #  0.17-  4.94      4
-        (  4.94,  24   , "right",   3),  #  4.94- 24         3
+        (  0.17,   4.95, "left",    3),  #  0.17-  4.94      3
+        (  4.95,  24   , "both",    0),  #  4.95- 24         0
         ( 24   , 311.8 , "right",   2),  # 24.  -311.8       2
         (311.8 ,   None, "neither", 1),  #      >311.8       1
     ]).to_expr(pre_los_hours) # fmt: skip
@@ -85,9 +79,9 @@ def _pre_icu_los_points(pre_los: pl.Expr) -> pl.Expr:
 def _age_points(age: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Age (years) | Points
         (None,   24, "neither", 0),  # <24 ......... 0
-        (  24,   53, "left",    3),  #  24-53        3
-        (  54,   77, "left",    6),  #  54-77        6
-        (  78,   89, "right",   9),  #  78-89        9
+        (  24,   53, "both",    3),  #  24-53        3
+        (  53,   77, "right",   6),  #  54-77        6
+        (  77,   89, "right",   9),  #  78-89        9
         (  89, None, "neither", 7),  # >89           7
     ]).to_expr(age) # fmt: skip
 
@@ -96,9 +90,9 @@ def _age_points(age: pl.Expr) -> pl.Expr:
 def _gcs_points(gcs: pl.Expr) -> pl.Expr:
     return ScoringTable([           # Glasgow Coma Scale | Points
         (None,  8, "neither", 10),  # <8                   10
-        (   8, 13, "right",    5),  #  8-13                 5 
-        (  14, 14, "both",     3),  #    14                 3
-        (  15, 15, "both",     0),  #    15 ............... 0
+        (   8, 14, "left",     4),  #  8-13                 4
+        (  14, 15, "left",     3),  #    14                 3
+        (  15, None, "left",   0),  #    15 ............... 0
     ]).to_expr(gcs) # fmt: skip
 
 
@@ -106,9 +100,9 @@ def _gcs_points(gcs: pl.Expr) -> pl.Expr:
 def _hr_points(hr: pl.Expr) -> pl.Expr:
     return ScoringTable([            # Heart rate (bpm) | Points
         (None,   33, "neither", 4),  #  <33               4
-        (  33,   88, "left",    0),  #   33- 88 ......... 0
-        (  89,  106, "left",    1),  #   89-106           1
-        ( 107,  125, "right",   3),  #  107-125           3
+        (  33,   88, "both",    0),  #   33- 88 ......... 0
+        (  88,  106, "right",   1),  #   89-106           1
+        ( 106,  125, "right",   3),  #  107-125           3
         ( 125, None, "neither", 6),  # >125               6
     ]).to_expr(hr) # fmt: skip
 
@@ -118,8 +112,8 @@ def _map_points(map: pl.Expr) -> pl.Expr:
     return ScoringTable([                # Mean Arterial Pressure (mmHg) | Points
         (  None,  20.65, "neither", 4),  #  <20.65                         4
         ( 20.65,  51.00, "left",    3),  #   20.65- 50.99                  3
-        ( 51.00,  61.32, "left",    2),  #   51.00- 61.32                  2
-        ( 61.33, 143.44, "right",   0),  #   61.33-143.44 ................ 0
+        ( 51.00,  61.33, "left",    2),  #   51.00- 61.32                  2
+        ( 61.33, 143.44, "both",    0),  #   61.33-143.44 ................ 0
         (143.44,   None, "neither", 3),  # >143.44                         3
     ]).to_expr(map) # fmt: skip
 
@@ -128,23 +122,23 @@ def _map_points(map: pl.Expr) -> pl.Expr:
 def _rr_points(rr: pl.Expr) -> pl.Expr:
     return ScoringTable([             # Respiratory rate (bpm) | Points
         (None,    6, "neither", 10),  #  <6                      10
-        (   6,   12, "right",    1),  #   6-12                    1
-        (  13,   22, "right",    0),  #  13-22 .................. 0
-        (  23,   30, "right",    1),  #  23-30                    1
-        (  31,   44, "right",    6),  #  31-44                    6
-        (  44, None, "neither",  9),  # >44                       9
+        (   6,   13, "left",     1),  #   6-12                    1
+        (  13,   23, "left",     0),  #  13-22 .................. 0
+        (  23,   31, "left",     1),  #  23-30                    1
+        (  31,   45, "left",     6),  #  31-44                    6
+        (  45, None, "left",     9),  # >44                       9
     ]).to_expr(rr) # fmt: skip
 
 
 # region temperature
 def _temperature_points(temp: pl.Expr) -> pl.Expr:
     return ScoringTable([              # Temperature (°C) | Points
-        ( None, 33.22, "neither", 3),  # <33.22.            3
-        (33.22, 35.93, "right",   4),  #  33.22-35.93       4
-        (35.94, 36.39, "right",   2),  #  35.94-36.39       2
-        (36.40, 36.88, "right",   0),  #  36.40-36.88 ..... 0
-        (36.89, 39.88, "right",   2),  #  36.89-39.88       2
-        (39.88,  None, "neither", 6),  # ≥39.88             6
+        ( None, 33.22, "neither", 3),  # <33.22             3
+        (33.22, 35.94, "left",    4),  #  33.22-35.93       4
+        (35.94, 36.40, "left",    2),  #  35.94-36.39       2
+        (36.40, 36.89, "left",    0),  #  36.40-36.88 ..... 0
+        (36.89, 39.89, "both",    2),  #  36.89-39.88       2
+        (39.88,  None, "neither", 6),  # >39.89             6
     ]).to_expr(temp) # fmt: skip
 
 
@@ -154,8 +148,8 @@ def _urine_output_points(uo_ml: pl.Expr) -> pl.Expr:
         (None,  671, "neither", 10),  #  <671                   10
         ( 671, 1427, "left",     5),  #   671-1426               5
         (1427, 2544, "left",     1),  #  1427-2543               1
-        (2544, 6896, "left",     0),  #  2544-6895 ............. 0
-        (6896, None, "neither",  4),  # ≥6896                    4
+        (2544, 6896, "both",     0),  #  2544-6896 ............. 0
+        (6896, None, "neither",  8),  # >6896                    8
     ]).to_expr(uo_ml) # fmt: skip
 
 

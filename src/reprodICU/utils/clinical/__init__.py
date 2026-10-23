@@ -15,6 +15,8 @@ from .IDEAL_BODY_WEIGHT import (
 from .cardiovascular.SCAI import SCAI
 from .gastrointestinal.MELD import MELD
 from .neurological.GCS import GCS_NT_CARRY_FORWARD, GCS_TO_AVPU
+from .pharmocological.ALIGNED_UNITS import ALIGNED_UNITS
+from .pharmocological.MORPHINE_EQUIVALENT_DOSAGE import MORPHINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.NOREPINEPHRINE_EQUIVALENT_DOSAGE import NOREPINEPHRINE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.HYDROCORTISONE_EQUIVALENT_DOSAGE import HYDROCORTISONE_EQUIVALENT_DOSAGE  # fmt: skip
 from .pharmocological.VASOPRESSORS_BOOLEAN import VASOPRESSORS_BOOLEAN
@@ -44,6 +46,8 @@ __all__ = [
     "GCS_NT_CARRY_FORWARD",
     "GCS_TO_AVPU",
     # pharmacological
+    "ALIGNED_UNITS",
+    "MORPHINE_EQUIVALENT_DOSAGE",
     "NOREPINEPHRINE_EQUIVALENT_DOSAGE",
     "HYDROCORTISONE_EQUIVALENT_DOSAGE",
     "VASOPRESSORS_BOOLEAN",
@@ -52,13 +56,9 @@ __all__ = [
     "AKI_KDIGO",
     "URINE_OUTPUT",
     # respiratory
-    "Aa_GRADIENT",
     "ARDS",
     "MECHANICAL_POWER",
     "STATIC_COMPLIANCE",
     "DYNAMIC_COMPLIANCE",
-    "P50",
-    "PaO2_FiO2_RATIO",
-    "SpO2_FiO2_RATIO",
     "RESPIRATORY_FAILURE",
 ]

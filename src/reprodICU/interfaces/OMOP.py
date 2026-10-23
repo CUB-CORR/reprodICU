@@ -92,6 +92,10 @@ def _add_missing_fields(
 
     for field, req in zip(fields, required):
         if req == "Yes" and check_required:
+            if field not in columns:
+                raise ValueError(
+                    f"Field {field} is required for the {table_name} table"
+                )
             # count the number of nulls
             if not data.filter(pl.col(field).is_null()).collect().is_empty():
                 count = data.collect().height
@@ -103,10 +107,6 @@ def _add_missing_fields(
             data = data.drop_nulls(field)
 
         if field not in columns:
-            if req == "Yes" and check_required:
-                raise ValueError(
-                    f"Field {field} is required for the {table_name} table"
-                )
             data = data.with_columns(pl.lit(None).alias(field))
 
     return data.select(fields)

@@ -50,8 +50,8 @@ PATIENT_INFO_CODES = {
     "ICU Length of Stay (days)": "ICU_LOS",
     "Mortality in ICU": "MORTALITY_ICU",
     "Mortality in Hospital": "MORTALITY_HOSPITAL",
-    "Mortality after ICU discharge (days)": "MORTALITY_AFTER_ICU",
-    "Mortality after ICU discharge cutoff (days)": "MORTALITY_AFTER_ICU_CUTOFF",
+    "Mortality After ICU Discharge (days)": "MORTALITY_AFTER_ICU",
+    "Mortality After ICU Discharge Censor Cutoff (days)": "MORTALITY_AFTER_ICU_CUTOFF",
 }
 
 
@@ -186,16 +186,19 @@ def patient_information_to_MEDS(
         )
         .with_columns(
             # add the string_value column to the code column
-            pl.concat_str(
-                [
+            # numeric events keep the bare code
+            pl.when(pl.col("string_value").is_not_null())
+            .then(
+                pl.concat_str([
                     pl.col("code"),
                     pl.lit("//"),
                     pl.col("string_value")
                     .str.to_uppercase()
                     .str.replace_all(" ", "_"),
-                ],
-                ignore_nulls=True,
-            ).alias("code"),
+                ])
+            )
+            .otherwise(pl.col("code"))
+            .alias("code"),
         )
         .select("Global ICU Stay ID", "time", "code", "numeric_value")
     )

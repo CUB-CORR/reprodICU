@@ -110,7 +110,7 @@ def reverse_MDRD(data: pl.LazyFrame, target_egfr: float = 75) -> pl.LazyFrame:
     eGFR = 175 * (SCr ^ -1.154) * (age ^ -0.203) * gender_factor * ethnicity_factor
 
     Algebraically rearranging for serum creatinine:
-    SCr = (175 * (age ^ -0.203) * gender_factor * ethnicity_factor / target_eGFR) ^ (1 / -1.154)
+    SCr = (175 * (age ^ -0.203) * gender_factor * ethnicity_factor / target_eGFR) ^ (1 / 1.154)
 
     Arguments
     ---------
@@ -131,7 +131,7 @@ def reverse_MDRD(data: pl.LazyFrame, target_egfr: float = 75) -> pl.LazyFrame:
 
     # Compute inverse MDRD: SCr = (175 * (age^-0.203) * gender_factor * ethnicity_factor / target_egfr) ^ (1/-1.154)
     N = 175 * (pl.col(age_col) ** -0.203) * G * E
-    estimated_scr = (N / target_egfr) ** (1.0 / -1.154)
+    estimated_scr = (N / target_egfr) ** (1.0 / 1.154)
 
     return data.with_columns(
         estimated_scr.alias(f"estimated Creatinine (MDRD eGFR={target_egfr})")

@@ -12,6 +12,7 @@ from ...common import (
     get_timeseries_respiratory,
     get_timeseries_vitals,
 )
+from ...core import RESPIRATORY_PARAMS
 
 SECONDS_IN_4H = 4 * 60 * 60
 pf_ratio_col = "PaO2/FiO2 Ratio"
@@ -23,17 +24,10 @@ def _improve_resp(
     resp: pl.LazyFrame,
     fio2_type: Literal["invasive", "non-invasive", "both"] = "both",
 ) -> pl.LazyFrame:
-    VENT_FIO2 = pl.max_horizontal(
-        "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-        "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-    )
+    resp = RESPIRATORY_PARAMS(timeseries_respiratory=resp)
 
-    FLOW_FIO2 = (
-        pl.col("Oxygen gas flow Oxygen delivery system")
-        .mul(3)
-        .add(21)
-        .clip(upper_bound=100)
-    )
+    VENT_FIO2 = pl.col("FiO2")
+    FLOW_FIO2 = pl.col("LPM").mul(3).add(21).clip(upper_bound=100)
 
     if fio2_type == "non-invasive":
         resp = resp.filter(
@@ -48,16 +42,10 @@ def _improve_resp(
         combined_fio2 = pl.coalesce(VENT_FIO2, FLOW_FIO2)
 
     return (
-        resp.with_columns(combined_fio2.alias("FiO2"))
-        .select(
+        resp.select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0.21, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(21, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2"),
+            combined_fio2.alias("FiO2"),
         )
         .drop_nulls("FiO2")
     )

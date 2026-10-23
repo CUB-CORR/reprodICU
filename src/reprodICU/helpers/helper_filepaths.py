@@ -61,12 +61,13 @@ class OMOPPaths(GlobalVars):
 # region eICU
 class EICUPaths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        if paths.eicu_source_path is None or (
-            not os.path.exists(paths.eicu_source_path)
+        if not DEMO and (
+            paths.eicu_source_path is None
+            or not os.path.exists(paths.eicu_source_path)
         ):
             raise ValueError("eICU source path does not exist or is null.")
         super().__init__(paths, DEMO)
-        eicu_path = paths.eicu_source_path
+        eicu_path = paths.eicu_source_path or ""  # demo paths replace these
 
         # eICU raw data paths
         self.admissionDrug_path = eicu_path + "admissionDrug.csv.gz"
@@ -229,12 +230,13 @@ class HiRIDPaths(GlobalVars):
 # region MIMIC-III
 class MIMIC3Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        if paths.mimic3_source_path is None or (
-            not os.path.exists(paths.mimic3_source_path)
+        if not DEMO and (
+            paths.mimic3_source_path is None
+            or not os.path.exists(paths.mimic3_source_path)
         ):
             raise ValueError("MIMIC-III source path does not exist or is null.")
         super().__init__(paths, DEMO)
-        mimic3_path = paths.mimic3_source_path
+        mimic3_path = paths.mimic3_source_path or ""
 
         # MIMIC-III raw data paths
         self.admissions_path = mimic3_path + "ADMISSIONS.csv.gz"
@@ -273,6 +275,8 @@ class MIMIC3Paths(GlobalVars):
             self.inputevents_cv_path = mimic3_path + "INPUTEVENTS_CV.csv"
             self.inputevents_mv_path = mimic3_path + "INPUTEVENTS_MV.csv"
             self.labevents_path = mimic3_path + "LABEVENTS.csv"
+            self.microbiologyevents_path = mimic3_path + "MICROBIOLOGYEVENTS.csv" # fmt: skip
+            self.noteevents_path = mimic3_path + "NOTEEVENTS.csv"
             self.outputevents_path = mimic3_path + "OUTPUTEVENTS.csv"
             self.patients_path = mimic3_path + "PATIENTS.csv"
             self.prescriptions_path = mimic3_path + "PRESCRIPTIONS.csv"
@@ -389,17 +393,19 @@ class MIMIC3Paths(GlobalVars):
 # region MIMIC-IV
 class MIMIC4Paths(GlobalVars):
     def __init__(self, paths, DEMO=False):
-        if paths.mimic4_source_path is None or (
-            not os.path.exists(paths.mimic4_source_path)
+        if not DEMO and (
+            paths.mimic4_source_path is None
+            or not os.path.exists(paths.mimic4_source_path)
         ):
             raise ValueError("MIMIC-IV source path does not exist or is null.")
-        if paths.mimic4_notes_source_path is None or (
-            not os.path.exists(paths.mimic4_notes_source_path)
+        if not DEMO and (
+            paths.mimic4_notes_source_path is None
+            or not os.path.exists(paths.mimic4_notes_source_path)
         ):
             raise ValueError("MIMIC-IV notes source path does not exist or is null.") # fmt: skip
         super().__init__(paths, DEMO)
-        mimic4_path = paths.mimic4_source_path
-        mimic4_notes_path = paths.mimic4_notes_source_path
+        mimic4_path = paths.mimic4_source_path or ""  # the demo paths replace these
+        mimic4_notes_path = paths.mimic4_notes_source_path or ""
 
         # MIMIC-IV raw data paths
         self.admissions_path = mimic4_path + "hosp/admissions.csv.gz"
@@ -446,6 +452,7 @@ class MIMIC4Paths(GlobalVars):
             self.icustays_path = mimic4_path + "icu/icustays.csv"
             self.inputevents_path = mimic4_path + "icu/inputevents.csv"
             self.labevents_path = mimic4_path + "hosp/labevents.csv"
+            self.microbiologyevents_path = mimic4_path + "hosp/microbiologyevents.csv" # fmt: skip
             self.outputevents_path = mimic4_path + "icu/outputevents.csv"
             self.patients_path = mimic4_path + "hosp/patients.csv"
             self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv"

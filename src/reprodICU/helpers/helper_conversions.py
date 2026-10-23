@@ -107,10 +107,9 @@ class UnitConversions(GlobalVars):
             goal_itemcol = itemcol
 
         if goal_itemcol not in data.collect_schema().names():
+            empty = self._empty_lab_struct()
             data = data.with_columns(
-                self._empty_lab_struct()
-                .struct.json_encode()
-                .alias(goal_itemcol)
+                (empty.struct.json_encode() if structstring else empty).alias(goal_itemcol)
             )
 
         temp_itemcol = f"temp_{itemcol}"
@@ -124,6 +123,8 @@ class UnitConversions(GlobalVars):
                     pl.col(goal_itemcol).str.json_decode(self.labstructdtype),
                     pl.col(total_itemcol).str.json_decode(self.labstructdtype),
                 )
+            else:
+                data = data.with_columns(pl.col(itemcol).alias(temp_itemcol))
 
             data = (
                 data.unnest(temp_itemcol)
@@ -138,6 +139,7 @@ class UnitConversions(GlobalVars):
                         pl.col("value").truediv(
                             pl.col(total_itemcol).struct.field("value")
                         )
+                        * 100
                     )
                     .otherwise(None)
                     .alias("value")
@@ -194,7 +196,7 @@ class UnitConversions(GlobalVars):
                     pl.col(goal_itemcol).is_not_null()
                     & pl.col(total_itemcol).is_not_null()
                 )
-                .then(pl.col(goal_itemcol).truediv(pl.col(total_itemcol)))
+                .then(pl.col(goal_itemcol).truediv(pl.col(total_itemcol)) * 100)
                 .otherwise(None)
                 .alias(goal_itemcol)
             )
@@ -268,7 +270,9 @@ class UnitConversions(GlobalVars):
                         time=pl.col("time"),
                         # If changes_LOINC_property is True, set LOINC to None
                         LOINC=(
-                            pl.lit(None)
+                            pl.when(pl.col(labelcol) == itemid)
+                            .then(None)
+                            .otherwise(pl.col("LOINC"))
                             if changes_LOINC_property
                             else pl.col("LOINC")
                         ),
@@ -470,8 +474,8 @@ class UnitConversions(GlobalVars):
     def convert_folate_nmol_L_to_ng_mL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """Convert folate values from nmol/L to ng/mL (factor: 2.265)."""
-        return data.pipe(self.GENERIC_CONVERTER, factor=2.265, **kwargs)
+        """Convert folate values from nmol/L to ng/mL (factor: 0.442)."""
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.442, **kwargs)
 
     def convert_glucose_mg_dL_to_mmol_L(
         self, data: pl.LazyFrame, **kwargs
@@ -530,8 +534,8 @@ class UnitConversions(GlobalVars):
     def convert_urate_umol_L_to_mg_dL(
         self, data: pl.LazyFrame, **kwargs
     ) -> pl.LazyFrame:
-        """Convert urate values from µmol/L to mg/dL (factor: 16.9)."""
-        return data.pipe(self.GENERIC_CONVERTER, factor=16.9, **kwargs)
+        """Convert urate values from µmol/L to mg/dL (factor: 0.0169)."""
+        return data.pipe(self.GENERIC_CONVERTER, factor=0.0169, **kwargs)
 
     def convert_VitB12_pg_mL_to_pmol_L(
         self, data: pl.LazyFrame, **kwargs
@@ -651,12 +655,12 @@ class UnitConversions(GlobalVars):
         """Convert electrolyte values from mEq/L to mmol/L (factor: ions parameter).
 
         Steps:
-            1. Apply multiplication by ions factor (default: 1 for monovalent ions like Na/K).
+            1. Divide by the ion valence (default: 1 for monovalent ions like Na/K).
 
         Returns:
             pl.LazyFrame: Data with converted electrolyte values.
         """
-        return data.pipe(self.GENERIC_CONVERTER, factor=ions, **kwargs)
+        return data.pipe(self.GENERIC_CONVERTER, factor=1 / ions, **kwargs)
 
     def convert_ratio_to_percentage(
         self,
@@ -996,6 +1000,7 @@ class UnitConverter(UnitConversions):
                         left_on=[sys_col, "method", "time_norm"],
                         right_on=["system", "method", "time"],
                         how="left",
+                        maintain_order="left",
                         nulls_equal=True,
                         coalesce=True,
                     ).rename({"LOINC_mapped": f"LOINC_{sys_col}"})
@@ -1006,6 +1011,7 @@ class UnitConverter(UnitConversions):
                         left_on=[component_col, sys_col, "method", "time_norm"],
                         right_on=["component", "system", "method", "time"],
                         how="left",
+                        maintain_order="left",
                         nulls_equal=True,
                         coalesce=True,
                     ).rename({"LOINC_mapped": f"LOINC_{sys_col}"})

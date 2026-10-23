@@ -26,12 +26,6 @@ chloride:
     lower: 95.0
     upper: 105.0
 
-bicarbonate:
-  units: mmol/L
-  reference_range:
-    lower: 22.0
-    upper: 28.0
-
 blood_urea_nitrogen:
   units: mmol/L
   reference_range:
@@ -218,7 +212,7 @@ T3:
     upper: 3.1
 
 T3_resin_uptake:
-  units: %
+  units: "%"
   reference_range:
     lower: 25
     upper: 35
@@ -334,7 +328,7 @@ bicarbonate:
     upper: 26
 
 saO2:
-  units: %
+  units: "%"
   reference_range:
     lower: 95
     upper: 100

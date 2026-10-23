@@ -4,6 +4,7 @@ import polars as pl
 
 from ...common import (
     T_MINUS1_DEFAULT,
+    FILTER_NOT_NULL,
     _build_t0,
     _optional_time_bounds_filter,
     _to_lazy,
@@ -22,12 +23,13 @@ SECONDS_IN_1D = 24 * SECONDS_IN_1H
 def _improve_inout(inout: pl.LazyFrame) -> pl.LazyFrame:
     return (
         _to_lazy(inout)
-        .filter(
-            pl.any_horizontal(
-                pl.col("Fluid output urine in and out urethral catheter").is_not_null(),
-                pl.col("Fluid output urine nephrostomy").is_not_null(),
-                pl.col("Urine output").is_not_null(),
-            ) # fmt: skip
+        .pipe(
+            FILTER_NOT_NULL,
+            [
+                "Fluid output urine in and out urethral catheter",
+                "Fluid output urine nephrostomy",
+                "Urine output",
+            ],
         )
         .select(
             "Global ICU Stay ID",

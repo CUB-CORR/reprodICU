@@ -27,6 +27,8 @@ from ..common import (
     _sum_points,
     T_MINUS1_DEFAULT,
     _add_sparse_timeframes,
+    FILTER_NOT_NULL,
+    NULL_NON_FINITE,
     ScoringTable,
     _assign_timeframe,
     _build_base_timeframes,
@@ -44,6 +46,7 @@ from ..common import (
     get_ventilation,
     intervention_per_timeframe,
 )
+from ..core import BLOOD_PRESSURES
 from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 STAY_KEY = "Global ICU Stay ID"
@@ -61,21 +64,16 @@ SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        vitals.filter(
-            pl.any_horizontal(
-                pl.col(col).is_finite()
-                for col in [
-                    "Heart rate", "Invasive systolic arterial pressure", 
-                    "Non-invasive systolic arterial pressure", "Temperature", 
-                    "Glasgow coma score total",
-                ]  # fmt: skip
-            )
-        )
-        .with_columns(
-            pl.coalesce(
-                pl.col("Invasive systolic arterial pressure"),
-                pl.col("Non-invasive systolic arterial pressure"),
-            ).alias("Systolic blood pressure"),
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"SBP": "Systolic blood pressure"})
+        .pipe(
+            FILTER_NOT_NULL,
+            [
+                "Heart rate",
+                "Systolic blood pressure",
+                "Temperature",
+                "Glasgow coma score total",
+            ],
         )
         .select(
             STAY_KEY,
@@ -97,7 +95,8 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
             extract_struct_value(col, sources, exact_match=True).alias(col)
             for col in LABS
         )
-        .filter(pl.any_horizontal(pl.col(col).is_finite() for col in LABS))
+        .pipe(NULL_NON_FINITE)
+        .pipe(FILTER_NOT_NULL, LABS)
         .select(STAY_KEY, TIME_KEY, *LABS)
     )
 
@@ -404,6 +403,7 @@ def SAPS2(
 
     pf_ratio = (
         PaO2_FiO2_RATIO(
+            patient_information=patient_information,
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
             t_0=t_0,

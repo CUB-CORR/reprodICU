@@ -301,7 +301,7 @@ class GlobalVars(GlobalHelpers):
             )
             if paths
             else ""
-        )
+        ) or ""  # an unset output path is no path
         tempfiles_path = reprodICU_files_path + "_tempfiles/"
 
         # append globally configured variables as class attributes

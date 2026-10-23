@@ -136,6 +136,9 @@ def __getattr__(name: str) -> Any:
         pl.LazyFrame
             Lazy-loaded dataset
     """
+    if name in _SetupNamespace._FUNCTIONS:
+        return getattr(setup, name)
+
     loader = _get_dataset_loader()
 
     if name in loader.DATASET_MAPPING:

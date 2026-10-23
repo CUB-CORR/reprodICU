@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import polars as pl
+import polars.selectors as cs
 
 from ..config import ConfigManager
 
@@ -488,9 +489,21 @@ def DROP_IMPLAUSIBLE_VALUES(
     return _plausible_values(obj, columns, column_config, mode="drop")
 
 
+def NULL_NON_FINITE(
+    data: Union[pl.LazyFrame, pl.DataFrame],
+) -> Union[pl.LazyFrame, pl.DataFrame]:
+    """Set non-finite values (NaN, +-inf) of all float columns to null."""
+    return data.with_columns(pl.when(cs.float().is_finite()).then(cs.float()))
+
+
+def FILTER_NOT_NULL(
+    data: Union[pl.LazyFrame, pl.DataFrame], columns: List[str]
+) -> Union[pl.LazyFrame, pl.DataFrame]:
+    """Keep the rows with a value in at least one of the columns."""
+    return data.filter(pl.any_horizontal(pl.col(columns).is_not_null()))
+
+
 # region struct extraction utilities
-
-
 def extract_struct_value(
     col_name: str,
     allowed_systems: Optional[List[str]] = None,
@@ -616,17 +629,13 @@ class ScoringTable:
             if lower is None or upper is None:
                 # Handle infinite boundaries
                 if lower is None:
-                    condition = col < upper  # (-∞, upper)
+                    condition = col <= upper if closed in ("right", "both") else col < upper  # (-∞, upper)
                 else:
-                    condition = col > lower  # (lower, ∞)
+                    condition = col >= lower if closed in ("left", "both") else col > lower   # (lower, ∞)
             else:
                 # Finite interval with specified closure
-                if closed == "left":
-                    condition = col.is_between(lower, upper, closed="left")
-                elif closed == "right":
-                    condition = col.is_between(lower, upper, closed="right")
-                elif closed == "both":
-                    condition = col.is_between(lower, upper, closed="both")
+                if closed in ("left", "right", "both"):
+                    condition = col.is_between(lower, upper, closed=closed)
                 elif closed == "neither":
                     condition = col.is_between(lower, upper, closed="none")
                 else:
@@ -679,4 +688,6 @@ __all__ = [
     # data cleaning
     "CLIP_PLAUSIBLE_VALUES",
     "DROP_IMPLAUSIBLE_VALUES",
+    "NULL_NON_FINITE",
+    "FILTER_NOT_NULL",
 ]
