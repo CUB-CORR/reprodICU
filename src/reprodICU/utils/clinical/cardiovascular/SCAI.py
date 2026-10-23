@@ -51,7 +51,7 @@ from ...common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _to_lazy,
     get_medications,
     get_patient_information,
@@ -152,8 +152,8 @@ def SCAI(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     window_size: int = SECONDS_PER_HOUR,
     timeframe_unit: str = "Hours",
 ) -> pl.LazyFrame:
@@ -176,15 +176,17 @@ def SCAI(
             Medications data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
         t_minus1 : int, optional
             Optional lower time bound (seconds from admission, may be negative);
             timeframes ending at or before it are dropped. Defaults to 30 days before
             admission; None keeps everything.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission); timeframes starting at
+            or after it are dropped.
         window_size : int, optional
             Timeframe width in seconds (default: 3600 = 1 hour). Window index is
             floor((time - T_0)/window_size).
@@ -275,8 +277,8 @@ def SCAI(
             medications,
             patient_information,
             ALL_STAYS_T0,
-            t_1=t_1,
             t_minus1=t_minus1,
+            t_1=t_1,
             window_size=window_size,
         )
         .select(STAY_KEY, "timeframe", "vasopressor_points")
@@ -296,7 +298,7 @@ def SCAI(
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .with_columns(
             pl.max_horizontal(

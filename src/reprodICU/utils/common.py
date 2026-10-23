@@ -136,36 +136,34 @@ def _assign_timeframe(time_col: str, window_size: int) -> pl.Expr:
     return pl.col(time_col).sub(pl.col("T_0")).floordiv(window_size).cast(int)
 
 
-def _optional_time_bounds_filter(
-    time_col: str,
+def _optional_timeframe_bounds_filter(
+    timeframe_col: str,
     window_size: int,
-    t_0: Optional[int],
-    t_1: Optional[int],
-    t0_col: str = "T_0",
     t_minus1: Optional[int] = None,
+    t_1: Optional[int] = None,
+    t0_col: str = "T_0",
 ) -> list[pl.Expr]:
     """
     Predicates restricting timeframes to the range of interest.
 
-    The timeframe column is relative to each stay's T_0, floor((time - T_0)/window_size),
-    while `t_minus1` and `t_1` are in seconds from admission. The frame therefore needs a
-    T_0 column. T_0 is only the reference of the timeframes and never cuts the range.
+    The timeframe column counts from each stay's T_0, floor((time - T_0)/window_size).
+    t_0 (scalar or per stay) therefore enters through the `t0_col` column and is only
+    the reference of the index, never a cut. `t_minus1` and `t_1` are on the admission
+    clock (seconds), so the frame needs the T_0 column.
 
     Arguments
     ---------
-        time_col : str
-            Timeframe column (relative to T_0).
+        timeframe_col : str
+            Timeframe column (index from T_0).
         window_size : int
             Timeframe width in seconds.
-        t_0 : int, optional
-            Reference time of the timeframes; unused here, kept for call compatibility.
+        t_minus1 : int, optional
+            Keep the windows ending after t_minus1 (seconds from admission, may be
+            negative to reach back before ICU admission).
         t_1 : int, optional
-            If given, keep the windows starting before t_1 (seconds from admission).
+            Keep the windows starting before t_1 (seconds from admission).
         t0_col : str
             Column with the T_0 of each stay (seconds from admission).
-        t_minus1 : int, optional
-            If given, keep the windows ending after t_minus1 (seconds from admission,
-            may be negative to reach back before ICU admission).
 
     Returns
     -------
@@ -175,11 +173,11 @@ def _optional_time_bounds_filter(
     conds: list[pl.Expr] = [pl.lit(True)]
     if t_minus1 is not None:
         conds.append(
-            (pl.col(time_col) + 1) * window_size + pl.col(t0_col) > int(t_minus1)
+            (pl.col(timeframe_col) + 1) * window_size + pl.col(t0_col) > int(t_minus1)
         )
     if t_1 is not None:
         conds.append(
-            pl.col(time_col) * window_size + pl.col(t0_col) < int(t_1)
+            pl.col(timeframe_col) * window_size + pl.col(t0_col) < int(t_1)
         )
     return conds
 
@@ -665,7 +663,7 @@ __all__ = [
     "_build_t0",
     "_build_base_timeframes",
     "_assign_timeframe",
-    "_optional_time_bounds_filter",
+    "_optional_timeframe_bounds_filter",
     "_get_timeframe_name",
     "_validate_required_data",
     # dataset loaders

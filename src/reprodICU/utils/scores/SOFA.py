@@ -43,7 +43,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_medications,
@@ -237,8 +237,8 @@ def qSOFA(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: str = None,
@@ -258,15 +258,17 @@ def qSOFA(
             Timeseries vitals data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
         t_minus1 : int, optional
             Optional lower time bound (seconds from admission, may be negative);
             timeframes ending at or before it are dropped. Defaults to 30 days before
             admission; None keeps everything.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission); timeframes starting at
+            or after it are dropped.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -343,7 +345,7 @@ def qSOFA(
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .with_columns(
             _null_if_incomplete_pre_icu(
@@ -447,8 +449,8 @@ def SOFA(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     forward_fill: bool = True,
@@ -480,15 +482,17 @@ def SOFA(
             Ventilation data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
         t_minus1 : int, optional
             Optional lower time bound (seconds from admission, may be negative);
             timeframes ending at or before it are dropped. Defaults to 30 days before
             admission; None keeps everything.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission); timeframes starting at
+            or after it are dropped.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -720,8 +724,8 @@ def SOFA(
             timeseries_inout=timeseries_inout,
             t_0=t_0,
             t_0_per_stay=t_0_per_stay,
-            t_1=t_1,
             t_minus1=t_minus1,
+            t_1=t_1,
             window_size=window_size,
         )
         .with_columns(
@@ -760,7 +764,7 @@ def SOFA(
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .with_columns(
             # renal_points: max(creatinine_points, uo_points)

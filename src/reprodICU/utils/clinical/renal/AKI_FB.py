@@ -38,12 +38,13 @@ import polars as pl
 
 from ...admission import COMMON_ADMISSION_CATEGORIES
 from ...common import (
+    NULL_NON_FINITE,
     T_MINUS1_DEFAULT,
     _assign_timeframe,
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _to_lazy,
     _validate_required_data,
     extract_struct_value,
@@ -143,8 +144,8 @@ def AKI_FB(
     *,
     t_0: Optional[int] = 0,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     window_size: int = SECONDS_IN_1D,
     timeframe_unit: str = "Days",  # semantics only; output timeframe is numeric
     timeframe_name: Optional[str] = None,
@@ -183,16 +184,17 @@ def AKI_FB(
             window_size=3600. Computed automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides (AKI onset) with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission); timeframes starting at
-            or after it are dropped.
         t_minus1 : int, optional
             Optional lower time bound (seconds from admission, may be negative);
             timeframes ending at or before it are dropped. Defaults to 30 days before
             admission; None keeps everything.
+        t_1 : int, optional
+            Optional upper time bound (seconds from admission); timeframes starting at
+            or after it are dropped.
         window_size : int, optional
             Timeframe width in seconds (default: 86400 = 1 day). Window index is
             floor((time - T_0)/window_size).
@@ -256,8 +258,8 @@ def AKI_FB(
     base = _build_base_timeframes(all_stays_t0, patient_information, window_size)
     # the score is defined from the day of diagnosis (timeframe 0) onwards
     base = base.filter(pl.col("timeframe") >= 0).filter(
-        *_optional_time_bounds_filter(
-            "timeframe", window_size, t_0, t_1, t_minus1=t_minus1
+        *_optional_timeframe_bounds_filter(
+            "timeframe", window_size, t_minus1=t_minus1, t_1=t_1
         )
     )
     timeframe_name = _get_timeframe_name(
@@ -302,6 +304,7 @@ def AKI_FB(
             extract_struct_value("Creatinine", ["Serum", "Blood"]).alias("Creatinine"),
             extract_struct_value("Lactate", ["Blood", "Plasma", "Serum"]).alias("Lactate"),
         )
+        .pipe(NULL_NON_FINITE)
         .filter(pl.col("timeframe") >= 0)
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.col("Creatinine").max(), pl.col("Lactate").max())
@@ -309,7 +312,8 @@ def AKI_FB(
 
     # Fluid balance per timeframe
     fluid_balance = (
-        timeseries_inout.join(all_stays_t0, on=STAY_KEY, how="inner")
+        timeseries_inout.pipe(NULL_NON_FINITE)
+        .join(all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(_assign_timeframe(TIME_KEY, window_size).alias("timeframe"))
         .filter(pl.col("timeframe") >= 0)
         .group_by(STAY_KEY, "timeframe")

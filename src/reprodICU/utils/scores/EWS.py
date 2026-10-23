@@ -33,7 +33,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_patient_information,
@@ -169,8 +169,8 @@ def EWS(
     *,
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -189,7 +189,10 @@ def EWS(
         timeseries_vitals: Vital signs LazyFrame.
         window_size: Size of the timeframe window in seconds (default: 24h).
         t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
+        t_minus1: Lower time bound in seconds from admission, may be negative; timeframes
+            ending at or before it are dropped (default: 30 days before admission, None keeps all).
+        t_1: Upper time bound in seconds from admission; timeframes starting at or after it
+            are dropped (optional).
         t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
         timeframe_name: Custom name for the timeframe column (optional).
 
@@ -242,7 +245,7 @@ def EWS(
         _add_sparse_timeframes(base, vitals_tf)
         .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .select(
             STAY_KEY,
@@ -289,8 +292,8 @@ def MEWS(
     *,
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -309,7 +312,10 @@ def MEWS(
         timeseries_vitals: Vital signs LazyFrame.
         window_size: Size of the timeframe window in seconds (default: 24h).
         t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
+        t_minus1: Lower time bound in seconds from admission, may be negative; timeframes
+            ending at or before it are dropped (default: 30 days before admission, None keeps all).
+        t_1: Upper time bound in seconds from admission; timeframes starting at or after it
+            are dropped (optional).
         t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
         timeframe_name: Custom name for the timeframe column (optional).
 
@@ -362,7 +368,7 @@ def MEWS(
         _add_sparse_timeframes(base, vitals_tf)
         .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .select(
             STAY_KEY,
@@ -443,8 +449,8 @@ def NEWS(
     *,
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -464,7 +470,10 @@ def NEWS(
         timeseries_resp: Respiratory LazyFrame (for supplemental oxygen).
         window_size: Size of the timeframe window in seconds (default: 24h).
         t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
+        t_minus1: Lower time bound in seconds from admission, may be negative; timeframes
+            ending at or before it are dropped (default: 30 days before admission, None keeps all).
+        t_1: Upper time bound in seconds from admission; timeframes starting at or after it
+            are dropped (optional).
         t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
         timeframe_name: Custom name for the timeframe column (optional).
 
@@ -534,7 +543,7 @@ def NEWS(
         .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .select(
             STAY_KEY,
@@ -616,8 +625,8 @@ def NEWS2(
     *,
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -638,7 +647,10 @@ def NEWS2(
         timeseries_labs: Labs LazyFrame (for paCO2).
         window_size: Size of the timeframe window in seconds (default: 24h).
         t_0: Global time anchor in seconds from admission (default: 0).
-        t_1: Global end time in seconds from admission (optional).
+        t_minus1: Lower time bound in seconds from admission, may be negative; timeframes
+            ending at or before it are dropped (default: 30 days before admission, None keeps all).
+        t_1: Upper time bound in seconds from admission; timeframes starting at or after it
+            are dropped (optional).
         t_0_per_stay: LazyFrame with stay-specific T_0 (optional).
         timeframe_name: Custom name for the timeframe column (optional).
 
@@ -723,7 +735,7 @@ def NEWS2(
         .join(vitals_tf, on=[STAY_KEY, "timeframe"], how="left")
         .join(resp_tf, on=[STAY_KEY, "timeframe"], how="left")
         .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .select(
             STAY_KEY,

@@ -96,7 +96,8 @@ def PaO2_FiO2_RATIO(
             Laboratory timeseries data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         tolerance : int, optional
@@ -208,7 +209,8 @@ def SpO2_FiO2_RATIO(
             Vital signs timeseries data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         tolerance : int, optional

@@ -79,7 +79,8 @@ def IMAGING_CRITERION(
             Clinical notes data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         definition_source : str, optional
@@ -222,7 +223,8 @@ def RESPIRATORY_CRITERION(
             Ventilation timeseries data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional
@@ -468,7 +470,8 @@ def ARDS(
             Ventilation timeseries data. Loaded automatically if None.
         t_0 : int, optional
             Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
+            Timeframes count from it; it never cuts the range. Ignored when
+            t_0_per_stay is provided.
         t_0_per_stay : pl.LazyFrame, optional
             Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional

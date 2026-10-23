@@ -34,7 +34,7 @@ from ..common import (
     _build_base_timeframes,
     _build_t0,
     _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _optional_timeframe_bounds_filter,
     _validate_required_data,
     extract_struct_value,
     get_diagnoses,
@@ -291,8 +291,8 @@ def SAPS2(
     *,
     window_size: int = SECONDS_IN_1D,
     t_0: int = 0,
-    t_1: Optional[int] = None,
     t_minus1: Optional[int] = T_MINUS1_DEFAULT,
+    t_1: Optional[int] = None,
     t_0_per_stay: Optional[pl.LazyFrame] = None,
     timeframe_name: Optional[str] = None,
 ) -> pl.LazyFrame:
@@ -464,7 +464,7 @@ def SAPS2(
 
     return (
         out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1, t_minus1=t_minus1)
+            _optional_timeframe_bounds_filter("timeframe", window_size, t_minus1=t_minus1, t_1=t_1)
         )
         .with_columns(
             _sum_points(window_size).alias(
