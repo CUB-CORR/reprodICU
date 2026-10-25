@@ -1208,6 +1208,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             # Filter for names of interest
             .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
+            # Several concepts of an item can share a name: a repeated pair would repeat its rows
+            .unique()
         )
         input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
@@ -1306,8 +1308,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
             # Remove rows with empty values
             .filter(pl.col("VALUENUM").is_not_null())
-            # Remove duplicate rows
-            .unique()
         )
 
     # endregion

@@ -1245,8 +1245,6 @@ class MIMIC4Extractor(MIMIC4Paths):
             .filter(pl.col("label").is_not_null() & (pl.col("label") != ""))
             # Remove rows with empty values
             .filter(pl.col("valuenum").is_not_null())
-            # Remove duplicate rows
-            .unique()
         )
 
     # endregion

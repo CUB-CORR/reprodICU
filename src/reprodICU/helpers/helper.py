@@ -166,6 +166,7 @@ class GlobalHelpers:
         numeric_col: Optional[str] = None,
         string_col: Optional[str] = None,
         save_conflicts: bool = True,
+        numeric_aggregate: str = "median",
     ) -> pl.LazyFrame:
         """Pivot numeric values (median) and string values (first) separately and
         combine them, all cast to String.
@@ -178,6 +179,7 @@ class GlobalHelpers:
             string_col: String value column. Non-unique values per (index, on_col)
                 are warned about, and only the first is kept.
             save_conflicts: Save the non-unique string records to a parquet file.
+            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes.
 
         Raises:
             ValueError: If neither numeric_col nor string_col is given.
@@ -202,7 +204,7 @@ class GlobalHelpers:
                 on=on_col,
                 index=index_cols,
                 values=numeric_col,
-                aggregate_function="median",
+                aggregate_function=numeric_aggregate,
             ).lazy()
 
             cols_num = [
