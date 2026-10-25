@@ -1970,9 +1970,9 @@ class EICUExtractor(EICUPaths):
             .join(self.icu_length_of_stay, on=self.icu_stay_id_col, how="left")
             .with_columns(
                 pl.when(pl.col(self.procedure_discharge_col))
+                # ends at unit discharge; the times are relative to unit admission
                 .then(
-                    pl.col(self.procedure_start_col)
-                    + pl.duration(days=1).dt.total_seconds()
+                    pl.duration(days=1).dt.total_seconds()
                     * pl.col(self.icu_length_of_stay_col)
                 )
                 .otherwise(pl.col("next_proc_start"))

@@ -64,32 +64,25 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
             .with_columns(
                 (pl.col("Offset") - pl.col("ICUOffset")).alias("RRT Start")
             )
-            # drop rows that are one minute apart from the previous row and the next row
+            # a run is a series of rows less than 2 h apart; the therapy lasts from its first
+            # to its last row (a single row has no duration), the gap to the next run is not RRT
             .sort("CaseID", "RRT Start")
-            .filter(
-                (
-                    (
-                        pl.col("RRT Start").shift(-1).over("CaseID")
-                        - pl.col("RRT Start")
-                    )
-                    < (60 * 60 * 2)
-                ).not_()
-                | (
-                    (
-                        pl.col("RRT Start")
-                        - pl.col("RRT Start").shift(1).over("CaseID")
-                    )
-                    < (60 * 60 * 2)
-                ).not_()
-                | pl.col("RRT Start").shift(-1).over("CaseID").is_null()
-                | pl.col("RRT Start").shift(1).over("CaseID").is_null()
-            )
             .with_columns(
-                pl.when(pl.col("CaseID") == pl.col("CaseID").shift(-1))
-                .then(pl.col("RRT Start").shift(-1))
-                .otherwise(None)
-                .alias("RRT End")
+                (
+                    pl.col("RRT Start") - pl.col("RRT Start").shift(1).over("CaseID")
+                    >= 60 * 60 * 2
+                )
+                .fill_null(True)
+                .cum_sum()
+                .over("CaseID")
+                .alias("RRT Run")
             )
+            .group_by("CaseID", "RRT Run")
+            .agg(
+                pl.col("RRT Start").min(),
+                pl.col("RRT Start").max().alias("RRT End"),
+            )
+            .drop("RRT Run")
             .rename(
                 {
                     "RRT Start": "Renal Replacement Therapy Start Relative to Admission (seconds)",
