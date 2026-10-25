@@ -1,6 +1,8 @@
-# reprodICU
+# [reprodICU](https://reprod.icu) – Bridging ICU Data Silos for Rapid, Reproducible Critical Care Research <img src="docs/_static/corr_favicon.png" align="right" width="100"/>
+[![DOI](https://zenodo.org/badge/DOI/UPCOMING.svg)](https://doi.org/UPCOMING)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## [DOCUMENTATION](http://wiki.reprodicu.org/)
+## [DOCUMENTATION](https://wiki.reprod.icu/)
 
 ## [INSTALLATION & GETTING STARTED](https://reprodicu.notion.site/gettingstarted)
 
