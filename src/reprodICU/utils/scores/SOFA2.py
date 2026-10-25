@@ -634,6 +634,7 @@ def SOFA2(
     # Ventilation
     vent = ventilation.lazy()
     vent_start_col = "Ventilation Start Relative to Admission (seconds)"
+    vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
     # RRT
     rrt = rrt.lazy()
@@ -681,10 +682,18 @@ def SOFA2(
         .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
             pl.lit(True).alias("ventilation"),
-            timeframe=(pl.col(vent_start_col) - pl.col("T_0"))
-            .floordiv(window.window_size)
-            .cast(int),
+            # every timeframe from the start to the end of the episode
+            timeframe=pl.int_ranges(
+                (pl.col(vent_start_col) - pl.col("T_0"))
+                .floordiv(window.window_size)
+                .cast(int),
+                (pl.col(vent_end_col) - pl.col("T_0"))
+                .floordiv(window.window_size)
+                .cast(int)
+                .add(1),
+            ),
         )
+        .explode("timeframe")
         .group_by(STAY_KEY, "timeframe")
         .agg(pl.col("ventilation").max())
     )
