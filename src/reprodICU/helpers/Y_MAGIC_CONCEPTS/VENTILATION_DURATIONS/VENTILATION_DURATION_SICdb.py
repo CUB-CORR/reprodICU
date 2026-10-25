@@ -38,14 +38,14 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
             # End must be before Discharge
             .filter(pl.col("OffsetEnd").le(pl.col("TimeOfStay")))
             # Filter for ventilation IDs
-            .filter(pl.col("DataID").is_in([720, 3043]))
+            .filter(pl.col("DataID").is_in([720, 3041]))
             # Make offsets (from the start of the case) relative to admission
             .with_columns(pl.col("Offset", "OffsetEnd") - pl.col("ICUOffset"))
             .with_columns(
                 pl.col("DataID")
                 .cast(str)
                 .replace(
-                    {"720": "invasive ventilation", "3043": "tracheostomy"}
+                    {"720": "invasive ventilation", "3041": "tracheostomy"}
                 )
                 .alias("Ventilation Type"),
             )

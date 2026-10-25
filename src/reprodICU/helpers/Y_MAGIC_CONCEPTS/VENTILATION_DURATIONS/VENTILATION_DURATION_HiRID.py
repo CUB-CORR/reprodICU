@@ -116,7 +116,11 @@ class VENTILATION_DURATION_HiRID(MAGIC_CONCEPTS):
                     [timeseries_AIRWAYTYPE, timeseries_VENTMODE],
                     how="align",
                 )
-                .select(pl.all().forward_fill())
+                .with_columns(
+                    pl.col("Ventilation Type", "Ventilator Mode")
+                    .forward_fill()
+                    .over("patientid")
+                )
                 .sort(
                     "patientid",
                     vent_start_col,
