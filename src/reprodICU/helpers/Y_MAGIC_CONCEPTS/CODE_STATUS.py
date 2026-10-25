@@ -262,11 +262,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
 
         # region ALL
         print("MAGIC_CONCEPTS: Code Status")
-        CODE_STATUS_ENUM = pl.Enum(
-            ["full code", "DNCPR", "DNI", "DNR", "DNR / DNI", "CMO"]
-        )
-
-        CODE_STATUS = (
+        CODE_STATUS = self._collapse(
             pl.concat(
                 [
                     eicu_CODE_STATUS,
@@ -275,13 +271,24 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                     umcdb_CODE_STATUS,
                 ],
                 how="diagonal_relaxed",
-            )
-            .select(
+            ).lazy()
+        )
+        # endregion
+
+        return CODE_STATUS
+
+    # region helpers
+    def _collapse(self, data: pl.LazyFrame) -> pl.LazyFrame:
+        """One status per stay and time; consecutive repeats of a stay's status dropped."""
+        CODE_STATUS_ENUM = pl.Enum(
+            ["full code", "DNCPR", "DNI", "DNR", "DNR / DNI", "CMO"]
+        )
+        return (
+            data.select(
                 self.column_names["global_icu_stay_id_col"],
                 "Time Relative to Admission (seconds)",
                 "CODE_STATUS",
             )
-            .lazy()
             .cast({"CODE_STATUS": CODE_STATUS_ENUM})
             .group_by(
                 self.column_names["global_icu_stay_id_col"],
@@ -293,19 +300,15 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                 .first()
                 .alias("CODE_STATUS")
             )
-            # Remove duplicates
+            .sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
+            # Remove consecutive duplicates (needs the sorted order)
             .filter(
                 pl.col("CODE_STATUS").ne_missing(
                     pl.col("CODE_STATUS").shift(1).over("Global ICU Stay ID")
                 ),
             )
-            .sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
         )
-        # endregion
 
-        return CODE_STATUS
-
-    # region helpers
     def _add_global_id_stay_id(
         self, data: pl.LazyFrame, source_dataset: str, stay_id_col: str
     ) -> pl.LazyFrame:
