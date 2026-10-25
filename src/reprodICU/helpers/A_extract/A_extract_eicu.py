@@ -1352,6 +1352,22 @@ class EICUExtractor(EICUPaths):
         )
         return infusiondrug
 
+    def _correct_infusion_fluid_rate(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
+        """Correct the infusion rates (ml/hr) of rows named "(mg/kg/min)".
+
+        The source system computes the infusion rate from the charted drug rate and the
+        concentration of the bag. Rows named "(mg/kg/min)" hold doses in mcg/kg/min (e.g.
+        propofol 50, an impossible 50 mg/kg/min) and the computed rate is 1000 times too
+        high: for them it is exactly 6 x drug rate x weight, the rate of a 10 mg/ml bag
+        if the unit were right.
+        """
+        return infusiondrug.with_columns(
+            pl.when(pl.col(self.drug_name_col).str.contains(r"\(mg/kg/min\)\s*$"))
+            .then(pl.col(self.fluid_rate_col) / 1000)
+            .otherwise(pl.col(self.fluid_rate_col))
+            .alias(self.fluid_rate_col)
+        )
+
     def extract_medications(self) -> pl.LazyFrame:
         """
         Extract medication administration events from infusion and medication files.
@@ -1451,6 +1467,7 @@ class EICUExtractor(EICUPaths):
             .filter(pl.col(self.drug_name_col).is_not_null())
             # Remove rows with empty drug rates
             .filter(pl.col(self.drug_rate_col).is_not_null())
+            .pipe(self._correct_infusion_fluid_rate)
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
