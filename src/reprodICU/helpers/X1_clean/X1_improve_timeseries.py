@@ -41,9 +41,9 @@ class IntakeOutputImprover(GlobalVars):
             pl.col(self.drug_admin_route_col) == "intravenous",
             (pl.col(self.drug_amount_unit_col) == "ml")
             | (pl.col(self.fluid_amount_col).is_not_null()),
-            pl.col(self.drug_class_col).str.contains_any(
-                ["fluid", "drug", None]
-            ),
+            # rows without a drug class (e.g. HiRID saline) are kept
+            pl.col(self.drug_class_col).is_null()
+            | pl.col(self.drug_class_col).str.contains_any(["fluid", "drug"]),
         ).with_columns(
             pl.when(pl.col(self.drug_amount_unit_col) == "ml")
             .then(pl.col(self.drug_amount_col))
@@ -127,9 +127,17 @@ class IntakeOutputImprover(GlobalVars):
                 how="left",
             )
             .with_columns(
-                pl.sum_horizontal(
-                    "Fluid intake intravascular", "Infused volume"
-                ).alias("Fluid intake intravascular")
+                # no intake data and no infusion stays null, not 0
+                pl.when(
+                    pl.col("Fluid intake intravascular").is_not_null()
+                    | pl.col("Infused volume").is_not_null()
+                )
+                .then(
+                    pl.sum_horizontal(
+                        "Fluid intake intravascular", "Infused volume"
+                    )
+                )
+                .alias("Fluid intake intravascular")
             )
             .drop("Infused volume")
         )
@@ -166,9 +174,12 @@ class IntakeOutputImprover(GlobalVars):
                 )
             ).alias("Fluid balance")
         ).with_columns(
-            # Calculate the total fluid balance
-            pl.col("Fluid balance")
-            .cum_sum()
-            .over("Global ICU Stay ID")
+            # Calculate the total fluid balance; stays without any intake record have no balance
+            pl.when(
+                pl.any_horizontal(pl.col(intake_cols).is_not_null())
+                .any()
+                .over("Global ICU Stay ID")
+            )
+            .then(pl.col("Fluid balance").cum_sum().over("Global ICU Stay ID"))
             .alias("Fluid balance"),
         )
