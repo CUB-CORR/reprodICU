@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -1278,7 +1278,7 @@ class EICUExtractor(EICUPaths):
                 how="left",
             )
             # Sort by patient ID, drug name and drug start time
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
+            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col, "infusiondrugid")
             # 2. Check if drug is continued from the previous log entry
             #    and if it is continued in the next log entry
             .with_columns(
@@ -1344,6 +1344,7 @@ class EICUExtractor(EICUPaths):
             ).filter(pl.col(self.drug_end_col).is_not_null())
             # 5. Remove the helper columns
             .drop(
+                "infusiondrugid",
                 "prev_drug_start",
                 "next_drug_start",
                 "drug_status_prev",
@@ -1425,6 +1426,7 @@ class EICUExtractor(EICUPaths):
                 schema_overrides={"drugrate": str},
             )
             .select(
+                "infusiondrugid",
                 "patientunitstayid",
                 "infusionoffset",
                 "drugname",
@@ -1474,7 +1476,13 @@ class EICUExtractor(EICUPaths):
                 self.drug_start_col,
                 base_unit="minutes",
             )
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
+            # Break ties between log entries at the same time
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                self.drug_start_col,
+                "infusiondrugid",
+            )
         )
 
         infusiondrug = self._collapse_infusion_log_entries(infusiondrug)
