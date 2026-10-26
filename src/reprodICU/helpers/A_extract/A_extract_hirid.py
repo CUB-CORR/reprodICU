@@ -14,6 +14,7 @@ from ..helper_filepaths import HiRIDPaths
 from ..helper_OMOP import Vocabulary
 
 
+
 class HiRIDExtractor(HiRIDPaths):
     def __init__(self, paths):
         super().__init__(paths)
@@ -442,13 +443,57 @@ class HiRIDExtractor(HiRIDPaths):
             .with_columns(
                 (pl.col("datetime") - pl.col("admissiontime"))
                 .dt.total_seconds()
-                .alias(self.timeseries_time_col)
+                .alias(self.timeseries_time_col),
+                # The cumulative counters restart at noon
+                (pl.col("datetime") - pl.duration(hours=12))
+                .dt.date()
+                .alias("noon_day"),
             )
             .drop("admissiontime", "datetime")
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
+            # The urine output is a cumulative counter: each record is the volume
+            # since the previous one. A decrease after noon is the daily reset,
+            # other decreases are corrections (no volume).
+            .sort(
+                self.icu_stay_id_col,
+                "variableid",
+                self.timeseries_time_col,
+                "value",
+            )
+            .with_columns(
+                pl.col("value")
+                .shift(1)
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("prev_value"),
+                pl.col("noon_day")
+                .shift(1)
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("prev_noon_day"),
+            )
+            .with_columns(
+                # 30005110: cumulative output counter (resets at noon); ricu reads it as
+                # the urine volume, too
+                pl.when(pl.col("variableid") == 30005110)
+                .then(
+                    pl.when(
+                        pl.col("prev_value").is_null()
+                        | (
+                            (pl.col("value") < pl.col("prev_value"))
+                            & (pl.col("noon_day") != pl.col("prev_noon_day"))
+                        )
+                    )
+                    .then(pl.col("value"))
+                    .otherwise(
+                        pl.max_horizontal(pl.col("value") - pl.col("prev_value"), 0)
+                    )
+                )
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+            .drop("noon_day", "prev_value", "prev_noon_day")
             # Remove rows with empty lab results
             .filter(pl.col("variable").is_not_null(), pl.col("variable") != "")
         )
@@ -821,6 +866,10 @@ class HiRIDExtractor(HiRIDPaths):
                 300: "Respiratory rate",  # Atemfrequenz
                 310: "Respiratory rate (spontaneous)",  # RRsp(m)
                 5685: None,  # RR Caresc
+                # The hourly urine volume (ml/h) is only recorded at some entries; the
+                # cumulative output counter has every one, and is the urine output (as in ricu)
+                10020000: None,
+                30005110: "Hourly urine volume",
             } # fmt: skip
         )
 
