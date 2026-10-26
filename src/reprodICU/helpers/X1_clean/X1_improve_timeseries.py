@@ -103,7 +103,12 @@ class IntakeOutputImprover(GlobalVars):
                 [
                     infused_volumes.filter(pl.col("Intake column") == column).select(
                         stay,
-                        pl.col("Drug End Relative to Admission (seconds)").alias(time),
+                        # administrations at a point in time (e.g. HiRID fluid counters)
+                        # have no end
+                        pl.coalesce(
+                            "Drug End Relative to Admission (seconds)",
+                            "Drug Start Relative to Admission (seconds)",
+                        ).alias(time),
                         pl.col("Infused volume").alias(f"{column} (medication)"),
                     )
                     for column in columns
