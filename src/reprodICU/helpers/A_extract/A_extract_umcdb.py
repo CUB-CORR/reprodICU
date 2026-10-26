@@ -983,14 +983,24 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         # Handle single drug items without solution items
+        # (orders of ml items only, e.g. nebulisers, nutrition and water, are single drug items
+        # unless they are infusions; fluid infusions are handled above)
         drugitems_without_solutionitem_single = (
             drugitems_without_solutionitem.filter(
-                (pl.col("doseunit") == "ml")
-                .all()
-                .over(self.drug_mixture_admin_id_col)
-                .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
-                pl.col(self.drug_mixture_admin_id_col).is_duplicated().not_(),
+                (
+                    (pl.col("doseunit") == "ml")
+                    .all()
+                    .over(self.drug_mixture_admin_id_col)
+                    & pl.col("ordercategory").str.contains("Infuus")
+                ).not_(),
+                (
+                    (pl.col("doseunit") == "ml")
+                    .all()
+                    .over(self.drug_mixture_admin_id_col)
+                    | pl.col(self.drug_mixture_admin_id_col)
+                    .is_duplicated()
+                    .not_()
+                ),
             )
         )
 
@@ -1001,7 +1011,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .all()
                 .over(self.drug_mixture_admin_id_col)
                 .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
                 pl.col(self.drug_mixture_admin_id_col).is_duplicated(),
             )
             .with_columns(
