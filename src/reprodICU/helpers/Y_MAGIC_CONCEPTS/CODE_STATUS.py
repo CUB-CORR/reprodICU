@@ -220,6 +220,67 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .collect()
         )
 
+        # Hospital-wide provider orders (as in mimic-code code_status.sql),
+        # kept for the ICU stay that the order time falls into
+        if "parquet" in self.mimic4_paths.poe_path:
+            mimic4_poe = pl.scan_parquet(self.mimic4_paths.poe_path)
+            mimic4_poe_detail = pl.scan_parquet(self.mimic4_paths.poe_detail_path) # fmt: skip
+        else:
+            mimic4_poe = pl.scan_csv(self.mimic4_paths.poe_path)
+            mimic4_poe_detail = pl.scan_csv(self.mimic4_paths.poe_detail_path)
+
+        mimic4_POE_CODE_STATUS_MAP = pl.LazyFrame(
+            {
+                "field_value": [
+                    "Resuscitate (Full code)",
+                    "Full code  (attempt resuscitation)",
+                    "DNAR (DO NOT attempt resuscitation for cardiac arrest) ",
+                    "Do not resuscitate (DNR/DNI)",
+                ],
+                "CODE_STATUS": ["full code", "full code", "DNR", "DNR / DNI"],
+            }
+        )
+
+        mimic4_POE_CODE_STATUS = (
+            mimic4_poe.filter(
+                pl.col("order_type") == "General Care",
+                pl.col("order_subtype") == "Code status",
+            )
+            .select("poe_id", "hadm_id", "ordertime")
+            .join(
+                mimic4_poe_detail.filter(
+                    pl.col("field_name") == "Code status"
+                ).select("poe_id", "field_value"),
+                on="poe_id",
+            )
+            .join(mimic4_POE_CODE_STATUS_MAP, on="field_value")
+            .with_columns(
+                pl.col("ordertime").str.to_datetime("%Y-%m-%d %H:%M:%S")
+            )
+            .join(
+                pl.scan_csv(self.mimic4_paths.icustays_path)
+                .select("stay_id", "hadm_id", "intime", "outtime")
+                .with_columns(
+                    pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                    pl.col("outtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                ),
+                on="hadm_id",
+            )
+            .filter(
+                pl.col("ordertime").is_between(
+                    pl.col("intime"), pl.col("outtime")
+                )
+            )
+            # Make datetime relative to admission in seconds
+            .with_columns(
+                (pl.col("ordertime") - pl.col("intime"))
+                .dt.total_seconds()
+                .alias("Time Relative to Admission (seconds)"),
+            )
+            .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
+            .collect()
+        )
+
         # endregion
 
         # region UMCdb
@@ -268,6 +329,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                     eicu_CODE_STATUS,
                     mimic3_CODE_STATUS,
                     mimic4_CODE_STATUS,
+                    mimic4_POE_CODE_STATUS,
                     umcdb_CODE_STATUS,
                 ],
                 how="diagonal_relaxed",
@@ -279,7 +341,7 @@ class CODE_STATUS(MAGIC_CONCEPTS):
 
     # region helpers
     def _collapse(self, data: pl.LazyFrame) -> pl.LazyFrame:
-        """One status per stay and time; consecutive repeats of a stay's status dropped."""
+        """One status per stay and time (the most restrictive), consecutive repeats dropped."""
         CODE_STATUS_ENUM = pl.Enum(
             ["full code", "DNCPR", "DNI", "DNR", "DNR / DNI", "CMO"]
         )
@@ -295,11 +357,28 @@ class CODE_STATUS(MAGIC_CONCEPTS):
                 "Time Relative to Admission (seconds)",
             )
             .agg(
+                # most restrictive status; a DNR together with a DNI is "DNR / DNI"
+                pl.col("CODE_STATUS").max(),
                 pl.col("CODE_STATUS")
-                .sort_by(pl.col("CODE_STATUS"))
-                .first()
+                .is_in(["DNR", "DNR / DNI"])
+                .any()
+                .alias("dnr"),
+                pl.col("CODE_STATUS")
+                .is_in(["DNI", "DNR / DNI"])
+                .any()
+                .alias("dni"),
+            )
+            .with_columns(
+                pl.when(
+                    (pl.col("CODE_STATUS") != "CMO")
+                    & pl.col("dnr")
+                    & pl.col("dni")
+                )
+                .then(pl.lit("DNR / DNI", dtype=CODE_STATUS_ENUM))
+                .otherwise(pl.col("CODE_STATUS"))
                 .alias("CODE_STATUS")
             )
+            .drop("dnr", "dni")
             .sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
             # Remove consecutive duplicates (needs the sorted order)
             .filter(
