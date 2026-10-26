@@ -125,6 +125,47 @@ class HiRIDProcessor(HiRIDExtractor):
                 )
             )
 
+            # Intake that no other variable has: the part of the intake counter that
+            # is left after the volumes that the medications count (the pharma records
+            # of the routes X1 counts, given only, and the fluid counters)
+            pharma, fluids = self._extract_linked_medications(
+                [path.name for path in batch_paths]
+            )
+            counted = pl.concat(
+                [
+                    pharma.filter(
+                        pl.col(self.drug_admin_type_col) == "given",
+                        pl.col(self.drug_admin_route_col).is_in(
+                            list(self.INTAKE_COLUMN_BY_ROUTE)
+                        ),
+                    ).select(
+                        self.icu_stay_id_col,
+                        "givenat",
+                        pl.when(pl.col(self.drug_amount_unit_col) == "ml")
+                        .then(pl.col(self.drug_amount_col))
+                        .otherwise(pl.col(self.fluid_amount_col))
+                        .alias("volume"),
+                    ),
+                    fluids.select(
+                        self.icu_stay_id_col,
+                        "givenat",
+                        pl.col(self.fluid_amount_col).alias("volume"),
+                    ),
+                ]
+            )
+            timeseries = pl.concat(
+                [
+                    timeseries,
+                    self._extract_unrecorded_intake(
+                        pl.scan_parquet(batch_paths),
+                        counted,
+                        self.admissiontime,
+                        self.length_of_stay,
+                    ),
+                ],
+                how="diagonal_relaxed",
+            )
+
             (
                 # Pivot the timeseries data
                 self.pivot_numeric_or_string(
@@ -297,14 +338,6 @@ class HiRIDProcessor(HiRIDExtractor):
 
         print("HiRID   - Processing medications...")
 
-        # The counter is a float32, hence the tolerance
-        COUNTER_TOLERANCE_ML = 0.01
-        COUNTER_TOLERANCE_RELATIVE = 1e-3
-        # Significant figures and minimal repeats of a syringe ratio per infusion
-        RATIO_SIG_FIGS = 3
-        RATIO_MIN_REPEATS = 3
-
-        instant_cols = [self.icu_stay_id_col, "givenat"]
         mixture_cols = [self.icu_stay_id_col, self.drug_mixture_id_col]
         infusion_cols = [*mixture_cols, self.drug_admin_type_col]
         drug_cols = [
@@ -315,21 +348,6 @@ class HiRIDProcessor(HiRIDExtractor):
         ]
         amount_cols = [self.drug_amount_col, self.fluid_amount_col]
 
-        # Load the volumes that pharma records add to the fluid counters
-        carrier_volumes = pl.read_csv(
-            self.carrier_volumes_mapping_path,
-            comment_prefix="#",
-            columns=[
-                "pharmaid",
-                "ml",
-                "ml_per_ml",
-                "ml_per_dose",
-                "per_infusion",
-                "dose_from",
-                "dose_unit",
-            ],
-            schema_overrides={"pharmaid": pl.Int32},
-        ).lazy()
         fluid_classes = self.load_many_to_one_mapping(
             self.mapping_path + "MEDICATIONS_FLUIDS_CLASSES.yaml"
         )
@@ -345,135 +363,8 @@ class HiRIDProcessor(HiRIDExtractor):
             index = str(i // batch_size).zfill(4)
             batch_names = [file.name for file in files[i : i + batch_size]]
 
-            # region EXTRACT
-            ###################################################################
-            # collected, since both are used several times below
-            pharma = (
-                pl.scan_parquet([self.pharma_path + name for name in batch_names])
-                .pipe(
-                    self._extract_medications_pharma,
-                    self.admissiontime,
-                    self.length_of_stay,
-                )
-                .collect()
-                .lazy()
-            )
-            fluids = (
-                pl.scan_parquet([self.timeseries_path + name for name in batch_names])
-                .pipe(
-                    self._extract_medications_observation,
-                    self.admissiontime,
-                    self.length_of_stay,
-                )
-                .collect()
-                .lazy()
-                .rename({"datetime": "givenat"})
-            )
-
-            # region CARRIER LINKING
-            ###################################################################
-            # sum the readings at the same instant
-            readings = fluids.group_by(instant_cols).agg(
-                pl.col(self.fluid_group_col).min(),
-                pl.col(self.fluid_amount_col).sum().alias("reading"),
-            )
-
-            # a pharma record takes the carrier volume row with the highest
-            # dose_from that its dose reaches
-            pharma = pharma.with_row_index("record_id")
-            volumes = (
-                pharma.join(carrier_volumes, on="pharmaid", how="left")
-                .filter(pl.col(self.drug_admin_type_col) == "given")
-                .filter(
-                    pl.col("dose_from").is_null()
-                    | (
-                        (pl.col(self.drug_amount_col) >= pl.col("dose_from"))
-                        & pl.col("dose_unit").eq_missing(
-                            pl.col(self.drug_amount_unit_col)
-                        )
-                    )
-                )
-                .sort("dose_from", nulls_last=False)
-                .unique("record_id", keep="last", maintain_order=True)
-            )
-
-            # ratio of the drugs that have one per infusion (syringe
-            # concentration): the most frequent ratio between reading and pharma
-            # volume of the records alone at their instant
-            ratios = (
-                volumes.filter(
-                    pl.col("per_infusion")
-                    & (pl.col(self.fluid_amount_col) > 0)
-                    & (pl.len().over(instant_cols) == 1)
-                )
-                .join(readings, on=instant_cols)
-                .with_columns(
-                    (pl.col("reading") / pl.col(self.fluid_amount_col))
-                    .round_sig_figs(RATIO_SIG_FIGS)
-                    .alias("ratio")
-                )
-                .group_by(*mixture_cols, "pharmaid", "ratio")
-                .agg(pl.len().alias("count"))
-                .sort("count", "ratio", descending=[True, False])
-                .unique([*mixture_cols, "pharmaid"], keep="first", maintain_order=True)
-                .filter(pl.col("count") >= RATIO_MIN_REPEATS)
-            )
-
-            # volume that each record adds to the counter
-            # (injections are excluded, their readings rarely match)
-            carrying = (
-                volumes.filter(~pl.col("injection"))
-                .join(
-                    ratios,
-                    on=[*mixture_cols, "pharmaid"],
-                    how="left",
-                    nulls_equal=True,
-                )
-                .with_columns(
-                    pl.coalesce(
-                        "ml",
-                        pl.col("ml_per_dose") * pl.col(self.drug_amount_col),
-                        pl.coalesce("ratio", "ml_per_ml")
-                        * pl.col(self.fluid_amount_col),
-                    ).alias("carried")
-                )
-                .filter(pl.col("carried") > 0)
-            )
-
-            # readings that equal the summed volume of their instant
-            linked = (
-                carrying.group_by(instant_cols)
-                .agg(pl.col("carried").sum().alias("expected"))
-                .join(readings, on=instant_cols)
-                .filter(
-                    (pl.col("reading") - pl.col("expected")).abs()
-                    <= COUNTER_TOLERANCE_ML
-                    + COUNTER_TOLERANCE_RELATIVE * pl.col("expected")
-                )
-            )
-
-            # the records take their share and the fluid group of the reading,
-            # the linked readings are removed from the fluids
-            pharma = (
-                pharma.join(
-                    carrying.join(linked, on=instant_cols).select(
-                        "record_id",
-                        self.fluid_group_col,
-                        pl.col("carried").alias("share"),
-                    ),
-                    on="record_id",
-                    how="left",
-                )
-                .with_columns(
-                    pl.col("share")
-                    .fill_null(pl.col(self.fluid_amount_col))
-                    .alias(self.fluid_amount_col)
-                )
-                .drop("record_id", "injection", "share", "givenat")
-            )
-            fluids = fluids.join(linked, on=instant_cols, how="anti").drop(
-                "givenat"
-            )
+            pharma, fluids = self._extract_linked_medications(batch_names)
+            pharma, fluids = pharma.drop("givenat"), fluids.drop("givenat")
 
             # region INFUSIONS
             ###################################################################

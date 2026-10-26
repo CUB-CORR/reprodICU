@@ -14,7 +14,6 @@ from ..helper_filepaths import HiRIDPaths
 from ..helper_OMOP import Vocabulary
 
 
-
 class HiRIDExtractor(HiRIDPaths):
     def __init__(self, paths):
         super().__init__(paths)
@@ -600,6 +599,70 @@ class HiRIDExtractor(HiRIDPaths):
         )
 
     # region medications
+    def _extract_counter_increases(
+        self,
+        data: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """
+        Extract the increase of a cumulative counter (it restarts at 12:00:00) at each
+        reading.
+
+        Arguments:
+            data: Readings of the counters (patientid, datetime, variableid, value);
+                further columns are kept.
+            admissiontime: Admission time of each ICU stay.
+            length_of_stay: Length of stay of each ICU stay.
+
+        Returns:
+            pl.LazyFrame: The readings with an increase, with the increase as
+                {fluid_amount_col}, the start time (seconds from admission) and the
+                exact time of the reading (datetime).
+        """
+        counter_cols = [self.icu_stay_id_col, "variableid", "counter_day"]
+
+        return (
+            data.rename({"patientid": self.icu_stay_id_col})
+            .cast({self.icu_stay_id_col: str, "datetime": str})
+            # Join the data with the admission times
+            .join(admissiontime, on=self.icu_stay_id_col)
+            .join(length_of_stay, on=self.icu_stay_id_col)
+            .with_columns(
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
+                pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("value").cast(float),
+            )
+            .sort(self.icu_stay_id_col, "variableid", "datetime", "value")
+            .with_columns(
+                # Number the counter days (the counter restarts at 12:00:00)
+                (pl.col("datetime").dt.time() == time(12))
+                .cum_sum()
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("counter_day"),
+                (pl.col("datetime") - pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.drug_start_col),
+            )
+            # Calculate the increase of the counter, as far as it stays below
+            # all later readings of the counter day
+            .with_columns(
+                (
+                    pl.col("value").cum_min(reverse=True)
+                    - pl.col("value").shift(1, fill_value=0)
+                )
+                .clip(lower_bound=0)
+                .over(counter_cols)
+                .alias(self.fluid_amount_col)
+            )
+            # Remove rows without an increase
+            .filter(pl.col(self.fluid_amount_col) > 0)
+            # Remove duplicate rows
+            .unique()
+        )
+
     def _extract_medications_observation(
         self,
         data: pl.LazyFrame,
@@ -629,58 +692,22 @@ class HiRIDExtractor(HiRIDPaths):
             },
             schema_overrides={"variableid": data.collect_schema()["variableid"]},
         )
-        counter_cols = [self.icu_stay_id_col, self.fluid_group_col, "counter_day"]
 
         return (
             data
             .select("patientid", "datetime", "variableid", "value")
-            .rename({"patientid": self.icu_stay_id_col})
             # Keep the relevant observation variables
             .join(fluid_variables, on="variableid")
-            .cast({self.icu_stay_id_col: str, "datetime": str})
-            # Join the data with the admission times
-            .join(admissiontime, on=self.icu_stay_id_col)
-            .join(length_of_stay, on=self.icu_stay_id_col)
+            .pipe(self._extract_counter_increases, admissiontime, length_of_stay)
             .with_columns(
-                pl.col("admissiontime").str.to_datetime(
-                    "%Y-%m-%d %H:%M:%S%.9f"
-                ),
-                pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                pl.col("value").cast(float),
                 pl.lit("intravenous").alias(self.drug_admin_route_col),
                 # The counters do not say whether it is a continuous infusion
                 pl.lit(None, dtype=pl.Boolean).alias(self.drug_continuous_col),
-            )
-            .sort(self.icu_stay_id_col, self.fluid_group_col, "datetime", "value")
-            .with_columns(
-                # Number the counter days (the counter restarts at 12:00:00)
-                (pl.col("datetime").dt.time() == time(12))
-                .cum_sum()
-                .over(self.icu_stay_id_col, self.fluid_group_col)
-                .alias("counter_day"),
                 # Point administration at the reading, without end and rate
                 pl.lit("given").alias(self.drug_admin_type_col),
-                (pl.col("datetime") - pl.col("admissiontime"))
-                .dt.total_seconds()
-                .alias(self.drug_start_col),
                 pl.lit(None, dtype=pl.Int64).alias(self.drug_end_col),
                 pl.lit(None, dtype=pl.Float64).alias(self.fluid_rate_col),
             )
-            # Calculate the increase of the counter, as far as it stays below
-            # all later readings of the counter day
-            .with_columns(
-                (
-                    pl.col("value").cum_min(reverse=True)
-                    - pl.col("value").shift(1, fill_value=0)
-                )
-                .clip(lower_bound=0)
-                .over(counter_cols)
-                .alias(self.fluid_amount_col)
-            )
-            # Remove rows without an increase
-            .filter(pl.col(self.fluid_amount_col) > 0)
-            # Remove duplicate rows
-            .unique()
             .select(
                 self.icu_stay_id_col,
                 self.drug_admin_route_col,
@@ -695,6 +722,68 @@ class HiRIDExtractor(HiRIDPaths):
                 # Exact time of the reading, to link it to the pharma records
                 "datetime",
             )
+        )
+
+    def _extract_unrecorded_intake(
+        self,
+        observations: pl.LazyFrame,
+        counted: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """
+        Extract the intake that the cumulative intake counter (IN/c) contains, but no
+        other HiRID variable: the increase of the counter minus the volumes that are
+        counted from the saline and colloid counters and the pharma records.
+
+        The remainder consists of round, hand-charted amounts (drinks, boluses, flushes),
+        so it is added as "Fluid intake" without a route.
+
+        Arguments:
+            observations: Observation table(s) of a batch of cases.
+            counted: Volumes that are counted as intake (columns: ICU stay ID, "givenat" =
+                exact time of the record, "volume" in ml). A pharma volume that a counter
+                reading carries is counted once (see process_medications).
+            admissiontime: Admission time of each ICU stay.
+            length_of_stay: Length of stay of each ICU stay.
+
+        Returns:
+            pl.LazyFrame: Long format timeseries with the stay, time, "variable"
+                ("Fluid intake") and "value" (ml).
+        """
+        # a difference to the counted volumes up to this is rounding, not intake
+        rounding_ml = 1
+        stay = self.icu_stay_id_col
+
+        # increase of the counter at each reading
+        steps = (
+            observations.filter(pl.col("variableid") == 30005010)
+            .select("patientid", "datetime", "variableid", "value")
+            .pipe(self._extract_counter_increases, admissiontime, length_of_stay)
+            .select(
+                stay,
+                "datetime",
+                self.drug_start_col,
+                pl.col(self.fluid_amount_col).alias("step"),
+            )
+        )
+
+        # the counted volumes have the time of the reading of the counter that includes them
+        matched = (
+            counted.filter(pl.col("volume") > 0)
+            .group_by(stay, pl.col("givenat").alias("datetime"))
+            .agg(pl.col("volume").sum().alias("matched"))
+        )
+
+        return (
+            steps.join(matched, on=[stay, "datetime"], how="left")
+            .select(
+                stay,
+                pl.col(self.drug_start_col).alias(self.timeseries_time_col),
+                pl.lit("Fluid intake").alias("variable"),
+                (pl.col("step") - pl.col("matched").fill_null(0)).alias("value"),
+            )
+            .filter(pl.col("value") > rounding_ml)
         )
 
     def _extract_medications_pharma(
@@ -818,6 +907,182 @@ class HiRIDExtractor(HiRIDPaths):
             .drop(self.icu_length_of_stay_col)
         )
 
+    def _extract_linked_medications(
+        self, batch_names: list[str]
+    ) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+        """
+        Extract the pharma records and the fluid counters of a batch of files and
+        link the counter readings to the pharma records that they carry.
+
+        Each case has its data in only one file, with the same name in the
+        observation and the pharma folder.
+
+        Arguments:
+            batch_names: File names of the batch.
+
+        Returns:
+            tuple: The pharma records (a record that a reading carries has its share
+                of the reading as fluid amount and the fluid group of the reading) and
+                the fluids (readings that no pharma record carries), both with the
+                exact time of the record ("givenat").
+        """
+        # The counter is a float32, hence the tolerance
+        COUNTER_TOLERANCE_ML = 0.01
+        COUNTER_TOLERANCE_RELATIVE = 1e-3
+        # Significant figures and minimal repeats of a syringe ratio per infusion
+        RATIO_SIG_FIGS = 3
+        RATIO_MIN_REPEATS = 3
+
+        instant_cols = [self.icu_stay_id_col, "givenat"]
+        mixture_cols = [self.icu_stay_id_col, self.drug_mixture_id_col]
+        amount_cols = [self.drug_amount_col, self.fluid_amount_col]
+
+        # Load the volumes that pharma records add to the fluid counters
+        carrier_volumes = pl.read_csv(
+            self.carrier_volumes_mapping_path,
+            comment_prefix="#",
+            columns=[
+                "pharmaid",
+                "ml",
+                "ml_per_ml",
+                "ml_per_dose",
+                "per_infusion",
+                "dose_from",
+                "dose_unit",
+            ],
+            schema_overrides={"pharmaid": pl.Int32},
+        ).lazy()
+
+        # region EXTRACT
+        ###################################################################
+        # collected, since both are used several times below
+        pharma = (
+            pl.scan_parquet([self.pharma_path + name for name in batch_names])
+            .pipe(
+                self._extract_medications_pharma,
+                self.admissiontime,
+                self.length_of_stay,
+            )
+            .collect()
+            .lazy()
+        )
+        fluids = (
+            pl.scan_parquet([self.timeseries_path + name for name in batch_names])
+            .pipe(
+                self._extract_medications_observation,
+                self.admissiontime,
+                self.length_of_stay,
+            )
+            .collect()
+            .lazy()
+            .rename({"datetime": "givenat"})
+        )
+
+        # region CARRIER LINKING
+        ###################################################################
+        # sum the readings at the same instant
+        readings = fluids.group_by(instant_cols).agg(
+            pl.col(self.fluid_group_col).min(),
+            pl.col(self.fluid_amount_col).sum().alias("reading"),
+        )
+
+        # a pharma record takes the carrier volume row with the highest
+        # dose_from that its dose reaches
+        pharma = pharma.with_row_index("record_id")
+        volumes = (
+            pharma.join(carrier_volumes, on="pharmaid", how="left")
+            .filter(pl.col(self.drug_admin_type_col) == "given")
+            .filter(
+                pl.col("dose_from").is_null()
+                | (
+                    (pl.col(self.drug_amount_col) >= pl.col("dose_from"))
+                    & pl.col("dose_unit").eq_missing(
+                        pl.col(self.drug_amount_unit_col)
+                    )
+                )
+            )
+            .sort("dose_from", nulls_last=False)
+            .unique("record_id", keep="last", maintain_order=True)
+        )
+
+        # ratio of the drugs that have one per infusion (syringe
+        # concentration): the most frequent ratio between reading and pharma
+        # volume of the records alone at their instant
+        ratios = (
+            volumes.filter(
+                pl.col("per_infusion")
+                & (pl.col(self.fluid_amount_col) > 0)
+                & (pl.len().over(instant_cols) == 1)
+            )
+            .join(readings, on=instant_cols)
+            .with_columns(
+                (pl.col("reading") / pl.col(self.fluid_amount_col))
+                .round_sig_figs(RATIO_SIG_FIGS)
+                .alias("ratio")
+            )
+            .group_by(*mixture_cols, "pharmaid", "ratio")
+            .agg(pl.len().alias("count"))
+            .sort("count", "ratio", descending=[True, False])
+            .unique([*mixture_cols, "pharmaid"], keep="first", maintain_order=True)
+            .filter(pl.col("count") >= RATIO_MIN_REPEATS)
+        )
+
+        # volume that each record adds to the counter
+        # (injections are excluded, their readings rarely match)
+        carrying = (
+            volumes.filter(~pl.col("injection"))
+            .join(
+                ratios,
+                on=[*mixture_cols, "pharmaid"],
+                how="left",
+                nulls_equal=True,
+            )
+            .with_columns(
+                pl.coalesce(
+                    "ml",
+                    pl.col("ml_per_dose") * pl.col(self.drug_amount_col),
+                    pl.coalesce("ratio", "ml_per_ml")
+                    * pl.col(self.fluid_amount_col),
+                ).alias("carried")
+            )
+            .filter(pl.col("carried") > 0)
+        )
+
+        # readings that equal the summed volume of their instant
+        linked = (
+            carrying.group_by(instant_cols)
+            .agg(pl.col("carried").sum().alias("expected"))
+            .join(readings, on=instant_cols)
+            .filter(
+                (pl.col("reading") - pl.col("expected")).abs()
+                <= COUNTER_TOLERANCE_ML
+                + COUNTER_TOLERANCE_RELATIVE * pl.col("expected")
+            )
+        )
+
+        # the records take their share and the fluid group of the reading,
+        # the linked readings are removed from the fluids
+        pharma = (
+            pharma.join(
+                carrying.join(linked, on=instant_cols).select(
+                    "record_id",
+                    self.fluid_group_col,
+                    pl.col("carried").alias("share"),
+                ),
+                on="record_id",
+                how="left",
+            )
+            .with_columns(
+                pl.col("share")
+                .fill_null(pl.col(self.fluid_amount_col))
+                .alias(self.fluid_amount_col)
+            )
+            .drop("record_id", "injection", "share")
+        )
+        fluids = fluids.join(linked, on=instant_cols, how="anti")
+
+        return pharma, fluids
+
     # endregion
 
     # region helpers
@@ -870,6 +1135,12 @@ class HiRIDExtractor(HiRIDPaths):
                 # cumulative output counter has every one, and is the urine output (as in ricu)
                 10020000: None,
                 30005110: "Hourly urine volume",
+                # The cumulative intake counter and the saline and colloid counters are
+                # counted as medications (the part of the intake counter that nothing else
+                # records is added in process_timeseries)
+                30005010: None,
+                30005075: None,
+                30005080: None,
             } # fmt: skip
         )
 
