@@ -591,12 +591,25 @@ def _balance_intake_output(paths: reprodICUPaths, save_path: str) -> None:
     """Add medication infusion volumes to intake/output and balance it."""
     print("reprodICU - Improving intake/output data...")
     improver = IntakeOutputImprover(paths=paths)
+    dataset_of_stay = pl.scan_parquet(save_path + "patient_information.parquet").select(
+        "Global ICU Stay ID", improver.dataset_col
+    )
+    # The intake/output timeseries of MIMIC-III and MIMIC-IV are built from the same inputevents
+    # rows as their medications, adding the medication volumes would count them twice
+    medications = (
+        pl.scan_parquet(save_path + "medications.parquet")
+        .join(dataset_of_stay, on="Global ICU Stay ID", how="left")
+        .filter(
+            pl.col(improver.dataset_col)
+            .is_in(["MIMIC-III", "MIMIC-IV"])
+            .fill_null(False)
+            .not_()
+        )
+        .drop(improver.dataset_col)
+    )
     (
         pl.scan_parquet(save_path + "timeseries_intakeoutput.parquet")
-        .pipe(
-            improver.add_infusion_volumes,
-            medications=pl.scan_parquet(save_path + "medications.parquet"),
-        )
+        .pipe(improver.add_infusion_volumes, medications=medications)
         .pipe(improver.improve_intake_output)
         .collect()
         .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")

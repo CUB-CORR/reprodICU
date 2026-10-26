@@ -18,17 +18,17 @@ class IntakeOutputImprover(GlobalVars):
         self, data: pl.LazyFrame, medications: pl.LazyFrame
     ) -> pl.LazyFrame:
         """
-        Add infusion volumes from medications to intake/output data.
+        Add the volumes of medications to the intake/output data.
 
         Steps:
-            1. Filter medications for intravenous infusions (route="intravenous", unit="ml").
-            2. Extract infused drug amounts and fluid volumes.
+            1. Filter medications for volumes given intravenously, orally or via a tube.
+            2. Extract drug amounts in ml and fluid volumes.
             3. Aggregate volumes for mixed infusions (same mixture ID).
-            4. Sum drug and fluid volumes to get total infused volume.
-            5. Join volumes to intake/output time grid.
+            4. Sum drug and fluid volumes to get the total volume.
+            5. Add the volumes to the intake column of their route, at their own time.
 
         Returns:
-            pl.LazyFrame: Intake/output data with added infusion volume measurements.
+            pl.LazyFrame: Intake/output data with added medication volumes.
         """
 
         if medications is None:
@@ -36,16 +36,17 @@ class IntakeOutputImprover(GlobalVars):
 
         print("reprodICU - Adding infusion volumes to intake/output data...")
 
-        # Filter the medication data for infusions (i.e. medications with a volume)
+        stay = "Global ICU Stay ID"
+        time = "Time Relative to Admission (seconds)"
+        columns = sorted(set(self.INTAKE_COLUMN_BY_ROUTE.values()))
+
+        # Filter the medication data for volumes (i.e. medications with a volume)
         infused_volumes = medications.filter(
             pl.col(self.drug_admin_route_col).is_in(
-                ["intravenous", "intravenous (central)"]
+                list(self.INTAKE_COLUMN_BY_ROUTE)
             ),
             (pl.col(self.drug_amount_unit_col) == "ml")
             | (pl.col(self.fluid_amount_col).is_not_null()),
-            # rows without a drug class (e.g. HiRID saline) are kept
-            pl.col(self.drug_class_col).is_null()
-            | pl.col(self.drug_class_col).str.contains_any(["fluid", "drug"]),
         ).with_columns(
             pl.when(pl.col(self.drug_amount_unit_col) == "ml")
             .then(pl.col(self.drug_amount_col))
@@ -87,61 +88,66 @@ class IntakeOutputImprover(GlobalVars):
                     pl.col("Drug Amount (ml)"),
                     pl.col(self.fluid_amount_col),
                     ignore_nulls=True,
-                ).alias("Infused volume")
-            )
-            .select(
-                "Global ICU Stay ID",
-                "Infused volume",
-                "Drug End Relative to Admission (seconds)",
-            )
-            .sort(
-                "Global ICU Stay ID", "Drug End Relative to Admission (seconds)"
+                ).alias("Infused volume"),
+                pl.col(self.drug_admin_route_col)
+                .replace_strict(self.INTAKE_COLUMN_BY_ROUTE, return_dtype=pl.String)
+                .alias("Intake column"),
             )
         )
 
-        # Sum up the infusion volumes for each intake output time point for joining
-        intake_output_times = data.select(
-            "Global ICU Stay ID", "Time Relative to Admission (seconds)"
-        ).sort("Global ICU Stay ID", "Time Relative to Admission (seconds)")
-
-        infused_volumes = (
-            infused_volumes.join_asof(
-                intake_output_times,
-                by="Global ICU Stay ID",
-                left_on="Drug End Relative to Admission (seconds)",
-                right_on="Time Relative to Admission (seconds)",
-                strategy="forward",
-            )
-            .group_by(
-                "Global ICU Stay ID", "Time Relative to Admission (seconds)"
-            )
-            .agg(pl.sum("Infused volume"))
-        )
-
-        # Add the infusion volumes to the intake output data
-        return (
-            data.join(
-                infused_volumes,
-                on=[
-                    "Global ICU Stay ID",
-                    "Time Relative to Admission (seconds)",
-                ],
-                how="left",
-            )
-            .with_columns(
-                # no intake data and no infusion stays null, not 0
-                pl.when(
-                    pl.col("Fluid intake intravascular").is_not_null()
-                    | pl.col("Infused volume").is_not_null()
-                )
-                .then(
-                    pl.sum_horizontal(
-                        "Fluid intake intravascular", "Infused volume"
+        # Sum up the volumes for each time point and intake column. Volumes without an intake
+        # output row at their time get a row of their own: joining them to the next row would
+        # shift them and drop those after the last row of a stay.
+        volumes = (
+            pl.concat(
+                [
+                    infused_volumes.filter(pl.col("Intake column") == column).select(
+                        stay,
+                        pl.col("Drug End Relative to Admission (seconds)").alias(time),
+                        pl.col("Infused volume").alias(f"{column} (medication)"),
                     )
-                )
-                .alias("Fluid intake intravascular")
+                    for column in columns
+                ],
+                how="diagonal_relaxed",
             )
-            .drop("Infused volume")
+            .group_by(stay, time)
+            .agg(
+                *[
+                    pl.when(pl.col(f"{column} (medication)").count() > 0)
+                    .then(pl.col(f"{column} (medication)").sum())
+                    .alias(f"{column} (medication)")
+                    for column in columns
+                ]
+            )
+        )
+
+        # Add the volumes to the intake output data
+        existing = data.collect_schema().names()
+        return (
+            data.with_columns(
+                [
+                    pl.lit(None, dtype=pl.Float64).alias(column)
+                    for column in columns
+                    if column not in existing
+                ]
+            )
+            .join(volumes, on=[stay, time], how="full", coalesce=True)
+            .sort(stay, time)
+            .with_columns(
+                # no intake data and no medication volume stays null, not 0
+                *[
+                    pl.when(
+                        pl.col(column).is_not_null()
+                        | pl.col(f"{column} (medication)").is_not_null()
+                    )
+                    .then(
+                        pl.sum_horizontal(column, f"{column} (medication)")
+                    )
+                    .alias(column)
+                    for column in columns
+                ]
+            )
+            .drop([f"{column} (medication)" for column in columns])
         )
 
     def improve_intake_output(self, data: pl.LazyFrame) -> pl.LazyFrame:

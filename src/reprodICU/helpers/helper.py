@@ -331,6 +331,16 @@ class GlobalVars(GlobalHelpers):
         self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
         self.OZ_TO_KG = 0.0283495  # 1 oz = 0.0283495 kg
 
+        # Intake column of the volumes of medications (added to the intake/output timeseries)
+        # by their route of administration
+        self.INTAKE_COLUMN_BY_ROUTE = {
+            "intravenous": "Fluid intake intravascular",
+            "intravenous (central)": "Fluid intake intravascular",
+            "oral": "Fluid intake oral",
+            "nasogastric": "Fluid intake nasogastric tube",
+            "enteral": "Fluid intake enteral tube",
+        }
+
         # region GLOBAL MAPS
         self.MEDICATION_MAPPING_PATH = mapping_path + "MEDICATIONS/"
 
