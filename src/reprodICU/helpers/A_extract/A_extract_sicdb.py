@@ -174,22 +174,26 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.discharge_locations_dtype)
                 .alias(self.discharge_loc_col),
                 # Convert mortality to established dtype
-                pl.when(pl.col("DischargeState") == 2202)  # "lebend"
-                .then(False)
-                .when(pl.col("DischargeState") == 2215)  # "verstorben"
+                # a death within the ICU stay counts even if the discharge state says otherwise
+                pl.when(
+                    (pl.col("DischargeState") == 2215)  # "verstorben"
+                    | (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                )
                 .then(True)
+                .when(pl.col("DischargeState") == 2202)  # "lebend"
+                .then(False)
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 2026)  # "Survived"
+                pl.when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
                 .then(False)
-                .when(pl.col("HospitalDischargeType") == 2028)  # "Deceased"
+                .when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
                 .then(True)
-                .otherwise(None)  # "Unknown" -> set to None
+                .otherwise(None)  # transfer, left against advice, unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
-                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset"))
+                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("TimeOfStay"))
                 .truediv(pl.duration(days=1))
                 .alias(self.mortality_after_col), # fmt: skip
                 # Get mortality after discharge cutoff
