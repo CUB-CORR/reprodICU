@@ -353,11 +353,11 @@ class UMCdbExtractor(UMCdbPaths):
                   .when(pl.col("item") == "Oxygen delivery system")
                   .then(pl.col("itemvalue").replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None))
                   .when(pl.col("item") == "Ventilation mode Ventilator")
-                  .then(pl.col("itemvalue").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
                   .when(pl.col("item") == "Continuous renal replacement therapy mode Renal replacement therapy circuit")
-                  .then(pl.col("itemvalue").replace_strict(self.RRT_MODE_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.RRT_MODE_MAP, default=None))
                   .when(pl.col("item") == "Confusion Assessment Method")
-                  .then(pl.col("itemvalue").replace_strict(self.DELIRIUM_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.DELIRIUM_MAP, default=None))
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
@@ -676,7 +676,6 @@ class UMCdbExtractor(UMCdbPaths):
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
-        INTIMES = self._extract_intimes()
         REGISTEREDBY = {
             "ICV_Medisch Staflid": 1,
             "ICV_Medisch": 2,
@@ -696,22 +695,6 @@ class UMCdbExtractor(UMCdbPaths):
                 "itemid",
                 "registeredby",
             )
-            .join(
-                INTIMES.select(self.icu_stay_id_col, "intime"),
-                on=self.icu_stay_id_col,
-                how="left",
-            )
-            .with_columns(
-                pl.duration(
-                    milliseconds=(
-                        pl.col(self.timeseries_time_col) - pl.col("intime")
-                    )
-                )
-                .dt.total_seconds()
-                .cast(float)
-                .alias(self.timeseries_time_col)
-            )
-            .drop("intime")
         )
 
         data_eye = (
