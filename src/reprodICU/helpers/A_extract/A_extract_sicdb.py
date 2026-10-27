@@ -13,6 +13,10 @@ from ..helper import GlobalHelpers
 from ..helper_filepaths import SICdbPaths
 from ..helper_OMOP import Vocabulary
 
+# Fluids that d_references gives in "drops" but SICdb counts in ml (its hourly
+# fluid DataID 2200 sums them): Tee/Suppe/Joghurt
+FLUIDS_IN_ML_LABELLED_DROPS = [2052]
+
 
 class SICdbExtractor(SICdbPaths):
     def __init__(self, paths):
@@ -449,10 +453,11 @@ class SICdbExtractor(SICdbPaths):
         Steps:
             1. Read medication data from CSV.
             2. Align data with ICU admission time.
-            3. Map drug IDs to standardized medication names and units.
-            4. Compute and filter infusion rates for continuous medications.
-            5. Map medications to active ingredients.
-            6. Filter for valid medication entries within ICU stay window.
+            3. Add the fluids and foods given in ml, carriers linked to drugs.
+            4. Map drug IDs to standardized medication names and units.
+            5. Compute and filter infusion rates for continuous medications.
+            6. Map medications to active ingredients.
+            7. Filter for valid medication entries within ICU stay window.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -469,6 +474,11 @@ class SICdbExtractor(SICdbPaths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_admin_type_col}: Administration type.
                 - {drug_continuous_col}: Continuous administration flag.
+                - {drug_admin_route_col}: Route of the volumes.
+                - {fluid_name_col}: Fluid name of a volume.
+                - {fluid_group_col}: Fluid group of a volume.
+                - {drug_class_col}: Class of a volume without a drug.
+                - {fluid_amount_col}: Volume in ml.
         """
 
         medications_path = self.precalc_path + "SICdb_medications.parquet"
@@ -480,6 +490,9 @@ class SICdbExtractor(SICdbPaths):
         print("SICdb   - Extracting medications...")
 
         offsets = self._get_offsets()
+        fluid_classes = self.helpers.load_many_to_one_mapping(
+            self.mapping_path + "MEDICATIONS_FLUIDS_CLASSES.yaml"
+        )
 
         medications = (
             pl.scan_csv(self.medication_path)
@@ -493,6 +506,7 @@ class SICdbExtractor(SICdbPaths):
                 "Amount",
                 "AmountPerMinute",
             )
+            .pipe(self._add_volumes)
             .rename(
                 {
                     "id": self.drug_mixture_admin_id_col,
@@ -516,8 +530,33 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.drug_name_col),
                 # Add a column to indicate the administration type
                 pl.lit("given").alias(self.drug_admin_type_col),
+                # Volumes are given intravenously unless their name says otherwise
+                pl.col("DrugID")
+                .replace_strict(
+                    self.helpers.load_mapping(self.fluid_route_mapping_path),
+                    default=None,
+                    return_dtype=pl.String,
+                )
+                .fill_null(
+                    pl.when(pl.col(self.fluid_amount_col).is_not_null()).then(
+                        pl.lit("intravenous")
+                    )
+                )
+                .alias(self.drug_admin_route_col),
             )
             .with_columns(
+                # Map the fluids to fluid groups, and the volumes without a
+                # drug to their class
+                pl.col(self.fluid_name_col)
+                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
+                .alias(self.fluid_group_col),
+                pl.when(pl.col(self.drug_name_col).is_null())
+                .then(
+                    pl.col(self.fluid_name_col).replace_strict(
+                        fluid_classes, default=None
+                    )
+                )
+                .alias(self.drug_class_col),
                 # Get drug units
                 pl.col(self.drug_name_col)
                 .replace_strict(self._extract_drug_units(), default=None)
@@ -566,10 +605,16 @@ class SICdbExtractor(SICdbPaths):
             )
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty medication names
-            .filter(pl.col(self.drug_name_col).is_not_null())
+            # Remove rows with empty medication names (volumes have a fluid name)
+            .filter(
+                pl.col(self.drug_name_col).is_not_null()
+                | pl.col(self.fluid_name_col).is_not_null()
+            )
             # Remove rows with empty medication results
-            .filter(pl.col(self.drug_amount_col).is_not_null())
+            .filter(
+                pl.col(self.drug_amount_col).is_not_null()
+                | pl.col(self.fluid_amount_col).is_not_null()
+            )
             # Drop columns
             .drop(
                 "CaseOffset",
@@ -582,6 +627,91 @@ class SICdbExtractor(SICdbPaths):
         medications.sink_parquet(medications_path)
 
         return pl.scan_parquet(medications_path)
+
+    def _add_volumes(self, raw: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Add the fluids and foods given in ml to the medication rows.
+
+        Fluids and foods are DrugIDs without a "Drug" reference. A carrier
+        (e.g. "NaCl 0,9% Perfusor") is a fluid that is the diluent of a drug.
+        It is linked to a drug when exactly one drug at its time usually gets
+        a carrier. Both are listed in the carrier mapping. Every other volume
+        is a row of its own.
+
+        Steps:
+            1. Read the carriers and the drugs that usually get one.
+            2. Split the volumes (fluids and foods in ml) from the drugs.
+            3. Link each carrier to the one usual drug at its time.
+            4. Add the carriers to their drugs and the other volumes as rows.
+
+        Args:
+            raw (pl.LazyFrame): Medication table with the columns id, CaseID,
+                DrugID, Offset, OffsetDrugEnd, IsSingleDose, Amount and
+                AmountPerMinute.
+
+        Returns:
+            pl.LazyFrame: The rows of the drugs with the columns of raw and
+                the rows of the volumes without Amount and AmountPerMinute.
+                Contains also:
+                - {fluid_name_col}: Fluid name (of the largest carrier).
+                - {fluid_amount_col}: Volume in ml (summed for a drug).
+        """
+        key = ["CaseID", "Offset", "OffsetDrugEnd"]
+
+        # Collect the table once, since it is used several times
+        raw = raw.collect().lazy()
+
+        # Get the carriers and the drugs that usually get one
+        fluid_carriers = self._extract_fluid_carriers()
+        carriers = fluid_carriers.filter(pl.col("role") == "carrier")["drugid"]
+        usual = fluid_carriers.filter(pl.col("role") == "usual")["drugid"]
+
+        # Split the volumes (fluids and foods in ml) from the drugs
+        fluid_names = self._extract_fluid_references()
+        is_volume = pl.col("DrugID").is_in(list(fluid_names))
+        drugs = raw.filter(~is_volume)
+        volumes = raw.filter(is_volume, pl.col("Amount") > 0).select(
+            pl.exclude("Amount", "AmountPerMinute"),
+            pl.col("Amount").alias(self.fluid_amount_col),
+            pl.col("DrugID")
+            .replace_strict(fluid_names)
+            .alias(self.fluid_name_col),
+        )
+
+        # Link a carrier to the one usual drug at its time. With none or
+        # several of them it may belong to any drug and stays a row of its own
+        one_usual = (
+            drugs.filter(pl.col("DrugID").is_in(usual.to_list()))
+            .group_by(key)
+            .agg(
+                pl.len().alias("count"),
+                pl.col("id").first().alias("drug_id"),
+            )
+            .filter(pl.col("count") == 1)
+        )
+        linked = (
+            volumes.filter(pl.col("DrugID").is_in(carriers.to_list()))
+            .join(one_usual, on=key)
+            .sort(self.fluid_amount_col)
+        )
+
+        return pl.concat(
+            [
+                # Add the linked carriers to their drugs
+                drugs.join(
+                    linked.group_by("drug_id").agg(
+                        pl.col(self.fluid_amount_col).sum(),
+                        pl.col(self.fluid_name_col).last(),
+                    ),
+                    left_on="id",
+                    right_on="drug_id",
+                    how="left",
+                ),
+                # Add the other volumes as rows of their own
+                volumes.join(linked.select("id"), on="id", how="anti"),
+            ],
+            how="diagonal_relaxed",
+        )
 
     # endregion
 
@@ -812,6 +942,52 @@ class SICdbExtractor(SICdbPaths):
         return self.omop.get_drug_references(
             rows, ["sourceCode"], self.drug_ingredient_col, self.drug_name_OMOP_col
         ).rename({"sourceCode": "DrugID"})
+
+    # Extract the fluids and foods in ml from the d_references.csv file
+    def _extract_fluid_references(self) -> dict:
+        """
+        Extract the fluids and foods that are given in ml.
+
+        Fluids and foods have no "Drug" reference. Only those given in ml have
+        a volume (the others are given in drops, units, bags or kcal), except
+        for the fluids in FLUIDS_IN_ML_LABELLED_DROPS.
+
+        Returns:
+            dict: Mapping from ReferenceGlobalID to ReferenceValue.
+        """
+        references = (
+            pl.read_csv(self.d_references_path)
+            .filter(
+                pl.col("ReferenceName").is_in(["Fluid", "Food"]),
+                (pl.col("ReferenceUnit") == "ml")
+                | pl.col("ReferenceGlobalID").is_in(FLUIDS_IN_ML_LABELLED_DROPS),
+            )
+            .select("ReferenceGlobalID", "ReferenceValue")
+        )
+
+        return dict(
+            zip(
+                references["ReferenceGlobalID"].to_list(),
+                references["ReferenceValue"].to_list(),
+            )
+        )
+
+    # Extract the information from the sicdb_fluid_carriers.csv file
+    def _extract_fluid_carriers(self) -> pl.DataFrame:
+        """
+        Extract the carriers and the drugs that usually get a carrier.
+
+        A carrier is a fluid that is the diluent of a drug, e.g. "NaCl 0,9%
+        Perfusor". The evidence for each entry is in the file.
+
+        Returns:
+            pl.DataFrame: Columns:
+                - drugid: Drug identifier.
+                - role: "carrier" or "usual" (a drug that usually gets one).
+        """
+        return pl.read_csv(
+            self.fluid_carrier_mapping_path, comment_prefix="#"
+        ).select("drugid", "role")
 
     # endregion
 

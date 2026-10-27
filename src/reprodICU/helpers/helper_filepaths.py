@@ -637,6 +637,8 @@ class SICdbPaths(GlobalVars):
         # SICdb custom mapping paths
         self.sicdb_mapping_path = self.mapping_path + "sicdb/"
         self.device_mapping_path = self.sicdb_mapping_path + "sicdb_Devices.yaml" # fmt: skip
+        self.fluid_route_mapping_path = self.sicdb_mapping_path + "sicdb_fluid_routes.yaml" # fmt: skip
+        self.fluid_carrier_mapping_path = self.sicdb_mapping_path + "sicdb_fluid_carriers.csv" # fmt: skip
 
 
 # endregion

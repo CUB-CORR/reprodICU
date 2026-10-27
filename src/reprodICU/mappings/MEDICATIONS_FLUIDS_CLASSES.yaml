@@ -3,6 +3,10 @@ fluid (crystalloid):
   - PACU Crystalloid Intake
   - OR Crystalloid
   - OR Crystalloid Intake
+  # SICdb
+  - Ringer Lösung
+  - Elomel isoton
+  - Elomel OP
 fluid (crystalloid - normal saline):
   - Normal Saline
   - 0.9% Normal Saline (ml/hr)
@@ -162,6 +166,12 @@ fluid (crystalloid - normal saline):
   - NACL
   - NACL (ml/hr)
   - NaCl (ml/hr)
+  # SICdb
+  - NaCl 0,9% Infusion
+  - NaCl 0,9% Kurzinfusion
+  - NaCl 0,9% Medikament
+  - NaCl 0,9% Perfusor
+  - NaCl 0,9% Infusion intraarteriell
 fluid (crystalloid - half normal saline):
   - .45% Normal Saline
   - 0.45% NS (ml/hr)
@@ -215,6 +225,9 @@ fluid (crystalloid - hypertonic saline):
   - 3% Sodium Chloride IVF Infused (ml/hr)
   - SODIUM CHLORIDE 3% (ml/hr)
   - Sodium Chloride 3% (ml/hr)
+  # SICdb
+  - Natriumchlorid3%
+  - Natriumchlorid5%
 fluid (crystalloid - Lactated Ringer's):
   - Ri-Lac (Ringers lactaat)
   - "LR "
@@ -264,6 +277,8 @@ fluid (crystalloid - Lactated Ringer's):
   - lr bolus
   - OR LR
   - LR
+  # SICdb
+  - Ringer Laktat
 fluid (crystalloid - glucose in water):
   - Glucose 20% /100ml
   - Glucose 20% /500ml
@@ -330,6 +345,17 @@ fluid (crystalloid - glucose in water):
   - Dextrose 20%
   - Dextrose 40%
   - Dextrose 30%
+  # SICdb
+  - Glukose 5%
+  - Glukose 5% Kurzinfusion
+  - Glukose 5% Medikament
+  - Glukose 5% Perf
+  - Glukose 2,5%
+  - Glukose 10%
+  - Glukose 20%
+  - Glukose 33%
+  - Glukose 33% Perf
+  - Glukose 50%
 fluid (crystalloid - glucose in saline):
   - D5/.45NS
   - NaCl 0,45%/Glucose 2,5%
@@ -603,6 +629,8 @@ fluid (colloid):
   - OR Colloid Intake
   - PACU Colloid
   - PACU Colloid Intake
+  # SICdb
+  - Gelofusin
 fluid (colloid - albumin):
   - Albumine 20%
   - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
@@ -669,7 +697,9 @@ fluid (colloid - albumin):
   - Humanalbumin 20% (Albunorm)
   - Humanalbumin 5%
   - Humanalbumin 5% (Albunorm)
-fluid (colloid - hydroxyethyl starch): []
+fluid (colloid - hydroxyethyl starch):
+  # SICdb
+  - Volulyte 6%
 fluid (colloid - dextran): []
 fluid (colloid - other): []
 blood product (packed red blood cells):
@@ -703,6 +733,8 @@ blood product (packed red blood cells):
   - OR Packed RBC Intake
   - PACU Packed RBC Intake
   - Packed Red Blood Cells
+  # SICdb
+  - Erythrozytenkonzentrat
 blood product (whole blood): []
 blood product (platelets):
   - Thrombocyten suspensie
@@ -731,6 +763,9 @@ blood product (platelets):
   - PACU Platelet Intake
   - Platelets
   - Platelets
+  # SICdb
+  - Thrombozytenkonzentrat gepoolt
+  - Thrombozytenkonzentrat Einzelspender
 blood product (plasma):
   - Fresh Frozen Plasma
   - FFP
@@ -748,6 +783,8 @@ blood product (plasma):
   - OR FFP
   - OR FFP Intake
   - Fresh Frozen Plasma
+  # SICdb
+  - Octaplas
 blood product (cryoprecipitate):
   - Cryoprecipitate
   - Cryoprecipitate

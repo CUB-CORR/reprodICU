@@ -16,6 +16,12 @@ normal saline 0.9%:
   - NaCl 0,9 %
   - NaCl 0,9% Medicatie
   - NaCl 0,9% Pompen
+  # SICdb
+  - NaCl 0,9% Infusion
+  - NaCl 0,9% Kurzinfusion
+  - NaCl 0,9% Medikament
+  - NaCl 0,9% Perfusor
+  - NaCl 0,9% Infusion intraarteriell
 
 half normal saline 0.45%:
   # MIMIC-III / MIMIC-IV
@@ -27,6 +33,9 @@ hypertonic saline:
   # MIMIC-IV
   - NaCl 3% (Hypertonic Saline) # only 243 entries
   - NaCl 23.4% # only 7 entries
+  # SICdb
+  - Natriumchlorid3%
+  - Natriumchlorid5%
 
 glucose 2.5% in half normal saline 0.45%:
   # UMCdb
@@ -41,6 +50,11 @@ glucose 5%:
   - Glucose 5 %
   - Glucose 5% Medicatie
   - Glucose 5% Pompen
+  # SICdb
+  - Glukose 5%
+  - Glukose 5% Kurzinfusion
+  - Glukose 5% Medikament
+  - Glukose 5% Perf
 
 glucose 5% in normal saline 0.9%:
   # MIMIC-III / MIMIC-IV
@@ -55,6 +69,8 @@ glucose 10%:
   - D10W
   # HiRID / UMCdb
   - Glucose 10%
+  # SICdb
+  - Glukose 10%
 
 glucose 20%:
   # HiRID
@@ -65,6 +81,8 @@ glucose 20%:
   - Dextrose 20% # only 43 entries
   # UMCdb
   - Glucose 20% # only 34 entries
+  # SICdb
+  - Glukose 20%
 
 glucose 30%:
   # HiRID
@@ -73,14 +91,20 @@ glucose 30%:
 glucose 50%:
   # HiRID
   - Glucose 50%
+  # SICdb
+  - Glukose 50%
 
 sodium bicarbonate 1.4%:
   # HiRID
   - Na-Bicarbonat 1.4%
+  # SICdb
+  - Natriumbikarbonat 1,4%
 
 sodium bicarbonate 8.4%:
   # HiRID
   - Na- Bicarbonat 8.4%
+  # SICdb
+  - Natriumbikarbonat 8,4%
 
 fresh frozen plasma:
   # HiRID
@@ -89,6 +113,9 @@ fresh frozen plasma:
 platelets:
   # HiRID
   - Platelet transfusion
+  # SICdb
+  - Thrombozytenkonzentrat gepoolt
+  - Thrombozytenkonzentrat Einzelspender
 
 sterile water:
   # MIMIC-III / MIMIC-IV
@@ -96,6 +123,11 @@ sterile water:
   # UMCdb
   - Aquadest Medicatie
   - Aquadest Pompen
+  # SICdb
+  - Aqua Kurzinfusion Lsg
+  - Aqua Medikament Lsg
+  - Aqua Perfusor Lsg
+  - Aqua Perfusor Lsg 1
 
 colloid: []
   # HiRID -> same name
@@ -105,6 +137,8 @@ Lactated Ringer's:
   - LR
   # UMCdb
   - Ri-Lac (Ringers lactaat)
+  # SICdb
+  - Ringer Laktat
 
 # UNMAPPED SOLUTION FLUIDS:
 ###########################
