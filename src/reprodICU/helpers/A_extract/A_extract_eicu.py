@@ -1354,16 +1354,28 @@ class EICUExtractor(EICUPaths):
         return infusiondrug
 
     def _correct_infusion_fluid_rate(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
-        """Correct the infusion rates (ml/hr) of rows named "(mg/kg/min)".
+        """Divide the infusion rate (ml/hr) of "(mg/kg/min)" rows that hold mcg/kg/min by 1000.
 
-        The source system computes the infusion rate from the charted drug rate and the
-        concentration of the bag. Rows named "(mg/kg/min)" hold doses in mcg/kg/min (e.g.
-        propofol 50, an impossible 50 mg/kg/min) and the computed rate is 1000 times too
-        high: for them it is exactly 6 x drug rate x weight, the rate of a 10 mg/ml bag
-        if the unit were right.
+        The source computes the rate from the dose in the unit of the drug name, so a
+        dose in mcg/kg/min (propofol 50) gives a rate 1000 times too high. Only rows with
+        a dose above the highest mg/kg/min dose of their drug are divided; real
+        mg/kg/min doses (propofol 0.03), dose 0 and other units are kept.
         """
+        # Highest mg/kg/min dose of the drug, from the first word of its name
+        max_mg_per_kg_min = {
+            "propofol": 0.2,
+            "rocuronium": 0.02,
+            "ketamine": 0.05,
+            "epinephrine": 0.005,
+            "norepinephrine": 0.005,
+            "phenylephrine": 0.005,
+        }
+        drug = pl.col(self.drug_name_col).str.to_lowercase().str.extract(r"^(\w+)")
         return infusiondrug.with_columns(
-            pl.when(pl.col(self.drug_name_col).str.contains(r"\(mg/kg/min\)\s*$"))
+            pl.when(
+                pl.col(self.drug_rate_unit_col) == "mg/kg/min",
+                pl.col(self.drug_rate_col) > drug.replace_strict(max_mg_per_kg_min, default=0.2),
+            )
             .then(pl.col(self.fluid_rate_col) / 1000)
             .otherwise(pl.col(self.fluid_rate_col))
             .alias(self.fluid_rate_col)
