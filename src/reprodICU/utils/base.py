@@ -71,9 +71,8 @@ def _build_base_timeframes(
                 start=(-pl.col("T_0")).truediv(window_size).floor().cast(int),
                 end=(pl.col(los_col) * SECONDS_IN_1D - pl.col("T_0"))
                 .truediv(window_size)
-                .clip(lower_bound=0)
+                .clip(lower_bound=1)  # at least the first window
                 .ceil()
-                .add(1)
                 .cast(int),
                 step=1,
             ).alias("timeframe")

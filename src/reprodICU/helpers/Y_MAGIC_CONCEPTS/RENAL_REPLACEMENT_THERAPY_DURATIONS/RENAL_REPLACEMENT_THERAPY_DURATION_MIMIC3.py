@@ -1,8 +1,13 @@
 # based on https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/durations/crrt_durations.sql
+# and https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/pivot/pivoted_rrt.sql
 
 import polars as pl
 
 from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
+
+START = "Renal Replacement Therapy Start Relative to Admission (seconds)"
+END = "Renal Replacement Therapy End Relative to Admission (seconds)"
+TYPE = "Renal Replacement Therapy Type"
 
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
@@ -50,20 +55,11 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
             224153,  # Replacement Rate
             224154,  # Dialysate Rate
             224191,  # Hourly Patient Fluid Removal
-            224404,  # ART Lumen Volume
-            224406,  # VEN Lumen Volume
             225183,  # Current Goal
-            225806,  # Volume In (PD)
-            225807,  # Volume Out (PD)
-            225810,  # Dwell Time (Peritoneal Dialysis)
-            225959,  # Medication Added Amount  #1 (Peritoneal Dialysis)
             225958,  # Heparin Concentration (units/mL)
             225976,  # Replacement Fluid
             225977,  # Dialysate Fluid
             226457,  # Ultrafiltrate Output
-            226499,  # Hemodialysis Output
-            227438,  # Volume not removed
-            227639,  # Medication Added Amount  #2 (Peritoneal Dialysis)
             228004,  # Citrate (ACD-A)
             228005,  # PBP (Prefilter) Replacement Rate
             228006,  # Post Filter Replacement Rate
@@ -72,6 +68,16 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
             224146,  # System Integrity (MetaVision)
             225956,  # Reason for CRRT Filter Change (MetaVision)
             227290,  # CRRT mode
+            # not in crrt_durations.sql (RRT = 0), kept for the type of pivoted_rrt.sql
+            224404,  # ART Lumen Volume
+            224406,  # VEN Lumen Volume
+            225806,  # Volume In (PD)
+            225807,  # Volume Out (PD)
+            225810,  # Dwell Time (Peritoneal Dialysis)
+            225959,  # Medication Added Amount  #1 (Peritoneal Dialysis)
+            226499,  # Hemodialysis Output
+            227438,  # Volume not removed
+            227639,  # Medication Added Amount  #2 (Peritoneal Dialysis)
         ]
 
         chartevents_carevue = [
@@ -86,10 +92,26 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
             5683,  # Hourly PFR (CareVue)
         ]
         chartevents_carevue_additional = [
+            612,  # Replace.Fluid Infuse (CareVue)
             147,  # Dialysate Infusing (CareVue)
             152,  # Dialysis Type
             582,  # Procedures
             665,  # System integrity (CareVue)
+        ]
+        # pivoted_rrt.sql, mv_ranges
+        inputevents = [
+            227536,  # KCl (CRRT)
+            227525,  # Calcium Gluconate (CRRT)
+        ]
+        procedureevents = [
+            225441,  # Hemodialysis
+            225802,  # Dialysis - CRRT
+            225803,  # Dialysis - CVVHD
+            225805,  # Peritoneal Dialysis
+            224270,  # Dialysis Catheter
+            225809,  # Dialysis - CVVHDF
+            225955,  # Dialysis - SCUF
+            225436,  # CRRT Filter Change
         ]
         # fmt: on
 
@@ -100,6 +122,11 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 self.mimic3_paths.chartevents_path,
                 schema_overrides={"VALUE": str},
             )
+
+        if "parquet" in self.mimic3_paths.inputevents_mv_path:
+            INPUTEVENTS = pl.scan_parquet(self.mimic3_paths.inputevents_mv_path)
+        else:
+            INPUTEVENTS = pl.scan_csv(self.mimic3_paths.inputevents_mv_path)
 
         ##############################################################################
         # crrt_durations.sql
@@ -155,19 +182,6 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .then(1)
                 .when(pl.col("ITEMID") == 665, pl.col("VALUE") == "Initiated")
                 .then(1)
-                # taken from pivoted_rrt.sql
-                .when(
-                    pl.col("ITEMID") == 582,
-                    pl.col("VALUE").is_in(
-                        [
-                            "CAVH Start",
-                            "CVVHD Start",
-                            "Hemodialysis st",
-                            "Peritoneal Dial",
-                        ]
-                    ),
-                )
-                .then(1)
                 .otherwise(0)
                 .alias("RRT_start"),
                 # Below indicates that the current instance of CRRT has ended
@@ -183,14 +197,6 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 ).then(1)
                 # Reason for CRRT filter change
                 .when(pl.col("ITEMID") == 225956).then(1)
-                # taken from pivoted_rrt.sql
-                .when(
-                    pl.col("ITEMID") == 582,
-                    pl.col("VALUE").is_in(
-                        ["CAVH D/C", "CVVHD D/C", "Hemodialysis end"]
-                    ),
-                )
-                .then(1)
                 .otherwise(0)
                 .alias("RRT_end"),
                 # Below indicates the type of CRRT (taken from pivoted_rrt.sql)
@@ -230,7 +236,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .shift(1)
                 .over(
                     "ICUSTAY_ID",
-                    pl.when((pl.col("RRT") == 1) | pl.col("RRT_end") == 1)
+                    pl.when((pl.col("RRT") == 1) | (pl.col("RRT_end") == 1))
                     .then(1)
                     .otherwise(0),
                     order_by="CHARTTIME",
@@ -240,7 +246,7 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .shift(1)
                 .over(
                     "ICUSTAY_ID",
-                    pl.when((pl.col("RRT") == 1) | pl.col("RRT_end") == 1)
+                    pl.when((pl.col("RRT") == 1) | (pl.col("RRT_end") == 1))
                     .then(1)
                     .otherwise(0),
                     order_by="CHARTTIME",
@@ -258,15 +264,26 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .then(0)
                 .when(pl.col("rrt_ended_prev_row") == 1)
                 .then(1)
-                # if there is less than 2 hours between CRRT settings, we do not treat this as a new CRRT event
+                # if there are at most 2 hours between CRRT settings, we do not treat this as a new CRRT event
+                # (DATETIME_DIFF(charttime, charttime_prev_row, HOUR) counts the hour boundaries)
                 .when(
-                    (pl.col("CHARTTIME") - pl.col("charttime_prev_row")).lt(
-                        pl.duration(hours=2)
+                    (
+                        pl.col("CHARTTIME").dt.truncate("1h")
+                        - pl.col("charttime_prev_row").dt.truncate("1h")
                     )
+                    <= pl.duration(hours=2)
                 )
                 .then(0)
                 .otherwise(1)
                 .alias("NewCRRT")
+            )
+            # now we can isolate to just rows with settings
+            # (before we had rows with start/end flags)
+            # this removes any null values for NewCRRT
+            .filter(
+                (pl.col("RRT_start") == 1)
+                | (pl.col("RRT") == 1)
+                | (pl.col("RRT_end") == 1)
             )
             # create a cumulative sum of the instances of new CRRT
             # this results in a monotonically increasing integer assigned to each CRRT
@@ -284,51 +301,158 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 .otherwise(None)
                 .alias("num")
             )
-            # now we can isolate to just rows with settings
-            # (before we had rows with start/end flags)
-            # this removes any null values for NewCRRT
-            .filter(
-                (pl.col("RRT_start") == 1)
-                | (pl.col("RRT") == 1)
-                | (pl.col("RRT_end") == 1)
-            )
             .group_by("ICUSTAY_ID", "num")
             .agg(
                 pl.col("CHARTTIME").min().alias("STARTTIME"),
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
                 pl.col("RRT_type")
                 .max()
-                .alias("Renal Replacement Therapy Type"),
+                .alias(TYPE),
             )
+            .filter(pl.col("STARTTIME") != pl.col("ENDTIME"))
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
                 .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy Start Relative to Admission (seconds)"
-                ),
+                .alias(START),
                 (pl.col("ENDTIME") - pl.col("INTIME"))
                 .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy End Relative to Admission (seconds)"
-                ),
+                .alias(END),
             )
             .select(
                 "ICUSTAY_ID",
-                "Renal Replacement Therapy Type",
-                "Renal Replacement Therapy Start Relative to Admission (seconds)",
-                "Renal Replacement Therapy End Relative to Admission (seconds)",
+                TYPE,
+                START,
+                END,
             )
             .collect()
+        )
+
+        ##############################################################################
+        # pivoted_rrt.sql, mv_ranges
+        ##############################################################################
+        RENAL_REPLACEMENT_THERAPY_INPUTEVENTS = (
+            INPUTEVENTS.select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID", "AMOUNT")
+            .filter(
+                pl.col("ITEMID").is_in(inputevents),
+                pl.col("AMOUNT") > 0,
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.lit(True).alias("dialysis_active"),
+                pl.lit("CRRT").alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "STARTTIME",
+                "ENDTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS = (
+            pl.scan_csv(
+                self.mimic3_paths.procedureevents_mv_path,
+                schema_overrides={"VALUE": pl.String},
+            )
+            .select("ICUSTAY_ID", "STARTTIME", "ENDTIME", "ITEMID", "VALUE")
+            .filter(
+                pl.col("ITEMID").is_in(procedureevents),
+                pl.col("VALUE").is_not_null(),
+            )
+            .with_columns(
+                pl.lit(True).alias("dialysis_present"),
+                pl.when(pl.col("ITEMID").is_in([224270, 225436]))
+                .then(False)
+                .otherwise(True)
+                .alias("dialysis_active"),
+                pl.when(pl.col("ITEMID") == 225441)
+                .then(pl.lit("IHD"))
+                .when(pl.col("ITEMID") == 225802)
+                .then(pl.lit("CRRT"))
+                .when(pl.col("ITEMID") == 225803)
+                .then(pl.lit("CVVHD"))
+                .when(pl.col("ITEMID") == 225805)
+                .then(pl.lit("Peritoneal dialysis"))
+                .when(pl.col("ITEMID") == 225809)
+                .then(pl.lit("CVVHDF"))
+                .when(pl.col("ITEMID") == 225955)
+                .then(pl.lit("SCUF"))
+                .otherwise(None)
+                .alias("dialysis_type"),
+            )
+            .select(
+                "ICUSTAY_ID",
+                "STARTTIME",
+                "ENDTIME",
+                "dialysis_present",
+                "dialysis_active",
+                "dialysis_type",
+            )
+        )
+
+        RENAL_REPLACEMENT_THERAPY_RANGES = (
+            pl.concat(
+                [
+                    RENAL_REPLACEMENT_THERAPY_INPUTEVENTS,
+                    RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS,
+                ],
+                how="vertical",
+            )
+            .unique()
+            # dialysis_active = 0 (catheter, filter change) is no therapy
+            .filter(pl.col("dialysis_active"), pl.col("ICUSTAY_ID").is_not_null())
+            .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
+            # Make datetime relative to admission in seconds
+            .select(
+                "ICUSTAY_ID",
+                pl.col("dialysis_type").alias(TYPE),
+                (
+                    pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                    - pl.col("INTIME")
+                )
+                .dt.total_seconds()
+                .alias(START),
+                (
+                    pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
+                    - pl.col("INTIME")
+                )
+                .dt.total_seconds()
+                .alias(END),
+            )
+            .collect()
+        )
+
+        # merge overlapping and touching episodes of a stay; a specific type wins over "CRRT"
+        RENAL_REPLACEMENT_THERAPY_DURATION = (
+            pl.concat([RENAL_REPLACEMENT_THERAPY_DURATION, RENAL_REPLACEMENT_THERAPY_RANGES])
+            .with_columns(pl.col(TYPE).fill_null("CRRT"))
+            .sort("ICUSTAY_ID", START)
+            .with_columns(
+                (pl.col(START) > pl.col(END).cum_max().shift(1).over("ICUSTAY_ID"))
+                .fill_null(True)
+                .cum_sum()
+                .over("ICUSTAY_ID")
+                .alias("episode")
+            )
+            .group_by("ICUSTAY_ID", "episode")
+            .agg(
+                pl.col(TYPE).filter(pl.col(TYPE) != "CRRT").mode().sort().first(),
+                pl.col(START).min(),
+                pl.col(END).max(),
+            )
+            .with_columns(pl.col(TYPE).fill_null("CRRT"))
         )
 
         return (
             RENAL_REPLACEMENT_THERAPY_DURATION.select(
                 "ICUSTAY_ID",
-                "Renal Replacement Therapy Type",
-                "Renal Replacement Therapy Start Relative to Admission (seconds)",
-                "Renal Replacement Therapy End Relative to Admission (seconds)",
+                TYPE,
+                START,
+                END,
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")

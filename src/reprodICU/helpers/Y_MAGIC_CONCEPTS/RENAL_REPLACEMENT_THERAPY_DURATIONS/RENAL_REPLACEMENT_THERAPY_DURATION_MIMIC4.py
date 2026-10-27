@@ -4,6 +4,10 @@ import polars as pl
 
 from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
+START = "Renal Replacement Therapy Start Relative to Admission (seconds)"
+END = "Renal Replacement Therapy End Relative to Admission (seconds)"
+TYPE = "Renal Replacement Therapy Type"
+
 
 class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
     def __init__(self, paths, datasets):
@@ -265,13 +269,18 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
             )
         )
 
-        RENAL_REPLACEMENT_THERAPY_RANGES = pl.concat(
-            [
-                RENAL_REPLACEMENT_THERAPY_INPUTEVENTS,
-                RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS,
-            ],
-            how="vertical",
-        ).unique()
+        RENAL_REPLACEMENT_THERAPY_RANGES = (
+            pl.concat(
+                [
+                    RENAL_REPLACEMENT_THERAPY_INPUTEVENTS,
+                    RENAL_REPLACEMENT_THERAPY_PROCEDUREEVENTS,
+                ],
+                how="vertical",
+            )
+            .unique()
+            # dialysis_active = 0 (catheter, filter change) is no therapy
+            .filter(pl.col("dialysis_active"))
+        )
 
         RENAL_REPLACEMENT_THERAPY_DURATION = (
             pl.concat(
@@ -300,20 +309,16 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 pl.col("endtime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
             .filter(
-                pl.col("charttime") > pl.col("starttime"),
-                pl.col("charttime") < pl.col("endtime"),
+                pl.col("charttime") >= pl.col("starttime"),
+                pl.col("charttime") <= pl.col("endtime"),
             )
             .with_columns(
                 (pl.col("starttime") - pl.col("intime"))
                 .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy Start Relative to Admission (seconds)"
-                ),
+                .alias(START),
                 (pl.col("endtime") - pl.col("intime"))
                 .dt.total_seconds()
-                .alias(
-                    "Renal Replacement Therapy End Relative to Admission (seconds)"
-                ),
+                .alias(END),
                 pl.coalesce(
                     pl.col("dialysis_present_mv"), pl.col("dialysis_present")
                 ).alias("Renal Replacement Therapy Present"),
@@ -322,10 +327,27 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 ).alias("Renal Replacement Therapy Active"),
                 pl.coalesce(
                     pl.col("dialysis_type_mv"), pl.col("dialysis_type")
-                ).alias("Renal Replacement Therapy Type"),
+                ).alias(TYPE),
             )
             .drop("intime", "starttime", "endtime")
             .collect()
+            # merge overlapping and touching episodes of a stay and type
+            .sort("stay_id", TYPE, START)
+            .with_columns(
+                (pl.col(START) > pl.col(END).cum_max().shift(1).over("stay_id", TYPE))
+                .fill_null(True)
+                .cum_sum()
+                .over("stay_id", TYPE)
+                .alias("episode")
+            )
+            .group_by("stay_id", TYPE, "episode")
+            .agg(
+                pl.col(START).min(),
+                pl.col(END).max(),
+                pl.col("Renal Replacement Therapy Present").max(),
+                pl.col("Renal Replacement Therapy Active").max(),
+            )
+            .drop("episode")
         )
 
         return (

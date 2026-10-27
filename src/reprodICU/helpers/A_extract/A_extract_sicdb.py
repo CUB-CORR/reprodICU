@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-07
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -174,22 +174,26 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.discharge_locations_dtype)
                 .alias(self.discharge_loc_col),
                 # Convert mortality to established dtype
-                pl.when(pl.col("DischargeState") == 2202)  # "lebend"
-                .then(False)
-                .when(pl.col("DischargeState") == 2215)  # "verstorben"
+                # a death within the ICU stay counts even if the discharge state says otherwise
+                pl.when(
+                    (pl.col("DischargeState") == 2215)  # "verstorben"
+                    | (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                )
                 .then(True)
+                .when(pl.col("DischargeState") == 2202)  # "lebend"
+                .then(False)
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 2026)  # "Survived"
+                pl.when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
                 .then(False)
-                .when(pl.col("HospitalDischargeType") == 2028)  # "Deceased"
+                .when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
                 .then(True)
-                .otherwise(None)  # "Unknown" -> set to None
+                .otherwise(None)  # transfer, left against advice, unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
-                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset"))
+                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("TimeOfStay"))
                 .truediv(pl.duration(days=1))
                 .alias(self.mortality_after_col), # fmt: skip
                 # Get mortality after discharge cutoff
@@ -455,7 +459,8 @@ class SICdbExtractor(SICdbPaths):
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {drug_mixture_admin_id_col}: Medication event identifier.
                 - {drug_name_col}: Medication name.
-                - {drug_ingredient_col}: Active drug ingredient.
+                - {drug_ingredient_col}: Active drug ingredient (or combination).
+                - {drug_name_OMOP_col}: OMOP-mapped medication name.
                 - {drug_amount_col}: Drug amount.
                 - {drug_amount_unit_col}: Amount unit.
                 - {drug_rate_col}: Administration rate.
@@ -788,24 +793,25 @@ class SICdbExtractor(SICdbPaths):
         )
 
     # Extract the information from the SICdb.usagi.csv file
-    def _extract_drug_references(self) -> dict:
+    def _extract_drug_references(self) -> pl.DataFrame:
         """
-        Extract and process drug references from CSV mapping files.
-        """
+        Extract the OMOP drug name and the ingredient of each drug ID.
 
-        return (
+        The drug name is the mapped concept if it is a drug (Clinical Drug Form,
+        Clinical Drug ...), else null. A drug ID can have several rows (one per
+        ingredient of a combination product); the ingredients of all rows are
+        named as one combination, e.g. "piperacillin / tazobactam".
+        """
+        rows = (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "SICdb.usagi.csv")
             .filter(pl.col("conceptName") != "Unmapped")
-            .select("sourceCode", "conceptName")
+            .select("sourceCode", "conceptId", "conceptName")
             .drop_nulls("sourceCode")
             .unique()
-            .rename(
-                {
-                    "sourceCode": "DrugID",
-                    "conceptName": self.drug_ingredient_col,
-                }
-            )
         )
+        return self.omop.get_drug_references(
+            rows, ["sourceCode"], self.drug_ingredient_col, self.drug_name_OMOP_col
+        ).rename({"sourceCode": "DrugID"})
 
     # endregion
 

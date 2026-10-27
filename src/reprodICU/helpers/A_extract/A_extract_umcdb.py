@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -353,11 +353,11 @@ class UMCdbExtractor(UMCdbPaths):
                   .when(pl.col("item") == "Oxygen delivery system")
                   .then(pl.col("itemvalue").replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None))
                   .when(pl.col("item") == "Ventilation mode Ventilator")
-                  .then(pl.col("itemvalue").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
                   .when(pl.col("item") == "Continuous renal replacement therapy mode Renal replacement therapy circuit")
-                  .then(pl.col("itemvalue").replace_strict(self.RRT_MODE_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.RRT_MODE_MAP, default=None))
                   .when(pl.col("item") == "Confusion Assessment Method")
-                  .then(pl.col("itemvalue").replace_strict(self.DELIRIUM_MAP, default=None))
+                  .then(pl.col("value").replace_strict(self.DELIRIUM_MAP, default=None))
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
@@ -676,7 +676,6 @@ class UMCdbExtractor(UMCdbPaths):
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
-        INTIMES = self._extract_intimes()
         REGISTEREDBY = {
             "ICV_Medisch Staflid": 1,
             "ICV_Medisch": 2,
@@ -696,22 +695,6 @@ class UMCdbExtractor(UMCdbPaths):
                 "itemid",
                 "registeredby",
             )
-            .join(
-                INTIMES.select(self.icu_stay_id_col, "intime"),
-                on=self.icu_stay_id_col,
-                how="left",
-            )
-            .with_columns(
-                pl.duration(
-                    milliseconds=(
-                        pl.col(self.timeseries_time_col) - pl.col("intime")
-                    )
-                )
-                .dt.total_seconds()
-                .cast(float)
-                .alias(self.timeseries_time_col)
-            )
-            .drop("intime")
         )
 
         data_eye = (
@@ -855,19 +838,8 @@ class UMCdbExtractor(UMCdbPaths):
 
         print("UMCdb   - Extracting medications...")
 
-        # Extract medication mappings by building a chain of references
-        # 1. Get drug name references from our mapping files
-        drug_references = self._extract_drug_references(return_ids=True)
-        concept_ids = drug_references.values()
-
-        # 2. Retrieve active ingredients for these concept IDs
-        ingredients = self.omop.get_ingredient(concept_ids)
-
-        # 3. Create a mapping from drug names to their active ingredients
-        drug_name_to_ingredient = {}
-        for drug_name, concept_id in drug_references.items():
-            if concept_id in ingredients:
-                drug_name_to_ingredient[drug_name] = ingredients[concept_id]
+        # Extract medication mappings from the drug item mapping
+        drug_references = self._extract_drug_references()
 
         # Load additional mappings
         umcdb_drug_administration_route_mapping = self.helpers.load_mapping(
@@ -954,14 +926,18 @@ class UMCdbExtractor(UMCdbPaths):
             pl.col("solutionitem").is_null()
         )
 
+        # Fluid infusions: all items of the order are fluids (ml) of an infusion
+        # category. Every other order is a single drug or a mixture (see below).
+        is_fluid_only = (
+            (pl.col("doseunit") == "ml")
+            .all()
+            .over(self.drug_mixture_admin_id_col)
+            & pl.col("ordercategory").str.contains("Infuus")
+        ) # fmt: skip
+
         # Separate fluid infusions from drugs and mixture infusions
         drugitems_without_solutionitem_only_fluid = (
-            drugitems_without_solutionitem.filter(
-                (pl.col("doseunit") == "ml")
-                .all()
-                .over(self.drug_mixture_admin_id_col),
-                pl.col("ordercategory").str.contains("Infuus"),
-            )
+            drugitems_without_solutionitem.filter(is_fluid_only)
             .with_columns(
                 # split additive and fluid items
                 *[
@@ -1000,14 +976,19 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         # Handle single drug items without solution items
+        # (orders of ml items only, e.g. nebulisers, nutrition and water, are single drug items
+        # unless they are infusions; fluid infusions are handled above)
         drugitems_without_solutionitem_single = (
             drugitems_without_solutionitem.filter(
-                (pl.col("doseunit") == "ml")
-                .all()
-                .over(self.drug_mixture_admin_id_col)
-                .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
-                pl.col(self.drug_mixture_admin_id_col).is_duplicated().not_(),
+                is_fluid_only.not_(),
+                (
+                    (pl.col("doseunit") == "ml")
+                    .all()
+                    .over(self.drug_mixture_admin_id_col)
+                    | pl.col(self.drug_mixture_admin_id_col)
+                    .is_duplicated()
+                    .not_()
+                ),
             )
         )
 
@@ -1018,7 +999,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .all()
                 .over(self.drug_mixture_admin_id_col)
                 .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
                 pl.col(self.drug_mixture_admin_id_col).is_duplicated(),
             )
             .with_columns(
@@ -1093,6 +1073,8 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             .join(intimes, on=self.icu_stay_id_col)
+            # Add the OMOP concept name and ingredient of each drug name
+            .join(drug_references.lazy(), on=self.drug_name_col, how="left")
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col(self.drug_start_col) < pl.col("outtime"),
@@ -1117,14 +1099,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_end_col),
-                # Replace drug names with standardized ingredient names
-                pl.col(self.drug_name_col)
-                .replace_strict(drug_name_to_ingredient, default=None)
-                .alias(self.drug_ingredient_col),
-                # Replace drug names with OMOP concepts
-                pl.col(self.drug_name_col)
-                .replace_strict(self._extract_drug_references(), default=None)
-                .alias(self.drug_name_OMOP_col),
                 # Replace drug administration routes
                 pl.col("ordercategory")
                 .replace_strict(umcdb_drug_administration_route_mapping, default=None)
@@ -1612,44 +1586,69 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
     # Extract the information from the drugitems_XXX.usagi.csv files
-    def _extract_drug_references(self, return_ids: bool = False) -> dict:
+    def _extract_drug_references(self) -> pl.DataFrame:
         """
-        Extract and process drug references from CSV mapping files.
+        Extract the OMOP concept and the ingredient of each drug name.
 
         Steps:
-            1. Reads CSV files for drug administration routes, drug items, and drug classes.
-            2. Concatenates the resulting dataframes.
-            3. Selects and drops nulls from "ADD_INFO:source_concept" and "conceptName".
-            4. Returns a dictionary mapping source names to concept names.
+            1. Read the drug item mapping and remove route of administration rows
+               (MAPS_TO_TYPE).
+            2. Rank the rows of a drug name (one per drugitem order category, e.g.
+               injection vs tablet): mapped RxNorm concept, other mapped concept,
+               unmapped; then the most used itemid-ordercategory, then the lowest
+               concept id.
+            3. Keep the rows of the best itemid-ordercategory. Their ingredient is
+               the ingredients of all their concepts named as one drug (e.g.
+               "amphotericin B / colistin / tobramycin").
 
         Returns:
-            dict: A mapping where:
-                - Keys: Source names (as strings).
-                - Values: Standardized concept names (as strings).
+            pl.DataFrame: One row per drug name with the columns {drug_name_col},
+                {drug_ingredient_col} and {drug_name_OMOP_col}.
         """
-
-        value_col = "conceptName" if not return_ids else "conceptId"
-        references = (
-            pl.concat(
-                [
-                    pl.read_csv(self.drug_administration_route_mapping_path),
-                    pl.read_csv(self.drugitems_item_mapping_path),
-                    pl.read_csv(self.drug_class_mapping_path),
-                ],
-                how="diagonal_relaxed",
+        drug = "ADD_INFO:source_concept"
+        usage = (
+            pl.scan_parquet(self.drugitems_path)
+            .group_by(
+                pl.concat_str("itemid", pl.lit("-"), "ordercategoryid").alias(
+                    "sourceCode"
+                )
             )
-            # .filter(pl.col("equivalence") == "EQUAL")
-            .select("ADD_INFO:source_concept", value_col)
-            .drop_nulls("ADD_INFO:source_concept")
-            .unique()
+            .agg(pl.len().alias("usage_count"))
+        )
+        best_rows = (
+            pl.scan_csv(self.drugitems_item_mapping_path)
+            # Remove route of administration rows (MAPS_TO_TYPE)
+            .filter(pl.col("mappingType").ne_missing("MAPS_TO_TYPE"))
+            .drop_nulls(drug)
+            .join(
+                self.omop.CONCEPT.select(
+                    pl.col("concept_id").alias("conceptId"), "vocabulary_id"
+                ),
+                on="conceptId",
+                how="left",
+            )
+            .join(usage, on="sourceCode", how="left")
+            .sort(
+                pl.col("conceptName") == "Unmapped",
+                pl.col("vocabulary_id").ne_missing("RxNorm"),
+                pl.col("usage_count").fill_null(0),
+                "conceptId",
+                "sourceCode",
+                descending=[False, False, True, False, False],
+            )
+            # Keep the rows of the best itemid-ordercategory per drug name
+            .filter(
+                pl.col("sourceCode") == pl.col("sourceCode").first().over(drug)
+            )
+            .collect()
         )
 
-        return dict(
-            zip(
-                references["ADD_INFO:source_concept"].to_numpy(),
-                references[value_col].to_numpy(),
-            )
-        )
+        return self.omop.get_drug_references(
+            best_rows,
+            [drug],
+            self.drug_ingredient_col,
+            self.drug_name_OMOP_col,
+        ).rename({drug: self.drug_name_col})
 
     # Extract the information from the processitems_item.usagi.csv
     # and procedureorderitems_item.usagi.csv files

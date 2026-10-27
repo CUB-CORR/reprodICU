@@ -166,6 +166,7 @@ class GlobalHelpers:
         numeric_col: Optional[str] = None,
         string_col: Optional[str] = None,
         save_conflicts: bool = True,
+        numeric_aggregate: str = "median",
     ) -> pl.LazyFrame:
         """Pivot numeric values (median) and string values (first) separately and
         combine them, all cast to String.
@@ -178,6 +179,7 @@ class GlobalHelpers:
             string_col: String value column. Non-unique values per (index, on_col)
                 are warned about, and only the first is kept.
             save_conflicts: Save the non-unique string records to a parquet file.
+            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes.
 
         Raises:
             ValueError: If neither numeric_col nor string_col is given.
@@ -202,7 +204,7 @@ class GlobalHelpers:
                 on=on_col,
                 index=index_cols,
                 values=numeric_col,
-                aggregate_function="median",
+                aggregate_function=numeric_aggregate,
             ).lazy()
 
             cols_num = [
@@ -328,6 +330,16 @@ class GlobalVars(GlobalHelpers):
         self.INCH_TO_CM = 2.54  # 1 inch = 2.54 cm
         self.LBS_TO_KG = 0.454  # 1 lb = 0.454 kg
         self.OZ_TO_KG = 0.0283495  # 1 oz = 0.0283495 kg
+
+        # Intake column of the volumes of medications (added to the intake/output timeseries)
+        # by their route of administration
+        self.INTAKE_COLUMN_BY_ROUTE = {
+            "intravenous": "Fluid intake intravascular",
+            "intravenous (central)": "Fluid intake intravascular",
+            "oral": "Fluid intake oral",
+            "nasogastric": "Fluid intake nasogastric tube",
+            "enteral": "Fluid intake enteral tube",
+        }
 
         # region GLOBAL MAPS
         self.MEDICATION_MAPPING_PATH = mapping_path + "MEDICATIONS/"

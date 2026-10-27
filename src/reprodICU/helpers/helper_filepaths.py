@@ -222,6 +222,7 @@ class HiRIDPaths(GlobalVars):
         self.apache_mapping_path = self.hirid_mapping_path + "hirid_OBSERVATION_APACHE.yaml" # fmt: skip
         self.drug_administration_route_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_drug_administration_route.yaml" # fmt: skip
         self.drug_class_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_drug_class.yaml" # fmt: skip
+        self.carrier_volumes_mapping_path = self.hirid_mapping_path + "hirid_PHARMA_carrier_volumes.csv" # fmt: skip
 
 
 # endregion
@@ -424,6 +425,8 @@ class MIMIC4Paths(GlobalVars):
         self.microbiologyevents_path = mimic4_path + "hosp/microbiologyevents.csv.gz" # fmt: skip
         self.outputevents_path = mimic4_path + "icu/outputevents.csv.gz"
         self.patients_path = mimic4_path + "hosp/patients.csv.gz"
+        self.poe_path = mimic4_path + "hosp/poe.csv.gz"
+        self.poe_detail_path = mimic4_path + "hosp/poe_detail.csv.gz"
         self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv.gz"
         self.procedureevents_path = mimic4_path + "icu/procedureevents.csv.gz"
         self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv.gz"
@@ -455,6 +458,8 @@ class MIMIC4Paths(GlobalVars):
             self.microbiologyevents_path = mimic4_path + "hosp/microbiologyevents.csv" # fmt: skip
             self.outputevents_path = mimic4_path + "icu/outputevents.csv"
             self.patients_path = mimic4_path + "hosp/patients.csv"
+            self.poe_path = mimic4_path + "hosp/poe.csv"
+            self.poe_detail_path = mimic4_path + "hosp/poe_detail.csv"
             self.prescriptions_path = mimic4_path + "hosp/prescriptions.csv"
             self.procedureevents_path = mimic4_path + "icu/procedureevents.csv"
             self.procedures_icd_path = mimic4_path + "hosp/procedures_icd.csv"
@@ -469,6 +474,8 @@ class MIMIC4Paths(GlobalVars):
                 self.labevents_path,
                 self.inputevents_path,
                 self.prescriptions_path,
+                self.poe_path,
+                self.poe_detail_path,
                 self.discharge_summaries_path,
                 self.radiology_reports_path,
             ]:
@@ -482,6 +489,8 @@ class MIMIC4Paths(GlobalVars):
             self.labevents_path = mimic4_path + "hosp/labevents.parquet"
             self.inputevents_path = mimic4_path + "icu/inputevents.parquet"
             self.prescriptions_path = mimic4_path + "hosp/prescriptions.parquet"
+            self.poe_path = mimic4_path + "hosp/poe.parquet"
+            self.poe_detail_path = mimic4_path + "hosp/poe_detail.parquet"
             self.discharge_summaries_path = mimic4_notes_path + "note/discharge.parquet"
             self.radiology_reports_path = mimic4_notes_path + "note/radiology.parquet"
 

@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -1208,6 +1208,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             # Filter for names of interest
             .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
+            # Several concepts of an item can share a name: a repeated pair would repeat its rows
+            .unique()
         )
         input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
@@ -1306,8 +1308,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
             # Remove rows with empty values
             .filter(pl.col("VALUENUM").is_not_null())
-            # Remove duplicate rows
-            .unique()
         )
 
     # endregion
@@ -2012,13 +2012,29 @@ class MIMIC3Extractor(MIMIC3Paths):
         #######################################################################
         inputevents_to_rxnorm_data = (
             pl.scan_csv(self.inputevents_to_rxnorm_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
+            .select(
+                "itemid (omop_source_code)",
+                "ordercategorydescription",
+                "omop_concept_name",
+                "inputevents_row_count",
+            )
             .rename(
                 {
                     "itemid (omop_source_code)": "ITEMID",
+                    "ordercategorydescription": "ORDERCATEGORYDESCRIPTION",
                     "omop_concept_name": "LABEL_OMOP",
                 }
             )
+            # Keep the most used name per item and order category
+            .sort(
+                "inputevents_row_count", "LABEL_OMOP", descending=[True, False]
+            )
+            .unique(
+                ["ITEMID", "ORDERCATEGORYDESCRIPTION"],
+                keep="first",
+                maintain_order=True,
+            )
+            .drop("inputevents_row_count")
         )
 
         inputevents = (
@@ -2040,7 +2056,11 @@ class MIMIC3Extractor(MIMIC3Paths):
                 how="left",
                 suffix="_FLUID",
             )
-            .join(inputevents_to_rxnorm_data, on="ITEMID", how="left")
+            .join(
+                inputevents_to_rxnorm_data,
+                on=["ITEMID", "ORDERCATEGORYDESCRIPTION"],
+                how="left",
+            )
             .drop("ITEMID", "ITEMID_FLUID")
             # Rename columns for consistency
             .rename(
@@ -2122,31 +2142,15 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        # 4. Get active ingredients for all medication concept IDs
-        all_concept_ids = list(ndc_to_rxnorm.values()) + list(
-            prescriptions_ndcisnullzero_concept_ids.values()
+        # 4. Map NDC codes to active ingredients and standardized drug names
+        ndc_to_ingredient, ndc_to_drugname = self.omop.get_ingredient_and_name(
+            ndc_to_rxnorm
         )
-        ingredients = self.omop.get_ingredient(all_concept_ids)
-        rxnorm_names = self.omop.get_concept_names_from_ids(
-            list(ndc_to_rxnorm.values())
-        )
-
-        # 5. Create final mappings from codes to ingredients and names
-        # Map NDC codes to active ingredients
-        ndc_to_ingredient = {
-            ndc: ingredients[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in ingredients
-        }
-
-        # Map NDC codes to standardized drug names
-        ndc_to_drugname = {
-            ndc: rxnorm_names[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in rxnorm_names
-        }
 
         # Map prescription labels to active ingredients for entries without NDCs
+        ingredients = self.omop.get_ingredient(
+            list(prescriptions_ndcisnullzero_concept_ids.values())
+        )
         prescriptions_ndcisnullzero_to_ingredient = {
             label: ingredients[concept_id]
             for label, concept_id in (

@@ -1,10 +1,12 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Enables easily working with OMOP vocabularies.
+from pathlib import Path
 from typing import Union
 
 import polars as pl
+import yaml
 
 from .helper_filepaths import OMOPPaths
 
@@ -244,6 +246,74 @@ class Vocabulary(OMOPPaths):
         )
 
     # region ingredient
+    def get_ingredient_name(
+        self, ingredient_col: str = "ingredient_name"
+    ) -> pl.Expr:
+        """
+        Name the ingredients of a group as one drug, sorted and joined with " / ",
+        e.g. "piperacillin / tazobactam". Not checked against OMOP.
+        """
+        return (
+            pl.col(ingredient_col)
+            .unique()
+            .sort_by(pl.col(ingredient_col).unique().str.to_lowercase())
+            .str.join(" / ")
+        )
+
+    def get_drug_references(
+        self,
+        rows: pl.DataFrame,
+        key_cols: list[str],
+        ingredient_col: str,
+        drug_name_col: str,
+    ) -> pl.DataFrame:
+        """
+        Ingredient and drug name of each source drug, from its mapped concepts.
+
+        Arguments:
+            rows: One row per source drug and mapped concept, with the columns
+                conceptId and conceptName (e.g. from a Usagi file) and key_cols.
+            key_cols: Columns that identify a source drug.
+            ingredient_col: Name of the output ingredient column.
+            drug_name_col: Name of the output drug name column.
+
+        Returns:
+            pl.DataFrame: One row per source drug with key_cols, the ingredients
+                of all its concepts named as one drug (get_ingredient_name) and
+                the name of its drug-level concept (null if it has several
+                concepts or only an ingredient).
+        """
+        rows = rows.join(
+            self.CONCEPT.select(
+                pl.col("concept_id").alias("conceptId"), "concept_class_id"
+            ).collect(),
+            on="conceptId",
+            how="left",
+        )
+        return (
+            rows.join(
+                self.get_ingredient(
+                    rows["conceptId"].drop_nulls().to_list(), return_dict=False
+                ),
+                left_on="conceptId",
+                right_on="drug_concept_id",
+                how="left",
+            )
+            .group_by(key_cols, maintain_order=True)
+            .agg(
+                self.get_ingredient_name().alias(ingredient_col),
+                # Only a drug-level concept (not an ingredient) is a drug name
+                pl.when(
+                    (pl.col("conceptName").n_unique() == 1)
+                    & ~pl.col("concept_class_id")
+                    .first()
+                    .is_in(["Ingredient", "Multiple Ingredients"])
+                )
+                .then(pl.col("conceptName").first())
+                .alias(drug_name_col),
+            )
+        )
+
     def get_ingredient(
         self, drug_concept_ids: list[int], return_dict: bool = True
     ) -> Union[dict, pl.DataFrame]:
@@ -253,47 +323,46 @@ class Vocabulary(OMOPPaths):
         https://github.com/OHDSI/OMOP-Queries/blob/master/md/Drug.md#d03-find-ingredients-of-a-drug
 
         Steps:
-            1. Filter ANCESTOR by descendant_concept_id (input drugs).
-            2. Join CONCEPT twice to get ancestor (ingredient) and descendant (drug) names.
-            3. Filter for concept_class_id == "Ingredient".
-            4. Return as dict (drug_concept_id → ingredient_name) or DataFrame.
+            1. Map the input drugs to their standard concepts ("Maps to").
+            2. Join ANCESTOR by descendant_concept_id (standard drugs).
+            3. Join CONCEPT to get the ancestor (ingredient) names.
+            4. Filter for standard concepts of concept_class_id == "Ingredient".
+            5. Return as dict (drug_concept_id → ingredient_name) or DataFrame.
 
         Returns:
             dict: Mapping from drug_concept_id to ingredient_name if return_dict=True; otherwise pl.DataFrame.
+                Drugs with several ingredients get one name (see get_ingredient_name).
         """
-
+        # "Maps to" leads from every drug concept to its standard concept (also
+        # itself), so non-standard concepts get the ingredients of their standard
+        # concept. Classification concepts without "Maps to" (e.g. Dose Groups)
+        # are not resolved.
         ingredients = (
-            self.ANCESTOR.filter(
-                pl.col("descendant_concept_id").is_in(drug_concept_ids)
+            self.RELATIONSHIP.filter(
+                pl.col("relationship_id") == "Maps to",
+                pl.col("concept_id_1").is_in(drug_concept_ids),
+            )
+            .join(
+                self.ANCESTOR,
+                left_on="concept_id_2",
+                right_on="descendant_concept_id",
             )
             .join(
                 self.CONCEPT,
                 left_on="ancestor_concept_id",
                 right_on="concept_id",
-                suffix="_A",
-                how="left",
             )
-            .join(
-                self.CONCEPT,
-                left_on="descendant_concept_id",
-                right_on="concept_id",
-                suffix="_D",
-                how="left",
+            # Keep standard ingredients only (excludes SPL concepts)
+            .filter(
+                pl.col("concept_class_id") == "Ingredient",
+                pl.col("standard_concept") == "S",
             )
-            .filter(pl.col("concept_class_id") == "Ingredient")
             .select(
-                "descendant_concept_id",
-                "ancestor_concept_id",
-                "concept_name",
+                pl.col("concept_id_1").alias("drug_concept_id"),
+                pl.col("ancestor_concept_id").alias("ingredient_concept_id"),
+                pl.col("concept_name").alias("ingredient_name"),
             )
-            .rename(
-                {
-                    "descendant_concept_id": "drug_concept_id",
-                    "ancestor_concept_id": "ingredient_concept_id",
-                    "concept_name": "ingredient_name",
-                }
-            )
-            .drop_nulls()
+            .unique()
             .collect()
         )
 
@@ -301,10 +370,32 @@ class Vocabulary(OMOPPaths):
             return ingredients
 
         return dict(
-            zip(
-                ingredients.get_column("drug_concept_id").to_list(),
-                ingredients.get_column("ingredient_name").to_list(),
-            )
+            ingredients.group_by("drug_concept_id")
+            .agg(self.get_ingredient_name().alias("ingredient_name"))
+            .iter_rows()
+        )
+
+    def get_ingredient_and_name(self, concept_ids: dict) -> tuple[dict, dict]:
+        """
+        Map source codes to the ingredient and the name of their concept id.
+        Codes without an ingredient or name are left out.
+
+        Returns:
+            tuple[dict, dict]: code → ingredient_name and code → concept_name.
+        """
+        ingredients = self.get_ingredient(list(concept_ids.values()))
+        names = self.get_concept_names_from_ids(list(concept_ids.values()))
+        return (
+            {
+                code: ingredients[concept_id]
+                for code, concept_id in concept_ids.items()
+                if concept_id in ingredients
+            },
+            {
+                code: names[concept_id]
+                for code, concept_id in concept_ids.items()
+                if concept_id in names
+            },
         )
 
     # region lab
@@ -361,7 +452,38 @@ class Vocabulary(OMOPPaths):
         Returns:
             dict: Mapping from lab name to component name.
         """
-        return self.get_lab_relationship_from_name(lab_names, "Has component")
+        components = self.get_lab_relationship_from_name(
+            lab_names, "Has component"
+        )
+        properties = self.get_lab_relationship_from_name(
+            lab_names, "Has property"
+        )
+        systems = self.get_lab_relationship_from_name(lab_names, "Has system")
+
+        # Variables whose key in RELEVANT_LABS_LOINC.yaml is not the LOINC
+        # component of their lab tests ("loinc_component"); the component is
+        # shared with other variables, so property and system tell them apart
+        with open(
+            Path(__file__).parent.parent
+            / "configs/RELEVANT_VALUES/RELEVANT_LABS_LOINC.yaml"
+        ) as f:
+            renamed = {
+                k: e for k, e in yaml.safe_load(f).items() if "loinc_component" in e
+            }
+
+        def variable(name: str, component: str) -> str:
+            keys = [
+                k
+                for k, e in renamed.items()
+                if e["loinc_component"] == component
+                and e["property"] == properties.get(name)
+                and systems.get(name) in e["systems"]
+            ]
+            # D-dimer DDU and FEU only differ in the lab test name
+            keys = [k for k in keys if k.split()[-1] in name] or keys
+            return keys[0] if keys else component
+
+        return {n: variable(n, c) for n, c in components.items()}
 
     def get_lab_system_from_name(self, lab_names: list[str]) -> dict:
         """

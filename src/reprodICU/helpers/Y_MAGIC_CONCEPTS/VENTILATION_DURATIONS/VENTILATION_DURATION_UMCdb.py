@@ -4,8 +4,9 @@ from ..MAGIC_CONCEPTS import MAGIC_CONCEPTS
 
 
 class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
-    def __init__(self, paths, datasets):
+    def __init__(self, paths, datasets, MAX_VENTILATION_PAUSE_HOURS):
         super().__init__(paths, datasets)
+        self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
     def VENTILATION_DURATION(self) -> pl.DataFrame:
         """
@@ -72,37 +73,24 @@ class VENTILATION_DURATION_UMCdb(MAGIC_CONCEPTS):
                 .alias("stop"),
             )
             .drop("admittedat")
-            # # Fix overlapping periods
-            # .with_columns(
-            #     pl.col("stop")
-            #     .shift(1)
-            #     .over(
-            #         partition_by=["admissionid", "Ventilation Type"],
-            #         order_by="start",
-            #     )
-            #     .alias("prevstop"),
-            # )
-            # .with_columns(
-            #     pl.when(pl.col("prevstop") < pl.col("start"))
-            #     .then(True)
-            #     .otherwise(False)
-            #     .fill_null(True)
-            #     .alias("isnewventilationperiod"),
-            # )
-            # .with_columns(
-            #     pl.col("isnewventilationperiod")
-            #     .cum_sum()
-            #     .over(
-            #         partition_by=["admissionid", "Ventilation Type"],
-            #         order_by="start",
-            #     )
-            #     .alias("ventilationperiodid"),
-            # )
-            # .group_by("admissionid", "Ventilation Type", "ventilationperiodid")
-            # .agg(
-            #     pl.col("start").min().alias("start"),
-            #     pl.col("stop").max().alias("stop"),
-            # )
+            # The AmsterdamUMCdb notebooks have no pause rule, MAX_VENTILATION_PAUSE_HOURS is the
+            # value of the concept (8 h, also the one of ventilation_durations.sql of MIMIC-III):
+            # rows of a stay and type that overlap or are at most that far apart are one episode
+            .sort("admissionid", "item", "start")
+            .with_columns(
+                (
+                    pl.col("start")
+                    > pl.col("stop").cum_max().shift(1).over("admissionid", "item")
+                    + self.MAX_VENTILATION_PAUSE_HOURS * 60 * 60
+                )
+                .fill_null(True)
+                .cum_sum()
+                .over("admissionid", "item")
+                .alias("episode")
+            )
+            .group_by("admissionid", "item", "episode")
+            .agg(pl.col("start").min(), pl.col("stop").max())
+            .drop("episode")
             # Rename columns
             .rename(
                 {

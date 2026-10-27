@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -1246,6 +1246,129 @@ class EICUExtractor(EICUPaths):
 
     # region medication
     # Extract medication information from the different medication files
+    def _collapse_infusion_log_entries(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
+        """Collapse eICU infusion log entries into one row per run of unchanged rate.
+
+        A log entry without a previous (next) entry is a run boundary, i.e. the
+        run starts (ends) there.
+        """
+        # Get infusion duration where possible, by checking whether the drugname reappears
+        # on next log entry (as determined by a different offset)
+        # 1. Get list of log entry offsets for each patient
+        infusiondrug_offsets = (
+            infusiondrug.select(self.icu_stay_id_col, self.drug_start_col)
+            .unique()
+            .sort(self.icu_stay_id_col, self.drug_start_col)
+            .with_columns(
+                pl.col(self.drug_start_col)
+                .shift(1)
+                .over(self.icu_stay_id_col)
+                .alias("prev_drug_start"),
+                pl.col(self.drug_start_col)
+                .shift(-1)
+                .over(self.icu_stay_id_col)
+                .alias("next_drug_start"),
+            )
+        )
+
+        infusiondrug = (
+            infusiondrug.join(
+                infusiondrug_offsets,
+                on=[self.icu_stay_id_col, self.drug_start_col],
+                how="left",
+            )
+            # Sort by patient ID, drug name and drug start time
+            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col, "infusiondrugid")
+            # 2. Check if drug is continued from the previous log entry
+            #    and if it is continued in the next log entry
+            .with_columns(
+                # Check if drug is continued from the previous log entry
+                # (no previous log entry: the null comparison falls through to "started")
+                pl.when(
+                    # Check if the previous drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(1),
+                    # Check if the previous drug start time is the previous log entry time
+                    pl.col("prev_drug_start")
+                    == pl.col(self.drug_start_col).shift(1),
+                    # Check if the drug amount is the same as the previous drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("started"))
+                .alias("drug_status_prev"),
+                # Check if drug is continued in the next log entry
+                pl.when(
+                    # Check if the next drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(-1),
+                    # Check if the next drug start time is the next log entry time
+                    pl.col("next_drug_start")
+                    == pl.col(self.drug_start_col).shift(-1),
+                    # Check if the drug amount is the same as the next drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(-1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("discontinued"))
+                .alias("drug_status_next"),
+            )
+            # Filter for rows where the drug status changes
+            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
+            # 3. Get the end time of the drug if it is discontinued
+            .with_columns(
+                pl.when(pl.col("drug_status_next") == "discontinued")
+                # the last log entry has no next entry: the run ends at that entry
+                .then(pl.coalesce("next_drug_start", self.drug_start_col))
+                .otherwise(None)
+                .alias(self.drug_end_col)
+            )
+            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
+            .with_columns(
+                pl.when(
+                    pl.col("drug_status_prev").shift(1) == "started",
+                    pl.col("drug_status_next").shift(1) == "continued",
+                    pl.col("drug_status_prev") == "continued",
+                    pl.col("drug_status_next") == "discontinued",
+                    # Check if the previous drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(1),
+                    # Check if the drug amount is the same as the previous drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(1),
+                )
+                .then(pl.col(self.drug_start_col).shift(1))
+                .otherwise(pl.col(self.drug_start_col))
+                .alias(self.drug_start_col)
+            ).filter(pl.col(self.drug_end_col).is_not_null())
+            # 5. Remove the helper columns
+            .drop(
+                "infusiondrugid",
+                "prev_drug_start",
+                "next_drug_start",
+                "drug_status_prev",
+                "drug_status_next",
+            )
+        )
+        return infusiondrug
+
+    def _correct_infusion_fluid_rate(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
+        """Correct the infusion rates (ml/hr) of rows named "(mg/kg/min)".
+
+        The source system computes the infusion rate from the charted drug rate and the
+        concentration of the bag. Rows named "(mg/kg/min)" hold doses in mcg/kg/min (e.g.
+        propofol 50, an impossible 50 mg/kg/min) and the computed rate is 1000 times too
+        high: for them it is exactly 6 x drug rate x weight, the rate of a 10 mg/ml bag
+        if the unit were right.
+        """
+        return infusiondrug.with_columns(
+            pl.when(pl.col(self.drug_name_col).str.contains(r"\(mg/kg/min\)\s*$"))
+            .then(pl.col(self.fluid_rate_col) / 1000)
+            .otherwise(pl.col(self.fluid_rate_col))
+            .alias(self.fluid_rate_col)
+        )
+
     def extract_medications(self) -> pl.LazyFrame:
         """
         Extract medication administration events from infusion and medication files.
@@ -1303,6 +1426,7 @@ class EICUExtractor(EICUPaths):
                 schema_overrides={"drugrate": str},
             )
             .select(
+                "infusiondrugid",
                 "patientunitstayid",
                 "infusionoffset",
                 "drugname",
@@ -1345,118 +1469,25 @@ class EICUExtractor(EICUPaths):
             .filter(pl.col(self.drug_name_col).is_not_null())
             # Remove rows with empty drug rates
             .filter(pl.col(self.drug_rate_col).is_not_null())
+            .pipe(self._correct_infusion_fluid_rate)
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.drug_start_col,
                 base_unit="minutes",
             )
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
-        )
-
-        # Get infusion duration where possible, by checking whether the drugname reappears
-        # on next log entry (as determined by a different offset)
-        # 1. Get list of log entry offsets for each patient
-        infusiondrug_offsets = (
-            infusiondrug.select(self.icu_stay_id_col, self.drug_start_col)
-            .unique()
-            .sort(self.icu_stay_id_col, self.drug_start_col)
-            .with_columns(
-                pl.col(self.drug_start_col)
-                .shift(1)
-                .over(self.icu_stay_id_col)
-                .alias("prev_drug_start"),
-                pl.col(self.drug_start_col)
-                .shift(-1)
-                .over(self.icu_stay_id_col)
-                .alias("next_drug_start"),
+            # Break ties between log entries at the same time
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                self.drug_start_col,
+                "infusiondrugid",
             )
         )
 
+        infusiondrug = self._collapse_infusion_log_entries(infusiondrug)
         infusiondrug = (
-            infusiondrug.join(
-                infusiondrug_offsets,
-                on=[self.icu_stay_id_col, self.drug_start_col],
-                how="left",
-            )
-            # Sort by patient ID, drug name and drug start time
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
-            # 2. Check if drug is continued from the previous log entry
-            #    and if it is continued in the next log entry
-            .with_columns(
-                # Check if drug is continued from the previous log entry
-                pl.when(pl.col("prev_drug_start").is_not_null())
-                .then(
-                    pl.when(
-                        # Check if the previous drug is the same as the current drug
-                        pl.col(self.drug_name_col)
-                        == pl.col(self.drug_name_col).shift(1),
-                        # Check if the previous drug start time is the previous log entry time
-                        pl.col("prev_drug_start")
-                        == pl.col(self.drug_start_col).shift(1),
-                        # Check if the drug amount is the same as the previous drug amount
-                        pl.col(self.drug_rate_col)
-                        == pl.col(self.drug_rate_col).shift(1),
-                    )
-                    .then(pl.lit("continued"))
-                    .otherwise(pl.lit("started"))
-                )
-                .otherwise(None)
-                .alias("drug_status_prev"),
-                # Check if drug is continued in the next log entry
-                pl.when(pl.col("next_drug_start").is_not_null())
-                .then(
-                    pl.when(
-                        # Check if the next drug is the same as the current drug
-                        pl.col(self.drug_name_col)
-                        == pl.col(self.drug_name_col).shift(-1),
-                        # Check if the next drug start time is the next log entry time
-                        pl.col("next_drug_start")
-                        == pl.col(self.drug_start_col).shift(-1),
-                        # Check if the drug amount is the same as the next drug amount
-                        pl.col(self.drug_rate_col)
-                        == pl.col(self.drug_rate_col).shift(-1),
-                    )
-                    .then(pl.lit("continued"))
-                    .otherwise(pl.lit("discontinued"))
-                )
-                .otherwise(None)
-                .alias("drug_status_next"),
-            )
-            # Filter for rows where the drug status changes
-            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
-            # 3. Get the end time of the drug if it is discontinued
-            .with_columns(
-                pl.when(pl.col("drug_status_next") == "discontinued")
-                .then(pl.col("next_drug_start"))
-                .otherwise(None)
-                .alias(self.drug_end_col)
-            )
-            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
-            .with_columns(
-                pl.when(
-                    pl.col("drug_status_prev").shift(1) == "started",
-                    pl.col("drug_status_next").shift(1) == "continued",
-                    pl.col("drug_status_prev") == "continued",
-                    pl.col("drug_status_next") == "discontinued",
-                    # Check if the previous drug is the same as the current drug
-                    pl.col(self.drug_name_col)
-                    == pl.col(self.drug_name_col).shift(1),
-                    # Check if the drug amount is the same as the previous drug amount
-                    pl.col(self.drug_rate_col)
-                    == pl.col(self.drug_rate_col).shift(1),
-                )
-                .then(pl.col(self.drug_start_col).shift(1))
-                .otherwise(pl.col(self.drug_start_col))
-                .alias(self.drug_start_col)
-            ).filter(pl.col(self.drug_end_col).is_not_null())
-            # 5. Remove the helper columns
-            .drop(
-                "prev_drug_start",
-                "next_drug_start",
-                "drug_status_prev",
-                "drug_status_next",
-            )
+            infusiondrug
             # 6. calculate infused fluid volume
             # eICU documentation: "Infusion rate is generally charted as ml/hr."
             .with_columns(
@@ -1970,9 +2001,9 @@ class EICUExtractor(EICUPaths):
             .join(self.icu_length_of_stay, on=self.icu_stay_id_col, how="left")
             .with_columns(
                 pl.when(pl.col(self.procedure_discharge_col))
+                # ends at unit discharge; the times are relative to unit admission
                 .then(
-                    pl.col(self.procedure_start_col)
-                    + pl.duration(days=1).dt.total_seconds()
+                    pl.duration(days=1).dt.total_seconds()
                     * pl.col(self.icu_length_of_stay_col)
                 )
                 .otherwise(pl.col("next_proc_start"))

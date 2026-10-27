@@ -48,18 +48,18 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_eICU(MAGIC_CONCEPTS):
             .with_columns(
                 pl.when(pl.col("RRT Type").str.contains("C A V H D"))
                 .then(pl.lit("CAVHD"))
-                .when(pl.col("RRT Type").str.contains("C V V H"))
-                .then(pl.lit("CVVH"))
+                # longest match first: "C V V H D" contains "C V V H"
                 .when(pl.col("RRT Type").str.contains("C V V H D"))
                 .then(pl.lit("CVVHD"))
-                .when(pl.col("RRT Type").str.contains("Hemodialysis"))
-                .then(pl.lit("CVVHDF"))
+                .when(pl.col("RRT Type").str.contains("C V V H"))
+                .then(pl.lit("CVVH"))
                 .when(pl.col("RRT Type").str.contains("Peritoneal Dialysis"))
                 .then(pl.lit("Peritoneal dialysis"))
                 .when(pl.col("RRT Type").str.contains("Ultrafiltration"))
                 .then(pl.lit("SCUF"))
                 .when(pl.col("RRT Type").str.contains("SLED"))
                 .then(pl.lit("SLED"))
+                # "Hemodialysis" does not name the modality: no type
                 .otherwise(None)
                 .alias("Renal Replacement Therapy Type"),
             )

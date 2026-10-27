@@ -391,17 +391,10 @@ class TimeseriesHarmonizer(GlobalVars):
                     self.timeseries_time_col: float,
                 }
             )
-            # Ensure "/leukocytes" / "/erythrocytes" columns all are in range [0, 1]
-            .with_columns(
-                pl.col(col)
-                .struct.with_fields(
-                    pl.when(pl.field("value") > 1)
-                    .then(pl.field("value").truediv(100))
-                    .otherwise(pl.field("value"))
-                    .alias("value")
-                )
-                .alias(col)
-                for col in [
+            # The "/leukocytes" / "/erythrocytes" columns arrive in percent: convert to range [0, 1]
+            .pipe(
+                self._percent_to_fraction,
+                [
                     "Basophils/leukocytes",
                     "Eosinophils/leukocytes",
                     "Lymphocytes/leukocytes",
@@ -410,7 +403,7 @@ class TimeseriesHarmonizer(GlobalVars):
                     "Neutrophils.band form/leukocytes",
                     "Reticulocytes/Erythrocytes",
                     "Neutrophils.segmented/leukocytes",
-                ]
+                ],
             )
             # Sort columns (index columns first, then sorted by name)
             .pipe(self._sort_columns)
@@ -618,6 +611,17 @@ class TimeseriesHarmonizer(GlobalVars):
         cols = data.collect_schema().names()
         return data.with_columns(
             pl.lit(None).alias(col) for col in expected_cols if col not in cols
+        )
+
+    # Divide the value of lab struct columns by 100
+    def _percent_to_fraction(
+        self, data: pl.LazyFrame, cols: list[str]
+    ) -> pl.LazyFrame:
+        return data.with_columns(
+            pl.col(col).struct.with_fields(
+                pl.field("value").truediv(100).alias("value")
+            )
+            for col in cols
         )
 
     # Sort columns based on the expected order (index columns first, then sorted by name)

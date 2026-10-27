@@ -359,7 +359,7 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
                 (
                     (pl.col("rn") == 2)
                     & (pl.col("vent_flag") == 1)
-                    & ~pl.col("activeupondischarge")
+                    & pl.col("activeupondischarge")
                 )
                 .cast(int)
                 .alias("flag")

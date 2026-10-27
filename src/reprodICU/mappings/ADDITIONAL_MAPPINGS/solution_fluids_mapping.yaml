@@ -22,6 +22,8 @@ half normal saline 0.45%:
   - NaCl 0.45%
 
 hypertonic saline:
+  # HiRID
+  - NaCl 2.5%
   # MIMIC-IV
   - NaCl 3% (Hypertonic Saline) # only 243 entries
   - NaCl 23.4% # only 7 entries
@@ -51,14 +53,42 @@ glucose 5% in Lactated Ringer's:
 glucose 10%:
   # MIMIC-III
   - D10W
-  # UMCdb
-  - Glucose 10% # only 19 entries
+  # HiRID / UMCdb
+  - Glucose 10%
 
 glucose 20%:
+  # HiRID
+  - Glucose 20% /100ml
+  - Glucose 20% /500ml
+  - Glucose 20%/100ml Pflege
   # MIMIC-IV
   - Dextrose 20% # only 43 entries
   # UMCdb
   - Glucose 20% # only 34 entries
+
+glucose 30%:
+  # HiRID
+  - Glucose 30%
+
+glucose 50%:
+  # HiRID
+  - Glucose 50%
+
+sodium bicarbonate 1.4%:
+  # HiRID
+  - Na-Bicarbonat 1.4%
+
+sodium bicarbonate 8.4%:
+  # HiRID
+  - Na- Bicarbonat 8.4%
+
+fresh frozen plasma:
+  # HiRID
+  - Transfusion of plasma (FFP)
+
+platelets:
+  # HiRID
+  - Platelet transfusion
 
 sterile water:
   # MIMIC-III / MIMIC-IV

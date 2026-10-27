@@ -67,7 +67,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         ).VENTILATION_DURATION()
 
         umcdb_VENTILATION_DURATION = VENTILATION_DURATION_UMCdb(
-            self.paths, self.datasets
+            self.paths, self.datasets, MAX_VENTILATION_PAUSE_HOURS
         ).VENTILATION_DURATION()
 
         # region ALL
@@ -98,25 +98,21 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 ],
                 how="diagonal_relaxed",
             )
-            # Combine consecutive rows where end time equals next start time
+            # Combine overlapping and touching episodes of a stay and type; the pause rule of a
+            # dataset is applied by its extractor, a gap is never bridged here
+            .sort("Global ICU Stay ID", "Ventilation Type", vent_start_col)
             .with_columns(
-                pl.struct(
-                    pl.col("Global ICU Stay ID"),
-                    pl.col(vent_start_col).eq_missing(
-                        pl.col(vent_end_col)
-                        .shift(1)
-                        .fill_null(pl.col(vent_start_col).min())
-                        .over(
-                            partition_by=[
-                                "Global ICU Stay ID",
-                                "Ventilation Type",
-                            ],
-                            order_by=vent_start_col,
-                        )
-                    ),
+                (
+                    pl.col(vent_start_col)
+                    > pl.col(vent_end_col)
+                    .cum_max()
+                    .shift(1)
+                    .over("Global ICU Stay ID", "Ventilation Type")
                 )
-                .rle_id()
-                .alias("is_consecutive"),
+                .fill_null(True)
+                .cum_sum()
+                .over("Global ICU Stay ID", "Ventilation Type")
+                .alias("is_consecutive")
             )
             .group_by(
                 "Global ICU Stay ID",

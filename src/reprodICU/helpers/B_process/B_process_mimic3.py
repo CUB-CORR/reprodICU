@@ -254,6 +254,7 @@ class MIMIC3Processor(MIMIC3Extractor):
             .pipe(
                 self.pivot_numeric_or_string,
                 dataset="MIMIC3_inout",
+                numeric_aggregate="sum",
                 on_col="LABEL",
                 index_cols=self.index_cols,
                 numeric_col="VALUENUM",

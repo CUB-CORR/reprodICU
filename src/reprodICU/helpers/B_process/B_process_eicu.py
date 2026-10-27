@@ -425,6 +425,7 @@ class EICUProcessor(EICUExtractor):
             .pipe(
                 self.pivot_numeric_or_string,
                 dataset="eICU_inout",
+                numeric_aggregate="sum",
                 on_col="celllabel",
                 index_cols=self.index_cols,
                 numeric_col="cellvaluenumeric",
