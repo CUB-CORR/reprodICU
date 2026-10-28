@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-29
 
 # Description: This script extracts the so called MAGIC CONCEPT "Severity Scores" directly from the source datasets.
 # The MAGIC CONCEPTS are a set of concepts that are based on the concept dict used in the ricu R package and/or
@@ -19,7 +19,7 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
         Extract severity/acuity scores from multiple ICU databases.
 
         Steps:
-            1. For each available database: extract APACHE, APS, SOFA, SAPS scores.
+            1. For each available database: extract the scores the database stores (HiRID, MIMIC-III and MIMIC-IV store none).
             2. Map database-specific item IDs to standardized score names.
             3. Calculate time relative to ICU admission.
             4. Concatenate scores from all databases.
@@ -28,11 +28,11 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
             pl.DataFrame: Contains columns:
                 - {global_icu_stay_id_col}: Global ICU stay identifier.
                 - {timeseries_time_col}: Time offset (seconds from ICU admission).
-                - APACHE II: Acute Physiology and Chronic Health Evaluation II score.  (MIMIC-III, MIMIC-IV, UMCdb)
-                - APACHE III: Acute Physiology and Chronic Health Evaluation III score.  (MIMIC-III, MIMIC-IV, UMCdb)
+                - APACHE II: Acute Physiology and Chronic Health Evaluation II score.  (UMCdb)
+                - APACHE III: Acute Physiology and Chronic Health Evaluation III score.  (UMCdb)
                 - APACHE IV: Acute Physiology and Chronic Health Evaluation IV score. (eICU, UMCdb)
-                - APS III: Acute Physiology Score III. (eICU, MIMIC-III, MIMIC-IV)
-                - SOFA: Sequential Organ Failure Assessment. (MIMIC-III, MIMIC-IV, SICdb)
+                - APS III: Acute Physiology Score III. (eICU)
+                - SOFA: Sequential Organ Failure Assessment. (SICdb)
                 - SAPS II: Simplified Acute Physiology Score II. (UMCdb)
                 - SAPS III: Simplified Acute Physiology Score III. (SICdb)
         """
@@ -64,100 +64,10 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
         # NOTE: No data available
         # endregion
 
-        # region MIMIC-III
-        print("MAGIC_CONCEPTS: Severity Scores - MIMIC-III")
-        mimic_SCORES = {
-            226743: "APACHE II",
-            226991: "APACHE III",
-            226996: "APS III",
-            227428: "SOFA",
-        }
-        mimic_SCORE_IDS = list(mimic_SCORES.keys())
-
-        mimic3_ADMISSIONTIMES = (
-            pl.scan_csv(self.mimic3_paths.icustays_path)
-            .select("ICUSTAY_ID", "INTIME")
-            .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
-        )
-        
-        if "parquet" in self.mimic3_paths.chartevents_path:
-            mimic3_chartevents = pl.scan_parquet(self.mimic3_paths.chartevents_path)
-        else:
-            mimic3_chartevents = pl.scan_csv(self.mimic3_paths.chartevents_path)
-
-        mimic3_SEVERITY_SCORES = (
-            mimic3_chartevents
-            .select("ICUSTAY_ID", "CHARTTIME", "ITEMID", "VALUENUM")
-            # Filter for scores
-            .filter(pl.col("ITEMID").is_in(mimic_SCORE_IDS))
-            .with_columns(
-                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("ITEMID").replace_strict(mimic_SCORES, default=None),
-            )
-            .join(mimic3_ADMISSIONTIMES, on="ICUSTAY_ID", how="left")
-            .with_columns(
-                (pl.col("CHARTTIME") - pl.col("INTIME"))
-                .dt.total_seconds()
-                .alias("Time Relative to Admission (seconds)")
-            )
-            .collect()
-            .pivot(
-                on="ITEMID",
-                index=["ICUSTAY_ID", "Time Relative to Admission (seconds)"],
-                values="VALUENUM",
-                aggregate_function="first",
-            )
-            .lazy()
-            # Make datetime relative to admission in seconds
-            .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
-        )
-
-        # endregion
-
-        # region MIMIC-IV
-        print("MAGIC_CONCEPTS: Severity Scores - MIMIC-IV")
-        mimic4_ADMISSIONTIMES = (
-            pl.scan_csv(self.mimic4_paths.icustays_path)
-            .select("stay_id", "intime")
-            .with_columns(
-                pl.col("intime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
-        )
-        
-        if "parquet" in self.mimic4_paths.chartevents_path:
-            mimic4_chartevents = pl.scan_parquet(self.mimic4_paths.chartevents_path)
-        else:
-            mimic4_chartevents = pl.scan_csv(self.mimic4_paths.chartevents_path)
-
-        mimic4_SEVERITY_SCORES = (
-            mimic4_chartevents
-            .select("stay_id", "charttime", "itemid", "valuenum")
-            # Filter for scores
-            .filter(pl.col("itemid").is_in(mimic_SCORE_IDS))
-            .with_columns(
-                pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("itemid").replace_strict(mimic_SCORES, default=None),
-            )
-            .join(mimic4_ADMISSIONTIMES, on="stay_id", how="left")
-            # Make datetime relative to admission in seconds
-            .with_columns(
-                (pl.col("charttime") - pl.col("intime"))
-                .dt.total_seconds()
-                .alias("Time Relative to Admission (seconds)")
-            )
-            .collect()
-            .pivot(
-                on="itemid",
-                index=["stay_id", "Time Relative to Admission (seconds)"],
-                values="valuenum",
-                aggregate_function="first",
-            )
-            .lazy()
-            .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
-        )
-
+        # region MIMIC-III, MIMIC-IV
+        # NOTE: No data available. The MetaVision score items (226743, 226991, 226996,
+        # 227428) are charted for under 0.1 % of the stays; mimic-code derives the scores
+        # from raw data.
         # endregion
 
         # region SICdb
@@ -195,8 +105,13 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
 
         # region UMCdb
         print("MAGIC_CONCEPTS: Severity Scores - UMCdb")
+        # NOTE: A_Apache_Score (13081) and MCA_Apache_Score (16624) are entered by staff
+        # and not documented. They are read as APACHE II: the AMSTEL mappings categorise
+        # them with the APACHE II variables, and the mortality rises with them.
         umcdb_SCORES = {
             19499: "APACHE II",
+            13081: "APACHE II",
+            16624: "APACHE II",
             19750: "APACHE III",
             19500: "APACHE IV",
             19503: "SAPS II",
@@ -212,8 +127,12 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
         umcdb_SEVERITY_SCORES = (
             pl.scan_parquet(self.umcdb_paths.numericitems_path)
             .select("admissionid", "itemid", "value", "measuredat")
-            # Filter for scores
-            .filter(pl.col("itemid").is_in(umcdb_SCORE_IDS))
+            # Filter for scores; the staff-entered ones hold -1 and values above 71
+            .filter(
+                pl.col("itemid").is_in(umcdb_SCORE_IDS),
+                ~pl.col("itemid").is_in([13081, 16624])
+                | pl.col("value").cast(pl.Float64, strict=False).is_between(0, 71),
+            )
             .join(umcdb_INTIMES, on="admissionid", how="left")
             # Make datetime relative to admission in seconds
             .with_columns(
@@ -245,8 +164,6 @@ class SEVERITY_SCORES(MAGIC_CONCEPTS):
                 [
                     eicu_SEVERITY_SCORES,
                     # hirid_SEVERITY_SCORES,
-                    mimic3_SEVERITY_SCORES,
-                    mimic4_SEVERITY_SCORES,
                     sicdb_SEVERITY_SCORES,
                     umcdb_SEVERITY_SCORES,
                 ],
