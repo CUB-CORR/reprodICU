@@ -61,11 +61,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
             STAY_KEY,
             TIME_KEY,
             extract_struct_value("Oxygen", ["Blood"]).alias("pO2"),
-            extract_struct_value(
-                "Oxygen saturation",
-                ["Blood arterial", "Blood venous", "Blood"],
-                exact_match=True,
-            ).alias("sO2"),
+            extract_struct_value("Oxygen saturation", ["Blood"]).alias("sO2"),
         )
         .filter(
             pl.col("pO2").is_between(20, 700),  # Physiologically valid range
