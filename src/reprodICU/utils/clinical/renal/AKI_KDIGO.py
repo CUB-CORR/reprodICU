@@ -788,6 +788,7 @@ def AKI_KDIGO(
             - Global ICU Stay ID
             - T_0 (reference time in seconds)
             - timeframe (or custom name)
+            - SCr Baseline source (where the creatinine baseline came from)
             - Creatinine AKI Stage (0-3)
             - UO Consecutive/Any Period/Fixed Block AKI Stage (if method enabled)
             - Overall KDIGO AKI Stage (max across all methods)
@@ -904,6 +905,7 @@ def AKI_KDIGO(
         .agg(
             pl.col("Creatinine").max(),
             pl.col("SCr Baseline").first(),
+            pl.col("SCr Baseline source").first(),
             pl.col("Creatinine AKI Stage").max(),
         )
     )
@@ -988,6 +990,7 @@ def AKI_KDIGO(
         "timeframe",
         "Creatinine",
         "SCr Baseline",
+        "SCr Baseline source",
         "Creatinine AKI Stage",
     )
     result = (
