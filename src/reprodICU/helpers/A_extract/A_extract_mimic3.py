@@ -1206,6 +1206,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.timeseries_intakeoutput_mapping, default=None
                 )
             )
+            # fix singular bad mapping
+            .with_columns(
+                # original: Urine output (GU Irrigant Volume In is an input)
+                pl.when(pl.col("ITEMID") == 227488)
+                .then(pl.lit("Fluid intake urinary bladder irrigation"))
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL")
+            )
             # Filter for names of interest
             .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
             # Several concepts of an item can share a name: a repeated pair would repeat its rows

@@ -1179,6 +1179,14 @@ class MIMIC4Extractor(MIMIC4Paths):
                     self.timeseries_intakeoutput_mapping, default=None
                 )
             )
+            # fix singular bad mapping
+            .with_columns(
+                # original: Not an output (GU Irrigant Volume In is an input)
+                pl.when(pl.col("itemid") == "227488")
+                .then(pl.lit("Fluid intake urinary bladder irrigation"))
+                .otherwise(pl.col("label"))
+                .alias("label")
+            )
             # Filter for names of interest
             .filter(pl.col("label").is_in(self.relevant_intakeoutput_values))
         )

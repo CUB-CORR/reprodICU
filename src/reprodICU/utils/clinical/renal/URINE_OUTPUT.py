@@ -64,7 +64,7 @@ def _without_irrigation_days(readings: pl.LazyFrame, timeseries_inout: pl.LazyFr
     admission = _admission_time_to_seconds(patient_information).select(STAY_KEY, "Admission Time (seconds)")
     day = _calendar_day_from_admission(pl.col(TIME_KEY), pl.col("Admission Time (seconds)")).alias("day")
     irrigation_days = (
-        timeseries_inout.filter(pl.col(IRRIGATION).is_not_null())
+        timeseries_inout.filter(pl.col(IRRIGATION) > 0)
         .join(admission, on=STAY_KEY)
         .select(STAY_KEY, day)
         .unique()

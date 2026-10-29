@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script contains helper functions and classes that are used across multiple scripts.
 # It contains the GlobalVars class that stores globally configured variables and the GlobalHelpers class
@@ -204,7 +204,12 @@ class GlobalHelpers:
                 on=on_col,
                 index=index_cols,
                 values=numeric_col,
-                aggregate_function=numeric_aggregate,
+                aggregate_function=(
+                    # polars fills the empty cells of "sum" with 0, not null
+                    pl.when(pl.element().len() > 0).then(pl.element().sum())
+                    if numeric_aggregate == "sum"
+                    else numeric_aggregate
+                ),
             ).lazy()
 
             cols_num = [
