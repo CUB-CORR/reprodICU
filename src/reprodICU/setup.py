@@ -279,8 +279,8 @@ def setup_mimic3_demo(config_manager=None, paths=None):
     converted to uppercase. This function:
         1. Checks if CSV files exist in the mimic3_demo_source folder
         2. Converts the first line (header) to uppercase
-        3. Saves files to a "HEADERFIX" subfolder
-        4. Updates the local config path to point to the HEADERFIX folder
+        3. Saves files to a "headerfix" folder next to it
+        4. Updates the local config path to point to the headerfix folder
 
     Arguments
     ---------
@@ -308,7 +308,7 @@ def setup_mimic3_demo(config_manager=None, paths=None):
 
     # Get source path
     source_path = Path(
-        config_manager.load_config("PATHS.yaml", user_override=False)[
+        config_manager.load_config("PATHS.yaml", user_override=True)[
             "mimic3_demo_source_path"
         ]
     )
@@ -319,7 +319,7 @@ def setup_mimic3_demo(config_manager=None, paths=None):
         )
 
     # Create HEADERFIX folder
-    headerfix_path = source_path.parent / "HEADERFIX"
+    headerfix_path = source_path.parent / "headerfix"  # as in PATHS.yaml.template
     headerfix_path.mkdir(parents=True, exist_ok=True)
 
     print("MIMIC-III demo - Converting headers to uppercase")
@@ -371,12 +371,12 @@ def setup_mimic3_demo(config_manager=None, paths=None):
     # Update configuration to point to HEADERFIX folder
     config_manager.update_config(
         "PATHS.yaml",
-        {"mimic3_demo_source_path": str(headerfix_path)},
+        {"mimic3_demo_source_path": str(headerfix_path) + "/"},  # paths are concatenated
         user_override=True,
     )
     print(f"  Updated config: mimic3_demo_source_path -> {headerfix_path}")
 
-    return str(headerfix_path)
+    return str(headerfix_path) + "/"
 
 
 # endregion

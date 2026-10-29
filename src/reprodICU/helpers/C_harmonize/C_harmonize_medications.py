@@ -7,12 +7,12 @@
 import polars as pl
 
 from ..A_extract.A_extract_eicu import EICUExtractor
-from ..A_extract.A_extract_hirid import HiRIDExtractor
 from ..A_extract.A_extract_mimic3 import MIMIC3Extractor
 from ..A_extract.A_extract_mimic4 import MIMIC4Extractor
 from ..A_extract.A_extract_nwicu import NWICUExtractor
 from ..A_extract.A_extract_sicdb import SICdbExtractor
 from ..A_extract.A_extract_umcdb import UMCdbExtractor
+from ..B_process.B_process_hirid import HiRIDProcessor
 from ..helper import GlobalHelpers, GlobalVars
 
 SECONDS_IN_1MIN = 60
@@ -37,7 +37,7 @@ class MedicationHarmonizer(GlobalVars):
         if "eICU" in self.datasets:
             self.eicu = EICUExtractor(paths, DEMO)
         if "HiRID" in self.datasets:
-            self.hirid = HiRIDExtractor(paths)
+            self.hirid = HiRIDProcessor(paths)
         if "MIMIC3" in self.datasets:
             self.mimic3 = MIMIC3Extractor(paths, DEMO)
         if "MIMIC4" in self.datasets:
@@ -136,7 +136,7 @@ class MedicationHarmonizer(GlobalVars):
 
         if "HiRID" in self.datasets:
             medications_datasets.append(
-                self.hirid.extract_medications()
+                self.hirid.process_medications()
                 .pipe(self._concat_helper, "hirid-")
                 .pipe(self._print_unique_cases, "HiRID")
             )
@@ -216,6 +216,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
+                        pl.col(self.drug_end_col) > pl.col(self.drug_start_col),
                         pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()
@@ -241,6 +242,7 @@ class MedicationHarmonizer(GlobalVars):
                         ),
                         pl.col(self.drug_start_col).is_not_null(),
                         pl.col(self.drug_end_col).is_not_null(),
+                        pl.col(self.drug_end_col) > pl.col(self.drug_start_col),
                         pl.col(self.drug_continuous_col),
                     )
                     & pl.col(self.drug_rate_col).is_null()
@@ -293,7 +295,7 @@ class MedicationHarmonizer(GlobalVars):
                 .str.replace("µ", "mc")
                 .str.replace("grams", "g")
                 .str.replace("mEQ", "mEq")
-                .str.replace("mEq\.", "mEq")
+                .str.replace(r"mEq\.", "mEq")
                 .alias(self.drug_amount_unit_col),
             )
             # remove units if amount is null

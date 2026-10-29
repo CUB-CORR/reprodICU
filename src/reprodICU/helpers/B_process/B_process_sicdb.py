@@ -52,7 +52,8 @@ class SICdbProcessor(SICdbExtractor):
 
         Steps:
             1. Check for preprocessed numeric timeseries file; load if available.
-            2. Extract raw timeseries data from {data_float_m_path}.
+            2. Extract raw timeseries data from {data_float_m_path} and the
+               hours without rawdata from {data_float_h_path}.
             3. Process in batches of 500 patients: extract, pivot, and filter measurements.
             4. Combine all batches and save sorted result.
 
@@ -74,10 +75,22 @@ class SICdbProcessor(SICdbExtractor):
 
         print("SICdb   - Preparing raw timeseries data...")
 
+        # Hours without rawdata only exist in the hourly table
+        cols = ["CaseID", "Offset", "DataID", "Val"]
+        minutely = pl.scan_parquet(self.data_float_m_path).select(cols)
+        hourly = (
+            pl.scan_csv(
+                self.data_float_h_path,
+                infer_schema_length=10000,
+                schema_overrides={"rawdata": pl.String},
+            )
+            .filter(pl.col("rawdata").is_null())
+            .select(cols)
+        )
+
         # Create the raw timeseries parquet file if it doesn't exist
         (
-            pl.scan_parquet(self.data_float_m_path)
-            .select("CaseID", "Offset", "DataID", "Val")
+            pl.concat([minutely, hourly], how="vertical_relaxed")
             # Round values to 2 decimal places due to precision issues of IEEE 754 floats
             .with_columns(pl.col("Val").cast(float).round(2))
             .rename({"CaseID": self.icu_stay_id_col})
@@ -161,7 +174,17 @@ class SICdbProcessor(SICdbExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="LaboratoryName",
-            ).with_columns(pl.col("labstruct").struct.json_encode())
+            )
+            # Manually sort specific lab tests into the correct order for pivoting
+            # - keep all other orders untouched
+            # - prefer "BE ecf (BGA)" (ID 669) over "BE (B) (BGA)" (ID 668)
+            .sort(
+                pl.when(pl.col("LaboratoryID") == 669)
+                .then(0)
+                .otherwise(1)
+            )
+            # JSON encode the structs for pivoting
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
             .pipe(
                 self.pivot_numeric_or_string,
@@ -217,6 +240,13 @@ class SICdbConverter(UnitConverter):
         return (
             data.pipe(
                 self.rename_anion_gap,  # "Anion gap 4" -> "Anion gap"
+                labelcol=labelcol,
+                valuecol=valuecol,
+                structfield=structfield,
+            )
+            .pipe(
+                self.convert_g_dL_to_g_L,
+                itemid="Albumin",
                 labelcol=labelcol,
                 valuecol=valuecol,
                 structfield=structfield,

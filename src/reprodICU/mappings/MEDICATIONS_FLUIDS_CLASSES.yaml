@@ -3,6 +3,10 @@ fluid (crystalloid):
   - PACU Crystalloid Intake
   - OR Crystalloid
   - OR Crystalloid Intake
+  # SICdb
+  - Ringer Lösung
+  - Elomel isoton
+  - Elomel OP
 fluid (crystalloid - normal saline):
   - Normal Saline
   - 0.9% Normal Saline (ml/hr)
@@ -47,56 +51,15 @@ fluid (crystalloid - normal saline):
   - "500 ml : sodium chloride 0.9 % iv soln"
   - "500 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
   - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
-  - Alteplase(tPA)ArteriClot 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-  - Aminocaproic acid MAX 25 g Sodium Chloride 0.9% 250 ml (Unknown)
-  - Aminocaproic acid STD 1 g Sodium Chloride 0.9% 50 ml (Unknown)
-  - Argatroban 250 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-  - Bivalirudin (Angiomax) 125 mg Sodium Chloride 0.9% 25 ml (mg/kg/hr)
-  - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
-  - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
-  - Bumetanide (Bumex) 10 mg Sodium Chloride 0.9% 100 ml (mg/hr)
   - Calcium CHLORIDE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
   - Calcium CHLORIDE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
   - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-  - Calcium Gluconate 1,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
-  - Calcium Gluconate 2,000 mg in Sodium Chloride 0.9% 100 ml (ml/hr)
-  - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-  - Calcium GLUCONATE MAX 2 g Sodium Chloride 0.9% 2600 ml (Unknown)
-  - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
-  - Calcium GLUCONATE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-  - Cisatracurium (Nimbex)MAX 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
-  - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 1000 ml (mcg/kg/min)
-  - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
   - D5 0.9% NaCl (ml/hr)
   - D5 NaCl 0.9% (ml/hr)
   - D5/0.9% NaCl (ml/hr)
-  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml ()
-  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
-  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-  - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (ml/hr)
-  - Dexmedetomidine(Precedex) 400 mcg Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
   - DEXT 5%-NACL 0.9% 1000 ML LVP
   - DEXTROSE 5%-NACL 0.9%
-  - Diltiazem (Cardizem) 125 mg Sodium Chloride 0.9% 125 ml (mg/hr)
-  - EPINEPHrine(Adrenalin)MAX 30 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-  - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-  - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 500 ml (mcg/min)
-  - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-  - Esmolol (Brevibloc) 2500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-  - Fenoldopam 10 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-  - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 250 ml  Premix (mcg/hr)
-  - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
-  - Furosemide (Lasix) MAX 500 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-  - Furosemide (Lasix) STD 250 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-  - HYDROmorphone (Dilaudid) 50 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
   - Insulin 250 Units Sodium Chloride 0.9% 250 ml (units/hr)
-  - Labetalol STD 500 mg Sodium Chloride 0.9% 500 ml (mg/min)
-  - Levothyroxine gtt 200 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
-  - LORazepam (Ativan) 100 mg Sodium Chloride 0.9% 100 ml  Premix (mg/hr)
-  - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-  - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
-  - Morphine 250 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
-  - Morphine 250 mg Sodium Chloride 0.9% 500 ml  Premix (mg/hr)
   - NaCl 0,9 %
   - NaCL 0,9% CO-meting
   - NaCl 0,9% druppels
@@ -110,18 +73,7 @@ fluid (crystalloid - normal saline):
   - NaCl 0.9% Bolus
   - NaCL 0.9% Calcium gluconate (ml/hr)
   - NaCl 0.9% MBP
-  - NiCARDipine (max) 100 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-  - NiCARDipine (premix) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
-  - NiCARDipine (premix) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
-  - NiCARDipine (std) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
-  - Octreotide 500 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
-  - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
   - Other Med 500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-  - Other Med 500 mg Sodium Chloride 0.9% 250 ml Ketamine HCl (mcg/kg/min)
-  - Pantoprazole (Protonix) 80 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-  - Phenylephrine  MAX 100 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-  - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-  - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
   - Research NaCL 0,9%
   - SODIUM CHLORIDE 0.45%
   - sodium chloride 0.9 %
@@ -178,10 +130,6 @@ fluid (crystalloid - normal saline):
   - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/min)
   - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (Unknown)
   - Vasopressin 40 Units Sodium Chloride 0.9% 200 ml (units/min)
-  - Vecuronium (Norcuron) 100 mg Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-  - Vecuronium Inj 40 mg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-  - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
-  - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE) (ml/hr)
   - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL
   - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL (ml/hr)
   - Volume (mL)-sodium chloride 0.9 % bolus 2,000 mL
@@ -218,6 +166,12 @@ fluid (crystalloid - normal saline):
   - NACL
   - NACL (ml/hr)
   - NaCl (ml/hr)
+  # SICdb
+  - NaCl 0,9% Infusion
+  - NaCl 0,9% Kurzinfusion
+  - NaCl 0,9% Medikament
+  - NaCl 0,9% Perfusor
+  - NaCl 0,9% Infusion intraarteriell
 fluid (crystalloid - half normal saline):
   - .45% Normal Saline
   - 0.45% NS (ml/hr)
@@ -232,14 +186,11 @@ fluid (crystalloid - half normal saline):
   - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
   - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
   - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
-  - HEPARIN (PORCINE) IN NACL 100-0.45 UNIT/ML-% IJ SOLN
   - IVF NaCl 0.45% (ml/hr)
   - NaCl 0.45%
   - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
   - Sodium Chloride 0.45% 1,000 ml (ml/hr)
   - SODIUM CHLORIDE 0.45% 1000 ML LVP
-  - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
-  - Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion (ml/hr)
   - Volume (mL)-sodium chloride 0.45 % bolus 1,000 mL (ml/hr)
   - Volume (mL)-sodium chloride 0.45 % bolus 500 mL (ml/hr)
   - 1/2 NSS
@@ -251,6 +202,7 @@ fluid (crystalloid - half normal saline):
   - 45NSS (ml/hr)
   - NaCL ).45% with MVI (ml/hr)
 fluid (crystalloid - hypertonic saline):
+  - NaCl 2.5%
   - NaCl 3% (Hypertonic Saline)
   - Hypertonic Saline 3% (ml/hr)
   - Hypertonic Saline (ml/hr)
@@ -273,6 +225,9 @@ fluid (crystalloid - hypertonic saline):
   - 3% Sodium Chloride IVF Infused (ml/hr)
   - SODIUM CHLORIDE 3% (ml/hr)
   - Sodium Chloride 3% (ml/hr)
+  # SICdb
+  - Natriumchlorid3%
+  - Natriumchlorid5%
 fluid (crystalloid - Lactated Ringer's):
   - Ri-Lac (Ringers lactaat)
   - "LR "
@@ -322,7 +277,14 @@ fluid (crystalloid - Lactated Ringer's):
   - lr bolus
   - OR LR
   - LR
+  # SICdb
+  - Ringer Laktat
 fluid (crystalloid - glucose in water):
+  - Glucose 20% /100ml
+  - Glucose 20% /500ml
+  - Glucose 20%/100ml Pflege
+  - Glucose 30%
+  - Glucose 50%
   - Glucose 10%
   - Glucose 20%
   - Glucose 30 %
@@ -342,7 +304,6 @@ fluid (crystalloid - glucose in water):
   - DEXTROSE 50 % IV SOLN
   - "DEXTROSE 5% IN WATER (D5W) IV : 1000 ML BAG"
   - Dextrose 50%
-  - VANCOMYCIN HCL IN DEXTROSE 1 GM/200ML IV SOLN
   - "37.5 G TUBE : DEXTROSE (DIABETIC USE) 40 % PO GEL"
   - DEXTROSE 50% ABBOJECT
   - DEXTROSE 50 % IN WATER (D50W) IV SYRINGE
@@ -354,7 +315,6 @@ fluid (crystalloid - glucose in water):
   - "50 ml syringe : dextrose 50 % iv soln"
   - DEXTROSE 50% 25 GRAM/50 ML INJ
   - DEXTROSE 40 % ORAL GEL
-  - DEXTROSE 5%/NACL 0.45%
   - DEXTROSE 5 % IV SOLN
   - Dextrose 50% in Water
   - dextrose 50 % in water (D50W) injection 15 mL
@@ -385,6 +345,17 @@ fluid (crystalloid - glucose in water):
   - Dextrose 20%
   - Dextrose 40%
   - Dextrose 30%
+  # SICdb
+  - Glukose 5%
+  - Glukose 5% Kurzinfusion
+  - Glukose 5% Medikament
+  - Glukose 5% Perf
+  - Glukose 2,5%
+  - Glukose 10%
+  - Glukose 20%
+  - Glukose 33%
+  - Glukose 33% Perf
+  - Glukose 50%
 fluid (crystalloid - glucose in saline):
   - D5/.45NS
   - NaCl 0,45%/Glucose 2,5%
@@ -658,6 +629,8 @@ fluid (colloid):
   - OR Colloid Intake
   - PACU Colloid
   - PACU Colloid Intake
+  # SICdb
+  - Gelofusin
 fluid (colloid - albumin):
   - Albumine 20%
   - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
@@ -724,7 +697,9 @@ fluid (colloid - albumin):
   - Humanalbumin 20% (Albunorm)
   - Humanalbumin 5%
   - Humanalbumin 5% (Albunorm)
-fluid (colloid - hydroxyethyl starch): []
+fluid (colloid - hydroxyethyl starch):
+  # SICdb
+  - Volulyte 6%
 fluid (colloid - dextran): []
 fluid (colloid - other): []
 blood product (packed red blood cells):
@@ -758,6 +733,8 @@ blood product (packed red blood cells):
   - OR Packed RBC Intake
   - PACU Packed RBC Intake
   - Packed Red Blood Cells
+  # SICdb
+  - Erythrozytenkonzentrat
 blood product (whole blood): []
 blood product (platelets):
   - Thrombocyten suspensie
@@ -786,6 +763,9 @@ blood product (platelets):
   - PACU Platelet Intake
   - Platelets
   - Platelets
+  # SICdb
+  - Thrombozytenkonzentrat gepoolt
+  - Thrombozytenkonzentrat Einzelspender
 blood product (plasma):
   - Fresh Frozen Plasma
   - FFP
@@ -803,6 +783,8 @@ blood product (plasma):
   - OR FFP
   - OR FFP Intake
   - Fresh Frozen Plasma
+  # SICdb
+  - Octaplas
 blood product (cryoprecipitate):
   - Cryoprecipitate
   - Cryoprecipitate

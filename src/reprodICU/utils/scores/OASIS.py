@@ -4,7 +4,7 @@ OASIS: compute Oxford Acute Severity of Illness Score in long format directly fr
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - OASIS Score (sum of component points)
 - Component scores (pre-ICU LOS, age, GCS, heart rate, MAP, respiratory rate, temperature, ventilation, urine output, elective surgery)
 
@@ -24,47 +24,39 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..common import (
+from ..base import (
+    SECONDS_IN_1D,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
     _assign_timeframe,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _finalize,
+    _null_if_incomplete_pre_icu,
+    _window_context,
+    intervention_per_timeframe,
+    with_windows,
+)
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_VOLUME
+from ..common import (
+    ScoringTable,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_intakeoutput,
     get_timeseries_vitals,
     get_ventilation,
-    intervention_per_timeframe,
 )
+from ..core import BLOOD_PRESSURES
 
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-SECONDS_IN_1W = 7 * SECONDS_IN_1D
 
 
 ################################################################################
 ################################################################################
 # region helpers
-
-
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.with_columns(
-        pl.coalesce(
-            pl.col("Invasive mean arterial pressure"),
-            pl.col("Non-invasive mean arterial pressure"),
-            1 / 3 * pl.col("Invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Invasive diastolic arterial pressure"),
-            1 / 3 * pl.col("Non-invasive systolic arterial pressure")
-            + 2 / 3 * pl.col("Non-invasive diastolic arterial pressure"),
-        ).alias("Mean arterial pressure"),
-    ).with_columns(
-        pl.when(pl.col("Mean arterial pressure").is_finite())
-        .then(pl.col("Mean arterial pressure"))
-        .otherwise(None)
-        .alias("Mean arterial pressure")
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"MAP": "Mean arterial pressure"})
     )
 
 
@@ -72,214 +64,92 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 ################################################################################
 # region pre-ICU LOS
 def _pre_icu_los_points(pre_los: pl.Expr) -> pl.Expr:
-    """
-    Pre-ICU length of stay points (in days)
-
-    <0.17 hours         5
-     0.17-  4.94 hours  4
-     4.94- 24    hours  3
-    24.01-311.8  hours  2
-    >311.8 hours        1
-    """
     pre_los_hours = pre_los * 24
-    return (
-        pl.when(pre_los_hours < 0.17)
-        .then(5)
-        .when(pre_los_hours.is_between(0.17, 4.94, closed="right"))
-        .then(4)
-        .when(pre_los_hours.is_between(4.94, 24, closed="right"))
-        .then(3)
-        .when(pre_los_hours.is_between(24, 311.8, closed="right"))
-        .then(2)
-        .when(pre_los_hours > 311.8)
-        .then(1)
-        .otherwise(None)
-    )
+    return ScoringTable([                # Pre-ICU length of stay (hours) | Points
+        (  None,   0.17, "neither", 5),  # <0.17             5
+        (  0.17,   4.95, "left",    3),  #  0.17-  4.94      3
+        (  4.95,  24   , "both",    0),  #  4.95- 24         0
+        ( 24   , 311.8 , "right",   2),  # 24.  -311.8       2
+        (311.8 ,   None, "neither", 1),  #      >311.8       1
+    ]).to_expr(pre_los_hours) # fmt: skip
 
 
 # region age
 def _age_points(age: pl.Expr) -> pl.Expr:
-    """
-    Age in years
-
-    <24 years     0
-     24-53 years  3
-     54-77 years  6
-     78-89 years  9
-    >89 years     7
-    """
-    return (
-        pl.when(age < 24)
-        .then(0)
-        .when(age.is_between(24, 53, closed="left"))
-        .then(3)
-        .when(age.is_between(54, 77, closed="left"))
-        .then(6)
-        .when(age.is_between(78, 89, closed="right"))
-        .then(9)
-        .when(age > 89)
-        .then(7)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Age (years) | Points
+        (None,   24, "neither", 0),  # <24 ......... 0
+        (  24,   53, "both",    3),  #  24-53        3
+        (  53,   77, "right",   6),  #  54-77        6
+        (  77,   89, "right",   9),  #  78-89        9
+        (  89, None, "neither", 7),  # >89           7
+    ]).to_expr(age) # fmt: skip
 
 
 # region GCS
 def _gcs_points(gcs: pl.Expr) -> pl.Expr:
-    """
-    Glasgow Coma Scale
-
-     3- 7  10
-     8-13   5
-    14      3
-    15      0
-    """
-    return (
-        pl.when(gcs < 8)
-        .then(10)
-        .when(gcs.is_between(8, 13, closed="right"))
-        .then(5)
-        .when(gcs == 14)
-        .then(3)
-        .when(gcs == 15)
-        .then(0)
-        .otherwise(None)
-    )
+    return ScoringTable([           # Glasgow Coma Scale | Points
+        (None,  8, "neither", 10),  # <8                   10
+        (   8, 14, "left",     4),  #  8-13                 4
+        (  14, 15, "left",     3),  #    14                 3
+        (  15, None, "left",   0),  #    15 ............... 0
+    ]).to_expr(gcs) # fmt: skip
 
 
 # region heart rate
 def _hr_points(hr: pl.Expr) -> pl.Expr:
-    """
-    Heart rate in bpm
-
-     <33 bpm      4
-      33- 88 bpm  0
-      89-106 bpm  1
-     107-125 bpm  3
-    >125 bpm      6
-    """
-    return (
-        pl.when(hr < 33)
-        .then(4)
-        .when(hr.is_between(33, 88, closed="left"))
-        .then(0)
-        .when(hr.is_between(89, 106, closed="left"))
-        .then(1)
-        .when(hr.is_between(107, 125, closed="right"))
-        .then(3)
-        .when(hr > 125)
-        .then(6)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Heart rate (bpm) | Points
+        (None,   33, "neither", 4),  #  <33               4
+        (  33,   88, "both",    0),  #   33- 88 ......... 0
+        (  88,  106, "right",   1),  #   89-106           1
+        ( 106,  125, "right",   3),  #  107-125           3
+        ( 125, None, "neither", 6),  # >125               6
+    ]).to_expr(hr) # fmt: skip
 
 
 # region MAP
 def _map_points(map: pl.Expr) -> pl.Expr:
-    """
-    Mean Arterial Pressure in mmHg
-
-     <20.65 mmHg         4
-      20.65- 50.99 mmHg  3
-      51.00- 61.32 mmHg  2
-      61.33-143.44 mmHg  0
-    >143.44 mmHg         3
-    """
-    return (
-        pl.when(map < 20.65)
-        .then(4)
-        .when(map.is_between(20.65, 51.00, closed="left"))
-        .then(3)
-        .when(map.is_between(51.00, 61.32, closed="left"))
-        .then(2)
-        .when(map.is_between(61.33, 143.44, closed="right"))
-        .then(0)
-        .when(map > 143.44)
-        .then(3)
-        .otherwise(None)
-    )
+    return ScoringTable([                # Mean Arterial Pressure (mmHg) | Points
+        (  None,  20.65, "neither", 4),  #  <20.65                         4
+        ( 20.65,  51.00, "left",    3),  #   20.65- 50.99                  3
+        ( 51.00,  61.33, "left",    2),  #   51.00- 61.32                  2
+        ( 61.33, 143.44, "both",    0),  #   61.33-143.44 ................ 0
+        (143.44,   None, "neither", 3),  # >143.44                         3
+    ]).to_expr(map) # fmt: skip
 
 
 # region respiratory rate
 def _rr_points(rr: pl.Expr) -> pl.Expr:
-    """
-    Respiratory rate in bpm
-
-    <6 bpm     10
-     6-12 bpm   1
-    13-22 bpm   0
-    23-30 bpm   1
-    31-44 bpm   6
-    >44 bpm     9
-    """
-    return (
-        pl.when(rr < 6)
-        .then(10)
-        .when(rr.is_between(6, 12, closed="right"))
-        .then(1)
-        .when(rr.is_between(13, 22, closed="right"))
-        .then(0)
-        .when(rr.is_between(23, 30, closed="right"))
-        .then(1)
-        .when(rr.is_between(31, 44, closed="right"))
-        .then(6)
-        .when(rr > 44)
-        .then(9)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Respiratory rate (bpm) | Points
+        (None,    6, "neither", 10),  #  <6                      10
+        (   6,   13, "left",     1),  #   6-12                    1
+        (  13,   23, "left",     0),  #  13-22 .................. 0
+        (  23,   31, "left",     1),  #  23-30                    1
+        (  31,   45, "left",     6),  #  31-44                    6
+        (  45, None, "left",     9),  # >44                       9
+    ]).to_expr(rr) # fmt: skip
 
 
 # region temperature
 def _temperature_points(temp: pl.Expr) -> pl.Expr:
-    """
-    Temperature in Celsius
-
-    <33.22 °C        3
-     33.22-35.93 °C  4
-     35.94-36.39 °C  2
-     36.40-36.88 °C  0
-     36.89-39.88 °C  2
-    >39.88 °C        6
-    """
-    return (
-        pl.when(temp < 33.22)
-        .then(3)
-        .when(temp.is_between(33.22, 35.93, closed="right"))
-        .then(4)
-        .when(temp.is_between(35.94, 36.39, closed="right"))
-        .then(2)
-        .when(temp.is_between(36.40, 36.88, closed="right"))
-        .then(0)
-        .when(temp.is_between(36.89, 39.88, closed="right"))
-        .then(2)
-        .when(temp >= 39.88)
-        .then(6)
-        .otherwise(None)
-    )
+    return ScoringTable([              # Temperature (°C) | Points
+        ( None, 33.22, "neither", 3),  # <33.22             3
+        (33.22, 35.94, "left",    4),  #  33.22-35.93       4
+        (35.94, 36.40, "left",    2),  #  35.94-36.39       2
+        (36.40, 36.89, "left",    0),  #  36.40-36.88 ..... 0
+        (36.89, 39.89, "both",    2),  #  36.89-39.88       2
+        (39.88,  None, "neither", 6),  # >39.89             6
+    ]).to_expr(temp) # fmt: skip
 
 
 # region urine output
 def _urine_output_points(uo_ml: pl.Expr) -> pl.Expr:
-    """
-    Urine output in mL/24h
-
-    < 671 mL/24h           10
-      671 to <1427 mL/24h   5
-     1427 to <2544 mL/24h   1
-     2544 to <6896 mL/24h   0
-    >6896 mL/24h            4
-    """
-    return (
-        pl.when(uo_ml < 671)
-        .then(10)
-        .when(uo_ml.is_between(671, 1427, closed="left"))
-        .then(5)
-        .when(uo_ml.is_between(1427, 2544, closed="left"))
-        .then(1)
-        .when(uo_ml.is_between(2544, 6896, closed="left"))
-        .then(0)
-        .when(uo_ml >= 6896)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Urine output (mL/24h) | Points
+        (None,  671, "neither", 10),  #  <671                   10
+        ( 671, 1427, "left",     5),  #   671-1426               5
+        (1427, 2544, "left",     1),  #  1427-2543               1
+        (2544, 6896, "both",     0),  #  2544-6896 ............. 0
+        (6896, None, "neither",  8),  # >6896                    8
+    ]).to_expr(uo_ml) # fmt: skip
 
 
 # region ventilation
@@ -307,17 +177,14 @@ def _elective_surgery_points(elective: pl.Expr) -> pl.Expr:
 ################################################################################
 ################################################################################
 # region OASIS
+@with_windows
 def OASIS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_inout: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_name: str = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute OASIS score in long format from raw inputs.
@@ -337,18 +204,6 @@ def OASIS(
             Timeseries intake/output data for urine output. Loaded automatically if None.
         ventilation : pl.LazyFrame, optional
             Ventilation data with start/end intervals. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
 
     Returns
     -------
@@ -377,13 +232,7 @@ def OASIS(
         "timeseries_inout": timeseries_inout,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute OASIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("OASIS", required)
 
     # Strict original column names
     age_col = "Admission Age (years)"
@@ -403,15 +252,11 @@ def OASIS(
     timeseries_inout = timeseries_inout.lazy()
     ventilation = ventilation.lazy()
 
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # region patient-level scores (pre-ICU LOS, age, elective surgery)
     patient_scores = (
-        patient_information.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        patient_information.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .select(STAY_KEY, age_col, pre_los_col, urgency_col, admission_type_col)
         .with_columns(
             pl.when(
@@ -449,9 +294,8 @@ def OASIS(
             rr_col,
             temp_col,
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .filter(pl.col(TIME_KEY) >= pl.col("T_0").sub(SECONDS_IN_1W))
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .with_columns(
             _gcs_points(pl.col(gcs_col)).alias("gcs_points"),
             _hr_points(pl.col(hr_col)).alias("hr_points"),
@@ -479,9 +323,7 @@ def OASIS(
             patient_information,
             start_col="Ventilation Start Relative to Admission (seconds)",
             end_col="Ventilation End Relative to Admission (seconds)",
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            window=window,
         )
         .rename({"intervention": "ventilated"})
         .with_columns(
@@ -494,58 +336,30 @@ def OASIS(
 
     # region urine output (daily totals)
     urine_scores = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_VOLUME(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            window_size=window.window_size,
+            timeframe_name="timeframe",
         )
         .with_columns(
             _urine_output_points(
-                pl.col("uo_interval_ml") * (SECONDS_IN_1D / window_size)
+                pl.col("uo_interval_ml") * (SECONDS_IN_1D / window.window_size)
             ).alias("urine_output_points")
         )
         .select(STAY_KEY, "timeframe", "urine_output_points")
     )
 
-    # region union of all (stay, timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe")
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
-
     # region assemble
-    out = base
-    for part in [vitals_scores, ventilation_scores, urine_scores]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
+    # the patient-level scores are constant across timeframes
+    out = _assemble(ctx, vitals_scores, ventilation_scores, urine_scores, stay_parts=[patient_scores])
 
-    # Join patient-level scores (constant across timeframes)
-
-    return (
-        out.join(patient_scores, on=STAY_KEY, how="left")
-        .filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .with_columns(
-            pl.sum_horizontal(
+    return _finalize(
+        out.with_columns(
+            _null_if_incomplete_pre_icu(
+                pl.sum_horizontal(
                 "age_points",
                 "pre_icu_los_points",
                 "elective_surgery_points",
@@ -557,25 +371,24 @@ def OASIS(
                 "ventilation_points",
                 "urine_output_points",
                 ignore_nulls=True,
+            ),
+                pl.col(["age_points", "pre_icu_los_points", "elective_surgery_points", "gcs_points", "hr_points", "map_points", "rr_points", "temperature_points", "ventilation_points", "urine_output_points"]),
+                window.window_size,
             ).alias("OASIS Score")
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "OASIS Score",
-            "age_points",
-            "pre_icu_los_points",
-            "elective_surgery_points",
-            "gcs_points",
-            "hr_points",
-            "map_points",
-            "rr_points",
-            "temperature_points",
-            "ventilation_points",
-            "urine_output_points",
-        )
-        .sort(STAY_KEY, timeframe_name)
+        ),
+        ctx,
+        "OASIS Score",
+        "age_points",
+        "pre_icu_los_points",
+        "elective_surgery_points",
+        "gcs_points",
+        "hr_points",
+        "map_points",
+        "rr_points",
+        "temperature_points",
+        "ventilation_points",
+        "urine_output_points",
+        rest=False,
     )
 
 
@@ -590,6 +403,16 @@ def OASIS_icu_mortality(oasis_score: float) -> float:
       Johnson, A. (2014).
       Mortality prediction and acuity assessment in critical care [PhD thesis].
       University of Oxford.
+
+    Arguments
+    ---------
+        oasis_score : float
+            OASIS score.
+
+    Returns
+    -------
+        float
+            Predicted ICU mortality rate (0 to 1).
     """
     x = -7.4225 + 0.1434 * oasis_score
     return np.exp(x) / (1 + np.exp(x))
@@ -603,6 +426,16 @@ def OASIS_hospital_mortality(oasis_score: float) -> float:
       Johnson, A. (2014).
       Mortality prediction and acuity assessment in critical care [PhD thesis].
       University of Oxford.
+
+    Arguments
+    ---------
+        oasis_score : float
+            OASIS score.
+
+    Returns
+    -------
+        float
+            Predicted hospital mortality rate (0 to 1).
     """
     x = -6.1746 + 0.1275 * oasis_score
     return np.exp(x) / (1 + np.exp(x))

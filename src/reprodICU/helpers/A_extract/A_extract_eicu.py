@@ -1,8 +1,10 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
+
+import os
 
 import polars as pl
 
@@ -410,7 +412,14 @@ class EICUExtractor(EICUPaths):
             lab = pl.scan_csv(self.lab_path)
 
         labs = (
-            lab.select("patientunitstayid", "labname", "labresultoffset", "labresult")
+            lab.select(
+                "patientunitstayid",
+                "labname",
+                "labresultoffset",
+                "labresult",
+                "labtypeid",
+                "labresultrevisedoffset",
+            )
             # Rename columns for consistency
             .rename(
                 {
@@ -425,7 +434,7 @@ class EICUExtractor(EICUPaths):
                     default=None,
                 )
             )
-        ) # fmt: skip
+        )
 
         LOINC_data = labs.select("labname").unique()
         labnames = LOINC_data.collect().to_series().to_list()
@@ -474,6 +483,16 @@ class EICUExtractor(EICUPaths):
                     self.relevant_lab_LOINC_components
                 )
             )
+            # Change LOINC system "Blood" to "Blood arterial" if labtypeid = 7 (ABG)
+            .with_columns(
+                pl.when(
+                    pl.col("LOINC_system") == "Blood",
+                    pl.col("labtypeid") == 7,
+                )
+                .then(pl.lit("Blood arterial"))
+                .otherwise(pl.col("LOINC_system"))
+                .alias("LOINC_system")
+            )
             # Filter for systems of interest
             .filter(
                 pl.col("LOINC_system").is_in(
@@ -490,6 +509,22 @@ class EICUExtractor(EICUPaths):
             .filter(pl.col("labname").is_not_null())
             # Remove rows with empty lab results
             .filter(pl.col("labresult").is_not_null())
+            # Keep the result that was revised later (i.e. has higher labresultrevisedoffset)
+            .group_by(
+                self.icu_stay_id_col,
+                self.timeseries_time_col,
+                "labname",
+                "LOINC_system",
+            )
+            .agg(
+                pl.col("labresult").sort_by("labresultrevisedoffset").last(),
+                pl.max(
+                    "LOINC_component",
+                    "LOINC_method",
+                    "LOINC_time",
+                    "LOINC_code",
+                ),
+            )
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -820,11 +855,19 @@ class EICUExtractor(EICUPaths):
                 how="vertical",
             )
             .with_columns(
+                # GCS total "unable to score" is not testable: verbal 0, no total
+                pl.when(
+                    pl.col("nursingchartcelltypevalname") == "GCS Total",
+                    pl.col("nursingchartvalue").str.starts_with("Unable"),
+                )
+                .then(pl.lit("Verbal"))
+                .otherwise(pl.col("nursingchartcelltypevalname"))
+                .alias("nursingchartcelltypevalname"),
                 pl.col("nursingchartvalue")
                 # Replace "Unable to score due to medication" values with 0
                 .replace("Unable to score due to medication", 0)
                 # Replace empty strings with None
-                .replace("", None)
+                .replace("", None),
             )
             .with_columns(
                 pl.col("nursingchartvalue")
@@ -1079,9 +1122,8 @@ class EICUExtractor(EICUPaths):
         Steps:
             1. Extract periodic vital sign data.
             2. Extract aperiodic vital sign data.
-            3. Concatenate both datasets diagonally (with relaxed schema).
-            4. Group by patient and time to aggregate first available value.
-            5. Rename columns based on periodic measurement mapping.
+            3. Full join both datasets on patient and time (unique, disjoint columns).
+            4. Rename columns based on periodic measurement mapping.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -1096,7 +1138,12 @@ class EICUExtractor(EICUPaths):
         aperiodic = self.extract_timeseries_aperiodic()
 
         return (
-            pl.concat([periodic, aperiodic], how="diagonal_relaxed")
+            periodic.join(
+                aperiodic,
+                on=[self.icu_stay_id_col, self.timeseries_time_col],
+                how="full",
+                coalesce=True,
+            )
             .rename(periodic_mapping)
             .select(
                 [self.icu_stay_id_col, self.timeseries_time_col]
@@ -1199,6 +1246,141 @@ class EICUExtractor(EICUPaths):
 
     # region medication
     # Extract medication information from the different medication files
+    def _collapse_infusion_log_entries(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
+        """Collapse eICU infusion log entries into one row per run of unchanged rate.
+
+        A log entry without a previous (next) entry is a run boundary, i.e. the
+        run starts (ends) there.
+        """
+        # Get infusion duration where possible, by checking whether the drugname reappears
+        # on next log entry (as determined by a different offset)
+        # 1. Get list of log entry offsets for each patient
+        infusiondrug_offsets = (
+            infusiondrug.select(self.icu_stay_id_col, self.drug_start_col)
+            .unique()
+            .sort(self.icu_stay_id_col, self.drug_start_col)
+            .with_columns(
+                pl.col(self.drug_start_col)
+                .shift(1)
+                .over(self.icu_stay_id_col)
+                .alias("prev_drug_start"),
+                pl.col(self.drug_start_col)
+                .shift(-1)
+                .over(self.icu_stay_id_col)
+                .alias("next_drug_start"),
+            )
+        )
+
+        infusiondrug = (
+            infusiondrug.join(
+                infusiondrug_offsets,
+                on=[self.icu_stay_id_col, self.drug_start_col],
+                how="left",
+            )
+            # Sort by patient ID, drug name and drug start time
+            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col, "infusiondrugid")
+            # 2. Check if drug is continued from the previous log entry
+            #    and if it is continued in the next log entry
+            .with_columns(
+                # Check if drug is continued from the previous log entry
+                # (no previous log entry: the null comparison falls through to "started")
+                pl.when(
+                    # Check if the previous drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(1),
+                    # Check if the previous drug start time is the previous log entry time
+                    pl.col("prev_drug_start")
+                    == pl.col(self.drug_start_col).shift(1),
+                    # Check if the drug amount is the same as the previous drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("started"))
+                .alias("drug_status_prev"),
+                # Check if drug is continued in the next log entry
+                pl.when(
+                    # Check if the next drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(-1),
+                    # Check if the next drug start time is the next log entry time
+                    pl.col("next_drug_start")
+                    == pl.col(self.drug_start_col).shift(-1),
+                    # Check if the drug amount is the same as the next drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(-1),
+                )
+                .then(pl.lit("continued"))
+                .otherwise(pl.lit("discontinued"))
+                .alias("drug_status_next"),
+            )
+            # Filter for rows where the drug status changes
+            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
+            # 3. Get the end time of the drug if it is discontinued
+            .with_columns(
+                pl.when(pl.col("drug_status_next") == "discontinued")
+                # the last log entry has no next entry: the run ends at that entry
+                .then(pl.coalesce("next_drug_start", self.drug_start_col))
+                .otherwise(None)
+                .alias(self.drug_end_col)
+            )
+            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
+            .with_columns(
+                pl.when(
+                    pl.col("drug_status_prev").shift(1) == "started",
+                    pl.col("drug_status_next").shift(1) == "continued",
+                    pl.col("drug_status_prev") == "continued",
+                    pl.col("drug_status_next") == "discontinued",
+                    # Check if the previous drug is the same as the current drug
+                    pl.col(self.drug_name_col)
+                    == pl.col(self.drug_name_col).shift(1),
+                    # Check if the drug amount is the same as the previous drug amount
+                    pl.col(self.drug_rate_col)
+                    == pl.col(self.drug_rate_col).shift(1),
+                )
+                .then(pl.col(self.drug_start_col).shift(1))
+                .otherwise(pl.col(self.drug_start_col))
+                .alias(self.drug_start_col)
+            ).filter(pl.col(self.drug_end_col).is_not_null())
+            # 5. Remove the helper columns
+            .drop(
+                "infusiondrugid",
+                "prev_drug_start",
+                "next_drug_start",
+                "drug_status_prev",
+                "drug_status_next",
+            )
+        )
+        return infusiondrug
+
+    def _correct_infusion_fluid_rate(self, infusiondrug: pl.LazyFrame) -> pl.LazyFrame:
+        """Divide the infusion rate (ml/hr) of "(mg/kg/min)" rows that hold mcg/kg/min by 1000.
+
+        The source computes the rate from the dose in the unit of the drug name, so a
+        dose in mcg/kg/min (propofol 50) gives a rate 1000 times too high. Only rows with
+        a dose above the highest mg/kg/min dose of their drug are divided; real
+        mg/kg/min doses (propofol 0.03), dose 0 and other units are kept.
+        """
+        # Highest mg/kg/min dose of the drug, from the first word of its name
+        max_mg_per_kg_min = {
+            "propofol": 0.2,
+            "rocuronium": 0.02,
+            "ketamine": 0.05,
+            "epinephrine": 0.005,
+            "norepinephrine": 0.005,
+            "phenylephrine": 0.005,
+        }
+        drug = pl.col(self.drug_name_col).str.to_lowercase().str.extract(r"^(\w+)")
+        return infusiondrug.with_columns(
+            pl.when(
+                pl.col(self.drug_rate_unit_col) == "mg/kg/min",
+                pl.col(self.drug_rate_col) > drug.replace_strict(max_mg_per_kg_min, default=0.2),
+            )
+            .then(pl.col(self.fluid_rate_col) / 1000)
+            .otherwise(pl.col(self.fluid_rate_col))
+            .alias(self.fluid_rate_col)
+        )
+
     def extract_medications(self) -> pl.LazyFrame:
         """
         Extract medication administration events from infusion and medication files.
@@ -1225,6 +1407,13 @@ class EICUExtractor(EICUPaths):
                 - {drug_patient_weight_col}: Patient weight used for dosing.
                 - {drug_admin_route_col}: Administration route.
         """
+
+        medications_path = self.precalc_path + "EICU_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("eICU    - Extracting medications...")
 
         eicu_medication_mapping = self.helpers.load_many_to_many_to_one_mapping(
@@ -1249,6 +1438,7 @@ class EICUExtractor(EICUPaths):
                 schema_overrides={"drugrate": str},
             )
             .select(
+                "infusiondrugid",
                 "patientunitstayid",
                 "infusionoffset",
                 "drugname",
@@ -1291,118 +1481,25 @@ class EICUExtractor(EICUPaths):
             .filter(pl.col(self.drug_name_col).is_not_null())
             # Remove rows with empty drug rates
             .filter(pl.col(self.drug_rate_col).is_not_null())
+            .pipe(self._correct_infusion_fluid_rate)
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.drug_start_col,
                 base_unit="minutes",
             )
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
-        )
-
-        # Get infusion duration where possible, by checking whether the drugname reappears
-        # on next log entry (as determined by a different offset)
-        # 1. Get list of log entry offsets for each patient
-        infusiondrug_offsets = (
-            infusiondrug.select(self.icu_stay_id_col, self.drug_start_col)
-            .unique()
-            .sort(self.icu_stay_id_col, self.drug_start_col)
-            .with_columns(
-                pl.col(self.drug_start_col)
-                .shift(1)
-                .over(self.icu_stay_id_col)
-                .alias("prev_drug_start"),
-                pl.col(self.drug_start_col)
-                .shift(-1)
-                .over(self.icu_stay_id_col)
-                .alias("next_drug_start"),
+            # Break ties between log entries at the same time
+            .sort(
+                self.icu_stay_id_col,
+                self.drug_name_col,
+                self.drug_start_col,
+                "infusiondrugid",
             )
         )
 
+        infusiondrug = self._collapse_infusion_log_entries(infusiondrug)
         infusiondrug = (
-            infusiondrug.join(
-                infusiondrug_offsets,
-                on=[self.icu_stay_id_col, self.drug_start_col],
-                how="left",
-            )
-            # Sort by patient ID, drug name and drug start time
-            .sort(self.icu_stay_id_col, self.drug_name_col, self.drug_start_col)
-            # 2. Check if drug is continued from the previous log entry
-            #    and if it is continued in the next log entry
-            .with_columns(
-                # Check if drug is continued from the previous log entry
-                pl.when(pl.col("prev_drug_start").is_not_null())
-                .then(
-                    pl.when(
-                        # Check if the previous drug is the same as the current drug
-                        pl.col(self.drug_name_col)
-                        == pl.col(self.drug_name_col).shift(1),
-                        # Check if the previous drug start time is the previous log entry time
-                        pl.col("prev_drug_start")
-                        == pl.col(self.drug_start_col).shift(1),
-                        # Check if the drug amount is the same as the previous drug amount
-                        pl.col(self.drug_rate_col)
-                        == pl.col(self.drug_rate_col).shift(1),
-                    )
-                    .then(pl.lit("continued"))
-                    .otherwise(pl.lit("started"))
-                )
-                .otherwise(None)
-                .alias("drug_status_prev"),
-                # Check if drug is continued in the next log entry
-                pl.when(pl.col("next_drug_start").is_not_null())
-                .then(
-                    pl.when(
-                        # Check if the next drug is the same as the current drug
-                        pl.col(self.drug_name_col)
-                        == pl.col(self.drug_name_col).shift(-1),
-                        # Check if the next drug start time is the next log entry time
-                        pl.col("next_drug_start")
-                        == pl.col(self.drug_start_col).shift(-1),
-                        # Check if the drug amount is the same as the next drug amount
-                        pl.col(self.drug_rate_col)
-                        == pl.col(self.drug_rate_col).shift(-1),
-                    )
-                    .then(pl.lit("continued"))
-                    .otherwise(pl.lit("discontinued"))
-                )
-                .otherwise(None)
-                .alias("drug_status_next"),
-            )
-            # Filter for rows where the drug status changes
-            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
-            # 3. Get the end time of the drug if it is discontinued
-            .with_columns(
-                pl.when(pl.col("drug_status_next") == "discontinued")
-                .then(pl.col("next_drug_start"))
-                .otherwise(None)
-                .alias(self.drug_end_col)
-            )
-            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
-            .with_columns(
-                pl.when(
-                    pl.col("drug_status_prev").shift(1) == "started",
-                    pl.col("drug_status_next").shift(1) == "continued",
-                    pl.col("drug_status_prev") == "continued",
-                    pl.col("drug_status_next") == "discontinued",
-                    # Check if the previous drug is the same as the current drug
-                    pl.col(self.drug_name_col)
-                    == pl.col(self.drug_name_col).shift(1),
-                    # Check if the drug amount is the same as the previous drug amount
-                    pl.col(self.drug_rate_col)
-                    == pl.col(self.drug_rate_col).shift(1),
-                )
-                .then(pl.col(self.drug_start_col).shift(1))
-                .otherwise(pl.col(self.drug_start_col))
-                .alias(self.drug_start_col)
-            ).filter(pl.col(self.drug_end_col).is_not_null())
-            # 5. Remove the helper columns
-            .drop(
-                "prev_drug_start",
-                "next_drug_start",
-                "drug_status_prev",
-                "drug_status_next",
-            )
+            infusiondrug
             # 6. calculate infused fluid volume
             # eICU documentation: "Infusion rate is generally charted as ml/hr."
             .with_columns(
@@ -1548,7 +1645,11 @@ class EICUExtractor(EICUPaths):
         )
 
         # Concatenate the medication tables
-        return pl.concat([infusiondrug, medication], how="diagonal_relaxed")
+        medications = pl.concat([infusiondrug, medication], how="diagonal_relaxed")
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 
@@ -1593,7 +1694,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.diagnosis_discharge_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="full")
             # Convert columns to appropriate data types
             .with_columns(
                 # Split diagnosis codes by comma and rename column
@@ -1811,7 +1912,7 @@ class EICUExtractor(EICUPaths):
                     "activeupondischarge": self.procedure_discharge_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="outer")
+            .join(self.icu_stay_id, on=self.icu_stay_id_col, how="full")
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.procedure_start_col,
@@ -1912,9 +2013,9 @@ class EICUExtractor(EICUPaths):
             .join(self.icu_length_of_stay, on=self.icu_stay_id_col, how="left")
             .with_columns(
                 pl.when(pl.col(self.procedure_discharge_col))
+                # ends at unit discharge; the times are relative to unit admission
                 .then(
-                    pl.col(self.procedure_start_col)
-                    + pl.duration(days=1).dt.total_seconds()
+                    pl.duration(days=1).dt.total_seconds()
                     * pl.col(self.icu_length_of_stay_col)
                 )
                 .otherwise(pl.col("next_proc_start"))
@@ -1959,7 +2060,7 @@ class EICUExtractor(EICUPaths):
         return treatment.with_columns(
             # TODO: make less hacky
             pl.col(self.procedure_description_col)
-            .str.replace_all("\|", " - ")
+            .str.replace_all(r"\|", " - ")
             .str.to_titlecase()
             .str.replace_many(
                 {

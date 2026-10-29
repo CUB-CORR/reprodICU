@@ -40,20 +40,27 @@ def load_mapping(path: str) -> dict:
 def _normalize_datasets(
     datasets: Optional[List[str]], demo: bool = False
 ) -> List[str]:
-    """
-    Normalize dataset selection.
+    """Normalize dataset selection, expanding wildcards and demo mode.
+    
+    Converts None or "all" selection into explicit dataset list.
+    In demo mode, restricts to smaller subset for faster testing.
 
     Arguments
     ---------
         datasets : list or None
             None for "all", or list of specific datasets to process
         demo : bool
-            If True, restrict to demo-compatible datasets
+            If True, restrict to demo-compatible datasets (subset with smaller data)
 
     Returns
     -------
         list
             Dataset names to process
+            
+    Notes
+    -----
+        Demo datasets are selected for fast iteration during development.
+        Full mode processes all 7 databases: eICU, HiRID, MIMIC3, MIMIC4, NWICU, SICdb, UMCdb.
     """
     if datasets is None or (isinstance(datasets, list) and "all" in datasets):
         all_datasets = [
@@ -65,6 +72,7 @@ def _normalize_datasets(
             "SICdb",
             "UMCdb",
         ]
+        # Demo mode uses smaller dataset variants for rapid testing
         if demo:
             return ["eICU", "MIMIC3", "MIMIC4"]
         return all_datasets
@@ -91,19 +99,28 @@ def _normalize_tables(tables: Optional[List[str]]) -> List[str]:
             "diagnoses",
             "procedures",
             "medications",
+            "microbiology",
+            "notes",
             "timeseries",
         ]
     return tables
 
 
 def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
-    """
-    Normalize timeseries selection.
+    """Normalize timeseries type selection, expanding wildcards.
+    
+    Converts None or "all" selection into explicit list of timeseries types
+    to extract from raw data.
 
     Arguments
     ---------
         timeseries : list or None
-            None for "all", or list of specific timeseries types
+            None for "all", or list of specific timeseries types:
+            "vitals" (heart rate, temperature, BP, etc.),
+            "labs" (lab measurements),
+            "respiratory" (ventilator parameters),
+            "inout" (intake/output records),
+            "extracorporeal" (ECMO, CRRT, etc.)
 
     Returns
     -------
@@ -113,6 +130,7 @@ def _normalize_timeseries(timeseries: Optional[List[str]]) -> List[str]:
     if timeseries is None or (
         isinstance(timeseries, list) and "all" in timeseries
     ):
+        # Return all available timeseries types
         return ["vitals", "labs", "respiratory", "inout", "extracorporeal"]
     return timeseries
 
@@ -569,6 +587,58 @@ def build_notes(
 
 
 # region timeseries
+def _balance_intake_output(paths: reprodICUPaths, save_path: str) -> None:
+    """Add medication infusion volumes to intake/output and balance it."""
+    print("reprodICU - Improving intake/output data...")
+    improver = IntakeOutputImprover(paths=paths)
+    dataset_of_stay = pl.scan_parquet(save_path + "patient_information.parquet").select(
+        "Global ICU Stay ID", improver.dataset_col
+    )
+    # The intake/output timeseries of MIMIC-III and MIMIC-IV are built from the same inputevents
+    # rows as their medications, adding the medication volumes would count them twice
+    medications = (
+        pl.scan_parquet(save_path + "medications.parquet")
+        .join(dataset_of_stay, on="Global ICU Stay ID", how="left")
+        .filter(
+            pl.col(improver.dataset_col)
+            .is_in(["MIMIC-III", "MIMIC-IV"])
+            .fill_null(False)
+            .not_()
+        )
+        .drop(improver.dataset_col)
+    )
+    (
+        pl.scan_parquet(save_path + "timeseries_intakeoutput.parquet")
+        .pipe(improver.add_infusion_volumes, medications=medications)
+        .pipe(improver.improve_intake_output)
+        .collect()
+        .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
+    )
+
+
+def _winsorize_labs(save_path: str, column_names: dict) -> None:
+    """Winsorize all lab columns (except ids, time and base excess) by quantiles."""
+    print("reprodICU - Winsorizing lab data...")
+    labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
+    columns_to_exclude = [
+        column_names["global_icu_stay_id_col"],
+        column_names["timeseries_time_col"],
+        "Base excess",
+    ]
+    columns_to_winsorize = [
+        c for c in labs.collect_schema().names() if c not in columns_to_exclude
+    ]
+    (
+        labs.pipe(
+            X2_Winsorizer().winsorize_structs,
+            winsorization_columns=columns_to_winsorize,
+            winsorization_methods=["quantiles"] * len(columns_to_winsorize),
+        )
+        .collect()
+        .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
+    )
+
+
 def build_timeseries(
     paths: Optional[reprodICUPaths] = None,
     datasets: Optional[List[str]] = None,
@@ -578,12 +648,13 @@ def build_timeseries(
     impute: bool = False,
     resample: Optional[int] = None,
 ) -> List[str]:
-    """
-    Build timeseries data from raw data sources.
+    """Build timeseries data from raw data sources.
 
-    Harmonizes vital signs, laboratory values, respiratory parameters, and
-    intake/output records across datasets. Applies optional winsorization,
-    imputation and resampling to standardize temporal resolution.
+    Orchestrates a multi-step pipeline:
+    1. Harmonize vital signs, labs, respiratory, and intake/output across datasets
+    2. Enhance intake/output with medication infusion data
+    3. Optionally winsorize lab data to clinically plausible ranges
+    4. Optionally impute and resample vital signs
 
     Arguments
     ---------
@@ -607,16 +678,8 @@ def build_timeseries(
     -------
         list
             List of output file paths created
-
-    Raises
-    ------
-        FileNotFoundError
-            If dataset files not found
-        ValueError
-            If invalid selection
-        RuntimeError
-            If processing fails
     """
+    # Initialize paths and configuration
     if paths is None:
         config_manager = get_config_manager()
         paths = reprodICUPaths(config_manager)
@@ -639,42 +702,10 @@ def build_timeseries(
         timeseries=TIMESERIES, save_to_default=True
     )
 
-    print("reprodICU - Improving intake/output data...")
-    timeseries_inout_improver = IntakeOutputImprover(paths=paths)
-    (
-        pl.scan_parquet(save_path + "timeseries_intakeoutput.parquet")
-        .pipe(
-            timeseries_inout_improver.add_infusion_volumes,
-            medications=pl.scan_parquet(save_path + "medications.parquet"),
-        )
-        .pipe(timeseries_inout_improver.improve_intake_output)
-        .collect()
-        .write_parquet(save_path + "timeseries_intakeoutput_balanced.parquet")
-    )
+    _balance_intake_output(paths, save_path)
 
     if "labs" in TIMESERIES and winsorize:
-        # Winsorize the lab data
-        print("reprodICU - Winsorizing lab data...")
-        winsorizer = X2_Winsorizer()
-        labs = pl.scan_parquet(save_path + "timeseries_labs.parquet")
-        columns_to_exclude = [
-            column_names["global_icu_stay_id_col"],
-            column_names["timeseries_time_col"],
-            "Base excess",
-        ]
-        labs_cols = labs.collect_schema().names()
-        columns_to_winsorize = list(set(labs_cols) - set(columns_to_exclude))
-        (
-            labs.pipe(
-                winsorizer.winsorize_structs,
-                winsorization_columns=columns_to_winsorize,
-                winsorization_methods=[
-                    "quantiles" for _ in columns_to_winsorize
-                ],
-            )
-            .collect()
-            .write_parquet(save_path + "timeseries_labs_winsorized.parquet")
-        )
+        _winsorize_labs(save_path, column_names)
 
     files = [
         save_path + f"timeseries_{ts_type}.parquet" for ts_type in TIMESERIES

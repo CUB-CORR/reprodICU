@@ -230,16 +230,6 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         # See the ventilation_classification.sql query for step 1 of the above.
         # This query has the logic for converting events into durations.
 
-        pl.concat(
-            [
-                CHARTEVENTS_VENTILATION_CLASSIFICATION,
-                PROCEDUREEVENTS_MV_VENTILATION_CLASSIFICATION,
-            ],
-            how="vertical",
-        ).unique(maintain_order=True).write_parquet(
-            "debug_chartevents_ventilation_classification.parquet"
-        )
-
         VENTILATION_DURATIONS = (
             pl.concat(
                 [
@@ -319,6 +309,12 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 pl.col("CHARTTIME").max().alias("ENDTIME"),
                 pl.col("MechVent").max().alias("MechVent"),
                 pl.col("OxygenTherapy").max().alias("OxygenTherapy"),
+            )
+            # as in ventilation_durations.sql: the patient had to be ventilated at least once
+            # (this drops oxygen/NIV groups and the VentNum = null rows) and the episode has a duration
+            .filter(
+                pl.col("MechVent") == 1,
+                pl.col("STARTTIME") != pl.col("ENDTIME"),
             )
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="ICUSTAY_ID", how="left")

@@ -20,7 +20,7 @@ Cardiac index: True # 54993008
 Intracranial pressure: True # 4353953
 Glasgow coma score total: True # 3007194
 Glasgow coma score eye opening: True # 3016335
-Glasgow coma score verbal: True # 3009094
+Glasgow coma score verbal: True # 3009094 (0 = not testable, total is then null)
 Glasgow coma score motor: True # 3008223
 Richmond Agitation-Sedation Scale: True # 36684829
 Numeric Pain Rating Scale: True # 37151627

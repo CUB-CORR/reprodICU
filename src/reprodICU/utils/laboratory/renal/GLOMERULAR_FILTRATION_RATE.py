@@ -51,8 +51,16 @@ from typing import Optional
 import numpy as np
 import polars as pl
 
-from ...common import _to_lazy, get_patient_information, get_timeseries_labs
-from ..IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
+from ...base import (
+    _to_lazy,
+)
+from ...clinical.IDEAL_BODY_WEIGHT import ADJUSTED_BODY_WEIGHT
+from ...common import (
+    _validate_required_data,
+    extract_struct_value,
+    get_patient_information,
+    get_timeseries_labs,
+)
 
 age_col = "Admission Age (years)"
 height_col = "Admission Height (cm)"
@@ -72,7 +80,7 @@ def CKD_EPI_Creatinine_parameters(data: pl.LazyFrame) -> pl.LazyFrame:
 
     | Female                  | Male                    |
     |-------------------------|-------------------------|
-    | Scr ≤0.7   | Scr >0.7   | Scr ≤0.9   | Scr >0.9   |
+    | SCr ≤0.7   | SCr >0.7   | SCr ≤0.9   | SCr >0.9   |
     |-------------------------|-------------------------|
     | A =  0.7   | A =  0.7   | A =  0.9   | A =  0.9   |
     | B = -0.241 | B = -1.2   | B = -0.302 | B = -1.2   |
@@ -115,7 +123,7 @@ def CKD_EPI_Creatinine_Cystatin_parameters(data: pl.LazyFrame) -> pl.LazyFrame:
 
     |             Female                    | Male                      |
     |---------------------------------------|---------------------------|
-    |           | Scr ≤0.7    | Scr >0.7    | Scr ≤0.9    | Scr >0.9    |
+    |           | SCr ≤0.7    | SCr >0.7    | SCr ≤0.9    | SCr >0.9    |
     |---------------------------------------|---------------------------|
     | Scys ≤0.8 | A =  0.7    | A =  0.7    | A =  0.9    | A =  0.9    |
     |           | B = -0.219  | B = -0.544  | B = -0.144  | B = -0.544  |
@@ -316,13 +324,9 @@ def _improve_labs(timeseries_labs: pl.LazyFrame) -> pl.LazyFrame:
     return timeseries_labs.select(
         "Global ICU Stay ID",
         "Time Relative to Admission (seconds)",
-        pl.when(
-            pl.col("Creatinine").struct.field("system").eq("Serum or Plasma")
-            | pl.col("Creatinine").struct.field("system").is_null()
-        )
-        .then(pl.col("Creatinine").struct.field("value"))
-        .otherwise(None)
-        .alias("Creatinine"),
+        extract_struct_value(
+            "Creatinine", ["Serum or Plasma"], exact_match=True
+        ).alias("Creatinine"),
     ).drop_nulls("Creatinine")
 
 
@@ -367,13 +371,7 @@ def ESTIMATED_GFR(
         "patient_information": patient_information,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ESTIMATED_GFR: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("ESTIMATED_GFR", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)

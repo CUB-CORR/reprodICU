@@ -38,7 +38,8 @@ class PatientInformationImputer(GlobalVars):
             .then(pl.col(self.global_icu_stay_id_col))
             .otherwise(pl.col(self.global_hospital_stay_id_col))
             .alias(self.global_hospital_stay_id_col),
-            # Add missing person IDs
+        ).with_columns(
+            # Add missing person IDs (from the hospital stay IDs just filled)
             pl.when(pl.col(self.global_person_id_col).is_null())
             .then(pl.col(self.global_hospital_stay_id_col))
             .otherwise(pl.col(self.global_person_id_col))

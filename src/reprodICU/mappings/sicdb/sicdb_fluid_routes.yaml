@@ -1,0 +1,54 @@
+# Route by name of the fluids and foods in ml. All others are intravenous.
+# DrugID: route # name
+2051: oral # Trinken
+2052: oral # Tee/Suppe/Joghurt
+2181: oral # Trinknahrung Fresubin Protein Energy
+2143: oral # Trinknahrung Fresubin Energy
+2144: oral # Trinknahrung Fortimel compact
+2156: oral # Fortimel Compact
+2119: oral # Fortimel Nutricia
+2158: oral # Nutrini Drink Smoothie
+2118: oral # Cubitan Nutricia
+2159: oral # Resource 2.0+ fibre
+2162: oral # Resource Fruit
+2160: oral # Fresubin Creme
+2151: oral # Karotten-Reis-Schleim
+2188: oral # Blasen- und Nierentee Solubitrat
+2056: nasogastric # Wasser zur Spülung Magensonde
+2107: enteral # Nicht gelistete enterale Lösung
+2108: enteral # Impact Nutrition
+2109: enteral # Nutrison Multi Fibre
+2110: enteral # Nutrison Standard
+2111: enteral # Nutrison Protein Plus Multi Fibre
+2112: enteral # Nutrison Protein Plus
+2113: enteral # Nutrison Soya
+2114: enteral # Nutrison Concentrated
+2115: enteral # Nutrison Diason
+2116: enteral # Nutrison Cubison
+2117: enteral # Nutrison Peptisorb
+2150: enteral # Nutrison Multi Fibre Energy
+2163: enteral # Nutrison ADV Pepti
+2120: enteral # Isosource Mix Nutrition
+2130: enteral # Isosource MCT
+2126: enteral # Novasource GI CONTROL
+2149: enteral # Nestle Peptamen AF
+2161: enteral # Elemental 028
+2191: enteral # OptiFibre
+2190: enteral # OptiXpress
+2071: enteral # Survimed OPD
+2070: enteral # Intestamin
+2067: enteral # Fresubin original fibre (Food)
+2068: enteral # Fresubin HP energy (Food)
+2069: enteral # Fresubin original (Food)
+2157: enteral # Fresubin Protein Energy (Food)
+2105: oral # Natriumpicosulfat (Agaffin)
+2098: inhalational # Ipratroprium und Salbutamol (Combivent)
+2099: inhalational # Isofluran (Anaconda)
+2100: other # Lactulose (Lactulose)
+2103: other # Nystatin (Mycostatin)
+2104: other # Natrium- und Megluminanmidotrizoat (Gastrografin)
+2129: other # Lysin Amidotrizoat (Peritrast)
+2136: other # Bellovac
+2167: other # NaCl 0,9% Blasenspülung
+2127: other # NaCl 0,9% Spüllösung
+2094: other # Ringer Lösung Spüllösung

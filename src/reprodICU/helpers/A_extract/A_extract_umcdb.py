@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -26,6 +26,48 @@ class UMCdbExtractor(UMCdbPaths):
         self.MILLISECONDS_IN_1H = 60 * 60 * 1000
         self.MILLISECONDS_IN_1D = 24 * self.MILLISECONDS_IN_1H
         self.MILLISECONDS_IN_1Y = 365 * self.MILLISECONDS_IN_1D
+
+    # region intimes
+    # Extract ICU admission times with offset to previous ICU stay
+    def _extract_intimes(self) -> pl.LazyFrame:
+        """
+        Extract ICU admission times and compute offset from previous ICU stay.
+
+        Steps:
+            1. Read admissions data from parquet.
+            2. Select and rename admission times and identifiers.
+            3. Sort by patient and admission time.
+            4. Calculate offset in milliseconds from previous ICU admission.
+
+        Returns:
+            pl.LazyFrame: Contains columns:
+                - {icu_stay_id_col}: ICU stay identifier.
+                - {person_id_col}: Patient identifier.
+                - intime: ICU admission time (milliseconds since epoch).
+                - outtime: ICU discharge time (milliseconds since epoch).
+                - offset_to_prev: Milliseconds from previous ICU admission for same patient.
+        """
+        return (
+            pl.scan_parquet(self.admissions_path)
+            .select("admissionid", "patientid", "admittedat", "dischargedat")
+            .rename(
+                {
+                    "admissionid": self.icu_stay_id_col,
+                    "patientid": self.person_id_col,
+                    "admittedat": "intime",
+                    "dischargedat": "outtime",
+                }
+            )
+            .sort(self.person_id_col, "intime")
+            .with_columns(
+                (
+                    pl.col("intime")
+                    - pl.col("outtime").shift(1).over(self.person_id_col)
+                ).alias("offset_to_prev")
+            )
+        )
+
+    # endregion
 
     # region patient
     # Extract patient information from the patient.csv file
@@ -129,7 +171,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias(self.icu_time_rel_to_first_col),
                 # for age, weight, height and year, assume average of the group
                 pl.col("agegroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -138,7 +180,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.age_col),
                 pl.col("weightgroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -147,7 +189,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.weight_col),
                 pl.col("heightgroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -156,7 +198,7 @@ class UMCdbExtractor(UMCdbPaths):
                 .cast(int)
                 .alias(self.height_col),
                 pl.col("admissionyeargroup")
-                .str.replace("-|\+", "–")
+                .str.replace(r"-|\+", "–")
                 .str.split("–")
                 .map_elements(
                     lambda s: np.mean([int(i) for i in s if i]),
@@ -283,15 +325,22 @@ class UMCdbExtractor(UMCdbPaths):
                 "value",
                 "valueid",
                 "measuredat",
+                "registeredat",
                 "registeredby",
+                pl.concat_str(
+                    pl.col("itemid").cast(str),
+                    pl.col("valueid").cast(str),
+                    separator="-",
+                ).alias("itemvalueid"),
             )
             .rename({"admissionid": self.icu_stay_id_col})
             .join(self._extract_list_references(), on="itemid", how="left")
+            .join(self._extract_listvalue_references(), on="itemvalueid", how="left")
             .pipe(self._extract_timeseries_helper)
             # Fix the values for RASS and NRS
             .with_columns(
                 pl.when(pl.col("item") == "Numeric Pain Rating Scale")
-                .then(pl.col("valueid"))
+                .then(pl.col("valueid") - 1)
                 .when(pl.col("item") == "Richmond Agitation-Sedation Scale")
                 .then(5 - pl.col("valueid"))
                 .otherwise(pl.col("value"))
@@ -300,42 +349,19 @@ class UMCdbExtractor(UMCdbPaths):
             # Fix the values for the mapped listitems
             .with_columns(
                 pl.when(pl.col("item") == "Heart rate rhythm")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.HEART_RHYTHM_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Oxygen delivery system")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Ventilation mode Ventilator")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.VENTILATOR_MODE_MAP, default=None
-                    )
-                )
-                .when(
-                    pl.col("item")
-                    == "Continuous renal replacement therapy mode Renal replacement therapy circuit"
-                )
-                .then(
-                    pl.col("value").replace_strict(
-                        self.RRT_MODE_MAP, default=None
-                    )
-                )
-                .when(pl.col("item") == "Confusion Assessment Method")
-                .then(
-                    pl.col("value").replace_strict(
-                        self.DELIRIUM_MAP, default=None
-                    )
-                )
+                  .then(pl.col("itemvalue").replace_strict(self.HEART_RHYTHM_MAP, default=None))
+                  .when(pl.col("item") == "Oxygen delivery system")
+                  .then(pl.col("itemvalue").replace_strict(self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None))
+                  .when(pl.col("item") == "Ventilation mode Ventilator")
+                  .then(pl.col("value").replace_strict(self.VENTILATOR_MODE_MAP, default=None))
+                  .when(pl.col("item") == "Continuous renal replacement therapy mode Renal replacement therapy circuit")
+                  .then(pl.col("value").replace_strict(self.RRT_MODE_MAP, default=None))
+                  .when(pl.col("item") == "Confusion Assessment Method")
+                  .then(pl.col("value").replace_strict(self.DELIRIUM_MAP, default=None))
                 .otherwise(pl.col("value"))
                 .alias("value"),
             )
-        )
+        ) # fmt: skip
 
         gcs = self._compute_gcs(listitems).unpivot(
             index=self.index_cols, variable_name="item", value_name="value"
@@ -485,40 +511,26 @@ class UMCdbExtractor(UMCdbPaths):
                 - Other columns from input data.
         """
 
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         return (
             data.join(intimes, on=self.icu_stay_id_col)
+            .with_columns(
+                (pl.col("measuredat") - pl.col("intime")).alias("offset")
+            )
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col("measuredat") < pl.col("outtime"),
-                pl.col("measuredat")
-                > (
-                    pl.col("intime")
-                    - pl.duration(
-                        days=self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                    ).dt.total_milliseconds()
-                ),
+                (pl.col("offset") > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
             .with_columns(
-                pl.duration(
-                    milliseconds=(pl.col("measuredat") - pl.col("intime"))
-                )
+                pl.duration(milliseconds=pl.col("offset"))
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col),
             )
-            .drop("measuredat", "intime", "outtime")
+            .drop("measuredat", "intime", "outtime", "offset_to_prev")
         )
 
     # endregion
@@ -552,6 +564,9 @@ class UMCdbExtractor(UMCdbPaths):
             # -> now without "/100", kept for compatibility and conversion
             .str.replace("/100 leukocytes", "/Leukocytes")
             .str.replace("/100 erythrocytes", "/Erythrocytes")
+            # "Anion gap" with no method obselete in v20250827
+            # -> now "Anion gap in {system} by {Calculated.4Ions or calculation}"
+            .str.replace("Anion gap in Blood", "Anion gap in Blood by calculation")
         ) # fmt: skip
 
         LOINC_data = data.select("item").unique()
@@ -661,11 +676,6 @@ class UMCdbExtractor(UMCdbPaths):
         if os.path.isfile(self.precalc_path + "UMCdb_gcs.parquet"):
             return pl.scan_parquet(self.precalc_path + "UMCdb_gcs.parquet")
 
-        INTIMES = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat")
-            .rename({"admissionid": self.icu_stay_id_col})
-        )
         REGISTEREDBY = {
             "ICV_Medisch Staflid": 1,
             "ICV_Medisch": 2,
@@ -685,18 +695,6 @@ class UMCdbExtractor(UMCdbPaths):
                 "itemid",
                 "registeredby",
             )
-            .join(INTIMES, on=self.icu_stay_id_col)
-            .with_columns(
-                pl.duration(
-                    milliseconds=(
-                        pl.col(self.timeseries_time_col) - pl.col("admittedat")
-                    )
-                )
-                .dt.total_seconds()
-                .cast(float)
-                .alias(self.timeseries_time_col)
-            )
-            .drop("admittedat")
         )
 
         data_eye = (
@@ -756,10 +754,10 @@ class UMCdbExtractor(UMCdbPaths):
                 .alias("Glasgow coma score verbal"),
             )
             # handle the special case where the value is <1, which corresponds
-            # to intubated patients (assign score 1)
+            # to intubated patients (unable to assess: 0, not 1)
             .with_columns(
                 pl.when(pl.col("Glasgow coma score verbal") < 1)
-                .then(1)
+                .then(0)
                 .otherwise(pl.col("Glasgow coma score verbal"))
                 .alias("Glasgow coma score verbal")
             )
@@ -832,21 +830,16 @@ class UMCdbExtractor(UMCdbPaths):
                 - {drug_admin_type_col}: Administration type.
         """
 
+        medications_path = self.precalc_path + "UMCdb_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("UMCdb   - Extracting medications...")
 
-        # Extract medication mappings by building a chain of references
-        # 1. Get drug name references from our mapping files
-        drug_references = self._extract_drug_references(return_ids=True)
-        concept_ids = drug_references.values()
-
-        # 2. Retrieve active ingredients for these concept IDs
-        ingredients = self.omop.get_ingredient(concept_ids)
-
-        # 3. Create a mapping from drug names to their active ingredients
-        drug_name_to_ingredient = {}
-        for drug_name, concept_id in drug_references.items():
-            if concept_id in ingredients:
-                drug_name_to_ingredient[drug_name] = ingredients[concept_id]
+        # Extract medication mappings from the drug item mapping
+        drug_references = self._extract_drug_references()
 
         # Load additional mappings
         umcdb_drug_administration_route_mapping = self.helpers.load_mapping(
@@ -856,17 +849,7 @@ class UMCdbExtractor(UMCdbPaths):
             self.drug_class_mapping_path
         )
 
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         drugitems = (
             pl.scan_parquet(self.drugitems_path)
@@ -943,14 +926,18 @@ class UMCdbExtractor(UMCdbPaths):
             pl.col("solutionitem").is_null()
         )
 
+        # Fluid infusions: all items of the order are fluids (ml) of an infusion
+        # category. Every other order is a single drug or a mixture (see below).
+        is_fluid_only = (
+            (pl.col("doseunit") == "ml")
+            .all()
+            .over(self.drug_mixture_admin_id_col)
+            & pl.col("ordercategory").str.contains("Infuus")
+        ) # fmt: skip
+
         # Separate fluid infusions from drugs and mixture infusions
         drugitems_without_solutionitem_only_fluid = (
-            drugitems_without_solutionitem.filter(
-                (pl.col("doseunit") == "ml")
-                .all()
-                .over(self.drug_mixture_admin_id_col),
-                pl.col("ordercategory").str.contains("Infuus"),
-            )
+            drugitems_without_solutionitem.filter(is_fluid_only)
             .with_columns(
                 # split additive and fluid items
                 *[
@@ -989,14 +976,19 @@ class UMCdbExtractor(UMCdbPaths):
         )
 
         # Handle single drug items without solution items
+        # (orders of ml items only, e.g. nebulisers, nutrition and water, are single drug items
+        # unless they are infusions; fluid infusions are handled above)
         drugitems_without_solutionitem_single = (
             drugitems_without_solutionitem.filter(
-                (pl.col("doseunit") == "ml")
-                .all()
-                .over(self.drug_mixture_admin_id_col)
-                .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
-                pl.col(self.drug_mixture_admin_id_col).is_duplicated().not_(),
+                is_fluid_only.not_(),
+                (
+                    (pl.col("doseunit") == "ml")
+                    .all()
+                    .over(self.drug_mixture_admin_id_col)
+                    | pl.col(self.drug_mixture_admin_id_col)
+                    .is_duplicated()
+                    .not_()
+                ),
             )
         )
 
@@ -1007,7 +999,6 @@ class UMCdbExtractor(UMCdbPaths):
                 .all()
                 .over(self.drug_mixture_admin_id_col)
                 .not_(),
-                pl.col("ordercategory").str.contains("Infuus").not_(),
                 pl.col(self.drug_mixture_admin_id_col).is_duplicated(),
             )
             .with_columns(
@@ -1071,7 +1062,7 @@ class UMCdbExtractor(UMCdbPaths):
             )
         )
 
-        return (
+        medications = (
             pl.concat(
                 [
                     drugitems_with_solutionitem,
@@ -1082,6 +1073,8 @@ class UMCdbExtractor(UMCdbPaths):
                 how="diagonal_relaxed",
             )
             .join(intimes, on=self.icu_stay_id_col)
+            # Add the OMOP concept name and ingredient of each drug name
+            .join(drug_references.lazy(), on=self.drug_name_col, how="left")
             # Keep only timepoints within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
             .filter(
                 pl.col(self.drug_start_col) < pl.col("outtime"),
@@ -1106,21 +1099,13 @@ class UMCdbExtractor(UMCdbPaths):
                 .dt.total_seconds()
                 .cast(float)
                 .alias(self.drug_end_col),
-                # Replace drug names with standardized ingredient names
-                pl.col(self.drug_name_col)
-                .replace_strict(drug_name_to_ingredient, default=None)
-                .alias(self.drug_ingredient_col),
-                # Replace drug names with OMOP concepts
-                pl.col(self.drug_name_col)
-                .replace_strict(self._extract_drug_references(), default=None)
-                .alias(self.drug_name_OMOP_col),
                 # Replace drug administration routes
                 pl.col("ordercategory")
-                .replace(umcdb_drug_administration_route_mapping, default=None)
+                .replace_strict(umcdb_drug_administration_route_mapping, default=None)
                 .alias(self.drug_admin_route_col),
                 # Replace drug classes
                 pl.col("ordercategory")
-                .replace(umcdb_drug_class_mapping, default=None)
+                .replace_strict(umcdb_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
                 # Replace solution items with standardized names
                 pl.col(self.fluid_name_col)
@@ -1136,8 +1121,12 @@ class UMCdbExtractor(UMCdbPaths):
                 pl.col(self.drug_name_col).is_not_null()
                 | pl.col(self.fluid_name_col).is_not_null()
             )
-            .drop("intime", "outtime")
+            .drop("intime", "outtime", "offset_to_prev")
         )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 
@@ -1165,18 +1154,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         print("UMCdb   - Extracting procedures...")
-        intimes = (
-            pl.scan_parquet(self.admissions_path)
-            .select("patientid", "admissionid", "admittedat", "dischargedat")
-            .rename(
-                {
-                    "patientid": self.person_id_col,
-                    "admissionid": self.icu_stay_id_col,
-                    "admittedat": "intime",
-                    "dischargedat": "outtime",
-                }
-            )
-        )
+        intimes = self._extract_intimes()
 
         procedureorderitems = (
             pl.scan_parquet(self.procedureorderitems_path)
@@ -1223,7 +1201,7 @@ class UMCdbExtractor(UMCdbPaths):
                 )
                 .alias(self.procedure_description_col),
             )
-            .drop("start", "stop", "intime", "outtime")
+            .drop("start", "stop", "intime", "outtime", "offset_to_prev")
         )
 
     # endregion
@@ -1534,7 +1512,7 @@ class UMCdbExtractor(UMCdbPaths):
     # Extract the information from the listitems_XXX.usagi.csv file
     def _extract_list_references(self) -> pl.LazyFrame:
         """
-        Extract and process list item references from CSV mapping files.
+        Extract and process list item references from CSV mapping file.
 
         Steps:
             1. Reads two CSV files containing list items mappings.
@@ -1550,13 +1528,7 @@ class UMCdbExtractor(UMCdbPaths):
         """
 
         return (
-            pl.concat(
-                [
-                    pl.read_csv(self.listitems_item_mapping_path),
-                    pl.read_csv(self.listitems_value_mapping_path),
-                ],
-                how="diagonal_relaxed",
-            )
+            pl.read_csv(self.listitems_item_mapping_path)
             # .filter(pl.col("equivalence") == "EQUAL")
             .select("sourceCode", "conceptName")
             .cast({"sourceCode": int}, strict=False)
@@ -1584,45 +1556,99 @@ class UMCdbExtractor(UMCdbPaths):
             .lazy()
         )
 
-    # Extract the information from the drugitems_XXX.usagi.csv files
-    def _extract_drug_references(self, return_ids: bool = False) -> dict:
+    def _extract_listvalue_references(self) -> pl.LazyFrame:
         """
-        Extract and process drug references from CSV mapping files.
+        Extract and process list value references from CSV mapping file.
 
         Steps:
-            1. Reads CSV files for drug administration routes, drug items, and drug classes.
-            2. Concatenates the resulting dataframes.
-            3. Selects and drops nulls from "ADD_INFO:source_concept" and "conceptName".
-            4. Returns a dictionary mapping source names to concept names.
+            1. Reads two CSV files containing list items mappings.
+            2. Concatenates the dataframes using a relaxed diagonal join.
+            3. Selects and casts "sourceCode" to int and maps it to "item".
+            4. Applies replacement mappings to standardize the concept names.
+            5. Drops null values and duplicates.
 
         Returns:
-            dict: A mapping where:
-                - Keys: Source names (as strings).
-                - Values: Standardized concept names (as strings).
+            pl.LazyFrame: A LazyFrame containing:
+                - "itemvalueid": Listvalue item identifier.
+                - "itemvalue": Standardized listvalue item name.
         """
 
-        value_col = "conceptName" if not return_ids else "conceptId"
-        references = (
-            pl.concat(
-                [
-                    pl.read_csv(self.drug_administration_route_mapping_path),
-                    pl.read_csv(self.drugitems_item_mapping_path),
-                    pl.read_csv(self.drug_class_mapping_path),
-                ],
-                how="diagonal_relaxed",
-            )
+        return (
+            pl.read_csv(self.listitems_value_mapping_path)
             # .filter(pl.col("equivalence") == "EQUAL")
-            .select("ADD_INFO:source_concept", value_col)
-            .drop_nulls("ADD_INFO:source_concept")
+            .select("sourceCode", "conceptName")
+            .cast({"sourceCode": str}, strict=False)
+            .filter(pl.col("conceptName").ne("Unmapped"))
+            .drop_nulls("sourceCode")
             .unique()
+            .rename({"sourceCode": "itemvalueid", "conceptName": "itemvalue"})
+            .lazy()
         )
 
-        return dict(
-            zip(
-                references["ADD_INFO:source_concept"].to_numpy(),
-                references[value_col].to_numpy(),
+    # Extract the information from the drugitems_XXX.usagi.csv files
+    def _extract_drug_references(self) -> pl.DataFrame:
+        """
+        Extract the OMOP concept and the ingredient of each drug name.
+
+        Steps:
+            1. Read the drug item mapping and remove route of administration rows
+               (MAPS_TO_TYPE).
+            2. Rank the rows of a drug name (one per drugitem order category, e.g.
+               injection vs tablet): mapped RxNorm concept, other mapped concept,
+               unmapped; then the most used itemid-ordercategory, then the lowest
+               concept id.
+            3. Keep the rows of the best itemid-ordercategory. Their ingredient is
+               the ingredients of all their concepts named as one drug (e.g.
+               "amphotericin B / colistin / tobramycin").
+
+        Returns:
+            pl.DataFrame: One row per drug name with the columns {drug_name_col},
+                {drug_ingredient_col} and {drug_name_OMOP_col}.
+        """
+        drug = "ADD_INFO:source_concept"
+        usage = (
+            pl.scan_parquet(self.drugitems_path)
+            .group_by(
+                pl.concat_str("itemid", pl.lit("-"), "ordercategoryid").alias(
+                    "sourceCode"
+                )
             )
+            .agg(pl.len().alias("usage_count"))
         )
+        best_rows = (
+            pl.scan_csv(self.drugitems_item_mapping_path)
+            # Remove route of administration rows (MAPS_TO_TYPE)
+            .filter(pl.col("mappingType").ne_missing("MAPS_TO_TYPE"))
+            .drop_nulls(drug)
+            .join(
+                self.omop.CONCEPT.select(
+                    pl.col("concept_id").alias("conceptId"), "vocabulary_id"
+                ),
+                on="conceptId",
+                how="left",
+            )
+            .join(usage, on="sourceCode", how="left")
+            .sort(
+                pl.col("conceptName") == "Unmapped",
+                pl.col("vocabulary_id").ne_missing("RxNorm"),
+                pl.col("usage_count").fill_null(0),
+                "conceptId",
+                "sourceCode",
+                descending=[False, False, True, False, False],
+            )
+            # Keep the rows of the best itemid-ordercategory per drug name
+            .filter(
+                pl.col("sourceCode") == pl.col("sourceCode").first().over(drug)
+            )
+            .collect()
+        )
+
+        return self.omop.get_drug_references(
+            best_rows,
+            [drug],
+            self.drug_ingredient_col,
+            self.drug_name_OMOP_col,
+        ).rename({drug: self.drug_name_col})
 
     # Extract the information from the processitems_item.usagi.csv
     # and procedureorderitems_item.usagi.csv files

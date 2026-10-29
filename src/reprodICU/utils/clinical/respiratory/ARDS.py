@@ -36,9 +36,19 @@ from typing import Literal, Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    SECONDS_IN_1D,
+    SECONDS_IN_4H,
+    STAY_KEY,
+    TIME_KEY,
+    Reference,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
+    _validate_required_data,
     get_diagnoses,
     get_notes,
     get_patient_information,
@@ -47,24 +57,18 @@ from ...common import (
     get_timeseries_vitals,
     get_ventilation,
 )
-from .PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_6H = 6 * SECONDS_IN_1H
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
+from ...core import RESPIRATORY_PARAMS
+from ...laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO, SpO2_FiO2_RATIO
 
 
 # region IMAGING_CRITERION
+@with_reference_time
 def IMAGING_CRITERION(
     patient_information: Optional[pl.LazyFrame] = None,
     notes: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     definition_source: Literal["Qian", "Neto", "Pensier", "any"] = "Qian",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Detect bilateral infiltrates in chest imaging reports.
@@ -75,11 +79,6 @@ def IMAGING_CRITERION(
             Patient/stay-level information. Loaded automatically if None.
         notes : pl.LazyFrame, optional
             Clinical notes data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         definition_source : str, optional
             Choice of definition for detecting bilateral infiltrates in chest
             imaging reports. Can be 'Qian', 'Neto', 'Pensier', or 'any'.
@@ -104,20 +103,11 @@ def IMAGING_CRITERION(
         "patient_information": patient_information,
         "notes": notes,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute IMAGING_CRITERION: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("IMAGING_CRITERION", required)
 
     notes = _to_lazy(notes)
 
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # Neto et al. 2018
     NETO_PATTERN = (
@@ -148,20 +138,26 @@ def IMAGING_CRITERION(
         & pl.col("Note Text (fixed)").str.contains("bilateral")
     )  # fmt: skip
 
+    # each definition reads the notes its authors selected
+    NETO_NOTES    = pl.col("Note Description").str.to_lowercase().str.contains("chest")  # `description ilike '%chest%'``
+    QIAN_NOTES    = pl.col("Note Text").str.contains("CHEST")  # `text LIKE '%CHEST%'`` is case-sensitive
+    PENSIER_NOTES = pl.col("Note Text").str.to_lowercase().str.contains("chest")
+
     if definition_source == "Neto":
-        imaging_expr = NETO_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (NETO_NOTES & NETO_PATTERN).alias("Bilateral Infiltrates")
     elif definition_source == "Qian":
-        imaging_expr = QIAN_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (QIAN_NOTES & QIAN_PATTERN).alias("Bilateral Infiltrates")
     elif definition_source == "Pensier":
-        imaging_expr = PENSIER_PATTERN.alias("Bilateral Infiltrates")
+        imaging_expr = (PENSIER_NOTES & PENSIER_PATTERN).alias("Bilateral Infiltrates")
     else:
-        imaging_expr = (NETO_PATTERN | QIAN_PATTERN | PENSIER_PATTERN).alias("Bilateral Infiltrates")  # fmt: skip
+        imaging_expr = (
+            (NETO_NOTES & NETO_PATTERN) 
+            | (QIAN_NOTES & QIAN_PATTERN) 
+            | (PENSIER_NOTES & PENSIER_PATTERN)
+        ).alias("Bilateral Infiltrates")
 
     BILATERAL_INFILTRATES = (
-        notes.filter(
-            pl.col("Note Category") == "Radiology",
-            pl.col("Note Text").str.to_lowercase().str.contains("chest"),
-        )
+        notes.filter(pl.col("Note Category") == "Radiology")
         .with_columns(
             pl.col("Note Text")
             .str.replace_all(r"\n", " ")
@@ -178,37 +174,30 @@ def IMAGING_CRITERION(
         ) # fmt: skip
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        BILATERAL_INFILTRATES = (
-            BILATERAL_INFILTRATES.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    BILATERAL_INFILTRATES = _relative_to_t0(BILATERAL_INFILTRATES, all_stays_t0, ref)
 
     return BILATERAL_INFILTRATES
 
 
 # region RESPIRATORY_CRITERION
+@with_reference_time
 def RESPIRATORY_CRITERION(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
-    vent: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     pf_ratio_only: bool = False,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Identify periods meeting respiratory criteria:
     - P/F ratio <= 300 or S/F ratio <= 315
       AND
     - PEEP >= 5 cm H2O
+    Both gates must have been met within 4 hours of each other; the first time
+    both are open is reported (P/F, S/F and PEEP are the paired qualifying values).
 
     Arguments
     ---------
@@ -220,13 +209,8 @@ def RESPIRATORY_CRITERION(
             Laboratory timeseries data. Loaded automatically if None.
         timeseries_resp : pl.LazyFrame, optional
             Respiratory timeseries data. Loaded automatically if None.
-        vent : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Ventilation timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional
             If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False.
 
@@ -252,8 +236,8 @@ def RESPIRATORY_CRITERION(
         timeseries_labs = get_timeseries_labs()
     if timeseries_resp is None:
         timeseries_resp = get_timeseries_respiratory()
-    if vent is None:
-        vent = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
@@ -261,36 +245,20 @@ def RESPIRATORY_CRITERION(
         "timeseries_vitals": timeseries_vitals,
         "timeseries_labs": timeseries_labs,
         "timeseries_resp": timeseries_resp,
-        "vent": vent,
+        "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ARDS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("RESPIRATORY_CRITERION", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_vitals = _to_lazy(timeseries_vitals)
     timeseries_labs = _to_lazy(timeseries_labs)
     timeseries_resp = _to_lazy(timeseries_resp)
-    vent = _to_lazy(vent)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    ventilation = _to_lazy(ventilation)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # region ventilator parameters
     # --------------------------------------------------------------------------
-    PEEP = timeseries_resp.select(
-        STAY_KEY,
-        TIME_KEY,
-        pl.max_horizontal(
-            "Positive end expiratory pressure setting Ventilator",
-            "PEEP Respiratory system",
-        ).alias("PEEP"),
-    )
+    PEEP = RESPIRATORY_PARAMS(timeseries_resp=timeseries_resp).select(STAY_KEY, TIME_KEY, "PEEP")
 
     # region O2 ratios
     # --------------------------------------------------------------------------
@@ -301,7 +269,6 @@ def RESPIRATORY_CRITERION(
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
             t_0=None,
-            tolerance=SECONDS_IN_6H,
             fio2_type=fio2_type,
         )
         sf = SpO2_FiO2_RATIO(
@@ -309,7 +276,6 @@ def RESPIRATORY_CRITERION(
             timeseries_resp=timeseries_resp,
             timeseries_vitals=timeseries_vitals,
             t_0=None,
-            tolerance=SECONDS_IN_6H,
             fio2_type=fio2_type,
         )
 
@@ -321,7 +287,7 @@ def RESPIRATORY_CRITERION(
     # region ventilation
     # --------------------------------------------------------------------------
     VENTILATION = (
-        vent.rename(
+        ventilation.rename(
             {
                 "Ventilation Start Relative to Admission (seconds)": "Ventilation Start",
                 "Ventilation End Relative to Admission (seconds)": "Ventilation End",
@@ -373,7 +339,7 @@ def RESPIRATORY_CRITERION(
         .select(*NONINVASIVE_O2_RATIOS.collect_schema().names())
     )
 
-    CRITERION = (
+    O2_GATE = (
         pl.concat(
             [
                 INVASIVE_VENT_O2_RATIOS,
@@ -388,33 +354,56 @@ def RESPIRATORY_CRITERION(
             pl.col("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").min(),
             pl.exclude("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").max(),
         )
-        .join(PEEP, on=[STAY_KEY, TIME_KEY], how="left")
         .filter(
             (pl.col("PaO2/FiO2 Ratio") <= 300)
             | (
                 pl.col("SpO2/FiO2 Ratio") <= 315
                 if not pf_ratio_only
-                else pl.lit(True)
-            ),
-            pl.col("PEEP") >= 5,
+                else pl.lit(False)
+            )
         )
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        CRITERION = (
-            CRITERION.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
+    PEEP_GATE = (
+        PEEP.filter(pl.col("PEEP") >= 5)
+        .group_by(STAY_KEY, TIME_KEY)
+        .agg(pl.col("PEEP").max())
+    )
+
+    # Onset = first time both gates were met within 4 h (the later gate's time)
+    CRITERION = (
+        pl.concat(
+            [O2_GATE.select(STAY_KEY, TIME_KEY), PEEP_GATE.select(STAY_KEY, TIME_KEY)]
         )
+        .unique()
+        .sort(TIME_KEY)
+        .join_asof(
+            O2_GATE.sort(TIME_KEY),
+            on=TIME_KEY,
+            by=STAY_KEY,
+            tolerance=SECONDS_IN_4H,
+        )
+        .join_asof(
+            PEEP_GATE.sort(TIME_KEY),
+            on=TIME_KEY,
+            by=STAY_KEY,
+            tolerance=SECONDS_IN_4H,
+        )
+        .filter(
+            pl.col("PEEP").is_not_null(),
+            pl.coalesce("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio").is_not_null(),
+            pl.col("Ventilation End").is_null()
+            | (pl.col(TIME_KEY) <= pl.col("Ventilation End")),
+        )
+    )
+
+    CRITERION = _relative_to_t0(CRITERION, all_stays_t0, ref)
 
     return CRITERION
 
 
 # region ARDS
+@with_reference_time
 def ARDS(
     patient_information: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
@@ -422,12 +411,11 @@ def ARDS(
     timeseries_labs: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     notes: Optional[pl.LazyFrame] = None,
-    vent: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
     pf_ratio_only: bool = False,
     definition_source: Literal["Qian", "Neto", "Pensier", "any"] = "Qian",
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Identify ARDS cases using the New Global Definition of ARDS.
@@ -450,13 +438,8 @@ def ARDS(
             Respiratory timeseries data. Loaded automatically if None.
         notes : pl.LazyFrame, optional
             Clinical notes data. Loaded automatically if None.
-        vent : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Ventilation timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
         pf_ratio_only : bool, optional
             If True, only apply P/F ratio criterion (ignore S/F ratio). Defaults to False
         definition_source : str, optional
@@ -473,6 +456,7 @@ def ARDS(
             - Ventilation Start
             - Ventilation End
             - Ventilation Type
+            - PaO2/FiO2 Ratio, SpO2/FiO2 Ratio, PEEP (values at ARDS onset)
     """
 
     # region load datasets
@@ -490,8 +474,8 @@ def ARDS(
         timeseries_resp = get_timeseries_respiratory()
     if notes is None:
         notes = get_notes()
-    if vent is None:
-        vent = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
@@ -501,15 +485,9 @@ def ARDS(
         "timeseries_labs": timeseries_labs,
         "timeseries_resp": timeseries_resp,
         "notes": notes,
-        "vent": vent,
+        "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute ARDS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("ARDS", required)
 
     patient_information = _to_lazy(patient_information)
     diagnoses = _to_lazy(diagnoses)
@@ -517,11 +495,9 @@ def ARDS(
     timeseries_labs = _to_lazy(timeseries_labs)
     timeseries_resp = _to_lazy(timeseries_resp)
     notes = _to_lazy(notes)
-    vent = _to_lazy(vent)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
+    ventilation = _to_lazy(ventilation)
     all_stays = patient_information.select(STAY_KEY).unique()
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # region ICD / APACHE
     # --------------------------------------------------------------------------
@@ -577,8 +553,8 @@ def ARDS(
     BILATERAL_INFILTRATES = IMAGING_CRITERION(
         patient_information=patient_information,
         notes=notes,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
+        t_0=ref.t_0,
+        t_0_per_stay=ref.t_0_per_stay,
         definition_source=definition_source,
     )
 
@@ -587,19 +563,23 @@ def ARDS(
         timeseries_vitals=timeseries_vitals,
         timeseries_labs=timeseries_labs,
         timeseries_resp=timeseries_resp,
-        vent=vent,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
+        ventilation=ventilation,
+        t_0=ref.t_0,
+        t_0_per_stay=ref.t_0_per_stay,
         pf_ratio_only=pf_ratio_only,
     )
 
     # region ARDS cohort
     # --------------------------------------------------------------------------
     ARDS_COHORT = (
-        RESPIRATORY_DATA.join_asof(
-            BILATERAL_INFILTRATES,
-            left_on=TIME_KEY,
-            right_on=TIME_KEY,
+        # join_asof needs both sides sorted by the keys
+        RESPIRATORY_DATA.sort(STAY_KEY, TIME_KEY)
+        .join_asof(
+            # both carry the time relative to T_0
+            BILATERAL_INFILTRATES
+            .drop("Time Relative to T_0 (seconds)", strict=False)
+            .sort(STAY_KEY, TIME_KEY),
+            on=TIME_KEY,
             by=STAY_KEY,
             strategy="nearest",
             tolerance=SECONDS_IN_1D,
@@ -623,10 +603,14 @@ def ARDS(
                 "Ventilation End",
                 "Ventilation Type",
             ).min(),
+            # qualifying values at onset
+            pl.col("PaO2/FiO2 Ratio", "SpO2/FiO2 Ratio", "PEEP")
+            .filter(pl.col(TIME_KEY) == pl.min(TIME_KEY))
+            .min(),
         )
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
+    if (ref.t_0 != 0) or (ref.t_0_per_stay is not None):
         ARDS_COHORT = ARDS_COHORT.join(
             all_stays_t0, on=STAY_KEY, how="inner"
         ).select(

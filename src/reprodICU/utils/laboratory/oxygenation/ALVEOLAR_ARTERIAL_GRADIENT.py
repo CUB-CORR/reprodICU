@@ -2,15 +2,24 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    SECONDS_IN_4H,
+    STAY_KEY,
+    TIME_KEY,
+    Reference,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
+    _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_labs,
     get_timeseries_respiratory,
 )
-
-SECONDS_IN_4H = 4 * 60 * 60
+from ...core import RESPIRATORY_PARAMS
 
 ATMOSPHERIC_PRESSURE_MMHG = 760  # mmHg
 WATER_VAPOR_PRESSURE_MMHG = 47  # mmHg
@@ -23,21 +32,11 @@ Aa_gradient_col = "Alveolar-arterial oxygen Partial pressure difference"
 # region helpers
 def _improve_resp(resp: pl.LazyFrame) -> pl.LazyFrame:
     return (
-        resp.with_columns(
-            pl.max_horizontal(
-                "Oxygen/Total gas setting [Volume Fraction] Ventilator",
-                "Oxygen/Gas total [Pure volume fraction] Inhaled gas",
-            ).alias("FiO2")
-        )
+        RESPIRATORY_PARAMS(timeseries_resp=resp)
         .select(
             "Global ICU Stay ID",
             "Time Relative to Admission (seconds)",
-            pl.when(pl.col("FiO2").is_between(0, 1))
-            .then(pl.col("FiO2") * 100)
-            .when(pl.col("FiO2").is_between(1, 100))
-            .then(pl.col("FiO2"))
-            .otherwise(None)
-            .alias("FiO2"),
+            "FiO2",
         )
         .drop_nulls("FiO2")
     )
@@ -47,35 +46,23 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
     return labs.select(
         "Global ICU Stay ID",
         "Time Relative to Admission (seconds)",
-        pl.when(
-            pl.col("Oxygen")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood"])
-            | pl.col("Oxygen").struct.field("system").is_null()
-        )
-        .then(pl.col("Oxygen").struct.field("value"))
-        .otherwise(None)
-        .alias("Oxygen in Arterial blood"),
-        pl.when(
-            pl.col("Carbon dioxide")
-            .struct.field("system")
-            .is_in(["Blood arterial", "Blood"])
-            | pl.col("Carbon dioxide").struct.field("system").is_null()
-        )
-        .then(pl.col("Carbon dioxide").struct.field("value"))
-        .otherwise(None)
-        .alias("Carbon dioxide in Arterial blood"),
+        extract_struct_value(
+            "Oxygen", ["Blood arterial", "Blood"], exact_match=True
+        ).alias("Oxygen in Arterial blood"),
+        extract_struct_value(
+            "Carbon dioxide", ["Blood arterial", "Blood"], exact_match=True
+        ).alias("Carbon dioxide in Arterial blood"),
     )
 
 
 # region PAO2
+@with_reference_time
 def PAO2(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate PAO2 from respiratory and laboratory timeseries.
@@ -90,11 +77,6 @@ def PAO2(
             Respiratory timeseries data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -118,33 +100,22 @@ def PAO2(
         "timeseries_resp": timeseries_resp,
         "timeseries_labs": timeseries_labs,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute PAO2: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
-
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
+    _validate_required_data("PAO2", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_resp = _to_lazy(timeseries_resp)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_resp = _improve_resp(timeseries_resp)
     timeseries_labs = _improve_labs(timeseries_labs)
 
     PAO2 = (
-        timeseries_labs
+        timeseries_labs.sort(STAY_KEY, TIME_KEY)
+        # join_asof needs both sides sorted by the keys
         # FiO2 occurred at most 4 hours before this blood gas
         .join_asof(
-            timeseries_resp,
+            timeseries_resp.sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
@@ -163,16 +134,7 @@ def PAO2(
         .select(STAY_KEY, TIME_KEY, PAO2_col)
     ) # fmt: skip
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        PAO2 = (
-            PAO2.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    PAO2 = _relative_to_t0(PAO2, all_stays_t0, ref)
 
     return PAO2
 
@@ -181,13 +143,13 @@ def PAO2(
 
 
 # region Aa_GRADIENT
+@with_reference_time
 def Aa_GRADIENT(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_resp: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate the alveolar-arterial oxygen gradient (A-a gradient).
@@ -203,11 +165,6 @@ def Aa_GRADIENT(
             Respiratory timeseries data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -225,23 +182,25 @@ def Aa_GRADIENT(
     if timeseries_labs is None:
         timeseries_labs = get_timeseries_labs()
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_labs": timeseries_labs,
+    }
+    _validate_required_data("Aa_GRADIENT", required)
 
     patient_information = _to_lazy(patient_information)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     # Get PAO2
     PAO2_df = PAO2(
         patient_information=patient_information,
         timeseries_resp=timeseries_resp,
         timeseries_labs=timeseries_labs,
-        t_0=t_0,
-        t_0_per_stay=t_0_per_stay,
+        t_0=ref.t_0,
+        t_0_per_stay=ref.t_0_per_stay,
     )
 
     timeseries_labs = _improve_labs(timeseries_labs)
@@ -265,16 +224,7 @@ def Aa_GRADIENT(
         .select(STAY_KEY, TIME_KEY, Aa_gradient_col)
     )
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        Aa_gradient = (
-            Aa_gradient.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    Aa_gradient = _relative_to_t0(Aa_gradient, all_stays_t0, ref)
 
     return Aa_gradient
 
@@ -282,4 +232,4 @@ def Aa_GRADIENT(
 # endregion Aa_GRADIENT
 
 
-___all__ = ["PAO2", "Aa_GRADIENT"]
+__all__ = ["PAO2", "Aa_GRADIENT"]

@@ -1,15 +1,21 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-07
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
 
+
+import os
 
 import polars as pl
 
 from ..helper import GlobalHelpers
 from ..helper_filepaths import SICdbPaths
 from ..helper_OMOP import Vocabulary
+
+# Fluids that d_references gives in "drops" but SICdb counts in ml (its hourly
+# fluid DataID 2200 sums them): Tee/Suppe/Joghurt
+FLUIDS_IN_ML_LABELLED_DROPS = [2052]
 
 
 class SICdbExtractor(SICdbPaths):
@@ -86,10 +92,8 @@ class SICdbExtractor(SICdbPaths):
                     "HeightOnAdmission": self.height_col,
                     "WeightOnAdmission": self.weight_col,
                     "ICD10Main": self.admission_diagnosis_col,
-                    "EstimatedSurvivalObservationTime": (
-                        self.mortality_after_cutoff_col
-                    ),
-                }
+                    "EstimatedSurvivalObservationTime": self.mortality_after_cutoff_col,
+                } # fmt: skip
             )
             .with_columns(
                 # Convert weight to kg from g
@@ -126,13 +130,9 @@ class SICdbExtractor(SICdbPaths):
                 pl.coalesce(
                     pl.when(pl.col("SurgicalAdmissionType") == 3124)  # Unknown
                     .then(None)
-                    .when(
-                        pl.col("SurgicalAdmissionType") == 3125
-                    )  # Urgent surgery
+                    .when(pl.col("SurgicalAdmissionType") == 3125)  # Urgent surgery
                     .then(pl.lit("Surgical"))
-                    .when(
-                        pl.col("SurgicalAdmissionType") == 3126
-                    )  # Elective surgery
+                    .when(pl.col("SurgicalAdmissionType") == 3126)  # Elective surgery
                     .then(pl.lit("Surgical"))
                     .when(pl.col("SurgicalAdmissionType") == 3127)  # No surgery
                     .then(pl.lit("Medical"))
@@ -142,7 +142,7 @@ class SICdbExtractor(SICdbPaths):
                     .replace_strict(self._extract_references("ReferringUnit"))
                     .replace_strict(self.ADMISSION_TYPES_MAP, default=None)
                     .cast(self.admission_types_dtype),
-                ).alias(self.admission_type_col),
+                ).alias(self.admission_type_col), # fmt: skip
                 # Convert admission urgency to established dtype
                 pl.when(pl.col("AdmissionUrgency") == 3136)  # Unknown
                 .then(pl.lit("Unknown"))
@@ -178,34 +178,36 @@ class SICdbExtractor(SICdbPaths):
                 .cast(self.discharge_locations_dtype)
                 .alias(self.discharge_loc_col),
                 # Convert mortality to established dtype
-                pl.when(pl.col("DischargeState") == 2202)  # "lebend"
-                .then(False)
-                .when(pl.col("DischargeState") == 2215)  # "verstorben"
+                # a death within the ICU stay counts even if the discharge state says otherwise
+                pl.when(
+                    (pl.col("DischargeState") == 2215)  # "verstorben"
+                    | (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                )
                 .then(True)
+                .when(pl.col("DischargeState") == 2202)  # "lebend"
+                .then(False)
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 2026)  # "Survived"
+                pl.when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
                 .then(False)
-                .when(pl.col("HospitalDischargeType") == 2028)  # "Deceased"
+                .when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
                 .then(True)
-                .otherwise(None)  # "Unknown" -> set to None
+                .otherwise(None)  # transfer, left against advice, unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
-                pl.duration(
-                    seconds=pl.col("OffsetOfDeath") - pl.col("ICUOffset")
-                )
+                pl.duration(seconds=pl.col("OffsetOfDeath") - pl.col("TimeOfStay"))
                 .truediv(pl.duration(days=1))
-                .alias(self.mortality_after_col),
+                .alias(self.mortality_after_col), # fmt: skip
                 # Get mortality after discharge cutoff
                 (
-                    pl.when(self.mortality_after_cutoff_col == 3076)  # 6 Months
+                    pl.when(pl.col(self.mortality_after_cutoff_col) == 3076)  # 6 Months
                     .then(pl.duration(days=180))
-                    .when(self.mortality_after_cutoff_col == 3077)  # 1 Year
+                    .when(pl.col(self.mortality_after_cutoff_col) == 3077)  # 1 Year
                     .then(pl.duration(days=365))
                     .otherwise(pl.duration(days=365))  # Default to 1 year
-                    - pl.duration(seconds=pl.col("TimeOfStay"))
+                    - pl.duration(seconds=pl.col("TimeOfStay") - pl.col("ICUOffset"))
                 )
                 .truediv(pl.duration(days=1))
                 .cast(int)
@@ -217,7 +219,7 @@ class SICdbExtractor(SICdbPaths):
                 # Create empty HospitalStayID column
                 pl.lit(None).alias(self.hospital_stay_id_col),
                 # Convert admission diagnosis to APACHE group
-                pl.col(self.admission_diagnosis_col).replace(
+                pl.col(self.admission_diagnosis_col).replace_strict(
                     diagnosis_mapping_dict, default=None
                 ),
             )
@@ -451,17 +453,19 @@ class SICdbExtractor(SICdbPaths):
         Steps:
             1. Read medication data from CSV.
             2. Align data with ICU admission time.
-            3. Map drug IDs to standardized medication names and units.
-            4. Compute and filter infusion rates for continuous medications.
-            5. Map medications to active ingredients.
-            6. Filter for valid medication entries within ICU stay window.
+            3. Add the fluids and foods given in ml, carriers linked to drugs.
+            4. Map drug IDs to standardized medication names and units.
+            5. Compute and filter infusion rates for continuous medications.
+            6. Map medications to active ingredients.
+            7. Filter for valid medication entries within ICU stay window.
 
         Returns:
             pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {drug_mixture_admin_id_col}: Medication event identifier.
                 - {drug_name_col}: Medication name.
-                - {drug_ingredient_col}: Active drug ingredient.
+                - {drug_ingredient_col}: Active drug ingredient (or combination).
+                - {drug_name_OMOP_col}: OMOP-mapped medication name.
                 - {drug_amount_col}: Drug amount.
                 - {drug_amount_unit_col}: Amount unit.
                 - {drug_rate_col}: Administration rate.
@@ -470,12 +474,27 @@ class SICdbExtractor(SICdbPaths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_admin_type_col}: Administration type.
                 - {drug_continuous_col}: Continuous administration flag.
+                - {drug_admin_route_col}: Route of the volumes.
+                - {fluid_name_col}: Fluid name of a volume.
+                - {fluid_group_col}: Fluid group of a volume.
+                - {drug_class_col}: Class of a volume without a drug.
+                - {fluid_amount_col}: Volume in ml.
         """
+
+        medications_path = self.precalc_path + "SICdb_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("SICdb   - Extracting medications...")
 
         offsets = self._get_offsets()
+        fluid_classes = self.helpers.load_many_to_one_mapping(
+            self.mapping_path + "MEDICATIONS_FLUIDS_CLASSES.yaml"
+        )
 
-        return (
+        medications = (
             pl.scan_csv(self.medication_path)
             .select(
                 "id",
@@ -487,6 +506,7 @@ class SICdbExtractor(SICdbPaths):
                 "Amount",
                 "AmountPerMinute",
             )
+            .pipe(self._add_volumes)
             .rename(
                 {
                     "id": self.drug_mixture_admin_id_col,
@@ -510,8 +530,33 @@ class SICdbExtractor(SICdbPaths):
                 .alias(self.drug_name_col),
                 # Add a column to indicate the administration type
                 pl.lit("given").alias(self.drug_admin_type_col),
+                # Volumes are given intravenously unless their name says otherwise
+                pl.col("DrugID")
+                .replace_strict(
+                    self.helpers.load_mapping(self.fluid_route_mapping_path),
+                    default=None,
+                    return_dtype=pl.String,
+                )
+                .fill_null(
+                    pl.when(pl.col(self.fluid_amount_col).is_not_null()).then(
+                        pl.lit("intravenous")
+                    )
+                )
+                .alias(self.drug_admin_route_col),
             )
             .with_columns(
+                # Map the fluids to fluid groups, and the volumes without a
+                # drug to their class
+                pl.col(self.fluid_name_col)
+                .replace_strict(self.SOLUTION_FLUIDS_MAP, default=None)
+                .alias(self.fluid_group_col),
+                pl.when(pl.col(self.drug_name_col).is_null())
+                .then(
+                    pl.col(self.fluid_name_col).replace_strict(
+                        fluid_classes, default=None
+                    )
+                )
+                .alias(self.drug_class_col),
                 # Get drug units
                 pl.col(self.drug_name_col)
                 .replace_strict(self._extract_drug_units(), default=None)
@@ -560,10 +605,16 @@ class SICdbExtractor(SICdbPaths):
             )
             # Remove duplicate rows
             .unique()
-            # Remove rows with empty medication names
-            .filter(pl.col(self.drug_name_col).is_not_null())
+            # Remove rows with empty medication names (volumes have a fluid name)
+            .filter(
+                pl.col(self.drug_name_col).is_not_null()
+                | pl.col(self.fluid_name_col).is_not_null()
+            )
             # Remove rows with empty medication results
-            .filter(pl.col(self.drug_amount_col).is_not_null())
+            .filter(
+                pl.col(self.drug_amount_col).is_not_null()
+                | pl.col(self.fluid_amount_col).is_not_null()
+            )
             # Drop columns
             .drop(
                 "CaseOffset",
@@ -571,6 +622,95 @@ class SICdbExtractor(SICdbPaths):
                 "Offset",
                 "OffsetDrugEnd",
             )
+        )
+
+        medications.sink_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
+
+    def _add_volumes(self, raw: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Add the fluids and foods given in ml to the medication rows.
+
+        Fluids and foods are DrugIDs without a "Drug" reference. A carrier
+        (e.g. "NaCl 0,9% Perfusor") is a fluid that is the diluent of a drug.
+        It is linked to a drug when exactly one drug at its time usually gets
+        a carrier. Both are listed in the carrier mapping. Every other volume
+        is a row of its own.
+
+        Steps:
+            1. Read the carriers and the drugs that usually get one.
+            2. Split the volumes (fluids and foods in ml) from the drugs.
+            3. Link each carrier to the one usual drug at its time.
+            4. Add the carriers to their drugs and the other volumes as rows.
+
+        Args:
+            raw (pl.LazyFrame): Medication table with the columns id, CaseID,
+                DrugID, Offset, OffsetDrugEnd, IsSingleDose, Amount and
+                AmountPerMinute.
+
+        Returns:
+            pl.LazyFrame: The rows of the drugs with the columns of raw and
+                the rows of the volumes without Amount and AmountPerMinute.
+                Contains also:
+                - {fluid_name_col}: Fluid name (of the largest carrier).
+                - {fluid_amount_col}: Volume in ml (summed for a drug).
+        """
+        key = ["CaseID", "Offset", "OffsetDrugEnd"]
+
+        # Collect the table once, since it is used several times
+        raw = raw.collect().lazy()
+
+        # Get the carriers and the drugs that usually get one
+        fluid_carriers = self._extract_fluid_carriers()
+        carriers = fluid_carriers.filter(pl.col("role") == "carrier")["drugid"]
+        usual = fluid_carriers.filter(pl.col("role") == "usual")["drugid"]
+
+        # Split the volumes (fluids and foods in ml) from the drugs
+        fluid_names = self._extract_fluid_references()
+        is_volume = pl.col("DrugID").is_in(list(fluid_names))
+        drugs = raw.filter(~is_volume)
+        volumes = raw.filter(is_volume, pl.col("Amount") > 0).select(
+            pl.exclude("Amount", "AmountPerMinute"),
+            pl.col("Amount").alias(self.fluid_amount_col),
+            pl.col("DrugID")
+            .replace_strict(fluid_names)
+            .alias(self.fluid_name_col),
+        )
+
+        # Link a carrier to the one usual drug at its time. With none or
+        # several of them it may belong to any drug and stays a row of its own
+        one_usual = (
+            drugs.filter(pl.col("DrugID").is_in(usual.to_list()))
+            .group_by(key)
+            .agg(
+                pl.len().alias("count"),
+                pl.col("id").first().alias("drug_id"),
+            )
+            .filter(pl.col("count") == 1)
+        )
+        linked = (
+            volumes.filter(pl.col("DrugID").is_in(carriers.to_list()))
+            .join(one_usual, on=key)
+            .sort(self.fluid_amount_col)
+        )
+
+        return pl.concat(
+            [
+                # Add the linked carriers to their drugs
+                drugs.join(
+                    linked.group_by("drug_id").agg(
+                        pl.col(self.fluid_amount_col).sum(),
+                        pl.col(self.fluid_name_col).last(),
+                    ),
+                    left_on="id",
+                    right_on="drug_id",
+                    how="left",
+                ),
+                # Add the other volumes as rows of their own
+                volumes.join(linked.select("id"), on="id", how="anti"),
+            ],
+            how="diagonal_relaxed",
         )
 
     # endregion
@@ -612,7 +752,7 @@ class SICdbExtractor(SICdbPaths):
             )
             .with_columns(
                 # Remove dot from ICD code
-                pl.col(self.diagnosis_icd_code_col).str.replace("\.", ""),
+                pl.col(self.diagnosis_icd_code_col).str.replace(r"\.", ""),
                 # Diagnoses are admission diagnoses
                 pl.lit(0).alias(self.diagnosis_start_col),
                 pl.lit(1).alias(self.diagnosis_priority_col),
@@ -653,17 +793,24 @@ class SICdbExtractor(SICdbPaths):
                 {
                     "PatientID": self.person_id_col,
                     "CaseID": self.icu_stay_id_col,
-                    "Offset": self.procedure_start_col,
-                    "OffsetEnd": self.procedure_end_col,
                 }
             )
+            .join(self._get_offsets(), on=self.icu_stay_id_col)
             .with_columns(
+                # Fix time offsets
+                (pl.col("Offset") - pl.col("CaseOffset")).alias(
+                    self.procedure_start_col
+                ),
+                (pl.col("OffsetEnd") - pl.col("CaseOffset")).alias(
+                    self.procedure_end_col
+                ),
                 pl.col("DataID")
-                .replace(
+                .replace_strict(
                     self.load_mapping(self.device_mapping_path), default=None
                 )
                 .alias(self.procedure_description_col),
             )
+            .drop("Offset", "OffsetEnd", "CaseOffset", "TimeOfStay")
         )
 
     # region mappers
@@ -705,15 +852,31 @@ class SICdbExtractor(SICdbPaths):
             .filter(pl.col("ReferenceName") == "Laboratory")
             .select("ReferenceGlobalID", "LOINC_long")
             .drop_nulls("LOINC_long")
+            # NOTE: fixing wrong unit / label mappings in the reference table
             .with_columns(
-                pl.col("LOINC_long").replace(
-                    {  # NOTE: fixing wrong unit
-                        "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
-                        "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
-                        "Hematocrit [Volume Fraction] of Arterial blood": "Hematocrit [Volume Fraction] of Blood by Automated count"
-                    }
+                pl.when(pl.col("ReferenceGlobalID") == 227).then(pl.lit("Monocytes/Leukocytes in Blood")) # is relative, not absolute
+                  .when(pl.col("ReferenceGlobalID") == 235).then(pl.lit("Protein S actual/normal in Platelet poor plasma by Chromogenic method")) # Protein S, not Protein C
+                  .when(pl.col("ReferenceGlobalID") == 296).then(pl.lit("Basophils [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 300).then(pl.lit("Eosinophils [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 303).then(pl.lit("Lymphocytes [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 306).then(pl.lit("Monocytes [#/volume] in Blood by Manual count")) # is absolute, not relative
+                  .when(pl.col("ReferenceGlobalID") == 559).then(pl.lit("pH of Urine")) # not Thyrotropin
+                  .when(pl.col("ReferenceGlobalID") == 669).then(pl.lit("Base excess in Extracellular fluid by calculation")) # is "BE ecf (BGA)"
+                  .when(pl.col("ReferenceGlobalID") == 699).then(pl.lit("Oxygen [Partial pressure] in Mixed venous blood")) # see ReferenceDescription
+                  .when(pl.col("ReferenceGlobalID") == 700).then(pl.lit("pH of Mixed venous blood")) # see ReferenceDescription
+                .otherwise(
+                    pl.col("LOINC_long").replace(
+                        {
+                            "Creatinine [Mass/time]": "Creatinine [Mass/volume]",
+                            "Thyroxine (T4) free [Mass/volume]": "Thyroxine (T4) free [Moles/volume]",
+                            "Hematocrit [Volume Fraction] of Arterial blood": "Hematocrit [Volume Fraction] of Blood by Automated count"
+                        }
+                    )
                 )
+                .alias("LOINC_long")
             )
+            # NOTE: filter out IDs with known validity issues in the reference table
+            .filter(pl.col("ReferenceGlobalID") != 686)
             .unique()
             .rename(
                 {
@@ -727,6 +890,9 @@ class SICdbExtractor(SICdbPaths):
                 # -> now without "/100", kept for compatibility and conversion
                 .str.replace("/100 leukocytes", "/Leukocytes")
                 .str.replace("/100 erythrocytes", "/Erythrocytes")
+                # "Anion gap 4" obselete in v20250827
+                # -> now "Anion gap in {system} by Calculated.4Ions"
+                .str.replace("Anion gap 4 in Arterial blood", "Anion gap in Arterial blood by Calculated.4Ions")
             )
         ) # fmt: skip
 
@@ -757,55 +923,104 @@ class SICdbExtractor(SICdbPaths):
         )
 
     # Extract the information from the SICdb.usagi.csv file
-    def _extract_drug_references(self) -> dict:
+    def _extract_drug_references(self) -> pl.DataFrame:
         """
-        Extract and process drug references from CSV mapping files.
-        """
+        Extract the OMOP drug name and the ingredient of each drug ID.
 
-        return (
+        The drug name is the mapped concept if it is a drug (Clinical Drug Form,
+        Clinical Drug ...), else null. A drug ID can have several rows (one per
+        ingredient of a combination product); the ingredients of all rows are
+        named as one combination, e.g. "piperacillin / tazobactam".
+        """
+        rows = (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "SICdb.usagi.csv")
             .filter(pl.col("conceptName") != "Unmapped")
-            .select("sourceCode", "conceptName")
+            .select("sourceCode", "conceptId", "conceptName")
             .drop_nulls("sourceCode")
             .unique()
-            .rename(
-                {
-                    "sourceCode": "DrugID",
-                    "conceptName": self.drug_ingredient_col,
-                }
+        )
+        return self.omop.get_drug_references(
+            rows, ["sourceCode"], self.drug_ingredient_col, self.drug_name_OMOP_col
+        ).rename({"sourceCode": "DrugID"})
+
+    # Extract the fluids and foods in ml from the d_references.csv file
+    def _extract_fluid_references(self) -> dict:
+        """
+        Extract the fluids and foods that are given in ml.
+
+        Fluids and foods have no "Drug" reference. Only those given in ml have
+        a volume (the others are given in drops, units, bags or kcal), except
+        for the fluids in FLUIDS_IN_ML_LABELLED_DROPS.
+
+        Returns:
+            dict: Mapping from ReferenceGlobalID to ReferenceValue.
+        """
+        references = (
+            pl.read_csv(self.d_references_path)
+            .filter(
+                pl.col("ReferenceName").is_in(["Fluid", "Food"]),
+                (pl.col("ReferenceUnit") == "ml")
+                | pl.col("ReferenceGlobalID").is_in(FLUIDS_IN_ML_LABELLED_DROPS),
+            )
+            .select("ReferenceGlobalID", "ReferenceValue")
+        )
+
+        return dict(
+            zip(
+                references["ReferenceGlobalID"].to_list(),
+                references["ReferenceValue"].to_list(),
             )
         )
+
+    # Extract the information from the sicdb_fluid_carriers.csv file
+    def _extract_fluid_carriers(self) -> pl.DataFrame:
+        """
+        Extract the carriers and the drugs that usually get a carrier.
+
+        A carrier is a fluid that is the diluent of a drug, e.g. "NaCl 0,9%
+        Perfusor". The evidence for each entry is in the file.
+
+        Returns:
+            pl.DataFrame: Columns:
+                - drugid: Drug identifier.
+                - role: "carrier" or "usual" (a drug that usually gets one).
+        """
+        return pl.read_csv(
+            self.fluid_carrier_mapping_path, comment_prefix="#"
+        ).select("drugid", "role")
 
     # endregion
 
     # region timehelper
-    def _get_offsets(self) -> float:
+    def _get_offsets(self) -> pl.LazyFrame:
         """
         Compute time offsets for cases.
+
+        All SICdb offsets count from the start of the case, so the time
+        relative to ICU admission is Offset - ICUOffset.
+        OffsetAfterFirstAdmission is the offset of a readmission from the first
+        admission of the patient and is not part of it.
 
         Steps:
             1. Read offset components from cases CSV.
             2. Rename CaseID to standardized name.
-            3. Compute CaseOffset as sum of ICUOffset and OffsetAfterFirstAdmission.
+            3. Compute CaseOffset (ICUOffset) and TimeOfStay relative to it.
 
         Returns:
             pl.LazyFrame: Columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - CaseOffset: Computed offset value.
-                - TimeOfStay: Total ICU stay duration.
+                - CaseOffset: ICU admission offset (seconds).
+                - TimeOfStay: End of the ICU stay relative to ICU admission.
         """
         return (
             pl.scan_csv(self.cases_path)
-            .select(
-                "CaseID", "ICUOffset", "OffsetAfterFirstAdmission", "TimeOfStay"
-            )
+            .select("CaseID", "ICUOffset", "TimeOfStay")
             .rename({"CaseID": self.icu_stay_id_col})
             .with_columns(
-                (pl.col("OffsetAfterFirstAdmission") + pl.col("ICUOffset"))
-                .cast(float)
-                .alias("CaseOffset")
+                pl.col("ICUOffset").cast(float).alias("CaseOffset"),
+                (pl.col("TimeOfStay") - pl.col("ICUOffset")).alias("TimeOfStay"),
             )
-            .drop("ICUOffset", "OffsetAfterFirstAdmission")
+            .drop("ICUOffset")
         )
 
     def _get_timeseries_mapping(self) -> pl.LazyFrame:

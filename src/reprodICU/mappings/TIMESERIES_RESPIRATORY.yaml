@@ -1,6 +1,8 @@
 # Based on the ICU module of the German Medical Informatics Initiative (MII)
 # https://www.medizininformatik-initiative.de/Kerndatensatz/Modul_Intensivmedizin/ParametervonBeatmungObservation.html
 Airway pressure delta setting Ventilator: # 42527137
+  # SICdb
+  - PressureOverPeep
   # UMCdb -> same name
 Breath rate setting Ventilator: # 3007469
   # eICU-CRD -> same name

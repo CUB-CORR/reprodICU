@@ -12,9 +12,18 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import (
-    _build_t0,
+from ...base import (
+    Reference,
+    STAY_KEY,
+    TIME_KEY,
+    _reference_t0,
+    _relative_to_t0,
     _to_lazy,
+    with_reference_time,
+)
+from ...common import (
+    FILTER_NOT_NULL,
+    _validate_required_data,
     get_patient_information,
     get_timeseries_labs,
     get_timeseries_vitals,
@@ -68,11 +77,7 @@ def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
         .then(pl.col("Oxygen saturation").struct.field("value"))
         .otherwise(None)
         .alias("SaO2"),
-    ).filter(
-        pl.any_horizontal(
-            pl.col(col).is_not_null() for col in ["PaO2", "PaCO2", "pH", "SaO2"]
-        )
-    )
+    ).pipe(FILTER_NOT_NULL, ["PaO2", "PaCO2", "pH", "SaO2"])
 
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
@@ -90,13 +95,13 @@ def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
 
 
 # region Respiratory Failure
+@with_reference_time
 def RESPIRATORY_FAILURE(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
     timeseries_labs: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Classify respiratory failure into acute hypoxemic and acute hypercapnic types.
@@ -118,11 +123,6 @@ def RESPIRATORY_FAILURE(
             Vital signs timeseries data. Loaded automatically if None.
         timeseries_labs : pl.LazyFrame, optional
             Laboratory timeseries data. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
 
     Returns
     -------
@@ -130,7 +130,7 @@ def RESPIRATORY_FAILURE(
             Respiratory failure observations with columns:
             - Global ICU Stay ID
             - Time Relative to Admission (seconds)
-            - {respiratory_failure_type_col}: Type of respiratory failure:
+            - Respiratory Failure Type: Type of respiratory failure:
                 "Acute Hypoxemic", "Acute Hypercapnic", "Mixed", or None if insufficient data
             - PaO2: Arterial oxygen partial pressure (mmHg)
             - PaCO2: Arterial carbon dioxide partial pressure (mmHg)
@@ -146,17 +146,19 @@ def RESPIRATORY_FAILURE(
     if timeseries_labs is None:
         timeseries_labs = get_timeseries_labs()
 
-    STAY_KEY = "Global ICU Stay ID"
-    TIME_KEY = "Time Relative to Admission (seconds)"
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+    }
+    _validate_required_data("RESPIRATORY_FAILURE", required)
     LAB_COLS = ["PaO2", "PaCO2", "pH", "SaO2", "SpO2"]
 
     patient_information = _to_lazy(patient_information)
     timeseries_vitals = _to_lazy(timeseries_vitals)
     timeseries_labs = _to_lazy(timeseries_labs)
-    t_0_per_stay = _to_lazy(t_0_per_stay) if t_0_per_stay is not None else None
-
-    all_stays = patient_information.select(STAY_KEY)
-    all_stays_t0 = _build_t0(all_stays, t_0_per_stay, t_0)
+    all_stays_t0 = _reference_t0(patient_information, ref)
 
     timeseries_labs = _improve_labs(timeseries_labs)
     timeseries_vitals = _improve_vitals(timeseries_vitals)
@@ -166,7 +168,7 @@ def RESPIRATORY_FAILURE(
         timeseries_labs.join(
             timeseries_vitals,
             on=[STAY_KEY, TIME_KEY],
-            how="outer",
+            how="full",
             coalesce=True,
         )
         .with_columns(
@@ -214,16 +216,7 @@ def RESPIRATORY_FAILURE(
         .select(STAY_KEY, TIME_KEY, *LAB_COLS, respiratory_failure_type_col)
     ) # fmt: skip
 
-    if (t_0 != 0) or (t_0_per_stay is not None):
-        resp_failure = (
-            resp_failure.join(all_stays_t0, on=STAY_KEY, how="inner")
-            .with_columns(
-                pl.col(TIME_KEY)
-                .sub(pl.col("T_0"))
-                .alias("Time Relative to T_0 (seconds)")
-            )
-            .drop("T_0")
-        )
+    resp_failure = _relative_to_t0(resp_failure, all_stays_t0, ref)
 
     return resp_failure
 

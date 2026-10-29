@@ -220,12 +220,25 @@ class ConfigManager:
 
 # region DatasetLoader
 class DatasetLoader:
-    """
-    Lazy-loads parquet datasets and concepts from configured paths.
+    """Lazy-loads clinical datasets and pre-computed concepts with caching.
 
-    Provides efficient lazy access to clinical datasets and pre-computed
-    concepts using Polars LazyFrame. Supports demo/full mode switching and
-    automatic caching for performance.
+    Provides efficient lazy access to Parquet-based datasets and concepts
+    using Polars LazyFrame (data not loaded into memory until needed).
+    Supports transparent demo/full mode switching and automatic caching.
+
+    Datasets are organized into three categories:
+    - Patient data: demographics, diagnoses, procedures, medications, etc.
+    - Timeseries data: vitals, labs, respiratory, intake/output
+    - Concepts: pre-computed clinical scores and derived variables
+
+    Access is unified through simple names (e.g., "vitals", "labs", "medications"),
+    which map to actual filenames via DATASET_MAPPING and CONCEPT_MAPPING.
+
+    Examples
+    --------
+        loader = DatasetLoader(config_manager)
+        vitals = loader.load_dataset("vitals")  # Returns LazyFrame
+        medications = loader.load_dataset("medications")
     """
 
     # Map attribute names to parquet filenames
@@ -676,7 +689,7 @@ class reprodICUPaths:
 
         config = config_manager.load_config("PATHS.yaml", user_override=True)
         for key, value in config.items():
-            setattr(self, key, str(value))
+            setattr(self, key, None if value is None else str(value))
 
     def validate_paths(self) -> list:
         """
@@ -689,7 +702,7 @@ class reprodICUPaths:
         """
         missing_paths = []
         for key, value in self.__dict__.items():
-            if not Path(value).exists():
+            if value is not None and not Path(value).exists():  # unset is not missing
                 missing_paths.append((key, value))
         return missing_paths
 

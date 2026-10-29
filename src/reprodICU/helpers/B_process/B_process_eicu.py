@@ -231,26 +231,26 @@ class EICUProcessor(EICUExtractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="labname",
-            ).with_columns(pl.col("labstruct").struct.json_encode())
-            # Save extracted data before pivoting
-            .sink_parquet(ts_labs_path_unsorted)
-        )
-
-        # Batch pivot the data
-        batch_process_timeseries(
-            input_file=ts_labs_path_unsorted,
-            output_file=ts_labs_path,
-            tempfiles_path=self.precalc_path,
-            operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
-                df,
+            )
+            # JSON encode the structs for pivoting
+            .with_columns(pl.col("labstruct").struct.json_encode())
+            # Pivot the lab data
+            .pipe(
+                self.pivot_numeric_or_string,
                 dataset="eICU_labs",
                 on_col="labname",
                 index_cols=self.index_cols,
                 string_col="labstruct",
-            ).sort(self.index_cols),
-            id_col=self.icu_stay_id_col,
-            delete_after=True,
+            )
+            # Save extracted data before pivoting
+            .sink_parquet(ts_labs_path_unsorted)
+        )
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
         )
         os.remove(ts_labs_path_unsorted)
 
@@ -425,6 +425,7 @@ class EICUProcessor(EICUExtractor):
             .pipe(
                 self.pivot_numeric_or_string,
                 dataset="eICU_inout",
+                numeric_aggregate="sum",
                 on_col="celllabel",
                 index_cols=self.index_cols,
                 numeric_col="cellvaluenumeric",
@@ -485,13 +486,13 @@ class EICUProcessor(EICUExtractor):
         # Extract and combine periodic and aperiodic data
         self.extract_and_combine_periodics().sink_parquet(ts_period_path_unsorted) # fmt: skip
 
-        # Batch process: cast to float and deduplicate
+        # Batch process: sort
         batch_process_timeseries(
             input_file=ts_period_path_unsorted,
             output_file=ts_period_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: df.unique(self.index_cols).sort(self.index_cols),
+            method=lambda df: df.sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
         )
@@ -542,7 +543,7 @@ class EICUProcessor(EICUExtractor):
             self.extract_diagnoses()
             # Remove the dots from the ICD codes.
             .with_columns(
-                pl.col(self.diagnosis_icd_code_col).str.replace_all("\.", "")
+                pl.col(self.diagnosis_icd_code_col).str.replace_all(r"\.", "")
             )
             # Determine the ICD version of the diagnoses.
             .with_columns(

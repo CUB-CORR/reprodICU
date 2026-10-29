@@ -9,24 +9,29 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import get_medications, get_patient_information
+from ...base import (
+    SECONDS_IN_1MIN,
+    STAY_KEY,
+)
+from ...common import (
+    _validate_required_data,
+    get_medications,
+    get_patient_information,
+)
 from .ALIGNED_UNITS import ALIGNED_UNITS
-
-STAY_KEY = "Global ICU Stay ID"
 START_KEY = "Drug Start Relative to Admission (seconds)"
 END_KEY = "Drug End Relative to Admission (seconds)"
 
-SECONDS_IN_5MIN = (
-    5 * 60
-)  # grace period to allow for minor gaps in continuous infusions
+# grace period to allow for minor gaps in continuous infusions
+GRACE_PERIOD = 5 * SECONDS_IN_1MIN
 
 VASOPRESSORS = {
     # "vasopressor": (MIN_RATE, MAX_RATE),
-    "epinephrine": (0.005, 2),  # µg/kg/min
-    "norepinephrine": (0.001, 5),  # µg/kg/min
-    "phenylephrine": (0.05, 10),  # µg/kg/min
-    "vasopressin (USP)": (0.01, 1),  # U/min
-}
+    "epinephrine":       (0.005,  2),  # µg/kg/min
+    "norepinephrine":    (0.001,  5),  # µg/kg/min
+    "phenylephrine":     (0.05,  10),  # µg/kg/min
+    "vasopressin (USP)": (0.01,   1),  # U/min
+} # fmt: skip
 
 
 def VASOPRESSORS_BOOLEAN(
@@ -69,13 +74,7 @@ def VASOPRESSORS_BOOLEAN(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("VASOPRESSORS_BOOLEAN", required)
 
     # Base frames
     patient_information = patient_information.lazy()
@@ -115,7 +114,7 @@ def VASOPRESSORS_BOOLEAN(
                     partition_by=[STAY_KEY, "Drug Ingredient"],
                     order_by=START_KEY,
                 )
-                + SECONDS_IN_5MIN
+                + GRACE_PERIOD
             )
             .fill_null(True)
             .alias("Starts at previous end"),

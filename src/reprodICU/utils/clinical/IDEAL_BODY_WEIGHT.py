@@ -26,7 +26,8 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import DROP_IMPLAUSIBLE_VALUES, _to_lazy, get_patient_information
+from ..base import _to_lazy
+from ..common import DROP_IMPLAUSIBLE_VALUES, get_patient_information
 
 height_col = "Admission Height (cm)"
 weight_col = "Admission Weight (kg)"
@@ -152,9 +153,13 @@ def ADJUSTED_BODY_WEIGHT(
             - Ideal Body Weight (Devine)
             - Adjusted Body Weight: Adjusted weight for dosing in kg (or None if not obese)
     """
+    patient_information = _load_patient_information(patient_information)
     return (
-        _load_patient_information(patient_information)
-        .pipe(IDEAL_BODY_WEIGHT_DEVINE)
+        patient_information.join(
+            patient_information.pipe(IDEAL_BODY_WEIGHT_DEVINE),
+            on="Global ICU Stay ID",
+            maintain_order="left",
+        )
         .with_columns(
             pl.when(pl.col(weight_col) > pl.col("Ideal Body Weight (Devine)"))
             .then(

@@ -176,7 +176,9 @@ class MIMIC4Processor(MIMIC4Extractor):
                 self.index_cols,
                 struct_cols=["labstruct"],
                 component_col="label",
-            ).with_columns(pl.col("labstruct").struct.json_encode())
+            )
+            # JSON encode the structs for pivoting
+            .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(
                 self.pivot_numeric_or_string,
@@ -258,6 +260,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             .pipe(
                 self.pivot_numeric_or_string,
                 dataset="MIMIC4_inout",
+                numeric_aggregate="sum",
                 on_col="label",
                 index_cols=self.index_cols,
                 numeric_col="valuenum",

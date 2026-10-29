@@ -53,18 +53,15 @@ acetaminophen:
     - acetaminophen (TYLENOL) tab 975 mg
     - "TYLENOL-CODEINE NO.3                                                                                                                                                                                                                                           "
     - "TYLENOL EXTRA STRENGTH                                                                                                                                                                                                                                         "
-    - "TYLENOL PM EXTRA STRENGTH                                                                                                                                                                                                                                      "
     - "TYLENOL ARTHRITIS                                                                                                                                                                                                                                              "
     - "TYLENOL-CODEINE NO.4                                                                                                                                                                                                                                           "
     - "TYLENOL 8 HOUR                                                                                                                                                                                                                                                 "
     - "TYLENOL W/CODEINE NO.3                                                                                                                                                                                                                                         "
     - "TYLENOL COLD SEVERE CONGESTION                                                                                                                                                                                                                                 "
-    - "TYLENOL PM                                                                                                                                                                                                                                                     "
     - "TYLENOL EXTRA STRENGTH ARTHRIT                                                                                                                                                                                                                                 "
     - ACETAMINOPHEN 325 MG PO TABS
     - ACETAMINOPHEN
     - acetaMINOPHEN 325 MG TAB
-    - HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS
     - ACETAMINOPHEN 650 MG RE SUPP
     - acetaminophen
     - acetaMINOPHEN 650MG RECT SUPP
@@ -75,10 +72,7 @@ acetaminophen:
     - ACETAMINOPHEN 500 MG PO TABS
     - ACETAMINOPHEN 1,000 MG/100 ML (10 MG/ML) IV SOLN
     - ACETAMINOPHEN 325 MG TABLET
-    - HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET
     - acetaminophen 325 mg po tabs
-    - HYDROCODONE-ACETAMINOPHEN 10-325 MG PO TABS
-    - HYDROcodone-acetaminophen
     - ACETAMINOPHEN 650 MG RECTAL SUPPOSITORY
     - ACETAMINOPHEN  650 MG RECT SUPP
     - "ACETAMINOPHEN                                                                                                                                                                                                                                                  "
@@ -92,35 +86,23 @@ acetaminophen:
     - Acetaminophen TAB
     - oxyCODONE-acetaminophen
     - acetaminophen-oxyCODONE 325 mg-5 mg oral tablet
-    - "HYDROCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                      "
-    - "HYDROCODONE BITARTRATE/ACETAMINOPHEN                                                                                                                                                                                                                           "
     - "OXYCODONE HCL-ACETAMINOPHEN                                                                                                                                                                                                                                    "
-    - "HYDROCODONE BIT/ACETAMINOPHEN                                                                                                                                                                                                                                  "
     - "ACETAMINOPHEN-CODEINE                                                                                                                                                                                                                                          "
     - "OXYCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                        "
     - "OXYCODONE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                    "
     - "ACETAMINOPHEN WITH CODEINE PHOSPHATE                                                                                                                                                                                                                           "
     - "BUTALBITAL-ACETAMINOPHEN-CAFFE                                                                                                                                                                                                                                 "
     - "ACETAMINOPHEN EXTRA STRENGTH                                                                                                                                                                                                                                   "
-    - "TRAMADOL HCL-ACETAMINOPHEN                                                                                                                                                                                                                                     "
     - "ACETAMINOPHEN 8 HOUR                                                                                                                                                                                                                                           "
-    - "ACETAMINOPHEN-DIPHENHYDRAMINE                                                                                                                                                                                                                                  "
     - "ACETAMINOPHEN ER                                                                                                                                                                                                                                               "
-    - "HYDROCODONE W/ACETAMINOPHEN                                                                                                                                                                                                                                    "
     - "BUTALBITAL/ACETAMINOPHEN                                                                                                                                                                                                                                       "
-    - "TRAMADOL HCL/ACETAMINOPHEN                                                                                                                                                                                                                                     "
-    - "HYDROCODONE/ACETAMINOPHEN                                                                                                                                                                                                                                      "
     - "ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                                         "
     - "ACETAMINOPHEN ES                                                                                                                                                                                                                                               "
     - "DEXTROMETHORPHAN HBR/ACETAMINOPHEN/DOXYLAMINE                                                                                                                                                                                                                  "
-    - "ACETAMINOPHEN/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                              "
     - "ACETAMINOPHEN-BUTALBITAL                                                                                                                                                                                                                                       "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN/CHLORPHENIRAMINE                                                                                                                                                                                                               "
-    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
     - "CHLORPHENIRAMINE/DEXTROMETHORPHAN/ACETAMINOPHEN/GUAIFENESIN                                                                                                                                                                                                    "
     - "SALICYLAMIDE/ACETAMINOPHEN/PHENYLTOLOXAMINE                                                                                                                                                                                                                    "
     - "ACETAMINOPHEN W-CODEINE                                                                                                                                                                                                                                        "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                "
     - "ACETAMINOPHEN PM                                                                                                                                                                                                                                               "
     - "BUTALBITAL/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                              "
     - acetaminophen (ml/hr)
@@ -365,15 +347,12 @@ amlodipine:
     - "AMLODIPINE BESYLATE/OLMESARTAN MEDOXOMIL                                                                                                                                                                                                                       "
     - "AMLODIPINE BESYLATE/VALSARTAN                                                                                                                                                                                                                                  "
     - "AMLODIPINE BESYLATE/BENAZEPRIL HCL                                                                                                                                                                                                                             "
-    - "AMLODIPINE BESYLATE/ATORVASTATIN CALCIUM                                                                                                                                                                                                                       "
     - "OLMESARTAN MEDOXOMIL/AMLODIPINE BESYLATE/HYDROCHLOROTHIAZIDE                                                                                                                                                                                                   "
     - "AMLODIPINE BESYLATE/VALSARTAN/HYDROCHLOROTHIAZIDE                                                                                                                                                                                                              "
-    - "AMLODIPINE-ATORVASTATIN                                                                                                                                                                                                                                        "
     - "AMLODIPINE BES/OLMESARTAN MED                                                                                                                                                                                                                                  "
     - "LOTREL                                                                                                                                                                                                                                                         "
     - NORVASC
     - "NORVASC                                                                                                                                                                                                                                                        "
-    - "CADUET                                                                                                                                                                                                                                                         "
     - "EXFORGE                                                                                                                                                                                                                                                        "
     - "EXFORGE HCT                                                                                                                                                                                                                                                    "
     - "AZOR                                                                                                                                                                                                                                                           "
@@ -520,7 +499,6 @@ aspirin:
     - ASPIRIN 81 MG CHEWABLE TABLET
     - "ASPIRIN EC                                                                                                                                                                                                                                                     "
     - "ASPIRIN BUFFERED                                                                                                                                                                                                                                               "
-    - "CHLORPHENIRAMINE MAL/PHENYLEPHRINE/D-METHORPHAN HB/ASPIRIN                                                                                                                                                                                                     "
     - "ASPIRIN/DIPYRIDAMOLE                                                                                                                                                                                                                                           "
     - "ADULT LOW DOSE ASPIRIN EC                                                                                                                                                                                                                                      "
     - "ASPIRIN/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                                 "
@@ -535,7 +513,6 @@ aspirin:
     - "ASPIRIN/SODIUM BICARBONATE/CITRIC ACID                                                                                                                                                                                                                         "
     - "ASPIRIN/ACETAMINOPHEN/MAGNESIUM/ALUMINUM HYDROXIDE/CAFFEINE                                                                                                                                                                                                    "
     - "ASPIRIN/ACETAMINOPHEN                                                                                                                                                                                                                                          "
-    - "CHLORPHENIRAMINE MALEATE/PHENYLEPHRINE BITARTRATE/ASPIRIN                                                                                                                                                                                                      "
     - "ASPIRIN/SALICYLAMIDE/ACETAMINOPHEN/CAFFEINE                                                                                                                                                                                                                    "
     - "BUFFERED ASPIRIN                                                                                                                                                                                                                                               "
     - "EXCEDRIN BACK & BODY                                                                                                                                                                                                                                           "
@@ -553,14 +530,11 @@ aspirin:
     - "EXCEDRIN EXTRA STRENGTH                                                                                                                                                                                                                                        "
     - "EXCEDRIN MIGRAINE                                                                                                                                                                                                                                              "
     - "EXCEDRIN TENSION HEADACHE                                                                                                                                                                                                                                      "
-    - "EXCEDRIN PM                                                                                                                                                                                                                                                    "
-    - "EXCEDRIN SINUS HEADACHE                                                                                                                                                                                                                                        "
     - "HALFPRIN                                                                                                                                                                                                                                                       "
     - "EQUAGESIC                                                                                                                                                                                                                                                      "
     - "IRON ASP GLY & PS CMPLX/ASCORB CALCIUM/CA-THR/SUCCINIC ACID                                                                                                                                                                                                    "
     - "IRON ASP.GLYCIN & FUMARATE /VIT C/FA/MV COMB 11/CA-THREONATE                                                                                                                                                                                                   "
     - "PRENATAL NO.29/IRON CARB & ASP.GLYCINATE/FA/DHA/FISH OIL                                                                                                                                                                                                       "
-    - "IRON ASP GLY&PS CMPLX/ASCORB.CAL/VIT B12/FA/CA-THR/SUCC.ACID                                                                                                                                                                                                   "
   mimic3: []
   mimic4: []
   nwicu:
@@ -588,9 +562,6 @@ atorvastatin:
     - ATORVASTATIN 40 MG TAB
     - ATORVASTATIN 20 MG TAB
     - ATORVASTATIN 40 MG TABLET
-    - "AMLODIPINE BESYLATE/ATORVASTATIN CALCIUM                                                                                                                                                                                                                       "
-    - "AMLODIPINE-ATORVASTATIN                                                                                                                                                                                                                                        "
-    - "CADUET                                                                                                                                                                                                                                                         "
     - "LIPTRUZET                                                                                                                                                                                                                                                      "
     - "LIPITOR                                                                                                                                                                                                                                                        "
     - LIPITOR
@@ -902,14 +873,11 @@ ciprofloxacin:
   eicu:
     - CIPROFLOXACIN IN D5W 400 MG/200ML IV SOLN
     - "CIPROFLOXACIN                                                                                                                                                                                                                                                  "
-    - "CIPROFLOXACIN HCL/DEXAMETHASONE                                                                                                                                                                                                                                "
     - "CIPROFLOXACIN HCL                                                                                                                                                                                                                                              "
     - Ciprofloxacin 400 mg/D5w 200 ml (ml/hr)
     - Ciprofloxacin 200 mg/D5w 100 ml (ml/hr)
-    - "CIPRODEX                                                                                                                                                                                                                                                       "
     - "CILOXAN                                                                                                                                                                                                                                                        "
     - "CIPRO HC                                                                                                                                                                                                                                                       "
-    - "ROBITUSSIN COUGH & COLD CF                                                                                                                                                                                                                                     "
     - "TUSSIN CF                                                                                                                                                                                                                                                      "
     - "CIPRO                                                                                                                                                                                                                                                          "
     - Cipro (ml/hr)
@@ -1110,17 +1078,14 @@ dexamethasone:
     - "DEXAMETHASONE                                                                                                                                                                                                                                                  "
     - "TOBRAMYCIN/DEXAMETHASONE                                                                                                                                                                                                                                       "
     - "TOBRAMYCIN-DEXAMETHASONE                                                                                                                                                                                                                                       "
-    - "CIPROFLOXACIN HCL/DEXAMETHASONE                                                                                                                                                                                                                                "
     - "DEXAMETHASONE SODIUM PHOSPHATE                                                                                                                                                                                                                                 "
     - "MAXITROL                                                                                                                                                                                                                                                       "
-    - "CIPRODEX                                                                                                                                                                                                                                                       "
     - "TOBRADEX                                                                                                                                                                                                                                                       "
     - DECADRON
     - Decadron
     - "DECADRON                                                                                                                                                                                                                                                       "
     - "MAXIDEX                                                                                                                                                                                                                                                        "
     - "DEXASOL                                                                                                                                                                                                                                                        "
-    - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
   mimic3: []
   mimic4: []
   nwicu:
@@ -1277,31 +1242,22 @@ diphenhydramine:
     - "1 ML VIAL : DIPHENHYDRAMINE HCL 50 MG/ML IJ SOLN"
     - diphenhydrAMINE HCl
     - "DIPHENHYDRAMINE HCL                                                                                                                                                                                                                                            "
-    - "MAG HYDROXIDE/AL HYDROXIDE/SIMETH/DIPHENHYDRAMINE/LIDOCAINE                                                                                                                                                                                                    "
     - "DIPHENHYDRAMINE HCL IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
-    - "ACETAMINOPHEN-DIPHENHYDRAMINE                                                                                                                                                                                                                                  "
     - "DIPHENHYDRAMINE                                                                                                                                                                                                                                                "
     - "DIPHENHYDRAMINE CITRATE                                                                                                                                                                                                                                        "
     - "IBUPROFEN-DIPHENHYDRAMINE HCL                                                                                                                                                                                                                                  "
-    - "ACETAMINOPHEN/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                              "
-    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
     - "DIPHENHYDRAMINE HCL/ZINC ACETATE                                                                                                                                                                                                                               "
-    - "NYSTATIN/LIDOCAINE HCL/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                     "
     - BENADRYL
     - Benadryl
     - "BENADRYL                                                                                                                                                                                                                                                       "
     - "BENADRYL ALLERGY                                                                                                                                                                                                                                               "
     - "BENADRYL ALLERGY PLUS COLD                                                                                                                                                                                                                                     "
-    - "EXCEDRIN PM                                                                                                                                                                                                                                                    "
-    - "TYLENOL PM EXTRA STRENGTH                                                                                                                                                                                                                                      "
-    - "TYLENOL PM                                                                                                                                                                                                                                                     "
     - "SIMPLY SLEEP                                                                                                                                                                                                                                                   "
     - "MOTRIN PM                                                                                                                                                                                                                                                      "
     - "BANOPHEN                                                                                                                                                                                                                                                       "
     - "DIPHENHIST                                                                                                                                                                                                                                                     "
     - "ADVIL PM                                                                                                                                                                                                                                                       "
     - "ACETADRYL                                                                                                                                                                                                                                                      "
-    - "ROBAFEN DM COUGH                                                                                                                                                                                                                                               "
   mimic3: []
   mimic4: []
   nwicu:
@@ -1413,7 +1369,6 @@ epinephrine:
     - Epinephrine (mg/hr)
     - "EPIPEN                                                                                                                                                                                                                                                         "
     - "EPIPEN 2-PAK                                                                                                                                                                                                                                                   "
-    - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
   mimic3:
     - Epinephrine-k
     - Epinephrine
@@ -1575,13 +1530,9 @@ fentanyl:
     - Fentanyl PCA (mcg/hr)
     - fentanyl epidural (ml/hr)
     - "FENTANYL-BUPIVACAINE-NS                                                                                                                                                                                                                                        "
-    - epidural :fentanyl/duramorph/bupivicaine (ml/hr)
     - Fentanyl/Bupivi Epidural
     - Fentanyl/Bupivi Epidural (ml/hr)
-    - epidural; fentanyl/lido/duramorph
-    - epidural; fentanyl/lido/duramorph (ml/hr)
     - fentanyl/bupivicaine (ml/hr)
-    - Fentanyl/Bupivacaine/Dilaudid (ml/hr)
     - FENTANYL PCA (mcg/hr)
     - Fentanyl PCA
     - Fentanyl/Bup Epidural (ml/hr)
@@ -1641,40 +1592,12 @@ fluconazole:
     - "FLUZONE 2012-2013                                                                                                                                                                                                                                              "
     - "FLUZONE HIGH-DOSE 2012-13                                                                                                                                                                                                                                      "
     - "DIFLUCAN                                                                                                                                                                                                                                                       "
-    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "1000 ML FLEX CONT: SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "250 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "50 ML FLEX CONT : MAGNESIUM SULFATE 4% IJ SOLN"
-    - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "1000 ml flex cont : sodium chloride 0.9 % iv soln"
-    - "50 ML FLEX CONT: MAGNESIUM SULFATE 40 MG/ML IJ SOLN"
-    - "500 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "MAGNESIUM SULFATE 4 GRAM/100 ML IV PIGGY BACK : 100 ML FLEX CONT"
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - "100 ml flex cont : magnesium sulfate in d5w 10-5 mg/ml-% iv soln"
-    - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
-    - MAGNESIUM SULFATE 2 GRAM/50 ML IV PIGGY BACK 50 ML FLEX CONT
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - "100 ML FLEX CONT : MAGNESIUM SULFATE IN D5W 10-5 MG/ML-% IV SOLN"
-    - "MAGNESIUM SULFATE 2 GRAM/50 ML IV PIGGY BACK : 50 ML FLEX CONT"
-    - "50 ML FLEX CONT : MAGNESIUM SULFATE 2 GRAM/50 ML (4 %) IV PGBK"
     - "1000 ML FLEX CONT: LACTATED RINGERS IV SOLN"
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - "50 ML FLEX CONT : MAGNESIUM SULFATE 40 MG/ML IJ SOLN"
-    - "150 ML FLEX CONT : LEVOFLOXACIN IN D5W 5 MG/ML IV SOLN"
-    - "100 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "250 ml flex cont : sodium chloride 0.9 % iv soln"
-    - "100 ML FLEX CONT : ALBUMIN HUMAN 25 % IV SOLN"
-    - "150 ml flex cont : sodium chloride 0.9 % iv soln"
     - "OSTEO BI-FLEX                                                                                                                                                                                                                                                  "
     - "TRIPLE FLEX                                                                                                                                                                                                                                                    "
     - "ARTHRI-FLEX                                                                                                                                                                                                                                                    "
     - "ROBITUSSIN COLD-FLU DAY                                                                                                                                                                                                                                        "
-    - "TYLENOL COLD & FLU SEVERE                                                                                                                                                                                                                                      "
     - "ROBITUSSIN COLD-FLU NIGHT                                                                                                                                                                                                                                      "
-    - "VICKS NYQUIL SEVERE COLD-FLU                                                                                                                                                                                                                                   "
-    - "VICKS DAYQUIL SEVERE COLD-FLU                                                                                                                                                                                                                                  "
   mimic3:
     - Fluconazole
   mimic4:
@@ -1944,24 +1867,15 @@ heparin:
 hydrocodone:
   blended: 1174888
   eicu:
-    - HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS
-    - HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET
-    - HYDROCODONE-ACETAMINOPHEN 10-325 MG PO TABS
-    - HYDROcodone-acetaminophen
     - HYDROCODONE/APAP 5MG/325MG
-    - "HYDROCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                      "
-    - "HYDROCODONE BITARTRATE/ACETAMINOPHEN                                                                                                                                                                                                                           "
     - "HYDROCODONE BIT-IBUPROFEN                                                                                                                                                                                                                                      "
-    - "HYDROCODONE BIT/ACETAMINOPHEN                                                                                                                                                                                                                                  "
     - "HYDROCODONE BITARTRATE                                                                                                                                                                                                                                         "
     - "HYDROCODONE-HOMATROPINE MBR                                                                                                                                                                                                                                    "
     - "HYDROCODONE BT-HOMATROPINE MBR                                                                                                                                                                                                                                 "
     - "HYDROCODONE-CHLORPHENIRAMINE                                                                                                                                                                                                                                   "
     - "HYDROCODONE BITARTRATE/CHLORPHENIRAMINE MALEATE                                                                                                                                                                                                                "
-    - "HYDROCODONE W/ACETAMINOPHEN                                                                                                                                                                                                                                    "
     - "HYDROCODONE BITARTRATE/HOMATROPINE METHYLBROMIDE                                                                                                                                                                                                               "
     - "HYDROCODONE POLISTIREX/CHLORPHENIRAMINE POLISTIREX                                                                                                                                                                                                             "
-    - "HYDROCODONE/ACETAMINOPHEN                                                                                                                                                                                                                                      "
     - "HYDROCODONE-IBUPROFEN                                                                                                                                                                                                                                          "
     - "HYDROCODONE COMPOUND                                                                                                                                                                                                                                           "
     - "HYDROCODONE BIT-GUAIFENESIN                                                                                                                                                                                                                                    "
@@ -1977,7 +1891,6 @@ hydrocodone:
     - Norco 5 mg-325 mg
     - "TUSSIONEX                                                                                                                                                                                                                                                      "
     - "STAGESIC                                                                                                                                                                                                                                                       "
-    - "STATUSS GREEN                                                                                                                                                                                                                                                  "
     - "VICOPROFEN                                                                                                                                                                                                                                                     "
     - "REPREXAIN                                                                                                                                                                                                                                                      "
     - "ZOLVIT                                                                                                                                                                                                                                                         "
@@ -2099,7 +2012,6 @@ hydromorphone:
     - Dilaudid PCA -Infusion (ml/hr)
     - PCA dilaudid
     - PCA dilaudid (ml/hr)
-    - Fentanyl/Bupivacaine/Dilaudid (ml/hr)
     - PCA Dilaudid
     - PCA Dilaudid cont dose
     - PCA Dilaudid ()
@@ -2157,8 +2069,6 @@ hypromellose:
     - "TEARS NATURALE                                                                                                                                                                                                                                                 "
     - "GONIOVISC                                                                                                                                                                                                                                                      "
     - "NATURE'S TEARS                                                                                                                                                                                                                                                 "
-    - "CLEAR EYES COMPLETE                                                                                                                                                                                                                                            "
-    - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
     - "ARTIFICIAL TEARS                                                                                                                                                                                                                                               "
   mimic3: []
   mimic4: []
@@ -2260,7 +2170,6 @@ insulin:
     - Insulin (mg/hr)
     - Insulin B (units/hr)
     - Insulin (scaleB) (units/hr)
-    - D30W/85 meq KCL/60 units insulin (ml/hr)
     - insulin drip (units/hr)
     - Insulin (Regular) (ml/hr)
     - Insulin Regular (ml/hr)
@@ -2543,7 +2452,6 @@ lidocaine:
     - "LIDOCAINE HCL VISCOUS                                                                                                                                                                                                                                          "
     - Lidocaine (Xylocaine) STD 2 g Dextrose 5% 500 ml  Premix (mg/min)
     - "LIDOCAINE HCL                                                                                                                                                                                                                                                  "
-    - "MAG HYDROXIDE/AL HYDROXIDE/SIMETH/DIPHENHYDRAMINE/LIDOCAINE                                                                                                                                                                                                    "
     - Lidocaine
     - "LIDOCAINE-PRILOCAINE                                                                                                                                                                                                                                           "
     - "LIDOCAINE/TRANSPARENT DRESSING                                                                                                                                                                                                                                 "
@@ -2553,7 +2461,6 @@ lidocaine:
     - "LIDOCAINE HCL/BENZALKONIUM CHLORIDE/ALCOHOL                                                                                                                                                                                                                    "
     - "LIDOCAINE HCL/GLYCERIN                                                                                                                                                                                                                                         "
     - "LIDOCAINE/ALOE VERA                                                                                                                                                                                                                                            "
-    - "NYSTATIN/LIDOCAINE HCL/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                     "
     - Lidocaine (mcg/kg/min)
     - Lidocaine (mg/kg/hr)
     - Lidocaine (mcg/min)
@@ -2572,14 +2479,11 @@ lidocaine:
     - "PRENATAL COMPLETE                                                                                                                                                                                                                                              "
     - "MULTI COMPLETE-IRON                                                                                                                                                                                                                                            "
     - "ENSURE COMPLETE                                                                                                                                                                                                                                                "
-    - "CLEAR EYES COMPLETE                                                                                                                                                                                                                                            "
     - "DHA COMPLETE                                                                                                                                                                                                                                                   "
     - "COMPLETE MULTIVITAMIN                                                                                                                                                                                                                                          "
     - "FLINTSTONES COMPLETE                                                                                                                                                                                                                                           "
     - "LIDOCREAM                                                                                                                                                                                                                                                      "
     - "EMLA                                                                                                                                                                                                                                                           "
-    - ASPIRIN, CHILDREN'S
-    - "CHILDREN'S ASPIRIN                                                                                                                                                                                                                                             "
     - "OS-CAL 500+D3                                                                                                                                                                                                                                                  "
     - "OS-CAL ULTRA                                                                                                                                                                                                                                                   "
     - "OS-CAL 500+D                                                                                                                                                                                                                                                   "
@@ -2595,7 +2499,6 @@ lidocaine:
     - "CAL-CITRATE                                                                                                                                                                                                                                                    "
     - "JEVITY 1.2 CAL                                                                                                                                                                                                                                                 "
     - "OSMOLITE 1.2 CAL                                                                                                                                                                                                                                               "
-    - "IRON ASP GLY&PS CMPLX/ASCORB.CAL/VIT B12/FA/CA-THR/SUCC.ACID                                                                                                                                                                                                   "
     - "LIDOPATCH                                                                                                                                                                                                                                                      "
   mimic3:
     - Lidocaine
@@ -2771,7 +2674,6 @@ methylprednisolone:
     - "MEDROL                                                                                                                                                                                                                                                         "
     - "SOLU-MEDROL                                                                                                                                                                                                                                                    "
     - "DEPO-MEDROL                                                                                                                                                                                                                                                    "
-    - "DIANEAL PD-2 W-2.5% DEXTROSE                                                                                                                                                                                                                                   "
     - SoluMedrol
     - Solumedrol  (mg/kg/hr)
     - solumedrol (mg/hr)
@@ -3079,12 +2981,9 @@ morphine:
     - "MS CONTIN                                                                                                                                                                                                                                                      "
     - "KADIAN                                                                                                                                                                                                                                                         "
     - "MSIR                                                                                                                                                                                                                                                           "
-    - epidural :fentanyl/duramorph/bupivicaine (ml/hr)
     - "Epidural: 0.1% Bupivicaine/ 40mcg/ml Duramorph (ml/hr)"
     - bupiv .1%, fent 2mcg/ml, duramorph 40mcg/ml
     - bupiv .1%, fent 2mcg/ml, duramorph 40mcg/ml (ml/hr)
-    - epidural; fentanyl/lido/duramorph
-    - epidural; fentanyl/lido/duramorph (ml/hr)
     - morph (mg/hr)
   mimic3:
     - Morphine Sulfate
@@ -3276,8 +3175,6 @@ nitroglycerin:
     - NITRO-BID
     - "NITRO-BID                                                                                                                                                                                                                                                      "
     - "NITRO-TIME                                                                                                                                                                                                                                                     "
-    - "EPIPEN                                                                                                                                                                                                                                                         "
-    - "EPIPEN 2-PAK                                                                                                                                                                                                                                                   "
     - Nitroglycerine (mcg/kg/min) (mcg/kg/min)
   mimic3:
     - Nitroglycerin
@@ -3531,7 +3428,6 @@ phenylephrine:
     - Volume (ml) Phenylephrine
     - "PHENYLEPHRINE HCL                                                                                                                                                                                                                                              "
     - Phenylephrine (mcg/min) (mcg/min)
-    - "CHLORPHENIRAMINE MAL/PHENYLEPHRINE/D-METHORPHAN HB/ASPIRIN                                                                                                                                                                                                     "
     - Phenylephrine (mcg/hr)
     - Phenylephrine (mcg/kg/min) (mcg/kg/min)
     - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
@@ -3539,33 +3435,21 @@ phenylephrine:
     - "BROMPHENIRAMINE MALEATE/PHENYLEPHRINE HCL/CARBETAPENTANE CIT                                                                                                                                                                                                   "
     - "PROMETHAZINE-PHENYLEPHRINE                                                                                                                                                                                                                                     "
     - "GUAIFENESIN-PHENYLEPHRINE                                                                                                                                                                                                                                      "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN/CHLORPHENIRAMINE                                                                                                                                                                                                               "
-    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
     - "TRIPROLIDINE HCL/PHENYLEPHRINE HCL/DEXTROMETHORPHAN HBR                                                                                                                                                                                                        "
     - "PHENYLEPHRINE-BROMPHENIRAMIN                                                                                                                                                                                                                                   "
-    - "CHLORPHENIRAMINE MALEATE/PHENYLEPHRINE BITARTRATE/ASPIRIN                                                                                                                                                                                                      "
-    - "PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                                                "
     - "PYRILAMINE-PHENYLEPHRINE                                                                                                                                                                                                                                       "
     - Phenylephrine (mg/kg/min)
     - Phenylephrine (mg/hr)
-    - "EXCEDRIN SINUS HEADACHE                                                                                                                                                                                                                                        "
     - "SERADEX                                                                                                                                                                                                                                                        "
     - "PREPARATION H                                                                                                                                                                                                                                                  "
-    - "STATUSS GREEN                                                                                                                                                                                                                                                  "
     - "NEOMYCIN-POLYMYXIN-HYDROCORT                                                                                                                                                                                                                                   "
     - "VICKS DAYQUIL                                                                                                                                                                                                                                                  "
     - "VICKS VAPORUB                                                                                                                                                                                                                                                  "
     - "VICKS NYQUIL COUGH                                                                                                                                                                                                                                             "
     - "VICKS NYQUIL                                                                                                                                                                                                                                                   "
-    - "VICKS NYQUIL SEVERE COLD-FLU                                                                                                                                                                                                                                   "
-    - "VICKS DAYQUIL SEVERE COLD-FLU                                                                                                                                                                                                                                  "
-    - "ROBITUSSIN COUGH & COLD CF                                                                                                                                                                                                                                     "
-    - "TYLENOL COLD & FLU SEVERE                                                                                                                                                                                                                                      "
     - "DIMETAPP                                                                                                                                                                                                                                                       "
     - "CYCLOMYDRIL                                                                                                                                                                                                                                                    "
     - "NOREL AD                                                                                                                                                                                                                                                       "
-    - "ISOPTO TEARS                                                                                                                                                                                                                                                   "
-    - "ROBAFEN DM COUGH                                                                                                                                                                                                                                               "
     - Neosynephrine (mcg/min)
   mimic3:
     - Phenylephrine
@@ -3617,6 +3501,15 @@ phenytoin:
     - "PHENYTOIN SODIUM EXTENDED 100 MG ORAL CAP"
 piperacillin:
   blended: 1746114
+  eicu: []
+  mimic3:
+    - Piperacillin
+  mimic4:
+    - Piperacillin
+  nwicu:
+    - "PIPER.BUT-PYRETHRINS-PERMETHRN 4-0.33-0.5 % TOP KIT"
+piperacillin / tazobactam:
+  blended: 36030773
   eicu:
     - PIPERACILLIN SOD-TAZOBACTAM SO 3-0.375 G IV SOLR
     - piperacillin-tazobactam
@@ -3638,12 +3531,9 @@ piperacillin:
     - Zosyn  (ml/hr)
   mimic3:
     - Piperacillin/Tazobactam (Zosyn)
-    - Piperacillin
   mimic4:
     - Piperacillin/Tazobactam (Zosyn)
-    - Piperacillin
   nwicu:
-    - "PIPER.BUT-PYRETHRINS-PERMETHRN 4-0.33-0.5 % TOP KIT"
     - "PIPERACILLIN-TAZOBACTAM  3.375 G IV SOLR"
     - "PIPERACILLIN-TAZOBACTAM (67.5 MG/ML) INJECTION FROM PREMIX (PEDS/NICU)"
     - "PIPERACILLIN-TAZOBACTAM-DEXTRS 2.25 GRAM/50 ML IV PGBK"
@@ -3906,8 +3796,6 @@ tramadol:
     - traMADol
     - TRAMADOL HCL
     - traMADol 50 MG TAB
-    - "TRAMADOL HCL-ACETAMINOPHEN                                                                                                                                                                                                                                     "
-    - "TRAMADOL HCL/ACETAMINOPHEN                                                                                                                                                                                                                                     "
     - "TRAMADOL HCL ER                                                                                                                                                                                                                                                "
     - "ULTRACET                                                                                                                                                                                                                                                       "
     - "CONZIP                                                                                                                                                                                                                                                         "
@@ -4160,7 +4048,6 @@ glucose:
     - DEXTROSE 50 % IV SOLN
     - "DEXTROSE 5% IN WATER (D5W) IV : 1000 ML BAG"
     - Dextrose 50%
-    - VANCOMYCIN HCL IN DEXTROSE 1 GM/200ML IV SOLN
     - "37.5 G TUBE : DEXTROSE (DIABETIC USE) 40 % PO GEL"
     - DEXTROSE 50% ABBOJECT
     - DEXTROSE 50 % IN WATER (D50W) IV SYRINGE
@@ -4170,11 +4057,9 @@ glucose:
     - DEXTROSE 50% SYRINGE
     - "50 ML SYRINGE: DEXTROSE 50 % IV SOLN"
     - "50 ml syringe : dextrose 50 % iv soln"
-    - ceFAZolin (ANCEF) in Dextrose ivpb 2 g
     - "50 ML VIAL : DEXTROSE 50 % IV SOLN"
     - DEXTROSE 50% 25 GRAM/50 ML INJ
     - DEXTROSE 40 % ORAL GEL
-    - DEXTROSE 5%/NACL 0.45%
     - DEXTROSE 5 % IV SOLN
     - Dextrose 50% in Water
     - dextrose 50 % in water (D50W) injection 15 mL
@@ -4182,52 +4067,20 @@ glucose:
     - dextrose 50 % injection 50 mL
     - dextrose 50 % (D50W) syringe
     - Dextrose 5% SSO
-    - HEPARIN/DEXTROSE 5% 25000 UNITS/250 ML BAG
     - DEXTROSE 50% ADULT
-    - Volume (ml) Heparin-heparin 25,000 units in dextrose 500 mL infusion (ml/hr)
-    - Norepinephrine STD 4 mg Dextrose 5% 250 ml (mcg/min)
     - dextrose
-    - Heparin 25000 Units Dextrose 5% 500 ml  Premix (units/kg/hr)
-    - Amiodarone (maintenance) 900 mg Dextrose 5% 500 ml (mg/min)
-    - Norepinephrine MAX 32 mg Dextrose 5% 250 ml (mcg/min)
-    - Nitroglycerin(25mg/250ml) 25 mg Dextrose 5% 250 ml  Premix (glass bottle) (mcg/min)
-    - DOPamine STD 400 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
-    - DOBUTamine STD 500 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
-    - Amiodarone (load) 150 mg Dextrose 5% 100 ml (mg/min)
-    - "MILRINONE IN 5% DEXTROSE                                                                                                                                                                                                                                       "
-    - Volume (ml) Heparin-heparin 25,000 units in dextrose 500 mL infusion
-    - Milrinone (Primacor) 40 mg Dextrose 5% 200 ml (mcg/kg/min)
-    - DOBUTamine MAX 1000 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
     - "DEXTROSE                                                                                                                                                                                                                                                       "
-    - Heparin 25000 Units Dextrose 5% 500 ml  Premix (units/hr)
-    - DOPamine MAX 800 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
-    - Lidocaine (Xylocaine) STD 2 g Dextrose 5% 500 ml  Premix (mg/min)
-    - "PIPERACILLIN AND TAZOBACTAM IN DEXTROSE, ISO-OSMOTIC                                                                                                                                                                                                           "
     - Mannitol gtt(100gm/500mL) 100 g Dextrose 5% 500 ml (Unknown)
-    - Nitroprusside(Nipride)STD 50 mg Dextrose 5% 250 ml (mcg/kg/min)
-    - Dexmedetomidine Inj 400 Mcg in Dextrose 5% 100 ml (mcg/kg/hr)
     - Acetylcysteine 3% (maint) 30000 mg Dextrose 5% 1000 ml (mg/kg/hr)
     - DEXTROSE 10% (ml/hr)
     - Dextrose 10% (ml/hr)
-    - Nitroprusside(Nipride)MAX 100 mg Dextrose 5% 250 ml (mcg/kg/min)
-    - Nitroglycerin(50mg/500ml) 50 mg Dextrose 5% 500 ml  Premix (glass bottle) (mcg/min)
     - "DEXTROSE 50 % IN WATER                                                                                                                                                                                                                                         "
     - 5% Dextrose (ml/hr)
     - "NORMOSOL-M AND DEXTROSE                                                                                                                                                                                                                                        "
-    - Isoproterenol(Isuprel)STD 1 mg Dextrose 5% 250 ml (mcg/min)
-    - Norepinephrine MAX 32 mg Dextrose 5% 500 ml (mcg/min)
     - Glucagon 10 mg Dextrose 5% 100 ml (mg/hr)
     - 10% Dextrose (ml/hr)
-    - Norepinephrine STD 8 mg Dextrose 5% 500 ml (mcg/min)
-    - Vancomycin Inj 500 mg in Dextrose 5% 100 ml (ml/hr)
-    - "CEFEPIME HCL/DEXTROSE 5 % IN WATER                                                                                                                                                                                                                             "
     - "AZACTAM-ISO-OSMOTIC DEXTROSE                                                                                                                                                                                                                                   "
-    - "KCL IN DEXTROSE AND NACL                                                                                                                                                                                                                                       "
     - "DIANEAL PD-2 W-2.5% DEXTROSE                                                                                                                                                                                                                                   "
-    - "LEVOFLOXACIN/DEXTROSE 5 % IN WATER                                                                                                                                                                                                                             "
-    - "MILRINONE LACTATE/DEXTROSE 5 % IN WATER                                                                                                                                                                                                                        "
-    - "DEXTROSE 5 % AND 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                         "
-    - Norepinephrine STD 8 mg Dextrose 5% 250 ml (mcg/min)
     - " 10% Dextrose (ml/hr)"
     - dextrose 10% in water
     - dextrose 10% in water (ml/hr)
@@ -4235,43 +4088,22 @@ glucose:
     - 10% dextrose (ml/hr)
     - dextrose 10% (ml/hr)
     - Mannitol gtt(25gms/500mL) 25 g Dextrose 5% 500 ml (Unknown)
-    - Norepinephrine STD 32 mg Dextrose 5% 282 ml (mcg/min)
     - Glucagon 10 mcg Dextrose 5% 100 ml (mg/hr)
-    - Nitroprusside(Nipride)STD 100 mg Dextrose 5% 250 ml (mcg/kg/min)
-    - DOPamine STD 400 mg Dextrose 5% 500 ml  Premix (mcg/kg/min)
     - 10% DEXTROSE (ml/hr)
-    - Heparin 25000 Units Dextrose 5% 950 ml  Premix (units/kg/hr)
     - LR w/ 50cc dextrose (ml/hr)
-    - Norepinephrine STD 32 mg Dextrose 5% 500 ml (mcg/min)
     - Acetylcysteine 3% (load) 30000 mg Dextrose 5% 1000 ml (mg/kg/hr)
-    - DOPamine STD 15 mg Dextrose 5% 250 ml  Premix (mcg/kg/min)
     - Mannitol gtt(100gm/500mL) 50 g Dextrose 5% 250 ml (Unknown)
-    - Bivalirudin (Angiomax) 250 mg Dextrose 5% 50 ml (mg/kg/hr)
-    - Norepinephrine STD 4 mg Dextrose 5% 500 ml (mcg/min)
     - Mannitol gtt(100gm/500mL) 50 g Dextrose 5% 500 ml (Unknown)
     - Anticoagulant Citrate Dextrose Sol A (ml/hr)
     - Volume (mL)-dextrose 5 % bolus 250 mL (ml/hr)
-    - Dexmedetomidine Inj 400 Mcg in Dextrose 5% 100 ml ()
-    - Amiodarone Inj 450 mg in Dextrose 5% (Aviva) 250 ml ()
-    - Diltiazem Inj 125 mg in Dextrose 5% 100 ml ()
-    - Vancomycin Inj 1,250 mg in Dextrose 5% 250 ml (ml/hr)
     - Dextrose 5%/0.45% Sod Chl 1,000 ml (ml/hr)
-    - Vancomycin 1 gm/Dextrose 200 ml (ml/hr)
     - Dextrose 5%/0.2% Sod Chl 1,000 ml (ml/hr)
-    - Dexmedetomidine Inj 400 Mcg in Dextrose 5% 100 ml (mcg/min)
-    - Thiamine Inj 100 mg in Dextrose 5% 50 ml (ml/hr)
-    - Dexmedetomidine Inj 400 Mcg in Dextrose 5% 100 ml (ml/hr)
     - Dextrose 5% (ml/hr)
     - Dextrose 10 (ml/hr)
-    - leveTIRACETAM INJ 1,500 mg in Dextrose 5% 100 ml (ml/hr)
     - 10% Dextrose  (ml/hr)
     - SODIUM BICARB 1mEq/ml INJ 150 Meq in Dextrose 5% 850 ml (ml/hr)
-    - Vancomycin Inj 2,000 mg in Dextrose 5% 500 ml (ml/hr)
     - Lacosamide 200 mg in Dextrose 5% 50 ml (ml/hr)
     - Dextrose 10% 1,000 ml (ml/hr)
-    - POTassium PHOSphate INJ 20 mm in Dextrose 5% 250 ml (ml/hr)
-    - Cefazolin Sod Inj 2 gm in Dextrose 5% 50 ml (ml/hr)
-    - Ceftriaxone 1 Gram/Dextrose 100 ml (ml/hr)
     - D5/LR/40mEq potassium (ml/hr)
     - D5/LR + MVI (ml/hr)
     - D5/LR (ml/hr)
@@ -4374,7 +4206,6 @@ glucose:
     - D5NaBi-carb (ml/hr)
     - D5NSS.45 c 75 mEq (ml/hr)
     - D5NSS w/ MVI (ml/hr)
-    - D5NSS (ml/hr)
     - D5NS1/4 (ml/hr)
     - D5NS/40KCL (ml/hr)
     - D5NS+40mEq Potassiuum (ml/hr)
@@ -4513,7 +4344,6 @@ glucose:
     - D5 w/ 40 mEq K+ (ml/hr)
     - D5 NSS w/ 20KCL (ml/hr)
     - D5 NSS
-    - D5 NS w 20K (ml/hr)
     - D5 NS 40K (ml/hr)
     - D5 NS 0.2% (ml/hr)
     - D5 NS +20 K (ml/hr)
@@ -4613,7 +4443,6 @@ glucose:
     - D5W 50 meq Ca Acetat
     - D5W 500ml bolus
     - D5W Bolus
-    - D5/.45NS
     - D5/.2NS
     - D5W flush
     - D5W w/20gm CaGluc
@@ -4709,10 +4538,6 @@ thiamine:
     - D5 1/2 w/mvi, thiamine and folic acid (ml/hr)
     - NSS wtih MVI, Thiamine,folate (ml/hr)
     - 1L D5 0.9NS w/MVI/Thiamine 100mg/Folic Acid 1mg/Mg ++ 2gm (ml/hr)
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml (ml/hr)
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()
     - Thiamine Inj 100 mg in Dextrose 5% 50 ml (ml/hr)
     - Folic Acid/Thiamine
     - D5/LR/Thiamine/Folic Acid (ml/hr)
@@ -4769,16 +4594,11 @@ sodium chloride:
     - ".45 NaCl (ml/hr)"
     - "100 ML BAG : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
     - "100 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
-    - "100 ML NDC : DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN"
     - "1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN"
     - "1000 ML : SODIUM CHLORIDE 0.9 % 0.9 % IV SOLP"
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
     - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.45 % IV SOLN"
     - "1000 ML FLEX CONT : SODIUM CHLORIDE 0.9 % IV SOLN"
     - "1000 ml flex cont : sodium chloride 0.9 % iv soln"
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
-    - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
     - "1000 ML FLEX CONT: SODIUM CHLORIDE 0.9 % IV SOLN"
     - "150 ml flex cont : sodium chloride 0.9 % iv soln"
     - "250 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN"
@@ -4791,16 +4611,7 @@ sodium chloride:
     - "500 ML FLEX CONT EXCEL : SODIUM CHLORIDE 0.9 % IV SOLN"
     - "ATROPINE SULFATE IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                      "
     - "DEXTRAN 40 IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                            "
-    - "DEXTROSE 5 % AND 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                         "
-    - "DIPHENHYDRAMINE HCL IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
-    - "HEPARIN SODIUM IN 0.45% NACL                                                                                                                                                                                                                                   "
-    - "HEPARIN SODIUM IN 0.9% NACL                                                                                                                                                                                                                                    "
-    - "KCL IN DEXTROSE AND NACL                                                                                                                                                                                                                                       "
-    - "LEVETIRACETAM-NACL                                                                                                                                                                                                                                             "
-    - "MAGNESIUM SULFATE 2G/SODIUM CHLORIDE 0.9% 100ML STOCK BAG"
-    - "NOREPINEPHRINE BITAR-0.9% NACL                                                                                                                                                                                                                                 "
     - "PHENOBARBITAL SODIUM IN 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                  "
-    - "POTASSIUM CHLORIDE IN 0.45 % SODIUM CHLORIDE                                                                                                                                                                                                                   "
     - "SODIUM CHLORIDE                                                                                                                                                                                                                                                "
     - "SODIUM CHLORIDE 0.45 %                                                                                                                                                                                                                                         "
     - "SODIUM CHLORIDE 0.45% 1000 ML LVP"
@@ -4856,8 +4667,6 @@ sodium chloride:
     - "SODIUM CHLORIDE IRRIGATING SOLUTION                                                                                                                                                                                                                            "
     - "SODIUM CHLORIDE"
     - "sodium chloride"
-    - "SODIUM CHLORIDE/POTASSIUM CHLORIDE                                                                                                                                                                                                                             "
-    - "VANCOMYCIN IN 0.9% SODIUM CHLORIDE                                                                                                                                                                                                                             "
     - .45 NSS (ml/hr)
     - .45NSS (ml/hr)
     - .9 NS (ml/hr)
@@ -4914,10 +4723,6 @@ sodium chloride:
     - 1/2 NSS
     - 1/2 NSS (ml/hr)
     - 1/2NSS (ml/hr)
-    - 100 ML  -  METRONIDAZOLE IN NACL 5-0.79 MG/ML-% IV SOLN
-    - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
-    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
-    - 1000 ML  -  POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
     - 1000 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
     - 2% NaCl (ml/hr)
     - 23.4% NaCl (ml/hr)
@@ -4937,22 +4742,9 @@ sodium chloride:
     - 3% SODIUM CHLORIDE (ml/hr)
     - 3% Sodium Chloride IVF Infused (ml/hr)
     - 500 ML  -  SODIUM CHLORIDE 0.9 % IV SOLN
-    - Abciximab (Reopro) 3.6 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Abciximab (Reopro) 7.2 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Alteplase(tPA)ArteriClot 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Alteplase(tPA)VasculrSur 10 mg Sodium Chloride 0.9% 1000 ml (mg/hr)
-    - Alteplase(tPA)VasculrSur 20 mg Sodium Chloride 0.9% 100 ml (mg/hr)
     - Aminocaproic acid MAX 25 g Sodium Chloride 0.9% 250 ml (Unknown)
     - Aminocaproic acid STD 1 g Sodium Chloride 0.9% 50 ml (Unknown)
     - Aminocaproic acid STD 25 g Sodium Chloride 0.9% 250 ml (Unknown)
-    - Argatroban 250 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Bivalirudin (Angiomax) 125 mg Sodium Chloride 0.9% 25 ml (mg/kg/hr)
-    - Bivalirudin (Angiomax) 200 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 100 ml (mg/kg/hr)
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mcg/kg/hr)
-    - Bivalirudin (Angiomax) 250 mg Sodium Chloride 0.9% 50 ml (mg/kg/hr)
-    - Bumetanide (Bumex) 10 mg Sodium Chloride 0.9% 100 ml (mg/hr)
     - Calcium CHLORIDE MAX 2 g Sodium Chloride 0.9% 100 ml (Unknown)
     - Calcium CHLORIDE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
     - Calcium CHLORIDE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
@@ -4964,49 +4756,14 @@ sodium chloride:
     - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 100 ml (Unknown)
     - Calcium GLUCONATE STD 1 g Sodium Chloride 0.9% 200 ml (Unknown)
     - Calcium GLUCONATE STD 2 g Sodium Chloride 0.9% 100 ml (Unknown)
-    - Cisatracurium (Nimbex)MAX 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
-    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 1000 ml (mcg/kg/min)
-    - Cisatracurium (Nimbex)STD 200 mg Sodium Chloride 0.9% 500 ml (mcg/kg/min)
     - D5 0.45 NaCl (ml/hr)
     - D5%./NaCl 0.45% (ml/hr)
-    - DEXMEDETOMIDINE HCL IN NACL 200 MCG/50ML IV SOLN
-    - DEXMEDETOMIDINE HCL IN NACL 400 MCG/100ML IV SOLN
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml ()
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (mcg/min)
-    - Dexmedetomidine Inj 400 Mcg in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - Dexmedetomidine(Precedex) 400 mcg Sodium Chloride 0.9% 100 ml (mcg/kg/hr)
     - DEXT 5%-NACL 0.45% 1000 ML LVP
-    - DEXT 5%-NACL 0.45%-KCL 20MEQ LVP
     - DEXT 5%-NACL 0.9% 1000 ML LVP
-    - DEXTROSE 5%-NACL 0.9%
-    - DEXTROSE 5%/NACL 0.45%
-    - Diltiazem (Cardizem) 125 mg Sodium Chloride 0.9% 125 ml (mg/hr)
-    - EPINEPHrine(Adrenalin)MAX 30 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - EPINEPHrine(Adrenalin)STD 4 mg Sodium Chloride 0.9% 500 ml (mcg/min)
-    - EPINEPHrine(Adrenalin)STD 7 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Esmolol (Brevibloc) 2500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
     - Fenoldopam 10 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 250 ml  Premix (mcg/hr)
-    - FentaNYL (Sublimaze) 2500 mcg Sodium Chloride 0.9% 500 ml  Premix (mcg/hr)
-    - Furosemide (Lasix) MAX 500 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Furosemide (Lasix) STD 250 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - HEPARIN (PORCINE) IN NACL 100-0.45 UNIT/ML-% IJ SOLN
-    - HYDROmorphone (Dilaudid) 50 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
-    - Insulin 250 Units Sodium Chloride 0.9% 250 ml (units/hr)
     - IVF NaCl 0.45% (ml/hr)
-    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
     - Labetalol STD 500 mg Sodium Chloride 0.9% 500 ml (mg/min)
     - Levothyroxine gtt 200 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
-    - LORazepam (Ativan) 100 mg Sodium Chloride 0.9% 100 ml  Premix (mg/hr)
-    - MAGNESIUM SULFATE 2G/SODIUM CHLORIDE 0.9% 100ML STOCK BAG
-    - Meropenem IV 2 gm in Sodium Chloride 0.9% 100 ml (ml/hr)
-    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 100 ml (mg/hr)
-    - Midazolam (Versed) 100 mg Sodium Chloride 0.9% 350 ml (mg/hr)
-    - Morphine 250 mg Sodium Chloride 0.9% 250 ml  Premix (mg/hr)
-    - Morphine 250 mg Sodium Chloride 0.9% 500 ml  Premix (mg/hr)
     - NACL
     - NACL (ml/hr)
     - NaCl (ml/hr)
@@ -5020,18 +4777,11 @@ sodium chloride:
     - NaCL 0.9% Calcium gluconate (ml/hr)
     - NaCl 0.9% MBP
     - NACL 1.8% (ml/hr)
-    - NACL 20MEQ KCL (ml/hr)
     - NaCl 3% (ml/hr)
     - NaCL 3% (ml/hr)
     - NaCl 3% Hypertonic (ml/hr)
     - NACL c 10%dextrose (ml/hr)
     - Naloxone(Narcan)-Obtunded 8 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - NiCARDipine (max) 100 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - NiCARDipine (premix) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
-    - NiCARDipine (premix) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
-    - NiCARDipine (std) 20 mg Sodium Chloride 0.9% 200 ml (mg/hr)
-    - NiCARDipine (std) 50 mg  500 ml  Sodium Chloride 0.45% (mg/hr)
-    - NiCARDipine (std) 50 mg Sodium Chloride 0.9% 500 ml (mg/hr)
     - Normal Saline (ml/hr)
     - normal saline (ml/hr)
     - NS
@@ -5046,18 +4796,10 @@ sodium chloride:
     - NSS control (ml/hr)
     - NSS RFS (ml/hr)
     - NSS w/ 7fr sheath (ml/hr)
-    - Octreotide 500 mcg Sodium Chloride 0.9% 500 ml (mcg/hr)
     - Other Med 20 Units Sodium Chloride 0.9% 2000 ml (units/hr)
     - Other Med 30 mmol Sodium Chloride 0.9% 510 ml SODIUM PHOSPHATE 30 MMOL SODIUM PHOSPHATE 30 MMOL (Unknown)
     - Other Med 500 mg Sodium Chloride 0.9% 250 ml (mcg/kg/min)
-    - Other Med 500 mg Sodium Chloride 0.9% 250 ml Ketamine HCl (mcg/kg/min)
     - Pantoprazole (Protonix) 80 mg Sodium Chloride 0.9% 250 ml (mg/hr)
-    - Phenylephrine  MAX 100 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 250 ml (mcg/min)
-    - Phenylephrine  STD 20 mg Sodium Chloride 0.9% 500 ml (mcg/min)
-    - POTASSIUM CHLORIDE IN NACL 20-0.9 MEQ/L-% IV SOLN
-    - POTASSIUM CHLORIDE IN NACL 40 MEQ IN 250 ML (PREMIX)
-    - POTassium PHOSphate INJ 20 mm in Sodium Chloride 0.9% 250 ml (ml/hr)
     - Protamine 250 mg Sodium Chloride 0.9% 100 ml (mg/hr)
     - Sodium Bicarb w/ 0.45% NaCl (ml/hr)
     - SODIUM CHLORIDE
@@ -5121,8 +4863,6 @@ sodium chloride:
     - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (units/min)
     - Vasopressin 40 Units Sodium Chloride 0.9% 100 ml (Unknown)
     - Vasopressin 40 Units Sodium Chloride 0.9% 200 ml (units/min)
-    - Vecuronium (Norcuron) 100 mg Sodium Chloride 0.9% 100 ml (mcg/kg/min)
-    - Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL LINE)
     - Volume (mL)-sodium chloride 0.45 % bolus 1,000 mL (ml/hr)
     - Volume (mL)-sodium chloride 0.45 % bolus 500 mL (ml/hr)
     - Volume (mL)-sodium chloride 0.9 % bolus 1,000 mL
@@ -5143,18 +4883,11 @@ sodium chloride:
     - Volume (mL)-sodium chloride 0.9 % bolus 700 mL (ml/hr)
     - Volume (mL)-sodium chloride 0.9 % bolus 750 mL
     - Volume (mL)-sodium chloride 0.9 % bolus 750 mL (ml/hr)
-    - "Volume (ml) Heparin-heparin 25,000 units in 0.45 % sodium chloride 500 mL infusion
-      (ml/hr)"
-    - "Volume (ml) Heparin-heparin infusion 2 units/mL in 0.9% sodium chloride (ARTERIAL
-      LINE) (ml/hr)"
-    - "Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml (ml/hr)"
     - "Vecuronium Inj 40 mg in Sodium Chloride 0.9% 100 ml (mcg/kg/min)
       Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()"
   mimic3:
     - .45% Normal Saline
     - Sodium Chloride
-    - D5/.45NS
     - NaCl 0.9%
     - NaCl 0.45%
     - NaCl 3% (Hypertonic Saline)
@@ -5194,7 +4927,7 @@ sodium chloride:
     - "SODIUM CITRATE 4 % (5 ML) ICATHETER SYRG"
     - "SODIUM CITRATE 4 GRAM /100 ML (4 %) MISC SOLN"
     - "SODIUM CITRATE-CITRIC ACID 500-334 MG/5 ML ORAL SOLN"
-sodium chloride / glucose:
+glucose / sodium chloride:
   blended: 0
   eicu:
     - D5NSS (ml/hr)
@@ -5202,7 +4935,6 @@ sodium chloride / glucose:
     - DEXTROSE-NACL 5-0.45 % IV SOLN
     - D5/0.45 NaCl (ml/hr)
     - d5/0.45% nacl/10K (ml/hr)
-    - D5 0.9% NaCl W 10 mEq KCl (ml/hr)
     - D5 0.2% NaCl/20K (ml/hr)
     - Dextrose 5%/NaCl 0.45%
     - D5/0.9% NaCl (ml/hr)
@@ -5213,7 +4945,6 @@ sodium chloride / glucose:
     - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 100 mL (ml/hr)
     - Volume (mL)-dextrose 5 % and 0.45% NaCl 5-0.45 % bolus 250 mL (ml/hr)
     - D10W 0.45 NaCl (ml/hr)
-    - D5/0.45% NaCl/40mEq KCL (ml/hr)
     - D5 NaCl 0.9% (ml/hr)
     - D10% /NaCl 0.45% (ml/hr)
     - DEXTROSE 5%-NACL 0.9%
@@ -5221,10 +4952,8 @@ sodium chloride / glucose:
     - 1000 ML  -  DEXTROSE-NACL 5-0.45 % IV SOLN
     - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.45 % IV SOLN"
     - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.9 % IV SOLN"
-    - 1000 ML  -  KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
     - "1000 ML FLEX CONT : DEXTROSE-NACL 5-0.45 % IV SOLN"
     - "DEXTROSE 5%-1/2 NORMAL SALINE IV : 1000 ML BAG"
-    - KCL IN DEXTROSE-NACL 20-5-0.45 MEQ/L-%-% IV SOLN
     - "1000 ML FLEX CONT: DEXTROSE-NACL 5-0.9 % IV SOLN"
     - D5/NS (ml/hr)
     - D5/NS  (ml/hr)
@@ -5316,7 +5045,10 @@ sodium chloride / glucose:
     - D51/2NS
     - D51/2NS (ml/hr)
     - D51/2NS w/ 20meqK (ml/hr)
-  mimic3: []
+    - "DEXTROSE 5%/NACL 0.45%"
+    - "DEXTROSE 5 % AND 0.9 % SODIUM CHLORIDE                                                                                                                                                                                                                         "
+  mimic3:
+    - "D5/.45NS"
   mimic4: []
   nwicu: []
 polyethylene glycols:
@@ -5433,7 +5165,6 @@ potassium chloride:
     - NS + KCL (ml/hr)
     - kcl (ml/hr)
     - IVF w/KCL (ml/hr)
-    - D30W/85 meq KCL/60 units insulin (ml/hr)
     - D5.9 w/ KCL (ml/hr)
     - MIV w/40 KCL (ml/hr)
     - IV + Kcl (ml/hr)
@@ -5760,10 +5491,6 @@ magnesium sulfate:
     - Magnesium Sulfate STD 1 g Sterile Water (SWFI) 50 ml  Premix (Unknown)
     - Magnesium Sulfate STD 1 g Sterile Water (SWFI) 500 ml  Premix (Unknown)
     - Magnesium Sulfate
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml (ml/hr)
-    - Folic Acid Inj 5 mg Multivitamins-12 Inj 20 ml Thiamine Inj 200 mg Magnesium Sulfate
-      Inj 4 gm in Sodium Chloride 0.9% 1,000 ml ()
   mimic3:
     - Magnesium Sulfate
     - Magnesium Sulfate (Bolus)
@@ -6567,3 +6294,60 @@ Enteral Nutrition:
     - Jevity 1.2 (Full)
   nwicu: []
   sicdb: []
+acetaminophen / diphenhydramine:
+  blended: 36029872
+  eicu:
+    - "TYLENOL PM EXTRA STRENGTH                                                                                                                                                                                                                                      "
+    - "TYLENOL PM                                                                                                                                                                                                                                                     "
+    - "ACETAMINOPHEN-DIPHENHYDRAMINE                                                                                                                                                                                                                                  "
+    - "ACETAMINOPHEN/DIPHENHYDRAMINE HCL                                                                                                                                                                                                                              "
+  mimic3: []
+  mimic4: []
+  nwicu: []
+acetaminophen / diphenhydramine / phenylephrine:
+  blended: 36030516
+  eicu:
+    - "DIPHENHYDRAMINE HCL/PHENYLEPHRINE HCL/ACETAMINOPHEN                                                                                                                                                                                                            "
+  mimic3: []
+  mimic4: []
+  nwicu: []
+acetaminophen / hydrocodone:
+  blended: 36029873
+  eicu:
+    - "HYDROCODONE-ACETAMINOPHEN 5-325 MG PO TABS"
+    - "HYDROCODONE 5 MG-ACETAMINOPHEN 325 MG TABLET"
+    - "HYDROCODONE-ACETAMINOPHEN 10-325 MG PO TABS"
+    - "HYDROcodone-acetaminophen"
+    - "HYDROCODONE-ACETAMINOPHEN                                                                                                                                                                                                                                      "
+    - "HYDROCODONE BITARTRATE/ACETAMINOPHEN                                                                                                                                                                                                                           "
+    - "HYDROCODONE BIT/ACETAMINOPHEN                                                                                                                                                                                                                                  "
+    - "HYDROCODONE W/ACETAMINOPHEN                                                                                                                                                                                                                                    "
+    - "HYDROCODONE/ACETAMINOPHEN                                                                                                                                                                                                                                      "
+  mimic3: []
+  mimic4: []
+  nwicu: []
+acetaminophen / tramadol:
+  blended: 36030125
+  eicu:
+    - "TRAMADOL HCL-ACETAMINOPHEN                                                                                                                                                                                                                                     "
+    - "TRAMADOL HCL/ACETAMINOPHEN                                                                                                                                                                                                                                     "
+  mimic3: []
+  mimic4: []
+  nwicu: []
+amlodipine / atorvastatin:
+  blended: 36030178
+  eicu:
+    - "AMLODIPINE BESYLATE/ATORVASTATIN CALCIUM                                                                                                                                                                                                                       "
+    - "AMLODIPINE-ATORVASTATIN                                                                                                                                                                                                                                        "
+    - "CADUET                                                                                                                                                                                                                                                         "
+  mimic3: []
+  mimic4: []
+  nwicu: []
+ciprofloxacin / dexamethasone:
+  blended: 36030192
+  eicu:
+    - "CIPROFLOXACIN HCL/DEXAMETHASONE                                                                                                                                                                                                                                "
+    - "CIPRODEX                                                                                                                                                                                                                                                       "
+  mimic3: []
+  mimic4: []
+  nwicu: []

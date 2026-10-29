@@ -1,13 +1,8 @@
 """
 NEE: compute Norepinephrine Equivalent Dose from raw inputs in long format.
 
-Output columns per row:
-- Global ICU Stay ID
-- T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
-- Norepinephrine Equivalent Dose (mcg/kg/min)
-
-Time is in seconds. Windows determined by floor((time - T_0)/window_size).
+One row per medication administration (drug interval) with the dose converted to a
+norepinephrine equivalent in mcg/kg/min. Times are in seconds from ICU admission.
 
 Sources
 -------
@@ -21,11 +16,12 @@ from typing import Optional
 
 import polars as pl
 
-from ...common import get_medications, get_patient_information
+from ...common import (
+    _validate_required_data,
+    get_medications,
+    get_patient_information,
+)
 from .ALIGNED_UNITS import ALIGNED_UNITS
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 VASOPRESSORS_INOTROPES = [
     "angiotensin II",  # 0.0025 * dose in ng/kg/min
@@ -36,7 +32,7 @@ VASOPRESSORS_INOTROPES = [
     "methylene blue",  # 0.2 * dose in mg/kg/h
     "midodrine",  # 0.4 * dose in mcg/kg/min
     "norepinephrine",  # 1 * dose in mcg/kg/min
-    "phenylephrine",  # 100 * dose in mcg/kg/min
+    "phenylephrine",  # 0.06 * dose in mcg/kg/min
     "terlipressin",  # 10 * dose in mcg/h
     "vasopressin (USP)",  # 2.5 * dose in units/kg
 ]
@@ -58,7 +54,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
     - Methylene Blue: 0.2 × dose (mg/kg/h)
     - Midodrine: 0.4 × dose (mcg/kg/min)
     - Norepinephrine: 1 × dose (mcg/kg/min)
-    - Phenylephrine: 100 × dose (mcg/kg/min)
+    - Phenylephrine: 0.06 × dose (mcg/kg/min)
     - Terlipressin: 10 × dose (mcg/h)
     - Vasopressin (USP): 2.5 × dose (units/kg/min)
 
@@ -74,7 +70,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
     Returns
     -------
         pl.LazyFrame
-            One row per (stay, timeframe) with columns:
+            One row per medication administration with columns:
             - Global ICU Stay ID
             - Drug Start Relative to Admission (seconds)
             - Drug End Relative to Admission (seconds)
@@ -93,13 +89,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("NOREPINEPHRINE_EQUIVALENT_DOSAGE", required)
 
     # Base frames
     patient_information = patient_information.lazy()
@@ -136,7 +126,7 @@ def NOREPINEPHRINE_EQUIVALENT_DOSAGE(
             pl.col("Drug Ingredient") == "phenylephrine",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
         )
-        .then(pl.col("Drug Rate (fixed units)") * 100)
+        .then(pl.col("Drug Rate (fixed units)") * 0.06)
         .when(
             pl.col("Drug Ingredient") == "terlipressin",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",

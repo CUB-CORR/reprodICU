@@ -98,12 +98,15 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 "valuenum",
             )
             .sort("subject_id", "charttime")
-            .filter(pl.col("itemid").is_in(o2_flow_chartevents_ids))
+            .filter(
+                pl.col("itemid").is_in(o2_flow_chartevents_ids),
+                pl.col("value").is_not_null(),
+            )
             .with_columns(
                 pl.col("charttime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("storetime").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 # merge o2 flows into a single row
-                pl.when(pl.col("itemid") == 226732)
+                pl.when(pl.col("itemid") == 227582)
                 .then(223834)
                 .otherwise(pl.col("itemid"))
                 .alias("itemid"),
@@ -146,39 +149,28 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .drop("storetime")
         )
 
-        OXYGEN_DELIVERY_IDS = (
-            CHARTEVENTS_OXYGEN_FLOW.select("subject_id", "charttime")
-            .join(
-                CHARTEVENTS_OXYGEN_DELIVERY.select("subject_id", "charttime"),
-                on=["subject_id", "charttime"],
-                how="outer",
-                coalesce=True,
-            )
-            .unique()
-        )
-
+        # stg: FULL OUTER JOIN of the o2 flows and the devices ON subject_id, charttime, then
+        # WHERE ce.rn = 1: one flow row per subject_id/charttime/itemid, joined to the devices
+        # of the charttime; device rows without a flow row have ce.rn = NULL and are dropped
         OXYGEN_DELIVERY = (
-            OXYGEN_DELIVERY_IDS.join(
-                CHARTEVENTS_OXYGEN_DELIVERY.join(
-                    # limit to 1 row per subject_id/charttime/itemid
-                    CHARTEVENTS_OXYGEN_FLOW.filter(pl.col("rn") == 1),
-                    on=["subject_id", "stay_id", "charttime", "itemid"],
-                    how="full",
-                    coalesce=True,
+            CHARTEVENTS_OXYGEN_FLOW.filter(pl.col("rn") == 1)
+            .join(
+                CHARTEVENTS_OXYGEN_DELIVERY.select(
+                    "subject_id", "stay_id", "charttime", "o2_device", "rn"
                 ),
                 on=["subject_id", "charttime"],
                 how="left",
-                coalesce=True,
+                suffix="_o2",
             )
             .group_by("subject_id", "charttime")
             .agg(
-                pl.col("stay_id").max(),
+                pl.coalesce("stay_id", "stay_id_o2").max().alias("stay_id"),
                 # contrary to mimic-code template we only need the first o2_device
-                pl.when(pl.col("rn") == 1)
+                pl.when(pl.col("rn_o2") == 1)
                 .then(pl.col("o2_device"))
                 .otherwise(None)
                 .drop_nulls()
-                .first()
+                .max()
                 .alias("o2_device"),
             )
             .collect()
@@ -234,13 +226,13 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .then(pl.col("value"))
                 .otherwise(None)
                 .drop_nulls()
-                .first()
+                .max()
                 .alias("ventilator_mode"),
                 pl.when(pl.col("itemid") == 229314)
                 .then(pl.col("value"))
                 .otherwise(None)
                 .drop_nulls()
-                .first()
+                .max()
                 .alias("ventilator_mode_hamilton"),
             )
             .collect()
@@ -343,10 +335,11 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                     )
                 )
                 .then(pl.lit("non-invasive ventilation"))
+                .when(pl.col("o2_device") == "High flow nasal cannula")
+                .then(pl.lit("high-flow nasal cannula"))
                 .when(
                     pl.col("o2_device").is_in(
                         [
-                            "High flow nasal cannula", # HFNC not extra
                             "Non-rebreather", "Face tent", "Aerosol-cool",
                             "Venti mask ", "Medium conc mask ",
                             "Ultrasonic neb", "Vapomist", "Oxymizer",
@@ -391,7 +384,11 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 .then(1)
                 # a X hour gap always initiates a new event
                 .when(
-                    (pl.col("charttime") - pl.col("charttime_lag")).gt(
+                    # DATETIME_DIFF(charttime, charttime_lag, HOUR) counts the hour boundaries
+                    (
+                        pl.col("charttime").dt.truncate("1h")
+                        - pl.col("charttime_lag").dt.truncate("1h")
+                    ).ge(
                         # is 14 hours in original code
                         pl.duration(hours=14)
                     )
@@ -420,6 +417,7 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .group_by("stay_id", "vent_seq")
             .agg(
                 pl.col("charttime").min().alias("starttime"),
+                pl.col("charttime").max().alias("charttime_max"),
                 # for the end time of the ventilation event, the time of the *next* setting
                 # i.e. if we go NIV -> O2, the end time of NIV is the first row
                 # with a documented O2 device
@@ -427,7 +425,11 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 # in which case it's the last row with a documented NIV.
                 pl.when(
                     pl.col("charttime_lead").is_null()
-                    | (pl.col("charttime") - pl.col("charttime_lag")).gt(
+                    # DATETIME_DIFF(charttime_lead, charttime, HOUR) counts the hour boundaries
+                    | (
+                        pl.col("charttime_lead").dt.truncate("1h")
+                        - pl.col("charttime").dt.truncate("1h")
+                    ).ge(
                         # is 14 hours in original code
                         pl.duration(hours=14)
                     )
@@ -441,7 +443,8 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 # but we could equally well group by this column
                 pl.col("ventilation_status").drop_nulls().first(),
             )
-            .filter(pl.col("starttime").ne(pl.col("endtime")))
+            # HAVING MIN(charttime) != MAX(charttime): at least two settings
+            .filter(pl.col("starttime").ne(pl.col("charttime_max")))
             # Make datetime relative to admission in seconds
             .join(ADMISSIONTIMES, on="stay_id", how="left")
             .with_columns(
@@ -451,9 +454,12 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
                 (pl.col("endtime") - pl.col("intime"))
                 .dt.total_seconds()
                 .alias("Ventilation End Relative to Admission (seconds)"),
-                pl.col("ventilation_status").alias("Ventilation Type"),
+                # HFNC is a status of its own for the episodes (ventilation.sql), not a type here
+                pl.col("ventilation_status")
+                .replace({"high-flow nasal cannula": "supplemental oxygen"})
+                .alias("Ventilation Type"),
             )
-            .drop("intime", "starttime", "endtime", "vent_seq")
+            .drop("intime", "starttime", "endtime", "charttime_max", "vent_seq")
         )
 
         return (

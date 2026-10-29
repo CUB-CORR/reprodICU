@@ -1,9 +1,10 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-07
 
 # Description: This script extracts data from HiRID source files and converts them into a structured format for harmonization.
 
 import os
+from datetime import time
 from pathlib import Path
 
 import polars as pl
@@ -289,7 +290,7 @@ class HiRIDExtractor(HiRIDPaths):
                         "%Y-%m-%d %H:%M:%S%.9f"
                     ),
                     # Replace the variableid with the corresponding variable name
-                    pl.col("variableid").replace(variables, default=None),
+                    pl.col("variableid").replace_strict(variables, default=None),
                 )
                 # Filter for variables of interest within the cutoff time
                 .filter(
@@ -376,10 +377,10 @@ class HiRIDExtractor(HiRIDPaths):
             .agg(pl.col("value").first())
             .with_columns(
                 pl.col("value")
-                .replace(hirid_diagnosis_mapping, default=None)
+                .replace_strict(hirid_diagnosis_mapping, default=None)
                 .alias(self.admission_diagnosis_col),
                 pl.col("value")
-                .replace(hirid_specialty_mapping, default=None)
+                .replace_strict(hirid_specialty_mapping, default=None)
                 .alias(self.specialty_col),
             )
             .select(
@@ -441,13 +442,57 @@ class HiRIDExtractor(HiRIDPaths):
             .with_columns(
                 (pl.col("datetime") - pl.col("admissiontime"))
                 .dt.total_seconds()
-                .alias(self.timeseries_time_col)
+                .alias(self.timeseries_time_col),
+                # The cumulative counters restart at noon
+                (pl.col("datetime") - pl.duration(hours=12))
+                .dt.date()
+                .alias("noon_day"),
             )
             .drop("admissiontime", "datetime")
             # Remove duplicate rows
             .unique()
             # Remove rows with empty lab names
             .filter(pl.col("value").is_not_null())
+            # The urine output is a cumulative counter: each record is the volume
+            # since the previous one. A decrease after noon is the daily reset,
+            # other decreases are corrections (no volume).
+            .sort(
+                self.icu_stay_id_col,
+                "variableid",
+                self.timeseries_time_col,
+                "value",
+            )
+            .with_columns(
+                pl.col("value")
+                .shift(1)
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("prev_value"),
+                pl.col("noon_day")
+                .shift(1)
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("prev_noon_day"),
+            )
+            .with_columns(
+                # 30005110: cumulative output counter (resets at noon); ricu reads it as
+                # the urine volume, too
+                pl.when(pl.col("variableid") == 30005110)
+                .then(
+                    pl.when(
+                        pl.col("prev_value").is_null()
+                        | (
+                            (pl.col("value") < pl.col("prev_value"))
+                            & (pl.col("noon_day") != pl.col("prev_noon_day"))
+                        )
+                    )
+                    .then(pl.col("value"))
+                    .otherwise(
+                        pl.max_horizontal(pl.col("value") - pl.col("prev_value"), 0)
+                    )
+                )
+                .otherwise(pl.col("value"))
+                .alias("value")
+            )
+            .drop("noon_day", "prev_value", "prev_noon_day")
             # Remove rows with empty lab results
             .filter(pl.col("variable").is_not_null(), pl.col("variable") != "")
         )
@@ -553,457 +598,490 @@ class HiRIDExtractor(HiRIDPaths):
             )
         )
 
-    # region pharma
-    def extract_medications(self) -> pl.LazyFrame:
+    # region medications
+    def _extract_counter_increases(
+        self,
+        data: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
         """
-        Extract and process medication administration events.
+        Extract the increase of a cumulative counter (it restarts at 12:00:00) at each
+        reading.
 
-        Steps:
-            1. Load medication and route mappings.
-            2. Extract pharmaceutical administration records from {pharma_path}.
-            3. Map medication IDs to standardized names and ingredients.
-            4. Compute infusion rates and durations from log entries.
-            5. Extract fluid administration (saline and colloids) from observations.
-            6. Combine pharmaceutical and fluid administration data.
+        Arguments:
+            data: Readings of the counters (patientid, datetime, variableid, value);
+                further columns are kept.
+            admissiontime: Admission time of each ICU stay.
+            length_of_stay: Length of stay of each ICU stay.
 
         Returns:
-            pl.LazyFrame: Contains columns:
-                - {icu_stay_id_col}: ICU stay identifier.
-                - {drug_name_col}: Medication name.
-                - {drug_ingredient_col}: Active drug ingredient.
-                - {drug_amount_col}: Drug amount.
-                - {drug_amount_unit_col}: Amount unit.
-                - {drug_rate_col}: Administration rate.
-                - {drug_rate_unit_col}: Rate unit.
-                - {drug_start_col}: Relative start time (seconds).
-                - {drug_end_col}: Relative end time (seconds).
-                - Additional administrative columns.
+            pl.LazyFrame: The readings with an increase, with the increase as
+                {fluid_amount_col}, the start time (seconds from admission) and the
+                exact time of the reading (datetime).
         """
-        print("HiRID   - Extracting medications...")
+        counter_cols = [self.icu_stay_id_col, "variableid", "counter_day"]
 
-        # Extract medication mappings by building a chain of references
-        # 1. Get drug name references from our mapping files
-        drug_references = self._extract_drug_references(return_ids=True)
-        concept_ids = drug_references.values()
-
-        # 2. Retrieve active ingredients for these concept IDs
-        ingredients = self.omop.get_ingredient(concept_ids, return_dict=False)
-
-        # 3. Create a mapping from drug names to their active ingredients
-        # Convert drug_references dictionary to DataFrame
-        drug_references_df = pl.from_dict(
-            {
-                "pharmaid": list(drug_references.keys()),
-                "drug_concept_id": list(drug_references.values()),
-            }
-        )
-
-        # Join drug references with ingredients to get all drug-ingredient mappings
-        # This preserves one-to-many relationships (one drug to multiple ingredients)
-        pharmaid_to_ingredient = (
-            drug_references_df.join(
-                ingredients, on="drug_concept_id", how="inner"
+        return (
+            data.rename({"patientid": self.icu_stay_id_col})
+            .cast({self.icu_stay_id_col: str, "datetime": str})
+            # Join the data with the admission times
+            .join(admissiontime, on=self.icu_stay_id_col)
+            .join(length_of_stay, on=self.icu_stay_id_col)
+            .with_columns(
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
+                pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("value").cast(float),
             )
-            .rename({"ingredient_name": self.drug_ingredient_col})
-            .select("pharmaid", self.drug_ingredient_col)
-            .lazy()
+            .sort(self.icu_stay_id_col, "variableid", "datetime", "value")
+            .with_columns(
+                # Number the counter days (the counter restarts at 12:00:00)
+                (pl.col("datetime").dt.time() == time(12))
+                .cum_sum()
+                .over(self.icu_stay_id_col, "variableid")
+                .alias("counter_day"),
+                (pl.col("datetime") - pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.drug_start_col),
+            )
+            # Calculate the increase of the counter, as far as it stays below
+            # all later readings of the counter day
+            .with_columns(
+                (
+                    pl.col("value").cum_min(reverse=True)
+                    - pl.col("value").shift(1, fill_value=0)
+                )
+                .clip(lower_bound=0)
+                .over(counter_cols)
+                .alias(self.fluid_amount_col)
+            )
+            # Remove rows without an increase
+            .filter(pl.col(self.fluid_amount_col) > 0)
+            # Remove duplicate rows
+            .unique()
         )
 
+    def _extract_medications_observation(
+        self,
+        data: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """
+        Extract the saline and colloid administrations, which are cumulative
+        counters (restarting at 12:00:00), as point administrations at the
+        reading of each increase.
+
+        Returns:
+            pl.LazyFrame: Fluid administrations with amount and start time (no
+                end and rate), and the exact time of the reading (datetime).
+        """
+        # Observation   30005075    Infusion of saline solution	cummulative
+        # Observation   30005080    Intravenous fluid colloid administration
+        # -> both are cumulative variables and reset at noon
+        fluid_variables = pl.LazyFrame(
+            {
+                "variableid": [30005075, 30005080],
+                self.fluid_group_col: ["normal saline 0.9%", "colloid"],
+                self.drug_class_col: [
+                    "fluid (crystalloid - normal saline)",
+                    "fluid (colloid)",
+                ],
+            },
+            schema_overrides={"variableid": data.collect_schema()["variableid"]},
+        )
+
+        return (
+            data
+            .select("patientid", "datetime", "variableid", "value")
+            # Keep the relevant observation variables
+            .join(fluid_variables, on="variableid")
+            .pipe(self._extract_counter_increases, admissiontime, length_of_stay)
+            .with_columns(
+                pl.lit("intravenous").alias(self.drug_admin_route_col),
+                # The counters do not say whether it is a continuous infusion
+                pl.lit(None, dtype=pl.Boolean).alias(self.drug_continuous_col),
+                # Point administration at the reading, without end and rate
+                pl.lit("given").alias(self.drug_admin_type_col),
+                pl.lit(None, dtype=pl.Int64).alias(self.drug_end_col),
+                pl.lit(None, dtype=pl.Float64).alias(self.fluid_rate_col),
+            )
+            .select(
+                self.icu_stay_id_col,
+                self.drug_admin_route_col,
+                self.drug_admin_type_col,
+                self.drug_continuous_col,
+                self.fluid_group_col,
+                self.drug_class_col,
+                self.fluid_amount_col,
+                self.fluid_rate_col,
+                self.drug_start_col,
+                self.drug_end_col,
+                # Exact time of the reading, to link it to the pharma records
+                "datetime",
+            )
+        )
+
+    def _extract_unrecorded_intake(
+        self,
+        observations: pl.LazyFrame,
+        counted: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """
+        Extract the intake that the cumulative intake counter (IN/c) contains, but no
+        other HiRID variable: the increase of the counter minus the volumes that are
+        counted from the saline and colloid counters and the pharma records.
+
+        The remainder consists of round, hand-charted amounts (drinks, boluses, flushes),
+        so it is added as "Fluid intake" without a route.
+
+        Arguments:
+            observations: Observation table(s) of a batch of cases.
+            counted: Volumes that are counted as intake (columns: ICU stay ID, "givenat" =
+                exact time of the record, "volume" in ml). A pharma volume that a counter
+                reading carries is counted once (see process_medications).
+            admissiontime: Admission time of each ICU stay.
+            length_of_stay: Length of stay of each ICU stay.
+
+        Returns:
+            pl.LazyFrame: Long format timeseries with the stay, time, "variable"
+                ("Fluid intake") and "value" (ml).
+        """
+        # a difference to the counted volumes up to this is rounding, not intake
+        rounding_ml = 1
+        stay = self.icu_stay_id_col
+
+        # increase of the counter at each reading
+        steps = (
+            observations.filter(pl.col("variableid") == 30005010)
+            .select("patientid", "datetime", "variableid", "value")
+            .pipe(self._extract_counter_increases, admissiontime, length_of_stay)
+            .select(
+                stay,
+                "datetime",
+                self.drug_start_col,
+                pl.col(self.fluid_amount_col).alias("step"),
+            )
+        )
+
+        # the counted volumes have the time of the reading of the counter that includes them
+        matched = (
+            counted.filter(pl.col("volume") > 0)
+            .group_by(stay, pl.col("givenat").alias("datetime"))
+            .agg(pl.col("volume").sum().alias("matched"))
+        )
+
+        return (
+            steps.join(matched, on=[stay, "datetime"], how="left")
+            .select(
+                stay,
+                pl.col(self.drug_start_col).alias(self.timeseries_time_col),
+                pl.lit("Fluid intake").alias("variable"),
+                (pl.col("step") - pl.col("matched").fill_null(0)).alias("value"),
+            )
+            .filter(pl.col("value") > rounding_ml)
+        )
+
+    def _extract_medications_pharma(
+        self,
+        data: pl.LazyFrame,
+        admissiontime: pl.LazyFrame,
+        length_of_stay: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """
+        Extract the pharma administration records and map them to medication
+        names, ingredients, classes and routes.
+
+        Returns:
+            pl.LazyFrame: One record per log entry, with the exact instant
+                (givenat), whether it is a fluid given in ml (fluid_entry)
+                and whether it is an injection (injection).
+        """
         # Load additional mappings
         hirid_drug_class_mapping = self.load_mapping(
-            self.drug_administration_route_mapping_path
+            self.drug_class_mapping_path
         )
         hirid_drug_administration_route_mapping = self.load_mapping(
             self.drug_administration_route_mapping_path
         )
 
-        admissiontime = (
-            self._extract_admissions()
-            .select(self.icu_stay_id_col, "admissiontime")
-            .cast({"admissiontime": str})
-        )
-        length_of_stay = self._extract_length_of_stay()
-
-        ########################################################################
-        # OBSERVATION
-        # -> saline and colloid infusions are tracked as observations
-        ########################################################################
-        # Create an empty DataFrame to store the observation data
-        observation = pl.LazyFrame()
-
-        # Filter for the relevant observation variables
-        # Observation   30005075    Infusion of saline solution	cummulative
-        # Observation   30005080    Intravenous fluid colloid administration
-        # -> both are cumulative variables and reset at midnight
-        # to calculate the infusion rate, we need to calculate the difference
-        # between the current and the previous value
-        fluid_ids = [
-            30005075,  # Infusion of saline solution
-            30005080,  # Intravenous fluid colloid administration
-        ]
-
-        # Since each case has it's data in only one file, iterating over the
-        # files allows for a more efficient processing of the data.
-        for file in Path(self.timeseries_path).glob("*.parquet"):
-            print(f"Processing file {os.path.basename(file)}...", end="\r")
-            data = (
-                pl.scan_parquet(file)
-                .filter(pl.col("variableid").is_in(fluid_ids))
-                # Select the relevant columns
-                .select("patientid", "datetime", "variableid", "value")
-                # Rename the columns for consistency
-                .rename({"patientid": self.icu_stay_id_col})
-                .with_columns(
-                    pl.col("variableid")
-                    .replace_strict(
-                        {
-                            30005075: "normal saline (0.9%)",
-                            30005080: "colloid",
-                        },
-                        default=None,
-                        return_dtype=pl.String,
-                    )
-                    .alias(self.fluid_group_col)
-                )
-                .cast({self.icu_stay_id_col: str, "datetime": str})
-                # Join the data with the admission times
-                .join(admissiontime, on=self.icu_stay_id_col)
-                .join(length_of_stay, on=self.icu_stay_id_col)
-                .with_columns(
-                    pl.col("admissiontime").str.to_datetime(
-                        "%Y-%m-%d %H:%M:%S%.9f"
-                    ),
-                    pl.col("datetime").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                    pl.col("value").cast(float),
-                    pl.lit("intravenous").alias(self.drug_admin_route_col),
-                    pl.lit(True).alias(self.drug_continuous_col),
-                )
-                # Calculate the difference between the current and the previous
-                # value, store each timestamp in a separate column
-                .with_columns(
-                    pl.col("datetime")
-                    .shift(1)
-                    .over(
-                        self.icu_stay_id_col,
-                        self.fluid_group_col,
-                        order_by="datetime",
-                    )
-                    .alias("prev_datetime"),
-                )
-                .with_columns(
-                    # Check if dates are different (midnight crossed)
-                    pl.when(
-                        pl.col("datetime").dt.date()
-                        != pl.col("prev_datetime").dt.date()
-                    )
-                    # If midnight crossed, use current value (assuming reset to 0)
-                    .then(pl.col("value"))
-                    # Otherwise calculate difference from previous value
-                    .otherwise(
-                        pl.col("value").sub(
-                            pl.col("value")
-                            .shift(1)
-                            .over(
-                                self.icu_stay_id_col,
-                                self.fluid_group_col,
-                                order_by="datetime",
-                            )
-                        )
-                    ).alias(self.fluid_amount_col),
-                )
-                # Calculate the rate
-                .with_columns(
-                    (
-                        pl.col(self.fluid_amount_col)
-                        / pl.col("datetime")
-                        .sub(pl.col("prev_datetime"))
-                        .dt.total_seconds()
-                    )
-                    .round_sig_figs(2)
-                    .alias(self.fluid_rate_col)
-                )
-                .with_columns(
-                    (pl.col("prev_datetime") - pl.col("admissiontime"))
-                    .dt.total_seconds()
-                    .alias(self.drug_start_col),
-                    (pl.col("datetime") - pl.col("admissiontime"))
-                    .dt.total_seconds()
-                    .alias(self.drug_end_col),
-                    # Add a column to indicate the administration type
-                    pl.lit("given").alias(self.drug_admin_type_col),
-                )
-                .drop("admissiontime", "datetime")
-                # Remove duplicate rows
-                .unique()
-                # Remove rows with empty values
-                .filter(pl.col(self.fluid_amount_col) > 0)
-                .select(
-                    self.icu_stay_id_col,
-                    self.drug_admin_route_col,
-                    self.drug_admin_type_col,
-                    self.drug_continuous_col,
-                    self.fluid_group_col,
-                    self.fluid_amount_col,
-                    self.fluid_rate_col,
-                    self.drug_start_col,
-                    self.drug_end_col,
-                )
+        return (
+            data
+            .select(
+                "patientid",
+                "pharmaid",
+                "givenat",
+                "givendose",
+                "doseunit",
+                "route",
+                "infusionid",
+                "typeid",
+                "subtypeid",
+                "recordstatus",
+                "fluidamount_calc",
             )
-
-            # Append the data to the DataFrame
-            observation = pl.concat(
-                [observation, data.lazy()], how="diagonal_relaxed"
+            # Rename columns for consistency
+            .rename(
+                {
+                    "patientid": self.icu_stay_id_col,
+                    "givendose": self.drug_amount_col,
+                    "doseunit": self.drug_amount_unit_col,
+                    "route": self.drug_admin_route_col,
+                    "infusionid": self.drug_mixture_id_col,
+                    "subtypeid": self.drug_class_col,
+                    "recordstatus": self.drug_admin_type_col,
+                    "fluidamount_calc": self.fluid_amount_col,
+                }
             )
-
-        ########################################################################
-        # PHARMA
-        ########################################################################
-        # Create an empty DataFrame to store the pharma data
-        pharma = pl.LazyFrame()
-
-        # Since each case has it's data in only one file, iterating over the
-        # files allows for a more efficient processing of the data.
-        for file in Path(self.pharma_path).glob("*.parquet"):
-            print(f"Processing file {os.path.basename(file)}...", end="\r")
-            data = (
-                pl.scan_parquet(file)
-                .select(
-                    "patientid",
-                    "pharmaid",
-                    "givenat",
-                    "givendose",
-                    "doseunit",
-                    "route",
-                    "infusionid",
-                    "subtypeid",
-                    "recordstatus",
-                    "fluidamount_calc",
-                )
-                # Rename columns for consistency
-                .rename(
-                    {
-                        "patientid": self.icu_stay_id_col,
-                        "givendose": self.drug_amount_col,
-                        "doseunit": self.drug_amount_unit_col,
-                        "route": self.drug_admin_route_col,
-                        "infusionid": self.drug_mixture_id_col,
-                        "subtypeid": self.drug_class_col,
-                        "recordstatus": self.drug_admin_type_col,
-                        "fluidamount_calc": self.fluid_amount_col,
-                    }
-                )
-                # Cast the datetime to string to avoid the following error:
-                # polars.exceptions.SchemaError: invalid series dtype: expected `String`, got `datetime[ns]`
-                .cast({self.icu_stay_id_col: str, "givenat": str})
-                .join(admissiontime, on=self.icu_stay_id_col)
-                .join(length_of_stay, on=self.icu_stay_id_col)
-                .with_columns(
-                    # Add a column to indicate the administration type
-                    # 2 = invalidated, 32 = notified, not administered
-                    pl.when((pl.col(self.drug_admin_type_col) & 2) != 0)
-                    .then(pl.lit("cancelled"))
-                    .when((pl.col(self.drug_admin_type_col) & 32) != 0)
-                    .then(pl.lit("ordered"))
-                    .otherwise(pl.lit("given"))
-                    .alias(self.drug_admin_type_col),
-                    pl.col("admissiontime").str.to_datetime(
-                        "%Y-%m-%d %H:%M:%S%.9f"
-                    ),
-                    pl.col("givenat").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                    pl.col(self.drug_amount_col).cast(float),
-                )
-                # Replace the pharmaid with the corresponding medication name
-                .join(self._get_pharma_variables(), on="pharmaid", how="left")
-                .join(pharmaid_to_ingredient, on="pharmaid", how="left")
-                .with_columns(
-                    (pl.col("givenat") - pl.col("admissiontime"))
-                    .dt.total_seconds()
-                    .alias(self.drug_end_col),
-                    # Map the medication classes
-                    pl.col(self.drug_class_col)
-                    .cast(str)
-                    .replace_strict(
-                        hirid_drug_class_mapping,
-                        default=None,
-                        return_dtype=pl.String,
-                    ),
-                    # Map the medication administration routes
-                    pl.col(self.drug_admin_route_col).replace_strict(
-                        hirid_drug_administration_route_mapping,
-                        default=None,
-                        return_dtype=pl.String,
-                    ),
-                )
-                .drop("admissiontime", "givenat")
-                # Remove duplicate rows
-                .unique()
-                # Remove rows with empty lab names
-                .filter(pl.col(self.drug_amount_col).is_not_null())
-                .drop(self.icu_length_of_stay_col)
-            )
-
-            # Append the data to the DataFrame
-            pharma = pl.concat([pharma, data.lazy()], how="diagonal_relaxed")
-
-        # Get infusion duration where possible, by checking whether the drugname reappears
-        # on next log entry (as determined by a different offset)
-        # 1. Get list of log entry offsets for each patient
-        pharma_offsets = (
-            pharma.select(
-                self.icu_stay_id_col,
-                self.drug_end_col,
-                self.drug_mixture_id_col,
-            )
-            .unique()
-            .sort(
-                self.icu_stay_id_col,
-                self.drug_mixture_id_col,
-                self.drug_end_col,
+            # Cast the datetime to string to avoid the following error:
+            # polars.exceptions.SchemaError: invalid series dtype: expected `String`, got `datetime[ns]`
+            .cast({self.icu_stay_id_col: str, "givenat": str})
+            .join(admissiontime, on=self.icu_stay_id_col)
+            .join(
+                length_of_stay.select(
+                    self.icu_stay_id_col, self.icu_length_of_stay_col
+                ),
+                on=self.icu_stay_id_col,
             )
             .with_columns(
-                pl.col(self.drug_end_col)
-                .shift(1)
-                .over(self.icu_stay_id_col, self.drug_mixture_id_col)
-                .alias("prev_drug_end"),
-                pl.col(self.drug_end_col)
-                .shift(-1)
-                .over(self.icu_stay_id_col, self.drug_mixture_id_col)
-                .alias("next_drug_end"),
+                # Add a column to indicate the administration type
+                # 2 = invalidated, 32 = notified, not administered
+                pl.when((pl.col(self.drug_admin_type_col) & 2) != 0)
+                .then(pl.lit("cancelled"))
+                .when((pl.col(self.drug_admin_type_col) & 32) != 0)
+                .then(pl.lit("ordered"))
+                .otherwise(pl.lit("given"))
+                .alias(self.drug_admin_type_col),
+                pl.col("admissiontime").str.to_datetime(
+                    "%Y-%m-%d %H:%M:%S%.9f"
+                ),
+                pl.col("givenat").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col(self.drug_amount_col).cast(float),
+                # An infusion ID of 0 means that the record is not part of an infusion
+                pl.col(self.drug_mixture_id_col).replace(0, None),
+            )
+            # Replace the pharmaid with the corresponding medication name
+            .join(self._get_pharma_variables(), on="pharmaid", how="left")
+            .with_columns(
+                (pl.col("givenat") - pl.col("admissiontime"))
+                .dt.total_seconds()
+                .alias(self.drug_end_col),
+                # Pharma IDs that are not in the mapping (and not documented by
+                # HiRID) are identified by their ID
+                pl.col(self.drug_name_col).fill_null(
+                    pl.format("HiRID pharmaid {}", "pharmaid")
+                ),
+                # Map the medication classes
+                pl.col(self.drug_class_col)
+                .cast(pl.Int64)
+                .cast(str)
+                .replace_strict(
+                    hirid_drug_class_mapping,
+                    default=None,
+                    return_dtype=pl.String,
+                ),
+                # Fluids (type 0) given in ml, other entries are drugs
+                (
+                    (pl.col("typeid") == 0)
+                    & pl.col(self.drug_amount_unit_col).eq_missing("ml")
+                ).alias("fluid_entry"),
+                pl.col(self.drug_admin_route_col)
+                .str.ends_with("-inj")
+                .alias("injection"),
+                # Map the medication administration routes
+                pl.col(self.drug_admin_route_col).replace_strict(
+                    hirid_drug_administration_route_mapping,
+                    default=None,
+                    return_dtype=pl.String,
+                ),
+            )
+            .drop("admissiontime", "typeid")
+            # Remove duplicate rows
+            .unique()
+            # Remove rows with empty lab names
+            .filter(pl.col(self.drug_amount_col).is_not_null())
+            .drop(self.icu_length_of_stay_col)
+        )
+
+    def _extract_linked_medications(
+        self, batch_names: list[str]
+    ) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+        """
+        Extract the pharma records and the fluid counters of a batch of files and
+        link the counter readings to the pharma records that they carry.
+
+        Each case has its data in only one file, with the same name in the
+        observation and the pharma folder.
+
+        Arguments:
+            batch_names: File names of the batch.
+
+        Returns:
+            tuple: The pharma records (a record that a reading carries has its share
+                of the reading as fluid amount and the fluid group of the reading) and
+                the fluids (readings that no pharma record carries), both with the
+                exact time of the record ("givenat").
+        """
+        # The counter is a float32, hence the tolerance
+        COUNTER_TOLERANCE_ML = 0.01
+        COUNTER_TOLERANCE_RELATIVE = 1e-3
+        # Significant figures and minimal repeats of a syringe ratio per infusion
+        RATIO_SIG_FIGS = 3
+        RATIO_MIN_REPEATS = 3
+
+        instant_cols = [self.icu_stay_id_col, "givenat"]
+        mixture_cols = [self.icu_stay_id_col, self.drug_mixture_id_col]
+        amount_cols = [self.drug_amount_col, self.fluid_amount_col]
+
+        # Load the volumes that pharma records add to the fluid counters
+        carrier_volumes = pl.read_csv(
+            self.carrier_volumes_mapping_path,
+            comment_prefix="#",
+            columns=[
+                "pharmaid",
+                "ml",
+                "ml_per_ml",
+                "ml_per_dose",
+                "per_infusion",
+                "dose_from",
+                "dose_unit",
+            ],
+            schema_overrides={"pharmaid": pl.Int32},
+        ).lazy()
+
+        # region EXTRACT
+        ###################################################################
+        # collected, since both are used several times below
+        pharma = (
+            pl.scan_parquet([self.pharma_path + name for name in batch_names])
+            .pipe(
+                self._extract_medications_pharma,
+                self.admissiontime,
+                self.length_of_stay,
+            )
+            .collect()
+            .lazy()
+        )
+        fluids = (
+            pl.scan_parquet([self.timeseries_path + name for name in batch_names])
+            .pipe(
+                self._extract_medications_observation,
+                self.admissiontime,
+                self.length_of_stay,
+            )
+            .collect()
+            .lazy()
+            .rename({"datetime": "givenat"})
+        )
+
+        # region CARRIER LINKING
+        ###################################################################
+        # sum the readings at the same instant
+        readings = fluids.group_by(instant_cols).agg(
+            pl.col(self.fluid_group_col).min(),
+            pl.col(self.fluid_amount_col).sum().alias("reading"),
+        )
+
+        # a pharma record takes the carrier volume row with the highest
+        # dose_from that its dose reaches
+        pharma = pharma.with_row_index("record_id")
+        volumes = (
+            pharma.join(carrier_volumes, on="pharmaid", how="left")
+            .filter(pl.col(self.drug_admin_type_col) == "given")
+            .filter(
+                pl.col("dose_from").is_null()
+                | (
+                    (pl.col(self.drug_amount_col) >= pl.col("dose_from"))
+                    & pl.col("dose_unit").eq_missing(
+                        pl.col(self.drug_amount_unit_col)
+                    )
+                )
+            )
+            .sort("dose_from", nulls_last=False)
+            .unique("record_id", keep="last", maintain_order=True)
+        )
+
+        # ratio of the drugs that have one per infusion (syringe
+        # concentration): the most frequent ratio between reading and pharma
+        # volume of the records alone at their instant
+        ratios = (
+            volumes.filter(
+                pl.col("per_infusion")
+                & (pl.col(self.fluid_amount_col) > 0)
+                & (pl.len().over(instant_cols) == 1)
+            )
+            .join(readings, on=instant_cols)
+            .with_columns(
+                (pl.col("reading") / pl.col(self.fluid_amount_col))
+                .round_sig_figs(RATIO_SIG_FIGS)
+                .alias("ratio")
+            )
+            .group_by(*mixture_cols, "pharmaid", "ratio")
+            .agg(pl.len().alias("count"))
+            .sort("count", "ratio", descending=[True, False])
+            .unique([*mixture_cols, "pharmaid"], keep="first", maintain_order=True)
+            .filter(pl.col("count") >= RATIO_MIN_REPEATS)
+        )
+
+        # volume that each record adds to the counter
+        # (injections are excluded, their readings rarely match)
+        carrying = (
+            volumes.filter(~pl.col("injection"))
+            .join(
+                ratios,
+                on=[*mixture_cols, "pharmaid"],
+                how="left",
+                nulls_equal=True,
+            )
+            .with_columns(
+                pl.coalesce(
+                    "ml",
+                    pl.col("ml_per_dose") * pl.col(self.drug_amount_col),
+                    pl.coalesce("ratio", "ml_per_ml")
+                    * pl.col(self.fluid_amount_col),
+                ).alias("carried")
+            )
+            .filter(pl.col("carried") > 0)
+        )
+
+        # readings that equal the summed volume of their instant
+        linked = (
+            carrying.group_by(instant_cols)
+            .agg(pl.col("carried").sum().alias("expected"))
+            .join(readings, on=instant_cols)
+            .filter(
+                (pl.col("reading") - pl.col("expected")).abs()
+                <= COUNTER_TOLERANCE_ML
+                + COUNTER_TOLERANCE_RELATIVE * pl.col("expected")
             )
         )
 
+        # the records take their share and the fluid group of the reading,
+        # the linked readings are removed from the fluids
         pharma = (
             pharma.join(
-                pharma_offsets,
-                on=[
-                    self.icu_stay_id_col,
-                    self.drug_end_col,
-                    self.drug_mixture_id_col,
-                ],
+                carrying.join(linked, on=instant_cols).select(
+                    "record_id",
+                    self.fluid_group_col,
+                    pl.col("carried").alias("share"),
+                ),
+                on="record_id",
                 how="left",
             )
-            # Sort by patient ID, drug name and drug start time
-            .sort(
-                self.icu_stay_id_col,
-                self.drug_name_col,
-                self.drug_mixture_id_col,
-                self.drug_end_col,
-                "prev_drug_end",  # sometimes, there is the same drug given twice at the same time
-            )
-            # NOTE: Convert drug_amount to drug_rates, fluid_amount to fluid_rates
             .with_columns(
-                (
-                    pl.col(self.drug_amount_col)
-                    / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
-                    * 3600
-                )
-                .round_sig_figs(2)
-                .alias(self.drug_rate_col),
-                pl.col(self.drug_amount_unit_col).str.replace("µ", "mc"),
-                (pl.col(self.drug_amount_unit_col) + pl.lit("/hr"))
-                .str.replace("µ", "mc")
-                .alias(self.drug_rate_unit_col),
-                (
-                    pl.col(self.fluid_amount_col)
-                    / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
-                    * 3600
-                )
-                .round_sig_figs(2)
-                .alias(self.fluid_rate_col),
+                pl.col("share")
+                .fill_null(pl.col(self.fluid_amount_col))
+                .alias(self.fluid_amount_col)
             )
-            # 2. Check if drug is continued from the previous log entry
-            #    and if it is continued in the next log entry
-            .with_columns(
-                # Check if drug is continued from the previous log entry
-                pl.when(pl.col("prev_drug_end").is_not_null())
-                .then(
-                    pl.when(
-                        # Check if the previous drug is the same as the current drug
-                        pl.col(self.drug_name_col)
-                        == pl.col(self.drug_name_col).shift(1),
-                        # Check if the previous drug end time is the previous log entry time
-                        pl.col("prev_drug_end")
-                        == pl.col(self.drug_end_col).shift(1),
-                        # Check if the drug rate is the same as the previous drug rate
-                        pl.col(self.drug_rate_col)
-                        == pl.col(self.drug_rate_col).shift(1),
-                    )
-                    .then(pl.lit("continued"))
-                    .otherwise(pl.lit("started"))
-                )
-                .otherwise(None)
-                .alias("drug_status_prev"),
-                # Check if drug is continued in the next log entry
-                pl.when(
-                    # Check if the next drug is the same as the current drug
-                    pl.col(self.drug_name_col)
-                    == pl.col(self.drug_name_col).shift(-1),
-                    # Check if the next drug end time is the next log entry time
-                    pl.col("next_drug_end")
-                    == pl.col(self.drug_end_col).shift(-1),
-                    # Check if the drug rate is the same as the next drug rate
-                    pl.col(self.drug_rate_col)
-                    == pl.col(self.drug_rate_col).shift(-1),
-                )
-                .then(pl.lit("continued"))
-                .otherwise(pl.lit("discontinued"))
-                .alias("drug_status_next"),
-            )
-            # Filter for rows where the drug status changes
-            .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
-            # 3. Get the end time of the drug if it is discontinued
-            .with_columns(
-                pl.when(pl.col("drug_status_next") == "discontinued")
-                .then("prev_drug_end")
-                .otherwise(None)
-                .alias(self.drug_start_col)
-            )
-            # 4. Combine rows where the drug is started, continued, then discontinued in the next row
-            .with_columns(
-                pl.when(
-                    pl.col("drug_status_prev").shift(1) == "started",
-                    pl.col("drug_status_next").shift(1) == "continued",
-                    pl.col("drug_status_prev") == "continued",
-                    pl.col("drug_status_next") == "discontinued",
-                    # Check if the previous drug is the same as the current drug
-                    pl.col(self.drug_name_col)
-                    == pl.col(self.drug_name_col).shift(1),
-                    # Check if the drug amount is the same as the previous drug amount
-                    pl.col(self.drug_rate_col)
-                    == pl.col(self.drug_rate_col).shift(1),
-                )
-                .then(pl.col("prev_drug_end").shift(1))
-                .otherwise(pl.col("prev_drug_end"))
-                .alias(self.drug_start_col)
-            )
-            # 5. filter out duplicate rows (same drug, same start time, same rate, different end time)
-            .filter(pl.col(self.drug_start_col).is_not_null())
-            .sort(
-                self.icu_stay_id_col,
-                self.drug_name_col,
-                self.drug_start_col,
-                self.drug_rate_col,
-                self.drug_end_col,
-            )
-            .group_by(
-                self.icu_stay_id_col,
-                self.drug_name_col,
-                self.drug_start_col,
-                self.drug_rate_col,
-                self.drug_admin_type_col,
-                maintain_order=True,
-            )
-            .last()
-            # 6. Remove the helper columns
-            .drop(
-                "prev_drug_end",
-                "next_drug_end",
-                "drug_status_prev",
-                "drug_status_next",
-            )
+            .drop("record_id", "injection", "share")
         )
+        fluids = fluids.join(linked, on=instant_cols, how="anti")
 
-        return pl.concat([pharma, observation], how="diagonal_relaxed")
+        return pharma, fluids
 
     # endregion
 
@@ -1053,6 +1131,16 @@ class HiRIDExtractor(HiRIDPaths):
                 300: "Respiratory rate",  # Atemfrequenz
                 310: "Respiratory rate (spontaneous)",  # RRsp(m)
                 5685: None,  # RR Caresc
+                # The hourly urine volume (ml/h) is only recorded at some entries; the
+                # cumulative output counter has every one, and is the urine output (as in ricu)
+                10020000: None,
+                30005110: "Hourly urine volume",
+                # The cumulative intake counter and the saline and colloid counters are
+                # counted as medications (the part of the intake counter that nothing else
+                # records is added in process_timeseries)
+                30005010: None,
+                30005075: None,
+                30005080: None,
             } # fmt: skip
         )
 
@@ -1086,45 +1174,50 @@ class HiRIDExtractor(HiRIDPaths):
             pl.LazyFrame: Columns:
                 - pharmaid: Pharmaceutical identifier.
                 - {drug_name_col}: Medication name.
-                - {drug_name_OMOP_col}: OMOP concept name.
+                - {drug_ingredient_col}: Active drug ingredient (a combination is
+                    named as one, e.g. "piperacillin / tazobactam").
+                - {drug_name_OMOP_col}: OMOP drug name (null if the pharmaid is
+                    mapped to an ingredient and not to a drug).
         """
+        # The HiRID name is kept for all pharma IDs, the OMOP name is null
+        # if the pharma ID is unmapped (e.g. enteral and parenteral nutrition)
         return (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "HiRID.usagi.csv")
-            .filter(pl.col("conceptName") != "Unmapped")
-            .select("sourceCode", "sourceName", "conceptName")
-            .drop_nulls("sourceCode")
-            .unique()
-            .rename(
-                {
-                    "sourceCode": "pharmaid",
-                    "sourceName": self.drug_name_col,
-                    "conceptName": self.drug_name_OMOP_col,
-                }
+            .select(
+                pl.col("sourceCode").alias("pharmaid"),
+                pl.col("sourceName").alias(self.drug_name_col),
+            )
+            .unique("pharmaid")
+            .join(
+                self._extract_drug_references().select(
+                    "pharmaid", self.drug_ingredient_col, self.drug_name_OMOP_col
+                ),
+                on="pharmaid",
+                how="left",
             )
             .lazy()
         )
 
-    # Extract the information from the HiRID.usagi.csv files
-    def _extract_drug_references(self, return_ids: bool = False) -> dict:
+    # Extract the information from the HiRID.usagi.csv file
+    def _extract_drug_references(self) -> pl.DataFrame:
         """
-        Extract drug concept reference mappings from USAGI file.
+        Extract the drug name, the ingredient and the OMOP drug name of each
+        pharma ID from the HiRID.usagi.csv file.
 
-        Returns:
-            dict: Mapping from source drug code to concept name (or ID if return_ids=True).
+        A pharma ID can have several rows (one per ingredient of a combination
+        product); the ingredients of all rows are named as one combination, e.g.
+        "piperacillin / tazobactam".
         """
-
-        value_col = "conceptName" if not return_ids else "conceptId"
-        references = (
+        rows = (
             pl.read_csv(self.MEDICATION_MAPPING_PATH + "HiRID.usagi.csv")
             .filter(pl.col("conceptName") != "Unmapped")
-            .select("sourceCode", value_col)
+            .select("sourceCode", "sourceName", "conceptId", "conceptName")
             .drop_nulls("sourceCode")
             .unique()
         )
-
-        return dict(
-            zip(
-                references["sourceCode"].to_numpy(),
-                references[value_col].to_numpy(),
-            )
-        )
+        return self.omop.get_drug_references(
+            rows,
+            ["sourceCode", "sourceName"],
+            self.drug_ingredient_col,
+            self.drug_name_OMOP_col,
+        ).rename({"sourceCode": "pharmaid", "sourceName": self.drug_name_col})

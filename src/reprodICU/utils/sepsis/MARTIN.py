@@ -13,7 +13,8 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import _to_lazy, get_diagnoses
+from ..base import _to_lazy
+from ..common import _validate_required_data, get_diagnoses
 
 
 # region Martin Sepsis
@@ -44,13 +45,7 @@ def MARTIN_SEPSIS(diagnoses: Optional[pl.LazyFrame] = None) -> pl.LazyFrame:
 
     # Validate data is available
     required = {"diagnoses": diagnoses}
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot load sepsis data: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("Martin sepsis", required)
 
     diagnoses = _to_lazy(diagnoses)
 
@@ -116,7 +111,18 @@ def MARTIN_SEPSIS(diagnoses: Optional[pl.LazyFrame] = None) -> pl.LazyFrame:
             ).alias("neurologic"),
         )
         .group_by("Global ICU Stay ID")
-        .agg(pl.all().sum().cast(bool))
+        .agg(
+            pl.col(
+                "sepsis",
+                "respiratory",
+                "cardiovascular",
+                "renal",
+                "hepatic",
+                "hematologic",
+                "metabolic",
+                "neurologic",
+            ).any()
+        )
         .with_columns(
             pl.any_horizontal(
                 pl.col("respiratory"),

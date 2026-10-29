@@ -1,8 +1,9 @@
 """
 Free Days Calculations: compute ventilator-free days, RRT-free days, and vasopressor-free days.
 
-Free days are calendar days within a timeframe (typically 28 days post-admission) where a patient
-was alive and not receiving a specific intervention (ventilation, RRT, or vasopressors).
+Free days are the calendar days within a timeframe (typically 28 days post-admission) without a
+specific intervention (ventilation, RRT, or vasopressors). A patient who dies within the timeframe
+has 0 free days (Yehya et al.); an unknown time of death after ICU discharge counts as survival.
 
 Output columns per row:
 - Global ICU Stay ID
@@ -25,17 +26,20 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import (
+from ..base import (
+    SECONDS_IN_1D,
+    STAY_KEY,
     _to_lazy,
-    get_patient_information,
-    get_medications,
-    get_ventilation,
-    get_rrt,
 )
-from ..mortality import COMMON_MORTALITY_MEASURES
+from ..common import (
+    _validate_required_data,
+    get_medications,
+    get_patient_information,
+    get_rrt,
+    get_ventilation,
+)
+from ..mortality import COMMON_MORTALITY_MEASURES, MORTALITY_WITHIN_DAYS
 
-SECONDS_IN_1D = 24 * 60 * 60
-SECONDS_IN_1H = 60 * 60
 SUCCESSFUL_EXTUBATION_GAP_SECONDS = 48 * 60 * 60
 VASOPRESSOR_MEDICATIONS = [
     "dopamine",
@@ -43,7 +47,7 @@ VASOPRESSOR_MEDICATIONS = [
     "epinephrine",
     "norepinephrine",
     "terlipressin",
-    "vasopressin",
+    "vasopressin (USP)",
 ]
 
 __all__ = [
@@ -102,10 +106,8 @@ def _calculate_event_calendar_days_from_intervals(
     )
 
     event_with_admission_time = event_data_filtered.join(
-        patient_information.select(
-            "Global ICU Stay ID", "Admission Time (24h)"
-        ),
-        on="Global ICU Stay ID",
+        patient_information.select(STAY_KEY, "Admission Time (24h)"),
+        on=STAY_KEY,
         how="left",
         coalesce=True,
     ).with_columns(
@@ -122,14 +124,10 @@ def _calculate_event_calendar_days_from_intervals(
             pl.col(end_time_col).alias("End Relative to Admission (seconds)"),
         )
         .filter(
-            (
-                pl.col("End Relative to Admission (seconds)")
-                > pl.col("Start Relative to Admission (seconds)")
-            )
-            & (
-                pl.col("Start Relative to Admission (seconds)")
-                < timeframe_total_seconds
-            )
+            pl.col("End Relative to Admission (seconds)")
+            > pl.col("Start Relative to Admission (seconds)"),
+            pl.col("Start Relative to Admission (seconds)")
+            < timeframe_total_seconds,
         )
         .with_columns(
             pl.min_horizontal(
@@ -143,20 +141,18 @@ def _calculate_event_calendar_days_from_intervals(
         )
         .with_columns(
             (
-                (
-                    pl.col("Start Relative to Admission (seconds)")
-                    + pl.col("Admission Time Offset (seconds)")
-                ).floordiv(SECONDS_IN_1D)
+                pl.col("Start Relative to Admission (seconds)")
+                + pl.col("Admission Time Offset (seconds)")
             )
+            .floordiv(SECONDS_IN_1D)
             .cast(int)
             .alias("Start Day (index)"),
             (
-                (
-                    pl.col("End Relative to Admission (seconds)")
-                    + pl.col("Admission Time Offset (seconds)")
-                    - 1
-                ).floordiv(SECONDS_IN_1D)
+                pl.col("End Relative to Admission (seconds)")
+                + pl.col("Admission Time Offset (seconds)")
+                - 1
             )
+            .floordiv(SECONDS_IN_1D)
             .cast(int)
             .alias("End Day (index)"),
         )
@@ -177,7 +173,7 @@ def _calculate_event_calendar_days_from_intervals(
             pl.col("Calendar Day Index") < timeframe_days,
             pl.col("Calendar Day Index") >= 0,
         )
-        .group_by("Global ICU Stay ID")
+        .group_by(STAY_KEY)
         .agg(
             pl.col("Calendar Day Index")
             .unique()
@@ -191,7 +187,6 @@ def _calculate_event_calendar_days_from_intervals(
 def calculate_event_free_days(
     patient_information: pl.LazyFrame,
     event_summary: pl.LazyFrame,
-    mortality: pl.LazyFrame,
     timeframe_days: int,
     event_calendar_days_colname: str,
     free_days_type_name: str,
@@ -205,8 +200,6 @@ def calculate_event_free_days(
             Patient/stay-level information.
         event_summary : pl.LazyFrame
             Summary of calendar days with events (from _calculate_event_calendar_days_from_intervals).
-        mortality : pl.LazyFrame
-            Mortality data with mortality flags and timing.
         timeframe_days : int
             Total timeframe in calendar days.
         event_calendar_days_colname : str
@@ -221,26 +214,28 @@ def calculate_event_free_days(
     """
     return (
         patient_information.select(
-            "Global ICU Stay ID",
+            STAY_KEY,
             "ICU Length of Stay (days)",
             "Admission Time (24h)",
             "Mortality After ICU Discharge (days)",
         )
         .join(
             event_summary.select(
-                "Global ICU Stay ID", event_calendar_days_colname
+                STAY_KEY, event_calendar_days_colname
             ),
-            on="Global ICU Stay ID",
+            on=STAY_KEY,
             how="left",
             coalesce=True,
         )
         .join(
-            mortality.select(
-                "Global ICU Stay ID",
+            COMMON_MORTALITY_MEASURES(patient_information)
+            .with_columns(MORTALITY_WITHIN_DAYS(timeframe_days))
+            .select(
+                STAY_KEY,
                 f"Mortality {timeframe_days} Days After ICU Admission",
                 "Mortality in ICU",
             ),
-            on="Global ICU Stay ID",
+            on=STAY_KEY,
             how="left",
             coalesce=True,
         )
@@ -322,7 +317,7 @@ def calculate_event_free_days(
             .alias(f"{free_days_type_name} Free Days ({timeframe_days}d)")
         )
         .select(
-            "Global ICU Stay ID",
+            STAY_KEY,
             f"{free_days_type_name} Free Days ({timeframe_days}d)",
             pl.col(event_calendar_days_colname)
             .list.len()
@@ -375,20 +370,11 @@ def VENTILATOR_FREE_DAYS(
         "patient_information": patient_information,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VENTILATOR_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("VENTILATOR_FREE_DAYS", required_data=required) # fmt: skip
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
     ventilation = _to_lazy(ventilation)
-
-    # Compute mortality measures
-    mortality = COMMON_MORTALITY_MEASURES(patient_information)
 
     # Filter to invasive ventilation types
     filtered_ventilation = ventilation.filter(
@@ -401,24 +387,25 @@ def VENTILATOR_FREE_DAYS(
     # Merge consecutive ventilation blocks separated by less than 48 hours (reintubation)
     processed_ventilation_data = (
         filtered_ventilation.sort(
-            "Global ICU Stay ID",
+            STAY_KEY,
             "Ventilation Start Relative to Admission (seconds)",
         )
         .with_columns(
-            pl.struct(
-                pl.col("Global ICU Stay ID"),
-                (
-                    pl.col("Ventilation Start Relative to Admission (seconds)")
-                    - pl.col("Ventilation End Relative to Admission (seconds)")
-                    .shift(1)
-                    .over("Global ICU Stay ID")
-                )
-                <= SUCCESSFUL_EXTUBATION_GAP_SECONDS,
+            # a new block starts at a gap of more than 48 h (or at the first episode of a stay)
+            (
+                pl.col("Ventilation Start Relative to Admission (seconds)")
+                - pl.col("Ventilation End Relative to Admission (seconds)")
+                .cum_max()
+                .shift(1)
+                .over(STAY_KEY)
+                > SUCCESSFUL_EXTUBATION_GAP_SECONDS
             )
-            .rle_id()
+            .fill_null(True)
+            .cum_sum()
+            .over(STAY_KEY)
             .alias("block_id")
         )
-        .group_by("Global ICU Stay ID", "block_id")
+        .group_by(STAY_KEY, "block_id")
         .agg(
             pl.col("Ventilation Start Relative to Admission (seconds)")
             .min()
@@ -442,7 +429,6 @@ def VENTILATOR_FREE_DAYS(
     return calculate_event_free_days(
         patient_information=patient_information,
         event_summary=ventilation_summary,
-        mortality=mortality,
         timeframe_days=timeframe_days,
         event_calendar_days_colname="Ventilator Calendar Days",
         free_days_type_name="Ventilator",
@@ -492,20 +478,11 @@ def RENAL_REPLACEMENT_THERAPY_FREE_DAYS(
         "patient_information": patient_information,
         "rrt": rrt,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute RENAL_REPLACEMENT_THERAPY_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("RENAL_REPLACEMENT_THERAPY_FREE_DAYS", required)
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
     rrt = _to_lazy(rrt)
-
-    # Compute mortality measures
-    mortality = COMMON_MORTALITY_MEASURES(patient_information)
 
     rrt_summary = _calculate_event_calendar_days_from_intervals(
         event_data=rrt,
@@ -519,7 +496,6 @@ def RENAL_REPLACEMENT_THERAPY_FREE_DAYS(
     return calculate_event_free_days(
         patient_information=patient_information,
         event_summary=rrt_summary,
-        mortality=mortality,
         timeframe_days=timeframe_days,
         event_calendar_days_colname="RRT Calendar Days",
         free_days_type_name="RRT",
@@ -569,20 +545,11 @@ def VASOPRESSOR_FREE_DAYS(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VASOPRESSOR_FREE_DAYS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("VASOPRESSOR_FREE_DAYS", required)
 
     # Ensure lazy
     patient_information = _to_lazy(patient_information)
     medications = _to_lazy(medications)
-
-    # Compute mortality measures
-    mortality = COMMON_MORTALITY_MEASURES(patient_information)
 
     vasopressor_filter = pl.col("Drug Ingredient").is_in(
         VASOPRESSOR_MEDICATIONS
@@ -601,7 +568,6 @@ def VASOPRESSOR_FREE_DAYS(
     return calculate_event_free_days(
         patient_information=patient_information,
         event_summary=vasopressor_summary,
-        mortality=mortality,
         timeframe_days=timeframe_days,
         event_calendar_days_colname="Vasopressor Calendar Days",
         free_days_type_name="Vasopressor",

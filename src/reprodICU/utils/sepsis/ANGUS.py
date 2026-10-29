@@ -1,8 +1,10 @@
 # based on: https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iii/concepts/sepsis/angus.sql
 # based on: https://github.com/alistairewj/mimic-iv-aline-study/blob/main/sql/angus_sepsis.sql
 
-# Angus et al, 2001. Epidemiology of severe sepsis in the United States
-# http://www.ncbi.nlm.nih.gov/pubmed/11445675
+# Derek C. Angus, Walter T. Linde-Zwirble, Jeffrey Lidicker, Gilles Clermont, Joseph Carcillo, and Michael R. Pinsky.
+# Epidemiology of severe sepsis in the United States: analysis of incidence, outcome, and associated costs of care.
+# Crit Care Med, 29(7):1303-1310, Jul 2001.
+# doi: 10.1097/00003246-200107000-00002. PMID: 11445675.
 
 # Case selection and definitions
 # To identify cases with severe sepsis, we selected all acute care
@@ -14,8 +16,11 @@ from typing import Optional
 
 import polars as pl
 
-from ..common import (
+from ..base import (
     _to_lazy,
+)
+from ..common import (
+    _validate_required_data,
     get_diagnoses,
     get_patient_information,
     get_procedures,
@@ -85,7 +90,7 @@ def ANGUS_SEPSIS(
     diagnoses: Optional[pl.LazyFrame] = None,
     procedures: Optional[pl.LazyFrame] = None,
     patient_information: Optional[pl.LazyFrame] = None,
-    mechanical_ventilation: Optional[pl.LazyFrame] = None,
+    ventilation: Optional[pl.LazyFrame] = None,
 ) -> pl.LazyFrame:
     """
     Calculate Angus sepsis classification from diagnosis and procedure codes.
@@ -104,7 +109,7 @@ def ANGUS_SEPSIS(
             Procedure data. Loaded automatically if None.
         patient_information : pl.LazyFrame, optional
             Patient/stay-level information. Loaded automatically if None.
-        mechanical_ventilation : pl.LazyFrame, optional
+        ventilation : pl.LazyFrame, optional
             Mechanical ventilation concept data. Loaded automatically if None.
 
     Returns
@@ -124,28 +129,22 @@ def ANGUS_SEPSIS(
         procedures = get_procedures()
     if patient_information is None:
         patient_information = get_patient_information()
-    if mechanical_ventilation is None:
-        mechanical_ventilation = get_ventilation()
+    if ventilation is None:
+        ventilation = get_ventilation()
 
     # Validate all required data is available
     required = {
         "diagnoses": diagnoses,
         "procedures": procedures,
         "patient_information": patient_information,
-        "mechanical_ventilation": mechanical_ventilation,
+        "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot load Angus sepsis data: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("Angus sepsis", required)
 
     diagnoses = _to_lazy(diagnoses)
     procedures = _to_lazy(procedures)
     patient_information = _to_lazy(patient_information)
-    mechanical_ventilation = _to_lazy(mechanical_ventilation)
+    ventilation = _to_lazy(ventilation)
 
     IDs = patient_information.select(
         "Global Person ID", "Global Hospital Stay ID", "Global ICU Stay ID"
@@ -180,7 +179,7 @@ def ANGUS_SEPSIS(
     )
 
     MECHANICAL_VENTILATION = (
-        mechanical_ventilation.filter(
+        ventilation.filter(
             pl.col("Ventilation Type").is_in(
                 ["invasive ventilation", "tracheostomy"]
             ),
@@ -193,6 +192,9 @@ def ANGUS_SEPSIS(
         .with_columns(pl.lit(True).alias("Mechanical Ventilation"))
     )
 
+    icd9 = pl.col("Diagnosis ICD-9 Code")
+    icd10 = pl.col("Diagnosis ICD-10 Code")
+
     return (
         diagnoses.join(
             pl.concat(
@@ -204,74 +206,43 @@ def ANGUS_SEPSIS(
             coalesce=True,
         )
         .with_columns(
+            pl.col("Mechanical Ventilation").fill_null(False),
             # Check for infection
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
             .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 3)
-                    .is_in(ANGUS_ICD9_3_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 4)
-                    .is_in(ANGUS_ICD9_4_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 5)
-                    .is_in(ANGUS_ICD9_5_DIGIT_INFECTION_CODES)
-                )
-                .then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_INFECTION_CODES
+                pl.any_horizontal(
+                    icd9.str.slice(0, 3).is_in(ANGUS_ICD9_3_DIGIT_INFECTION_CODES),
+                    icd9.str.slice(0, 4).is_in(ANGUS_ICD9_4_DIGIT_INFECTION_CODES),
+                    icd9.str.slice(0, 5).is_in(ANGUS_ICD9_5_DIGIT_INFECTION_CODES),
                 )
             )
+            .otherwise(icd10.is_in(ANGUS_ICD10_INFECTION_CODES))
             .alias("Infection"),
             # Check for organ dysfunction
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
             .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 3)
-                    .is_in(ANGUS_ICD9_3_DIGIT_DYSFUNCTION_CODES)
-                )
-                .then(1)
-                .when(
-                    pl.col("Diagnosis ICD-9 Code")
-                    .str.slice(0, 4)
-                    .is_in(ANGUS_ICD9_4_DIGIT_DYSFUNCTION_CODES)
-                )
-                .then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_DYSFUNCTION_CODES
+                pl.any_horizontal(
+                    icd9.str.slice(0, 3).is_in(ANGUS_ICD9_3_DIGIT_DYSFUNCTION_CODES),
+                    icd9.str.slice(0, 4).is_in(ANGUS_ICD9_4_DIGIT_DYSFUNCTION_CODES),
                 )
             )
+            .otherwise(icd10.is_in(ANGUS_ICD10_DYSFUNCTION_CODES))
             .alias("Organ Dysfunction"),
             # Check for explicit sepsis
             pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
-            .then(
-                pl.when(
-                    pl.col("Diagnosis ICD-9 Code").is_in(
-                        ANGUS_ICD9_EXPLICIT_SEPSIS
-                    )
-                ).then(1)
-            )
-            .otherwise(
-                pl.col("Diagnosis ICD-10 Code").is_in(
-                    ANGUS_ICD10_EXPLICIT_SEPSIS
-                )
-            )
+            .then(icd9.is_in(ANGUS_ICD9_EXPLICIT_SEPSIS))
+            .otherwise(icd10.is_in(ANGUS_ICD10_EXPLICIT_SEPSIS))
             .alias("Explicit Sepsis"),
         )
         .group_by("Global ICU Stay ID")
-        .agg(pl.all().sum().cast(bool))
+        .agg(
+            pl.col(
+                "Infection",
+                "Organ Dysfunction",
+                "Explicit Sepsis",
+                "Mechanical Ventilation",
+            ).any()
+        )
         .with_columns(
             pl.when(pl.col("Explicit Sepsis"))
             .then(True)

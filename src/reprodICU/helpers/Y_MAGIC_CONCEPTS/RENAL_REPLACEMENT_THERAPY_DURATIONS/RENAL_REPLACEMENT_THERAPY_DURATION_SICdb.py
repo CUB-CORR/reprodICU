@@ -32,8 +32,21 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
             "CaseID", "ICUOffset"
         )
 
+        # Hours without rawdata only exist in the hourly table
+        cols = ["CaseID", "Offset", "DataID", "Val"]
+        minutely = pl.scan_parquet(self.sicdb_paths.data_float_m_path).select(cols)
+        hourly = (
+            pl.scan_csv(
+                self.sicdb_paths.data_float_h_path,
+                infer_schema_length=10000,
+                schema_overrides={"rawdata": pl.String},
+            )
+            .filter(pl.col("rawdata").is_null())
+            .select(cols)
+        )
+
         RENAL_REPLACEMENT_THERAPY_DURATION = (
-            pl.scan_parquet(self.sicdb_paths.data_float_m_path)
+            pl.concat([minutely, hourly], how="vertical_relaxed")
             .join(ADMISSION_TIMES, on="CaseID", how="left")
             # Filter for RRT IDs
             .filter(
@@ -51,32 +64,25 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_SICdb(MAGIC_CONCEPTS):
             .with_columns(
                 (pl.col("Offset") - pl.col("ICUOffset")).alias("RRT Start")
             )
-            # drop rows that are one minute apart from the previous row and the next row
+            # a run is a series of rows less than 2 h apart; the therapy lasts from its first
+            # to its last row (a single row has no duration), the gap to the next run is not RRT
             .sort("CaseID", "RRT Start")
-            .filter(
-                (
-                    (
-                        pl.col("RRT Start").shift(-1).over("CaseID")
-                        - pl.col("RRT Start")
-                    )
-                    < (60 * 60 * 2)
-                ).not_()
-                | (
-                    (
-                        pl.col("RRT Start")
-                        - pl.col("RRT Start").shift(1).over("CaseID")
-                    )
-                    < (60 * 60 * 2)
-                ).not_()
-                | pl.col("RRT Start").shift(-1).over("CaseID").is_null()
-                | pl.col("RRT Start").shift(1).over("CaseID").is_null()
-            )
             .with_columns(
-                pl.when(pl.col("CaseID") == pl.col("CaseID").shift(-1))
-                .then(pl.col("RRT Start").shift(-1))
-                .otherwise(None)
-                .alias("RRT End")
+                (
+                    pl.col("RRT Start") - pl.col("RRT Start").shift(1).over("CaseID")
+                    >= 60 * 60 * 2
+                )
+                .fill_null(True)
+                .cum_sum()
+                .over("CaseID")
+                .alias("RRT Run")
             )
+            .group_by("CaseID", "RRT Run")
+            .agg(
+                pl.col("RRT Start").min(),
+                pl.col("RRT Start").max().alias("RRT End"),
+            )
+            .drop("RRT Run")
             .rename(
                 {
                     "RRT Start": "Renal Replacement Therapy Start Relative to Admission (seconds)",

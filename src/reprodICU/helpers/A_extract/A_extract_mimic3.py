@@ -1,5 +1,5 @@
 # Author: Finn Fassbender
-# Last modified: 2025-10-30
+# Last modified: 2026-10-06
 
 # Description: This script extracts the data from the source files and provides the extracted data
 # in a structured format for further processing and harmonization.
@@ -12,6 +12,13 @@ from ..helper import GlobalHelpers
 from ..helper_filepaths import MIMIC3Paths
 from ..helper_OMOP import Vocabulary
 
+
+# Rows flagged as erroneous, see mimic-code mimic-iii/concepts/pivot/pivoted_vital.sql:19
+NOT_ERROR = pl.col("ERROR").cast(int, strict=False).ne_missing(1)
+
+# Superseded orders, see mimic-code mimic-iii/concepts/severityscores/sofa.sql:117
+# (inputevents_mv) and pivot/pivoted_invasive_lines.sql:169 (procedureevents_mv)
+NOT_REWRITTEN = pl.col("STATUSDESCRIPTION") != "Rewritten"
 
 class MIMIC3Extractor(MIMIC3Paths):
     def __init__(self, paths, DEMO=False):
@@ -44,7 +51,8 @@ class MIMIC3Extractor(MIMIC3Paths):
         Steps:
             1. Read ICU stays CSV and rename columns to standardized names.
             2. Remove duplicates and cast ID columns to integer.
-            3. Select required columns.
+            3. Parse ICU admission time and sort stays per person.
+            4. Calculate the time since the previous ICU stay.
 
         Returns:
             pl.LazyFrame: Contains columns:
@@ -53,6 +61,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - {person_id_col}: Patient identifier.
                 - {icu_length_of_stay_col}: ICU length of stay (days).
                 - INTIME: ICU admission datetime.
+                - OFFSET_TO_PREV: Time relative to the previous ICU admission (seconds).
         """
         return (
             pl.scan_csv(self.icustays_path)
@@ -78,6 +87,18 @@ class MIMIC3Extractor(MIMIC3Paths):
                 self.person_id_col,
                 self.icu_length_of_stay_col,
                 "INTIME",
+                "OUTTIME",
+            )
+            .with_columns(
+                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("OUTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+            )
+            .sort(self.person_id_col, "INTIME")
+            .with_columns(
+                (
+                    pl.col("INTIME")
+                    - pl.col("OUTTIME").shift(1).over(self.person_id_col)
+                ).alias("OFFSET_TO_PREV")
             )
         )
 
@@ -233,9 +254,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 (
                     pl.col("INTIME").dt.date().dt.year()
                     - pl.col("DOB").dt.date().dt.year()
-                    - (  # -1 if birthday not yet reached this year
+                    # -1 if birthday not yet reached this year
+                    - (
                         (pl.col("INTIME").dt.month() < pl.col("DOB").dt.month())
-                        & (pl.col("INTIME").dt.day() < pl.col("DOB").dt.day())
+                        | (
+                            (pl.col("INTIME").dt.month() == pl.col("DOB").dt.month())
+                            & (pl.col("INTIME").dt.day() < pl.col("DOB").dt.day())
+                        ) # fmt: skip
                     ).cast(int)
                 ).alias(self.age_col),
             )
@@ -269,11 +294,14 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # Calculate admission time
                 pl.col("INTIME").dt.time().alias(self.admission_time_col),
                 # Calculate ICU mortality
-                (pl.col("DEATHTIME") - pl.col("OUTTIME"))
-                .truediv(pl.duration(hours=1))
-                .le(pl.duration(hours=self.ICU_DISCHARGE_MORTALITY_CUTOFF))
-                .cast(bool)
-                # .fill_null(False)
+                pl.when(pl.col("DEATHTIME") <= pl.col("OUTTIME"))
+                .then(True)
+                .when(
+                    pl.col("DISCHTIME") <= pl.col("OUTTIME"),
+                    pl.col(self.discharge_loc_col) == "DEAD/EXPIRED",
+                )
+                .then(True)
+                .otherwise(False)
                 .alias(self.mortality_icu_col),
                 # Calculate hospital mortality
                 pl.col(self.mortality_hosp_col).cast(bool),
@@ -366,25 +394,20 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - {icu_stay_id_col}: ICU stay identifier.
                 - {specialty_col}: Treating specialty.
         """
-        IDs = self.extract_patient_IDs().select(
-            self.hospital_stay_id_col, self.icu_stay_id_col, "INTIME"
-        )
-
-        services = pl.scan_csv(self.services_path).rename(
-            {
-                "HADM_ID": self.hospital_stay_id_col,
-                "CURR_SERVICE": self.specialty_col,
-            }
-        )
+        IDs = self.extract_patient_IDs()
 
         return (
-            services.select(
-                self.hospital_stay_id_col, "TRANSFERTIME", self.specialty_col
+            pl.scan_csv(self.services_path)
+            .select("SUBJECT_ID", "TRANSFERTIME", "CURR_SERVICE")
+            .rename(
+                {
+                    "SUBJECT_ID": self.person_id_col,
+                    "CURR_SERVICE": self.specialty_col,
+                }
             )
-            .join(IDs, on=self.hospital_stay_id_col, how="outer")
+            .join(IDs, on=self.person_id_col, how="full")
             .with_columns(
-                pl.col("TRANSFERTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("TRANSFERTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
             )
             # Get the most recent specialty
             .filter(
@@ -479,7 +502,8 @@ class MIMIC3Extractor(MIMIC3Paths):
         DAILY_WEIGHT_IDS = [763, 3580, 3581, 3693, 224639]
 
         height_weight = (
-            chartevents.select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
+            chartevents.filter(NOT_ERROR)
+            .select("ICUSTAY_ID", "ITEMID", "VALUENUM", "CHARTTIME")
             # Rename columns for consistency
             .rename({"ICUSTAY_ID": self.icu_stay_id_col})
             .filter(pl.col("ITEMID").is_in(KEEPIDS))
@@ -612,25 +636,29 @@ class MIMIC3Extractor(MIMIC3Paths):
         IDs = self.extract_patient_IDs()
 
         return (
-            data.join(IDs, on=self.hospital_stay_id_col, how="left")
-            .with_columns(pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"))
+            data.join(IDs, on=self.person_id_col, how="left")
             .with_columns(
                 (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET")
             )
-            .drop("CHARTTIME", "INTIME")
-            # Keep only data within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only data within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
-                pl.col("OFFSET")
-                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
-                pl.col("OFFSET")
-                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+                pl.col("CHARTTIME") < pl.col("OUTTIME"),
+                (pl.col("OFFSET") > -pl.col("OFFSET_TO_PREV"))
+                | pl.col("OFFSET_TO_PREV").is_null(),
             )
             .with_columns(
-                (pl.col("OFFSET").dt.total_seconds())
+                pl.col("OFFSET")
+                .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop(self.icu_length_of_stay_col)
+            .drop(
+                "CHARTTIME",
+                "INTIME",
+                "OUTTIME",
+                "OFFSET_TO_PREV",
+                self.icu_length_of_stay_col,
+            )
         )
 
     # region vitals TS
@@ -716,19 +744,27 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         return (
-            chartevents
+            chartevents.filter(NOT_ERROR)
             # Select relevant columns
-            .select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUENUM")
+            .select("SUBJECT_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUENUM")
             # Rename columns for consistency
-            .rename({"HADM_ID": self.hospital_stay_id_col})
+            .rename({"SUBJECT_ID": self.person_id_col})
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .pipe(self._compute_cam_icu)
             .join(meas_chartevents_main_data, on="ITEMID", how="left")
             .with_columns(
+                # Verbal GCS of intubated patients is unable to assess (0, not 1)
+                pl.when(
+                    pl.col("LABEL") == "Glasgow coma score verbal",
+                    pl.col("VALUE").is_in(["1.0 ET/Trach", "No Response-ETT"]),
+                )
+                .then(0)
+                .otherwise(pl.col("VALUENUM"))
+                .alias("VALUENUM"),
                 pl.when(pl.col("LABEL") == "Heart rate rhythm")
                 .then(
                     pl.col("VALUE").replace_strict(
@@ -931,7 +967,20 @@ class MIMIC3Extractor(MIMIC3Paths):
                 # -> now without "/100", kept for compatibility and conversion
                 .str.replace("/100 leukocytes", "/Leukocytes")
                 .str.replace("/100 erythrocytes", "/Erythrocytes")
+                # "Anion gap 4" obselete in v20250827
+                # -> now "Anion gap in {system} by Calculated.4Ions"
+                .str.replace("Anion gap 4 in Serum or Plasma", "Anion gap in Serum or Plasma by Calculated.4Ions")
             )
+            # fix singular bad mapping
+            .with_columns(
+                # original: Reticulocytes [#/volume] in Blood by Automated count
+                pl.when(pl.col("ITEMID") == 51283)
+                .then(pl.lit("Reticulocytes/Erythrocytes in Blood by Automated count"))
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL")
+            )
+            # Exclude total CO2, since it's neither pCO2 nor exactly HCO3-
+            .filter(~pl.col("LABEL").str.contains("Carbon dioxide, total"))
         ) # fmt: skip
         labnames = (
             d_labitems_to_loinc_data.select("LABEL")
@@ -1004,11 +1053,11 @@ class MIMIC3Extractor(MIMIC3Paths):
         SPECIMEN_ID = 50800
         SPECIMENS = (
             labevents.filter(pl.col("ITEMID") == SPECIMEN_ID)
-            .select("HADM_ID", "CHARTTIME", "VALUE")
-            .rename({"HADM_ID": self.hospital_stay_id_col})
+            .select("SUBJECT_ID", "CHARTTIME", "VALUE")
+            .rename({"SUBJECT_ID": self.person_id_col})
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("VALUE").replace(self.lab_specimen_map, default=None),
+                pl.col("VALUE").replace_strict(self.lab_specimen_map, default=None),
             )
             .pipe(self.extract_timeseries_helper)
         )
@@ -1023,13 +1072,13 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         return (
             labevents.select(
-                "HADM_ID", "ITEMID", "CHARTTIME", "VALUENUM", "VALUEUOM"
+                "SUBJECT_ID", "ITEMID", "CHARTTIME", "VALUENUM", "VALUEUOM"
             )
             # Rename columns for consistency
-            .rename({"HADM_ID": self.hospital_stay_id_col})
+            .rename({"SUBJECT_ID": self.person_id_col})
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(d_labitems_to_loinc_data, on="ITEMID", how="left")
@@ -1044,7 +1093,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Replace the systems as determined by the specimen
             .join(
                 SPECIMENS,
-                on=[self.hospital_stay_id_col, self.timeseries_time_col],
+                on=[self.person_id_col, self.timeseries_time_col],
                 how="left",
                 coalesce=True,
             )
@@ -1103,12 +1152,28 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - LABEL: Input/output measurement name.
                 - VALUENUM: Measurement value.
         """
+
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace_strict(
+                    self.omop.get_concept_names_from_ids(
+                        data.select(column_in).collect().to_series()
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
+                )
+                .alias(column_out)
+            )
+
         cv_input_label_to_concept = pl.scan_csv(
             self.cv_input_label_to_concept_path
         )
         cv_input_label_to_concept = (
             cv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         mv_input_label_to_concept = pl.scan_csv(
@@ -1116,13 +1181,13 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
         mv_input_label_to_concept = (
             mv_input_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
         output_label_to_concept = pl.scan_csv(self.output_label_to_concept_path)
         output_label_to_concept = (
             output_label_to_concept.rename({"item_id": "ITEMID"})
-            .pipe(self._mapping_from_ids, "concept_id", "LABEL")
+            .pipe(_create_mapping, "concept_id", "LABEL")
             .select("ITEMID", "LABEL")
         )
 
@@ -1141,8 +1206,18 @@ class MIMIC3Extractor(MIMIC3Paths):
                     self.timeseries_intakeoutput_mapping, default=None
                 )
             )
+            # fix singular bad mapping
+            .with_columns(
+                # original: Urine output (GU Irrigant Volume In is an input)
+                pl.when(pl.col("ITEMID") == 227488)
+                .then(pl.lit("Fluid intake urinary bladder irrigation"))
+                .otherwise(pl.col("LABEL"))
+                .alias("LABEL")
+            )
             # Filter for names of interest
             .filter(pl.col("LABEL").is_in(self.relevant_intakeoutput_values))
+            # Several concepts of an item can share a name: a repeated pair would repeat its rows
+            .unique()
         )
         input_mappings = self.helpers.load_mapping(self.inputs_mapping_path)
 
@@ -1157,7 +1232,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         inputevents_cv = (
             inputevents_cv.select(
-                "HADM_ID",
+                "SUBJECT_ID",
                 "ITEMID",
                 "CHARTTIME",
                 "AMOUNT",
@@ -1167,7 +1242,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Rename columns for consistency
             .rename(
                 {
-                    "HADM_ID": self.hospital_stay_id_col,
+                    "SUBJECT_ID": self.person_id_col,
                     "AMOUNT": "VALUENUM",
                 }
             )
@@ -1185,8 +1260,9 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         inputevents_mv = (
-            inputevents_mv.select(
-                "HADM_ID",
+            inputevents_mv.filter(NOT_REWRITTEN)
+            .select(
+                "SUBJECT_ID",
                 "ITEMID",
                 "STORETIME",
                 "ORDERCATEGORYNAME",
@@ -1196,7 +1272,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Rename columns for consistency
             .rename(
                 {
-                    "HADM_ID": self.hospital_stay_id_col,
+                    "SUBJECT_ID": self.person_id_col,
                     "STORETIME": "CHARTTIME",
                     "AMOUNT": "VALUENUM",
                     "ORDERCATEGORYNAME": "ORIGINALROUTE",
@@ -1209,9 +1285,9 @@ class MIMIC3Extractor(MIMIC3Paths):
         outputevents = (
             pl.scan_csv(
                 self.outputevents_path, infer_schema_length=100000
-            ).select("HADM_ID", "ITEMID", "CHARTTIME", "VALUE")
+            ).select("SUBJECT_ID", "ITEMID", "CHARTTIME", "VALUE")
             # Rename columns for consistency
-            .rename({"HADM_ID": self.hospital_stay_id_col, "VALUE": "VALUENUM"})
+            .rename({"SUBJECT_ID": self.person_id_col, "VALUE": "VALUENUM"})
         )
 
         return (
@@ -1221,7 +1297,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col(self.hospital_stay_id_col).cast(int),
+                pl.col(self.person_id_col).cast(int),
             )
             .pipe(self.extract_timeseries_helper)
             .join(label_to_concept, on="ITEMID", how="left")
@@ -1240,8 +1316,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col("LABEL").is_not_null() & (pl.col("LABEL") != ""))
             # Remove rows with empty values
             .filter(pl.col("VALUENUM").is_not_null())
-            # Remove duplicate rows
-            .unique()
         )
 
     # endregion
@@ -1273,9 +1347,22 @@ class MIMIC3Extractor(MIMIC3Paths):
         """
         print("MIMIC3  - Extracting microbiology...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
-        )
+        intimes = self.extract_patient_IDs()
+
+        def _create_mapping(
+            data: pl.LazyFrame, column_in: str, column_out: str
+        ) -> pl.LazyFrame:
+            return data.with_columns(
+                pl.col(column_in)
+                .replace_strict(
+                    self.omop.get_concept_names_from_codes(
+                        data.select(column_in).collect().to_series().to_list()
+                    ),
+                    return_dtype=pl.String,
+                    default=None,
+                )
+                .alias(column_out)
+            )
 
         microbiology_specimen_to_concept_mapping = (
             pl.scan_csv(self.microbiology_specimen_to_concept_path)
@@ -1290,24 +1377,20 @@ class MIMIC3Extractor(MIMIC3Paths):
         org_name_to_concept_mapping = pl.scan_csv(self.org_name_to_concept_path)
         org_name_to_concept_mapping = (
             org_name_to_concept_mapping.rename({"org_name": "ORG_NAME"})
-            .pipe(self._mapping_from_codes, "snomed", self.micro_organism_col)
+            .pipe(_create_mapping, "snomed", self.micro_organism_col)
             .select("ORG_NAME", self.micro_organism_col)
         )
         atb_to_concept_mapping = pl.scan_csv(self.atb_to_concept_path)
         atb_to_concept_mapping = (
             atb_to_concept_mapping.rename({"ab_name": "AB_NAME"})
-            .pipe(
-                self._mapping_from_codes,
-                "concept_code",
-                self.micro_antibiotic_col,
-            )
+            .pipe(_create_mapping, "concept_code", self.micro_antibiotic_col)
             .select("AB_NAME", self.micro_antibiotic_col)
         )
 
         return (
             pl.scan_csv(self.microbiologyevents_path)
             .select(
-                "HADM_ID",
+                "SUBJECT_ID",
                 "CHARTTIME",
                 "SPEC_TYPE_DESC",
                 "ORG_NAME",
@@ -1319,15 +1402,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             # Rename columns for consistency
             .rename(
                 {
-                    "HADM_ID": self.hospital_stay_id_col,
+                    "SUBJECT_ID": self.person_id_col,
                     # "SPEC_TYPE_DESC": self.micro_specimen_col,
                     # "ORG_NAME": self.micro_organism_col,
                     # "AB_NAME": self.micro_antibiotic_col,
                     "INTERPRETATION": self.micro_sensitivity_col,
                 }
             )
-            .join(self.icu_stay_id, on=self.hospital_stay_id_col)
-            .drop(self.person_id_col)
+            .join(self.icu_stay_id, on=self.person_id_col)
             .join(intimes, on=self.icu_stay_id_col)
             # Add mappings
             .join(
@@ -1339,8 +1421,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .join(atb_to_concept_mapping, on="AB_NAME", how="left")
             # Convert timestamps to datetime
             .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                pl.col("CHARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S")
             )
             .with_columns(
                 (pl.col("CHARTTIME") - pl.col("INTIME")).alias("OFFSET"),
@@ -1352,20 +1433,25 @@ class MIMIC3Extractor(MIMIC3Paths):
                     pl.col("DILUTION_VALUE"),
                 ).alias(self.micro_dilution_col),
             )
-            .drop("CHARTTIME", "INTIME")
-            # Keep only microbiology within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only microbiology within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
-                pl.col("OFFSET")
-                < pl.duration(days=1) * pl.col(self.icu_length_of_stay_col),
-                pl.col("OFFSET")
-                > pl.duration(days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF),
+                pl.col("CHARTTIME") < pl.col("OUTTIME"),
+                (pl.col("OFFSET") > -pl.col("OFFSET_TO_PREV"))
+                | pl.col("OFFSET_TO_PREV").is_null(),
             )
             .with_columns(
-                (pl.col("OFFSET").dt.total_seconds())
+                pl.col("OFFSET")
+                .dt.total_seconds()
                 .cast(float)
                 .alias(self.timeseries_time_col)
             )
-            .drop(self.icu_length_of_stay_col)
+            .drop(
+                "CHARTTIME",
+                "INTIME",
+                "OUTTIME",
+                "OFFSET_TO_PREV",
+                self.icu_length_of_stay_col,
+            )
             # Remove rows with empty values
             .filter(
                 pl.col(self.timeseries_time_col).is_not_null(),
@@ -1404,11 +1490,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                 - {drug_end_col}: Relative end time (seconds).
                 - {drug_patient_weight_col}: Patient weight used for dosing.
         """
+
+        medications_path = self.precalc_path + "MIMIC3_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
         print("MIMIC3  - Extracting medications...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, self.icu_length_of_stay_col, "INTIME"
-        )
+        intimes = self.extract_patient_IDs()
 
         # Map order categories to administration routes
         map_route_to_concept = (
@@ -1449,7 +1540,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
 
         inputevents_mv = (
-            inputevents_mv.select(
+            inputevents_mv.filter(NOT_REWRITTEN)
+            .select(
                 "ICUSTAY_ID",
                 "STARTTIME",
                 "ENDTIME",
@@ -1500,14 +1592,14 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .with_columns(
                 pl.col("ORDERCATEGORYNAME")
-                .replace(mimic3_drug_class_mapping, default=None)
+                .replace_strict(mimic3_drug_class_mapping, default=None)
                 .alias(self.drug_class_col),
                 # Rename units
                 pl.col(self.drug_rate_unit_col)
                 .str.replace("grams", "g")
                 .str.replace("hour", "hr")
                 .str.replace("mL", "ml")
-                .str.replace("mEq\.", "mEq")
+                .str.replace(r"mEq\.", "mEq")
                 .str.replace("units", "U"),
                 # Add a column to indicate if the drug is continuous
                 pl.col("ORDERCATEGORYDESCRIPTION")
@@ -1694,6 +1786,19 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # Order of the CareVue events. Windows depend on the row order and group_by
+        # keeps it within each group, so the events are sorted once before every
+        # group_by and first() then takes the earliest non-null value of a group.
+        # The order has to be total, so that the result does not depend on how the
+        # rows arrive: events of an admin share the same minute (rate vs. amount
+        # events, drug vs. fluid items), each column of the key is needed for that.
+        cv_sort_cols = [
+            "CHARTTIME",
+            self.drug_mixture_admin_id_col,
+            "ITEMID",
+            self.drug_rate_col,
+        ]
+
         # select all inputevents that only represent fluids within the same LINKORDERID
         inputevents_cv_fluids_only = (
             inputevents_cv.with_columns(
@@ -1709,7 +1814,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.col("CHARTTIME")
                 .shift(1)
-                .over(self.drug_mixture_id_col, order_by="CHARTTIME")
+                .over(self.drug_mixture_id_col, order_by=cv_sort_cols)
                 # fill empty first with nearest previous full hour
                 # -> "For volumes, the CHARTTIME will correspond to an end time."
                 .fill_null(
@@ -1732,10 +1837,12 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .alias(self.fluid_rate_col)
             )
+            # sorted so that first() below takes the earliest value of each group
+            .sort(cv_sort_cols)
             .group_by(self.drug_mixture_id_col, self.drug_mixture_admin_id_col)
             .agg(
                 *[
-                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.fluid_rate_col,
@@ -1756,17 +1863,19 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # select all other inputevents
         # Split into two dataframes for drug and fluid components
+        # -> sorted at the end, so that first() in the group_bys below takes the
+        # earliest value of each group
         inputevents_cv_mixtures = inputevents_cv.with_columns(
             pl.col(self.drug_rate_col, self.drug_rate_unit_col)
             .forward_fill()
             .backward_fill()
-            .over(self.drug_mixture_admin_id_col),
+            .over(self.drug_mixture_admin_id_col, order_by=cv_sort_cols),
         ).filter(
             pl.col(self.drug_amount_unit_col)
             .ne_missing("ml")
             .any()
             .over(self.drug_mixture_id_col)
-        )
+        ).sort(cv_sort_cols)
 
         # Group by mixture ID and rate continuity
         inputevents_cv_mixtures = (
@@ -1775,7 +1884,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .agg(
                 *[
-                    pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.drug_continuous_col,
@@ -1796,7 +1905,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 .agg(
                     *[
-                        pl.col(column).sort_by("CHARTTIME").drop_nulls().first()
+                        pl.col(column).drop_nulls().first()
                         for column in [
                             "ITEMID",
                             self.drug_rate_col,
@@ -1836,6 +1945,10 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
+        # Only merge rows with the same items, otherwise fluids get mislabeled
+        merge_keys = [self.drug_mixture_id_col, "ITEMID", "ITEMID_FLUID"]
+        # Total order for deterministic fills, run-length ids and first()
+        sort_cols = ["STARTTIME", "ENDTIME", self.drug_mixture_admin_id_col]
         inputevents_cv_combined = (
             pl.concat(
                 [inputevents_cv_fluids_only, inputevents_cv_mixtures],
@@ -1855,22 +1968,30 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 # NOTE: Sometimes there is a singular hour for which only a volume, but no rate is given.
                 # Visual inspection of the data shows that these are continuous infusions with the constant rate as before and after.
-                # -> forward fill and backward fill the drug rate
-                pl.col(self.drug_rate_col)
+                # -> forward fill and backward fill the rate, its units and the items
+                pl.col(
+                    self.drug_rate_col,
+                    self.drug_rate_unit_col,
+                    self.fluid_rate_col,
+                    "ITEMID",
+                    "ITEMID_FLUID",
+                )
                 .forward_fill()
                 .backward_fill()
-                .over(self.drug_mixture_id_col, order_by="STARTTIME"),
+                .over(self.drug_mixture_id_col, order_by=sort_cols),
             )
             .with_columns(
                 pl.struct([self.drug_rate_col, self.fluid_rate_col])
                 .rle_id()
-                .over(self.drug_mixture_id_col, order_by="STARTTIME")
+                .over(merge_keys, order_by=sort_cols)
                 .alias("has_same_rate")
             )
-            .group_by(self.drug_mixture_id_col, "has_same_rate")
+            # sorted so that first() below takes the earliest value of each group
+            .sort(sort_cols)
+            .group_by(*merge_keys, "has_same_rate")
             .agg(
                 *[
-                    pl.col(column).sort_by("STARTTIME").drop_nulls().first()
+                    pl.col(column).drop_nulls().first()
                     for column in [
                         self.icu_stay_id_col,
                         self.drug_mixture_admin_id_col,
@@ -1881,8 +2002,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.drug_rate_col,
                         self.drug_rate_unit_col,
                         self.fluid_rate_col,
-                        "ITEMID",
-                        "ITEMID_FLUID",
                     ]
                 ],
                 pl.col("STARTTIME").min().alias("STARTTIME"),
@@ -1901,13 +2020,29 @@ class MIMIC3Extractor(MIMIC3Paths):
         #######################################################################
         inputevents_to_rxnorm_data = (
             pl.scan_csv(self.inputevents_to_rxnorm_path)
-            .select("itemid (omop_source_code)", "omop_concept_name")
+            .select(
+                "itemid (omop_source_code)",
+                "ordercategorydescription",
+                "omop_concept_name",
+                "inputevents_row_count",
+            )
             .rename(
                 {
                     "itemid (omop_source_code)": "ITEMID",
+                    "ordercategorydescription": "ORDERCATEGORYDESCRIPTION",
                     "omop_concept_name": "LABEL_OMOP",
                 }
             )
+            # Keep the most used name per item and order category
+            .sort(
+                "inputevents_row_count", "LABEL_OMOP", descending=[True, False]
+            )
+            .unique(
+                ["ITEMID", "ORDERCATEGORYDESCRIPTION"],
+                keep="first",
+                maintain_order=True,
+            )
+            .drop("inputevents_row_count")
         )
 
         inputevents = (
@@ -1929,7 +2064,11 @@ class MIMIC3Extractor(MIMIC3Paths):
                 how="left",
                 suffix="_FLUID",
             )
-            .join(inputevents_to_rxnorm_data, on="ITEMID", how="left")
+            .join(
+                inputevents_to_rxnorm_data,
+                on=["ITEMID", "ORDERCATEGORYDESCRIPTION"],
+                how="left",
+            )
             .drop("ITEMID", "ITEMID_FLUID")
             # Rename columns for consistency
             .rename(
@@ -1969,9 +2108,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                 pl.col("concept_id")
                 .replace_strict(
                     self.omop.get_concept_names_from_ids(
-                        pl.read_csv(self.route_to_concept_path)[
-                            "concept_id"
-                        ].to_list()
+                        pl.read_csv(self.route_to_concept_path)["concept_id"]
                     ),
                     default=None,
                 )
@@ -2013,34 +2150,20 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
         )
 
-        # 4. Get active ingredients for all medication concept IDs
-        all_concept_ids = list(ndc_to_rxnorm.values()) + list(
-            prescriptions_ndcisnullzero_concept_ids.values()
+        # 4. Map NDC codes to active ingredients and standardized drug names
+        ndc_to_ingredient, ndc_to_drugname = self.omop.get_ingredient_and_name(
+            ndc_to_rxnorm
         )
-        ingredients = self.omop.get_ingredient(all_concept_ids)
-        rxnorm_names = self.omop.get_concept_names_from_ids(
-            list(ndc_to_rxnorm.values())
-        )
-
-        # 5. Create final mappings from codes to ingredients and names
-        # Map NDC codes to active ingredients
-        ndc_to_ingredient = {
-            ndc: ingredients[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in ingredients
-        }
-
-        # Map NDC codes to standardized drug names
-        ndc_to_drugname = {
-            ndc: rxnorm_names[rxnorm_id]
-            for ndc, rxnorm_id in ndc_to_rxnorm.items()
-            if rxnorm_id in rxnorm_names
-        }
 
         # Map prescription labels to active ingredients for entries without NDCs
+        ingredients = self.omop.get_ingredient(
+            list(prescriptions_ndcisnullzero_concept_ids.values())
+        )
         prescriptions_ndcisnullzero_to_ingredient = {
             label: ingredients[concept_id]
-            for label, concept_id in prescriptions_ndcisnullzero_concept_ids.items()
+            for label, concept_id in (
+                prescriptions_ndcisnullzero_concept_ids.items()
+            )
             if concept_id in ingredients
         }
 
@@ -2107,14 +2230,13 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         # region RETURN
         #######################################################################
-        return (
+        medications = (
             pl.concat([inputevents, prescriptions], how="diagonal_relaxed")
             .join(intimes, on=self.icu_stay_id_col)
             # Change times to relative times
             .with_columns(
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
-                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.9f"),
+                pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.f"),
+                pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S%.f"),
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
@@ -2124,18 +2246,31 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .dt.total_seconds()
                 .alias(self.drug_end_col),
             )
-            # Keep only drugs within timeframe of ICU stay + PRE_ICU_TIMESERIES_DAYS_CUTOFF
+            # Keep only drugs within timeframe of end of previous ICU stay and end of current ICU stay
             .filter(
                 pl.col(self.drug_start_col)
                 < pl.duration(days=1).dt.total_seconds()
                 * pl.col(self.icu_length_of_stay_col),
-                pl.col(self.drug_start_col)
-                > pl.duration(
-                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
-                ).dt.total_seconds(),
+                (
+                    pl.col(self.drug_start_col)
+                    > -pl.col("OFFSET_TO_PREV").dt.total_seconds()
+                )
+                | pl.col("OFFSET_TO_PREV").is_null(),
             )
-            .drop("STARTTIME", "ENDTIME", "INTIME", self.icu_length_of_stay_col)
+            .drop(
+                "STARTTIME",
+                "ENDTIME",
+                "INTIME",
+                "OUTTIME",
+                "OFFSET_TO_PREV",
+                self.icu_length_of_stay_col,
+            )
         )
+
+        # collect instead of sink_parquet: streaming sums floats in a run-dependent order
+        medications.collect().write_parquet(medications_path)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 
@@ -2238,9 +2373,7 @@ class MIMIC3Extractor(MIMIC3Paths):
         """
         print("MIMIC3  - Extracting procedures...")
 
-        intimes = self.extract_patient_IDs().select(
-            self.icu_stay_id_col, "INTIME"
-        )
+        intimes = self.extract_patient_IDs()
 
         # d_items = pl.scan_csv(self.d_items_path).select("ITEMID", "LABEL")
         d_icd_procedures = pl.scan_csv(
@@ -2270,6 +2403,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         procedureevents_mv = (
             pl.scan_csv(self.procedureevents_mv_path)
+            .filter(NOT_REWRITTEN)
             .rename(
                 {
                     "SUBJECT_ID": self.person_id_col,
@@ -2292,7 +2426,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .with_columns(
                 pl.col("STARTTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
                 pl.col("ENDTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
             )
             .with_columns(
                 (pl.col("STARTTIME") - pl.col("INTIME"))
@@ -2352,6 +2485,7 @@ class MIMIC3Extractor(MIMIC3Paths):
 
         datetimeevents = (
             pl.scan_csv(self.datetimeevents_path)
+            .filter(NOT_ERROR)
             .rename(
                 {
                     "SUBJECT_ID": self.person_id_col,
@@ -2368,10 +2502,7 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .join(intimes, on=self.icu_stay_id_col, how="left")
             .join(proc_datetimeevents_data, on="ITEMID", how="left")
-            .with_columns(
-                pl.col("VALUE").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-                pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
-            )
+            .with_columns(pl.col("VALUE").str.to_datetime("%Y-%m-%d %H:%M:%S"))
             .with_columns(
                 (pl.col("VALUE") - pl.col("INTIME"))
                 .dt.total_seconds()
@@ -2465,34 +2596,3 @@ class MIMIC3Extractor(MIMIC3Paths):
         )
 
     # endregion
-
-    # region helper functions
-    def _mapping_from_codes(
-        self, data: pl.LazyFrame, column_in: str, column_out: str
-    ) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.col(column_in)
-            .replace_strict(
-                self.omop.get_concept_names_from_codes(
-                    data.select(column_in).collect().to_series().to_list()
-                ),
-                return_dtype=pl.String,
-                default=None,
-            )
-            .alias(column_out)
-        )
-
-    def _mapping_from_ids(
-        self, data: pl.LazyFrame, column_in: str, column_out: str
-    ) -> pl.LazyFrame:
-        return data.with_columns(
-            pl.col(column_in)
-            .replace_strict(
-                self.omop.get_concept_names_from_ids(
-                    data.select(column_in).collect().to_series().to_list()
-                ),
-                return_dtype=pl.String,
-                default=None,
-            )
-            .alias(column_out)
-        )

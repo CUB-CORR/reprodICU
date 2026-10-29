@@ -31,8 +31,15 @@ from typing import Optional
 import polars as pl
 from pycomorb import CustomComorbidityIndex
 
-from ..common import (
+from ..base import (
+    Reference,
+    SECONDS_IN_1D,
+    STAY_KEY,
     _to_lazy,
+    with_reference_time,
+)
+from ..common import (
+    _validate_required_data,
     get_diagnoses,
     get_patient_information,
     get_timeseries_intakeoutput,
@@ -43,71 +50,54 @@ from ..common import (
 )
 from ..comorbidity import _load_and_process_diagnoses
 from .APS import APS, APS3
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
 ICD_COL = "Diagnosis ICD-10 Code"
-
-SECONDS_IN_1D = 86400
 
 
 # region age points
-def _apache2_age_points(age_col: str = "Admission Age (years)") -> pl.Expr:
+def _apache2_age_points(age: pl.Expr) -> pl.Expr:
     """
     APACHE II points for age.
 
     Age (years)
-    <44      0
+    <45      0
      45-54  +2
      55-64  +3
      65-74  +5
-    >75     +6
+    ≥75     +6
     """
     return (
-        pl.when(pl.col(age_col) <= 44)
-        .then(0)
-        .when(pl.col(age_col).is_between(45, 54))
-        .then(2)
-        .when(pl.col(age_col).is_between(55, 64))
-        .then(3)
-        .when(pl.col(age_col).is_between(65, 74))
-        .then(5)
-        .when(pl.col(age_col) >= 75)
-        .then(6)
-        .otherwise(None)
-    )
+        pl.when(age < 45).then(0)
+          .when(age < 55).then(2)
+          .when(age < 65).then(3)
+          .when(age < 75).then(5)
+          .when(age >= 75).then(6)
+          .otherwise(None)
+    )  # fmt: skip
 
 
-def _apache3_age_points(age_col: str = "Admission Age (years)") -> pl.Expr:
+def _apache3_age_points(age: pl.Expr) -> pl.Expr:
     """
     APACHE III points for age.
 
     Age (years)
-    <44       0
+    <45       0
      45-59   +5
      60-64  +11
      65-69  +13
      70-74  +16
      75-84  +17
-    >85     +24
+    ≥85     +24
     """
     return (
-        pl.when(pl.col(age_col) <= 44)
-        .then(0)
-        .when(pl.col(age_col).is_between(45, 59))
-        .then(5)
-        .when(pl.col(age_col).is_between(60, 64))
-        .then(11)
-        .when(pl.col(age_col).is_between(65, 69))
-        .then(13)
-        .when(pl.col(age_col).is_between(70, 74))
-        .then(16)
-        .when(pl.col(age_col).is_between(75, 84))
-        .then(17)
-        .when(pl.col(age_col) >= 85)
-        .then(24)
-        .otherwise(None)
-    )
+        pl.when(age < 45).then(0)
+          .when(age < 60).then(5)
+          .when(age < 65).then(11)
+          .when(age < 70).then(13)
+          .when(age < 75).then(16)
+          .when(age < 85).then(17)
+          .when(age >= 85).then(24)
+          .otherwise(None)
+    )  # fmt: skip
 
 
 # endregion
@@ -204,9 +194,15 @@ def _apache2_history_points(
         }
     )
 
+    history_diagnoses = _load_and_process_diagnoses(
+        diagnoses=diagnoses, patient_information=patient_information
+    )
+    if history_diagnoses.is_empty():  # the comorbidity index cannot handle no rows
+        return pl.LazyFrame(schema={STAY_KEY: pl.String, "history_points": pl.Int32})
+
     APACHE2_history = (
         CustomComorbidityIndex(
-            df=_load_and_process_diagnoses(),
+            df=history_diagnoses,
             id_col=STAY_KEY,
             code_col="Diagnosis ICD Code",
             icd_version_col="Diagnosis ICD Code Version (source)",
@@ -306,12 +302,15 @@ def _apache3_comorbidity_points(
         }
     )
 
+    history_diagnoses = _load_and_process_diagnoses(
+        diagnoses=diagnoses, patient_information=patient_information
+    )
+    if history_diagnoses.is_empty():  # the comorbidity index cannot handle no rows
+        return pl.LazyFrame(schema={STAY_KEY: pl.String, "comorbidity_points": pl.Int32, "comorbidity_name": pl.String})
+
     APACHE3_history = (
         CustomComorbidityIndex(
-            df=_load_and_process_diagnoses(
-                diagnoses=diagnoses,
-                patient_information=patient_information,
-            ),
+            df=history_diagnoses,
             id_col=STAY_KEY,
             code_col="Diagnosis ICD Code",
             icd_version_col="Diagnosis ICD Code Version (source)",
@@ -368,6 +367,7 @@ def _apache3_comorbidity_points(
 ################################################################################
 ################################################################################
 # region APACHE2
+@with_reference_time
 def APACHE2(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -375,8 +375,7 @@ def APACHE2(
     timeseries_resp: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Acute Physiology And Chronic Health Evaluation II (APACHE II).
@@ -389,9 +388,24 @@ def APACHE2(
         3. Calculate Chronic Health Points based on diagnoses and "Admission Type".
         4. Assemble components and sum to get the final APACHE II score.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {stay_id_col}: Unique identifier for the ICU stay.
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vital signs. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries laboratory values. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        diagnoses : pl.LazyFrame, optional
+            Diagnoses (ICD codes). Loaded automatically if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Contains columns:
+            - Global ICU Stay ID
             - T_0: Reference time for the stay.
             - APACHE II Score.
             - Component points (APS Score, age_points, history_points)
@@ -416,13 +430,7 @@ def APACHE2(
         "timeseries_resp": timeseries_resp,
         "diagnoses": diagnoses,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APACHE II: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("APACHE II", required)
 
     info = _to_lazy(patient_information)
     diag = _to_lazy(diagnoses)
@@ -435,16 +443,20 @@ def APACHE2(
             timeseries_vitals=timeseries_vitals,
             timeseries_labs=timeseries_labs,
             timeseries_resp=timeseries_resp,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
             window_size=SECONDS_IN_1D,
+            timeframe_name="timeframe",
         )
-        .filter(pl.col("Days Relative to T_0") == 1)
+        .filter(pl.col("timeframe") == 0)
         .select(STAY_KEY, "T_0", "APS Score")
     )
 
     # 2. Age Points
-    age_tf = info.select(STAY_KEY, _apache2_age_points().alias("age_points"))
+    age_tf = info.select(
+        STAY_KEY,
+        _apache2_age_points(pl.col("Admission Age (years)")).alias("age_points"),
+    )
 
     # 3. History Points
     history_tf = _apache2_history_points(info, diag)
@@ -454,6 +466,7 @@ def APACHE2(
     return (
         aps_tf.join(age_tf, on=STAY_KEY, how="left")
         .join(history_tf, on=STAY_KEY, how="left")
+        .with_columns(pl.col("history_points").fill_null(0))
         .with_columns(
             pl.sum_horizontal(
                 "APS Score", "age_points", "history_points"
@@ -476,6 +489,7 @@ def APACHE2(
 ################################################################################
 ################################################################################
 # region APACHE3
+@with_reference_time
 def APACHE3(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -485,8 +499,7 @@ def APACHE3(
     diagnoses: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Acute Physiology And Chronic Health Evaluation III (APACHE III).
@@ -499,9 +512,28 @@ def APACHE3(
         3. Calculate Comorbidity Points based on diagnoses.
         4. Assemble components and sum to get the final APACHE III score.
 
-    Returns:
-        pl.LazyFrame: Contains columns:
-            - {stay_id_col}: Unique identifier for the ICU stay.
+    Arguments
+    ---------
+        patient_information : pl.LazyFrame, optional
+            Patient/stay-level information. Loaded automatically if None.
+        timeseries_vitals : pl.LazyFrame, optional
+            Timeseries vital signs. Loaded automatically if None.
+        timeseries_labs : pl.LazyFrame, optional
+            Timeseries laboratory values. Loaded automatically if None.
+        timeseries_resp : pl.LazyFrame, optional
+            Timeseries respiratory data. Loaded automatically if None.
+        timeseries_inout : pl.LazyFrame, optional
+            Timeseries intake/output data. Loaded automatically if None.
+        diagnoses : pl.LazyFrame, optional
+            Diagnoses (ICD codes). Loaded automatically if None.
+        ventilation : pl.LazyFrame, optional
+            Ventilation episodes with start and end. Loaded automatically if None.
+
+    Returns
+    -------
+        pl.LazyFrame
+            Contains columns:
+            - Global ICU Stay ID
             - T_0: Reference time for the stay.
             - APACHE III Score.
             - Component points (APS3 Score, age_points, comorbidity_points)
@@ -531,13 +563,7 @@ def APACHE3(
         "diagnoses": diagnoses,
         "ventilation": ventilation,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute APACHE III: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("APACHE III", required)
 
     info = _to_lazy(patient_information)
     diag = _to_lazy(diagnoses)
@@ -552,18 +578,19 @@ def APACHE3(
             timeseries_resp=timeseries_resp,
             timeseries_inout=timeseries_inout,
             ventilation=ventilation,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
             window_size=SECONDS_IN_1D,
+            timeframe_name="timeframe",
         )
-        .filter(pl.col("Days Relative to Admission") == 1)
+        .filter(pl.col("timeframe") == 0)
         .select(STAY_KEY, "T_0", "APS3 Score")
     )
 
     # 2. Age Points
     age_tf = info.select(
         STAY_KEY,
-        _apache3_age_points().alias("age_points"),
+        _apache3_age_points(pl.col("Admission Age (years)")).alias("age_points"),
     )
 
     # 3. Comorbidity Points
@@ -574,6 +601,7 @@ def APACHE3(
     return (
         aps3_tf.join(age_tf, on=STAY_KEY, how="left")
         .join(comorbidity_tf, on=STAY_KEY, how="left")
+        .with_columns(pl.col("comorbidity_points").fill_null(0))
         .with_columns(
             pl.sum_horizontal(
                 "APS3 Score", "age_points", "comorbidity_points"
@@ -619,6 +647,7 @@ def _APACHE2_mortality(
     return odds / (1 + odds)
 
 
+@with_reference_time
 def APACHE2_mortality(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -626,8 +655,7 @@ def APACHE2_mortality(
     timeseries_resp: Optional[pl.LazyFrame] = None,
     diagnoses: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate predicted mortality rate from APACHE II score.
@@ -642,8 +670,8 @@ def APACHE2_mortality(
             timeseries_labs=timeseries_labs,
             timeseries_resp=timeseries_resp,
             diagnoses=diagnoses,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
         )
         .join(
             patient_information.select(
@@ -698,13 +726,14 @@ def _APACHE4_hospital_mortality(
 
     age_spline = (
         0.0241774552028671 * age
-        + pl.when(age > 27).then(-4.38861616925701e-6 * (age - 27) ** 3)
-        + pl.when(age > 51).then( 5.01422332950743e-5 * (age - 51) ** 3)
-        + pl.when(age > 64).then(-1.27787345016656e-4 * (age - 64) ** 3)
-        + pl.when(age > 74).then( 1.09605981585416e-4 * (age - 74) ** 3)
-        + pl.when(age > 86).then(-2.75722536945775e-5 * (age - 86) ** 3)
+        + pl.when(age > 27).then(-4.38861616925701e-6 * (age - 27) ** 3).otherwise(0)
+        + pl.when(age > 51).then( 5.01422332950743e-5 * (age - 51) ** 3).otherwise(0)
+        + pl.when(age > 64).then(-1.27787345016656e-4 * (age - 64) ** 3).otherwise(0)
+        + pl.when(age > 74).then( 1.09605981585416e-4 * (age - 74) ** 3).otherwise(0)
+        + pl.when(age > 86).then(-2.75722536945775e-5 * (age - 86) ** 3).otherwise(0)
     ) # fmt: skip
 
+    chronic_health = chronic_health.cast(pl.String)
     chronic_health_weight = (
         pl.when(chronic_health == "AIDS")
         .then(0.958100515711858)
@@ -725,11 +754,11 @@ def _APACHE4_hospital_mortality(
 
     aps3_spline = (
         0.0556349159410042 * aps3_score
-        + pl.when(aps3_score > 10).then( 8.71852213571101e-6 * (aps3_score - 10) ** 3)
-        + pl.when(aps3_score > 22).then(-4.51101465395454e-5 * (aps3_score - 22) ** 3)
-        + pl.when(aps3_score > 32).then( 5.03800407345824e-5 * (aps3_score - 32) ** 3)
-        + pl.when(aps3_score > 48).then(-1.31230671327519e-5 * (aps3_score - 48) ** 3)
-        + pl.when(aps3_score > 89).then(-8.65349197996149e-7 * (aps3_score - 89) ** 3)
+        + pl.when(aps3_score > 10).then( 8.71852213571101e-6 * (aps3_score - 10) ** 3).otherwise(0)
+        + pl.when(aps3_score > 22).then(-4.51101465395454e-5 * (aps3_score - 22) ** 3).otherwise(0)
+        + pl.when(aps3_score > 32).then( 5.03800407345824e-5 * (aps3_score - 32) ** 3).otherwise(0)
+        + pl.when(aps3_score > 48).then(-1.31230671327519e-5 * (aps3_score - 48) ** 3).otherwise(0)
+        + pl.when(aps3_score > 89).then(-8.65349197996149e-7 * (aps3_score - 89) ** 3).otherwise(0)
     ) # fmt: skip
 
     admission_source_weight = (
@@ -760,10 +789,10 @@ def _APACHE4_hospital_mortality(
     los_sqrt = pre_icu_length_of_stay.sqrt().fill_null(0)
     los_spline = (
         -0.310487496000706 * los_sqrt
-        + pl.when(los_sqrt > 0.121).then( 1.47467251149713   * (los_sqrt - 0.121) ** 3)
-        + pl.when(los_sqrt > 0.423).then(-2.86188569954954   * (los_sqrt - 0.423) ** 3)
-        + pl.when(los_sqrt > 0.794).then( 1.42165901026679   * (los_sqrt - 0.794) ** 3)
-        + pl.when(los_sqrt > 2.806).then(-0.0344458222143702 * (los_sqrt - 2.806) ** 3)
+        + pl.when(los_sqrt > 0.121).then( 1.47467251149713   * (los_sqrt - 0.121) ** 3).otherwise(0)
+        + pl.when(los_sqrt > 0.423).then(-2.86188569954954   * (los_sqrt - 0.423) ** 3).otherwise(0)
+        + pl.when(los_sqrt > 0.794).then( 1.42165901026679   * (los_sqrt - 0.794) ** 3).otherwise(0)
+        + pl.when(los_sqrt > 2.806).then(-0.0344458222143702 * (los_sqrt - 2.806) ** 3).otherwise(0)
     ) # fmt: skip
 
     logit = (
@@ -783,6 +812,7 @@ def _APACHE4_hospital_mortality(
     return odds / (1 + odds)
 
 
+@with_reference_time
 def APACHE4_hospital_mortality(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -792,8 +822,7 @@ def APACHE4_hospital_mortality(
     diagnoses: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    t_0: int = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
+    ref: Reference,
 ) -> pl.LazyFrame:
     """
     Calculate predicted mortality rate from APACHE IV score.
@@ -813,9 +842,11 @@ def APACHE4_hospital_mortality(
             timeseries_resp=timeseries_resp,
             timeseries_inout=timeseries_inout,
             ventilation=ventilation,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=ref.t_0,
+            t_0_per_stay=ref.t_0_per_stay,
+            timeframe_name="timeframe",
         )
+        .filter(pl.col("timeframe") == 0)  # first 24 h
         .join(
             patient_information.select(
                 STAY_KEY,
@@ -842,7 +873,6 @@ def APACHE4_hospital_mortality(
             .pipe(_APACHE_diagnostic_category_weight, "IV")
             .alias("APACHE diagnostic category weight"),
         )
-        .sink_parquet("apache4_mortality_debug.parquet")
         .select(
             STAY_KEY,
             "APS3 Score",
@@ -858,6 +888,7 @@ def APACHE4_hospital_mortality(
                 pl.col("Pre-ICU Length of Stay (days)"),
                 pl.col("Admission Diagnosis (APACHE)")
                 .pipe(_APACHE_diagnostic_category_weight, "IV")
+                .fill_null(0)  # a category without a coefficient adds nothing
                 .alias("APACHE diagnostic category weight"),
                 pl.lit(15),  # Worst GCS placeholder
             ).alias("Predicted ICU Mortality Rate"),

@@ -15,7 +15,6 @@ import time
 
 from ..A_extract.A_extract_hirid import HiRIDExtractor
 from ..helper import GlobalHelpers
-from ..helper_batch import batch_process_timeseries
 from ..helper_conversions import UnitConverter
 
 
@@ -69,7 +68,7 @@ class HiRIDProcessor(HiRIDExtractor):
                 default=None,
             )
             .alias("LOINC_component")
-        )
+        ).unique()
 
     # region time series
     def process_timeseries(self) -> pl.LazyFrame:
@@ -124,6 +123,47 @@ class HiRIDProcessor(HiRIDExtractor):
                     self.admissiontime,
                     self.length_of_stay,
                 )
+            )
+
+            # Intake that no other variable has: the part of the intake counter that
+            # is left after the volumes that the medications count (the pharma records
+            # of the routes X1 counts, given only, and the fluid counters)
+            pharma, fluids = self._extract_linked_medications(
+                [path.name for path in batch_paths]
+            )
+            counted = pl.concat(
+                [
+                    pharma.filter(
+                        pl.col(self.drug_admin_type_col) == "given",
+                        pl.col(self.drug_admin_route_col).is_in(
+                            list(self.INTAKE_COLUMN_BY_ROUTE)
+                        ),
+                    ).select(
+                        self.icu_stay_id_col,
+                        "givenat",
+                        pl.when(pl.col(self.drug_amount_unit_col) == "ml")
+                        .then(pl.col(self.drug_amount_col))
+                        .otherwise(pl.col(self.fluid_amount_col))
+                        .alias("volume"),
+                    ),
+                    fluids.select(
+                        self.icu_stay_id_col,
+                        "givenat",
+                        pl.col(self.fluid_amount_col).alias("volume"),
+                    ),
+                ]
+            )
+            timeseries = pl.concat(
+                [
+                    timeseries,
+                    self._extract_unrecorded_intake(
+                        pl.scan_parquet(batch_paths),
+                        counted,
+                        self.admissiontime,
+                        self.length_of_stay,
+                    ),
+                ],
+                how="diagonal_relaxed",
             )
 
             (
@@ -244,26 +284,25 @@ class HiRIDProcessor(HiRIDExtractor):
                 struct_cols=["labstruct"],
                 component_col="variable",
             )
+            # JSON encode the structs for pivoting
             .with_columns(pl.col("labstruct").struct.json_encode())
-            # Save extracted data before pivoting
-            .sink_parquet(ts_labs_path_unsorted)
-        )
-
-        # Batch pivot the data
-        batch_process_timeseries(
-            input_file=ts_labs_path_unsorted,
-            output_file=ts_labs_path,
-            tempfiles_path=self.precalc_path,
-            operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
-                df,
+            # Pivot the lab data
+            .pipe(
+                self.pivot_numeric_or_string,
                 dataset="HiRID_labs",
                 on_col="variable",
                 index_cols=self.index_cols,
                 string_col="labstruct",
-            ).sort(self.index_cols),
-            id_col=self.icu_stay_id_col,
-            delete_after=True,
+            )
+            # Save extracted data before pivoting
+            .sink_parquet(ts_labs_path_unsorted)
+        )
+
+        # Sort the data
+        (
+            pl.scan_parquet(ts_labs_path_unsorted)
+            .sort(self.index_cols)
+            .sink_parquet(ts_labs_path)
         )
         os.remove(ts_labs_path_unsorted)
 
@@ -272,6 +311,238 @@ class HiRIDProcessor(HiRIDExtractor):
             pl.col(self.index_cols).set_sorted(),
             pl.exclude(self.index_cols),
         )
+
+    # endregion
+
+    # region medications
+    def process_medications(self) -> pl.LazyFrame:
+        """
+        Process the medication administrations.
+
+        Steps:
+            1. Check for preprocessed medications file; load if available.
+            2. Extract the pharma records and the fluids (observation tables) in batches of files.
+            3. Link the fluid counter readings to the pharma records carrying them.
+            4. Derive infusion rates, start and end times of the pharma records.
+            5. Move the fluid records from the drug to the fluid columns.
+            6. Sink each batch, concatenate them and clean temporary files.
+
+        Returns:
+            pl.LazyFrame: Medication administrations in the common medication format.
+        """
+        medications_path = self.precalc_path + "HiRID_medications.parquet"
+
+        if os.path.isfile(medications_path):
+            # Load the preprocessed data
+            return pl.scan_parquet(medications_path)
+
+        print("HiRID   - Processing medications...")
+
+        mixture_cols = [self.icu_stay_id_col, self.drug_mixture_id_col]
+        infusion_cols = [*mixture_cols, self.drug_admin_type_col]
+        drug_cols = [
+            self.icu_stay_id_col,
+            "pharmaid",
+            self.drug_mixture_id_col,
+            self.drug_admin_type_col,
+        ]
+        amount_cols = [self.drug_amount_col, self.fluid_amount_col]
+
+        fluid_classes = self.load_many_to_one_mapping(
+            self.mapping_path + "MEDICATIONS_FLUIDS_CLASSES.yaml"
+        )
+
+        # Since each case has its data in only one file (with the same name in
+        # the observation and pharma folder), iterating over the files in
+        # batches allows for a more efficient processing of the data.
+        batch_size = 10
+        files = sorted(Path(self.pharma_path).glob("*.parquet"))
+        total_batches = (len(files) + batch_size - 1) // batch_size
+        for i in range(0, len(files), batch_size):
+            start = time.time()
+            index = str(i // batch_size).zfill(4)
+            batch_names = [file.name for file in files[i : i + batch_size]]
+
+            pharma, fluids = self._extract_linked_medications(batch_names)
+            pharma, fluids = pharma.drop("givenat"), fluids.drop("givenat")
+
+            # region INFUSIONS
+            ###################################################################
+            pharma = pharma.with_columns(
+                pl.col(self.drug_amount_unit_col).str.replace("µ", "mc")
+            )
+
+            # records outside of an infusion (no mixture) are point administrations
+            boluses = pharma.filter(
+                pl.col(self.drug_mixture_id_col).is_null()
+            ).with_columns(pl.col(self.drug_end_col).alias(self.drug_start_col))
+            pharma = pharma.filter(pl.col(self.drug_mixture_id_col).is_not_null())
+
+            # log entries of a drug within the same second are one entry (e.g.
+            # the stop of an infusion has a second entry without a dose), which
+            # takes the values of the one with the highest amounts
+            pharma = (
+                pharma.sort(*drug_cols, self.drug_end_col, *amount_cols)
+                .group_by(*drug_cols, self.drug_end_col, maintain_order=True)
+                .agg(
+                    pl.col(amount_cols).sum(),
+                    pl.exclude(*drug_cols, self.drug_end_col, *amount_cols).last(),
+                )
+            )
+
+            # end of the previous log entry of the infusion
+            pharma = pharma.join(
+                pharma.select(*infusion_cols, self.drug_end_col)
+                .unique()
+                .sort(*infusion_cols, self.drug_end_col)
+                .with_columns(
+                    pl.col(self.drug_end_col)
+                    .shift(1)
+                    .over(infusion_cols)
+                    .alias("prev_drug_end")
+                ),
+                on=[*infusion_cols, self.drug_end_col],
+                how="left",
+            )
+
+            # the first log entry of an infusion has no interval: it is a point
+            # administration if it has a dose or is the only log entry, else it
+            # is dropped (the start of the next interval is already its end)
+            administrations = (
+                pharma.filter(
+                    pl.col("prev_drug_end").is_null()
+                    & (
+                        (pl.len().over(infusion_cols) == 1)
+                        | pl.any_horizontal(pl.col(amount_cols) > 0)
+                    )
+                )
+                .with_columns(pl.col(self.drug_end_col).alias(self.drug_start_col))
+                .drop("prev_drug_end")
+            )
+
+            pharma = (
+                pharma.filter(pl.col("prev_drug_end").is_not_null())
+                .sort(*drug_cols, self.drug_end_col)
+                # NOTE: Convert drug_amount to drug_rates, fluid_amount to fluid_rates
+                .with_columns(
+                    *[
+                        (
+                            pl.col(amount)
+                            / (pl.col(self.drug_end_col) - pl.col("prev_drug_end"))
+                            * 3600
+                        )
+                        .round_sig_figs(2)
+                        .alias(rate)
+                        for amount, rate in (
+                            (self.drug_amount_col, self.drug_rate_col),
+                            (self.fluid_amount_col, self.fluid_rate_col),
+                        )
+                    ],
+                )
+                .with_columns(
+                    pl.format("{}/hr", self.drug_amount_unit_col).alias(
+                        self.drug_rate_unit_col
+                    ),
+                    # a log entry continues the previous one of the same drug if
+                    # it starts where that ended, at the same rate; a run of
+                    # continued log entries is one interval
+                    (
+                        (pl.col("prev_drug_end") == pl.col(self.drug_end_col).shift(1))
+                        & (
+                            pl.col(self.drug_rate_col)
+                            == pl.col(self.drug_rate_col).shift(1)
+                        )
+                    )
+                    .fill_null(False)
+                    .not_()
+                    .cum_sum()
+                    .over(drug_cols)
+                    .alias("run"),
+                )
+                # merge each run: starts with the first log entry, sums the amounts
+                .group_by(*drug_cols, "run", maintain_order=True)
+                .agg(
+                    pl.col("prev_drug_end").first().alias(self.drug_start_col),
+                    pl.col(amount_cols).sum(),
+                    pl.exclude(*drug_cols, "run", *amount_cols).last(),
+                )
+                .drop("prev_drug_end", "run")
+            )
+
+            pharma = pl.concat(
+                [pharma, administrations, boluses], how="diagonal_relaxed"
+            ).with_columns(
+                # a point administration has no end
+                pl.when(pl.col(self.drug_start_col) != pl.col(self.drug_end_col))
+                .then(pl.col(self.drug_end_col))
+                .alias(self.drug_end_col)
+            )
+
+            # region FLUID COLUMNS
+            ###################################################################
+            # move the fluids (given in ml) from the drug to the fluid columns,
+            # and map their class and fluid group
+            pharma = pharma.with_columns(
+                pl.when(pl.col("fluid_entry"))
+                .then(pl.col(self.drug_name_col))
+                .alias(self.fluid_name_col),
+                *[
+                    pl.when(pl.col("fluid_entry"))
+                    .then(
+                        pl.col(self.drug_name_col).replace_strict(
+                            mapping, default=None
+                        )
+                    )
+                    .fill_null(pl.col(column))
+                    .alias(column)
+                    for column, mapping in (
+                        (self.drug_class_col, fluid_classes),
+                        (self.fluid_group_col, self.SOLUTION_FLUIDS_MAP),
+                    )
+                ],
+                pl.when(~pl.col("fluid_entry")).then(
+                    pl.col(
+                        self.drug_name_col,
+                        self.drug_amount_col,
+                        self.drug_amount_unit_col,
+                        self.drug_rate_col,
+                        self.drug_rate_unit_col,
+                    )
+                ),
+            ).drop("fluid_entry")
+
+            # region SINK
+            ###################################################################
+            # sink each intermittent batch result to a parquet
+            for table, data in (("observation", fluids), ("pharma", pharma)):
+                data.sink_parquet(
+                    self.precalc_path
+                    + f"HiRID_medications_{table}_batch_{index}.parquet"
+                )
+
+            sys.stdout.write("\033[K")  # Clear to the end of line
+            print(
+                f"Processing batch {i//batch_size + 1:3.0f} of "
+                f"{total_batches} (last: {time.time() - start:.2f}s)",
+                end="\r",
+            )
+
+        print("\nBatch processing complete. Concatenating results...")
+
+        # Concatenate and sink all processed batches
+        batch_files = sorted(
+            glob.glob(self.precalc_path + "HiRID_medications_*_batch_*.parquet")
+        )
+        pl.concat(
+            [pl.scan_parquet(file) for file in batch_files],
+            how="diagonal_relaxed",
+        ).sink_parquet(medications_path)
+
+        # Delete the temporary files
+        for file in batch_files:
+            os.remove(file)
+
+        return pl.scan_parquet(medications_path)
 
     # endregion
 

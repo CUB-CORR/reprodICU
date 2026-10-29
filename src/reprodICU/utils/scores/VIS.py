@@ -4,10 +4,11 @@ VIS: compute Vasoactive-Inotropic Score in long format directly from raw inputs.
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
-- Vasoactive-Inotropic Score (VIS) (sum of vasoactive agent contributions)
+- timeframe (integer window index counted from T_0)
+- Vasoactive-Inotropic Score (VIS) (hourly VIS aggregated per window)
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
+VIS is computed per hour (no vasoactives = 0) and aggregated per window.
 
 SOURCES
 -------
@@ -21,31 +22,34 @@ from typing import Optional
 
 import polars as pl
 
+from ..base import (
+    SECONDS_IN_1H,
+    STAY_KEY,
+    Window,
+    _add_sparse_timeframes,
+    _build_base_timeframes,
+    _optional_timeframe_bounds_filter,
+    _window_context,
+    with_windows,
+)
 from ..clinical.pharmocological.ALIGNED_UNITS import ALIGNED_UNITS_VIS
 from ..common import (
-    _build_t0,
-    _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _validate_required_data,
     get_medications,
     get_patient_information,
 )
-from ..FIX_WINDOW_BORDERS import FIX_WINDOW_BORDERS
-
-STAY_KEY = "Global ICU Stay ID"
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
+from ..FIX_WINDOW_BORDERS import PROJECT_TO_WINDOWS, TIME_WEIGHTED_MEAN_RATE
 
 
+
+
+@with_windows
 def VIS(
     patient_information: Optional[pl.LazyFrame] = None,
     medications: Optional[pl.LazyFrame] = None,
     *,
-    t_0: Optional[int] = 0,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    t_1: Optional[int] = None,
-    window_size: int = SECONDS_IN_1D,
-    timeframe_name: str = None,
+    aggregation: str = "mean",
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute Vasoactive-Inotropic Score (VIS) in long format from raw inputs.
@@ -65,9 +69,11 @@ def VIS(
     - Milrinone: 10 × dose (mcg/kg/min)
     - Norepinephrine: 100 × dose (mcg/kg/min)
     - Olprinone: 25 × dose (mcg/kg/min)
-    - Phenylephrine: 100 × dose (mcg/kg/min)
-    - Terlipressin: 10 × dose (mcg/h)
+    - Phenylephrine: 10 × dose (mcg/kg/min)
+    - Terlipressin: 10 × dose (mcg/min)
     - Vasopressin (USP): 10000 × dose (units/kg/min)
+
+    The windows are aggregated from hourly values, so `window_size` must be a multiple of 3600.
 
     Arguments
     ---------
@@ -77,18 +83,8 @@ def VIS(
         medications : pl.LazyFrame, optional
             Medication administrations with drug ingredient, rate, unit, and
             timing information. Loaded automatically if None.
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
+        aggregation : {"mean", "median"}, optional
+            How hourly VIS values are aggregated over a window (default: "mean").
 
     Returns
     -------
@@ -99,6 +95,11 @@ def VIS(
             - timeframe (or custom name)
             - Vasoactive-Inotropic Score (VIS)
     """
+    if window.window_size % SECONDS_IN_1H != 0:
+        raise ValueError(f"window_size must be a multiple of 3600, got {window.window_size}")
+    if aggregation not in ("mean", "median"):
+        raise ValueError(f"aggregation must be 'mean' or 'median', got {aggregation!r}")
+
     # Load defaults if not provided
     if patient_information is None:
         patient_information = get_patient_information()
@@ -110,13 +111,7 @@ def VIS(
         "patient_information": patient_information,
         "medications": medications,
     }
-
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Cannot compute VIS: Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured in ~/.reprodICU/PATHS.yaml or provide them explicitly."
-        )
+    _validate_required_data("VIS", required)
 
     VASOPRESSORS_INOTROPES = [
         "angiotensin II",  # 0.25 * dose in ng/kg/min
@@ -138,11 +133,7 @@ def VIS(
     patient_information = patient_information.lazy()
     medications = medications.lazy()
 
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # Select relevant columns and build T_0
     medications = (
@@ -150,7 +141,7 @@ def VIS(
             pl.col("Drug Ingredient").is_in(VASOPRESSORS_INOTROPES)
         )
         .pipe(ALIGNED_UNITS_VIS, patient_information=patient_information)
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
         .with_columns(
             # Calculate start and end relative to T_0
             (
@@ -185,12 +176,12 @@ def VIS(
             pl.col("Drug Ingredient") == "terlipressin",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
         )
-        .then(pl.col("Drug Rate (fixed units)") * pl.col("Admission Weight (kg)"))
+        .then(pl.col("Drug Rate (fixed units)") * pl.col("Admission Weight (kg)") / 1000 * 10) # mcg/kg/min -> mg/min, x10
         .when(
             pl.col("Drug Ingredient") == "methylene blue",
-            pl.col("Drug Rate Unit (fixed units)") == "mg/kg/min",
+            pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
         )
-        .then(pl.col("Drug Rate (fixed units)") * 20 * 60) # min -> h
+        .then(pl.col("Drug Rate (fixed units)") * 60 / 1000 * 20) # mcg/kg/min -> mg/kg/h, x20
         .when(
             pl.col("Drug Ingredient") == "olprinone",
             pl.col("Drug Rate Unit (fixed units)") == "mcg/kg/min",
@@ -215,46 +206,47 @@ def VIS(
         .alias("VIS Component"),
     ) # fmt: skip
 
-    # Fix window borders
-    medications = FIX_WINDOW_BORDERS(
-        medications, TIMEWINDOW_IN_SECONDS=SECONDS_IN_1H
-    ).rename(
-        {
-            "Window Relative to T_0": "Hour Relative to T_0",
-            "Drug Duration (windows)": "Drug Duration (hours)",
-        }
+    meds_agg = PROJECT_TO_WINDOWS(
+        medications,
+        group_cols=[STAY_KEY, "Drug Ingredient", "T_0"],
+        value_col="VIS Component",
+        TIMEWINDOW_IN_SECONDS=SECONDS_IN_1H,
+        prefix="Drug",
+        reference="T_0",
+        unit="seconds",
+    ).with_columns(
+        pl.col("Window Relative to T_0").alias("Hour Relative to T_0"),
     )
 
-    # Calculate VIS per hour
-    vis = (
-        medications.group_by(
-            STAY_KEY, "Hour Relative to T_0", "Drug Ingredient"
-        )
-        .agg(
-            pl.col("VIS Component")
-            .mul(pl.col("Drug Duration (hours)"))
-            .sum()
-            .truediv(pl.sum("Drug Duration (hours)"))
-            .alias("VIS Component"),
-            pl.col("T_0").first(),
-        )
+    # Calculate VIS per hour: sum each drug's own time-weighted average contribution
+    hourly_vis = (
+        meds_agg.group_by(STAY_KEY, "Drug Ingredient", "Hour Relative to T_0")
+        .agg(TIME_WEIGHTED_MEAN_RATE(SECONDS_IN_1H).alias("VIS Component"))
         .group_by(STAY_KEY, "Hour Relative to T_0")
-        .agg(
-            pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"),
-            pl.col("T_0").first(),
+        .agg(pl.sum("VIS Component").alias("Vasoactive-Inotropic Score (VIS)"))
+    )
+
+    # All hours of the stay (no vasoactives = VIS 0), aggregated per window
+    vis = (
+        _add_sparse_timeframes(
+            _build_base_timeframes(ctx.all_stays_t0, patient_information, SECONDS_IN_1H),
+            hourly_vis.rename({"Hour Relative to T_0": "timeframe"}),
         )
+        .rename({"timeframe": "Hour Relative to T_0"})
         .filter(
-            _optional_time_bounds_filter(
-                "Hour Relative to T_0", SECONDS_IN_1H, t_0, t_1
+            _optional_timeframe_bounds_filter(
+                "Hour Relative to T_0", SECONDS_IN_1H, t_minus1=window.t_minus1, t_1=window.t_1
             )
         )
-        .sort(STAY_KEY, "Hour Relative to T_0")
-        .select(
+        .join(hourly_vis, on=[STAY_KEY, "Hour Relative to T_0"], how="left")
+        .with_columns(pl.col("Vasoactive-Inotropic Score (VIS)").fill_null(0.0))
+        .group_by(
             STAY_KEY,
             "T_0",
-            pl.col("Hour Relative to T_0").alias(timeframe_name),
-            "Vasoactive-Inotropic Score (VIS)",
+            (pl.col("Hour Relative to T_0") // (window.window_size // SECONDS_IN_1H)).alias(ctx.name),
         )
+        .agg(getattr(pl.col("Vasoactive-Inotropic Score (VIS)"), aggregation)())
+        .sort(STAY_KEY, ctx.name)
     )
 
     return vis

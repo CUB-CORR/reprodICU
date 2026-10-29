@@ -13,9 +13,10 @@ from typing import Optional
 
 import polars as pl
 
+from ...base import (
+    STAY_KEY,
+)
 from ...common import get_patient_information
-
-STAY_KEY = "Global ICU Stay ID"
 WEIGHT_COL = "Admission Weight (kg)"
 
 
@@ -58,6 +59,8 @@ def ALIGNED_UNITS(
         pl.col("Drug Rate").is_null(),
         pl.col("Drug Rate Unit").is_null(),
         pl.col("Drug Amount").is_not_null(),
+        pl.col("Drug End Relative to Admission (seconds)")
+        > pl.col("Drug Start Relative to Admission (seconds)"),
         pl.col("Drug Amount Unit").is_in(
             ["g", "mg", "mcg", "U", "IE", "units"]
         ),

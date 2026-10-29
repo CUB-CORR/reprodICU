@@ -4,9 +4,9 @@ LODS: compute Logistic Organ Dysfunction System (LODS and mLODS) in long format 
 Output columns per row:
 - Global ICU Stay ID
 - T_0 (seconds from admission used as reference)
-- timeframe (0-indexed integer window)
+- timeframe (integer window index counted from T_0)
 - LODS Score or mLODS Score (sum of component points)
-- Component points (GCS, heart rate, systolic BP, P/F ratio, BUN, creatinine, urine output, WBC, bilirubin, platelets, INR)
+- Component points (GCS, heart rate, systolic BP, P/F ratio, BUN, creatinine, urine output, WBC, bilirubin, platelets, prothrombin time)
 
 Time is in seconds. Windows determined by floor((time - T_0)/window_size).
 Worst-within-window aggregation is applied per component.
@@ -27,27 +27,33 @@ from typing import Optional
 
 import polars as pl
 
-from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT
-from ..clinical.respiratory.PF_RATIO import PaO2_FiO2_RATIO
-from ..common import (
+from ..base import (
+    SECONDS_IN_1D,
+    STAY_KEY,
+    TIME_KEY,
+    Window,
+    _assemble,
     _assign_timeframe,
-    _build_t0,
-    _get_timeframe_name,
-    _optional_time_bounds_filter,
+    _finalize,
+    _null_if_incomplete_pre_icu,
+    _window_context,
+    intervention_per_timeframe,
+    with_windows,
+)
+from ..clinical.renal.URINE_OUTPUT import URINE_OUTPUT_VOLUME
+from ..common import (
+    ScoringTable,
+    _validate_required_data,
+    extract_struct_value,
     get_patient_information,
     get_timeseries_intakeoutput,
     get_timeseries_labs,
     get_timeseries_respiratory,
     get_timeseries_vitals,
     get_ventilation,
-    intervention_per_timeframe,
 )
-
-STAY_KEY = "Global ICU Stay ID"
-TIME_KEY = "Time Relative to Admission (seconds)"
-
-SECONDS_IN_1H = 60 * 60
-SECONDS_IN_1D = 24 * SECONDS_IN_1H
+from ..core import BLOOD_PRESSURES
+from ..laboratory.oxygenation.PF_RATIO import PaO2_FiO2_RATIO
 
 
 ################################################################################
@@ -56,40 +62,26 @@ SECONDS_IN_1D = 24 * SECONDS_IN_1H
 
 
 def _improve_vitals(vitals: pl.LazyFrame) -> pl.LazyFrame:
-    return vitals.select(
-        STAY_KEY,
-        TIME_KEY,
-        "Heart rate",
-        pl.coalesce(
-            "Invasive systolic arterial pressure",
-            "Non-invasive systolic arterial pressure",
-        ).alias("Systolic arterial pressure"),
-        "Glasgow coma score total",
+    return (
+        BLOOD_PRESSURES(timeseries_vitals=vitals)
+        .rename({"SBP": "Systolic arterial pressure"})
+        .select(
+            STAY_KEY,
+            TIME_KEY,
+            "Heart rate",
+            "Systolic arterial pressure",
+            "Glasgow coma score total",
+        )
     )
 
 
 def _improve_labs(labs: pl.LazyFrame) -> pl.LazyFrame:
-    sources = ["Serum or Plasma", "Blood", None]
-    LABS = [
-        "Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets",
-        "INR",
-    ] # fmt: skip
+    sources = ["Serum or Plasma", "Blood"]
+    LABS    = ["Urea nitrogen", "Creatinine", "Leukocytes", "Bilirubin", "Platelets", "Prothrombin time (PT)"] # fmt: skip
     return labs.with_columns(
-        pl.when(pl.col(col).struct.field("system").is_in(sources))
-        .then(pl.col(col).struct.field("value"))
-        .otherwise(None)
-        .alias(col)
-        for col in LABS
+        extract_struct_value(lab, sources, exact_match=True).alias(lab)
+        for lab in LABS
     ).select(STAY_KEY, TIME_KEY, *LABS)
-
-
-def _validate_data(required: dict) -> None:
-    missing = [name for name, data in required.items() if data is None]
-    if missing:
-        raise ValueError(
-            f"Missing required datasets: {', '.join(missing)}. "
-            f"Ensure they are configured or provide them explicitly."
-        )
 
 
 # endregion
@@ -101,229 +93,126 @@ def _validate_data(required: dict) -> None:
 
 
 def _gcs_points_lods(gcs: pl.Expr) -> pl.Expr:
-    """
-    Glasgow Coma Scale
-
-    14-15   0
-     9-13  +1
-     6- 8  +2
-     4- 5  +3
-    <4     +4
-    """
-    return (
-        pl.when(gcs.is_between(14, 15))
-        .then(0)
-        .when(gcs.is_between(9, 13))
-        .then(1)
-        .when(gcs.is_between(6, 8))
-        .then(2)
-        .when(gcs.is_between(4, 5))
-        .then(3)
-        .when(gcs < 4)
-        .then(4)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Glasgow Coma Scale | Points
+        (  14, None, "left",    0),  # 14-15 .............. 0
+        (   9,   14, "left",    1),  #  9-13                1
+        (   6,    9, "left",    3),  #  6- 8                3
+        (None,    6, "neither", 5),  #  3- 5                5
+    ]).to_expr(gcs) # fmt: skip
 
 
 def _pf_ratio_points_lods(pf: pl.Expr, ventilated: pl.Expr) -> pl.Expr:
     """
     PaO2/FiO2 ratio, mmHg
 
-    Any      and NOT mechanically ventilated  0
-    ≥250     and mechanically ventilated     +1
-     150-249 and mechanically ventilated     +2
-      50-149 and mechanically ventilated     +3
-     <50     and mechanically ventilated     +4
+    Any  and NOT mechanically ventilated or on CPAP   0
+    ≥150 and     mechanically ventilated or on CPAP  +1
+    <150 and     mechanically ventilated or on CPAP  +3
     """
     return (
         pl.when(~ventilated)
         .then(0)
-        .when(pf >= 250)
+        .when(pf >= 150)
         .then(1)
-        .when(pf.is_between(150, 250, closed="left"))
-        .then(2)
-        .when(pf.is_between(50, 150, closed="left"))
+        .when(pf < 150)
         .then(3)
-        .when(pf < 50)
-        .then(4)
         .otherwise(None)
     )
 
 
 def _hr_points_lods(hr: pl.Expr) -> pl.Expr:
-    """
-    Heart rate, bpm
-
-     <30      +3
-      30-139   0
-     140-159  +1
-    ≥160      +2
-    """
-    return (
-        pl.when(hr < 30)
-        .then(3)
-        .when(hr.is_between(30, 140, closed="left"))
-        .then(0)
-        .when(hr.is_between(140, 160, closed="left"))
-        .then(1)
-        .when(hr >= 160)
-        .then(2)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Heart rate (bpm) | Points
+        (None,   30, "neither", 5),  #  <30               5
+        (  30,  140, "left",    0),  #   30-139 ......... 0
+        ( 140, None, "left",    1),  # ≥140               1
+    ]).to_expr(hr) # fmt: skip
 
 
 def _sbp_points_lods(sbp: pl.Expr) -> pl.Expr:
-    """
-    Systolic blood pressure, mmHg
-
-     <40      +3
-      40- 69  +2
-      70- 89  +1
-      90-239   0
-     240-269  +1
-    ≥270      +2
-    """
-    return (
-        pl.when(sbp < 40)
-        .then(3)
-        .when(sbp.is_between(40, 70, closed="left"))
-        .then(2)
-        .when(sbp.is_between(70, 90, closed="left"))
-        .then(1)
-        .when(sbp.is_between(90, 240, closed="left"))
-        .then(0)
-        .when(sbp.is_between(240, 270, closed="left"))
-        .then(1)
-        .when(sbp >= 270)
-        .then(2)
-        .otherwise(None)
-    )
+    return ScoringTable([             # Systolic blood pressure (mmHg) | Points
+        (None,   40, "neither", 5),   #  <40                             5
+        (  40,   70, "left",    3),   #   40- 69                         3
+        (  70,   90, "left",    1),   #   70- 89                         1
+        (  90,  240, "left",    0),   #   90-239 ....................... 0
+        ( 240,  270, "left",    1),   #  240-269                         1
+        ( 270, None, "left",    3),   # ≥270                             3
+    ]).to_expr(sbp) # fmt: skip
 
 
 def _bun_points_lods(bun: pl.Expr) -> pl.Expr:
-    """
-    Urea nitrogen, mg/dL
-    (Converted to Urea mmol/L for scoring)
-
-    Urea  <6        0
-    Urea   6- 9.9  +1
-    Urea  10-19.9  +2
-    Urea ≥20       +3
-    """
-    urea = bun / 0.467
-    return (
-        pl.when(urea < 6)
-        .then(0)
-        .when(urea.is_between(6, 10, closed="left"))
-        .then(1)
-        .when(urea.is_between(10, 20, closed="left"))
-        .then(2)
-        .when(urea >= 20)
-        .then(3)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Urea nitrogen (mg/dL) | Points
+        (None,   17, "neither", 0),  # <17 ................... 0
+        (  17,   28, "left",    1),  #  17-<28                 1
+        (  28,   56, "left",    3),  #  28-<56                 3
+        (  56, None, "left",    5),  # ≥56                     5
+    ]).to_expr(bun) # fmt: skip
 
 
 def _creatinine_points_lods(crea: pl.Expr) -> pl.Expr:
-    """
-    Creatinine, mg/dL
-
-    <1.2       0
-     1.2-1.6  +1
-    >1.6      +2
-    """
-    return (
-        pl.when(crea < 1.2)
-        .then(0)
-        .when(crea.is_between(1.2, 1.6, closed="both"))
-        .then(1)
-        .when(crea > 1.6)
-        .then(2)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Creatinine (mg/dL) | Points
+        (None,  1.2, "neither", 0),  # <1.2 ............... 0
+        ( 1.2,  1.6, "left",    1),  #  1.2-1.59            1
+        ( 1.6, None, "left",    3),  # ≥1.6                 3
+    ]).to_expr(crea) # fmt: skip
 
 
 def _uo_points_lods(uo_l_day: pl.Expr) -> pl.Expr:
-    """
-    Urine output, L/day
-
-     <0.5        +2
-      0.5 -0.74  +1
-      0.75-9.99   0
-    ≥10          +1
-    """
-    return (
-        pl.when(uo_l_day < 0.5)
-        .then(2)
-        .when(uo_l_day.is_between(0.5, 0.75, closed="left"))
-        .then(1)
-        .when(uo_l_day.is_between(0.75, 10, closed="left"))
-        .then(0)
-        .when(uo_l_day >= 10)
-        .then(1)
-        .otherwise(None)
-    )
+    return ScoringTable([              # Urine output (L/day) | Points
+        (None,   0.5,  "neither", 5),  # <0.5                   5
+        ( 0.5,   0.75, "left",    3),  #  0.5 -0.74             3
+        ( 0.75, 10,    "left",    0),  #  0.75-9.99 ........... 0
+        (10,    None,  "left",    3),  # ≥10                    3
+    ]).to_expr(uo_l_day) # fmt: skip
 
 
 def _wbc_points_lods(wbc: pl.Expr) -> pl.Expr:
-    """
-    Leukocytes, 10^9/L
-
-     <1.0       +2
-      1.0- 2.4  +1
-      2.5-49.9   0
-    ≥50         +1
-    """
-    return (
-        pl.when(wbc < 1.0)
-        .then(2)
-        .when(wbc.is_between(1.0, 2.5, closed="left"))
-        .then(1)
-        .when(wbc.is_between(2.5, 50, closed="left"))
-        .then(0)
-        .when(wbc >= 50)
-        .then(1)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Leukocytes (10^9/L) | Points
+        (None,  1.0, "neither", 3),  #  <1.0                 3
+        ( 1.0,  2.5, "left",    1),  #   1.0- 2.4            1
+        ( 2.5,  50,  "left",    0),  #   2.5-49.9 .......... 0
+        (50,   None, "left",    1),  # ≥50.                  1
+    ]).to_expr(wbc) # fmt: skip
 
 
 def _bilirubin_points_lods(bili: pl.Expr) -> pl.Expr:
-    """
-    Bilirubin, mg/dL
-
-    <2.0       0
-     2.0-4.0  +1
-    >4.0      +2
-    """
-    return (
-        pl.when(bili < 2.0)
-        .then(0)
-        .when(bili.is_between(2.0, 4.0, closed="both"))
-        .then(1)
-        .when(bili > 4.0)
-        .then(2)
-        .otherwise(None)
-    )
+    return ScoringTable([            # Bilirubin (mg/dL) | Points
+        (None,  2.0, "neither", 0),  # <2.0 .............. 0
+        ( 2.0, None, "left",    1),  # ≥2.0                1
+    ]).to_expr(bili) # fmt: skip
 
 
 def _platelet_points_lods(plt: pl.Expr) -> pl.Expr:
-    """
-    Platelets, 10^3/uL
-
-    <50  +1
-    ≥50   0
-    """
-    return pl.when(plt < 50).then(1).when(plt >= 50).then(0).otherwise(None)
+    return ScoringTable([            # Platelets (10^3/µL) | Points
+        (None,   50, "neither", 1),  # <50                   1
+        (  50, None, "left",    0),  # ≥50 ................. 0
+    ]).to_expr(plt) # fmt: skip
 
 
-def _inr_points_lods(inr: pl.Expr) -> pl.Expr:
-    """
-    INR, ratio
+def _pt_points_lods(pt: pl.Expr) -> pl.Expr:
+    # more than 3 s above the standard (about 12 s)
+    return ScoringTable([            # Prothrombin time (s) | Points
+        (None,   15, "right",   0),  # ≤15 .................. 0
+        (  15, None, "neither", 1),  # >15                    1
+    ]).to_expr(pt) # fmt: skip
 
-    <0.25  +1
-    ≥0.25   0
-    """
-    return pl.when(inr < 0.25).then(1).when(inr >= 0.25).then(0).otherwise(None)
+
+def _organ_system_score(columns: list[str]) -> pl.Expr:
+    """Sum over the organ systems of the highest points of their variables (those among `columns`)."""
+    # organ systems of Table 5: a system scores its most severe variable
+    ORGAN_SYSTEMS = [
+        ["gcs_points"],
+        ["hr_points", "sbp_points"],
+        ["bun_points", "creatinine_points", "uo_points"],
+        ["pf_ratio_points"],
+        ["wbc_points", "platelet_points"],
+        ["bilirubin_points", "pt_points"],
+    ]
+
+    return pl.sum_horizontal(
+        pl.max_horizontal(*[pl.col(c) for c in system if c in columns])
+        for system in ORGAN_SYSTEMS
+        if any(c in columns for c in system)
+    )
 
 
 # endregion
@@ -332,6 +221,7 @@ def _inr_points_lods(inr: pl.Expr) -> pl.Expr:
 ################################################################################
 ################################################################################
 # region LODS
+@with_windows
 def LODS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -340,11 +230,7 @@ def LODS(
     timeseries_inout: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute Logistic Organ Dysfunction System (LODS) score in long format.
@@ -366,18 +252,6 @@ def LODS(
             Timeseries intake/output data. Loaded automatically if None.
         ventilation : pl.LazyFrame, optional
             Ventilation data with start/end intervals. Loaded automatically if None.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
 
     Returns
     -------
@@ -389,7 +263,7 @@ def LODS(
             - LODS Score
             - Component points (gcs_points, hr_points, sbp_points, pf_ratio_points,
               bun_points, creatinine_points, uo_points, wbc_points, bilirubin_points,
-              platelet_points, inr_points)
+              platelet_points, pt_points)
     """
     # region data loading
     if patient_information is None:
@@ -405,26 +279,22 @@ def LODS(
     if ventilation is None:
         ventilation = get_ventilation()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_labs": timeseries_labs,
-            "timeseries_resp": timeseries_resp,
-            "timeseries_inout": timeseries_inout,
-            "ventilation": ventilation,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "timeseries_inout": timeseries_inout,
+        "ventilation": ventilation,
+    }
+    _validate_required_data("LODS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     labs = _improve_labs(timeseries_labs.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # Ventilation status
     vent = (
@@ -436,9 +306,7 @@ def LODS(
             patient_information,
             start_col="Ventilation Start Relative to Admission (seconds)",
             end_col="Ventilation End Relative to Admission (seconds)",
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            window=window,
         )
         .rename({"intervention": "ventilated"})
     )
@@ -446,8 +314,8 @@ def LODS(
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _gcs_points_lods(pl.col("Glasgow coma score total"))
@@ -461,11 +329,13 @@ def LODS(
     )
 
     labs_tf = (
-        labs.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        labs.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
-            _bun_points_lods(pl.col("Urea nitrogen")).max().alias("bun_points"),
+            _bun_points_lods(pl.col("Urea nitrogen"))
+            .max()
+            .alias("bun_points"),
             _creatinine_points_lods(pl.col("Creatinine"))
             .max()
             .alias("creatinine_points"),
@@ -476,7 +346,9 @@ def LODS(
             _platelet_points_lods(pl.col("Platelets"))
             .max()
             .alias("platelet_points"),
-            _inr_points_lods(pl.col("INR")).max().alias("inr_points"),
+            _pt_points_lods(pl.col("Prothrombin time (PT)"))
+            .max()
+            .alias("pt_points"),
         )
     )
 
@@ -485,11 +357,11 @@ def LODS(
             patient_information=patient_information,
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .join(vent, [STAY_KEY, "timeframe"], how="left")
         .with_columns(pl.col("ventilated").fill_null(False))
         .group_by(STAY_KEY, "timeframe")
@@ -503,68 +375,36 @@ def LODS(
     )
 
     uo_tf = (
-        URINE_OUTPUT(
+        URINE_OUTPUT_VOLUME(
             patient_information=patient_information,
             timeseries_inout=timeseries_inout,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
+            window_size=window.window_size,
+            timeframe_name="timeframe",
         )
         .with_columns(
             uo_l_day=pl.col("uo_interval_ml")
             .truediv(1000)
-            .mul(SECONDS_IN_1D / window_size)
+            .mul(SECONDS_IN_1D / window.window_size)
         )
         .group_by(STAY_KEY, "timeframe")
         .agg(_uo_points_lods(pl.col("uo_l_day")).max().alias("uo_points"))
     )
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
-
     # region assemble
-    out = base
-    for part in [vitals_tf, labs_tf, resp_tf, uo_tf]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
-
-    return (
-        out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "LODS Score"
-            )
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "LODS Score",
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name, "LODS Score"),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf, labs_tf, resp_tf, uo_tf)
+    return _finalize(
+        out.with_columns(
+            _null_if_incomplete_pre_icu(
+                _organ_system_score(out.collect_schema().names()),
+                pl.exclude(STAY_KEY, "T_0", "timeframe"),
+                ctx.window_size,
+            ).alias("LODS Score")
+        ),
+        ctx,
+        "LODS Score",
     )
 
 
@@ -574,6 +414,7 @@ def LODS(
 ################################################################################
 ################################################################################
 # region mLODS
+@with_windows
 def mLODS(
     patient_information: Optional[pl.LazyFrame] = None,
     timeseries_vitals: Optional[pl.LazyFrame] = None,
@@ -581,11 +422,7 @@ def mLODS(
     timeseries_resp: Optional[pl.LazyFrame] = None,
     ventilation: Optional[pl.LazyFrame] = None,
     *,
-    window_size: int = SECONDS_IN_1D,
-    t_0: int = 0,
-    t_1: Optional[int] = None,
-    t_0_per_stay: Optional[pl.LazyFrame] = None,
-    timeframe_name: Optional[str] = None,
+    window: Window,
 ) -> pl.LazyFrame:
     """
     Compute modified Logistic Organ Dysfunction System (mLODS) score in long format.
@@ -606,18 +443,6 @@ def mLODS(
             Timeseries respiratory data. Loaded automatically if None.
         ventilation : pl.LazyFrame, optional
             Ventilation data with start/end intervals. Loaded automatically if None.
-        window_size : int, optional
-            Timeframe width in seconds (default: 86400 = 1 day). Window index is
-            floor((time - T_0)/window_size).
-        t_0 : int, optional
-            Scalar reference time (seconds from admission). Defaults to 0 (admission).
-            Ignored when t_0_per_stay is provided.
-        t_1 : int, optional
-            Optional upper time bound (seconds from admission) for filtering inputs.
-        t_0_per_stay : pl.LazyFrame, optional
-            Per-stay T_0 overrides with columns [Global ICU Stay ID, T_0].
-        timeframe_name : str, optional
-            Name for output timeframe column. Auto-generated if None.
 
     Returns
     -------
@@ -642,25 +467,21 @@ def mLODS(
     if ventilation is None:
         ventilation = get_ventilation()
 
-    _validate_data(
-        {
-            "patient_information": patient_information,
-            "timeseries_vitals": timeseries_vitals,
-            "timeseries_labs": timeseries_labs,
-            "timeseries_resp": timeseries_resp,
-            "ventilation": ventilation,
-        }
-    )
+    # Validate all required data is available
+    required = {
+        "patient_information": patient_information,
+        "timeseries_vitals": timeseries_vitals,
+        "timeseries_labs": timeseries_labs,
+        "timeseries_resp": timeseries_resp,
+        "ventilation": ventilation,
+    }
+    _validate_required_data("mLODS", required)
 
     vitals = _improve_vitals(timeseries_vitals.lazy())
     labs = _improve_labs(timeseries_labs.lazy())
 
     patient_information = patient_information.lazy()
-    ALL_STAYS = patient_information.select(STAY_KEY)
-    ALL_STAYS_T0 = _build_t0(ALL_STAYS, t_0_per_stay=t_0_per_stay, t_0=t_0)
-    timeframe_name = _get_timeframe_name(
-        timeframe_name, window_size, t_0, t_0_per_stay
-    )
+    ctx = _window_context(patient_information, window)
 
     # Ventilation status
     vent = (
@@ -672,9 +493,7 @@ def mLODS(
             patient_information,
             start_col="Ventilation Start Relative to Admission (seconds)",
             end_col="Ventilation End Relative to Admission (seconds)",
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
-            window_size=window_size,
+            window=window,
         )
         .rename({"intervention": "ventilated"})
     )
@@ -682,8 +501,8 @@ def mLODS(
 
     # region component scoring
     vitals_tf = (
-        vitals.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        vitals.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _gcs_points_lods(pl.col("Glasgow coma score total"))
@@ -697,8 +516,8 @@ def mLODS(
     )
 
     labs_tf = (
-        labs.join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        labs.join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .group_by(STAY_KEY, "timeframe")
         .agg(
             _creatinine_points_lods(pl.col("Creatinine"))
@@ -719,11 +538,11 @@ def mLODS(
             patient_information=patient_information,
             timeseries_resp=timeseries_resp,
             timeseries_labs=timeseries_labs,
-            t_0=t_0,
-            t_0_per_stay=t_0_per_stay,
+            t_0=window.t_0,
+            t_0_per_stay=window.t_0_per_stay,
         )
-        .join(ALL_STAYS_T0, on=STAY_KEY, how="inner")
-        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window_size))
+        .join(ctx.all_stays_t0, on=STAY_KEY, how="inner")
+        .with_columns(timeframe=_assign_timeframe(TIME_KEY, window.window_size))
         .join(vent, [STAY_KEY, "timeframe"], how="left")
         .with_columns(pl.col("ventilated").fill_null(False))
         .group_by(STAY_KEY, "timeframe")
@@ -737,51 +556,18 @@ def mLODS(
     )
     # endregion
 
-    # region union of all (stay,timeframe)
-    base = (
-        ALL_STAYS_T0.join(patient_information, on=STAY_KEY, how="left")
-        .select(STAY_KEY, "T_0", "ICU Length of Stay (days)")
-        .with_columns(
-            pl.int_ranges(
-                start=0 - pl.col("T_0").floordiv(window_size).sub(1),
-                end=pl.col("ICU Length of Stay (days)")
-                .mul(SECONDS_IN_1D)
-                .sub("T_0")
-                .truediv(window_size)
-                .ceil()
-                .add(1),
-                step=1,
-            )
-            .cast(pl.List(float))
-            .alias("timeframe"),
-        )
-        .explode("timeframe")
-        .unique()
-        .select(STAY_KEY, "T_0", "timeframe")
-    )
-
     # region assemble
-    out = base
-    for part in [vitals_tf, labs_tf, resp_tf]:
-        out = out.join(part, on=[STAY_KEY, "timeframe"], how="left")
-
-    return (
-        out.filter(
-            _optional_time_bounds_filter("timeframe", window_size, t_0, t_1)
-        )
-        .with_columns(
-            pl.sum_horizontal(pl.exclude(STAY_KEY, "T_0", "timeframe")).alias(
-                "mLODS Score"
-            )
-        )
-        .select(
-            STAY_KEY,
-            "T_0",
-            pl.col("timeframe").alias(timeframe_name),
-            "mLODS Score",
-            pl.all().exclude(STAY_KEY, "T_0", timeframe_name, "mLODS Score"),
-        )
-        .sort(STAY_KEY, timeframe_name)
+    out = _assemble(ctx, vitals_tf, labs_tf, resp_tf)
+    return _finalize(
+        out.with_columns(
+            _null_if_incomplete_pre_icu(
+                _organ_system_score(out.collect_schema().names()),
+                pl.exclude(STAY_KEY, "T_0", "timeframe"),
+                ctx.window_size,
+            ).alias("mLODS Score")
+        ),
+        ctx,
+        "mLODS Score",
     )
 
 
@@ -799,6 +585,16 @@ def LODS_mortality(lods_score: pl.Expr) -> pl.Expr:
     -------
         logit = -3.4043 + 0.4173 * LODS
         mortality = exp(logit) / (1 + exp(logit))
+
+    Arguments
+    ---------
+        lods_score : pl.Expr
+            LODS score.
+
+    Returns
+    -------
+        pl.Expr
+            Predicted mortality rate (0 to 1).
     """
     logit = -3.4043 + 0.4173 * lods_score
     return logit.exp() / (1 + logit.exp())

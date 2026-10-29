@@ -1,0 +1,177 @@
+# Carriers of SICdb drugs and the drugs that usually get one. A carrier is a fluid in ml that is the diluent of a drug (e.g. "NaCl 0,9% Perfusor"): it has the case, start and end of a drug.
+# role carrier: fluid or food in ml that has a drug at its time in 85 % or more of its rows. rows: its rows with Amount > 0; hits: rows with a drug at their time; share: hits / rows.
+# role usual: drug that gets a carrier in 50 % or more of its rows that are alone at their time (at least 5 such rows). rows: its rows that are alone at their time; hits: rows with a carrier at their time.
+# control_hits: hits with the times shifted by 1 h (chance). Usual drugs with control_hits above 30 % of hits are not listed.
+# Used in SICdbExtractor._add_volumes: a carrier is linked to the one usual drug at its time. Derived from SICdb 1.0.8 by derive_sicdb_fluid_carriers.py (re-derive for other SICdb releases).
+drugid,drug_name,role,rows,hits,share,control_hits
+2080,"NaCl 0,9% Perfusor",carrier,588307,579409,0.985,463
+2081,"NaCl 0,9% Kurzinfusion",carrier,324720,323337,0.996,28526
+2073,Sojabohnenöl Propofol,carrier,165266,165243,1.0,1209
+2079,"NaCl 0,9% Medikament",carrier,157974,157503,0.997,5767
+2075,Aqua Medikament Lsg,carrier,146364,146299,1.0,7956
+2074,Aqua Kurzinfusion Lsg,carrier,91798,91693,0.999,9882
+2034,Aqua Perfusor Lsg,carrier,80060,77244,0.965,206
+2077,Glukose 5% Perf,carrier,16510,16147,0.978,23
+2032,"NaCl 0,9% Infusion",carrier,9097,7857,0.864,342
+2082,Glukose 5% Medikament,carrier,8417,8416,1.0,307
+2078,Glukose 5% Kurzinfusion,carrier,5054,5015,0.992,393
+2154,Trimix perikal,carrier,93,93,1.0,0
+2184,Trimix HP,carrier,58,58,1.0,0
+2072,Aqua Thiopental,carrier,48,46,0.958,2
+2089,Aqua Perfusor Lsg 1,carrier,24,24,1.0,0
+1562,Norepinephrin,usual,334531,327535,0.979,223
+1521,PIRItramid,usual,147835,134994,0.913,3254
+1549,Propofol 2%,usual,138672,138437,0.998,54
+1546,Remifentanil,usual,123628,117387,0.95,74
+1610,Metamizol,usual,77011,57723,0.75,2686
+1557,Insulin,usual,72803,70981,0.975,26
+1420,Paracetamol,usual,41031,32959,0.803,1452
+1400,CloNIDin,usual,35841,32862,0.917,178
+1558,Heparin,usual,26728,26112,0.977,284
+1577,Cefuroxim,usual,25689,25573,0.995,560
+1494,Urapidil,usual,25476,13123,0.515,271
+1459,Piperacillin/Tazobactam,usual,24629,24605,0.999,992
+1417,FUROsemid,usual,18684,13111,0.702,429
+1479,ROCuronium,usual,18190,13184,0.725,505
+1437,AMIOdaron,usual,15246,12354,0.81,155
+1547,SUFentanil,usual,14968,8901,0.595,150
+1499,Propofol 1%,usual,13855,12742,0.92,959
+1745,ROPIvacain 0.2%,usual,11863,11790,0.994,64
+1460,Ampicillin/Sulbactam,usual,10868,10639,0.979,465
+1480,FentaNYL,usual,10817,5953,0.55,157
+1427,Pantoprazol,usual,10563,5983,0.566,504
+1559,DOBUtamin,usual,10297,10011,0.972,5
+1418,Cefazolin,usual,9833,8483,0.863,356
+1508,ONDANsetron,usual,9259,7213,0.779,243
+1451,Meropenem,usual,8892,8869,0.997,436
+1747,Dexmedetomidin,usual,8178,8092,0.989,12
+1520,Morphin,usual,7993,7729,0.967,115
+1533,Thiamin,usual,7175,5123,0.714,205
+1525,Hydrocortison,usual,6662,6218,0.933,18
+1477,Tranexams,usual,6630,4118,0.621,106
+1495,Midazolam,usual,6058,3167,0.523,161
+1523,Magnesiumgluconicum,usual,5806,5685,0.979,125
+1530,Protaminsulfat,usual,5806,5119,0.882,29
+1527,Haloperidol,usual,5732,4534,0.791,167
+1461,Vancomycin,usual,5701,5318,0.933,760
+1578,S-Ketamin,usual,4586,4560,0.994,82
+1436,Flucloxacillin,usual,4488,4424,0.986,299
+1498,Metoclopramid,usual,4370,4200,0.961,323
+1485,Fibrinogen,usual,3955,3779,0.955,70
+1422,Ciprofloxacin,usual,3950,3831,0.97,206
+1513,Glucose-1-Phosphat,usual,3947,1975,0.5,46
+1551,Glyceroltrinitrat,usual,3664,3606,0.984,46
+1550,Vasopressin,usual,3369,3131,0.929,1
+1515,Phytmenadion,usual,3204,2218,0.692,220
+1428,Clindamycin,usual,3200,2881,0.9,277
+1507,Droperidol,usual,3112,2011,0.646,90
+1416,LevETIRAcetam,usual,3000,2261,0.754,242
+1548,Levosimendan,usual,2933,1484,0.506,0
+1741,ROPIvacain 0.5%,usual,2890,2889,1.0,44
+1502,EPINEPHrin,usual,2801,2443,0.872,36
+1431,Erythromycin,usual,2683,2682,1.0,205
+1975,Insulin lispro,usual,2639,2068,0.784,1
+1744,ROPIvacain 0.75%,usual,2635,2635,1.0,53
+1476,Calciumglukonat 10%,usual,2493,1784,0.716,138
+1401,Metronidazol,usual,2474,2059,0.832,146
+1421,Cefepim,usual,2333,2315,0.992,367
+1445,LORazepam,usual,2259,1307,0.579,80
+1575,Diclofenac,usual,2148,1985,0.924,85
+1438,Metoprolol,usual,2018,1091,0.541,111
+1439,Ceftazidim,usual,1951,1935,0.992,130
+1496,DesmoPRESSINazetat,usual,1890,1697,0.898,21
+1474,Atropin sulfuricum,usual,1764,1734,0.983,113
+1526,Neostigmin,usual,1727,1688,0.977,79
+1457,Ampicillin,usual,1658,1637,0.987,134
+1406,Amoxicillin/Clavulans,usual,1575,1393,0.884,60
+1563,Argatroban,usual,1356,1343,0.99,0
+1500,"Gerinnungsfaktoren II, VI, IX, X",usual,1308,1274,0.974,33
+1482,N-Acetylcystein,usual,1207,1207,1.0,35
+1458,Levofloxacin,usual,1189,1182,0.994,145
+1465,Fluconazol,usual,1008,1006,0.998,101
+1581,Nicht gelisteter Perfusor,usual,1003,922,0.919,115
+1456,Ceftriaxon,usual,980,970,0.99,170
+1561,Esmolol,usual,964,549,0.57,23
+1483,Terlipressin,usual,926,923,0.997,81
+1952,Somatostatin,usual,875,853,0.975,0
+1462,Linezolid,usual,864,854,0.988,69
+1616,Lidocain 2%,usual,851,826,0.971,6
+1454,Penicillin G,usual,834,830,0.995,65
+1522,Hyoscin-N-Butylbromid,usual,827,664,0.803,32
+1423,Cefotaxim,usual,819,819,1.0,98
+1535,Glycopyrronium,usual,814,425,0.522,20
+1433,Trimethoprim/Sulfametoxazol,usual,780,690,0.885,110
+1930,Urokinase,usual,634,624,0.984,0
+1449,Clarithromycin,usual,620,551,0.889,46
+1466,Anidulafungin,usual,610,608,0.997,44
+1506,MethylPREDNIsolon,usual,608,315,0.518,45
+1405,Digitoxin,usual,556,414,0.745,31
+1583,Nicht gelistete Kurzinfusion,usual,513,280,0.546,56
+1475,Natriumvalproat,usual,504,383,0.76,71
+1464,Caspofungin,usual,502,502,1.0,48
+1552,ROPIvacain,usual,458,383,0.836,2
+1586,Nicht gelistetes Antiinfektivum,usual,431,231,0.536,27
+1514,Ornithinaspartat,usual,420,321,0.764,13
+1739,Lidocain 1%,usual,358,358,1.0,1
+1512,Fols,usual,354,181,0.511,16
+1467,Acyclovir,usual,352,332,0.943,38
+1505,Labetalol,usual,345,342,0.991,0
+1813,Daptomycin,usual,333,321,0.964,40
+1628,Fosfomycin,usual,318,301,0.947,45
+1497,Naloxon,usual,276,217,0.786,16
+1605,Gentamycin,usual,268,260,0.97,58
+1556,KETAmin,usual,257,257,1.0,0
+1685,NIFEdipin,usual,249,241,0.968,0
+1471,Kaliumcanrenoat,usual,243,220,0.905,37
+1742,ROPIvacain 0.375%,usual,235,235,1.0,3
+1573,Thiopentalnatrium,usual,230,197,0.857,7
+1743,ROPIvacain 1%,usual,208,208,1.0,4
+1532,CLEMAstin,usual,200,156,0.78,7
+1528,Amantadinsulfat,usual,181,156,0.862,22
+1599,Ranitidin,usual,175,153,0.874,3
+1740,Prilocain 1%,usual,168,153,0.911,3
+1519,Isoprenalin,usual,160,150,0.938,0
+1408,Moxifloxacin,usual,146,135,0.925,7
+1509,Terbutalin,usual,143,106,0.741,4
+1468,ADENOsin,usual,138,133,0.964,0
+1757,Kybernin P,usual,138,120,0.87,3
+1734,BUPivacain 0.5%,usual,123,123,1.0,1
+1662,Alprostadil,usual,115,115,1.0,17
+1579,Voriconazol,usual,105,99,0.943,11
+1529,PHYSostigmin,usual,96,81,0.844,0
+1735,BUPivacain 0.5% hyperbar,usual,96,93,0.969,1
+1516,Fisch,usual,94,81,0.862,0
+1947,On,usual,85,83,0.976,0
+1606,Teicoplanin,usual,82,79,0.963,12
+1501,ClonazePAM,usual,66,52,0.788,1
+1493,Etomidate,usual,64,64,1.0,0
+1594,Alfentanil,usual,64,63,0.984,3
+1446,Imipenem/Cilastin,usual,52,48,0.923,1
+1410,Aztreonam,usual,51,50,0.98,2
+1864,Sulproston,usual,50,50,1.0,0
+1619,Acetazolamid,usual,49,31,0.633,6
+1736,Mepivacain 1%,usual,48,48,1.0,0
+1883,Abciximab,usual,45,43,0.956,0
+1819,Doxycyclin monohydrat,usual,40,24,0.6,5
+1518,Cyanocobolamin,usual,32,29,0.906,4
+1746,Mepivacain 2%,usual,31,31,1.0,1
+1942,Colistin,usual,31,31,1.0,0
+1469,Alteplase,usual,30,28,0.933,6
+1618,DOPamin,usual,29,29,1.0,0
+1441,Fusidins,usual,27,25,0.926,1
+1938,Oxytocin,usual,27,25,0.926,0
+1470,Biperidin,usual,25,23,0.92,0
+1939,Carbetocin,usual,25,15,0.6,0
+1545,Trometamol,usual,24,15,0.625,2
+1949,Immunglobulin,usual,20,20,1.0,3
+1604,Ganciclovir,usual,19,19,1.0,0
+1463,Liposomales Amphotericin B,usual,12,12,1.0,0
+1758,Bivalirudin,usual,12,12,1.0,0
+1752,ROPIvacain 0.1%,usual,11,11,1.0,0
+1504,Atracurium,usual,8,7,0.875,0
+1882,Etacrynsaeure,usual,8,7,0.875,0
+1531,Caroverin,usual,7,7,1.0,0
+1898,Tetracosactid,usual,7,7,1.0,0
+1822,Cyclophosphamid,usual,6,5,0.833,0
+1756,AJMALin,usual,5,3,0.6,0
+2007,ROPIvacain 0.15%,usual,5,5,1.0,0

@@ -4,7 +4,7 @@
 # MIMIC-IV:  admissions table -> admission_location column
 # NWICU:     admissions table -> admission_location column
 # SICdb:     cases table -> ReferringUnit column
-# UMCdb:     admissions table -> origin column
+# UMCdb:     admissions table -> origin column -> manual exploration has shown that the origin column values correspond to the listitem_values of 16693 "NICE Herkomst" (Origin)
 
 Other ICU:
   # eICU-CRD

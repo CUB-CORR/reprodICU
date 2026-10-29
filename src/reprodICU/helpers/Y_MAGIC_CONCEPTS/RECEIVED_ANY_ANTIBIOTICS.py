@@ -56,6 +56,8 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
         )
         eicu_medication = (
             pl.scan_csv(self.eicu_paths.medication_path)
+            # Cancelled orders were not given
+            .filter(pl.col("drugordercancelled") != "Yes")
             .select("patientunitstayid", "drugname")
             # Filter for antibiotics
             .filter(
@@ -75,14 +77,9 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             )
         )
 
-        eicu_RECEIVED_ANY_ANTIBIOTICS = eicu_infusiondrug.sort(
-            by=self.column_names["global_icu_stay_id_col"]
-        ).merge_sorted(
-            eicu_medication.sort(
-                by=self.column_names["global_icu_stay_id_col"]
-            ),
-            key=self.column_names["global_icu_stay_id_col"],
-        )
+        eicu_RECEIVED_ANY_ANTIBIOTICS = pl.concat(
+            [eicu_infusiondrug, eicu_medication]
+        ).unique()
 
         # endregion
 
@@ -118,9 +115,15 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
 
         # region MIMIC-III
         # print("MAGIC_CONCEPTS: Received ANY Antibiotics - MIMIC-III")
+        if "parquet" in self.mimic3_paths.prescriptions_path:
+            mimic3_prescriptions = pl.scan_parquet(self.mimic3_paths.prescriptions_path)
+        else:
+            mimic3_prescriptions = pl.scan_csv(self.mimic3_paths.prescriptions_path)
+
         mimic3_prescriptions = (
-            pl.scan_csv(self.mimic3_paths.prescriptions_path)
-            .select("ICUSTAY_ID", "DRUG")
+            mimic3_prescriptions.select(
+                "ICUSTAY_ID", "HADM_ID", "DRUG", "STARTDATE"
+            )
             # Filter for antibiotics
             .filter(
                 pl.col("DRUG")
@@ -131,17 +134,51 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                     ][0]["regex"],
                 )
             )
-            .pipe(
-                self._received_any_antibiotics_bool,
-                "mimic3-",
-                "ICUSTAY_ID",
-                "DRUG",
-            )
         )
 
+        # Prescriptions without an ICU stay (35%) go to the stays of their
+        # admission that they start in
+        mimic3_prescriptions = pl.concat(
+            [
+                mimic3_prescriptions.filter(
+                    pl.col("ICUSTAY_ID").is_not_null()
+                ).select("ICUSTAY_ID", "DRUG"),
+                mimic3_prescriptions.filter(pl.col("ICUSTAY_ID").is_null())
+                .select("HADM_ID", "DRUG", "STARTDATE")
+                .join(
+                    pl.scan_csv(self.mimic3_paths.icustays_path).select(
+                        "ICUSTAY_ID",
+                        "HADM_ID",
+                        pl.col("INTIME").str.to_datetime(),
+                        pl.col("OUTTIME").str.to_datetime(),
+                    ),
+                    on="HADM_ID",
+                )
+                .filter(
+                    pl.col("STARTDATE")
+                    .str.to_datetime()
+                    .is_between(
+                        pl.col("INTIME").dt.truncate("1d"),
+                        pl.col("OUTTIME"),
+                        closed="left",
+                    )
+                )
+                .select("ICUSTAY_ID", "DRUG"),
+            ]
+        ).pipe(
+            self._received_any_antibiotics_bool,
+            "mimic3-",
+            "ICUSTAY_ID",
+            "DRUG",
+        )
+
+        if "parquet" in self.mimic3_paths.inputevents_mv_path:
+            mimic3_inputevents_mv = pl.scan_parquet(self.mimic3_paths.inputevents_mv_path)
+        else:
+            mimic3_inputevents_mv = pl.scan_csv(self.mimic3_paths.inputevents_mv_path)
+
         mimic3_inputevents_mv = (
-            pl.scan_csv(self.mimic3_paths.inputevents_mv_path)
-            .select("ICUSTAY_ID", "ITEMID")
+            mimic3_inputevents_mv.select("ICUSTAY_ID", "ITEMID")
             # Filter for antibiotics
             .filter(
                 pl.col("ITEMID").is_in(
@@ -149,8 +186,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "mimic"
                     ][1]["ids"],
                 )
-            )
-            .pipe(
+            ).pipe(
                 self._received_any_antibiotics_bool,
                 "mimic3-",
                 "ICUSTAY_ID",
@@ -158,36 +194,66 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             )
         )
 
-        mimic3_RECEIVED_ANY_ANTIBIOTICS = mimic3_prescriptions.sort(
-            by=self.column_names["global_icu_stay_id_col"]
-        ).merge_sorted(
-            mimic3_inputevents_mv.sort(
-                by=self.column_names["global_icu_stay_id_col"]
-            ),
-            key=self.column_names["global_icu_stay_id_col"],
-        )
+        mimic3_RECEIVED_ANY_ANTIBIOTICS = pl.concat(
+            [mimic3_prescriptions, mimic3_inputevents_mv]
+        ).unique()
 
         # endregion
 
         # region MIMIC-IV
         # print("MAGIC_CONCEPTS: Received ANY Antibiotics - MIMIC-IV")
-        # NOTE: MIMIC-IV prescriptions do not include ICU stay IDs
-        # mimic4_prescriptions = (
-        #     pl.scan_csv(self.mimic4_paths.prescriptions_path)
-        #     .select("icustay_id", "drug")
-        #     # Filter for antibiotics
-        #     .filter(
-        #         pl.col("drug").str.to_lowercase().str.contains(
-        #             self.ricu_mappings.ricu_concept_dict["abx"]["sources"]["miiv"][0]["regex"],
-        #
-        #         )
-        #     )
-        #     .pipe(self._received_any_antibiotics_bool, "mimic4-", "icustay_id", "drug")
-        # )
+        # Prescriptions have no ICU stay ID: they go to the stay of their
+        # admission that they start in
+        if "parquet" in self.mimic4_paths.prescriptions_path:
+            mimic4_prescriptions = pl.scan_parquet(
+                self.mimic4_paths.prescriptions_path
+            )
+        else:
+            mimic4_prescriptions = pl.scan_csv(
+                self.mimic4_paths.prescriptions_path
+            )
+
+        mimic4_prescriptions = (
+            mimic4_prescriptions.select("hadm_id", "drug", "starttime")
+            .filter(
+                pl.col("drug")
+                .str.to_lowercase()
+                .str.contains(
+                    self.ricu_mappings.ricu_concept_dict["abx"]["sources"][
+                        "miiv"
+                    ][0]["regex"],
+                )
+            )
+            .join(
+                pl.scan_csv(self.mimic4_paths.icustays_path).select(
+                    "stay_id",
+                    "hadm_id",
+                    pl.col("intime").str.to_datetime(),
+                    pl.col("outtime").str.to_datetime(),
+                ),
+                on="hadm_id",
+            )
+            .filter(
+                pl.col("starttime")
+                .str.to_datetime()
+                .is_between(pl.col("intime"), pl.col("outtime"), closed="left")
+            )
+            .select("stay_id", "drug")
+            .pipe(
+                self._received_any_antibiotics_bool,
+                "mimic4-",
+                "stay_id",
+                "drug",
+            )
+        )
+
+        if "parquet" in self.mimic4_paths.inputevents_path:
+            mimic4_inputevents = pl.scan_parquet(self.mimic4_paths.inputevents_path)
+        else:
+            mimic4_inputevents = pl.scan_csv(self.mimic4_paths.inputevents_path)
 
         mimic4_inputevents = (
-            pl.scan_csv(self.mimic4_paths.inputevents_path)
-            .select("stay_id", "itemid")
+            mimic4_inputevents.select("stay_id", "itemid")
             # Filter for antibiotics
             .filter(
                 pl.col("itemid").is_in(
@@ -195,8 +261,7 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "miiv"
                     ][1]["ids"],
                 )
-            )
-            .pipe(
+            ).pipe(
                 self._received_any_antibiotics_bool,
                 "mimic4-",
                 "stay_id",
@@ -204,7 +269,9 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
             )
         )
 
-        mimic4_RECEIVED_ANY_ANTIBIOTICS = mimic4_inputevents
+        mimic4_RECEIVED_ANY_ANTIBIOTICS = pl.concat(
+            [mimic4_inputevents, mimic4_prescriptions]
+        ).unique()
 
         # endregion
 
