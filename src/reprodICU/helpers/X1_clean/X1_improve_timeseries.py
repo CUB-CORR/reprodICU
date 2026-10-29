@@ -25,7 +25,8 @@ class IntakeOutputImprover(GlobalVars):
             2. Extract drug amounts in ml and fluid volumes.
             3. Aggregate volumes for mixed infusions (same mixture ID).
             4. Sum drug and fluid volumes to get the total volume.
-            5. Add the volumes to the intake column of their route, at their own time.
+            5. Spread the volumes over the hours they run.
+            6. Add the volumes to the intake column of their route, at their own time.
 
         Returns:
             pl.LazyFrame: Intake/output data with added medication volumes.
@@ -95,20 +96,55 @@ class IntakeOutputImprover(GlobalVars):
             )
         )
 
+        # Spread over the hours it runs, each part at the end of its hour
+        start = "Drug Start Relative to Admission (seconds)"
+        end = "Drug End Relative to Admission (seconds)"
+        hour = 3600
+        runs = (pl.col(end) > pl.col(start)).fill_null(False)
+        timed_volumes = pl.concat(
+            [
+                infused_volumes.filter(~runs).select(
+                    stay,
+                    pl.coalesce(end, start).alias(time),
+                    "Intake column",
+                    "Infused volume",
+                ),
+                infused_volumes.filter(runs)
+                .select(stay, start, end, "Intake column", "Infused volume")
+                .with_columns(
+                    pl.int_ranges(
+                        (pl.col(start) // hour).cast(pl.Int64),
+                        (pl.col(end) / hour).ceil().cast(pl.Int64),
+                    ).alias("hour")
+                )
+                .explode("hour")
+                .with_columns(
+                    pl.min_horizontal(end, (pl.col("hour") + 1) * hour).alias(time),
+                    pl.max_horizontal(start, pl.col("hour") * hour).alias("part start"),
+                )
+                .select(
+                    stay,
+                    time,
+                    "Intake column",
+                    (
+                        pl.col("Infused volume")
+                        * (pl.col(time) - pl.col("part start"))
+                        / (pl.col(end) - pl.col(start))
+                    ).alias("Infused volume"),
+                ),
+            ],
+            how="diagonal_relaxed",
+        )
+
         # Sum up the volumes for each time point and intake column. Volumes without an intake
         # output row at their time get a row of their own: joining them to the next row would
         # shift them and drop those after the last row of a stay.
         volumes = (
             pl.concat(
                 [
-                    infused_volumes.filter(pl.col("Intake column") == column).select(
+                    timed_volumes.filter(pl.col("Intake column") == column).select(
                         stay,
-                        # administrations at a point in time (e.g. HiRID fluid counters)
-                        # have no end
-                        pl.coalesce(
-                            "Drug End Relative to Admission (seconds)",
-                            "Drug Start Relative to Admission (seconds)",
-                        ).alias(time),
+                        time,
                         pl.col("Infused volume").alias(f"{column} (medication)"),
                     )
                     for column in columns
