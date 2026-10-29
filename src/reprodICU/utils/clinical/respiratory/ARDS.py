@@ -37,11 +37,11 @@ from typing import Literal, Optional
 import polars as pl
 
 from ...base import (
-    Reference,
     SECONDS_IN_1D,
     SECONDS_IN_4H,
     STAY_KEY,
     TIME_KEY,
+    Reference,
     _reference_t0,
     _relative_to_t0,
     _to_lazy,
@@ -572,9 +572,13 @@ def ARDS(
     # region ARDS cohort
     # --------------------------------------------------------------------------
     ARDS_COHORT = (
-        RESPIRATORY_DATA.join_asof(
+        # join_asof needs both sides sorted by the keys
+        RESPIRATORY_DATA.sort(STAY_KEY, TIME_KEY)
+        .join_asof(
             # both carry the time relative to T_0
-            BILATERAL_INFILTRATES.drop("Time Relative to T_0 (seconds)", strict=False),
+            BILATERAL_INFILTRATES
+            .drop("Time Relative to T_0 (seconds)", strict=False)
+            .sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="nearest",

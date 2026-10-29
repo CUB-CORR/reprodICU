@@ -32,9 +32,9 @@ from typing import Optional
 import polars as pl
 
 from ...base import (
-    Reference,
     STAY_KEY,
     TIME_KEY,
+    Reference,
     _reference_t0,
     _relative_to_t0,
     _to_lazy,
@@ -46,6 +46,7 @@ from ...common import (
     get_patient_information,
     get_timeseries_labs,
 )
+
 HILL_COEFFICIENT = 2.711
 
 

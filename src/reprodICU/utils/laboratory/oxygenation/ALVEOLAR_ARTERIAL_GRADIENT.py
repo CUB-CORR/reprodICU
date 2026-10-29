@@ -3,10 +3,10 @@ from typing import Optional
 import polars as pl
 
 from ...base import (
-    Reference,
     SECONDS_IN_4H,
     STAY_KEY,
     TIME_KEY,
+    Reference,
     _reference_t0,
     _relative_to_t0,
     _to_lazy,
@@ -111,10 +111,11 @@ def PAO2(
     timeseries_labs = _improve_labs(timeseries_labs)
 
     PAO2 = (
-        timeseries_labs
+        timeseries_labs.sort(STAY_KEY, TIME_KEY)
+        # join_asof needs both sides sorted by the keys
         # FiO2 occurred at most 4 hours before this blood gas
         .join_asof(
-            timeseries_resp,
+            timeseries_resp.sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",

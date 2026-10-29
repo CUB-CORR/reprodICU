@@ -428,8 +428,11 @@ def APS(
             on=[STAY_KEY, TIME_KEY],
             how="full",
         )
+        # join_asof needs both sides sorted by the keys
+        .sort(STAY_KEY, TIME_KEY)
         .join_asof(
-            resp_tf.select(STAY_KEY, TIME_KEY, "FiO2"),
+            resp_tf.select(STAY_KEY, TIME_KEY, "FiO2")
+            .sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",

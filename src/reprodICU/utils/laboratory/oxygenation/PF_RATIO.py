@@ -3,10 +3,10 @@ from typing import Literal, Optional
 import polars as pl
 
 from ...base import (
-    Reference,
     SECONDS_IN_4H,
     STAY_KEY,
     TIME_KEY,
+    Reference,
     _reference_t0,
     _relative_to_t0,
     _to_lazy,
@@ -21,6 +21,7 @@ from ...common import (
     get_timeseries_vitals,
 )
 from ...core import RESPIRATORY_PARAMS
+
 pf_ratio_col = "PaO2/FiO2 Ratio"
 sf_ratio_col = "SpO2/FiO2 Ratio"
 
@@ -139,10 +140,11 @@ def PaO2_FiO2_RATIO(
     timeseries_labs = _improve_labs(timeseries_labs)
 
     pf_ratio = (
-        timeseries_labs
+        timeseries_labs.sort(STAY_KEY, TIME_KEY)
+        # join_asof needs both sides sorted by the keys
         # FiO2 occurred at most 4 hours before this blood gas
         .join_asof(
-            timeseries_resp,
+            timeseries_resp.sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
@@ -231,10 +233,11 @@ def SpO2_FiO2_RATIO(
     timeseries_vitals = _improve_vitals(timeseries_vitals)
 
     sf_ratio = (
-        timeseries_vitals
+        timeseries_vitals.sort(STAY_KEY, TIME_KEY)
+        # join_asof needs both sides sorted by the keys
         # FiO2 occurred at most 4 hours before this blood gas
         .join_asof(
-            timeseries_resp,
+            timeseries_resp.sort(STAY_KEY, TIME_KEY),
             on=TIME_KEY,
             by=STAY_KEY,
             strategy="backward",
