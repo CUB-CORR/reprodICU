@@ -371,10 +371,15 @@ class HiRIDExtractor(HiRIDPaths):
             # Append the data to the DataFrame
             admitDX = pl.concat([admitDX, data], how="diagonal_relaxed")
 
+        # At the first timestamp, keep the most frequent code, null if it is a tie
+        first_codes = (
+            pl.col("value")
+            .filter(pl.col("datetime") == pl.col("datetime").min())
+            .mode()
+        )
         admitDX = (
-            admitDX.sort(self.icu_stay_id_col, "datetime")
-            .group_by(self.icu_stay_id_col)
-            .agg(pl.col("value").first())
+            admitDX.group_by(self.icu_stay_id_col)
+            .agg(first_codes.filter(first_codes.len() == 1).first())
             .with_columns(
                 pl.col("value")
                 .replace_strict(hirid_diagnosis_mapping, default=None)
