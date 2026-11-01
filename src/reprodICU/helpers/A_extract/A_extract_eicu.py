@@ -1316,11 +1316,18 @@ class EICUExtractor(EICUPaths):
             )
             # Filter for rows where the drug status changes
             .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
-            # 3. Get the end time of the drug if it is discontinued
+            # 3. Get the end time of the drug if it is discontinued: the next log entry
+            #    of the stay, but at most 4 h after the last entry of the drug (a drug
+            #    not charted again is not known to run until some later log entry)
             .with_columns(
                 pl.when(pl.col("drug_status_next") == "discontinued")
                 # the last log entry has no next entry: the run ends at that entry
-                .then(pl.coalesce("next_drug_start", self.drug_start_col))
+                .then(
+                    pl.min_horizontal(
+                        pl.coalesce("next_drug_start", self.drug_start_col),
+                        pl.col(self.drug_start_col) + 4 * 3600,
+                    )
+                )
                 .otherwise(None)
                 .alias(self.drug_end_col)
             )
