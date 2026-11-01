@@ -4,10 +4,12 @@
 # Visualize the vital signs of a patient in a line plot
 
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import polars as pl
 import seaborn as sns
+from matplotlib.ticker import FuncFormatter, MultipleLocator
 from mpl_toolkits import axisartist
 from mpl_toolkits.axes_grid1 import host_subplot
 
@@ -29,7 +31,15 @@ def plot_line_without_nan(x, y, data, label, color, marker, ax=None):
     x = data.filter(pl.col(y).is_not_null()).select(x).to_numpy().flatten()
     y = data.filter(pl.col(y).is_not_null()).select(y).to_numpy().flatten()
     return sns.lineplot(
-        x=x, y=y, label=label, color=color, marker=marker, markersize=10, ax=ax
+        x=x,
+        y=y,
+        label=label,
+        color=color,
+        marker=marker,
+        markersize=8,
+        markeredgewidth=0.2,
+        markeredgecolor="w",
+        ax=ax,
     )
 
 
@@ -74,7 +84,9 @@ def plot_bp_without_nan(
         y=high,
         color=color,
         marker=markers[0],
-        markersize=10,
+        markersize=8,
+        markeredgewidth=0.2,
+        markeredgecolor="w",
         linestyle="--",
         lw=1,
         ax=ax,
@@ -85,7 +97,9 @@ def plot_bp_without_nan(
         label=label,
         color=color,
         marker=markers[1],
-        markersize=10,
+        markersize=8,
+        markeredgewidth=0.2,
+        markeredgecolor="w",
         lw=1,
         ax=ax,
     )
@@ -94,7 +108,9 @@ def plot_bp_without_nan(
         y=low,
         color=color,
         marker=markers[2],
-        markersize=10,
+        markersize=8,
+        markeredgewidth=0.2,
+        markeredgecolor="w",
         linestyle="--",
         lw=1,
         ax=ax,
@@ -108,7 +124,29 @@ def plot_bp_without_nan(
                 ymin=low[i],
                 ymax=high[i],
                 color=color,
+                lw=0.5,
+                alpha=0.5,
             )
+
+
+def twin_axis(host, label, ylim, key, loc, offset):
+    """Y-axis sharing the x-axis of host, at the loc offset by offset points."""
+    ax = host.twinx()
+    ax.set_ylabel(label)
+    if ylim:
+        ax.set_ylim(ylim)
+    if loc:
+        ax.axis[key] = ax.new_fixed_axis(loc=loc, offset=(offset, 0))
+    ax.axis[key].toggle(all=True)
+    return ax
+
+
+def pad_ylim(ax, low: float, high: float, share: float = 0.04) -> None:
+    """Set the limits so that low and high lie a share of the height inside
+    the axes, i.e. the markers are not cut off and low is at the same level
+    on all axes."""
+    pad = share * (high - low) / (1 - 2 * share)
+    ax.set_ylim(low - pad, high + pad)
 
 
 # region visualize
@@ -159,39 +197,18 @@ def visualize_vitals(
     ax_hf_bp = host_subplot(111, axes_class=axisartist.Axes)
     ax_hf_bp.set_ylabel("Heart rate in bpm / Blood pressure in mmHg")
 
-    ax_icp_cvp = ax_hf_bp.twinx()
-    ax_icp_cvp.set_ylabel(
-        "Intracranial pressure / Central venous pressure in mmHg"
-    )
-    ax_icp_cvp.axis["left"] = ax_icp_cvp.new_fixed_axis(
-        loc="left", offset=(-50, 0)
-    )
-    ax_icp_cvp.axis["left"].toggle(all=True)
-
-    ax_spo2 = ax_hf_bp.twinx()
-    ax_spo2.set_ylabel("SpO2 in %")
-    ax_spo2.set_ylim(0, 100)
-    ax_spo2.axis["right"].toggle(all=True)
-
-    ax_temp = ax_hf_bp.twinx()
-    ax_temp.set_ylabel("Temperature in °C")
-    ax_temp.set_ylim(31, 45)
-    ax_temp.axis["right"] = ax_temp.new_fixed_axis(loc="right", offset=(50, 0))
-    ax_temp.axis["right"].toggle(all=True)
-
-    # Respiratory rate axis (right, offset further to avoid overlap)
-    ax_rr = ax_hf_bp.twinx()
-    ax_rr.set_ylabel("Respiratory rate in breaths/min")
-    ax_rr.set_ylim(0, 60)
-    ax_rr.axis["right"] = ax_rr.new_fixed_axis(loc="left", offset=(-100, 0))
-    ax_rr.axis["right"].toggle(all=True)
-
-    # GCS total axis (right, offset further to avoid overlap)
-    ax_gcs = ax_hf_bp.twinx()
-    ax_gcs.set_ylabel("GCS total")
-    ax_gcs.set_ylim(3, 15)
-    ax_gcs.axis["right"] = ax_gcs.new_fixed_axis(loc="right", offset=(100, 0))
-    ax_gcs.axis["right"].toggle(all=True)
+    # the y-axes of the other vitals, each offset so that they do not overlap
+    ax_icp_cvp, ax_spo2, ax_temp, ax_rr, ax_gcs = (
+        twin_axis(ax_hf_bp, *args)
+        for args in (
+            # label                                                     ylim      key      loc      offset
+            ("Intracranial pressure / Central venous pressure in mmHg", None,     "left",  "left",   -50),
+            ("SpO2 in %",                                               (0, 100), "right", None,       0),
+            ("Temperature in °C",                                       (31, 45), "right", "right",   50),
+            ("Respiratory rate in breaths/min",                         (0, 60),  "right", "left",  -100),
+            ("GCS total",                                               (3, 15),  "right", "right",  100),
+        )
+    )  # fmt: skip
 
     # plot each vital sign
     # non-invasive blood pressure
@@ -303,10 +320,18 @@ def visualize_vitals(
         ax=ax_gcs,
     )
 
+    # the same level for 0 (respiratory rate, heart rate, blood pressure, SpO2)
+    # and for 3 (GCS)
+    pad_ylim(ax_hf_bp, 0, ax_hf_bp.dataLim.y1)
+    for ax in (ax_spo2, ax_temp, ax_rr, ax_gcs):
+        pad_ylim(ax, *ax.get_ylim())
+    ax_hf_bp.margins(x=0.04)  # as much as vertically
+
     plt.gcf().set_size_inches(20, 8)
     plt.title(f"Vital signs of patient {global_icu_stay_id}")
-    plt.xlabel("Time in seconds relative to admission")
-    plt.xticks(rotation=45)
+    plt.xlabel("Time since admission in hours")
+    ax_hf_bp.xaxis.set_major_locator(MultipleLocator(4 * 3600))
+    ax_hf_bp.xaxis.set_major_formatter(FuncFormatter(lambda s, _: f"{s / 3600:g}"))
     # plt.tight_layout()
 
     # Combine legends without duplicates
@@ -325,24 +350,34 @@ def visualize_vitals(
         lines,
         labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.05),
+        bbox_to_anchor=(0.5, -0.08),
         fancybox=True,
         shadow=True,
         ncol=5,
     )
 
-    ax_hf_bp.axis["left"].label.set_color("red")
-    ax_spo2.axis["right"].label.set_color("blue")
-    ax_temp.axis["right"].label.set_color("green")
-    ax_rr.axis["right"].label.set_color("orange")
-    ax_gcs.axis["right"].label.set_color("brown")
+    # axisartist draws ticks inwards by default; colour each axis like its line
+    for ax, side, color in (
+        (ax_hf_bp, "left", "red"),
+        (ax_spo2, "right", "blue"),
+        (ax_temp, "right", "green"),
+        (ax_rr, "right", "orange"),
+        (ax_gcs, "right", "brown"),
+    ):
+        axis = ax.axis[side]
+        axis.major_ticks.set_color(color)
+        for artist in (axis.label, axis.major_ticklabels, axis.line):
+            artist.set_color(color)
+    for ax in [ax_hf_bp, ax_icp_cvp, ax_spo2, ax_temp, ax_rr, ax_gcs]:
+        for axis in ax.axis.values():
+            axis.major_ticks.set_tick_out(True)
+            axis.minor_ticks.set_tick_out(True)
 
     # save plot
     if save:
-        if save_path is not None:
-            plt.savefig(save_path)
-        else:
-            plt.savefig(f"{global_icu_stay_id}.png")
+        save_path = save_path or f"plots/visualize/{global_icu_stay_id}.png"
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
     else:
         plt.show()
 
@@ -375,7 +410,7 @@ if __name__ == "__main__":
 
     # Determine save parameters
     save = args.save is not None
-    save_path = args.save if isinstance(args.save, str) else f"{args.icu_stay_id}.png"
+    save_path = args.save if isinstance(args.save, str) else None
 
     # Visualize the vital signs
     visualize_vitals(vitals, args.icu_stay_id, save, save_path)
