@@ -65,10 +65,12 @@ silver sulfadiazine: 2
 
 # 3: Extended-spectrum antibiotics
 cefepime: 3
+avibactam / ceftazidime: 3
 ceftazidime: 3
 ertapenem: 3
 gentamicin: 3
 piperacillin: 3 # without tazobactam
+piperacillin / tazobactam: 3 # rank as piperacillin, confirm against Shah et al.
 teicoplanin: 3
 vancomycin: 3
 
@@ -76,6 +78,8 @@ vancomycin: 3
 aztreonam: 4
 colistin: 4
 daptomycin: 4
+cilastatin / imipenem: 4 # imipenem / cilastatin
+cilastatin / imipenem / relebactam: 4
 imipenem: 4 # NEW
 linezolid: 4
 meropenem: 4

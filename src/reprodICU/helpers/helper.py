@@ -179,7 +179,7 @@ class GlobalHelpers:
             string_col: String value column. Non-unique values per (index, on_col)
                 are warned about, and only the first is kept.
             save_conflicts: Save the non-unique string records to a parquet file.
-            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes.
+            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes (empty cells stay null).
 
         Raises:
             ValueError: If neither numeric_col nor string_col is given.
