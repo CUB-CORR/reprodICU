@@ -35,8 +35,12 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         return (
             pl.scan_csv(self.sicdb_paths.data_range_path)
             .join(ADMISSION_TIMES, on="CaseID", how="left")
-            # End must be before Discharge
-            .filter(pl.col("OffsetEnd").le(pl.col("TimeOfStay")))
+            # Start must be before Discharge; episodes ending after the case
+            # was closed are cut at the closing
+            .filter(pl.col("Offset").le(pl.col("TimeOfStay")))
+            .with_columns(
+                pl.min_horizontal("OffsetEnd", "TimeOfStay").alias("OffsetEnd")
+            )
             # Filter for ventilation IDs
             .filter(pl.col("DataID").is_in([720, 3041]))
             # Make offsets (from the start of the case) relative to admission
