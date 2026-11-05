@@ -905,18 +905,34 @@ class EICUExtractor(EICUPaths):
                 pl.col("nursingchartcelltypevalname").replace_strict(
                     nurse_names_mapping, default=None
                 ),
+            )
+            # (separate step: the renamed column is only visible from here on)
+            .with_columns(
                 # Map O2 delivery device values
                 pl.when(
                     pl.col("nursingchartcelltypevalname")
                     == "Oxygen delivery system"
                 )
                 .then(
-                    pl.col("nursingchartvalue").replace_strict(
+                    pl.col("nursingchartvalue")
+                    .replace_strict(
                         nurse_oxygen_delivery_device_mapping, default=None
+                    )
+                    # targets outside the harmonized device names become null
+                    .replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
                     )
                 )
                 .otherwise(pl.col("nursingchartvalue"))
                 .alias("nursingchartvaluestr"),
+                # A number typed into the device field is not a measurement
+                pl.when(
+                    pl.col("nursingchartcelltypevalname")
+                    == "Oxygen delivery system"
+                )
+                .then(None)
+                .otherwise(pl.col("nursingchartvaluefloat"))
+                .alias("nursingchartvaluefloat"),
             )
             .with_columns(
                 # Finalize exclusive columns
