@@ -822,8 +822,19 @@ class MIMIC4Extractor(MIMIC4Paths):
                         self.DELIRIUM_MAP, default=None
                     )
                 )
+                # Ventilator type has no value mapping: keep the charted text
+                .when(pl.col("label") == "Ventilator type")
+                .then(pl.col("value"))
                 .otherwise(None)
                 .alias("value"),
+            )
+            # Text items also carry a list code in valuenum, which would win over
+            # the text in the pivot: where there is text, drop the number
+            .with_columns(
+                pl.when(pl.col("value").is_not_null())
+                .then(None)
+                .otherwise(pl.col("valuenum"))
+                .alias("valuenum")
             )
             .drop("itemid")
             # Remove rows with empty names
