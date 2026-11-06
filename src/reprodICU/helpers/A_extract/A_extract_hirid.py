@@ -1091,6 +1091,30 @@ class HiRIDExtractor(HiRIDPaths):
     # endregion
 
     # region helpers
+    def _get_ordinal_variables(self) -> pl.LazyFrame:
+        """
+        Retrieve the picklist labels of the ordinal variables that are decoded.
+
+        The other ordinal variables are not decoded: the Glasgow coma scores
+        equal their codes, the rest is not extracted.
+
+        Returns:
+            pl.LazyFrame: Columns:
+                - variableid: Observation variable identifier.
+                - value: Picklist code.
+                - label: Label of the code (ordinal_vars_ref.csv).
+        """
+        return (
+            pl.scan_csv(self.ordinal_reference_path)
+            # Ventilator mode, heart rhythm, nasal cannula flow
+            .filter(pl.col("variableid").is_in([3845, 15001166, 15001525]))
+            .select(
+                "variableid",
+                pl.col("code").cast(float).alias("value"),
+                pl.col("stringvalue").alias("label"),
+            )
+        )
+
     def _get_observation_variables(self) -> pl.DataFrame:
         """
         Retrieve and filter observation variables from reference mapping.

@@ -213,6 +213,7 @@ class HiRIDPaths(GlobalVars):
         self.raw_stage_path = hirid_path + "raw_stage/"
         self.general_table_path = self.reference_data_path + "general_table.csv"
         self.variable_reference_path = self.reference_data_path + "hirid_variable_reference.csv" # fmt: skip
+        self.ordinal_reference_path = self.reference_data_path + "ordinal_vars_ref.csv" # fmt: skip
         self.timeseries_path = self.raw_stage_path + "observation_tables/parquet/" # fmt: skip
         self.pharma_path = self.raw_stage_path + "pharma_records/parquet/"
 

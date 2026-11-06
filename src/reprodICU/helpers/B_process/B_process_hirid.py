@@ -166,6 +166,30 @@ class HiRIDProcessor(HiRIDExtractor):
                 how="diagonal_relaxed",
             )
 
+            # Decode the ordinal variables (picklist codes): a numeric label
+            # (nasal cannula flow) is the value, a text label (heart rhythm,
+            # ventilator mode) is harmonized and pivoted as string
+            timeseries = (
+                timeseries.join(
+                    self._get_ordinal_variables(),
+                    on=["variableid", "value"],
+                    how="left",
+                )
+                .with_columns(
+                    pl.col("label")
+                    .replace_strict(
+                        {**self.HEART_RHYTHM_MAP, **self.VENTILATOR_MODE_MAP},
+                        default=None,
+                    )
+                    .alias("string_value"),
+                    pl.when(pl.col("label").is_null())
+                    .then(pl.col("value"))
+                    .otherwise(pl.col("label").cast(float, strict=False))
+                    .alias("value"),
+                )
+                .drop("label")
+            )
+
             (
                 # Pivot the timeseries data
                 self.pivot_numeric_or_string(
@@ -174,6 +198,7 @@ class HiRIDProcessor(HiRIDExtractor):
                     on_col="variable",
                     index_cols=self.index_cols,
                     numeric_col="value",
+                    string_col="string_value",
                 ).sort(self.index_cols)
                 # Sink each intermittent batch result to a parquet
                 .sink_parquet(self.precalc_path + f"{batch_id}_{index}.parquet")
