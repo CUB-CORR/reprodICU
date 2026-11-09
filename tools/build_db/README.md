@@ -9,6 +9,94 @@ MIMIC-III, MIMIC-IV, NWICU, SICdb, AmsterdamUMCdb) end to end.
 It only calls reprodICU code from this repository (installed in editable mode), so
 the build always reflects the checked-out branch.
 
+## Files of the tool
+
+| File | Role | Do you edit it? |
+| --- | --- | --- |
+| `run.sh` | Entry point: Python environment, then `build_db.py` with a log | No |
+| `build_db.py` | All the commands (`check`, `prepare`, `build`...) | No, unless a dataset version changes |
+| `config.yaml` | Default configuration (paths, datasets, build options), tracked in git | No, copy it to `config.local.yaml` |
+| `config.local.yaml` | Your own configuration, ignored by git, used instead of `config.yaml` | Yes, this is the one to edit |
+| `requirements.txt` | Python packages of the environment | Only to change a package version |
+| `.gitignore` | Keeps `.venv/`, `logs/` and `config.local.yaml` out of git | No |
+
+### run.sh
+
+The only command you need: `./run.sh <command> [options]`, from any folder.
+
+1. Creates `tools/build_db/.venv/` on the first run, with uv (Python 3.12) if it is
+   installed, otherwise with the first `python3.12`, `python3.11` or `python3.10`
+   found. It installs `requirements.txt` and reprodICU from this repository in
+   editable mode (`pip install -e`), so code changes in `src/reprodICU` are used
+   without reinstalling.
+2. Reinstalls the packages whenever `requirements.txt` is newer than the
+   environment. To start from a clean environment, delete `.venv/`.
+3. Runs `build_db.py` with the arguments given and copies everything it prints to
+   `logs/<date>_<command>.log`. The exit code is the one of `build_db.py`.
+
+Nothing to configure here.
+
+### build_db.py
+
+Does the actual work, one subcommand per stage (see [Commands](#commands)). At every
+run it:
+
+- reads `config.local.yaml` if it exists, otherwise `config.yaml`;
+- turns the paths into absolute paths and writes `~/.reprodICU/PATHS.yaml`, the file
+  reprodICU reads its paths from (so you never edit `PATHS.yaml` by hand);
+- checks for each dataset that the files expected by reprodICU are there.
+
+It is configured through the YAML files only. The one thing set in the script is the
+folder of each dataset version (`DATASETS` near the top, for example
+`physionet.org/files/mimiciv/3.1`), which follows the versions supported by
+reprodICU: edit it only if you use another version.
+
+### config.yaml and config.local.yaml
+
+`config.yaml` is the template kept in git. Copy it to `config.local.yaml` and edit the
+copy: when `config.local.yaml` exists it is read instead of `config.yaml` (the whole
+file, the two are not merged), and git ignores it, so your paths stay on your
+machine.
+
+```yaml
+paths:
+  raw_data: /Volumes/ICU/raw                  # PhysioNet downloads and UMCdb/ (layout below)
+  omop_vocabulary: /Volumes/ICU/OMOP          # Athena vocabularies (zip or CSV files)
+  output: /Volumes/ICU/reprodICU              # harmonized database (parquet)
+  output_demo: /Volumes/ICU/reprodICU_demo    # reprodICU demo mode, not used by this tool
+
+datasets:          # false leaves a dataset out of check, prepare and build
+  eICU: true
+  HiRID: true
+  MIMIC3: true
+  MIMIC4: true
+  NWICU: false
+  SICdb: true
+  UMCdb: true
+
+build:             # passed as is to the reprodICU build functions
+  winsorize: false # clip extreme values (labs, height and weight)
+  impute: false    # impute vital signs
+  resample: null   # resample vital signs, in seconds (e.g. 3600), null = no resampling
+```
+
+- Paths can be absolute, start with `~`, or be relative to the root of the
+  repository. The defaults point to a `reprodICU-data` folder next to the repository.
+  If a data folder is inside the repository anyway, the tool adds a `.gitignore` to it
+  so that it is never committed.
+- `paths` is required. A dataset missing from `datasets` counts as `true`; a missing
+  `build` section means the three defaults above.
+- A dataset left out can be added later: set it to `true`, then `./run.sh prepare`
+  and `./run.sh build`.
+- `./run.sh check` prints which configuration file is in use.
+
+### requirements.txt
+
+Packages installed in `.venv/` next to reprodICU. `polars` is pinned to the version
+the seven datasets were built with (1.41.2 crashed with a bus error on the HiRID
+medication step, 1.44.2 builds them all). After a change, the next `./run.sh`
+reinstalls the environment.
+
 ## Requirements
 
 - macOS or Linux, with `bash`, `tar` and `git`.
@@ -16,9 +104,6 @@ the build always reflects the checked-out branch.
   or Python 3.10 or later.
 - Enough disk space for the raw data, the parquet cache and the outputs (several
   hundred GB for the seven datasets).
-
-`polars` is pinned in `requirements.txt`: 1.41.2 crashed (bus error) on the HiRID
-medication step, 1.44.2 builds all seven datasets.
 
 ## Quick start
 
@@ -34,26 +119,6 @@ cp config.yaml config.local.yaml   # then edit the paths (optional)
 The first run creates `.venv/` (and updates it whenever `requirements.txt` changes).
 Every command writes its output to `logs/<date>_<command>.log`. Every command can be
 rerun: finished steps are detected and skipped.
-
-## Configuration
-
-`config.yaml` holds the paths, the datasets to include and the build options. If
-`config.local.yaml` exists (ignored by git), it is used instead, so your own paths
-stay out of the repository.
-
-| Key | Meaning |
-| --- | --- |
-| `paths.raw_data` | Folder with the PhysioNet downloads and the AmsterdamUMCdb files |
-| `paths.omop_vocabulary` | Folder with the OMOP vocabularies from Athena |
-| `paths.output` | Output folder of the harmonized database |
-| `paths.output_demo` | Output of the reprodICU demo mode (not used here) |
-| `datasets.<name>` | `false` leaves a dataset out |
-| `build.winsorize`, `build.impute`, `build.resample` | Options passed to the reprodICU build functions |
-
-Relative paths are resolved against the root of the repository. The defaults point
-to a `reprodICU-data` folder next to the repository. If you put a data folder inside
-the repository anyway, the tool adds a `.gitignore` to it so that it is never
-committed.
 
 ## Expected layout of the raw data
 
