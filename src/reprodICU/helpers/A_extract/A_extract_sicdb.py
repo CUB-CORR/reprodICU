@@ -189,10 +189,13 @@ class SICdbExtractor(SICdbPaths):
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
-                .then(False)
-                .when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
+                pl.when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
                 .then(True)
+                # death before the case was closed overrides an alive discharge type
+                .when(pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                .then(True)
+                .when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
+                .then(False)
                 .otherwise(None)  # transfer, left against advice, unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
