@@ -1,0 +1,29 @@
+# Configuration of tools/build_db/build_db.py.
+# Relative paths are resolved against the root of this repository; absolute paths
+# (or ~/...) can be used instead. The defaults point to a reprodICU-data folder next
+# to the repository, so that no credentialed data ends up inside the git working tree.
+# To keep your own paths out of git, copy this file to config.local.yaml (ignored by
+# git): it is used instead of this one when present.
+# ~/.reprodICU/PATHS.yaml is generated from these paths at every run.
+
+paths:
+  raw_data: ../reprodICU-data/raw                     # PhysioNet downloads (physionet.org/files/...) and UMCdb/
+  omop_vocabulary: ../reprodICU-data/OMOP_vocabulary  # OMOP vocabularies from Athena (zip or unzipped CSV files)
+  output: ../reprodICU-data/reprodICU                 # harmonized database (parquet)
+  output_demo: ../reprodICU-data/reprodICU_demo       # output of the demo mode (not used by this tool)
+
+# Datasets to include (set to false to leave one out).
+datasets:
+  eICU: true
+  HiRID: true
+  MIMIC3: true
+  MIMIC4: true
+  NWICU: true
+  SICdb: true
+  UMCdb: true
+
+# Build options (defaults of reprodICU build_all).
+build:
+  winsorize: false   # clip extreme values (labs, height/weight)
+  impute: false      # impute vital signs
+  resample: null     # resample vital signs (seconds), e.g. 3600
