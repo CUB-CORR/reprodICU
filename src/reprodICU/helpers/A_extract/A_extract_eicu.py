@@ -1085,7 +1085,7 @@ class EICUExtractor(EICUPaths):
             1. Read aperiodic vital sign data from CSV.
             2. Select noninvasive blood pressure measurements.
             3. Rename columns to standard format.
-            4. Remove duplicate records.
+            4. Merge rows of the same instant (median).
             5. Convert time from minutes to seconds.
 
         Returns:
@@ -1117,8 +1117,11 @@ class EICUExtractor(EICUPaths):
                     "observationoffset": self.timeseries_time_col,
                 }
             )
-            # Remove duplicate rows
-            .unique([self.icu_stay_id_col, self.timeseries_time_col])
+            # Rows sharing an instant are not duplicates
+            # (one may hold the blood pressures, another only PAOP or cardiac output):
+            # one row per instant, each value the median of the rows that have one
+            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
+            .agg(pl.col("noninvasivesystolic", "noninvasivediastolic", "noninvasivemean").median())
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
