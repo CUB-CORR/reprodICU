@@ -1,0 +1,12 @@
+# Python environment of tools/build_db (reprodICU itself is installed in editable mode
+# from this repository, see run.sh).
+# polars 1.44.2 (9 September 2026): with 1.41.2, the build crashed (bus error) on the
+# HiRID medication step of dev 5e75b28; 1.44.2 builds all seven datasets.
+polars==1.44.2
+pandas>=2.2,<3
+pyyaml>=6.0
+numpy>=1.26,<3
+scikit-learn>=1.4
+pycomorb
+tqdm
+pyarrow
