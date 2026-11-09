@@ -138,7 +138,8 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 vent_start_col,
                 vent_end_col,
             )
-            # .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
+            # identical intervals with several types keep the highest in the enum order
+            .cast({"Ventilation Type": VENTILATION_TYPE_ENUM})
             .group_by(
                 "Global ICU Stay ID",
                 vent_start_col,
