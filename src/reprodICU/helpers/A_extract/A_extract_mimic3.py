@@ -966,6 +966,17 @@ class MIMIC3Extractor(MIMIC3Paths):
                 values="VALUE",
                 aggregate_function="first",
             )
+            # optiflow (proposal, change 34): a component never charted is a
+            # null column, so that the status below does not fail. The CAM-ICU
+            # items are MetaVision items: with MIMIC3_CAREVUE_ONLY, only a few
+            # stays of minors keep some of them
+            .pipe(
+                lambda df: df.with_columns(
+                    pl.lit(None, dtype=pl.String).alias(c)
+                    for c in COMPONENTS
+                    if c not in df.columns
+                )
+            )
             .with_columns(
                 pl.when(pl.any_horizontal(pl.col(COMPONENTS) == "Unable to Assess"))
                 .then(pl.lit("Unable to Assess"))
