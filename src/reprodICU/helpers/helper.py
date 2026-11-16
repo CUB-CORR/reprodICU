@@ -156,6 +156,25 @@ class GlobalHelpers:
 
         return result
 
+    # optiflow (proposal): rows that carry a rank in rank_col compete with
+    # the other ranked rows of the same label at the same instant, and only
+    # the rows with the lowest rank are kept. Rows without a rank are left
+    # untouched, and equal ranks are all kept (the wide pivot then aggregates
+    # them as before). Applied just before the wide pivot of the MIMIC
+    # chartevents, which otherwise kept an arbitrary oxygen device and the
+    # median of the main and additional cannula flows.
+    def keep_highest_priority_rows(
+        self,
+        data: pl.LazyFrame,
+        labelcol: str,
+        index_cols: list[str],
+        rank_col: str = "priority_rank",
+    ) -> pl.LazyFrame:
+        best_rank = pl.col(rank_col).min().over(index_cols + [labelcol])
+        return data.filter(
+            pl.col(rank_col).is_null() | (pl.col(rank_col) == best_rank)
+        ).drop(rank_col)
+
     # region pivot / cast
     def pivot_numeric_or_string(
         self,
@@ -375,10 +394,31 @@ class GlobalVars(GlobalHelpers):
         self.HEART_RHYTHM_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
         )
-        self.OXYGEN_DELIVERY_SYSTEM_MAP = self.load_many_to_one_mapping(
-            mapping_path
-            + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+        # optiflow fix: the mapping file documents devices whose source value
+        # is already the harmonized name ("-> same name", e.g. Endotracheal
+        # tube, Tracheostomy tube). load_many_to_one_mapping only reads the
+        # listed values, so these source values were mapped to null. Keys now
+        # map to themselves as well.
+        self.OXYGEN_DELIVERY_SYSTEM_MAP = (
+            self.load_many_to_one_mapping_incl_keys(
+                mapping_path
+                + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+            )
         )
+        # optiflow (proposal): oxygen devices charted at the same instant. The
+        # device of the highest category is kept, in the order of mimic-code
+        # (mimic-iv/concepts/treatment/ventilation.sql: trach > mech vent >
+        # NIV > high flow > o2 > none). Devices not listed are other oxygen
+        # devices (5); within a category the pivot keeps its first value, as
+        # before. See keep_highest_priority_rows.
+        self.OXYGEN_DELIVERY_SYSTEM_PRIORITY = {
+            "Tracheostomy tube": 1,
+            "Endotracheal tube": 2,
+            "Mechanical ventilator": 2,
+            "Continuous positive airway pressure/Bilevel positive airway pressure mask": 3,
+            "High flow oxygen nasal cannula": 4,
+            "Room air": 6,
+        }
         self.VENTILATOR_MODE_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/ventilator_mode_mapping.yaml"
         )

@@ -795,6 +795,16 @@ class MIMIC4Extractor(MIMIC4Paths):
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
+                # optiflow: 'None' on the oxygen device items means that no
+                # oxygen delivery device is used (room air); the same value
+                # means "no artificial airway" on other items mapped to this
+                # label (MIMIC-III 40 'Airway Type'), which stay unmapped.
+                .when(
+                    (pl.col("label") == "Oxygen delivery system")
+                    & (pl.col("value") == "None")
+                    & pl.col("itemid").is_in([226732])
+                )
+                .then(pl.lit("Room air"))
                 .when(pl.col("label") == "Oxygen delivery system")
                 .then(
                     pl.col("value").replace_strict(
@@ -822,8 +832,55 @@ class MIMIC4Extractor(MIMIC4Paths):
                         self.DELIRIUM_MAP, default=None
                     )
                 )
+                # optiflow fix: Ventilator type has no value mapping; the
+                # charted text is kept (as for eICU) instead of being dropped.
+                .when(pl.col("label") == "Ventilator type")
+                .then(pl.col("value"))
                 .otherwise(None)
                 .alias("value"),
+            )
+            # optiflow (proposal): priority rank of the oxygen devices charted
+            # at the same instant, used by keep_highest_priority_rows just
+            # before the wide pivot (OXYGEN_DELIVERY_SYSTEM_PRIORITY).
+            # Oxygen flow: 227287 'O2 Flow (additional cannula)' (MetaVision)
+            # is the flow of a device added to the main one; it gives way to
+            # the main flow (223834 'O2 Flow', 227582 'BiPap O2 Flow') at the
+            # same instant instead of being averaged with it, and is kept when
+            # charted alone. mimic-code (oxygen_delivery.sql) keeps it in a
+            # column of its own.
+            .with_columns(
+                pl.when(pl.col("label") == "Oxygen delivery system")
+                .then(
+                    pl.col("value").replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_PRIORITY,
+                        default=5,
+                        return_dtype=pl.Int8,
+                    )
+                )
+                .when(
+                    pl.col("label") == "Oxygen gas flow Oxygen delivery system"
+                )
+                .then(
+                    pl.when(pl.col("itemid") == 227287)
+                    .then(2)
+                    .otherwise(1)
+                    .cast(pl.Int8)
+                )
+                .alias("priority_rank"),
+            )
+            # optiflow fix: 223849 'Ventilator Mode' and 223848 'Ventilator
+            # Type' (MetaVision) also carry a list code in valuenum, which the
+            # wide pivot keeps before the text. Both are categorical: only
+            # their text is kept.
+            .with_columns(
+                pl.when(
+                    pl.col("label").is_in(
+                        ["Ventilation mode Ventilator", "Ventilator type"]
+                    )
+                )
+                .then(None)
+                .otherwise(pl.col("valuenum"))
+                .alias("valuenum")
             )
             .drop("itemid")
             # Remove rows with empty names

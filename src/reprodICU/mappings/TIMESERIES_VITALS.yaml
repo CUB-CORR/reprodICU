@@ -43,7 +43,11 @@ Peripheral oxygen saturation: # 4196147
 Respiratory rate: # 4313591
   # eICU-CRD / HiRID / MIMIC-III / MIMIC-IV / NWICU -> same name
   # SICdb
-  - RespRate
+  # optiflow (proposal): 2274 'RespRateEKG' (SignalFloat, /min), the
+  # respiratory rate measured by the bedside monitor. 719 'RespRate' is the
+  # ventilator-measured rate and is filed under "Breath rate spontaneous and
+  # mechanical --on ventilator" (TIMESERIES_RESPIRATORY.yaml): with both here,
+  # the pivot took the mean of the two at shared minutes.
   - RespRateEKG
   # UMCdb -> same name
 Invasive systolic arterial pressure: # 4353843

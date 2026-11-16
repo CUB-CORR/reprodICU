@@ -15,7 +15,8 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         Steps:
             1. Extract ventilation data ranges with timestamps.
             2. Join with admission times for time reference.
-            3. Validate end time before discharge.
+            3. Keep episodes starting before discharge and truncate their
+               end at discharge.
             4. Calculate episode duration.
             5. Compute time relative to admission.
 
@@ -35,8 +36,16 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         return (
             pl.scan_csv(self.sicdb_paths.data_range_path)
             .join(ADMISSION_TIMES, on="CaseID", how="left")
-            # End must be before Discharge
-            .filter(pl.col("OffsetEnd").le(pl.col("TimeOfStay")))
+            # optiflow fix: an episode whose end was charted after the closing
+            # of the case (TimeOfStay, counted like Offset from the MetaVision
+            # admission) was dropped entirely, which removed every intubation
+            # of 759 of the 5,300 SICdb cases with an endotracheal tube. The
+            # episode is now kept and its end truncated at the closing of the
+            # case; episodes starting after it are still dropped.
+            .filter(pl.col("Offset").le(pl.col("TimeOfStay")))
+            .with_columns(
+                pl.min_horizontal("OffsetEnd", "TimeOfStay").alias("OffsetEnd")
+            )
             # Filter for ventilation IDs
             .filter(pl.col("DataID").is_in([720, 3041]))
             # Make offsets (from the start of the case) relative to admission

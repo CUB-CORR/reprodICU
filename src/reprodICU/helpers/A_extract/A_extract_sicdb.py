@@ -189,11 +189,29 @@ class SICdbExtractor(SICdbPaths):
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
-                .then(False)
-                .when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
+                # optiflow fix: 3131 (transfer to another hospital), 3132
+                # (discharge against medical advice), 3133 and 3134 (internal
+                # transfers) are alive at discharge from this hospital
+                # (d_references, ReferenceName "DischargeType"). A death in the
+                # ICU (DischargeState 2215) whose OffsetOfDeath is not after the
+                # closure of the case (TimeOfStay, both counted from the case
+                # admission) is a hospital death even if the discharge type says
+                # alive (12 cases coded 3129 or 3131). 2026/2028 are kept for
+                # older releases.
+                pl.when(pl.col("HospitalDischargeType").is_in([2028, 3130]))  # "Deceased"
                 .then(True)
-                .otherwise(None)  # transfer, left against advice, unknown -> set to None
+                .when(
+                    (pl.col("DischargeState") == 2215)
+                    & (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                )
+                .then(True)
+                .when(
+                    pl.col("HospitalDischargeType").is_in(
+                        [2026, 3129, 3131, 3132, 3133, 3134]
+                    )
+                )
+                .then(False)
+                .otherwise(None)  # unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days

@@ -82,23 +82,27 @@
 "oxymizer/NRM": Basic nasal oxygen cannula
 "partial-rebreather": Partial rebreather oxygen mask
 "PS-Auto": Continuous positive airway pressure/Bilevel positive airway pressure mask
-"R.A":
-"r/a":
-"R/A":
-"ra":
-"Ra":
-"RA":
+# optiflow (change 81, proposal): the room air spellings had no target and
+# became null; they now map to Room air, as "None (Room air)" does in
+# eicu_respiratoryCharting_oxygenDeliveryDevices.yaml. "none" and
+# "RA/trach capped" keep no target.
+"R.A": Room air
+"r/a": Room air
+"R/A": Room air
+"ra": Room air
+"Ra": Room air
+"RA": Room air
 "RA/trach capped": # or room air?
-"rm air":
-"room air":
-"Room air":
-"Room Air":
-"ROOM AIR":
-"room air ":
-"Room Air ":
-"ROOM AIR ":
-"roomair":
-"rooom air":
+"rm air": Room air
+"room air": Room air
+"Room air": Room air
+"Room Air": Room air
+"ROOM AIR": Room air
+"room air ": Room air
+"Room Air ": Room air
+"ROOM AIR ": Room air
+"roomair": Room air
+"rooom air": Room air
 "simple mask": Oxygen mask
 "Simple mask": Oxygen mask
 "SIMPLE MASK": Oxygen mask

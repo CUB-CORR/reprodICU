@@ -54,7 +54,7 @@ def setup_umcdb(config_manager=None, paths=None):
 
     # Get source path
     source_path = Path(
-        config_manager.load_config("PATHS.yaml", user_override=False)[
+        config_manager.load_config("PATHS.yaml", user_override=True)[
             "umcdb_source_path"
         ]
     )
@@ -198,7 +198,7 @@ def setup_sicdb(config_manager=None, paths=None):
 
     # Get source path
     source_path = Path(
-        config_manager.load_config("PATHS.yaml", user_override=False)[
+        config_manager.load_config("PATHS.yaml", user_override=True)[
             "sicdb_source_path"
         ]
     )

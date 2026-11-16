@@ -105,13 +105,7 @@ class SICdbProcessor(SICdbExtractor):
             output_file=ts_float_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: self.pivot_numeric_or_string(
-                df.pipe(self._extract_timeseries_helper),
-                dataset="SICdb_vitals",
-                on_col="DataID",
-                index_cols=self.index_cols,
-                numeric_col="Val",
-            ).sort(self.index_cols),
+            method=self._process_timeseries_float_batch,
             id_col=self.icu_stay_id_col,
             batch_size=500,
             delete_after=True,
@@ -124,6 +118,55 @@ class SICdbProcessor(SICdbExtractor):
         )
 
     # endregion
+
+    # optiflow: SICdb (>= 1.0.7) charts high flow nasal oxygen with dedicated
+    # signals. Their values are harmonized as generic FiO2 / O2 flow, which lost
+    # the information that the patient was on HFNC: record the device as well.
+    HFNC_DATA_IDS = [3142, 3143]  # "Optiflow O2", "Optiflow Flow"
+
+    def _process_timeseries_float_batch(self, df: pl.LazyFrame) -> pl.LazyFrame:
+        """
+        Pivot one batch of data_float_m rows and add the oxygen delivery device
+        ("High flow oxygen nasal cannula") at every timestamp with Optiflow data.
+        """
+        wide = self.pivot_numeric_or_string(
+            df.pipe(self._extract_timeseries_helper),
+            dataset="SICdb_vitals",
+            on_col="DataID",
+            index_cols=self.index_cols,
+            numeric_col="Val",
+        )
+        hfnc = (
+            df.filter(
+                pl.col("DataID").is_in(self.HFNC_DATA_IDS),
+                pl.col("Val").is_not_null(),
+            )
+            .join(self._get_offsets(), on=self.icu_stay_id_col)
+            .with_columns(
+                (pl.col("Offset") - pl.col("CaseOffset"))
+                .cast(float)
+                .alias(self.timeseries_time_col)
+            )
+            # same time window as _extract_timeseries_helper
+            .filter(
+                pl.col(self.timeseries_time_col)
+                > pl.duration(
+                    days=-self.PRE_ICU_TIMESERIES_DAYS_CUTOFF
+                ).dt.total_seconds(),
+                pl.col(self.timeseries_time_col)
+                < pl.duration(seconds=pl.col("TimeOfStay")).dt.total_seconds(),
+            )
+            .select(self.index_cols)
+            .unique()
+            .with_columns(
+                pl.lit("High flow oxygen nasal cannula").alias(
+                    "Oxygen delivery system"
+                )
+            )
+        )
+        return wide.join(
+            hfnc, on=self.index_cols, how="full", coalesce=True
+        ).sort(self.index_cols)
 
     # region lab values
     def process_timeseries_data_labs(self) -> pl.LazyFrame:

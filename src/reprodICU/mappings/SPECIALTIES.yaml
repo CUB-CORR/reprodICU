@@ -54,6 +54,8 @@ Hematology / Oncology: # 38004502 # subsumed under Medical Oncology AND Hematolo
   # SICdb
   - 3. Medizin # Hematology / Oncology
 Medical Oncology: # 38004507
+  # MIMIC-III / MIMIC-IV
+  - OMED # Oncologic Medical - non-surgical, relating to cancer
   # UMCdb
   - Oncologie Inwendig # Internal Oncology
 Nephrology: # 38004479
@@ -112,7 +114,6 @@ Orthopedic Surgery: # 38004465
   # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - ORTHO # Orthopaedic - surgical, relating to the musculoskeletal system
-  - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
   # SICdb
   - Orthopädie # Orthopedics
   # UMCdb

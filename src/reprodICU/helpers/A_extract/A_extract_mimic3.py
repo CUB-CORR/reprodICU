@@ -100,6 +100,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                     - pl.col("OUTTIME").shift(1).over(self.person_id_col)
                 ).alias("OFFSET_TO_PREV")
             )
+            # optiflow (proposal, change 34): built stays only, after the time
+            # to the previous stay, so that the window of a kept stay is unchanged
+            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
     # region patient
@@ -373,6 +376,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(pl.col(self.mortality_icu_col))
                 .alias(self.mortality_icu_col)
             )
+            # optiflow (proposal, change 34): built stays only, after the stay
+            # sequence number and the time to the first stay of the patient
+            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
     # endregion
@@ -771,6 +777,16 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
+                # optiflow: 'None' on the oxygen device items means that no
+                # oxygen delivery device is used (room air); the same value
+                # means "no artificial airway" on other items mapped to this
+                # label (MIMIC-III 40 'Airway Type'), which stay unmapped.
+                .when(
+                    (pl.col("LABEL") == "Oxygen delivery system")
+                    & (pl.col("VALUE") == "None")
+                    & pl.col("ITEMID").is_in([467, 468, 226732])
+                )
+                .then(pl.lit("Room air"))
                 .when(pl.col("LABEL") == "Oxygen delivery system")
                 .then(
                     pl.col("VALUE").replace_strict(
@@ -798,8 +814,55 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.DELIRIUM_MAP, default=None
                     )
                 )
+                # optiflow fix: Ventilator type has no value mapping; the
+                # charted text is kept (as for eICU) instead of being dropped.
+                .when(pl.col("LABEL") == "Ventilator type")
+                .then(pl.col("VALUE"))
                 .otherwise(None)
                 .alias("VALUE"),
+            )
+            # optiflow (proposal): priority rank of the oxygen devices charted
+            # at the same instant, used by keep_highest_priority_rows just
+            # before the wide pivot (OXYGEN_DELIVERY_SYSTEM_PRIORITY).
+            # Oxygen flow: 227287 'O2 Flow (additional cannula)' (MetaVision)
+            # is the flow of a device added to the main one; it gives way to
+            # the main flow (223834 'O2 Flow', 227582 'BiPap O2 Flow') at the
+            # same instant instead of being averaged with it, and is kept when
+            # charted alone. mimic-code (oxygen_delivery.sql) keeps it in a
+            # column of its own.
+            .with_columns(
+                pl.when(pl.col("LABEL") == "Oxygen delivery system")
+                .then(
+                    pl.col("VALUE").replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_PRIORITY,
+                        default=5,
+                        return_dtype=pl.Int8,
+                    )
+                )
+                .when(
+                    pl.col("LABEL") == "Oxygen gas flow Oxygen delivery system"
+                )
+                .then(
+                    pl.when(pl.col("ITEMID") == 227287)
+                    .then(2)
+                    .otherwise(1)
+                    .cast(pl.Int8)
+                )
+                .alias("priority_rank"),
+            )
+            # optiflow fix: 223849 'Ventilator Mode' and 223848 'Ventilator
+            # Type' (MetaVision) also carry a list code in VALUENUM, which the
+            # wide pivot keeps before the text. Both are categorical: only
+            # their text is kept.
+            .with_columns(
+                pl.when(
+                    pl.col("LABEL").is_in(
+                        ["Ventilation mode Ventilator", "Ventilator type"]
+                    )
+                )
+                .then(None)
+                .otherwise(pl.col("VALUENUM"))
+                .alias("VALUENUM")
             )
             .drop("ITEMID")
             # Remove rows with empty names
@@ -902,6 +965,17 @@ class MIMIC3Extractor(MIMIC3Paths):
                 on="LABEL",
                 values="VALUE",
                 aggregate_function="first",
+            )
+            # optiflow (proposal, change 34): a component never charted is a
+            # null column, so that the status below does not fail. The CAM-ICU
+            # items are MetaVision items: with MIMIC3_CAREVUE_ONLY, only a few
+            # stays of minors keep some of them
+            .pipe(
+                lambda df: df.with_columns(
+                    pl.lit(None, dtype=pl.String).alias(c)
+                    for c in COMPONENTS
+                    if c not in df.columns
+                )
             )
             .with_columns(
                 pl.when(pl.any_horizontal(pl.col(COMPONENTS) == "Unable to Assess"))
@@ -2339,6 +2413,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col(self.diagnosis_icd_code_col).is_not_null())
             # drop duplicates
             .unique()
+            # optiflow (proposal, change 34): admissions of the built stays only
+            .pipe(
+                self.keep_built_mimic3_stays,
+                on=self.hospital_stay_id_col,
+                by="HADM_ID",
+            )
         )
 
     # endregion
@@ -2444,6 +2524,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .drop_nulls(self.procedure_description_col)
             .unique()
+            # optiflow (proposal, change 34): built stays only
+            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
         procedures_icd = (
@@ -2481,6 +2563,12 @@ class MIMIC3Extractor(MIMIC3Paths):
             # drop rows with empty ICD codes
             .filter(pl.col(self.procedure_icd_code_col).is_not_null())
             .unique()
+            # optiflow (proposal, change 34): admissions of the built stays only
+            .pipe(
+                self.keep_built_mimic3_stays,
+                on=self.hospital_stay_id_col,
+                by="HADM_ID",
+            )
         )
 
         datetimeevents = (
@@ -2512,6 +2600,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             .rename({"LABEL": self.procedure_description_col})
             .drop_nulls(self.procedure_description_col)
             .unique()
+            # optiflow (proposal, change 34): built stays only
+            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
         return pl.concat(

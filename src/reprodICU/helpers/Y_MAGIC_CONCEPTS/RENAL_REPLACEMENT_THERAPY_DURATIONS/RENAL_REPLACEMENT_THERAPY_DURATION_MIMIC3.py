@@ -455,6 +455,8 @@ class RENAL_REPLACEMENT_THERAPY_DURATION_MIMIC3(MAGIC_CONCEPTS):
                 END,
             )
             .unique()
+            # optiflow (proposal, change 34): built MIMIC-III stays only
+            .pipe(self.mimic3_paths.keep_built_mimic3_stays)
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
             .lazy()
         )

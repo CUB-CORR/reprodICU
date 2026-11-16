@@ -86,15 +86,35 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         vent_start_col = "Ventilation Start Relative to Admission (seconds)"
         vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
+        # optiflow fix: the per-dataset results differ in columns and column
+        # order (eICU has no "Ventilation Type"; HiRID, MIMIC-IV, SICdb and
+        # UMCdb keep working columns). Concatenated lazily, they made the
+        # final collect fail with "unable to vstack, column names don't
+        # match". Each result is materialized and reduced to the four columns
+        # used below, in the same order; rows and values are unchanged.
+        def _normalize(result) -> pl.LazyFrame:
+            if isinstance(result, pl.LazyFrame):
+                result = result.collect()
+            if "Ventilation Type" not in result.columns:
+                result = result.with_columns(
+                    pl.lit(None, dtype=pl.String).alias("Ventilation Type")
+                )
+            return result.select(
+                "Global ICU Stay ID",
+                "Ventilation Type",
+                vent_start_col,
+                vent_end_col,
+            ).lazy()
+
         VENTILATION_DURATION = (
             pl.concat(
                 [
-                    eicu_VENTILATION_DURATION.lazy(),
-                    hirid_VENTILATION_DURATION.lazy(),
-                    mimic3_VENTILATION_DURATION.lazy(),
-                    mimic4_VENTILATION_DURATION.lazy(),
-                    sicdb_VENTILATION_DURATION.lazy(),
-                    umcdb_VENTILATION_DURATION.lazy(),
+                    _normalize(eicu_VENTILATION_DURATION),
+                    _normalize(hirid_VENTILATION_DURATION),
+                    _normalize(mimic3_VENTILATION_DURATION),
+                    _normalize(mimic4_VENTILATION_DURATION),
+                    _normalize(sicdb_VENTILATION_DURATION),
+                    _normalize(umcdb_VENTILATION_DURATION),
                 ],
                 how="diagonal_relaxed",
             )
@@ -144,7 +164,26 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 vent_start_col,
                 vent_end_col,
             )
-            .agg(pl.col("Ventilation Type").max())
+            # optiflow (proposal): for identical intervals of different types,
+            # max() kept the alphabetically last type ("supplemental oxygen"
+            # over "invasive ventilation", "weaning" over "tracheostomy"). The
+            # type kept is now the highest in VENTILATION_TYPE_ENUM order.
+            .agg(
+                pl.col("Ventilation Type")
+                .sort_by(
+                    pl.col("Ventilation Type").replace_strict(
+                        {
+                            name: rank
+                            for rank, name in enumerate(
+                                VENTILATION_TYPE_ENUM.categories.to_list()
+                            )
+                        },
+                        default=-1,
+                        return_dtype=pl.Int8,
+                    )
+                )
+                .last()
+            )
             .with_columns(
                 (pl.col(vent_end_col) - pl.col(vent_start_col))
                 .truediv(SECONDS_IN_1H)

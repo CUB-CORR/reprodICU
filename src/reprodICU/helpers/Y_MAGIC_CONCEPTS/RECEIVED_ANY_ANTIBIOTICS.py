@@ -165,6 +165,8 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                 )
                 .select("ICUSTAY_ID", "DRUG"),
             ]
+        ).pipe(  # optiflow (proposal, change 34): built MIMIC-III stays only
+            self.mimic3_paths.keep_built_mimic3_stays
         ).pipe(
             self._received_any_antibiotics_bool,
             "mimic3-",
@@ -186,7 +188,10 @@ class RECEIVED_ANY_ANTIBIOTICS(MAGIC_CONCEPTS):
                         "mimic"
                     ][1]["ids"],
                 )
-            ).pipe(
+            )
+            # optiflow (proposal, change 34): built MIMIC-III stays only
+            .pipe(self.mimic3_paths.keep_built_mimic3_stays)
+            .pipe(
                 self._received_any_antibiotics_bool,
                 "mimic3-",
                 "ICUSTAY_ID",

@@ -14,3 +14,14 @@ ADMISSION_WEIGHT_HEIGHT_CUTOFF: 5
 # Decimals to round to when calculating during extraction / processing
 # NOTE: Don't forget to delete precalculated files when changing this!
 ROUNDING_DECIMALS: 3
+
+# optiflow (proposal, change 34): build only the MIMIC-III ICU stays that are
+# not in MIMIC-IV: the stays charted in CareVue (ICUSTAYS.DBSOURCE "carevue",
+# 2001 to 2008), and the stays of the patients younger than 18 at their first
+# MetaVision or mixed stay, whom MIMIC-IV excludes. The other MetaVision
+# admissions of MIMIC-III (2008 to 2012) are also in MIMIC-IV, with other
+# identifiers, so that a user who pools both datasets would count them twice.
+# Set to false to build the full MIMIC-III, for a study that does not use
+# MIMIC-IV.
+# NOTE: Don't forget to delete precalculated files when changing this!
+MIMIC3_CAREVUE_ONLY: true

@@ -15,7 +15,7 @@ Medical:
   - CMED # Cardiac Medical - for non-surgical cardiac related admissions
   - MED # Medical - general service for internal medicine
   - NMED # Neurologic Medical - non-surgical, relating to the brain
-  - OMED # Orthopaedic medicine - non-surgical, relating to musculoskeletal system
+  - OMED # Oncologic Medical - non-surgical, relating to cancer
   # SICdb
   - 2. Medizin # Cardiology
   - Intensivstation 2. Medizin # Intensive Care Cardiology

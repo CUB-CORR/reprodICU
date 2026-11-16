@@ -383,7 +383,11 @@ class TimeseriesHarmonizer(GlobalVars):
                 cols_to_exclude=self.index_cols,
             )
             # Add missing columns as null columns
-            .pipe(self._add_missing_cols, self.relevant_lab_LOINC_components)
+            .pipe(
+                self._add_missing_cols,
+                self.relevant_lab_LOINC_components,
+                self.labstructdtype,
+            )
             # Convert columns to appropriate types
             .cast(
                 {
@@ -606,11 +610,15 @@ class TimeseriesHarmonizer(GlobalVars):
     # region helpers
     # Add missing columns as null columns
     def _add_missing_cols(
-        self, data: pl.LazyFrame, expected_cols: list
+        self, data: pl.LazyFrame, expected_cols: list, dtype=None
     ) -> pl.LazyFrame:
+        # dtype: type of the added null columns (e.g. the lab struct dtype, so
+        # that struct operations still work when no dataset provides a lab)
         cols = data.collect_schema().names()
         return data.with_columns(
-            pl.lit(None).alias(col) for col in expected_cols if col not in cols
+            pl.lit(None, dtype=dtype).alias(col)
+            for col in expected_cols
+            if col not in cols
         )
 
     # Divide the value of lab struct columns by 100

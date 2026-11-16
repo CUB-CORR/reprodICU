@@ -174,6 +174,8 @@ class HiRIDProcessor(HiRIDExtractor):
                     on_col="variable",
                     index_cols=self.index_cols,
                     numeric_col="value",
+                    # optiflow fix: decoded heart rhythm
+                    string_col="string_value",
                 ).sort(self.index_cols)
                 # Sink each intermittent batch result to a parquet
                 .sink_parquet(self.precalc_path + f"{batch_id}_{index}.parquet")

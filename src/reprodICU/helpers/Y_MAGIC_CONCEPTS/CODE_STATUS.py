@@ -148,6 +148,8 @@ class CODE_STATUS(MAGIC_CONCEPTS):
             .join(mimic3_CODE_STATUS_MAP, on="VALUE", how="left")
             .drop("VALUE")
             .drop_nulls("CODE_STATUS")
+            # optiflow (proposal, change 34): built MIMIC-III stays only
+            .pipe(self.mimic3_paths.keep_built_mimic3_stays)
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
             .collect()
         )

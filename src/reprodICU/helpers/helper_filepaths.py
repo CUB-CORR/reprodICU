@@ -387,6 +387,72 @@ class MIMIC3Paths(GlobalVars):
         self.numerics_summary_path = self.mimic4_loinc_mapping_path + "numerics-summary.csv"
         # fmt: on
 
+    # optiflow (proposal, change 34): the MIMIC-III ICU stays that are built.
+    # With MIMIC3_CAREVUE_ONLY (GLOBAL_CONFIG.yaml), the stays charted in
+    # CareVue (ICUSTAYS.DBSOURCE "carevue", 2001 to 2008), which MIMIC-IV does
+    # not hold, and the other stays of the patients younger than 18 at their
+    # first MetaVision or mixed stay, whom MIMIC-IV excludes. The other
+    # MetaVision and mixed stays (2008 to 2012) are also in MIMIC-IV, with
+    # other identifiers ("both databases contain the same admissions which
+    # occurred between 2008 - 2012", MIMIC-III CareVue subset v1.4, PhysioNet;
+    # "Patients were excluded if they were younger than 18 on their first
+    # visit", Johnson et al., Sci Data 2023, Methods). Every place that reads
+    # MIMIC-III stays or admissions goes through this function, so that all
+    # tables and concepts keep the same stays.
+    def keep_built_mimic3_stays(
+        self,
+        data: pl.LazyFrame | pl.DataFrame,
+        on: str = "ICUSTAY_ID",
+        by: str = "ICUSTAY_ID",
+    ) -> pl.LazyFrame | pl.DataFrame:
+        """Keep the rows of data whose column `on` matches a built MIMIC-III
+        ICU stay (by="ICUSTAY_ID") or the admission of one (by="HADM_ID").
+        Without MIMIC3_CAREVUE_ONLY, data is returned unchanged. Every MIMIC-III
+        admission has stays of one DBSOURCE only, and the age rule applies to
+        all the stays of a patient, so that both keys give the same
+        admissions."""
+        if not getattr(self, "MIMIC3_CAREVUE_ONLY", False):
+            return data
+        frame = data.lazy()
+        stays = pl.scan_csv(self.icustays_path).select(
+            "SUBJECT_ID",
+            "HADM_ID",
+            "ICUSTAY_ID",
+            "DBSOURCE",
+            pl.col("INTIME").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+        )
+        # patients younger than 18 at their first MetaVision or mixed stay,
+        # whom MIMIC-IV excludes: their stays are not in MIMIC-IV and are kept
+        under_18 = (
+            stays.filter(pl.col("DBSOURCE") != "carevue")
+            .join(
+                pl.scan_csv(self.patients_path).select(
+                    "SUBJECT_ID",
+                    pl.col("DOB").str.to_datetime("%Y-%m-%d %H:%M:%S"),
+                ),
+                on="SUBJECT_ID",
+            )
+            .group_by("SUBJECT_ID")
+            .agg(
+                (
+                    (pl.col("INTIME") - pl.col("DOB")).dt.total_days().min()
+                    / 365.25
+                    < 18
+                ).alias("_under_18")
+            )
+        )
+        built = (
+            stays.join(under_18, on="SUBJECT_ID", how="left")
+            .filter(
+                (pl.col("DBSOURCE") == "carevue")
+                | pl.col("_under_18").fill_null(False)
+            )
+            .select(pl.col(by).cast(frame.collect_schema()[on]).alias(on))
+            .unique()
+        )
+        kept = frame.join(built, on=on, how="semi")
+        return kept if isinstance(data, pl.LazyFrame) else kept.collect()
+
 
 # endregion
 
@@ -726,36 +792,56 @@ class UMCdbPaths(GlobalVars):
 def _parquetize(path, db: str):
     print(f"{db}   - parquetizing {path}")
     parquet_path = path.replace(".csv", ".parquet").replace(".gz", "")
-    pl.scan_csv(
-        path,
-        schema_overrides={
-            "amount": float,
-            "AMOUNT": float,
-            "dose_given": str,
-            "dose_val_rx": str,
-            "doses_per_24_hrs": float,
-            "patientweight": float,
-            "PATIENTWEIGHT": float,
-            "product_amount_given": str,
-            "RATE": float,
-            "totalamount": float,
-            "TOTALAMOUNT": float,
-            "value": str,
-            "VALUE": str,
-        },
-        infer_schema_length=10000,
-    ).sink_parquet(parquet_path)
+    schema_overrides = {
+        "amount": float,
+        "AMOUNT": float,
+        "dose_given": str,
+        "dose_val_rx": str,
+        "doses_per_24_hrs": float,
+        "patientweight": float,
+        "PATIENTWEIGHT": float,
+        "product_amount_given": str,
+        "RATE": float,
+        "totalamount": float,
+        "TOTALAMOUNT": float,
+        "value": str,
+        "VALUE": str,
+    }
+
+    def _sink(infer_schema_length):
+        pl.scan_csv(
+            path,
+            schema_overrides=schema_overrides,
+            infer_schema_length=infer_schema_length,
+        ).sink_parquet(tmp_path)
+
+    # Write to a temporary file first: a failed conversion must not leave a
+    # truncated parquet file behind (it would be silently reused later).
+    tmp_path = parquet_path + ".tmp"
+    try:
+        _sink(10000)
+    except pl.exceptions.ComputeError as e:
+        # e.g. MIMIC-IV 3.1 emar_detail.infusion_rate contains "___" after
+        # the first 10000 rows -> infer the schema on the whole file instead
+        print(
+            f"{db}   - schema inference on 10000 rows failed "
+            f"({str(e).splitlines()[0]}); retrying with full-file inference"
+        )
+        _sink(None)
+    os.replace(tmp_path, parquet_path)
 
 
 def _parquetize_OMOP(path):
     print(f"OMOP   - parquetizing {path}")
     parquet_path = path.replace(".csv", ".parquet").replace(".gz", "")
+    tmp_path = parquet_path + ".tmp"
     pl.scan_csv(
         path,
         separator="\t",
         infer_schema_length=10000,
         quote_char=None,
-    ).sink_parquet(parquet_path)
+    ).sink_parquet(tmp_path)
+    os.replace(tmp_path, parquet_path)
 
 
 # endregion

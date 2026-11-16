@@ -27,9 +27,48 @@ class EICUExtractor(EICUPaths):
         self.icu_length_of_stay = self.extract_patient_information().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
+        # optiflow fix (change 37): end of each unit stay, in seconds from ICU
+        # admission (unitdischargeoffset), for the window of the eICU tables
+        self.icu_discharge = pl.scan_csv(self.patient_path).select(
+            pl.col("patientunitstayid").alias(self.icu_stay_id_col),
+            (pl.col("unitdischargeoffset") * 60).cast(float).alias("_icu_discharge"),
+        )
 
     # region patient
     # Extract patient information from the patient.csv file
+    # optiflow fix (changes 29 and 37): the window of the time series of the
+    # other datasets, for the eICU tables: from PRE_ICU_TIMESERIES_DAYS_CUTOFF
+    # days before ICU admission (GLOBAL_CONFIG.yaml) to ICU discharge
+    # (unitdischargeoffset), strictly before discharge as in the other datasets
+    # (charttime < outtime in MIMIC, TimeOfStay in SICdb).
+    def _within_stay_window(
+        self, data: pl.LazyFrame, time_col: str, end_col: str | None = None
+    ) -> pl.LazyFrame:
+        """Keep the rows charted after PRE_ICU_TIMESERIES_DAYS_CUTOFF days
+        before ICU admission and strictly before ICU discharge (times in
+        seconds from ICU admission). For intervals (end_col given, as for
+        medications), the lower bound applies to the end of the interval (the
+        start when the end is missing) and the upper bound to its start, so
+        that an infusion running at either bound is kept. A stay without a
+        discharge offset keeps its rows after the lower bound."""
+        end = pl.coalesce(end_col, time_col) if end_col else pl.col(time_col)
+        id_dtype = data.collect_schema()[self.icu_stay_id_col]
+        return (
+            data.join(
+                self.icu_discharge.with_columns(
+                    pl.col(self.icu_stay_id_col).cast(id_dtype)
+                ),
+                on=self.icu_stay_id_col,
+                how="left",
+                maintain_order="left",
+            )
+            .filter(
+                end > -self.PRE_ICU_TIMESERIES_DAYS_CUTOFF * 24 * 3600,
+                pl.col(time_col).lt(pl.col("_icu_discharge")).fill_null(True),
+            )
+            .drop("_icu_discharge")
+        )
+
     def extract_patient_information(self) -> pl.LazyFrame:
         """
         Extract and derive comprehensive patient demographics and clinical information.
@@ -531,6 +570,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("labname"))
             .with_columns(
@@ -710,6 +751,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
@@ -905,18 +948,37 @@ class EICUExtractor(EICUPaths):
                 pl.col("nursingchartcelltypevalname").replace_strict(
                     nurse_names_mapping, default=None
                 ),
+            )
+            # optiflow fix: the device mapping must be evaluated AFTER the
+            # renaming above. In a single with_columns both expressions see the
+            # original label ("O2 Admin Device"), so the mapping was never
+            # applied and raw free-text values reached the output.
+            .with_columns(
                 # Map O2 delivery device values
                 pl.when(
                     pl.col("nursingchartcelltypevalname")
                     == "Oxygen delivery system"
                 )
                 .then(
-                    pl.col("nursingchartvalue").replace_strict(
-                        nurse_oxygen_delivery_device_mapping, default=None
+                    self._map_nurse_oxygen_delivery_device(
+                        pl.col("nursingchartvalue"),
+                        nurse_oxygen_delivery_device_mapping,
                     )
                 )
                 .otherwise(pl.col("nursingchartvalue"))
                 .alias("nursingchartvaluestr"),
+            )
+            # optiflow fix: a number typed in the device field ("2",
+            # "100") was read as a numeric value and reached the device
+            # column as "2.0"; device rows keep their text only.
+            .with_columns(
+                pl.when(
+                    pl.col("nursingchartcelltypevalname")
+                    == "Oxygen delivery system"
+                )
+                .then(pl.lit(None, dtype=pl.Float64))
+                .otherwise(pl.col("nursingchartvaluefloat"))
+                .alias("nursingchartvaluefloat")
             )
             .with_columns(
                 # Finalize exclusive columns
@@ -938,9 +1000,43 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
+
+    # optiflow fix: targets of eicu_nurseCharting_oxygenDeliveryDevices.yaml
+    # that are not harmonized device names. "Tracheostomy mask, oxygen" (trach
+    # collar, T-piece) becomes "Tracheostomy tube" as in MIMIC and in eICU
+    # respiratoryCharting; the other targets ("unknown", "other") are dropped.
+    NURSE_DEVICE_TARGET_ALIASES = {"Tracheostomy mask, oxygen": "Tracheostomy tube"}
+
+    def _map_nurse_oxygen_delivery_device(
+        self, value: pl.Expr, mapping: dict
+    ) -> pl.Expr:
+        """
+        Map eICU "O2 Admin Device" values with the reprodICU mapping file
+        (eicu_nurseCharting_oxygenDeliveryDevices.yaml), exactly as written:
+        exact match on the charted value, as in the original reprodICU code.
+        Values absent from the file, or listed without a target, stay null.
+
+        optiflow fix: targets that are not harmonized device names are
+        aliased (NURSE_DEVICE_TARGET_ALIASES) or set to null.
+        """
+        device_names = set(
+            self.load_mapping(
+                self.mapping_path
+                + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
+            ).keys()
+        )
+        lookup = {}
+        for key, target in mapping.items():
+            target = self.NURSE_DEVICE_TARGET_ALIASES.get(target, target)
+            lookup[key] = target if target in device_names else None
+        return value.cast(pl.String).replace_strict(
+            lookup, default=None, return_dtype=pl.String
+        )
 
     # region in/out TS
     # Extract time series information for intake/output values from the intakeOutput.csv file
@@ -1010,6 +1106,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
@@ -1055,6 +1153,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
@@ -1101,14 +1201,27 @@ class EICUExtractor(EICUPaths):
                     "observationoffset": self.timeseries_time_col,
                 }
             )
-            # Remove duplicate rows
-            .unique([self.icu_stay_id_col, self.timeseries_time_col])
+            # optiflow fix: rows sharing an instant are not duplicates (one may
+            # hold the blood pressures, another only PAOP or cardiac output,
+            # or the pressures are split over two rows), and unique() kept any
+            # of them. One row per instant, each value the median of the rows
+            # that have one, as the pivot does for numeric values.
+            .group_by([self.icu_stay_id_col, self.timeseries_time_col])
+            .agg(
+                pl.col(
+                    "noninvasivesystolic",
+                    "noninvasivediastolic",
+                    "noninvasivemean",
+                ).median()
+            )
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
@@ -1240,6 +1353,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
+            # optiflow fix: window of the stay (changes 29 and 37)
+            .pipe(self._within_stay_window, self.timeseries_time_col)
         )
 
     # endregion
@@ -1645,7 +1760,11 @@ class EICUExtractor(EICUPaths):
         )
 
         # Concatenate the medication tables
-        medications = pl.concat([infusiondrug, medication], how="diagonal_relaxed")
+        medications = pl.concat(
+            [infusiondrug, medication], how="diagonal_relaxed"
+        ).pipe(  # optiflow fix: window of the stay (changes 29 and 37)
+            self._within_stay_window, self.drug_start_col, self.drug_end_col
+        )
 
         medications.sink_parquet(medications_path)
 

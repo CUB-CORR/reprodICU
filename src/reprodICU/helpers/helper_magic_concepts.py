@@ -5,6 +5,7 @@
 # The MAGIC CONCEPTS are a set of concepts based on the ricu R package and prewritten code snippets.
 # All functions are designed to be called programmatically from Python code.
 
+import os
 from typing import Dict, List, Optional
 
 import yaml
@@ -117,6 +118,7 @@ def build_magic_concepts(
     # Initialize MAGIC CONCEPTS repository
     MAGIC_CONCEPTS = MAGIC_CONCEPTS_REPOSITORY(paths, DATASETS)
     MAGIC_CONCEPTS_PATH = paths.reprodICU_files_path + "MAGIC_CONCEPTS/"
+    os.makedirs(MAGIC_CONCEPTS_PATH, exist_ok=True)
 
     # Validate concepts exist
     for concept in CONCEPTS:

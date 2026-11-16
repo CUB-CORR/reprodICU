@@ -17,5 +17,26 @@ Oxyhood: Oxygen mask
 Simple mask: Oxygen mask
 T-Piece: Tracheostomy tube
 Trach mask/collar: Tracheostomy tube
-Ventilator: Endotracheal tube
+# optiflow (change 82, proposal): "Ventilator" was mapped to Endotracheal tube,
+# but the airway is not charted with it (tracheostomy in about one in six of
+# the rows whose care plan gives the airway); Mechanical ventilator, as for the
+# ventilator spellings of eicu_nurseCharting_oxygenDeliveryDevices.yaml.
+Ventilator: Mechanical ventilator
 Venturi mask: Venturi mask
+# optiflow (change 81, proposal): spellings of the label "Oxygen Delivery
+# Method" that were missing from this file and became null. Each gets the
+# target this file gives to the same device under its "O2 Device" spelling;
+# "Mechanical ventilator" is a harmonized device name and maps to itself, as in
+# eicu_nurseCharting_oxygenDeliveryDevices.yaml.
+Ambu bag: Ambu bag
+BiPAP: Continuous positive airway pressure/Bilevel positive airway pressure mask
+Blowby: Blow by oxygen mask
+High Flow Nasal Cannula: High flow oxygen nasal cannula
+Mechanical ventilator: Mechanical ventilator
+Non-rebreather: Nonrebreather oxygen mask
+Resuscitation bag: Ambu bag
+Room air: Room air
+T-piece: Tracheostomy tube
+Trach collar: Tracheostomy tube
+Venti Mask: Venturi mask
+Venturi Mask: Venturi mask
