@@ -36,12 +36,8 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         return (
             pl.scan_csv(self.sicdb_paths.data_range_path)
             .join(ADMISSION_TIMES, on="CaseID", how="left")
-            # optiflow fix: an episode whose end was charted after the closing
-            # of the case (TimeOfStay, counted like Offset from the MetaVision
-            # admission) was dropped entirely, which removed every intubation
-            # of 759 of the 5,300 SICdb cases with an endotracheal tube. The
-            # episode is now kept and its end truncated at the closing of the
-            # case; episodes starting after it are still dropped.
+            # Start must be before Discharge; episodes ending after the case
+            # was closed are cut at the closing
             .filter(pl.col("Offset").le(pl.col("TimeOfStay")))
             .with_columns(
                 pl.min_horizontal("OffsetEnd", "TimeOfStay").alias("OffsetEnd")

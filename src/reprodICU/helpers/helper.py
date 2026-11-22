@@ -198,7 +198,7 @@ class GlobalHelpers:
             string_col: String value column. Non-unique values per (index, on_col)
                 are warned about, and only the first is kept.
             save_conflicts: Save the non-unique string records to a parquet file.
-            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes.
+            numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes (empty cells stay null).
 
         Raises:
             ValueError: If neither numeric_col nor string_col is given.
@@ -394,16 +394,9 @@ class GlobalVars(GlobalHelpers):
         self.HEART_RHYTHM_MAP = self.load_many_to_one_mapping(
             mapping_path + "ADDITIONAL_MAPPINGS/heart_rhythm_mapping.yaml"
         )
-        # optiflow fix: the mapping file documents devices whose source value
-        # is already the harmonized name ("-> same name", e.g. Endotracheal
-        # tube, Tracheostomy tube). load_many_to_one_mapping only reads the
-        # listed values, so these source values were mapped to null. Keys now
-        # map to themselves as well.
-        self.OXYGEN_DELIVERY_SYSTEM_MAP = (
-            self.load_many_to_one_mapping_incl_keys(
-                mapping_path
-                + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
-            )
+        self.OXYGEN_DELIVERY_SYSTEM_MAP = self.load_many_to_one_mapping_incl_keys(
+            mapping_path
+            + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
         )
         # optiflow (proposal): oxygen devices charted at the same instant. The
         # device of the highest category is kept, in the order of mimic-code

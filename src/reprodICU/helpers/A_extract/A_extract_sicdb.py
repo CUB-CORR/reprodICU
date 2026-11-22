@@ -189,25 +189,20 @@ class SICdbExtractor(SICdbPaths):
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                # optiflow fix: 3131 (transfer to another hospital), 3132
-                # (discharge against medical advice), 3133 and 3134 (internal
-                # transfers) are alive at discharge from this hospital
-                # (d_references, ReferenceName "DischargeType"). A death in the
-                # ICU (DischargeState 2215) whose OffsetOfDeath is not after the
-                # closure of the case (TimeOfStay, both counted from the case
-                # admission) is a hospital death even if the discharge type says
-                # alive (12 cases coded 3129 or 3131). 2026/2028 are kept for
-                # older releases.
+                # a transfer to another hospital or a discharge against advice
+                # is alive at discharge from this hospital
                 pl.when(pl.col("HospitalDischargeType").is_in([2028, 3130]))  # "Deceased"
                 .then(True)
+                # death before the case was closed overrides an alive discharge type
+                # (SICdb 1.0.8: 12 cases, 4 "survived" and 8 transfers)
                 .when(
-                    (pl.col("DischargeState") == 2215)
+                    (pl.col("DischargeState") == 2215)  # "verstorben"
                     & (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
                 )
                 .then(True)
                 .when(
                     pl.col("HospitalDischargeType").is_in(
-                        [2026, 3129, 3131, 3132, 3133, 3134]
+                        [2026, 3129, 3131, 3132, 3133, 3134]  # survived, transfers, against advice
                     )
                 )
                 .then(False)

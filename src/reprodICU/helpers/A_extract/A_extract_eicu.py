@@ -949,10 +949,7 @@ class EICUExtractor(EICUPaths):
                     nurse_names_mapping, default=None
                 ),
             )
-            # optiflow fix: the device mapping must be evaluated AFTER the
-            # renaming above. In a single with_columns both expressions see the
-            # original label ("O2 Admin Device"), so the mapping was never
-            # applied and raw free-text values reached the output.
+            # (separate step: the renamed column is only visible from here on)
             .with_columns(
                 # Map O2 delivery device values
                 pl.when(
@@ -960,25 +957,25 @@ class EICUExtractor(EICUPaths):
                     == "Oxygen delivery system"
                 )
                 .then(
-                    self._map_nurse_oxygen_delivery_device(
-                        pl.col("nursingchartvalue"),
-                        nurse_oxygen_delivery_device_mapping,
+                    pl.col("nursingchartvalue")
+                    .replace_strict(
+                        nurse_oxygen_delivery_device_mapping, default=None
+                    )
+                    # targets outside the harmonized device names become null
+                    .replace_strict(
+                        self.OXYGEN_DELIVERY_SYSTEM_MAP, default=None
                     )
                 )
                 .otherwise(pl.col("nursingchartvalue"))
                 .alias("nursingchartvaluestr"),
-            )
-            # optiflow fix: a number typed in the device field ("2",
-            # "100") was read as a numeric value and reached the device
-            # column as "2.0"; device rows keep their text only.
-            .with_columns(
+                # A number typed into the device field is not a measurement
                 pl.when(
                     pl.col("nursingchartcelltypevalname")
                     == "Oxygen delivery system"
                 )
-                .then(pl.lit(None, dtype=pl.Float64))
+                .then(None)
                 .otherwise(pl.col("nursingchartvaluefloat"))
-                .alias("nursingchartvaluefloat")
+                .alias("nursingchartvaluefloat"),
             )
             .with_columns(
                 # Finalize exclusive columns
@@ -1005,38 +1002,6 @@ class EICUExtractor(EICUPaths):
         )
 
     # endregion
-
-    # optiflow fix: targets of eicu_nurseCharting_oxygenDeliveryDevices.yaml
-    # that are not harmonized device names. "Tracheostomy mask, oxygen" (trach
-    # collar, T-piece) becomes "Tracheostomy tube" as in MIMIC and in eICU
-    # respiratoryCharting; the other targets ("unknown", "other") are dropped.
-    NURSE_DEVICE_TARGET_ALIASES = {"Tracheostomy mask, oxygen": "Tracheostomy tube"}
-
-    def _map_nurse_oxygen_delivery_device(
-        self, value: pl.Expr, mapping: dict
-    ) -> pl.Expr:
-        """
-        Map eICU "O2 Admin Device" values with the reprodICU mapping file
-        (eicu_nurseCharting_oxygenDeliveryDevices.yaml), exactly as written:
-        exact match on the charted value, as in the original reprodICU code.
-        Values absent from the file, or listed without a target, stay null.
-
-        optiflow fix: targets that are not harmonized device names are
-        aliased (NURSE_DEVICE_TARGET_ALIASES) or set to null.
-        """
-        device_names = set(
-            self.load_mapping(
-                self.mapping_path
-                + "ADDITIONAL_MAPPINGS/oxygen_delivery_device_mapping.yaml"
-            ).keys()
-        )
-        lookup = {}
-        for key, target in mapping.items():
-            target = self.NURSE_DEVICE_TARGET_ALIASES.get(target, target)
-            lookup[key] = target if target in device_names else None
-        return value.cast(pl.String).replace_strict(
-            lookup, default=None, return_dtype=pl.String
-        )
 
     # region in/out TS
     # Extract time series information for intake/output values from the intakeOutput.csv file
@@ -1169,7 +1134,7 @@ class EICUExtractor(EICUPaths):
             1. Read aperiodic vital sign data from CSV.
             2. Select noninvasive blood pressure measurements.
             3. Rename columns to standard format.
-            4. Remove duplicate records.
+            4. Merge rows of the same instant (median).
             5. Convert time from minutes to seconds.
 
         Returns:
@@ -1201,19 +1166,11 @@ class EICUExtractor(EICUPaths):
                     "observationoffset": self.timeseries_time_col,
                 }
             )
-            # optiflow fix: rows sharing an instant are not duplicates (one may
-            # hold the blood pressures, another only PAOP or cardiac output,
-            # or the pressures are split over two rows), and unique() kept any
-            # of them. One row per instant, each value the median of the rows
-            # that have one, as the pivot does for numeric values.
-            .group_by([self.icu_stay_id_col, self.timeseries_time_col])
-            .agg(
-                pl.col(
-                    "noninvasivesystolic",
-                    "noninvasivediastolic",
-                    "noninvasivemean",
-                ).median()
-            )
+            # Rows sharing an instant are not duplicates
+            # (one may hold the blood pressures, another only PAOP or cardiac output):
+            # one row per instant, each value the median of the rows that have one
+            .group_by(self.icu_stay_id_col, self.timeseries_time_col)
+            .agg(pl.col("noninvasivesystolic", "noninvasivediastolic", "noninvasivemean").median())
             # Convert time to seconds
             .pipe(
                 self.helpers._convert_time_to_seconds_float,
@@ -1431,11 +1388,18 @@ class EICUExtractor(EICUPaths):
             )
             # Filter for rows where the drug status changes
             .filter(pl.col("drug_status_prev") != pl.col("drug_status_next"))
-            # 3. Get the end time of the drug if it is discontinued
+            # 3. Get the end time of the drug if it is discontinued: the next log entry
+            #    of the stay, but at most 4 h after the last entry of the drug (a drug
+            #    not charted again is not known to run until some later log entry)
             .with_columns(
                 pl.when(pl.col("drug_status_next") == "discontinued")
                 # the last log entry has no next entry: the run ends at that entry
-                .then(pl.coalesce("next_drug_start", self.drug_start_col))
+                .then(
+                    pl.min_horizontal(
+                        pl.coalesce("next_drug_start", self.drug_start_col),
+                        pl.col(self.drug_start_col) + 4 * 3600,
+                    )
+                )
                 .otherwise(None)
                 .alias(self.drug_end_col)
             )

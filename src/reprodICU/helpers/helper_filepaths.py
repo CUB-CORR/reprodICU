@@ -213,6 +213,7 @@ class HiRIDPaths(GlobalVars):
         self.raw_stage_path = hirid_path + "raw_stage/"
         self.general_table_path = self.reference_data_path + "general_table.csv"
         self.variable_reference_path = self.reference_data_path + "hirid_variable_reference.csv" # fmt: skip
+        self.ordinal_reference_path = self.reference_data_path + "ordinal_vars_ref.csv" # fmt: skip
         self.timeseries_path = self.raw_stage_path + "observation_tables/parquet/" # fmt: skip
         self.pharma_path = self.raw_stage_path + "pharma_records/parquet/"
 
@@ -808,26 +809,14 @@ def _parquetize(path, db: str):
         "VALUE": str,
     }
 
-    def _sink(infer_schema_length):
-        pl.scan_csv(
-            path,
-            schema_overrides=schema_overrides,
-            infer_schema_length=infer_schema_length,
-        ).sink_parquet(tmp_path)
-
     # Write to a temporary file first: a failed conversion must not leave a
     # truncated parquet file behind (it would be silently reused later).
     tmp_path = parquet_path + ".tmp"
-    try:
-        _sink(10000)
-    except pl.exceptions.ComputeError as e:
-        # e.g. MIMIC-IV 3.1 emar_detail.infusion_rate contains "___" after
-        # the first 10000 rows -> infer the schema on the whole file instead
-        print(
-            f"{db}   - schema inference on 10000 rows failed "
-            f"({str(e).splitlines()[0]}); retrying with full-file inference"
-        )
-        _sink(None)
+    pl.scan_csv(
+        path,
+        schema_overrides=schema_overrides,
+        infer_schema_length=250_000,  # CPTEVENTS needs ~183k rows before its first non-numeric CPT code
+    ).sink_parquet(tmp_path)
     os.replace(tmp_path, parquet_path)
 
 
