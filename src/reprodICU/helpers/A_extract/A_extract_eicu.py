@@ -27,48 +27,78 @@ class EICUExtractor(EICUPaths):
         self.icu_length_of_stay = self.extract_patient_information().select(
             self.icu_stay_id_col, self.icu_length_of_stay_col
         )
-        # optiflow fix (change 37): end of each unit stay, in seconds from ICU
-        # admission (unitdischargeoffset), for the window of the eICU tables
-        self.icu_discharge = pl.scan_csv(self.patient_path).select(
-            pl.col("patientunitstayid").alias(self.icu_stay_id_col),
-            (pl.col("unitdischargeoffset") * 60).cast(float).alias("_icu_discharge"),
+
+    # region ID mapping table
+    def extract_patient_IDs(self) -> pl.LazyFrame:
+        """
+        ICU stay window, as in the MIMIC extractors. eICU has no dates, so the
+        stays of one hospital stay are ordered by their offset from the
+        hospital admission.
+
+        Returns:
+            pl.LazyFrame: One row per ICU stay:
+                - {icu_stay_id_col}
+                - {icu_length_of_stay_col}: ICU discharge (minutes from ICU
+                  admission), the end of the stay.
+                - offset_to_prev: Seconds from the discharge of the previous
+                  ICU stay of the hospital stay to this ICU admission (null
+                  for the first stay).
+        """
+        return (
+            pl.scan_csv(self.patient_path)
+            .sort("patienthealthsystemstayid", -pl.col("hospitaladmitoffset"), "patientunitstayid")
+            .select(
+                pl.col("patientunitstayid").alias(self.icu_stay_id_col),
+                pl.col("unitdischargeoffset")
+                .cast(float)
+                .alias(self.icu_length_of_stay_col),
+                (
+                    60 * 
+                    -pl.col("hospitaladmitoffset")
+                    - (-pl.col("hospitaladmitoffset") + pl.col("unitdischargeoffset"))
+                    .shift(1)
+                    .over("patienthealthsystemstayid")
+                ).alias("offset_to_prev")
+            )
         )
 
-    # region patient
-    # Extract patient information from the patient.csv file
-    # optiflow fix (changes 29 and 37): the window of the time series of the
-    # other datasets, for the eICU tables: from PRE_ICU_TIMESERIES_DAYS_CUTOFF
-    # days before ICU admission (GLOBAL_CONFIG.yaml) to ICU discharge
-    # (unitdischargeoffset), strictly before discharge as in the other datasets
-    # (charttime < outtime in MIMIC, TimeOfStay in SICdb).
-    def _within_stay_window(
+    # endregion
+
+    # region TS helper
+    def extract_timeseries_helper(
         self, data: pl.LazyFrame, time_col: str, end_col: str | None = None
     ) -> pl.LazyFrame:
-        """Keep the rows charted after PRE_ICU_TIMESERIES_DAYS_CUTOFF days
-        before ICU admission and strictly before ICU discharge (times in
-        seconds from ICU admission). For intervals (end_col given, as for
-        medications), the lower bound applies to the end of the interval (the
-        start when the end is missing) and the upper bound to its start, so
-        that an infusion running at either bound is kept. A stay without a
-        discharge offset keeps its rows after the lower bound."""
-        end = pl.coalesce(end_col, time_col) if end_col else pl.col(time_col)
-        id_dtype = data.collect_schema()[self.icu_stay_id_col]
+        """
+        Keep the rows within the window of their ICU stay, as in MIMIC:
+        before ICU discharge and after the end of the previous ICU stay of the
+        hospital stay (seconds from ICU admission). For intervals (end_col
+        given, as for medications) the lower bound applies to the end of the
+        interval (its start if missing) and the upper bound to its start.
+        """
         return (
             data.join(
-                self.icu_discharge.with_columns(
-                    pl.col(self.icu_stay_id_col).cast(id_dtype)
+                self.extract_patient_IDs().with_columns(
+                    pl.col(self.icu_stay_id_col).cast(
+                        data.collect_schema()[self.icu_stay_id_col]
+                    )
                 ),
                 on=self.icu_stay_id_col,
                 how="left",
                 maintain_order="left",
             )
             .filter(
-                end > -self.PRE_ICU_TIMESERIES_DAYS_CUTOFF * 24 * 3600,
-                pl.col(time_col).lt(pl.col("_icu_discharge")).fill_null(True),
+                (pl.col(time_col) < pl.col(self.icu_length_of_stay_col) * 60)
+                | pl.col(self.icu_length_of_stay_col).is_null(),
+                (pl.coalesce(end_col or time_col, time_col) > -pl.col("offset_to_prev"))
+                | pl.col("offset_to_prev").is_null(),
             )
-            .drop("_icu_discharge")
+            .drop(self.icu_length_of_stay_col, "offset_to_prev")
         )
 
+    # endregion
+
+    # region patient
+    # Extract patient information from the patient.csv file
     def extract_patient_information(self) -> pl.LazyFrame:
         """
         Extract and derive comprehensive patient demographics and clinical information.
@@ -570,8 +600,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
             # MAKE STRUCT
             .with_columns(pl.col("LOINC_component").alias("labname"))
             .with_columns(
@@ -751,8 +781,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -997,8 +1027,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -1071,8 +1101,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -1118,8 +1148,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -1177,8 +1207,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -1310,8 +1340,8 @@ class EICUExtractor(EICUPaths):
                 self.timeseries_time_col,
                 base_unit="minutes",
             )
-            # optiflow fix: window of the stay (changes 29 and 37)
-            .pipe(self._within_stay_window, self.timeseries_time_col)
+            # window of the ICU stay, as in MIMIC
+            .pipe(self.extract_timeseries_helper, self.timeseries_time_col)
         )
 
     # endregion
@@ -1726,8 +1756,8 @@ class EICUExtractor(EICUPaths):
         # Concatenate the medication tables
         medications = pl.concat(
             [infusiondrug, medication], how="diagonal_relaxed"
-        ).pipe(  # optiflow fix: window of the stay (changes 29 and 37)
-            self._within_stay_window, self.drug_start_col, self.drug_end_col
+        ).pipe(  # window of the ICU stay, as in MIMIC
+            self.extract_timeseries_helper, self.drug_start_col, self.drug_end_col
         )
 
         medications.sink_parquet(medications_path)
