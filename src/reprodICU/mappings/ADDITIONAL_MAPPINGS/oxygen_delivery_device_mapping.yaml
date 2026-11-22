@@ -81,6 +81,12 @@ Guedel airway: [] # 4235033
 Endotracheal tube: [] # 4097216
   # eICU / MIMIC-III / MIMIC-IV -> same name
 
+# -- Mechanical ventilator
+Mechanical ventilator:
+  # eICU -> same name
+  # MIMIC-III (CareVue item 467)
+  - Ventilator
+
 # -- Tracheal tubes
 Tracheostomy tube: # 4044008
   # MIMIC-III
@@ -94,6 +100,8 @@ Tracheostomy tube: # 4044008
   # UMCdb
   - Heat and moisture exchanger
   - Tracheostomy tube speech valve
+  # eICU (nurse charting target)
+  - Tracheostomy mask, oxygen
 
 # -- Endobronchial tubes
 Double lumen tracheobronchial tube: [] # 4208623

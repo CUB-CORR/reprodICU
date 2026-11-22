@@ -276,8 +276,8 @@ class HiRIDExtractor(HiRIDPaths):
             .cast({self.icu_stay_id_col: str, "admissiontime": str})
         )
 
-        # Create an empty DataFrame to store the height and weight data
-        height_weight = pl.LazyFrame()
+        # Collected per file: one query over all files exceeds the out-of-core disk budget
+        height_weight = []
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
@@ -322,13 +322,11 @@ class HiRIDExtractor(HiRIDPaths):
                 .drop("admissiontime", "valuedate")
             )
 
-            # Append the data to the DataFrame
-            height_weight = pl.concat(
-                [height_weight, data], how="diagonal_relaxed"
-            )
+            # Only the few height and weight rows are kept in memory
+            height_weight.append(data.collect())
 
         height_weight = (
-            height_weight.collect()
+            pl.concat(height_weight, how="diagonal_relaxed")
             .pivot(
                 on="variableid",
                 index=self.icu_stay_id_col,
@@ -392,10 +390,15 @@ class HiRIDExtractor(HiRIDPaths):
             # Append the data to the DataFrame
             admitDX = pl.concat([admitDX, data], how="diagonal_relaxed")
 
+        # At the first timestamp, keep the most frequent code, null if it is a tie
+        first_codes = (
+            pl.col("value")
+            .filter(pl.col("datetime") == pl.col("datetime").min())
+            .mode()
+        )
         admitDX = (
-            admitDX.sort(self.icu_stay_id_col, "datetime")
-            .group_by(self.icu_stay_id_col)
-            .agg(pl.col("value").first())
+            admitDX.group_by(self.icu_stay_id_col)
+            .agg(first_codes.filter(first_codes.len() == 1).first())
             .with_columns(
                 pl.col("value")
                 .replace_strict(hirid_diagnosis_mapping, default=None)
@@ -1140,6 +1143,30 @@ class HiRIDExtractor(HiRIDPaths):
     # endregion
 
     # region helpers
+    def _get_ordinal_variables(self) -> pl.LazyFrame:
+        """
+        Retrieve the picklist labels of the ordinal variables that are decoded.
+
+        The other ordinal variables are not decoded: the Glasgow coma scores
+        equal their codes, the rest is not extracted.
+
+        Returns:
+            pl.LazyFrame: Columns:
+                - variableid: Observation variable identifier.
+                - value: Picklist code.
+                - label: Label of the code (ordinal_vars_ref.csv).
+        """
+        return (
+            pl.scan_csv(self.ordinal_reference_path)
+            # Ventilator mode, heart rhythm, nasal cannula flow
+            .filter(pl.col("variableid").is_in([3845, 15001166, 15001525]))
+            .select(
+                "variableid",
+                pl.col("code").cast(float).alias("value"),
+                pl.col("stringvalue").alias("label"),
+            )
+        )
+
     def _get_observation_variables(self) -> pl.DataFrame:
         """
         Retrieve and filter observation variables from reference mapping.

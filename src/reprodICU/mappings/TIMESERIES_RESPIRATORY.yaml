@@ -201,7 +201,9 @@ Tidal volume.spontaneous --on ventilator: [] # 3017594
   # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
 Tidal volume.spontaneous+mechanical --on ventilator: [] # 3004732
   # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
-Ventilation mode Ventilator: [] # 3004921
+Ventilation mode Ventilator: # 3004921
   # eICU-CRD / MIMIC-III / MIMIC-IV / UMCdb -> same name
+  # HiRID
+  - Ventilator mode
 Ventilator type: [] # 3007397
   # eICU-CRD / MIMIC-III / MIMIC-IV -> same name
