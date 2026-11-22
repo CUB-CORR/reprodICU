@@ -11,7 +11,7 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
         super().__init__(paths, datasets)
         self.MAX_VENTILATION_PAUSE_HOURS = MAX_VENTILATION_PAUSE_HOURS
 
-    def VENTILATION_DURATION(self) -> pl.LazyFrame:
+    def VENTILATION_DURATION(self) -> pl.DataFrame:
         """
         Extract ventilation episodes from eICU careplan and vital data.
 
@@ -583,6 +583,7 @@ class VENTILATION_DURATION_eICUv1(MAGIC_CONCEPTS):
             )
             .unique()
             .pipe(self._add_global_id_stay_id, "eicu-", "patientunitstayid")
+            .collect()
         )
 
     # region helpers

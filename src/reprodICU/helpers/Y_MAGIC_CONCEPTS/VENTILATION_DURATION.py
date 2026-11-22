@@ -86,35 +86,15 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
         vent_start_col = "Ventilation Start Relative to Admission (seconds)"
         vent_end_col = "Ventilation End Relative to Admission (seconds)"
 
-        # optiflow fix: the per-dataset results differ in columns and column
-        # order (eICU has no "Ventilation Type"; HiRID, MIMIC-IV, SICdb and
-        # UMCdb keep working columns). Concatenated lazily, they made the
-        # final collect fail with "unable to vstack, column names don't
-        # match". Each result is materialized and reduced to the four columns
-        # used below, in the same order; rows and values are unchanged.
-        def _normalize(result) -> pl.LazyFrame:
-            if isinstance(result, pl.LazyFrame):
-                result = result.collect()
-            if "Ventilation Type" not in result.columns:
-                result = result.with_columns(
-                    pl.lit(None, dtype=pl.String).alias("Ventilation Type")
-                )
-            return result.select(
-                "Global ICU Stay ID",
-                "Ventilation Type",
-                vent_start_col,
-                vent_end_col,
-            ).lazy()
-
         VENTILATION_DURATION = (
             pl.concat(
                 [
-                    _normalize(eicu_VENTILATION_DURATION),
-                    _normalize(hirid_VENTILATION_DURATION),
-                    _normalize(mimic3_VENTILATION_DURATION),
-                    _normalize(mimic4_VENTILATION_DURATION),
-                    _normalize(sicdb_VENTILATION_DURATION),
-                    _normalize(umcdb_VENTILATION_DURATION),
+                    eicu_VENTILATION_DURATION.lazy(),
+                    hirid_VENTILATION_DURATION.lazy(),
+                    mimic3_VENTILATION_DURATION.lazy(),
+                    mimic4_VENTILATION_DURATION.lazy(),
+                    sicdb_VENTILATION_DURATION.lazy(),
+                    umcdb_VENTILATION_DURATION.lazy(),
                 ],
                 how="diagonal_relaxed",
             )
