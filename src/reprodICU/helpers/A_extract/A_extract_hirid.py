@@ -255,8 +255,8 @@ class HiRIDExtractor(HiRIDPaths):
             .cast({self.icu_stay_id_col: str, "admissiontime": str})
         )
 
-        # Create an empty DataFrame to store the height and weight data
-        height_weight = pl.LazyFrame()
+        # Collected per file: one query over all files exceeds the out-of-core disk budget
+        height_weight = []
 
         # Since each case has it's data in only one file, iterating over the files specifically allows
         # for a more efficient processing of the data.
@@ -301,13 +301,11 @@ class HiRIDExtractor(HiRIDPaths):
                 .drop("admissiontime", "valuedate")
             )
 
-            # Append the data to the DataFrame
-            height_weight = pl.concat(
-                [height_weight, data], how="diagonal_relaxed"
-            )
+            # Only the few height and weight rows are kept in memory
+            height_weight.append(data.collect())
 
         height_weight = (
-            height_weight.collect()
+            pl.concat(height_weight, how="diagonal_relaxed")
             .pivot(
                 on="variableid",
                 index=self.icu_stay_id_col,
