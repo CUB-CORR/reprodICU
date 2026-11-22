@@ -1,11 +1,17 @@
 *.csv
 *.md
 *.parquet
-sources/
-plots/
-tests/
-docs/
+**conflicts/
+**docs/
+**markdown/
+**notion/
+**plots/
+**sources/
+**tests/**/*.parquet
 **/ADDITIONAL_FILES/
+
+**.claude/*
+**.vscode/*
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos

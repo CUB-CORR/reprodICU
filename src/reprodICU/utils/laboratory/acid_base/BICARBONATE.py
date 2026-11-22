@@ -18,9 +18,9 @@ from typing import Optional
 import polars as pl
 
 from ...base import (
-    Reference,
     STAY_KEY,
     TIME_KEY,
+    Reference,
     _reference_t0,
     _relative_to_t0,
     _to_lazy,

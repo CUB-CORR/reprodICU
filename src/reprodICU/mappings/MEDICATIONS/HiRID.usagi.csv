@@ -211,7 +211,7 @@ sourceCode,sourceName,sourceFrequency,sourceAutoAssignedConceptIds,matchScore,ma
 190,Zovirax inf 250 mg,-1,,0.58,APPROVED,EQUAL,Finn Fassbender,1741017165272,36260809,Acyclovir 250 MG Injection [Zovirax],Drug,MAPS_TO,,Finn Fassbender,1741017164312,
 1000286,Pulmicort Dosieraerosol 0.2mg,-1,,0.31,UNCHECKED,UNREVIEWED,,0,0,Unmapped,,MAPS_TO,,,0,
 1000458,Nitroderm TTS 5,-1,,0.62,APPROVED,EQUAL,Finn Fassbender,1741016736081,43726191,Nitroglycerin 25 MG [Nitroderm Tts],Drug,MAPS_TO,,Finn Fassbender,1741016735556,
-1000252,Sodium nitro,-1,,0.92,APPROVED,EQUAL,Finn Fassbender,1741015488831,19100394,sodium nitrate,Drug,MAPS_TO,,<auto>,1741014585017,
+1000252,Sodium nitro,-1,,0.92,APPROVED,EQUAL,Finn Fassbender,1741015488831,19020994,nitroprusside,Drug,MAPS_TO,,<auto>,1741014585017,
 1000843,PDA-Bupivacain 0.125% ohne Fentanyl,-1,,0.43,APPROVED,EQUAL,Finn Fassbender,1741022245724,41110817,Bupivacaine 0.125 MG/ML [Bucain],Drug,MAPS_TO,,Finn Fassbender,1741022243257,
 208,Disoprivan 2%,-1,,0.37,APPROVED,EQUAL,Finn Fassbender,1741019823938,43677200,Propofol 20 MG/ML [Disoprivan],Drug,MAPS_TO,,<auto>,1741014585412,
 1000489,Perfalgan 1g,-1,,0.52,APPROVED,EQUAL,Finn Fassbender,1741018220024,21069318,100 ML Acetaminophen 10 MG/ML Injection [Perfalgan],Drug,MAPS_TO,,Finn Fassbender,1741018219271,

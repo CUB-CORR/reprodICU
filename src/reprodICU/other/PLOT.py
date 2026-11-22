@@ -8,11 +8,13 @@ import os
 import sys
 from textwrap import wrap
 
-import altair as alt
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import polars as pl
 import seaborn as sns
 from matplotlib.patches import Patch
+from matplotlib.ticker import MaxNLocator
 
 import reprodICU
 
@@ -76,6 +78,9 @@ COLORS = {
     "SICdb": "gray",
 }
 
+DATASETS = list(COLORS)
+LABELS = {"AmsterdamUMCdb": "AUMCdb"}  # shorter names for the plots
+
 # Tol's muted qualitative color palett
 # (https://cran.r-project.org/web/packages/khroma/vignettes/tol.html#muted)
 COLORS_TOL = {
@@ -109,31 +114,23 @@ def _collect_data(
     if _data is None:
         raise ValueError(f"Table {table} not found in available data")
 
-    # Load data
+    # Load data, combine urine output
+    URINE_COLS = [
+        "Fluid output urine in and out urethral catheter",
+        "Fluid output urine nephrostomy",
+        "Urine output",
+    ]
+    value = (
+        pl.sum_horizontal(URINE_COLS).alias(variable)
+        if variable == "Urine output"
+        else pl.col(variable)
+    )
     data = (
         _data
         .join(ID_TO_DB, on="Global ICU Stay ID", how="left")
-        .select("Global ICU Stay ID", "Source Dataset", variable)
+        .select("Global ICU Stay ID", "Source Dataset", value)
         .filter(pl.col(variable).is_not_null())
     )
-
-    # combine urine output
-    if variable == "Urine output":
-        URINE_COLS = [
-            "Fluid output urine in and out urethral catheter",
-            "Fluid output urine nephrostomy",
-            "Urine output",
-        ]
-        data = (
-            _data
-            .join(ID_TO_DB, on="Global ICU Stay ID", how="left")
-            .select(
-                "Global ICU Stay ID",
-                "Source Dataset",
-                pl.sum_horizontal(URINE_COLS).alias("Urine output"),
-            )
-            .filter(pl.col(variable).is_not_null())
-        )
 
     # filter source if specified
     if table == "labs":
@@ -149,14 +146,14 @@ def _collect_data(
 
     # aggregate means for vitals
     if table == "vitals" or table == "respiratory":
-        if variable.startswith("Glasgow coma score"):
-            data = data.group_by(
-                "Global ICU Stay ID", "Source Dataset"
-            ).agg(pl.col(variable).last().alias(variable))
-        else:
-            data = data.group_by(
-                "Global ICU Stay ID", "Source Dataset"
-            ).agg(pl.col(variable).median().alias(variable))
+        stay_value = (
+            pl.col(variable).last()
+            if variable.startswith("Glasgow coma score")
+            else pl.col(variable).median()
+        )
+        data = data.group_by("Global ICU Stay ID", "Source Dataset").agg(
+            stay_value
+        )
 
     # drop outliers (1th percentile > values > 99th percentile)
     # and aggregate data
@@ -171,18 +168,72 @@ def _collect_data(
     )
 
 
+NOISY_VARIABLES = ("pressure", "urine output", "temperature")
+
+
+def _kde_bandwidth(data: pl.DataFrame, variable: str) -> float:
+    """One bandwidth for all datasets, so they are smoothed alike: Scott's rule
+    on the pooled values, but at least two steps of the coarsest dataset's
+    resolution, so that whole numbers and decimals look alike. Noisy variables
+    are smoothed twice as much, the ordinal Glasgow coma scores not at all."""
+    values = data[variable]
+    bw = values.std() * len(values) ** (-1 / 5)
+    if variable.startswith("Glasgow coma score"):
+        return bw
+    resolution = (
+        data.group_by("Source Dataset")
+        .agg(pl.col(variable).unique().sort().diff().median())[variable]
+        .max()
+    )
+    noisy = any(name in variable.lower() for name in NOISY_VARIABLES)
+    return (2 if noisy else 1) * max(bw, 2 * resolution)
+
+
+RIDGE_OVERLAP = 0.25  # share of its height that a ridge may reach into the next
+
+
+def _kde_curve(ax) -> tuple:
+    """x and density of the filled kde on the axis, zero if it is empty."""
+    if not ax.collections:
+        return np.zeros(1), np.zeros(1)
+    xy = ax.collections[0].get_paths()[0].vertices
+    x, i = np.unique(xy[:, 0], return_inverse=True)
+    y = np.zeros(len(x))
+    np.maximum.at(y, i, xy[:, 1])
+    return x, y
+
+
+def _tail_limit(values: pl.Series) -> float | None:
+    """97.5th percentile where a long right tail should be cut off, else None."""
+    q = values.quantile(0.975)
+    return q if values.max() > 2 * q else None
+
+
+def _systems(variable: str) -> list:
+    """Lab systems to select for the variable."""
+    if variable in ["Oxygen saturation", "Lactate"]:
+        return ["Blood arterial", "Blood"]
+    return ["Blood", "Plasma"]
+
+
+def _kde(x: pd.Series, bw: float, **kwargs) -> None:
+    """kdeplot with an absolute bandwidth instead of one scaled per group."""
+    sns.kdeplot(x=x, bw_method=bw / x.std(), **kwargs)
+
+
 def _BLENDED_PLOT(data_map: dict) -> None:
-    NCOLS = 5
+    NCOLS = 8
 
     fig, axs_ = plt.subplots(
         ncols=NCOLS,
         nrows=len(BLENDEDICU_PLOT_VARIABLES.keys()) // NCOLS + 1,
-        figsize=(15, 25),
+        figsize=(25, 15),
     )
     axs = axs_.flatten()
 
     handles = [
-        Patch(color=c, label=label, alpha=0.5) for label, c in COLORS.items()
+        Patch(color=c, label=LABELS.get(label, label), alpha=0.5)
+        for label, c in COLORS.items()
     ]
 
     axs[0].legend(handles=handles, loc="lower left", frameon=False)
@@ -205,28 +256,26 @@ def _BLENDED_PLOT(data_map: dict) -> None:
         data = _collect_data(
             table=TABLE,
             variable=VARIABLE,
-            systems=(
-                ["Blood", "Plasma"]
-                if not VARIABLE in ["Oxygen saturation", "Lactate"]
-                else ["Blood arterial", "Blood"]
-            ),
+            systems=_systems(VARIABLE),
             data_map=data_map,
         )
 
         # Plot
-        ax = sns.kdeplot(
-            data=data,
-            x=VARIABLE,
-            hue="Source Dataset",
-            ax=ax,
-            fill=True,
-            common_norm=False,
-            palette=COLORS,
-            # bw_adjust=2,
-        )
+        bw = _kde_bandwidth(data, VARIABLE)
+        for DATASET in data["Source Dataset"].unique().sort():
+            values = data.filter(pl.col("Source Dataset") == DATASET)[VARIABLE]
+            _kde(
+                values.to_pandas(),
+                bw=bw,
+                ax=ax,
+                fill=True,
+                color=COLORS[DATASET],
+            )
+        ax.set_xlim(right=_tail_limit(data[VARIABLE]))
         ax.set_title("\n".join(wrap(VARIABLE, 28)), fontsize=13)
         ax.set_xlabel(f"{UNIT}", fontsize=10)
-        ax.get_legend().remove()
+        if VARIABLE.startswith("Glasgow coma score"):
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     [ax.axis("off") for ax in axs[len(BLENDEDICU_PLOT_VARIABLES.keys()) + 1 :]]
     plt.tight_layout()
@@ -254,76 +303,90 @@ def _plot_ridgeline(
     # PLOT
     ####################################
 
-    step = 20
-    overlap = 1
-    # Sanitize variable name for use in Altair/Vega expressions
-    # First remove known long phrases
     title = (
-        variable.replace(" Respiratory system airway", "")
+        variable
+        .replace("/", "")
+        .replace(" Respiratory system airway", "")
         .replace(" --on ventilator", "")
     )
-    # Then replace special characters that break Vega field references
-    # Must replace dots and plus signs before replacing other punctuation
-    title = (
-        title.replace(".", " ")
-        .replace("+", " and ")
-        .replace("/", " per ")
-        .replace("[", "(")
-        .replace("]", ")")
-    )
-    SORT = [
-        "AmsterdamUMCdb",
-        "eICU-CRD",
-        "HiRID",
-        "MIMIC-III",
-        "MIMIC-IV",
-        "NWICU",
-        "SICdb",
-    ]
 
-    data = data.rename({variable: title})
+    SORT = DATASETS  # rows of datasets without data stay, faded
 
-    # Create a KDE ridgeline plot for each dataset
-    chart = (
-        alt.Chart(data, height=step)
-        .transform_density(
-            density=title,
-            groupby=["Source Dataset"],
-            extent=[data[title].min(), data[title].max()],
-        )
-        .mark_area(
-            interpolate="monotone",
-            fillOpacity=0.8,
-            stroke="lightgray",
-            strokeWidth=0.5,
-        )
-        .encode(
-            alt.X("value:Q", title=title),
-            alt.Y("density:Q")
-            .sort(SORT)
-            .axis(None)
-            .scale(range=[step, -step * overlap]),
-            alt.Color("Source Dataset:N", legend=None).scale(
-                domain=SORT, range=[COLORS[dataset] for dataset in SORT]
-            ),
-        )
-        .facet(
-            row=alt.Row("Source Dataset:N")
-            .title(None)
-            .header(labelAngle=0, labelAlign="left")
-        )
-        .properties(title=title, bounds="flush")
-        .configure_facet(spacing=0)
-        .configure_view(stroke=None)
-        .configure_title(anchor="end")
+    plot_data = (
+        data.rename({variable: title})
+        .to_pandas()
+        .assign(**{"Source Dataset": lambda df: pd.Categorical(
+            df["Source Dataset"], categories=SORT, ordered=True
+        )})
+        .sort_values("Source Dataset")
     )
+
+    sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
+
+    palette = {ds: COLORS[ds] for ds in SORT}
+
+    g = sns.FacetGrid(
+        plot_data,
+        row="Source Dataset",
+        hue="Source Dataset",
+        hue_order=SORT,
+        row_order=SORT,
+        palette=palette,
+        aspect=7,
+        height=1,
+    )
+
+    bw = _kde_bandwidth(data, variable)
+    tail = _tail_limit(data[variable])
+    g.map(
+        _kde,
+        title,
+        bw=bw,
+        clip=(None, tail),
+        clip_on=False,
+        fill=True,
+        alpha=1,
+        linewidth=1.5,
+    )
+    # white outline only where a ridge reaches into the one above it
+    # (a bit of tolerance, so that ridges that just touch count too)
+    ymax = g.axes.flat[0].get_ylim()[1]
+    for ax, above in zip(g.axes.flat[1:], g.axes.flat):
+        x, y = _kde_curve(ax)
+        y_above = np.interp(x, *_kde_curve(above), left=0, right=0)
+        shift = (1 - RIDGE_OVERLAP) * ymax
+        if ((y > shift - 0.1 * ymax) & (y - shift < y_above)).any():
+            ax.plot(x, y, color="w", linewidth=2, clip_on=False)
+    g.refline(y=0, linewidth=1.5, linestyle="-", color=None, clip_on=False)
+    # mark zero only if the data crosses it, it would stretch the axis otherwise
+    if data[variable].min() < 0 < data[variable].max():
+        g.refline(x=0, linewidth=1.5, linestyle="-", color="k")
+
+    present = data["Source Dataset"].unique().to_list()
+    for ax, dataset in zip(g.axes.flat, SORT):
+        ax.text(
+            -0.02,
+            0.2,
+            LABELS.get(dataset, dataset),
+            fontweight="bold",
+            color=COLORS[dataset],
+            alpha=1 if dataset in present else 0.7,
+            ha="right",
+            va="center",
+            transform=ax.transAxes,
+        )
+
+    g.set_titles("")
+    g.set(yticks=[], ylabel="")
+    g.despine(bottom=True, left=True)
+    g.figure.subplots_adjust(hspace=-RIDGE_OVERLAP)
+    g.figure.suptitle(title, fontweight="bold")
 
     # Save the plot
-    plot_path = "plots/" if not all_vars else "plots/all_vars/"
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
-    plot_path += f"{title}.png"
-    chart.save(plot_path, ppi=300)
+    plot_path = "plots/all_vars/" if all_vars else "plots/"
+    os.makedirs(plot_path, exist_ok=True)
+    plt.savefig(plot_path + f"{title}.png", dpi=300, bbox_inches="tight")
+    plt.close()
 
 
 # region main
@@ -394,11 +457,7 @@ if __name__ == "__main__":
                 variable=VARIABLE,
                 table=BLENDEDICU_PLOT_VARIABLES[VARIABLE][0],
                 data_map=data_map,
-                systems=(
-                    ["Blood", "Plasma"]
-                    if not VARIABLE in ["Oxygen saturation", "Lactate"]
-                    else ["Blood arterial", "Blood"]
-                ),
+                systems=_systems(VARIABLE),
                 all_vars=True,
             )
     else:

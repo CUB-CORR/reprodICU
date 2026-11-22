@@ -258,6 +258,8 @@ class Vocabulary(OMOPPaths):
             .unique()
             .sort_by(pl.col(ingredient_col).unique().str.to_lowercase())
             .str.join(" / ")
+            # No ingredient at all: join gives "", not null
+            .replace("", None)
         )
 
     def get_drug_references(

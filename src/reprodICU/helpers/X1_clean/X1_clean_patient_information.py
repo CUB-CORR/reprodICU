@@ -55,74 +55,68 @@ class PatientInformationCleaner(GlobalVars):
         """
         Add primary diagnoses to patient information.
 
+        Several diagnoses can share priority 1 (eICU: same entry time). NWICU
+        is left null: its seq_num (0 or 1 only) is undocumented, not a ranking.
+
         Steps:
-            1. Load primary diagnoses (priority=1) from diagnoses table.
-            2. Split by ICU vs hospital scope using global IDs.
-            3. Select first ICD-10 code per ICU/hospital stay.
-            4. Map ICD-10 code to ICD subchapter.
-            5. Join enriched diagnoses back to patient data.
+            1. Map priority-1 ICD-10 codes to ICD subchapters, without NWICU.
+            2. Per ICU stay use its own diagnoses, else those of its hospital stay.
+            3. Keep the earliest, preferring source ICD-10 over converted ICD-9.
+            4. Take the most frequent subchapter, null on a tie.
 
         Returns:
             pl.LazyFrame: Patient information with added diagnosis columns.
         """
 
-        primary_diagnoses = pl.scan_parquet(diagnoses).filter(
-            pl.col(self.diagnosis_priority_col) == 1
-        )
-        primary_diagnoses_icu = (
-            primary_diagnoses.filter(
-                pl.col(self.global_icu_stay_id_col).is_not_null()
+        icd10 = pl.col(self.diagnosis_icd_source_version_col).str.contains("10")
+
+        diagnoses = (
+            pl.scan_parquet(diagnoses)
+            .filter(pl.col(self.diagnosis_priority_col) == 1)
+            .filter(
+                ~pl.col(self.global_hospital_stay_id_col)
+                .str.starts_with("nwicu")
+                .fill_null(False)
             )
+            .rename({self.diagnosis_icd10_code_col: "ICD"})
+            .pipe(self.ICD_TO_ICDSUBCHAPTER)
+            .drop_nulls(self.admission_diagnosis_icd_col)
             .unique()
+        )
+
+        # Diagnoses without an ICU stay belong to all ICU stays of the hospital
+        # stay, unless the ICU stay has diagnoses of its own
+        own = diagnoses.filter(pl.col(self.global_icu_stay_id_col).is_not_null())
+        shared = (
+            diagnoses.filter(pl.col(self.global_icu_stay_id_col).is_null())
+            .drop(self.global_icu_stay_id_col)
+            .join(
+                data.select(self.global_icu_stay_id_col, self.global_hospital_stay_id_col),
+                on=self.global_hospital_stay_id_col,
+            )
+            .join(own, on=self.global_icu_stay_id_col, how="anti")
+        )
+
+        primary = (
+            pl.concat([own, shared], how="diagonal")
+            .filter(
+                pl.col(self.diagnosis_start_col).eq_missing(
+                    pl.col(self.diagnosis_start_col)
+                    .min()
+                    .over(self.global_icu_stay_id_col)
+                )
+            )
+            .filter(icd10 | ~icd10.any().over(self.global_icu_stay_id_col))
             .group_by(self.global_icu_stay_id_col)
             .agg(
-                pl.col(self.diagnosis_icd10_code_col)
-                .sort_by(self.diagnosis_start_col)
-                .first()
-            )
-        )
-        primary_diagnoses_hosp = (
-            primary_diagnoses.filter(
-                pl.col(self.global_icu_stay_id_col).is_null()
-            )
-            .unique()
-            .group_by(self.global_hospital_stay_id_col)
-            .agg(
-                pl.col(self.diagnosis_icd10_code_col)
-                .sort_by(self.diagnosis_start_col)
+                pl.col(self.admission_diagnosis_icd_col)
+                .mode()
+                .filter(pl.col(self.admission_diagnosis_icd_col).mode().len() == 1)
                 .first()
             )
         )
 
-        return data.join(
-            (
-                data.select(
-                    self.global_icu_stay_id_col,
-                    self.global_hospital_stay_id_col,
-                )
-                .join(
-                    primary_diagnoses_icu,
-                    on=self.global_icu_stay_id_col,
-                    how="left",
-                )
-                .join(
-                    primary_diagnoses_hosp,
-                    on=self.global_hospital_stay_id_col,
-                    how="left",
-                )
-                .with_columns(
-                    pl.coalesce(
-                        pl.col(self.diagnosis_icd10_code_col),
-                        pl.col(self.diagnosis_icd10_code_col + "_right"),
-                    )
-                )
-            )
-            .select(self.global_icu_stay_id_col, self.diagnosis_icd10_code_col)
-            .rename({self.diagnosis_icd10_code_col: "ICD"})
-            .pipe(self.ICD_TO_ICDSUBCHAPTER),
-            on=self.global_icu_stay_id_col,
-            how="left",
-        )
+        return data.join(primary, on=self.global_icu_stay_id_col, how="left")
 
     def remove_bad_patient_information(
         self, data: pl.LazyFrame
