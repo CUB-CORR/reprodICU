@@ -744,7 +744,7 @@ def _parquetize(path, db: str):
             "value": str,
             "VALUE": str,
         },
-        infer_schema_length=10000,
+        infer_schema_length=250_000,  # CPTEVENTS needs ~183k rows before its first non-numeric CPT code
     ).sink_parquet(parquet_path)
 
 
