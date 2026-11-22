@@ -608,9 +608,13 @@ class TimeseriesHarmonizer(GlobalVars):
     def _add_missing_cols(
         self, data: pl.LazyFrame, expected_cols: list
     ) -> pl.LazyFrame:
-        cols = data.collect_schema().names()
+        schema = data.collect_schema()
+        # Typed null (the lab struct): struct.with_fields fails on a Null column
+        dtype = next((t for t in schema.values() if isinstance(t, pl.Struct)), None)
         return data.with_columns(
-            pl.lit(None).alias(col) for col in expected_cols if col not in cols
+            pl.lit(None, dtype=dtype).alias(col)
+            for col in expected_cols
+            if col not in schema
         )
 
     # Divide the value of lab struct columns by 100
