@@ -111,12 +111,6 @@ Double lumen tracheobronchial tube: [] # 4208623
 # ##############################################################################
 # OTHER respiratory / ventilator equipment
 
-# optiflow: harmonized name already produced by the eICU mapping files
-Mechanical ventilator:
-  # eICU -> same name
-  # MIMIC-III (CareVue, item 467 'O2 Delivery Device')
-  - Ventilator
-
 Ambu bag: # 4160626
   # eICU -> same name
   # UMCdb -> same name

@@ -168,7 +168,10 @@ class HiRIDProcessor(HiRIDExtractor):
 
             # Decode the ordinal variables (picklist codes): a numeric label
             # (nasal cannula flow) is the value, a text label (heart rhythm,
-            # ventilator mode) is harmonized and pivoted as string
+            # ventilator mode) is harmonized and pivoted as string.
+            # The nasal cannula flow (15001525) is a code, not a flow: its label
+            # in ordinal_vars_ref.csv gives the l/min (16 = '0', 17 = '1.5',
+            # 18 = '9'). Labels that are not a single flow ('2 x 4') become null.
             timeseries = (
                 timeseries.join(
                     self._get_ordinal_variables(),

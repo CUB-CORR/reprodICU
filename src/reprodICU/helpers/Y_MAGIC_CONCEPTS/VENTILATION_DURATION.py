@@ -165,26 +165,7 @@ class VENTILATION_DURATION(MAGIC_CONCEPTS):
                 vent_start_col,
                 vent_end_col,
             )
-            # optiflow (proposal): for identical intervals of different types,
-            # max() kept the alphabetically last type ("supplemental oxygen"
-            # over "invasive ventilation", "weaning" over "tracheostomy"). The
-            # type kept is now the highest in VENTILATION_TYPE_ENUM order.
-            .agg(
-                pl.col("Ventilation Type")
-                .sort_by(
-                    pl.col("Ventilation Type").replace_strict(
-                        {
-                            name: rank
-                            for rank, name in enumerate(
-                                VENTILATION_TYPE_ENUM.categories.to_list()
-                            )
-                        },
-                        default=-1,
-                        return_dtype=pl.Int8,
-                    )
-                )
-                .last()
-            )
+            .agg(pl.col("Ventilation Type").max())
             .with_columns(
                 (pl.col(vent_end_col) - pl.col(vent_start_col))
                 .truediv(SECONDS_IN_1H)
