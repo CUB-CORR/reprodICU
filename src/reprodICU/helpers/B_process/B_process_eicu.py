@@ -509,18 +509,17 @@ class EICUProcessor(EICUExtractor):
     # Processes the diagnoses data of the eICU dataset.
     def process_diagnoses(self):
         """
-        Process diagnosis data with ICD version detection and descriptions.
+        Process eICU's diagnoses.
 
-        Steps:
-            1. Extract diagnosis data.
-            2. Remove dots from ICD codes for standardization.
-            3. Determine ICD version (9 or 10) using known code mappings.
-            4. Map codes to standardized descriptions.
+        eICU's code string lists the ICD-9 codes first, then the ICD-10 codes (one to seven; a repeated
+        code counts once). Exactly one ICD-9 and one ICD-10 code stay on one row, any other string gets
+        one row per code. The ICD-10 code of an ICD-9 code comes from eicu_icd9_to_icd10.csv.
 
         Returns:
             pl.LazyFrame: Contains columns:
-                - {diagnosis_icd_code_col}: ICD code.
-                - {diagnosis_icd_version_col}: ICD version (9 or 10).
+                - {diagnosis_icd9_code_col}, {diagnosis_icd10_code_col}: both codes of a pair.
+                - {diagnosis_icd_code_col}, {diagnosis_icd_version_col}: the code of any other row
+                  and its ICD version.
                 - {diagnosis_description_col}: Mapped diagnosis description.
                 - Additional diagnosis metadata columns.
         """
@@ -537,46 +536,80 @@ class EICUProcessor(EICUExtractor):
             )
         )
 
-        # Return the processed diagnoses data.
+        # eICU is from 2014 and 2015, when ICD-9-CM was in use: its own ICD-9 codes also include
+        # parent codes that later got a 5th digit (512.8 -> 512.81 ...), so those count as ICD-9 too.
+        ICD9_codes = pl.Series(
+            sorted({c[:k] for c in ICD9_descriptions for k in range(3, len(c) + 1)})
+        )
+        ICD10_codes = pl.Series(sorted(ICD10_descriptions))
+        # The ICD-10 code of an ICD-9 code in the 2015 era (not the 2018 table's)
+        ICD9_TO_ICD10 = dict(
+            pl.read_csv(self.icd9_to_icd10_mapping_path, infer_schema_length=0)
+            .select("icd9", "icd10")
+            .iter_rows()
+        )
+
+        def version(code):
+            """ICD version by lookup; E-codes in both lists are ICD-10, V-codes ICD-9 (eICU lists medical diagnoses)."""
+            return (
+                pl.when(code.is_in(ICD9_codes) & code.is_in(ICD10_codes))
+                .then(pl.when(code.str.starts_with("E")).then(10).otherwise(9))
+                .when(code.is_in(ICD10_codes))
+                .then(10)
+                .when(code.is_in(ICD9_codes))
+                .then(9)
+            )
+
         print("eICU    - Processing diagnoses data...")
+        extracted = self.extract_diagnoses().with_columns(
+            pl.col(self.diagnosis_icd_code_col)
+            .str.replace_all(r"\.", "")
+            .str.split(", ")
+            .list.unique(maintain_order=True)
+            .alias("codes")
+        )
+        codes = pl.col("codes").list
+        # Exactly one ICD-9 code followed by one ICD-10 code: eICU's translation.
+        is_pair = (
+            (codes.len() == 2)
+            & codes.get(0, null_on_oob=True).is_in(ICD9_codes)
+            & codes.get(1, null_on_oob=True).is_in(ICD10_codes)
+        )
+
         return (
-            self.extract_diagnoses()
-            # Remove the dots from the ICD codes.
-            .with_columns(
-                pl.col(self.diagnosis_icd_code_col).str.replace_all(r"\.", "")
+            pl.concat(
+                [
+                    # A pair stays on one row.
+                    extracted.filter(is_pair).select(
+                        pl.exclude(self.diagnosis_icd_code_col, "codes"),
+                        codes.get(0).alias(self.diagnosis_icd9_code_col),
+                        codes.get(1).alias(self.diagnosis_icd10_code_col),
+                    ),
+                    # Every other string: one row per code; the other ICD version is filled in later.
+                    extracted.filter(~is_pair)
+                    .explode("codes")
+                    .drop(self.diagnosis_icd_code_col)
+                    .rename({"codes": self.diagnosis_icd_code_col})
+                    .with_columns(
+                        version(pl.col(self.diagnosis_icd_code_col)).alias(self.diagnosis_icd_version_col)
+                    )
+                    .with_columns(
+                        pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
+                        .then(pl.col(self.diagnosis_icd_code_col).replace_strict(ICD9_TO_ICD10, default=None))
+                        .alias(self.diagnosis_icd10_code_col)
+                    ),
+                ],
+                how="diagonal_relaxed",
             )
-            # Determine the ICD version of the diagnoses.
+            # ICD-9 text for an ICD-9 code, ICD-10 text otherwise (also for a pair).
             .with_columns(
-                pl.when(
-                    pl.col(self.diagnosis_icd_code_col).is_in(
-                        ICD10_descriptions.keys()
-                    )
+                pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
+                .then(pl.col(self.diagnosis_icd_code_col).replace_strict(ICD9_descriptions, default=None))
+                .otherwise(
+                    pl.coalesce(
+                        self.diagnosis_icd_code_col, self.diagnosis_icd10_code_col
+                    ).replace_strict(ICD10_descriptions, default=None)
                 )
-                .then(pl.lit(10))
-                .when(
-                    pl.col(self.diagnosis_icd_code_col).is_in(
-                        ICD9_descriptions.keys()
-                    )
-                )
-                .then(pl.lit(9))
-                .otherwise(pl.lit(None))
-                .alias(self.diagnosis_icd_version_col)
-            )
-            # Add the description of the diagnoses, depending on the ICD version.
-            .with_columns(
-                pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
-                .then(
-                    pl.col(self.diagnosis_icd_code_col).replace_strict(
-                        ICD10_descriptions, default=None
-                    )
-                )
-                .when(pl.col(self.diagnosis_icd_version_col) == 9)
-                .then(
-                    pl.col(self.diagnosis_icd_code_col).replace_strict(
-                        ICD9_descriptions, default=None
-                    )
-                )
-                .otherwise(pl.lit(None))
                 .alias(self.diagnosis_description_col)
             )
         )

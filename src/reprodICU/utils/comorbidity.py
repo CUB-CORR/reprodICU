@@ -93,7 +93,7 @@ def _load_and_process_diagnoses(
             Processed diagnosis data with:
             - Global ICU Stay ID
             - Diagnosis ICD Code (unified from ICD-9/10)
-            - Diagnosis ICD Code Version (source)
+            - Diagnosis ICD Code Version (source), "ICD-9" or "ICD-10" for the code in that row
             - Admission Age (years)
 
     Raises
@@ -116,14 +116,28 @@ def _load_and_process_diagnoses(
     diagnoses = _to_lazy(diagnoses)
     patient_information = _to_lazy(patient_information)
 
+    diagnoses = diagnoses.join(
+        patient_information, on="Global ICU Stay ID", how="left"
+    )
+    version = pl.col("Diagnosis ICD Code Version (source)")
+    columns = ["Global ICU Stay ID", "Admission Age (years)"]
+    # A source pair ("ICD-9 / ICD-10") is scored with both of its codes.
     return (
-        diagnoses.join(patient_information, on="Global ICU Stay ID", how="left")
-        .with_columns(
-            pl.when(pl.col("Diagnosis ICD Code Version (source)") == "ICD-9")
-            .then(pl.col("Diagnosis ICD-9 Code"))
-            .otherwise(pl.col("Diagnosis ICD-10 Code"))
-            .alias("Diagnosis ICD Code")
+        pl.concat(
+            [
+                diagnoses.filter(version.str.starts_with("ICD-9")).select(
+                    *columns,
+                    pl.col("Diagnosis ICD-9 Code").alias("Diagnosis ICD Code"),
+                    pl.lit("ICD-9").alias("Diagnosis ICD Code Version (source)"),
+                ),
+                diagnoses.filter(version != "ICD-9").select(
+                    *columns,
+                    pl.col("Diagnosis ICD-10 Code").alias("Diagnosis ICD Code"),
+                    pl.lit("ICD-10").alias("Diagnosis ICD Code Version (source)"),
+                ),
+            ]
         )
+        .drop_nulls("Diagnosis ICD Code")
         .select(
             "Global ICU Stay ID",
             "Diagnosis ICD Code",

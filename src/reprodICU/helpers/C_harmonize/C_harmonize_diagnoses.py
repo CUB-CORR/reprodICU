@@ -44,6 +44,9 @@ class DiagnosesHarmonizer(GlobalVars):
             self.global_icu_stay_id_col,
             self.diagnosis_icd_code_col,
             self.diagnosis_icd_version_col,
+            # Both codes, only where the source gives the pair (eICU)
+            self.diagnosis_icd9_code_col,
+            self.diagnosis_icd10_code_col,
             self.diagnosis_start_col,
             self.diagnosis_end_col,
             self.diagnosis_priority_col,

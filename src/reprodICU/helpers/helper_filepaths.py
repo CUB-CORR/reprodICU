@@ -164,6 +164,9 @@ class EICUPaths(GlobalVars):
             self.eICU_mapping_path + "eicu_intakeOutput_cellpath.yaml"
         )
         self.lab_mapping_path = self.eICU_mapping_path + "eicu_lab.yaml"
+        self.icd9_to_icd10_mapping_path = (
+            self.eICU_mapping_path + "eicu_icd9_to_icd10.csv"
+        )
         self.drug_administration_route_mapping_path = (
             self.eICU_mapping_path + "eicu_medication_routeadmin.yaml"
         )

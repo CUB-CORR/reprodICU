@@ -1688,16 +1688,15 @@ class EICUExtractor(EICUPaths):
         Steps:
             1. Read diagnosis records from diagnosis CSV.
             2. Select and rename key columns.
-            3. Split and clean ICD code strings.
+            3. Keep the ICD code string (a single code or eICU's ICD-9, ICD-10 pair).
             4. Convert diagnosis offset times to seconds.
-            5. Explode list of codes to create one row per diagnosis code.
             6. Group to keep most severe diagnosis when duplicates exist.
             7. Calculate diagnosis end times by matching with next log entry offsets.
 
         Returns:
             pl.LazyFrame: Contains columns:
                 - {icu_stay_id_col}: ICU stay identifier.
-                - {diagnosis_icd_code_col}: ICD diagnosis code.
+                - {diagnosis_icd_code_col}: ICD code string, e.g. "I50.9" or "428.0, I50.9".
                 - {diagnosis_start_col}: Time of diagnosis onset (seconds).
                 - {diagnosis_priority_col}: Diagnosis priority (numeric).
                 - {diagnosis_discharge_col}: Diagnosis active at discharge flag.
@@ -1723,10 +1722,8 @@ class EICUExtractor(EICUPaths):
             .join(self.icu_stay_id, on=self.icu_stay_id_col, how="full")
             # Convert columns to appropriate data types
             .with_columns(
-                # Split diagnosis codes by comma and rename column
-                pl.col("icd9code")
-                .str.split(by=", ")
-                .alias(self.diagnosis_icd_code_col),
+                # Keep eICU's code string as is: one code, or the pair "ICD-9, ICD-10"
+                pl.col("icd9code").alias(self.diagnosis_icd_code_col),
                 # Convert diagnosisoffset to float and rename column
                 pl.col("diagnosisoffset")
                 .cast(float, strict=False)
@@ -1743,8 +1740,6 @@ class EICUExtractor(EICUPaths):
                 self.diagnosis_start_col,
                 base_unit="minutes",
             )
-            # Explode the icd_code column to have one row per diagnosis code
-            .explode(self.diagnosis_icd_code_col)
             # Remove duplicate rows
             .unique()
             # Remove rows with empty diagnosis codes
@@ -1755,7 +1750,11 @@ class EICUExtractor(EICUPaths):
                 self.diagnosis_icd_code_col,
                 self.diagnosis_start_col,
             )
-            .agg(pl.all().sort_by(self.diagnosis_priority_col).first())
+            .agg(
+                pl.all()
+                .sort_by(self.diagnosis_priority_col, self.diagnosis_discharge_col)
+                .first()
+            )
         )
 
         # Get continued diagnoses where possible, by checking whether the diagnosis reappears
