@@ -7,7 +7,7 @@ Oxygen mask: # 4222966
   # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - Medium Conc Mask
-  # optiflow: MIMIC-III (MetaVision) / MIMIC-IV spelling, with trailing space
+  # MIMIC spelling with trailing space
   - "Medium conc mask "
 Aerosol oxygen mask: # 4145694
   # eICU -> same name
@@ -129,14 +129,9 @@ Nebulizer: # 4219814
   - Heated Neb
   # MIMIC-III / MIMIC-IV
   - Ultrasonic neb
-  # optiflow: MIMIC-III CareVue spelling
+  # MIMIC-III CareVue
   - Ultrasonic Neb
-  # optiflow (proposal): high-flow nebulizers read as nebulizers, not nasal high flow.
-  # They are fed by a wall flowmeter (charted O2 flow: median 15 L/min) and
-  # are conventional oxygen therapy in mimic-code
-  # (mimic-iv/concepts/treatment/ventilation.sql: 'High flow neb' ->
-  # SupplementalOxygen; 'High flow nasal cannula' -> HFNC). Filed here with the
-  # other nebulizers of this file.
+  # High-flow nebulizers are wall-flowmeter oxygen, not nasal high flow (mimic-code: supplemental oxygen).
   # MIMIC-III (CareVue)
   - Hi Flow Neb
   # MIMIC-III (MetaVision) / MIMIC-IV
@@ -148,9 +143,7 @@ Nebulizer: # 4219814
 Room air: # 45881798 # LOINC
   # UMCdb
   - Zero
-  # optiflow: MIMIC 'None' (no oxygen delivery device) is mapped to Room air in
-  # A_extract_mimic3/4 for the device items only (467, 468, 226732), since the
-  # same value means "no artificial airway" for item 40 'Airway Type'.
+  # MIMIC 'None' is mapped to Room air in A_extract_mimic3/4 (device items only).
 
 
 

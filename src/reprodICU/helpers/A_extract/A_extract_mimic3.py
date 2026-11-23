@@ -771,10 +771,7 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
-                # optiflow: 'None' on the oxygen device items means that no
-                # oxygen delivery device is used (room air); the same value
-                # means "no artificial airway" on other items mapped to this
-                # label (MIMIC-III 40 'Airway Type'), which stay unmapped.
+                # 'None' on the device items is room air (on other items it means no airway).
                 .when(
                     (pl.col("LABEL") == "Oxygen delivery system")
                     & (pl.col("VALUE") == "None")
@@ -814,27 +811,10 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(None)
                 .alias("VALUE"),
             )
-            # optiflow (proposal): priority rank of the oxygen devices charted
-            # at the same instant, used by keep_highest_priority_rows just
-            # before the wide pivot (OXYGEN_DELIVERY_SYSTEM_PRIORITY).
-            # Oxygen flow: 227287 'O2 Flow (additional cannula)' (MetaVision)
-            # is the flow of a device added to the main one; it gives way to
-            # the main flow (223834 'O2 Flow', 227582 'BiPap O2 Flow') at the
-            # same instant instead of being averaged with it, and is kept when
-            # charted alone. mimic-code (oxygen_delivery.sql) keeps it in a
-            # column of its own.
+            # 227287 (additional cannula flow) gives way to the main flow
+            # (keep_highest_priority_rows).
             .with_columns(
-                pl.when(pl.col("LABEL") == "Oxygen delivery system")
-                .then(
-                    pl.col("VALUE").replace_strict(
-                        self.OXYGEN_DELIVERY_SYSTEM_PRIORITY,
-                        default=5,
-                        return_dtype=pl.Int8,
-                    )
-                )
-                .when(
-                    pl.col("LABEL") == "Oxygen gas flow Oxygen delivery system"
-                )
+                pl.when(pl.col("LABEL") == "Oxygen gas flow Oxygen delivery system")
                 .then(
                     pl.when(pl.col("ITEMID") == 227287)
                     .then(2)
@@ -851,13 +831,23 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(pl.col("VALUENUM"))
                 .alias("VALUENUM")
             )
+            # The oxygen device is pivoted by its order in the enum
+            .with_columns(
+                pl.when(pl.col("LABEL") == "Oxygen delivery system")
+                .then(pl.col("VALUE").cast(self.OXYGEN_DELIVERY_SYSTEM_ENUM))
+                .alias("VALUE_ENUM"),
+                pl.when(pl.col("LABEL") != "Oxygen delivery system")
+                .then(pl.col("VALUE"))
+                .alias("VALUE"),
+            )
             .drop("ITEMID")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null())  # & (pl.col("LABEL") != ""))
             # Remove rows with empty values (numeric or categorical string)
             .filter(
                 pl.col("VALUENUM").is_not_null()
-                | pl.col("VALUE").is_not_null(),
+                | pl.col("VALUE").is_not_null()
+                | pl.col("VALUE_ENUM").is_not_null(),
             )
             # Remove duplicate rows
             .unique()

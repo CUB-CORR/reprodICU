@@ -105,9 +105,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             tempfiles_path=self.precalc_path,
             operation="pivot",
             method=lambda df: self.pivot_numeric_or_string_or_enum(
-                # optiflow (proposal): one oxygen device and one oxygen flow
-                # source per instant, chosen by priority (see
-                # keep_highest_priority_rows)
+                # One oxygen flow per instant, by priority
                 self.keep_highest_priority_rows(
                     df, labelcol="label", index_cols=self.index_cols
                 ),
@@ -116,6 +114,7 @@ class MIMIC4Processor(MIMIC4Extractor):
                 index_cols=self.index_cols,
                 numeric_col="valuenum",
                 string_col="value",
+                enum_col="value_enum",
             ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
