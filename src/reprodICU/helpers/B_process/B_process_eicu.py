@@ -236,7 +236,7 @@ class EICUProcessor(EICUExtractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="eICU_labs",
                 on_col="labname",
                 index_cols=self.index_cols,
@@ -304,7 +304,7 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_resp_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 df,
                 dataset="eICU_resp",
                 on_col="respchartvaluelabel",
@@ -366,7 +366,7 @@ class EICUProcessor(EICUExtractor):
             output_file=ts_nurse_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 df,
                 dataset="eICU_nurse",
                 on_col="nursingchartcelltypevalname",
@@ -423,7 +423,7 @@ class EICUProcessor(EICUExtractor):
             self.extract_timeseries_intake_output()
             # Pivot the intake/output values to wide format
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="eICU_inout",
                 numeric_aggregate="sum",
                 on_col="celllabel",

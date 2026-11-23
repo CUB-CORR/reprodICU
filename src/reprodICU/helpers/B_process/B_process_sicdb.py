@@ -105,7 +105,7 @@ class SICdbProcessor(SICdbExtractor):
             output_file=ts_float_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 df.pipe(self._extract_timeseries_helper),
                 dataset="SICdb_vitals",
                 on_col="DataID",
@@ -188,7 +188,7 @@ class SICdbProcessor(SICdbExtractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the timeseries data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="SICdb_labs",
                 on_col="LaboratoryName",
                 index_cols=self.index_cols,

@@ -104,7 +104,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             output_file=ts_vitals_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 # optiflow (proposal): one oxygen device and one oxygen flow
                 # source per instant, chosen by priority (see
                 # keep_highest_priority_rows)
@@ -186,7 +186,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="MIMIC4_labs",
                 on_col="label",
                 index_cols=self.index_cols,
@@ -263,7 +263,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             self.extract_output_measurements()
             # Pivot the inout data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="MIMIC4_inout",
                 numeric_aggregate="sum",
                 on_col="label",

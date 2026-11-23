@@ -144,7 +144,7 @@ class UMCdbProcessor(UMCdbExtractor):
             output_file=ts_numeric_path,
             tempfiles_path=self.precalc_path,
             operation="process",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 df,
                 dataset="UMCdb_numeric",
                 on_col="item",
@@ -228,7 +228,7 @@ class UMCdbProcessor(UMCdbExtractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the labs data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="UMCdb_labs",
                 on_col="item",
                 index_cols=self.index_cols,
@@ -313,7 +313,7 @@ class UMCdbProcessor(UMCdbExtractor):
             pl.scan_parquet(ts_list_path_cache)
             # Pivot the list data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="UMCdb_listitems",
                 on_col="item",
                 index_cols=self.index_cols,

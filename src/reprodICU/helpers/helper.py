@@ -176,140 +176,123 @@ class GlobalHelpers:
         ).drop(rank_col)
 
     # region pivot / cast
-    def pivot_numeric_or_string(
+    def pivot_numeric_or_string_or_enum(
         self,
         data: pl.LazyFrame,
         dataset: str,
         on_col: str,
         index_cols: list[str],
         numeric_col: Optional[str] = None,
-        string_col: Optional[str] = None,
-        save_conflicts: bool = True,
         numeric_aggregate: str = "median",
+        string_col: Optional[str] = None,
+        enum_col: Optional[str] = None,
+        save_conflicts: bool = True,
     ) -> pl.LazyFrame:
-        """Pivot numeric values (median) and string values (first) separately and
-        combine them, all cast to String.
+        """
+        Pivot numeric values (median), string values (first) and enum values (highest) separately and combine them, all cast to String.
 
         Arguments:
             dataset: Dataset name (for the conflict file name).
             on_col: Column to pivot on.
             index_cols: Row identifier columns.
             numeric_col: Numeric value column.
-            string_col: String value column. Non-unique values per (index, on_col)
-                are warned about, and only the first is kept.
-            save_conflicts: Save the non-unique string records to a parquet file.
             numeric_aggregate: Polars aggregation of numeric values sharing a cell, "sum" for volumes (empty cells stay null).
+            string_col: String value column. Non-unique values per (index, on_col) are warned about, and only the first is kept.
+            enum_col: Enum value column, ordered lowest priority first. Per cell, the highest value in the enum order is kept.
+            save_conflicts: Save the non-unique string records to a parquet file.
 
         Raises:
-            ValueError: If neither numeric_col nor string_col is given.
+            ValueError: If none of numeric_col, string_col and enum_col is given.
         """
-        if numeric_col is None and string_col is None:
+        if numeric_col is None and string_col is None and enum_col is None:
             raise ValueError(
-                "At least one of numeric_col or string_col must be provided."
+                "At least one of numeric_col, string_col or enum_col must be provided."
             )
 
-        df_num_pivoted = None
-        df_str_pivoted = None
-        cols_num = []
-        cols_str = []
+        numeric_agg = (
+            # polars fills the empty cells of "sum" with 0, not null
+            pl.when(pl.element().len() > 0).then(pl.element().sum())
+            if numeric_aggregate == "sum"
+            else numeric_aggregate
+        )
 
-        # 1. Pivot numeric (median)
-        df_num = pl.DataFrame()
-        if numeric_col:
-            df_num = data.filter(pl.col(numeric_col).is_not_null()).collect()
-
-        if not df_num.is_empty():
-            df_num_pivoted = df_num.pivot(
-                on=on_col,
-                index=index_cols,
-                values=numeric_col,
-                aggregate_function=(
-                    # polars fills the empty cells of "sum" with 0, not null
-                    pl.when(pl.element().len() > 0).then(pl.element().sum())
-                    if numeric_aggregate == "sum"
-                    else numeric_aggregate
-                ),
-            ).lazy()
-
-            cols_num = [
+        # One pivot per value column, all as String. When a cell is in several of
+        # them, the first one wins: numeric, then string, then enum.
+        res = None
+        for value_col, aggregate in (
+            (numeric_col, numeric_agg),
+            (string_col, "first"),
+            (enum_col, "max"),
+        ):
+            if value_col is None:
+                continue
+            df = data.filter(pl.col(value_col).is_not_null()).collect()
+            if df.is_empty():
+                continue
+            if value_col == string_col:
+                self._save_string_conflicts(
+                    df, dataset, on_col, index_cols, value_col, save_conflicts
+                )
+            pivoted = (
+                df.pivot(
+                    on=on_col,
+                    index=index_cols,
+                    values=value_col,
+                    aggregate_function=aggregate,
+                )
+                .lazy()
+                .with_columns(pl.exclude(index_cols).cast(pl.String))
+            )
+            if res is None:
+                res = pivoted
+                continue
+            shared = [
                 c
-                for c in df_num_pivoted.collect_schema().names()
-                if c not in index_cols
+                for c in pivoted.collect_schema().names()
+                if c not in index_cols and c in res.collect_schema().names()
             ]
-
-            df_num_pivoted = df_num_pivoted.with_columns(
-                pl.col(c).cast(pl.String) for c in cols_num
+            res = (
+                res.join(pivoted, on=index_cols, how="full", coalesce=True)
+                .with_columns(pl.coalesce(c, f"{c}_right").alias(c) for c in shared)
+                .drop(f"{c}_right" for c in shared)
             )
 
-        # 2. Pivot string (first)
-        df_str = pl.DataFrame()
-        if string_col:
-            df_str = data.filter(pl.col(string_col).is_not_null()).collect()
+        # No values at all: just the indices
+        return res if res is not None else data.select(index_cols).unique()
 
-        if not df_str.is_empty():
-            # Check for non-uniqueness: count occurrences per unique cell after consolidation
-            non_unique = (
-                df_str.group_by(index_cols + [on_col])
-                .agg(pl.col(string_col).unique().count().alias("count"))
-                .filter(pl.col("count") > 1)
+    def _save_string_conflicts(
+        self,
+        df: pl.DataFrame,
+        dataset: str,
+        on_col: str,
+        index_cols: list[str],
+        string_col: str,
+        save_conflicts: bool,
+    ) -> None:
+        """Warn about cells with several different strings (the pivot keeps the
+        first) and save those records to a parquet file."""
+        non_unique = (
+            df.group_by(index_cols + [on_col])
+            .agg(pl.col(string_col).unique().count().alias("count"))
+            .filter(pl.col("count") > 1)
+        )
+        if non_unique.is_empty():
+            return
+        print(
+            f"Warning: Non-unique string values found for {len(non_unique)} "
+            f"index/on_col combinations in {string_col}. Only the first will be kept."
+        )
+        if save_conflicts:
+            conflicts = df.join(
+                non_unique.select(index_cols + [on_col]),
+                on=index_cols + [on_col],
+                how="inner",
             )
-            if not non_unique.is_empty():
-                print(
-                    f"Warning: Non-unique string values found for {len(non_unique)} "
-                    f"index/on_col combinations in {string_col}. Only the first will be kept."
-                )
-            if save_conflicts and not non_unique.is_empty():
-                # Get the full non-aggregated records that cause the conflict
-                conflicts = df_str.join(
-                    non_unique.select(index_cols + [on_col]),
-                    on=index_cols + [on_col],
-                    how="inner",
-                )
-                filename = f"conflicts_{dataset}_{string_col}_{datetime.now().strftime('%Y%m%d')}.parquet" # fmt: skip
-                if Path(filename).exists():
-                    conflicts = pl.concat([pl.read_parquet(filename), conflicts]).unique() # fmt: skip
-                conflicts.sort(index_cols + [on_col]).write_parquet(filename)
-                print(f"Non-aggregated conflicting values saved to {filename}")
-
-            df_str_pivoted = df_str.pivot(
-                on=on_col,
-                index=index_cols,
-                values=string_col,
-                aggregate_function="first",
-            ).lazy()
-
-            cols_str = [
-                c
-                for c in df_str_pivoted.collect_schema().names()
-                if c not in index_cols
-            ]
-
-        # 3. Combine results
-        if df_num_pivoted is not None and df_str_pivoted is not None:
-            res = df_num_pivoted.join(
-                df_str_pivoted, on=index_cols, how="full", coalesce=True
-            )
-            common_cols = [c for c in cols_num if c in cols_str]
-            if common_cols:
-                res = res.with_columns(
-                    [pl.coalesce(c, f"{c}_right").alias(c) for c in common_cols]
-                )
-            final_cols = (
-                index_cols
-                + cols_num
-                + [c for c in cols_str if c not in cols_num]
-            )
-            return res.select(final_cols)
-
-        elif df_num_pivoted is not None:
-            return df_num_pivoted.select(index_cols + cols_num)
-
-        elif df_str_pivoted is not None:
-            return df_str_pivoted.select(index_cols + cols_str)
-
-        else:
-            # Return empty frame with correct schema if possible, or just start from original indices
-            return data.select(index_cols).unique()
+            filename = f"conflicts_{dataset}_{string_col}_{datetime.now().strftime('%Y%m%d')}.parquet" # fmt: skip
+            if Path(filename).exists():
+                conflicts = pl.concat([pl.read_parquet(filename), conflicts]).unique() # fmt: skip
+            conflicts.sort(index_cols + [on_col]).write_parquet(filename)
+            print(f"Non-aggregated conflicting values saved to {filename}")
 
 
 # region GlobalVars

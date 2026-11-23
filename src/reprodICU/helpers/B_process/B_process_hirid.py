@@ -195,7 +195,7 @@ class HiRIDProcessor(HiRIDExtractor):
 
             (
                 # Pivot the timeseries data
-                self.pivot_numeric_or_string(
+                self.pivot_numeric_or_string_or_enum(
                     timeseries,
                     dataset="HiRID_ts",
                     on_col="variable",
@@ -316,7 +316,7 @@ class HiRIDProcessor(HiRIDExtractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="HiRID_labs",
                 on_col="variable",
                 index_cols=self.index_cols,
