@@ -100,9 +100,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                     - pl.col("OUTTIME").shift(1).over(self.person_id_col)
                 ).alias("OFFSET_TO_PREV")
             )
-            # optiflow (proposal, change 34): built stays only, after the time
-            # to the previous stay, so that the window of a kept stay is unchanged
-            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
     # region patient
@@ -376,9 +373,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(pl.col(self.mortality_icu_col))
                 .alias(self.mortality_icu_col)
             )
-            # optiflow (proposal, change 34): built stays only, after the stay
-            # sequence number and the time to the first stay of the patient
-            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
     # endregion
@@ -958,17 +952,6 @@ class MIMIC3Extractor(MIMIC3Paths):
                 on="LABEL",
                 values="VALUE",
                 aggregate_function="first",
-            )
-            # optiflow (proposal, change 34): a component never charted is a
-            # null column, so that the status below does not fail. The CAM-ICU
-            # items are MetaVision items: with MIMIC3_CAREVUE_ONLY, only a few
-            # stays of minors keep some of them
-            .pipe(
-                lambda df: df.with_columns(
-                    pl.lit(None, dtype=pl.String).alias(c)
-                    for c in COMPONENTS
-                    if c not in df.columns
-                )
             )
             .with_columns(
                 pl.when(pl.any_horizontal(pl.col(COMPONENTS) == "Unable to Assess"))
@@ -2406,12 +2389,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .filter(pl.col(self.diagnosis_icd_code_col).is_not_null())
             # drop duplicates
             .unique()
-            # optiflow (proposal, change 34): admissions of the built stays only
-            .pipe(
-                self.keep_built_mimic3_stays,
-                on=self.hospital_stay_id_col,
-                by="HADM_ID",
-            )
         )
 
     # endregion
@@ -2517,8 +2494,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             )
             .drop_nulls(self.procedure_description_col)
             .unique()
-            # optiflow (proposal, change 34): built stays only
-            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
         procedures_icd = (
@@ -2556,12 +2531,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             # drop rows with empty ICD codes
             .filter(pl.col(self.procedure_icd_code_col).is_not_null())
             .unique()
-            # optiflow (proposal, change 34): admissions of the built stays only
-            .pipe(
-                self.keep_built_mimic3_stays,
-                on=self.hospital_stay_id_col,
-                by="HADM_ID",
-            )
         )
 
         datetimeevents = (
@@ -2593,8 +2562,6 @@ class MIMIC3Extractor(MIMIC3Paths):
             .rename({"LABEL": self.procedure_description_col})
             .drop_nulls(self.procedure_description_col)
             .unique()
-            # optiflow (proposal, change 34): built stays only
-            .pipe(self.keep_built_mimic3_stays, on=self.icu_stay_id_col)
         )
 
         return pl.concat(

@@ -31,12 +31,7 @@ Breath rate spontaneous and mechanical --on ventilator: # 3007646
   # HiRID
   - Respiratory rate (total)
   # SICdb
-  # optiflow (proposal): 719 'RespRate' (SignalFloat, ventilator block
-  # 711-719) is recorded with a ventilator: 97.9% of its hours have a
-  # ventilator setting (2282 or 2278), 0.8% of the hours without a setting
-  # have a value, and 97.7% of its minute values have a tidal or minute
-  # volume (713, 717, 718) at the same minute. The monitor rate 2274 stays in
-  # Respiratory rate.
+  # 719: ventilator-measured (97.9% of its hours have a ventilator setting).
   - RespRate
   # UMCdb -> same name
   ### This one refers to non-ventilated data as well as ventilated data
