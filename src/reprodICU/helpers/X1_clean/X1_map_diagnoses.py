@@ -68,25 +68,49 @@ class DiagnosesMapper(GlobalVars):
             )
             .collect()
             .with_columns(
-                # Impute missing ICD9 codes
-                pl.when(pl.col(self.diagnosis_icd_version_col) == 9)
-                .then(pl.col(self.diagnosis_icd_code_col))
+                # Anchor on the code the source gave: a pair gives both, otherwise the code
+                # of the source version.
+                pl.coalesce(
+                    pl.col(self.diagnosis_icd9_code_col),
+                    pl.when(pl.col(self.diagnosis_icd_version_col) == 9).then(
+                        pl.col(self.diagnosis_icd_code_col)
+                    ),
+                ).alias(self.diagnosis_icd9_code_col),
+                pl.coalesce(
+                    pl.col(self.diagnosis_icd10_code_col),
+                    pl.when(pl.col(self.diagnosis_icd_version_col) == 10).then(
+                        pl.col(self.diagnosis_icd_code_col)
+                    ),
+                ).alias(self.diagnosis_icd10_code_col),
+                # Label of the source version, "ICD-9 / ICD-10" for a pair
+                pl.when(
+                    pl.col(self.diagnosis_icd9_code_col).is_not_null()
+                    & pl.col(self.diagnosis_icd10_code_col).is_not_null()
+                )
+                .then(pl.lit("ICD-9 / ICD-10"))
                 .otherwise(
-                    pl.col(self.diagnosis_icd_code_col).replace_strict(
-                        ICD10_TO_ICD9_MAPPING, default=None
+                    pl.concat_str(
+                        pl.lit("ICD-"),
+                        pl.col(self.diagnosis_icd_version_col).cast(pl.String),
                     )
                 )
-                .alias(self.diagnosis_icd9_code_col),
-                # Impute missing ICD10 codes
-                pl.when(pl.col(self.diagnosis_icd_version_col) == 10)
-                .then(pl.col(self.diagnosis_icd_code_col))
-                .otherwise(
-                    pl.col(self.diagnosis_icd_code_col).replace_strict(
+                .alias(self.diagnosis_icd_source_version_col),
+            )
+            .with_columns(
+                # Impute only the codes still missing, from the other version
+                pl.col(self.diagnosis_icd9_code_col)
+                .fill_null(
+                    pl.col(self.diagnosis_icd10_code_col).replace_strict(
+                        ICD10_TO_ICD9_MAPPING, default=None
+                    )
+                ),
+                pl.col(self.diagnosis_icd10_code_col)
+                .fill_null(
+                    pl.col(self.diagnosis_icd9_code_col).replace_strict(
                         ICD9_TO_ICD10_MAPPING, default=None
                     )
                 )
-                .replace("NoDx", None)
-                .alias(self.diagnosis_icd10_code_col),
+                .replace("NoDx", None),
             )
             .group_by(
                 self.global_person_id_col,
@@ -97,29 +121,33 @@ class DiagnosesMapper(GlobalVars):
                 self.diagnosis_start_col,
                 self.diagnosis_end_col,
                 self.diagnosis_priority_col,
+                self.diagnosis_admission_col,
                 self.diagnosis_discharge_col,
                 # self.diagnosis_description_col, # Description is not used in the grouping, as it can be inconsistent
             )
-            # Add column for ICD version of original diagnosis code
+            # Rows of one diagnosis that come from both ICD versions get the label "ICD-9 / ICD-10"
             .agg(
-                pl.implode(self.diagnosis_icd_version_col),
-                pl.first(self.diagnosis_description_col),
+                pl.implode(self.diagnosis_icd_source_version_col),
+                # Prefer the ICD-10 description (row order is not stable)
+                pl.col(self.diagnosis_description_col)
+                .sort_by(
+                    self.diagnosis_icd_version_col,
+                    descending=True,
+                    nulls_last=True,
+                )
+                .drop_nulls()
+                .first(),
             )
             .with_columns(
                 pl.when(
-                    pl.col(self.diagnosis_icd_version_col)
+                    pl.col(self.diagnosis_icd_source_version_col)
                     .list.unique()
                     .list.len()
                     > 1
                 )
                 .then(pl.lit("ICD-9 / ICD-10"))
                 .otherwise(
-                    pl.concat_str(
-                        pl.lit("ICD-"),
-                        pl.col(self.diagnosis_icd_version_col)
-                        .list.first()
-                        .cast(pl.String),
-                    )
+                    pl.col(self.diagnosis_icd_source_version_col).list.first()
                 )
                 .alias(self.diagnosis_icd_source_version_col)
             )
@@ -157,6 +185,7 @@ class DiagnosesMapper(GlobalVars):
                 self.diagnosis_start_col,
                 self.diagnosis_end_col,
                 self.diagnosis_priority_col,
+                self.diagnosis_admission_col,
                 self.diagnosis_discharge_col,
                 self.diagnosis_description_col,
             )
