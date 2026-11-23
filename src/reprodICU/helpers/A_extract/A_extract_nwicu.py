@@ -966,7 +966,7 @@ class NWICUExtractor(NWICUPaths):
                 - {hospital_stay_id_col}: Hospital admission identifier.
                 - {diagnosis_icd_code_col}: ICD diagnosis code.
                 - {diagnosis_icd_version_col}: ICD version (9 or 10).
-                - {diagnosis_priority_col}: Diagnosis priority (1-indexed).
+                - {diagnosis_priority_col}: Diagnosis priority (1 = primary, 2 = secondary).
                 - {diagnosis_description_col}: Diagnosis description.
                 - {diagnosis_discharge_col}: Discharge diagnosis flag (always True).
         """
@@ -1017,9 +1017,8 @@ class NWICUExtractor(NWICUPaths):
                     "long_title": self.diagnosis_description_col,
                 }
             )
-            .with_columns(
-                pl.col(self.diagnosis_priority_col) + 1  # Priority is 1-indexed
-            )
+            # NWICU's seq_num is 1 for the primary and 0 for a secondary diagnosis
+            .with_columns(-pl.col(self.diagnosis_priority_col) + 2)
             # drop rows with empty ICD codes
             .filter(pl.col(self.diagnosis_icd_code_col).is_not_null())
             # drop duplicates
