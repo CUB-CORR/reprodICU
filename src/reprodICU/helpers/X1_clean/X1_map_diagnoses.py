@@ -119,13 +119,14 @@ class DiagnosesMapper(GlobalVars):
                 self.diagnosis_icd9_code_col,
                 self.diagnosis_icd10_code_col,
                 self.diagnosis_start_col,
-                self.diagnosis_end_col,
-                self.diagnosis_priority_col,
-                self.diagnosis_discharge_col,
                 # self.diagnosis_description_col, # Description is not used in the grouping, as it can be inconsistent
             )
-            # Rows of one diagnosis that come from both ICD versions get the label "ICD-9 / ICD-10"
+            # Source rows of one diagnosis become one row: most severe priority, open if any row is open
             .agg(
+                pl.col(self.diagnosis_priority_col).min(),
+                pl.col(self.diagnosis_end_col).sort(nulls_last=True).last(),
+                pl.col(self.diagnosis_discharge_col).max(),
+                # Rows of one diagnosis that come from both ICD versions get the label "ICD-9 / ICD-10"
                 pl.implode(self.diagnosis_icd_source_version_col),
                 # Prefer the ICD-10 description (row order is not stable)
                 pl.col(self.diagnosis_description_col)
@@ -151,28 +152,6 @@ class DiagnosesMapper(GlobalVars):
                 .alias(self.diagnosis_icd_source_version_col)
             )
             .unique()
-            # Keep records that are not duplicates OR keep only active on discharge if duplicates exist
-            .with_columns(
-                # Count duplicates for each group
-                pl.len()
-                .over(
-                    self.global_person_id_col,
-                    self.global_hospital_stay_id_col,
-                    self.global_icu_stay_id_col,
-                    self.diagnosis_icd9_code_col,
-                    self.diagnosis_icd10_code_col,
-                    self.diagnosis_start_col,
-                )
-                .alias("Diagnosis Group Count")
-            )
-            .filter(
-                (pl.col("Diagnosis Group Count") == 1)
-                | (
-                    (pl.col("Diagnosis Group Count") > 1)
-                    & pl.col(self.diagnosis_discharge_col)
-                )
-            )
-            .drop("Diagnosis Group Count")
             .sort(self.global_icu_stay_id_col, self.diagnosis_start_col)
             .select(
                 self.global_person_id_col,
