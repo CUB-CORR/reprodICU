@@ -35,11 +35,12 @@ class DiagnosesMapper(GlobalVars):
             self.global_icu_stay_id_col,
         )
 
+        # An ICD-9 code can have several ICD-10 targets; the mapping lists the primary one first
+        # (4019 -> I10, then I169), so take the first and not the last.
         ICD9_TO_ICD10_MAPPING = dict(
-            zip(
-                self.ICD9_TO_ICD10_DIAGS["icd9"],
-                self.ICD9_TO_ICD10_DIAGS["icd10"],
-            )
+            self.ICD9_TO_ICD10_DIAGS.unique("icd9", keep="first", maintain_order=True)
+            .select("icd9", "icd10")
+            .iter_rows()
         )
         ICD10_TO_ICD9_MAPPING = dict(
             zip(
