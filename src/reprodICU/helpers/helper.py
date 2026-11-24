@@ -156,19 +156,6 @@ class GlobalHelpers:
 
         return result
 
-    # Keep only the lowest-ranked rows per label and instant. Unranked rows are kept.
-    def keep_highest_priority_rows(
-        self,
-        data: pl.LazyFrame,
-        labelcol: str,
-        index_cols: list[str],
-        rank_col: str = "priority_rank",
-    ) -> pl.LazyFrame:
-        best_rank = pl.col(rank_col).min().over(index_cols + [labelcol])
-        return data.filter(
-            pl.col(rank_col).is_null() | (pl.col(rank_col) == best_rank)
-        ).drop(rank_col)
-
     # region pivot / cast
     def pivot_numeric_or_string_or_enum(
         self,

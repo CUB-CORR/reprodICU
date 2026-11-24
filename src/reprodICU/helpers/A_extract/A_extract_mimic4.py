@@ -835,17 +835,12 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .otherwise(None)
                 .alias("value"),
             )
-            # 227287 (additional cannula flow) gives way to the main flow
-            # (keep_highest_priority_rows).
-            .with_columns(
-                pl.when(pl.col("label") == "Oxygen gas flow Oxygen delivery system")
-                .then(
-                    pl.when(pl.col("itemid") == 227287)
-                    .then(2)
-                    .otherwise(1)
-                    .cast(pl.Int8)
+            # 227287 (additional cannula flow) is kept only when no main flow is charted at the same instant
+            .filter(
+                (pl.col("itemid") != 227287)
+                | (pl.col("itemid") == 227287).all().over(
+                    self.icu_stay_id_col, self.timeseries_time_col, "label"
                 )
-                .alias("priority_rank"),
             )
             # Text items also carry a list code in valuenum, which would win over
             # the text in the pivot: where there is text, drop the number
