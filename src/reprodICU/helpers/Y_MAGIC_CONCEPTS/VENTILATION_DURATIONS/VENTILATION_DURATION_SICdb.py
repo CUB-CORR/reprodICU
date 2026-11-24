@@ -15,7 +15,8 @@ class VENTILATION_DURATION_SICdb(MAGIC_CONCEPTS):
         Steps:
             1. Extract ventilation data ranges with timestamps.
             2. Join with admission times for time reference.
-            3. Validate end time before discharge.
+            3. Keep episodes starting before discharge and truncate their
+               end at discharge.
             4. Calculate episode duration.
             5. Compute time relative to admission.
 

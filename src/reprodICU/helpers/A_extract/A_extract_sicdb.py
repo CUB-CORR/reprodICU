@@ -189,14 +189,24 @@ class SICdbExtractor(SICdbPaths):
                 .otherwise(None)  # "Unknown" -> set to None
                 .cast(bool)
                 .alias(self.mortality_icu_col),
-                pl.when(pl.col("HospitalDischargeType") == 3130)  # "Deceased"
+                # a transfer to another hospital or a discharge against advice
+                # is alive at discharge from this hospital
+                pl.when(pl.col("HospitalDischargeType").is_in([2028, 3130]))  # "Deceased"
                 .then(True)
                 # death before the case was closed overrides an alive discharge type
-                .when(pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                # (SICdb 1.0.8: 12 cases, 4 "survived" and 8 transfers)
+                .when(
+                    pl.col("DischargeState") == 2215,  # "verstorben"
+                    pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"),
+                )
                 .then(True)
-                .when(pl.col("HospitalDischargeType") == 3129)  # "Survived"
+                .when(
+                    pl.col("HospitalDischargeType").is_in(
+                        [2026, 3129, 3131, 3132, 3133, 3134]  # survived, transfers, against advice
+                    )
+                )
                 .then(False)
-                .otherwise(None)  # transfer, left against advice, unknown -> set to None
+                .otherwise(None)  # unknown -> set to None
                 .cast(bool)
                 .alias(self.mortality_hosp_col),
                 # Convert post ICU discharge mortality to days
@@ -292,8 +302,12 @@ class SICdbExtractor(SICdbPaths):
             .unique()
             # Remove rows with empty parameter names
             .filter(pl.col(self.timeseries_time_col).is_not_null())
+            # A device row has a string value, not a number
+            .with_columns(
+                pl.when(pl.col("value").is_null()).then(pl.col("Val")).alias("Val")
+            )
             # Remove rows with empty parameter results
-            .filter(pl.col("Val").is_not_null())
+            .filter(pl.col("Val").is_not_null() | pl.col("value").is_not_null())
             # Drop columns
             .drop("CaseOffset", "Offset")
         )
@@ -1046,25 +1060,38 @@ class SICdbExtractor(SICdbPaths):
         extracted_references.update({2282: "RespRateVentilator"})
 
         # Convert parameter IDs to names, then map them
-        return (
-            pl.read_csv(self.d_references_path)
-            .select("ReferenceGlobalID")
-            .with_columns(
-                pl.col("ReferenceGlobalID")
-                .replace_strict(extracted_references, default=None)
-                .replace(
-                    {
-                        **self.timeseries_vitals_mapping,
-                        **self.timeseries_intakeoutput_mapping,
-                        **self.timeseries_respiratory_mapping,
-                        **self.timeseries_extracorporeal_mapping,
-                    }
+        return pl.concat(
+            [
+                pl.read_csv(self.d_references_path)
+                .select("ReferenceGlobalID")
+                .with_columns(
+                    pl.col("ReferenceGlobalID")
+                    .replace_strict(extracted_references, default=None)
+                    .replace(
+                        {
+                            **self.timeseries_vitals_mapping,
+                            **self.timeseries_intakeoutput_mapping,
+                            **self.timeseries_respiratory_mapping,
+                            **self.timeseries_extracorporeal_mapping,
+                        }
+                    )
+                    .alias("DataName")
                 )
-                .alias("DataName")
-            )
-            .drop_nulls()
-            .rename({"ReferenceGlobalID": "DataID"})
-            .lazy()
-        )
+                .drop_nulls()
+                .rename({"ReferenceGlobalID": "DataID"}),
+                # SICdb (>= 1.0.7) charts high flow nasal oxygen with dedicated
+                # signals (3142 "Optiflow O2", 3143 "Optiflow Flow"), harmonized
+                # as generic FiO2 / O2 flow. A second row per reading records
+                # the oxygen delivery device.
+                pl.DataFrame(
+                    {
+                        "DataID": [3142, 3143],
+                        "DataName": ["Oxygen delivery system"] * 2,
+                        "value": ["High flow oxygen nasal cannula"] * 2,
+                    }
+                ),
+            ],
+            how="diagonal_relaxed",
+        ).lazy()
 
     # endregion

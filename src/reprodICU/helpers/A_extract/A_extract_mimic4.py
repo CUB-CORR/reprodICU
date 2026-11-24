@@ -365,8 +365,8 @@ class MIMIC4Extractor(MIMIC4Paths):
             # discharged from hospital alive
             .with_columns(
                 pl.when(
-                    pl.col(self.mortality_icu_col).is_null()
-                    & pl.col(self.mortality_hosp_col).eq(False)
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_hosp_col).eq(False),
                 )
                 .then(False)
                 .otherwise(pl.col(self.mortality_icu_col))
@@ -795,6 +795,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
+                # 'None' on the device items is room air (on other items it means no airway).
+                .when(
+                    pl.col("label") == "Oxygen delivery system",
+                    pl.col("value") == "None",
+                    pl.col("itemid") == 226732,
+                )
+                .then(pl.lit("Room air"))
                 .when(pl.col("label") == "Oxygen delivery system")
                 .then(
                     pl.col("value").replace_strict(
@@ -828,6 +835,13 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .otherwise(None)
                 .alias("value"),
             )
+            # 227287 (additional cannula flow) is kept only when no main flow is charted at the same instant
+            .filter(
+                (pl.col("itemid") != 227287)
+                | (pl.col("itemid") == 227287).all().over(
+                    self.icu_stay_id_col, self.timeseries_time_col, "label"
+                )
+            )
             # Text items also carry a list code in valuenum, which would win over
             # the text in the pivot: where there is text, drop the number
             .with_columns(
@@ -836,13 +850,23 @@ class MIMIC4Extractor(MIMIC4Paths):
                 .otherwise(pl.col("valuenum"))
                 .alias("valuenum")
             )
+            # The oxygen device is pivoted by its order in the enum
+            .with_columns(
+                pl.when(pl.col("label") == "Oxygen delivery system")
+                .then(pl.col("value").cast(self.OXYGEN_DELIVERY_SYSTEM_ENUM))
+                .alias("value_enum"),
+                pl.when(pl.col("label") != "Oxygen delivery system")
+                .then(pl.col("value"))
+                .alias("value"),
+            )
             .drop("itemid")
             # Remove rows with empty names
             .filter(pl.col("label").is_not_null(), pl.col("label") != "")
             # Remove rows with empty values (numeric or categorical string)
             .filter(
                 pl.col("valuenum").is_not_null()
-                | pl.col("value").is_not_null(),
+                | pl.col("value").is_not_null()
+                | pl.col("value_enum").is_not_null(),
             )
             # Remove duplicate rows
             .unique()

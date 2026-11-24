@@ -7,6 +7,8 @@ Oxygen mask: # 4222966
   # eICU -> same name
   # MIMIC-III / MIMIC-IV
   - Medium Conc Mask
+  # MIMIC spelling with trailing space
+  - "Medium conc mask "
 Aerosol oxygen mask: # 4145694
   # eICU -> same name
   # MIMIC-III
@@ -64,7 +66,6 @@ High flow oxygen nasal cannula: # 4139525
   - Vapotherm
   # MIMIC-III / MIMIC-IV
   - High flow nasal cannula
-  - Hi Flow Neb
 
 
 # ##############################################################################
@@ -128,6 +129,13 @@ Nebulizer: # 4219814
   - Heated Neb
   # MIMIC-III / MIMIC-IV
   - Ultrasonic neb
+  # MIMIC-III CareVue
+  - Ultrasonic Neb
+  # High-flow nebulizers are wall-flowmeter oxygen, not nasal high flow (mimic-code: supplemental oxygen).
+  # MIMIC-III (CareVue)
+  - Hi Flow Neb
+  # MIMIC-III (MetaVision) / MIMIC-IV
+  - High flow neb
   # UMCdb -> same name
 
 
@@ -135,6 +143,7 @@ Nebulizer: # 4219814
 Room air: # 45881798 # LOINC
   # UMCdb
   - Zero
+  # MIMIC 'None' is mapped to Room air in A_extract_mimic3/4 (device items only).
 
 
 

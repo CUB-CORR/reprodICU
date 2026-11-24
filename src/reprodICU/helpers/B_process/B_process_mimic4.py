@@ -104,13 +104,14 @@ class MIMIC4Processor(MIMIC4Extractor):
             output_file=ts_vitals_path,
             tempfiles_path=self.precalc_path,
             operation="pivot",
-            method=lambda df: self.pivot_numeric_or_string(
+            method=lambda df: self.pivot_numeric_or_string_or_enum(
                 df,
                 dataset="MIMIC4_vitals",
                 on_col="label",
                 index_cols=self.index_cols,
                 numeric_col="valuenum",
                 string_col="value",
+                enum_col="value_enum",
             ).sort(self.index_cols),
             id_col=self.icu_stay_id_col,
             delete_after=True,
@@ -181,7 +182,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             .with_columns(pl.col("labstruct").struct.json_encode())
             # Pivot the lab data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="MIMIC4_labs",
                 on_col="label",
                 index_cols=self.index_cols,
@@ -258,7 +259,7 @@ class MIMIC4Processor(MIMIC4Extractor):
             self.extract_output_measurements()
             # Pivot the inout data
             .pipe(
-                self.pivot_numeric_or_string,
+                self.pivot_numeric_or_string_or_enum,
                 dataset="MIMIC4_inout",
                 numeric_aggregate="sum",
                 on_col="label",

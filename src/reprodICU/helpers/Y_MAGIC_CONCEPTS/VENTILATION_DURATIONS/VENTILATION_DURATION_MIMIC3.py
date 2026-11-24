@@ -342,7 +342,6 @@ class VENTILATION_DURATION_MIMIC3(MAGIC_CONCEPTS):
         return (
             VENTILATION_DURATIONS.unique()
             .pipe(self._add_global_id_stay_id, "mimic3-", "ICUSTAY_ID")
-            .lazy()
         )
 
     # region helpers

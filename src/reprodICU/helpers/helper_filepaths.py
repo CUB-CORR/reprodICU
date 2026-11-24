@@ -727,36 +727,44 @@ class UMCdbPaths(GlobalVars):
 def _parquetize(path, db: str):
     print(f"{db}   - parquetizing {path}")
     parquet_path = path.replace(".csv", ".parquet").replace(".gz", "")
+    schema_overrides = {
+        "amount": float,
+        "AMOUNT": float,
+        "dose_given": str,
+        "dose_val_rx": str,
+        "doses_per_24_hrs": float,
+        "patientweight": float,
+        "PATIENTWEIGHT": float,
+        "product_amount_given": str,
+        "RATE": float,
+        "totalamount": float,
+        "TOTALAMOUNT": float,
+        "value": str,
+        "VALUE": str,
+    }
+
+    # Write to a temporary file first: a failed conversion must not leave a
+    # truncated parquet file behind (it would be silently reused later).
+    tmp_path = parquet_path + ".tmp"
     pl.scan_csv(
         path,
-        schema_overrides={
-            "amount": float,
-            "AMOUNT": float,
-            "dose_given": str,
-            "dose_val_rx": str,
-            "doses_per_24_hrs": float,
-            "patientweight": float,
-            "PATIENTWEIGHT": float,
-            "product_amount_given": str,
-            "RATE": float,
-            "totalamount": float,
-            "TOTALAMOUNT": float,
-            "value": str,
-            "VALUE": str,
-        },
+        schema_overrides=schema_overrides,
         infer_schema_length=250_000,  # CPTEVENTS needs ~183k rows before its first non-numeric CPT code
-    ).sink_parquet(parquet_path)
+    ).sink_parquet(tmp_path)
+    os.replace(tmp_path, parquet_path)
 
 
 def _parquetize_OMOP(path):
     print(f"OMOP   - parquetizing {path}")
     parquet_path = path.replace(".csv", ".parquet").replace(".gz", "")
+    tmp_path = parquet_path + ".tmp"
     pl.scan_csv(
         path,
         separator="\t",
         infer_schema_length=10000,
         quote_char=None,
-    ).sink_parquet(parquet_path)
+    ).sink_parquet(tmp_path)
+    os.replace(tmp_path, parquet_path)
 
 
 # endregion

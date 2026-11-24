@@ -1093,6 +1093,10 @@ class HiRIDExtractor(HiRIDPaths):
         """
         Retrieve the picklist labels of the ordinal variables that are decoded.
 
+        The nasal cannula flow (15001525) is a code, not a flow: its label gives
+        the l/min (16 = '0', 17 = '1.5', 18 = '9'), and labels that are not a
+        single flow ('2 x 4') become null in the decoding.
+
         The other ordinal variables are not decoded: the Glasgow coma scores
         equal their codes, the rest is not extracted.
 

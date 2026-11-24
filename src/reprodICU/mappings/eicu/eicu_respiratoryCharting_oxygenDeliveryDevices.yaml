@@ -17,5 +17,19 @@ Oxyhood: Oxygen mask
 Simple mask: Oxygen mask
 T-Piece: Tracheostomy tube
 Trach mask/collar: Tracheostomy tube
-Ventilator: Endotracheal tube
+# The airway is not charted with "Ventilator", so not Endotracheal tube.
+Ventilator: Mechanical ventilator
 Venturi mask: Venturi mask
+# "Oxygen Delivery Method" spellings, mapped like their "O2 Device" spelling.
+Ambu bag: Ambu bag
+BiPAP: Continuous positive airway pressure/Bilevel positive airway pressure mask
+Blowby: Blow by oxygen mask
+High Flow Nasal Cannula: High flow oxygen nasal cannula
+Mechanical ventilator: Mechanical ventilator
+Non-rebreather: Nonrebreather oxygen mask
+Resuscitation bag: Ambu bag
+Room air: Room air
+T-piece: Tracheostomy tube
+Trach collar: Tracheostomy tube
+Venti Mask: Venturi mask
+Venturi Mask: Venturi mask

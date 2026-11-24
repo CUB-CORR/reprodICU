@@ -468,7 +468,6 @@ class VENTILATION_DURATION_MIMIC4(MAGIC_CONCEPTS):
             .filter(pl.col("Ventilation Type").ne_missing(pl.lit("none")))
             .unique()
             .pipe(self._add_global_id_stay_id, "mimic4-", "stay_id")
-            .lazy()
         )
 
     # region helpers

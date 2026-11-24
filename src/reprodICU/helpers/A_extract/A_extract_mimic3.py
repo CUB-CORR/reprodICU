@@ -366,8 +366,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             # discharged from hospital alive
             .with_columns(
                 pl.when(
-                    pl.col(self.mortality_icu_col).is_null()
-                    & pl.col(self.mortality_hosp_col).eq(False)
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_hosp_col).eq(False),
                 )
                 .then(False)
                 .otherwise(pl.col(self.mortality_icu_col))
@@ -771,6 +771,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                         self.HEART_RHYTHM_MAP, default=None
                     )
                 )
+                # 'None' on the device items is room air (on other items it means no airway).
+                .when(
+                    pl.col("LABEL") == "Oxygen delivery system",
+                    pl.col("VALUE") == "None",
+                    pl.col("ITEMID").is_in([467, 468, 226732]),
+                )
+                .then(pl.lit("Room air"))
                 .when(pl.col("LABEL") == "Oxygen delivery system")
                 .then(
                     pl.col("VALUE").replace_strict(
@@ -804,6 +811,13 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(None)
                 .alias("VALUE"),
             )
+            # 227287 (additional cannula flow) is kept only when no main flow is charted at the same instant
+            .filter(
+                (pl.col("ITEMID") != 227287)
+                | (pl.col("ITEMID") == 227287).all().over(
+                    self.icu_stay_id_col, self.timeseries_time_col, "LABEL"
+                )
+            )
             # Text items also carry a list code in valuenum, which would win over
             # the text in the pivot: where there is text, drop the number
             .with_columns(
@@ -812,13 +826,23 @@ class MIMIC3Extractor(MIMIC3Paths):
                 .otherwise(pl.col("VALUENUM"))
                 .alias("VALUENUM")
             )
+            # The oxygen device is pivoted by its order in the enum
+            .with_columns(
+                pl.when(pl.col("LABEL") == "Oxygen delivery system")
+                .then(pl.col("VALUE").cast(self.OXYGEN_DELIVERY_SYSTEM_ENUM))
+                .alias("VALUE_ENUM"),
+                pl.when(pl.col("LABEL") != "Oxygen delivery system")
+                .then(pl.col("VALUE"))
+                .alias("VALUE"),
+            )
             .drop("ITEMID")
             # Remove rows with empty names
             .filter(pl.col("LABEL").is_not_null())  # & (pl.col("LABEL") != ""))
             # Remove rows with empty values (numeric or categorical string)
             .filter(
                 pl.col("VALUENUM").is_not_null()
-                | pl.col("VALUE").is_not_null(),
+                | pl.col("VALUE").is_not_null()
+                | pl.col("VALUE_ENUM").is_not_null(),
             )
             # Remove duplicate rows
             .unique()
