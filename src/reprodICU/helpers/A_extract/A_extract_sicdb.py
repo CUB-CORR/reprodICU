@@ -196,8 +196,8 @@ class SICdbExtractor(SICdbPaths):
                 # death before the case was closed overrides an alive discharge type
                 # (SICdb 1.0.8: 12 cases, 4 "survived" and 8 transfers)
                 .when(
-                    (pl.col("DischargeState") == 2215)  # "verstorben"
-                    & (pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"))
+                    pl.col("DischargeState") == 2215,  # "verstorben"
+                    pl.col("OffsetOfDeath") <= pl.col("TimeOfStay"),
                 )
                 .then(True)
                 .when(

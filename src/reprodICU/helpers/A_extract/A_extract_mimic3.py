@@ -366,8 +366,8 @@ class MIMIC3Extractor(MIMIC3Paths):
             # discharged from hospital alive
             .with_columns(
                 pl.when(
-                    pl.col(self.mortality_icu_col).is_null()
-                    & pl.col(self.mortality_hosp_col).eq(False)
+                    pl.col(self.mortality_icu_col).is_null(),
+                    pl.col(self.mortality_hosp_col).eq(False),
                 )
                 .then(False)
                 .otherwise(pl.col(self.mortality_icu_col))
@@ -773,9 +773,9 @@ class MIMIC3Extractor(MIMIC3Paths):
                 )
                 # 'None' on the device items is room air (on other items it means no airway).
                 .when(
-                    (pl.col("LABEL") == "Oxygen delivery system")
-                    & (pl.col("VALUE") == "None")
-                    & pl.col("ITEMID").is_in([467, 468, 226732])
+                    pl.col("LABEL") == "Oxygen delivery system",
+                    pl.col("VALUE") == "None",
+                    pl.col("ITEMID").is_in([467, 468, 226732]),
                 )
                 .then(pl.lit("Room air"))
                 .when(pl.col("LABEL") == "Oxygen delivery system")

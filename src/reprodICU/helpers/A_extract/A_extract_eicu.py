@@ -230,8 +230,8 @@ class EICUExtractor(EICUPaths):
                 .cast(bool),
                 # Calculate mortality after discharge
                 pl.when(
-                    (pl.col(self.mortality_icu_col) != "Expired")
-                    & (pl.col(self.mortality_hosp_col) == "Expired")
+                    pl.col(self.mortality_icu_col) != "Expired",
+                    pl.col(self.mortality_hosp_col) == "Expired",
                 )
                 .then(
                     pl.col("hospitaldischargeoffset")
